@@ -191,7 +191,7 @@ const MODALIDADES_SECOES = [
         id: "casa50",
         nome: "Casa até 50m²",
         sub: "Monofásico 63 A",
-        img: "assets/portal/img_casa1.png",
+        img: "imgs/mod-casa-50.png",
         status: "ok",
         prefill: {
           atividade: "Residencial",
@@ -203,7 +203,7 @@ const MODALIDADES_SECOES = [
         id: "casa100",
         nome: "Casa até 100m²",
         sub: "Bifásico 63 A",
-        img: "assets/portal/img_casa2.png",
+        img: "imgs/mod-casa-100.png",
         status: "ok",
         prefill: {
           atividade: "Residencial",
@@ -215,7 +215,7 @@ const MODALIDADES_SECOES = [
         id: "casaluxo",
         nome: "Casa > 100m²",
         sub: "Baixa Tensão",
-        img: "assets/portal/img_casa3.png",
+        img: "imgs/mod-casa-luxo.png",
         status: "ok",
         prefill: {
           atividade: "Residencial",
@@ -227,7 +227,7 @@ const MODALIDADES_SECOES = [
         id: "comercio",
         nome: "Comércio",
         sub: "Baixa Tensão (BT)",
-        img: "assets/portal/img_comercio.png",
+        img: "imgs/mod-comercio.png",
         status: "ok",
         prefill: {
           atividade: "Comercial",
@@ -239,7 +239,7 @@ const MODALIDADES_SECOES = [
         id: "industriabt",
         nome: "Indústria",
         sub: "Baixa Tensão (BT)",
-        img: "assets/portal/img_industria_bt.png",
+        img: "imgs/mod-industria-bt.png",
         status: "ok",
         prefill: {
           atividade: "Industrial",
@@ -251,7 +251,7 @@ const MODALIDADES_SECOES = [
         id: "rural",
         nome: "Rural",
         sub: "Baixa Tensão (BT)",
-        img: "assets/portal/img_rural.png",
+        img: "imgs/mod-rural.png",
         status: "ok",
         prefill: {
           atividade: "Rural",
@@ -268,15 +268,18 @@ const MODALIDADES_SECOES = [
         id: "loteamento",
         nome: "Loteamento",
         sub: "Baixa Tensão (BT)",
-        img: "assets/portal/img_loteamento.png",
-        status: "link",
-        href: "loteamento/",
+        img: "imgs/mod-loteamento.png",
+        status: "ok",
+        prefill: {
+          atend: { disjGeral: "Sim", solicitacao: SOLICITACOES[2], escopo: "Ligação Nova", nUCs: 2 },
+          obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
+        },
       },
       {
         id: "condominiotorres",
         nome: "Condomínio de torres",
         sub: "Baixa Tensão (BT)",
-        img: "assets/portal/img_condominio.png",
+        img: "imgs/mod-condominio-torres.png",
         status: "ok",
         prefill: {
           atividade: "Residencial",
@@ -288,7 +291,7 @@ const MODALIDADES_SECOES = [
         id: "coletivo",
         nome: "Atendimento coletivo",
         sub: "Baixa Tensão (BT)",
-        img: "assets/portal/img_coletivo.png",
+        img: "imgs/mod-coletivo.png",
         status: "ok",
         prefill: {
           atividade: "Residencial",
@@ -301,9 +304,9 @@ const MODALIDADES_SECOES = [
   {
     titulo: "Média Tensão",
     cards: [
-      { id: "mt-industria", nome: "Indústria", sub: "Média Tensão (MT)", img: "assets/portal/img_industria_mt.png", status: "link", href: "mt/?atividade=Industrial" },
-      { id: "mt-outros", nome: "Outros estabelecimentos", sub: "Média Tensão (MT)", img: "assets/portal/img_outros_mt.png", status: "link", href: "mt/" },
-      { id: "mt-irrigante", nome: "Irrigante", sub: "Média Tensão (MT)", img: "assets/portal/img_irrigante.png", status: "link", href: "mt/?atividade=Irrigação" },
+      { id: "mt-industria", nome: "Indústria", sub: "Média Tensão (MT)", img: "imgs/mod-mt-industria.png", status: "soon" },
+      { id: "mt-outros", nome: "Outros estabelecimentos", sub: "Média Tensão (MT)", img: "imgs/mod-mt-outros.png", status: "soon" },
+      { id: "mt-irrigante", nome: "Irrigante", sub: "Média Tensão (MT)", img: "imgs/mod-mt-irrigante.png", status: "soon" },
     ],
   },
   {
