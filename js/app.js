@@ -912,9 +912,7 @@ function App() {
     <div>
       <div className="topbar">
         <div className="topbar-inner">
-          <a className="logo-cemig" href="#">
-            <LogoCemig />
-          </a>
+          <span className="app-title">Assistente de formulário</span>
           <div className="topbar-links">
             <a
               href="https://atende.cemig.com.br/Login"

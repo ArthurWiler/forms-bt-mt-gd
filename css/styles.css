@@ -3,6 +3,11 @@
    Folha de estilos principal (padrão visual formulário MT)
    ============================================================ */
 
+@font-face {
+  font-family: "SS Broad";
+  src: url("../shared/css/ssbroad.otf") format("opentype");
+}
+
 :root {
   /* ===== Paleta oficial CEMIG — Manual de Marca 2022 ===== */
   --verde-escuro: #0a2f27;   /* Verde Escuro */
@@ -75,6 +80,12 @@ body {
 }
 .logo-cemig svg { height: 34px; width: auto; }
 .logo-cemig .logo-img { height: 34px; width: auto; display: block; }
+.app-title {
+  font-family: "SS Broad", "DM Sans", system-ui, -apple-system, sans-serif;
+  font-size: 22px;
+  color: #fff;
+  letter-spacing: 0.3px;
+}
 .topbar-links { display: flex; gap: 8px; flex-wrap: wrap; }
 .topbar-links a {
   font-size: 12px;
