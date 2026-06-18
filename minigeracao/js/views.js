@@ -1,2884 +1,456 @@
-/* ============================================================
-   CEMIG — Abas (componentes de visão). JSX via Babel.
-   Cada aba recebe `ctx` (estado/handlers do App) e o desestrutura.
-   ============================================================ */
-function TabOrient({ ctx }) {
-  const {
-    aba,
-    setAba,
-    modalidade,
-    setModalidade,
-    atend,
-    setAtend,
-    prop,
-    setProp,
-    corr,
-    setCorr,
-    obra,
-    setObra,
-    gerador,
-    setGerador,
-    obs,
-    setObs,
-    cepStatus,
-    setCepStatus,
-    cnpjStatus,
-    setCnpjStatus,
-    logoPDF,
-    setLogoPDF,
-    ucsDet,
-    setUcsDet,
-    ucBlocos,
-    setUcBlocos,
-    blocos,
-    setBlocos,
-    abas,
-    buscarCEP,
-    buscarCNPJ,
-    coletivo,
-    coordObrigatoria,
-    coordPreenchida,
-    demandaPrevTotal,
-    demandaTotalGeral,
-    disjGeralObrigatorio,
-    docInfo,
-    gerarPDF,
-    hibrido,
-    idx,
-    irAnt,
-    irProx,
-    isAlteracaoColetivo,
-    maiorCorrenteUC,
-    multiTorres,
-    opcoesDisjGeral,
-    pessoaFisica,
-    prevTotalKw,
-    redeMono,
-    replicarPrevTodas,
-    replicarPrevTorre,
-    replicarPrimeiro,
-    replicarUC1Coletivo,
-    replicarUC1Torre,
-    setBloco,
-    setBlocoPrev,
-    setTorre,
-    setUcDet,
-    setUcTorre,
-    setUcTorrePrev,
-    sincronizarUCsTorre,
-    totalUcsEmpreendimento,
-    trocaDisjGeral,
-    validacaoDisjuntores,
-    validacaoHibrido,
-  } = ctx;
+// ============================================================
+// MINIGERAÇÃO DISTRIBUÍDA — Views (seções do formulário)
+// ============================================================
+
+// ---------- Seção 1: Identificação ----------
+function ViewIdentificacao({ ctx }) {
+  const { d, set, cnpjStatus, buscarCnpj, cepStatus, buscarCep } = ctx;
   return (
-    <Card
-      eyebrow="Comece por aqui"
-      title="Orientações para preenchimento"
-      sub={ORIENTACOES.intro}
-    >
-      <div
-        style={{
-          fontWeight: 700,
-          color: "var(--verde-escuro)",
-          fontSize: 14,
-          marginBottom: 4,
-        }}
-      >
-        {ORIENTACOES.geral.titulo}
-      </div>
-      <ul className="orient-list">
-        {ORIENTACOES.geral.itens.map((it, i) => (
-          <li key={i} className="orient-item">
-            <span className="orient-num">{i + 1}</span>
-            <p>{it}</p>
-          </li>
-        ))}
-      </ul>
-      <div
-        style={{
-          fontWeight: 700,
-          color: "var(--verde-escuro)",
-          fontSize: 14,
-          margin: "18px 0 4px",
-        }}
-      >
-        {ORIENTACOES.individual.titulo}
-      </div>
-      <ul className="orient-list">
-        {ORIENTACOES.individual.itens.map((it, i) => (
-          <li key={i} className="orient-item">
-            <span className="orient-num">{i + 1}</span>
-            <p>{it}</p>
-          </li>
-        ))}
-      </ul>
-      <div
-        style={{
-          fontWeight: 700,
-          color: "var(--verde-escuro)",
-          fontSize: 14,
-          margin: "18px 0 4px",
-        }}
-      >
-        {ORIENTACOES.coletivo.titulo}
-      </div>
-      <ul className="orient-list">
-        {ORIENTACOES.coletivo.itens.map((it, i) => (
-          <li key={i} className="orient-item">
-            <span className="orient-num">{i + 1}</span>
-            <p>{it}</p>
-          </li>
-        ))}
-      </ul>
-      <div className="callout">{ORIENTACOES.callout}</div>
-      <div className="legend">
-        <span>
-          <span className="req">*</span> Campo de preenchimento obrigatório
-        </span>
-        <span>
-          <span className="req">**</span> Obrigatório para pessoa física
-        </span>
-      </div>
-      <div style={{ marginTop: 16 }}>
-        <Btn variant="primary" onClick={irProx}>
-          Iniciar preenchimento →
-        </Btn>
+    <Card eyebrow="Seção 1" title="Identificação da Unidade Consumidora">
+      <div className="grid">
+        <Field label="Número da instalação" req>
+          <Inp value={d.instalacao} onChange={(e) => set({ instalacao: e.target.value.replace(/\D/g, "") })} placeholder="Nº da instalação CEMIG" />
+        </Field>
+        <Field label="Titular da Unidade Consumidora" req span={2}>
+          <Inp value={d.titular} onChange={(e) => set({ titular: e.target.value })} />
+        </Field>
+        <Field label="Grupo" req>
+          <Sel value={d.grupo} onChange={(e) => set({ grupo: e.target.value })}>
+            {GD_GRUPOS.map((g) => (<option key={g} value={g}>{g}</option>))}
+          </Sel>
+        </Field>
+        <Field label="Classe" req>
+          <Sel value={d.classe} onChange={(e) => set({ classe: e.target.value })}>
+            <option value="">Selecionar</option>
+            {GD_CLASSES.map((c) => (<option key={c} value={c}>{c}</option>))}
+          </Sel>
+        </Field>
+        <Field label="CPF/CNPJ" req hint={cnpjStatus}>
+          <Inp value={d.cpfCnpj} onChange={(e) => {
+            const v = mascararCpfCnpj(e.target.value); set({ cpfCnpj: v });
+            if (ehCNPJ(v) && soDigitos(v).length === 14) buscarCnpj(v);
+          }} placeholder="Somente números" />
+        </Field>
+        <Field label="Logradouro" req span={2}>
+          <Inp value={d.logradouro} onChange={(e) => set({ logradouro: e.target.value })} />
+        </Field>
+        <Field label="Número" req>
+          <Inp value={d.numero} onChange={(e) => set({ numero: e.target.value })} />
+        </Field>
+        <Field label="Complemento">
+          <Inp value={d.complemento} onChange={(e) => set({ complemento: e.target.value })} />
+        </Field>
+        <Field label="Bairro" req>
+          <Inp value={d.bairro} onChange={(e) => set({ bairro: e.target.value })} />
+        </Field>
+        <Field label="Município" req>
+          <Inp value={d.municipio} onChange={(e) => set({ municipio: e.target.value })} />
+        </Field>
+        <Field label="Estado" req>
+          <Sel value={d.estado} onChange={(e) => set({ estado: e.target.value })}><option value="MG">MG</option></Sel>
+        </Field>
+        <Field label="CEP" req hint={cepStatus}>
+          <Inp value={d.cep} onChange={(e) => {
+            const v = mascararCEP(e.target.value); set({ cep: v });
+            if (soDigitos(v).length === 8) buscarCep(v);
+          }} />
+        </Field>
+        <Field label="Telefone">
+          <Inp value={d.telefone} onChange={(e) => set({ telefone: mascararFixo(e.target.value) })} />
+        </Field>
+        <Field label="Celular" req>
+          <Inp value={d.celular} onChange={(e) => set({ celular: mascararCelular(e.target.value) })} />
+        </Field>
+        <Field label="E-mail" req>
+          <Inp value={d.email} onChange={(e) => set({ email: e.target.value })} />
+        </Field>
       </div>
     </Card>
   );
 }
 
-function TabTipo({ ctx }) {
-  const {
-    aba,
-    setAba,
-    modalidade,
-    setModalidade,
-    atend,
-    setAtend,
-    prop,
-    setProp,
-    corr,
-    setCorr,
-    obra,
-    setObra,
-    gerador,
-    setGerador,
-    obs,
-    setObs,
-    cepStatus,
-    setCepStatus,
-    cnpjStatus,
-    setCnpjStatus,
-    logoPDF,
-    setLogoPDF,
-    ucsDet,
-    setUcsDet,
-    ucBlocos,
-    setUcBlocos,
-    blocos,
-    setBlocos,
-    abas,
-    buscarCEP,
-    buscarCNPJ,
-    coletivo,
-    coordObrigatoria,
-    coordPreenchida,
-    demandaPrevTotal,
-    demandaTotalGeral,
-    disjGeralObrigatorio,
-    docInfo,
-    gerarPDF,
-    hibrido,
-    idx,
-    irAnt,
-    irProx,
-    isAlteracaoColetivo,
-    maiorCorrenteUC,
-    multiTorres,
-    opcoesDisjGeral,
-    pessoaFisica,
-    prevTotalKw,
-    redeMono,
-    replicarPrevTodas,
-    replicarPrevTorre,
-    replicarPrimeiro,
-    replicarUC1Coletivo,
-    replicarUC1Torre,
-    setBloco,
-    setBlocoPrev,
-    setTorre,
-    setUcDet,
-    setUcTorre,
-    setUcTorrePrev,
-    sincronizarUCsTorre,
-    totalUcsEmpreendimento,
-    trocaDisjGeral,
-    validacaoDisjuntores,
-    validacaoHibrido,
-  } = ctx;
+// ---------- Seção 2: Dados da UC ----------
+function ViewDadosUC({ ctx }) {
+  const { d, set } = ctx;
+  const utm = gdValidarUTM(d.fuso, d.utmE, d.utmN);
+  const potTrafos = d.tipoSE ? GD_TRAFO_POR_SE[d.tipoSE] || [] : [];
+  const setTrafo = (i, patch) => set({ trafos: d.trafos.map((t, k) => (k === i ? { ...t, ...patch } : t)) });
+  const addTrafo = () => set({ trafos: [...d.trafos, { se: d.tipoSE, qte: "", potencia: "" }] });
+  const delTrafo = (i) => set({ trafos: d.trafos.filter((_, k) => k !== i) });
   return (
-    <Card
-      eyebrow="Etapa 1"
-      title="Tipo de Atendimento"
-      sub="O tipo de formulário é definido pela presença ou não de disjuntor geral. Os campos seguintes se adaptam à sua escolha."
-    >
-      <div className="grid grid-2 divider">
-        <Field label="Solicitação" req>
-          <Sel
-            value={atend.solicitacao}
-            onChange={(e) =>
-              setAtend({ ...atend, solicitacao: e.target.value })
-            }
-          >
-            {SOLICITACOES.map((s) => (
-              <option key={s}>{s}</option>
-            ))}
+    <Card eyebrow="Seção 2" title="Dados da Unidade Consumidora">
+      <div className="grid">
+        <Field label="Fuso" req>
+          <Sel value={d.fuso} onChange={(e) => set({ fuso: e.target.value })}>
+            <option value="">Selecionar</option>
+            {GD_FUSOS.map((f) => (<option key={f} value={f}>{f}</option>))}
           </Sel>
         </Field>
-        <Field label="Escopo do Atendimento" req>
-          <Sel
-            value={atend.escopo}
-            onChange={(e) => setAtend({ ...atend, escopo: e.target.value })}
-          >
-            {(ESCOPOS[atend.solicitacao] || []).map((s) => (
-              <option key={s}>{s}</option>
-            ))}
+        <Field label="E (Abscissa)" req hint={!utm.ok ? utm.msg : ""}>
+          <Inp value={d.utmE} onChange={(e) => set({ utmE: e.target.value.replace(/[^\d.]/g, "") })} />
+        </Field>
+        <Field label="N (Ordenada)" req hint={!utm.ok && d.utmN ? utm.msg : ""}>
+          <Inp value={d.utmN} onChange={(e) => set({ utmN: e.target.value.replace(/[^\d.]/g, "") })} />
+        </Field>
+        <Field label="Tipo de Subestação (ND 5.3)">
+          <Sel value={d.tipoSE} onChange={(e) => set({ tipoSE: e.target.value })}>
+            <option value="">Selecionar</option>
+            {GD_TIPOS_SE.map((s) => (<option key={s} value={s}>{s}</option>))}
           </Sel>
         </Field>
-        {multiTorres && (
+        <Field label="Tipo de Ligação do Transformador">
+          <Sel value={d.tipoLigTrafo} onChange={(e) => set({ tipoLigTrafo: e.target.value })}>
+            <option value="">Selecionar</option>
+            {GD_TIPO_LIG_TRAFO.map((s) => (<option key={s} value={s}>{s}</option>))}
+          </Sel>
+        </Field>
+        <Field label="Impedância Percentual do Transformador (%)" req>
+          <Inp value={d.impedanciaTrafo} onChange={(e) => set({ impedanciaTrafo: e.target.value.replace(/[^\d.]/g, "") })} />
+        </Field>
+      </div>
+
+      {d.tipoSE && (
+        <div className="subbox" style={{ marginTop: 12 }}>
+          <div className="motores-head">
+            <span className="subbox-title">Transformadores (Qte × Potência)</span>
+            <Btn variant="primary" onClick={addTrafo}>+ Trafo</Btn>
+          </div>
+          <table className="motores-table">
+            <thead><tr><th>Qte</th><th>Potência (kVA)</th><th></th></tr></thead>
+            <tbody>
+              {d.trafos.map((t, i) => (
+                <tr key={i}>
+                  <td><input type="number" min="0" value={t.qte} onChange={(e) => setTrafo(i, { qte: e.target.value })} style={{ width: 70 }} /></td>
+                  <td>
+                    <select value={t.potencia} onChange={(e) => setTrafo(i, { potencia: e.target.value })}>
+                      <option value="">Selecionar</option>
+                      {potTrafos.map((p) => (<option key={p} value={p}>{p}</option>))}
+                    </select>
+                  </td>
+                  <td>{d.trafos.length > 1 && (<button type="button" className="motor-del" onClick={() => delTrafo(i)}>✕</button>)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div className="grid" style={{ marginTop: 12 }}>
+        <Field label="Potência do Grupo Motor Gerador de Emergência em Paralelo (kVA)" span={2}>
+          <Inp value={d.geradorPotencia} onChange={(e) => set({ geradorPotencia: e.target.value.replace(/[^\d.]/g, "") })} />
+        </Field>
+        <Field label="Tensão de Atendimento (V)">
+          <Sel value={d.tensaoAtendimento} onChange={(e) => set({ tensaoAtendimento: e.target.value })}>
+            <option value="">Selecionar</option>
+            {GD_TENSAO_A.map((t) => (<option key={t} value={t}>{t}</option>))}
+          </Sel>
+        </Field>
+        <Field label="Entrada de Energia">
+          <Sel value={d.entradaEnergia} onChange={(e) => set({ entradaEnergia: e.target.value })}>
+            <option value="">Selecionar</option>
+            {GD_ENTRADA_ENERGIA.map((s) => (<option key={s} value={s}>{s}</option>))}
+          </Sel>
+        </Field>
+        <Field label="Tipo de Solicitação" req span={3} hint="Para fonte diferente da original, deverá ser realizada solicitação de ligação nova.">
+          <Sel value={d.solicitacao} onChange={(e) => set({ solicitacao: e.target.value })}>
+            <option value="">Selecionar</option>
+            {GD_SOLICITACOES.map((s) => (<option key={s} value={s}>{s}</option>))}
+          </Sel>
+        </Field>
+        <Field label="Demanda a ser contratada de geração (kW)">
+          <Inp value={d.demandaGeracao} onChange={(e) => set({ demandaGeracao: e.target.value.replace(/[^\d.]/g, "") })} />
+        </Field>
+        <Field label="Demanda a ser contratada de consumo (kW)" req hint="Não incluir potência de trafos, inversores ou placas">
+          <Inp value={d.demandaConsumo} onChange={(e) => set({ demandaConsumo: e.target.value.replace(/[^\d.]/g, "") })} />
+        </Field>
+        <Field label='O empreendimento será "Grid Zero"?'>
+          <Toggle value={d.gridZero} onChange={(v) => set({ gridZero: v })} options={GD_SN.map((o) => ({ v: o, l: o }))} />
+        </Field>
+        <Field label="O telhado será arrendado para pessoa/empresa diferente do proprietário?" span={3}>
+          <Toggle value={d.telhadoArrendado} onChange={(v) => set({ telhadoArrendado: v })} options={GD_SN.map((o) => ({ v: o, l: o }))} />
+        </Field>
+        {d.telhadoArrendado === "Sim" && (
+          <Field label="As 2 instalações foram representadas no DUB e memorial descritivo?" span={3}>
+            <Toggle value={d.duasInstalacoesDUB} onChange={(v) => set({ duasInstalacoesDUB: v })} options={GD_SN.map((o) => ({ v: o, l: o }))} />
+          </Field>
+        )}
+        <Field label="Número da instalação existente no local" span={2}>
+          <Inp value={d.instExistente} onChange={(e) => set({ instExistente: e.target.value.replace(/\D/g, "") })} />
+        </Field>
+        <Field label="A instalação existente é atendida em BT ou MT?">
+          <Sel value={d.instExistenteBTMT} onChange={(e) => set({ instExistenteBTMT: e.target.value })}>
+            <option value="">Selecionar</option>
+            {GD_BT_MT.map((s) => (<option key={s} value={s}>{s}</option>))}
+          </Sel>
+        </Field>
+      </div>
+    </Card>
+  );
+}
+
+// ---------- Seção 3: Documentação ----------
+function ViewDocumentacao({ ctx }) {
+  const { d, set } = ctx;
+  const setDoc = (id, v) => set({ docs: { ...d.docs, [id]: v } });
+  return (
+    <Card eyebrow="Seção 3" title="Documentação da UC a anexar (Nova UC ou Alteração de Potência)">
+      <p className="card-sub">Marque os documentos que serão anexados. Itens "Caso aplicável" só quando pertinentes.</p>
+      <div className="doc-list">
+        {GD_DOCUMENTOS.map((doc) => (
+          <label key={doc.id} className="doc-item">
+            <input type="checkbox" checked={!!d.docs[doc.id]} onChange={(e) => setDoc(doc.id, e.target.checked)} />
+            <span className="doc-text"><strong>{doc.id}</strong> {doc.txt}{doc.req && <span className="doc-req"> (obrigatório)</span>}</span>
+          </label>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+// ---------- Seção 4: Dados da Geração (múltiplas fontes) ----------
+function ViewGeracao({ ctx }) {
+  const { d, set } = ctx;
+  const setFonte = (i, patch) => set({ fontes: d.fontes.map((f, k) => (k === i ? { ...f, ...patch } : f)) });
+  const ajustarQtd = (q) => {
+    q = parseInt(q) || 1;
+    const arr = [...d.fontes];
+    while (arr.length < q) arr.push(gdFontePadrao());
+    while (arr.length > q) arr.pop();
+    set({ qtdFontes: q, fontes: arr });
+  };
+  return (
+    <Card eyebrow="Seção 4" title="Dados da Geração">
+      <div className="grid">
+        <Field label="Quantidade de fontes de geração" req>
+          <Sel value={d.qtdFontes} onChange={(e) => ajustarQtd(e.target.value)}>
+            {GD_QTD_FONTES.map((q) => (<option key={q} value={q}>{q}</option>))}
+          </Sel>
+        </Field>
+        <Field label="Potência Ativa Instalada Total de Geração (kW)" req span={2}>
+          <Inp value={d.potAtivaInstalada} onChange={(e) => set({ potAtivaInstalada: e.target.value.replace(/[^\d.]/g, "") })} />
+        </Field>
+        <Field label="Modalidade de compensação" req span={2}>
+          <Sel value={d.modalidade} onChange={(e) => set({ modalidade: e.target.value })}>
+            <option value="">Selecionar</option>
+            {GD_MODALIDADES.map((m) => (<option key={m} value={m}>{m}</option>))}
+          </Sel>
+        </Field>
+        <Field label="Qtde. de Instalações a receber o crédito">
+          <Inp value={d.qtdInstalacoesCredito} onChange={(e) => set({ qtdInstalacoesCredito: e.target.value.replace(/\D/g, "") })} />
+        </Field>
+        <Field label="Anexou contrato de constituição? (consórcio/cooperativa)" span={3}>
+          <Toggle value={d.anexouContrato} onChange={(v) => set({ anexouContrato: v })} options={GD_SN.map((o) => ({ v: o, l: o }))} />
+        </Field>
+      </div>
+
+      {d.fontes.map((f, i) => {
+        const ehFV = f.fontePrimaria === "Solar";
+        const potMod = ((parseFloat(f.qtdModulos) || 0) * 0); // potência total informada manualmente abaixo
+        return (
+          <React.Fragment key={i}>
+            <div className="gd-subhead">4.{i + 1} — Dados da Fonte de Geração {i + 1}</div>
+            <div className="grid">
+              <Field label="Tipo de Fonte Primária" req>
+                <Sel value={f.fontePrimaria} onChange={(e) => setFonte(i, { fontePrimaria: e.target.value })}>
+                  {GD_FONTES.map((o) => (<option key={o} value={o}>{o}</option>))}
+                </Sel>
+              </Field>
+              <Field label="Potência Geração {i+1} (kW)" req>
+                <Inp value={f.potencia} onChange={(e) => setFonte(i, { potencia: e.target.value.replace(/[^\d.]/g, "") })} />
+              </Field>
+              <Field label="Tipo de geração" req>
+                <Sel value={f.tipoGeracao} onChange={(e) => setFonte(i, { tipoGeracao: e.target.value })}>
+                  {GD_TIPO_GERACAO.map((t) => (<option key={t} value={t}>{t}</option>))}
+                </Sel>
+              </Field>
+              {f.tipoGeracao === "Outra (especificar):" && (
+                <Field label="Especificar" span={3}>
+                  <Inp value={f.tipoGeracaoOutro} onChange={(e) => setFonte(i, { tipoGeracaoOutro: e.target.value })} />
+                </Field>
+              )}
+            </div>
+            {ehFV && (
+              <div className="grid">
+                <Field label="Potência Total Módulos (kW)">
+                  <Inp value={f.potTotalModulos} onChange={(e) => setFonte(i, { potTotalModulos: e.target.value.replace(/[^\d.]/g, "") })} />
+                </Field>
+                <Field label="Potência Total Inversores (kW)">
+                  <Inp value={f.potTotalInversores} onChange={(e) => setFonte(i, { potTotalInversores: e.target.value.replace(/[^\d.]/g, "") })} />
+                </Field>
+                <Field label="Área dos Arranjos (m²)">
+                  <Inp value={f.areaArranjos} onChange={(e) => setFonte(i, { areaArranjos: e.target.value.replace(/[^\d.]/g, "") })} />
+                </Field>
+                <Field label="Quantidade de Módulos">
+                  <Inp value={f.qtdModulos} onChange={(e) => setFonte(i, { qtdModulos: e.target.value.replace(/\D/g, "") })} />
+                </Field>
+                <Field label="Modelo dos Módulos">
+                  <Inp value={f.modeloModulos} onChange={(e) => setFonte(i, { modeloModulos: e.target.value })} />
+                </Field>
+                <Field label="Fabricante dos Módulos">
+                  <Inp value={f.fabricanteModulos} onChange={(e) => setFonte(i, { fabricanteModulos: e.target.value })} />
+                </Field>
+                <Field label="Quantidade de Inversores">
+                  <Inp value={f.qtdInversores} onChange={(e) => setFonte(i, { qtdInversores: e.target.value.replace(/\D/g, "") })} />
+                </Field>
+                <Field label="Modelo dos Inversores" hint="Para mais de 1 modelo, separar com barra (/)">
+                  <Inp value={f.modeloInversores} onChange={(e) => setFonte(i, { modeloInversores: e.target.value })} />
+                </Field>
+                <Field label="Fabricante dos Inversores">
+                  <Inp value={f.fabricanteInversores} onChange={(e) => setFonte(i, { fabricanteInversores: e.target.value })} />
+                </Field>
+              </div>
+            )}
+            <div className="grid">
+              <Field label="CEG do empreendimento (se houver outorga)" span={2}>
+                <Inp value={f.ceg} onChange={(e) => setFonte(i, { ceg: e.target.value })} />
+              </Field>
+              <Field label="Nº do Ato de Outorga/Registro">
+                <Inp value={f.numAtoOutorga} onChange={(e) => setFonte(i, { numAtoOutorga: e.target.value })} />
+              </Field>
+              <Field label="Nome da Usina" span={2}>
+                <Inp value={f.nomeUsina} onChange={(e) => setFonte(i, { nomeUsina: e.target.value })} />
+              </Field>
+              <Field label="Ano do Ato">
+                <Inp value={f.anoAtoOutorga} onChange={(e) => setFonte(i, { anoAtoOutorga: e.target.value.replace(/\D/g, "") })} />
+              </Field>
+              <Field label="Tipo do Ato de Outorga/Registro" span={3}>
+                <Inp value={f.tipoAtoOutorga} onChange={(e) => setFonte(i, { tipoAtoOutorga: e.target.value })} />
+              </Field>
+            </div>
+          </React.Fragment>
+        );
+      })}
+    </Card>
+  );
+}
+
+// ---------- Seção 5: Armazenamento ----------
+function ViewArmazenamento({ ctx }) {
+  const { d, set } = ctx;
+  const sim = d.possuiArmazenamento === "Sim";
+  return (
+    <Card eyebrow="Seção 5" title="Sistema de Armazenamento de Energia">
+      <div className="grid">
+        <Field label="Possui sistema de armazenamento de energia?" span={3}>
+          <Toggle value={d.possuiArmazenamento} onChange={(v) => set({ possuiArmazenamento: v })} options={GD_SN.map((o) => ({ v: o, l: o }))} />
+        </Field>
+        {sim && (
           <React.Fragment>
-            <Field label="Atendimento a">
-              <Toggle
-                value={atend.atendA}
-                onChange={(v) => setAtend({ ...atend, atendA: v })}
-                options={[
-                  { v: "Bloco", l: "Bloco" },
-                  { v: "Torre", l: "Torre" },
-                ]}
-              />
+            <Field label="Operação ilhada?" span={3}>
+              <Toggle value={d.armOperacaoIlhada} onChange={(v) => set({ armOperacaoIlhada: v })} options={GD_SN.map((o) => ({ v: o, l: o }))} />
             </Field>
-            <Field label="Nº de Blocos / Torres" req>
-              <Inp
-                type="number"
-                value={atend.nBlocos}
-                onChange={(e) =>
-                  setAtend({
-                    ...atend,
-                    nBlocos: Math.max(1, parseInt(e.target.value)),
-                  })
-                }
-              />
-            </Field>
+            {d.armOperacaoIlhada === "Sim" && (
+              <React.Fragment>
+                <Field label="Chave de desconexão física?"><Toggle value={d.armChaveDesconexao} onChange={(v) => set({ armChaveDesconexao: v })} options={GD_SN.map((o) => ({ v: o, l: o }))} /></Field>
+                <Field label="Reconexão automática?"><Toggle value={d.armReconexaoAuto} onChange={(v) => set({ armReconexaoAuto: v })} options={GD_SN.map((o) => ({ v: o, l: o }))} /></Field>
+              </React.Fragment>
+            )}
+            <Field label="Capacidade do banco (kWh)"><Inp value={d.armCapacidadeKwh} onChange={(e) => set({ armCapacidadeKwh: e.target.value.replace(/[^\d.]/g, "") })} /></Field>
+            <Field label="Potência total do banco (kW)"><Inp value={d.armPotenciaKw} onChange={(e) => set({ armPotenciaKw: e.target.value.replace(/[^\d.]/g, "") })} /></Field>
+            <Field label="Capacidade nominal (Ah)"><Inp value={d.armCapacidadeAh} onChange={(e) => set({ armCapacidadeAh: e.target.value.replace(/[^\d.]/g, "") })} /></Field>
+            <Field label="Tensão CC (V)"><Inp value={d.armTensaoCC} onChange={(e) => set({ armTensaoCC: e.target.value.replace(/[^\d.]/g, "") })} /></Field>
+            <Field label="Profundidade de descarga (%)"><Inp value={d.armProfundidadeDescarga} onChange={(e) => set({ armProfundidadeDescarga: e.target.value.replace(/[^\d.]/g, "") })} /></Field>
+            <Field label="Produção mensal (kWh)"><Inp value={d.armProducaoMensal} onChange={(e) => set({ armProducaoMensal: e.target.value.replace(/[^\d.]/g, "") })} /></Field>
           </React.Fragment>
         )}
       </div>
-
-      <div className="grid grid-2">
-        <Field label="Possui disjuntor geral (proteção geral)?" req>
-          <Toggle
-            value={atend.disjGeral}
-            onChange={(v) => setAtend({ ...atend, disjGeral: v })}
-            options={[
-              { v: "Não", l: "Não" },
-              { v: "Sim", l: "Sim" },
-            ]}
-          />
-        </Field>
-        {!multiTorres && (
-          <Field label="Nº de Unidades Consumidoras" req>
-            <Inp
-              type="number"
-              value={atend.nUCs}
-              onChange={(e) =>
-                setAtend({
-                  ...atend,
-                  nUCs: Math.max(1, parseInt(e.target.value)),
-                  disjGeral: parseInt(e.target.value) > 3 ? "Sim" : "Não",
-                })
-              }
-              options={[
-                { v: true, l: "Sim" },
-                { v: false, l: "Não" },
-              ]}
-            />
-          </Field>
-        )}
-      </div>
-
-      <div className="grid grid-2 divider">
-        <Field label="Há múltiplas unidades consumidoras com proteção acima de 63 A?">
-          <Toggle
-            value={atend.biAcima63}
-            onChange={(v) =>
-              setAtend({
-                ...atend,
-                biAcima63: v,
-                triAcima63: v,
-                disjGeral: v ? "Sim" : "Não", // converte booleano para string
-              })
-            }
-            options={[
-              { v: true, l: "Sim" },
-              { v: false, l: "Não" },
-            ]}
-          />
-        </Field>
-      </div>
-
-      <div
-        className={"alert " + (coletivo ? "alert-ok" : "alert-info")}
-        style={{ marginTop: 16 }}
-      >
-        {multiTorres
-          ? "Atendimento caracterizado como empreendimento com 'Múltiplas Torres ou Blocos'."
-          : coletivo
-            ? "Atendimento caracterizado como 'Coletivo'."
-            : "Atendimento caracterizado como 'Individual'."}
-      </div>
     </Card>
   );
 }
 
-function TabProprietario({ ctx }) {
-  const {
-    aba,
-    setAba,
-    modalidade,
-    setModalidade,
-    atend,
-    setAtend,
-    prop,
-    setProp,
-    corr,
-    setCorr,
-    obra,
-    setObra,
-    gerador,
-    setGerador,
-    obs,
-    setObs,
-    cepStatus,
-    setCepStatus,
-    cnpjStatus,
-    setCnpjStatus,
-    logoPDF,
-    setLogoPDF,
-    ucsDet,
-    setUcsDet,
-    ucBlocos,
-    setUcBlocos,
-    blocos,
-    setBlocos,
-    abas,
-    buscarCEP,
-    buscarCNPJ,
-    coletivo,
-    coordObrigatoria,
-    coordPreenchida,
-    demandaPrevTotal,
-    demandaTotalGeral,
-    disjGeralObrigatorio,
-    docInfo,
-    gerarPDF,
-    hibrido,
-    idx,
-    irAnt,
-    irProx,
-    isAlteracaoColetivo,
-    maiorCorrenteUC,
-    multiTorres,
-    opcoesDisjGeral,
-    pessoaFisica,
-    prevTotalKw,
-    redeMono,
-    replicarPrevTodas,
-    replicarPrevTorre,
-    replicarPrimeiro,
-    replicarUC1Coletivo,
-    replicarUC1Torre,
-    setBloco,
-    setBlocoPrev,
-    setTorre,
-    setUcDet,
-    setUcTorre,
-    setUcTorrePrev,
-    sincronizarUCsTorre,
-    totalUcsEmpreendimento,
-    trocaDisjGeral,
-    validacaoDisjuntores,
-    validacaoHibrido,
-  } = ctx;
+// ---------- Seções 6, 7, 8, 9 ----------
+function ViewDeclaracoes({ ctx }) {
+  const { d, set } = ctx;
+  const setDocTec = (id, v) => set({ docsTec: { ...d.docsTec, [id]: v } });
+  const exigeGFC = (parseFloat(d.potAtivaInstalada) || 0) > GD_GFC_LIMITE_KW;
   return (
-    <Card
-      eyebrow="Dados"
-      title="Dados do Proprietário"
-      sub="Titular da conta de energia ou proprietário/possuidor do imóvel. (*) obrigatório · (**) obrigatório para pessoa física."
-    >
-      <div className="grid grid-2">
-        <Field label="Nome Completo (sem abreviações)" req span={2}>
-          <Inp
-            value={prop.nome}
-            onChange={(e) => setProp({ ...prop, nome: e.target.value })}
-          />
-        </Field>
-        <Field
-          label="CPF / CNPJ"
-          req
-          hint={
-            docInfo.valido === false
-              ? `${docInfo.tipo} inválido — verifique os dígitos.`
-              : docInfo.valido === true
-                ? `${docInfo.tipo} válido.`
-                : "Digite CPF (pessoa física) ou CNPJ (pessoa jurídica)."
-          }
-        >
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input
-              value={prop.cpfCnpj || ""}
-              onChange={(e) => {
-                const m = mascararCpfCnpj(e.target.value);
-                setProp({ ...prop, cpfCnpj: m });
-                if (ehCNPJ(m)) buscarCNPJ(m);
-                else setCnpjStatus("");
-              }}
-              placeholder="000.000.000-00"
-              style={{
-                borderColor:
-                  docInfo.valido === false ? "var(--vermelho)" : undefined,
-              }}
-            />
-            {cnpjStatus === "buscando" && <span className="spinner"></span>}
-            {cnpjStatus === "ok" && <Badge>dados preenchidos</Badge>}
-            {cnpjStatus === "erro" && (
-              <span style={{ color: "var(--vermelho)", fontSize: 12 }}>
-                CNPJ não encontrado
-              </span>
-            )}
-          </div>
-        </Field>
-        <Field label="E-mail" req>
-          <Inp
-            type="email"
-            value={prop.email}
-            onChange={(e) => setProp({ ...prop, email: e.target.value })}
-          />
-        </Field>
-        {pessoaFisica && (
-          <Field label="Filiação (Mãe ou Pai) **">
-            <Inp
-              value={prop.filiacao}
-              onChange={(e) => setProp({ ...prop, filiacao: e.target.value })}
-            />
-          </Field>
-        )}
-        {pessoaFisica && (
-          <Field label="RG / RNE / RANI **">
-            <Inp
-              value={prop.rg}
-              onChange={(e) =>
-                setProp({ ...prop, rg: mascararRG(e.target.value) })
-              }
-            />
-          </Field>
-        )}
-        {pessoaFisica && (
-          <Field label="Data de Nascimento **">
-            <Inp
-              type="date"
-              value={prop.nasc}
-              onChange={(e) => setProp({ ...prop, nasc: e.target.value })}
-            />
-          </Field>
-        )}
-        <Field label="Celular" req>
-          <Inp
-            value={prop.celular}
-            onChange={(e) =>
-              setProp({
-                ...prop,
-                celular: mascararCelular(e.target.value),
-              })
-            }
-          />
-        </Field>
-        <Field label="Telefone Fixo">
-          <Inp
-            value={prop.fixo}
-            onChange={(e) =>
-              setProp({ ...prop, fixo: mascararFixo(e.target.value) })
-            }
-          />
-        </Field>
-        <Field label="Telefone do Proprietário" req>
-          <Inp
-            value={prop.telProp}
-            onChange={(e) =>
-              setProp({
-                ...prop,
-                telProp: mascararTelefone(e.target.value),
-              })
-            }
-          />
-        </Field>
-        {pessoaFisica && (
-          <Field
-            label="Possui laudo médico (equipamentos essenciais)? **"
-            span={2}
-          >
-            <Toggle
-              value={prop.laudoMedico}
-              onChange={(v) => setProp({ ...prop, laudoMedico: v })}
-              options={[
-                { v: "Sim", l: "Sim" },
-                { v: "Não", l: "Não" },
-              ]}
-            />
-          </Field>
-        )}
-        {pessoaFisica && (
-          <Field label="Possui NIS para Tarifa Social? **">
-            <Toggle
-              value={prop.nis}
-              onChange={(v) => setProp({ ...prop, nis: v })}
-              options={[
-                { v: "Sim", l: "Sim" },
-                { v: "Não", l: "Não" },
-              ]}
-            />
-          </Field>
-        )}
-        {pessoaFisica && prop.nis === "Sim" && (
-          <Field label="Número do NIS" req>
-            <Inp
-              value={prop.numNis}
-              onChange={(e) => setProp({ ...prop, numNis: e.target.value })}
-            />
-          </Field>
-        )}
+    <Card eyebrow="Seções 6 a 9" title="Garantia, documentação técnica, declarações e solicitante">
+      <div className="gd-subhead">6 — Garantia de Fiel Cumprimento</div>
+      <div className="gd-info-box">
+        Para minigeração com potência instalada superior a 500 kW, é necessário apresentar a garantia de fiel cumprimento (art. 655-C da REN nº 1.000/2021).
       </div>
-    </Card>
-  );
-}
-
-function TabCorrespondencia({ ctx }) {
-  const {
-    aba,
-    setAba,
-    modalidade,
-    setModalidade,
-    atend,
-    setAtend,
-    prop,
-    setProp,
-    corr,
-    setCorr,
-    obra,
-    setObra,
-    gerador,
-    setGerador,
-    obs,
-    setObs,
-    cepStatus,
-    setCepStatus,
-    cnpjStatus,
-    setCnpjStatus,
-    logoPDF,
-    setLogoPDF,
-    ucsDet,
-    setUcsDet,
-    ucBlocos,
-    setUcBlocos,
-    blocos,
-    setBlocos,
-    abas,
-    buscarCEP,
-    buscarCNPJ,
-    coletivo,
-    coordObrigatoria,
-    coordPreenchida,
-    demandaPrevTotal,
-    demandaTotalGeral,
-    disjGeralObrigatorio,
-    docInfo,
-    gerarPDF,
-    hibrido,
-    idx,
-    irAnt,
-    irProx,
-    isAlteracaoColetivo,
-    maiorCorrenteUC,
-    multiTorres,
-    opcoesDisjGeral,
-    pessoaFisica,
-    prevTotalKw,
-    redeMono,
-    replicarPrevTodas,
-    replicarPrevTorre,
-    replicarPrimeiro,
-    replicarUC1Coletivo,
-    replicarUC1Torre,
-    setBloco,
-    setBlocoPrev,
-    setTorre,
-    setUcDet,
-    setUcTorre,
-    setUcTorrePrev,
-    sincronizarUCsTorre,
-    totalUcsEmpreendimento,
-    trocaDisjGeral,
-    validacaoDisjuntores,
-    validacaoHibrido,
-  } = ctx;
-  return (
-    <Card
-      eyebrow="Dados"
-      title="Correspondência e Fatura"
-      sub="Como o cliente deseja receber a conta de energia."
-    >
-      <div className="grid grid-2">
-        <Field label="Deseja receber a fatura no e-mail informado?" req>
-          <Toggle
-            value={corr.receberEmail}
-            onChange={(v) => setCorr({ ...corr, receberEmail: v })}
-            options={[
-              { v: "Sim", l: "Sim" },
-              { v: "Não", l: "Não" },
-            ]}
-          />
-        </Field>
-        <Field label="Data de Vencimento da Fatura">
-          <Toggle
-            value={corr.vencimento}
-            onChange={(v) => setCorr({ ...corr, vencimento: v })}
-            options={DIAS_VENCIMENTO.map((d) => ({ v: d, l: d }))}
-          />
-        </Field>
-      </div>
-      {corr.receberEmail === "Não" && (
-        <div className="divider">
-          <Field label="Como deseja receber a fatura?" req>
-            <Toggle
-              value={corr.alternativa}
-              onChange={(v) => setCorr({ ...corr, alternativa: v })}
-              options={[
-                { v: "Endereço novo", l: "Novo endereço" },
-                { v: "Mesmo da obra", l: "Endereço da obra" },
-                { v: "Outro e-mail", l: "Outro e-mail" },
-              ]}
-            />
-          </Field>
-
-          {corr.alternativa === "Mesmo da obra" && (
-            <div className="alert alert-info" style={{ marginTop: 12 }}>
-              A fatura será enviada para o endereço informado em{" "}
-              <strong>Dados da Obra</strong>.
-            </div>
-          )}
-
-          {corr.alternativa === "Outro e-mail" && (
-            <div className="grid grid-2" style={{ marginTop: 12 }}>
-              <Field label="E-mail para envio da fatura" span={2} req>
-                <Inp
-                  type="email"
-                  value={corr.outroEmail}
-                  onChange={(e) =>
-                    setCorr({ ...corr, outroEmail: e.target.value })
-                  }
-                  placeholder="email@exemplo.com"
-                />
-              </Field>
-            </div>
-          )}
-
-          {corr.alternativa === "Endereço novo" && (
-            <div className="grid grid-2" style={{ marginTop: 12 }}>
-              <Field label="CEP" span={2}>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <div style={{ maxWidth: 180 }}>
-                    <Inp
-                      value={corr.cep}
-                      onChange={(e) => {
-                        const v = mascararCEP(e.target.value);
-                        setCorr({ ...corr, cep: v });
-                        buscarCEP(v, "corr");
-                      }}
-                      placeholder="00000-000"
-                    />
-                  </div>
-                  {cepStatus.corr === "buscando" && (
-                    <span className="spinner"></span>
-                  )}
-                  {cepStatus.corr === "ok" && (
-                    <Badge>Endereço encontrado</Badge>
-                  )}
-                  {cepStatus.corr === "erro" && (
-                    <span style={{ color: "var(--vermelho)", fontSize: 12 }}>
-                      CEP não encontrado
-                    </span>
-                  )}
-                </div>
-              </Field>
-              <Field label="Rua / Av." span={2}>
-                <Inp
-                  value={corr.rua}
-                  onChange={(e) => setCorr({ ...corr, rua: e.target.value })}
-                />
-              </Field>
-              <Field label="Nº">
-                <Inp
-                  value={corr.num}
-                  onChange={(e) => setCorr({ ...corr, num: e.target.value })}
-                />
-              </Field>
-              <Field label="Complemento">
-                <Inp
-                  value={corr.compl}
-                  onChange={(e) => setCorr({ ...corr, compl: e.target.value })}
-                />
-              </Field>
-              <Field label="Bairro / Distrito">
-                <Inp
-                  value={corr.bairro}
-                  onChange={(e) => setCorr({ ...corr, bairro: e.target.value })}
-                />
-              </Field>
-              <Field label="Município">
-                <Inp
-                  value={corr.municipio}
-                  onChange={(e) =>
-                    setCorr({ ...corr, municipio: e.target.value })
-                  }
-                />
-              </Field>
-              <Field label="Estado">
-                <Inp
-                  value={corr.estado}
-                  onChange={(e) => setCorr({ ...corr, estado: e.target.value })}
-                />
-              </Field>
-            </div>
-          )}
-        </div>
-      )}
-      <div style={{ marginTop: 14 }}>
-        <Field label="Conta globalizada (poder público — código de débito automático globalizado)">
-          <Inp
-            value={corr.contaGlobal}
-            onChange={(e) => setCorr({ ...corr, contaGlobal: e.target.value })}
-            placeholder="Opcional"
-          />
-        </Field>
-      </div>
-    </Card>
-  );
-}
-
-function TabObra({ ctx }) {
-  const {
-    aba,
-    setAba,
-    modalidade,
-    setModalidade,
-    atend,
-    setAtend,
-    prop,
-    setProp,
-    corr,
-    setCorr,
-    obra,
-    setObra,
-    gerador,
-    setGerador,
-    obs,
-    setObs,
-    cepStatus,
-    setCepStatus,
-    cnpjStatus,
-    setCnpjStatus,
-    logoPDF,
-    setLogoPDF,
-    ucsDet,
-    setUcsDet,
-    ucBlocos,
-    setUcBlocos,
-    blocos,
-    setBlocos,
-    abas,
-    buscarCEP,
-    buscarCNPJ,
-    coletivo,
-    coordObrigatoria,
-    coordPreenchida,
-    demandaPrevTotal,
-    demandaTotalGeral,
-    disjGeralObrigatorio,
-    docInfo,
-    gerarPDF,
-    hibrido,
-    idx,
-    irAnt,
-    irProx,
-    isAlteracaoColetivo,
-    maiorCorrenteUC,
-    multiTorres,
-    opcoesDisjGeral,
-    pessoaFisica,
-    prevTotalKw,
-    redeMono,
-    replicarPrevTodas,
-    replicarPrevTorre,
-    replicarPrimeiro,
-    replicarUC1Coletivo,
-    replicarUC1Torre,
-    setBloco,
-    setBlocoPrev,
-    setTorre,
-    setUcDet,
-    setUcTorre,
-    setUcTorrePrev,
-    sincronizarUCsTorre,
-    totalUcsEmpreendimento,
-    trocaDisjGeral,
-    validacaoDisjuntores,
-    validacaoHibrido,
-  } = ctx;
-  return (
-    <Card
-      eyebrow="Dados"
-      title="Dados da Obra"
-      sub="Endereço do padrão de entrada / ponto de entrega."
-    >
-      <div className="grid grid-2">
-        <Field label="Zona de localização" req>
-          <Toggle
-            value={obra.localizacao}
-            onChange={(v) => setObra({ ...obra, localizacao: v })}
-            options={[
-              { v: "Urbana", l: "Urbana" },
-              { v: "Rural", l: "Rural" },
-            ]}
-          />
-        </Field>
-        {coletivo && (
-          <Field label="Nº ART/TRT de Projeto" req>
-            <Inp
-              value={obra.art}
-              onChange={(e) => setObra({ ...obra, art: e.target.value })}
-            />
-          </Field>
-        )}
-      </div>
-      {obra.localizacao === "Urbana" && (
-        <div className="grid grid-2" style={{ marginTop: 14 }}>
-          <Field label="CEP" req span={2}>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <div style={{ maxWidth: 180 }}>
-                <Inp
-                  value={obra.cep}
-                  onChange={(e) => {
-                    const v = mascararCEP(e.target.value);
-                    setObra({ ...obra, cep: v });
-                    buscarCEP(v, "obra");
-                  }}
-                  placeholder="00000-000"
-                />
-              </div>
-              {cepStatus.obra === "buscando" && (
-                <span className="spinner"></span>
-              )}
-              {cepStatus.obra === "ok" && <Badge>Endereço encontrado</Badge>}
-              {cepStatus.obra === "erro" && (
-                <span style={{ color: "var(--vermelho)", fontSize: 12 }}>
-                  CEP não encontrado
-                </span>
-              )}
-            </div>
-          </Field>
-          <Field label="Endereço" req span={2}>
-            <Inp
-              value={obra.endereco}
-              onChange={(e) => setObra({ ...obra, endereco: e.target.value })}
-            />
-          </Field>
-          <Field label="Nº" req>
-            <Inp
-              value={obra.num}
-              onChange={(e) => setObra({ ...obra, num: e.target.value })}
-            />
-          </Field>
-          <Field label="Complemento">
-            <Inp
-              value={obra.compl}
-              onChange={(e) => setObra({ ...obra, compl: e.target.value })}
-            />
-          </Field>
-          <Field label="Bairro" req>
-            <Inp
-              value={obra.bairro}
-              onChange={(e) => setObra({ ...obra, bairro: e.target.value })}
-            />
-          </Field>
-          <Field label="Cidade / Município" req>
-            <Inp
-              value={obra.cidade}
-              onChange={(e) => setObra({ ...obra, cidade: e.target.value })}
-            />
-          </Field>
-          <Field label="Estado" req>
-            <Inp
-              value={obra.estado}
-              onChange={(e) => setObra({ ...obra, estado: e.target.value })}
-            />
+      {exigeGFC && (
+        <div className="grid" style={{ marginTop: 10 }}>
+          <Field label="Garantia de Fiel Cumprimento (R$ ou descrição)" span={3}>
+            <Inp value={d.gfcValor} onChange={(e) => set({ gfcValor: e.target.value })} />
           </Field>
         </div>
       )}
-      {obra.localizacao === "Rural" && (
-        <div className="grid grid-2" style={{ marginTop: 14 }}>
-          <Field label="Município" req>
-            <Inp
-              value={obra.cidade}
-              onChange={(e) => setObra({ ...obra, cidade: e.target.value })}
-            />
-          </Field>
-          <Field label="Estado" req>
-            <Inp
-              value={obra.estado}
-              onChange={(e) => setObra({ ...obra, estado: e.target.value })}
-            />
-          </Field>
-          <Field label="Distrito / Comunidade / Região">
-            <Inp
-              value={obra.distritoComunidade}
-              onChange={(e) =>
-                setObra({ ...obra, distritoComunidade: e.target.value })
-              }
-            />
-          </Field>
-          <Field label="Nome da propriedade">
-            <Inp
-              value={obra.nomePropriedade}
-              onChange={(e) =>
-                setObra({ ...obra, nomePropriedade: e.target.value })
-              }
-            />
-          </Field>
-          <Field label="Ponto de referência">
-            <Inp
-              value={obra.pontoRef}
-              onChange={(e) => setObra({ ...obra, pontoRef: e.target.value })}
-            />
-          </Field>
-          <Field label="Nº instalação mais próxima">
-            <Inp
-              value={obra.instProxima}
-              onChange={(e) =>
-                setObra({ ...obra, instProxima: e.target.value })
-              }
-            />
-          </Field>
-        </div>
-      )}
-      <div className="grid grid-2 divider">
-        <Field
-          label={coordObrigatoria ? "Latitude" : "Latitude — opcional"}
-          req={coordObrigatoria}
-        >
-          <Inp
-            value={obra.lat}
-            onChange={(e) => setObra({ ...obra, lat: e.target.value })}
-            placeholder=""
-          />
-        </Field>
-        <Field
-          label={coordObrigatoria ? "Longitude" : "Longitude — opcional"}
-          req={coordObrigatoria}
-        >
-          <Inp
-            value={obra.lng}
-            onChange={(e) => setObra({ ...obra, lng: e.target.value })}
-            placeholder=""
-          />
-        </Field>
-      </div>
-      <div className="grid grid-2 divider">
-        <Field label="Distância padrão→rede CEMIG inferior a 30 m?">
-          <Toggle
-            value={obra.distMenor30}
-            onChange={(v) => setObra({ ...obra, distMenor30: v })}
-            options={[
-              { v: "Sim", l: "Sim" },
-              { v: "Não", l: "Não" },
-            ]}
-          />
-        </Field>
-        <Field label="O padrão está pronto para ser ligado?" req>
-          <Toggle
-            value={obra.prontoLigar}
-            onChange={(v) => setObra({ ...obra, prontoLigar: v })}
-            options={[
-              { v: "Sim", l: "Sim" },
-              { v: "Não", l: "Não" },
-            ]}
-          />
-        </Field>
-        <Field label="Tipo de rede BT que atende o local">
-          <Sel
-            value={obra.tipoRede}
-            onChange={(e) => setObra({ ...obra, tipoRede: e.target.value })}
-          >
-            <option>Monofásica</option>
-            <option>Bifásica</option>
-            <option>Trifásica</option>
-          </Sel>
-        </Field>
-        <Field label="Código do transformador mais próximo">
-          <Inp
-            value={obra.transformador}
-            onChange={(e) =>
-              setObra({ ...obra, transformador: e.target.value })
-            }
-          />
-        </Field>
-      </div>
-      {coordObrigatoria && !coordPreenchida && (
-        <div className="alert alert-warn" style={{ marginTop: 8 }}>
-          ⚠ Em área rural com distância superior a 30 m da rede CEMIG, a
-          coordenada é obrigatória para localização da propriedade.
-        </div>
-      )}
-      <LocalizacaoObra obra={obra} setObra={setObra} />
-      <div className="field" style={{ marginTop: 14 }}>
-        <label>Unidade consumidora em área de restrição ambiental?</label>
-        {!obra.restricaoAmbiental && (
-          <div className="alert alert-info">
-            Consulte a coordenada no mapa acima para verificar a restrição
-            ambiental.
-          </div>
-        )}
-        {obra.restricaoAmbiental === "Sim" && (
-          <div className="alert alert-warn restricao-destaque">
-            <strong>⚠ SIM — em área de restrição ambiental.</strong>
-            {obra.restricoesTexto && (
-              <div style={{ marginTop: 6 }}>{obra.restricoesTexto}</div>
-            )}
-          </div>
-        )}
-        {obra.restricaoAmbiental === "Não" && (
-          <div className="alert alert-ok restricao-destaque">
-            <strong>Não há restrição ambiental.</strong>
-          </div>
-        )}
-      </div>
-    </Card>
-  );
-}
 
-function TabBlocos({ ctx }) {
-  const {
-    aba,
-    setAba,
-    modalidade,
-    setModalidade,
-    atend,
-    setAtend,
-    prop,
-    setProp,
-    corr,
-    setCorr,
-    obra,
-    setObra,
-    gerador,
-    setGerador,
-    obs,
-    setObs,
-    cepStatus,
-    setCepStatus,
-    cnpjStatus,
-    setCnpjStatus,
-    logoPDF,
-    setLogoPDF,
-    ucsDet,
-    setUcsDet,
-    ucBlocos,
-    setUcBlocos,
-    blocos,
-    setBlocos,
-    abas,
-    buscarCEP,
-    buscarCNPJ,
-    coletivo,
-    coordObrigatoria,
-    coordPreenchida,
-    demandaPrevTotal,
-    demandaTotalGeral,
-    disjGeralObrigatorio,
-    docInfo,
-    gerarPDF,
-    hibrido,
-    idx,
-    irAnt,
-    irProx,
-    isAlteracaoColetivo,
-    maiorCorrenteUC,
-    multiTorres,
-    opcoesDisjGeral,
-    pessoaFisica,
-    prevTotalKw,
-    redeMono,
-    replicarPrevTodas,
-    replicarPrevTorre,
-    replicarPrimeiro,
-    replicarUC1Coletivo,
-    replicarUC1Torre,
-    setBloco,
-    setBlocoPrev,
-    setTorre,
-    setUcDet,
-    setUcTorre,
-    setUcTorrePrev,
-    sincronizarUCsTorre,
-    totalUcsEmpreendimento,
-    trocaDisjGeral,
-    validacaoDisjuntores,
-    validacaoHibrido,
-  } = ctx;
-  return (
-    <div>
-      <Card
-        eyebrow="Empreendimento"
-        title="Atendimento a Empreendimento com Múltiplas Torres ou Blocos"
-        sub={`Cada ${atend.atendA.toLowerCase()} pode ter seu disjuntor geral e seu disjuntor de combate a incêndio. Preencha o primeiro e use "Replicar" para preenchimento em massa.`}
-      >
-        <div className="kpi-row">
-          <div className="kpi">
-            <div className="kpi-label">Atendimento a</div>
-            <div className="kpi-value" style={{ fontSize: 15 }}>
-              {atend.atendA}
-            </div>
-          </div>
-          <div className="kpi">
-            <div className="kpi-label">Total de UCs do empreendimento</div>
-            <div className="kpi-value">{totalUcsEmpreendimento}</div>
-          </div>
-          <div className="kpi dark">
-            <div className="kpi-label">Demanda total do empreendimento</div>
-            <div className="kpi-value" style={{ fontSize: 18 }}>
-              {fmt2(demandaTotalGeral)} kVA
-            </div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            gap: 10,
-            alignItems: "flex-end",
-            flexWrap: "wrap",
-            marginBottom: 14,
-          }}
-        >
-          <Field
-            label={`Nº de ${atend.atendA === "Bloco" ? "Blocos" : "Torres"}`}
-          >
-            <div style={{ maxWidth: 120 }}>
-              <Inp
-                type="number"
-                value={atend.nBlocos}
-                onChange={(e) =>
-                  setAtend({
-                    ...atend,
-                    nBlocos: Math.max(1, parseInt(e.target.value) || 1),
-                  })
-                }
-              />
-            </div>
-          </Field>
-          <Btn variant="ghost" onClick={replicarPrimeiro}>
-            ⧉ Replicar {atend.atendA} 1 para todos
-          </Btn>
-        </div>
-
-        {blocos.map((b, bi) => (
-          <div key={bi} className="uc-block">
-            <div className="uc-block-head">
-              <span className="uc-block-title">
-                {atend.atendA} {b.nome || bi + 1}
-              </span>
-              <Badge>
-                {bi + 1} de {blocos.length}
-              </Badge>
-            </div>
-            <div className="grid grid-3">
-              <Field label={`Identificação do ${atend.atendA.toLowerCase()}`}>
-                <Inp
-                  value={b.nome}
-                  onChange={(e) => setTorre(bi, { nome: e.target.value })}
-                  placeholder={`${bi + 1}`}
-                />
-              </Field>
-              <Field label="Disjuntor Geral" req>
-                <Sel
-                  value={b.disjGeral}
-                  onChange={(e) => setTorre(bi, { disjGeral: e.target.value })}
-                >
-                  <option value="">Selecione…</option>
-                  {DISJ_GER.filter((d) => d.tipo === "tri").map((d) => (
-                    <option key={d.fx} value={d.fx}>
-                      {d.fx}
-                    </option>
-                  ))}
-                </Sel>
-              </Field>
-              <Field label={`Demanda do ${atend.atendA} (kVA)`}>
-                <Inp
-                  type="text"
-                  readOnly
-                  disabled
-                  value={fmt2(
-                    (b.ucs || []).reduce(
-                      (s, u) => s + num((u.prev || {}).demanda),
-                      0,
-                    ),
-                  )}
-                  placeholder="0"
-                />
-              </Field>
-              <Field label={`Qtd. de UCs por ${atend.atendA}`} req>
-                <Inp
-                  type="number"
-                  value={b.qtdUCs}
-                  onChange={(e) => sincronizarUCsTorre(bi, e.target.value)}
-                  placeholder="0"
-                />
-              </Field>
-              <Field label="Disjuntor do Condomínio / Sist. Combate Incêndio">
-                <Sel
-                  value={b.disjIncendio}
-                  onChange={(e) =>
-                    setTorre(bi, { disjIncendio: e.target.value })
-                  }
-                >
-                  <option value="">Selecione…</option>
-                  {DISJ_CN.map((d) => (
-                    <option key={d.fx} value={d.fx}>
-                      {d.fx}
-                    </option>
-                  ))}
-                </Sel>
-              </Field>
-              <Field label="Demanda Condomínio / Combate Incêndio (kVA)">
-                <Inp
-                  type="number"
-                  value={b.demandaIncendio}
-                  onChange={(e) =>
-                    setTorre(bi, { demandaIncendio: e.target.value })
-                  }
-                  placeholder="0"
-                />
-              </Field>
-            </div>
-
-            {/* UCs da torre/bloco — preenchimento em massa */}
-            {(b.ucs || []).length > 0 && (
-              <div className="uc-torre-wrap">
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    margin: "4px 0 10px",
-                    flexWrap: "wrap",
-                    gap: 8,
-                  }}
-                >
-                  <span className="subbox-title">
-                    Unidades consumidoras do {atend.atendA.toLowerCase()} (
-                    {b.ucs.length})
-                  </span>
-                  {b.ucs.length > 1 && (
-                    <Btn variant="ghost" onClick={() => replicarUC1Torre(bi)}>
-                      ⧉ Replicar UC 1 para todas
-                    </Btn>
-                  )}
-                </div>
-                {b.ucs.map((u, ui) => (
-                  <div key={ui} className="uc-mini">
-                    <div className="uc-mini-head">
-                      UC {ui + 1}
-                      {ui === 0 && b.ucs.length > 1 && (
-                        <span className="uc-mini-tag">modelo p/ replicar</span>
-                      )}
-                    </div>
-                    <div className="grid grid-3">
-                      <Field label="Identificação">
-                        <Inp
-                          value={u.identificacao}
-                          onChange={(e) =>
-                            setUcTorre(bi, ui, {
-                              identificacao: e.target.value,
-                            })
-                          }
-                        />
-                      </Field>
-                      <Field label="Complemento" req={b.ucs.length > 1}>
-                        <Inp
-                          value={u.complemento}
-                          onChange={(e) =>
-                            setUcTorre(bi, ui, {
-                              complemento: e.target.value,
-                            })
-                          }
-                          placeholder="999"
-                        />
-                      </Field>
-                      <Field label="Nº Predial">
-                        <Inp
-                          value={u.nPredial}
-                          onChange={(e) =>
-                            setUcTorre(bi, ui, {
-                              nPredial: e.target.value,
-                            })
-                          }
-                        />
-                      </Field>
-                      <Field label="Solicitação" req>
-                        <Sel
-                          value={u.solicitacao}
-                          onChange={(e) =>
-                            setUcTorre(bi, ui, {
-                              solicitacao: e.target.value,
-                            })
-                          }
-                        >
-                          <option>Conexão Nova</option>
-                          <option>Alteração de Carga</option>
-                          <option>Caixa Existente sem Alteração</option>
-                        </Sel>
-                      </Field>
-                      <Field label="Atividade" req>
-                        <Sel
-                          value={u.atividade}
-                          onChange={(e) =>
-                            setUcTorre(bi, ui, {
-                              atividade: e.target.value,
-                            })
-                          }
-                        >
-                          <option value="">Selecionar</option>
-                          <option>Residencial</option>
-                          <option>Comercial</option>
-                          <option>Industrial</option>
-                          <option>Rural</option>
-                        </Sel>
-                      </Field>
-                      <Field
-                        label="Ramo de atividade"
-                        req={u.atividade !== "Residencial"}
-                      >
-                        <Inp
-                          value={u.ramo}
-                          onChange={(e) =>
-                            setUcTorre(bi, ui, { ramo: e.target.value })
-                          }
-                          placeholder={
-                            u.atividade === "Residencial" ? "—" : "Obrigatório"
-                          }
-                        />
-                      </Field>
-                      {/* Instalação somente se NÃO for conexão nova */}
-                      {u.solicitacao !== "Conexão Nova" && (
-                        <Field label="Instalação" req>
-                          <Inp
-                            value={u.instalacao}
-                            onChange={(e) =>
-                              setUcTorre(bi, ui, {
-                                instalacao: e.target.value,
-                              })
-                            }
-                            placeholder="Nº instalação existente"
-                          />
-                        </Field>
-                      )}
-                      <Field label="Unidade Consumidora">
-                        <Inp
-                          value={u.unidadeConsumidora}
-                          onChange={(e) =>
-                            setUcTorre(bi, ui, {
-                              unidadeConsumidora: e.target.value,
-                            })
-                          }
-                          placeholder="Identificação da UC"
-                        />
-                      </Field>
-                      <Field label="Disjuntor da UC">
-                        <Sel
-                          value={u.disjPara}
-                          onChange={(e) =>
-                            setUcTorre(bi, ui, {
-                              disjPara: e.target.value,
-                            })
-                          }
-                        >
-                          <option value="">Selecione…</option>
-                          {DISJ.map((d) => (
-                            <option key={d.fx} value={d.fx}>
-                              {d.fx}
-                            </option>
-                          ))}
-                        </Sel>
-                      </Field>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            {(b.ucs || []).length > 0 && (
-              <div className="prev-table-wrap" style={{ marginTop: 14 }}>
-                <div className="prev-toolbar">
-                  <strong
-                    style={{
-                      marginRight: "auto",
-                      color: "var(--verde-escuro)",
-                    }}
-                  >
-                    Previsão de carga das UCs
-                  </strong>
-                  {b.ucs.length > 1 && (
-                    <Btn variant="ghost" onClick={() => replicarPrevTorre(bi)}>
-                      Replicar previsão da UC 1 para todas
-                    </Btn>
-                  )}
-                </div>
-                <table className="prev-table">
-                  <thead>
-                    <tr>
-                      <th>Unidade</th>
-                      <th>Ilum. (kW)</th>
-                      <th>Tomada (kW)</th>
-                      <th>Chuveiro (kW)</th>
-                      <th>Ar Cond. (kW)</th>
-                      <th>Outros (kW)</th>
-                      <th>Carga (kW)</th>
-                      <th className="col-demanda">Demanda (kVA)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {b.ucs.map((u, ui) => (
-                      <tr key={ui}>
-                        <td className="uc-name">
-                          {u.identificacao || `UC ${ui + 1}`}
-                        </td>
-                        {["ilum", "tomada", "chuveiro", "ar", "outros"].map(
-                          (k) => (
-                            <td key={k}>
-                              <input
-                                type="number"
-                                value={(u.prev || {})[k] || ""}
-                                onChange={(e) =>
-                                  setUcTorrePrev(bi, ui, {
-                                    [k]: e.target.value,
-                                  })
-                                }
-                                placeholder="0,0"
-                              />
-                            </td>
-                          ),
-                        )}
-                        <td className="carga-cell">{fmt2(prevKwUC(u))}</td>
-                        <td className="col-demanda">
-                          <input
-                            className="demanda-prev"
-                            type="number"
-                            value={(u.prev || {}).demanda || ""}
-                            onChange={(e) =>
-                              setUcTorrePrev(bi, ui, {
-                                demanda: e.target.value,
-                              })
-                            }
-                            placeholder="0,0"
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr>
-                      <td className="uc-name">Total do bloco</td>
-                      <td colSpan={5}></td>
-                      <td className="carga-cell">
-                        {fmt2(b.ucs.reduce((s, u) => s + prevKwUC(u), 0))}
-                      </td>
-                      <td className="col-demanda total-dem">
-                        {fmt2(
-                          b.ucs.reduce(
-                            (s, u) => s + num((u.prev || {}).demanda),
-                            0,
-                          ),
-                        )}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            )}
-          </div>
+      <div className="gd-subhead">7 — Documentação Técnica (obrigatória)</div>
+      <div className="doc-list">
+        {GD_DOCS_TEC.map((dc) => (
+          <label key={dc.id} className="doc-item">
+            <input type="checkbox" checked={!!d.docsTec[dc.id]} onChange={(e) => setDocTec(dc.id, e.target.checked)} />
+            <span className="doc-text"><strong>{dc.id}</strong> {dc.txt}{dc.req && <span className="doc-req"> (obrigatório)</span>}</span>
+          </label>
         ))}
-
-        {demandaTotalGeral > 304 && (
-          <div className="alert alert-info" style={{ marginTop: 10 }}>
-            Demanda total acima de 304 kVA: o atendimento fica condicionado à
-            apresentação do projeto elétrico com ART/TRT.
-          </div>
-        )}
-      </Card>
-    </div>
-  );
-}
-
-function TabUcsColetivo({ ctx }) {
-  const {
-    aba,
-    setAba,
-    modalidade,
-    setModalidade,
-    atend,
-    setAtend,
-    prop,
-    setProp,
-    corr,
-    setCorr,
-    obra,
-    setObra,
-    gerador,
-    setGerador,
-    obs,
-    setObs,
-    cepStatus,
-    setCepStatus,
-    cnpjStatus,
-    setCnpjStatus,
-    logoPDF,
-    setLogoPDF,
-    ucsDet,
-    setUcsDet,
-    ucBlocos,
-    setUcBlocos,
-    blocos,
-    setBlocos,
-    abas,
-    buscarCEP,
-    buscarCNPJ,
-    coletivo,
-    coordObrigatoria,
-    coordPreenchida,
-    demandaPrevTotal,
-    demandaTotalGeral,
-    disjGeralObrigatorio,
-    docInfo,
-    gerarPDF,
-    hibrido,
-    idx,
-    irAnt,
-    irProx,
-    isAlteracaoColetivo,
-    maiorCorrenteUC,
-    multiTorres,
-    opcoesDisjGeral,
-    pessoaFisica,
-    prevTotalKw,
-    redeMono,
-    replicarPrevTodas,
-    replicarPrevTorre,
-    replicarPrimeiro,
-    replicarUC1Coletivo,
-    replicarUC1Torre,
-    setBloco,
-    setBlocoPrev,
-    setTorre,
-    setUcDet,
-    setUcTorre,
-    setUcTorrePrev,
-    sincronizarUCsTorre,
-    totalUcsEmpreendimento,
-    trocaDisjGeral,
-    validacaoDisjuntores,
-    validacaoHibrido,
-  } = ctx;
-  return (
-    <div>
-      {trocaDisjGeral && (
-        <Card
-          eyebrow="Alteração de carga"
-          title="Troca do Disjuntor Geral e Demandas"
-          sub="Informe o disjuntor geral existente e o novo, além da demanda atual e futura do agrupamento. A demanda futura corresponde à soma das demandas previstas das UCs."
-        >
-          <div className="grid grid-2">
-            <Field label="Disjuntor geral existente" req>
-              <Sel
-                value={atend.disjGeralAtual}
-                onChange={(e) =>
-                  setAtend({ ...atend, disjGeralAtual: e.target.value })
-                }
-              >
-                <option value="">Selecione…</option>
-                {DISJ.map((d) => (
-                  <option key={d.fx} value={d.fx}>
-                    {d.fx}
-                  </option>
-                ))}
-              </Sel>
-            </Field>
-            <Field label="Disjuntor geral novo" req>
-              <Sel
-                value={atend.disjuntorGeral}
-                onChange={(e) =>
-                  setAtend({ ...atend, disjuntorGeral: e.target.value })
-                }
-              >
-                <option value="">Selecione…</option>
-                {opcoesDisjGeral.map((o) => (
-                  <option key={o} value={o}>
-                    {o}
-                  </option>
-                ))}
-              </Sel>
-            </Field>
-            <Field label="Demanda atual (kVA)" req>
-              <Inp
-                type="number"
-                value={atend.demandaAtual}
-                onChange={(e) =>
-                  setAtend({ ...atend, demandaAtual: e.target.value })
-                }
-                placeholder="0,0"
-              />
-            </Field>
-            <Field label="Demanda futura (kVA)">
-              <div className="readonly-val">{fmt2(demandaPrevTotal)} kVA</div>
-            </Field>
-          </div>
-        </Card>
-      )}
-      {disjGeralObrigatorio && !trocaDisjGeral && (
-        <Card
-          eyebrow="Proteção geral"
-          title="Disjuntor Geral do Agrupamento"
-          sub={`Obrigatório quando há UC bi/trifásica com proteção acima de 60/63 A. Faixas disponíveis: acima de ${maiorCorrenteUC || "—"} A.`}
-        >
-          <div className="geral-box" style={{ marginTop: 0 }}>
-            <Field label="Disjuntor geral" req>
-              <Sel
-                value={atend.disjuntorGeral}
-                onChange={(e) =>
-                  setAtend({ ...atend, disjuntorGeral: e.target.value })
-                }
-              >
-                <option value="">Selecione…</option>
-                {opcoesDisjGeral.map((o) => (
-                  <option key={o} value={o}>
-                    {o}
-                  </option>
-                ))}
-              </Sel>
-            </Field>
-            {opcoesDisjGeral.length === 0 && (
-              <div className="alert alert-info" style={{ marginTop: 10 }}>
-                Preencha os disjuntores das UCs acima para liberar as opções.
-              </div>
-            )}
-            {atend.disjuntorGeral &&
-              correnteDisj(atend.disjuntorGeral) <= maiorCorrenteUC && (
-                <div className="alert alert-warn" style={{ marginTop: 10 }}>
-                  ⚠ O disjuntor geral deve ter faixa superior ao maior disjuntor
-                  das UCs ({maiorCorrenteUC} A).
-                </div>
-              )}
-          </div>
-        </Card>
-      )}
-
-      {hibrido && !validacaoHibrido.ok && (
-        <div className="alert alert-warn" style={{ marginBottom: 14 }}>
-          <strong>Atendimento híbrido — pendências:</strong>
-          <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
-            {validacaoHibrido.erros.map((e, i) => (
-              <li key={i}>{e}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {hibrido && validacaoHibrido.ok && (
-        <div className="alert alert-ok" style={{ marginBottom: 14 }}>
-          Classificação ND 5.1 / ND 5.2 das UCs está consistente.
-        </div>
-      )}
-      <Card
-        eyebrow="Identificação"
-        title={`Unidades Consumidoras (${ucBlocos.length})`}
-        sub="Preencha os dados de identificação de cada UC. Campos com valor padrão já vêm preenchidos. Em Conexão Nova não há disjuntor 'De' (a instalação ainda não existe)."
-      >
-        {ucBlocos.length > 1 && (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              marginBottom: 12,
-            }}
-          >
-            <Btn variant="ghost" onClick={replicarUC1Coletivo}>
-              ⧉ Replicar UC 1 para todas
-            </Btn>
-          </div>
-        )}
-        {ucBlocos.map((u, ui) => (
-          <div key={ui} className="uc-block">
-            <div className="uc-block-head">
-              <span className="uc-block-title">
-                {u.identificacao || `UC ${ui + 1}`}
-              </span>
-              <Badge>
-                {ui + 1} de {ucBlocos.length}
-              </Badge>
-            </div>
-            <div className="grid grid-3">
-              {hibrido && (
-                <Field label="Norma de atendimento">
-                  <Sel
-                    value={u.nd}
-                    onChange={(e) => setBloco(ui, { nd: e.target.value })}
-                  >
-                    <option value="5.1">ND 5.1</option>
-                    <option value="5.2">ND 5.2</option>
-                  </Sel>
-                </Field>
-              )}
-              <Field label="Identificação">
-                <Inp
-                  value={u.identificacao}
-                  onChange={(e) =>
-                    setBloco(ui, { identificacao: e.target.value })
-                  }
-                />
-              </Field>
-              {hibrido && u.nd === "5.1" ? (
-                <Field label="Nº Predial" req hint="Distinto entre as UCs">
-                  <Inp
-                    value={u.nPredial}
-                    onChange={(e) => setBloco(ui, { nPredial: e.target.value })}
-                  />
-                </Field>
-              ) : (
-                <Field label="Nº Predial">
-                  <div className="readonly-val">{obra.num || "Nº Predial"}</div>
-                </Field>
-              )}
-              <Field label="Complemento" req={ucBlocos.length > 1}>
-                <Inp
-                  value={u.complemento}
-                  onChange={(e) =>
-                    setBloco(ui, { complemento: e.target.value })
-                  }
-                  placeholder="999"
-                />
-              </Field>
-              <Field label="Caixa">
-                <Inp
-                  value={u.caixa}
-                  onChange={(e) => setBloco(ui, { caixa: e.target.value })}
-                  placeholder="Apartamento"
-                />
-              </Field>
-              <Field label="Solicitação" req>
-                <Sel
-                  value={u.solicitacao}
-                  onChange={(e) =>
-                    setBloco(ui, { solicitacao: e.target.value })
-                  }
-                >
-                  <option>Conexão Nova</option>
-                  <option>Alteração de Carga</option>
-                  <option>Caixa Existente sem Alteração</option>
-                </Sel>
-              </Field>
-              {u.solicitacao === "Alteração de Carga" && (
-                <Field label="Mudança de local">
-                  <Toggle
-                    value={u.mudancaLocal}
-                    onChange={(v) => setBloco(ui, { mudancaLocal: v })}
-                    options={[
-                      { v: "Sim", l: "Sim" },
-                      { v: "Não", l: "Não" },
-                    ]}
-                  />
-                </Field>
-              )}
-              <Field label="Atividade principal" req>
-                <Sel
-                  value={u.atividade}
-                  onChange={(e) => setBloco(ui, { atividade: e.target.value })}
-                >
-                  <option value="">Selecionar</option>
-                  <option>Residencial</option>
-                  <option>Comercial</option>
-                  <option>Industrial</option>
-                  <option>Rural</option>
-                </Sel>
-              </Field>
-              <Field
-                label="Ramo de atividade"
-                req={u.atividade !== "Residencial"}
-              >
-                <Inp
-                  value={u.ramo}
-                  onChange={(e) => setBloco(ui, { ramo: e.target.value })}
-                  placeholder={
-                    u.atividade === "Residencial" ? "—" : "Obrigatório"
-                  }
-                />
-              </Field>
-              {u.solicitacao !== "Conexão Nova" && (
-                <Field label="Instalação" req>
-                  <Inp
-                    value={u.instalacao}
-                    onChange={(e) =>
-                      setBloco(ui, { instalacao: e.target.value })
-                    }
-                    placeholder="Nº instalação existente"
-                  />
-                </Field>
-              )}
-              <Field label="Unidade Consumidora">
-                <Inp
-                  value={u.unidadeConsumidora}
-                  onChange={(e) =>
-                    setBloco(ui, { unidadeConsumidora: e.target.value })
-                  }
-                  placeholder="Identificação da UC (interna/externa)"
-                />
-              </Field>
-              <Field label="Disjuntor" span={3}>
-                <div className="disj-pair">
-                  {u.solicitacao !== "Conexão Nova" && (
-                    <div>
-                      <Sel
-                        value={u.disjDe}
-                        onChange={(e) =>
-                          setBloco(ui, { disjDe: e.target.value })
-                        }
-                      >
-                        <option value="">De: (atual)…</option>
-                        {DISJ.map((d) => (
-                          <option key={d.fx} value={d.fx}>
-                            {d.fx}
-                          </option>
-                        ))}
-                      </Sel>
-                    </div>
-                  )}
-                  <div>
-                    <Sel
-                      value={u.disjPara}
-                      onChange={(e) =>
-                        setBloco(ui, { disjPara: e.target.value })
-                      }
-                    >
-                      <option value="">
-                        {u.solicitacao === "Conexão Nova"
-                          ? "Disjuntor solicitado…"
-                          : "Para: (solicitado)…"}
-                      </option>
-                      {DISJ_CN.map((d) => (
-                        <option key={d.fx} value={d.fx}>
-                          {d.fx}
-                        </option>
-                      ))}
-                    </Sel>
-                  </div>
-                </div>
-              </Field>
-            </div>
-          </div>
-        ))}
-      </Card>
-    </div>
-  );
-}
-
-function TabUcsIndividual({ ctx }) {
-  const {
-    aba,
-    setAba,
-    modalidade,
-    setModalidade,
-    atend,
-    setAtend,
-    prop,
-    setProp,
-    corr,
-    setCorr,
-    obra,
-    setObra,
-    gerador,
-    setGerador,
-    obs,
-    setObs,
-    cepStatus,
-    setCepStatus,
-    cnpjStatus,
-    setCnpjStatus,
-    logoPDF,
-    setLogoPDF,
-    ucsDet,
-    setUcsDet,
-    ucBlocos,
-    setUcBlocos,
-    blocos,
-    setBlocos,
-    abas,
-    buscarCEP,
-    buscarCNPJ,
-    coletivo,
-    coordObrigatoria,
-    coordPreenchida,
-    demandaPrevTotal,
-    demandaTotalGeral,
-    disjGeralObrigatorio,
-    docInfo,
-    gerarPDF,
-    hibrido,
-    idx,
-    irAnt,
-    irProx,
-    isAlteracaoColetivo,
-    maiorCorrenteUC,
-    multiTorres,
-    opcoesDisjGeral,
-    pessoaFisica,
-    prevTotalKw,
-    redeMono,
-    replicarPrevTodas,
-    replicarPrevTorre,
-    replicarPrimeiro,
-    replicarUC1Coletivo,
-    replicarUC1Torre,
-    setBloco,
-    setBlocoPrev,
-    setTorre,
-    setUcDet,
-    setUcTorre,
-    setUcTorrePrev,
-    sincronizarUCsTorre,
-    totalUcsEmpreendimento,
-    trocaDisjGeral,
-    validacaoDisjuntores,
-    validacaoHibrido,
-  } = ctx;
-  return (
-    <div>
-      <Card
-        eyebrow="Identificação"
-        title={`Unidades Consumidoras (${ucsDet.length})`}
-        sub="Dados de identificação de cada unidade consumidora. O detalhamento das cargas é feito na próxima etapa. Em Conexão Nova não há disjuntor 'De' nem instalação."
-      >
-        {ucsDet.map((u, ui) => (
-          <div key={ui} className="uc-block">
-            <div className="uc-block-head">
-              <span className="uc-block-title">UC {ui + 1}</span>
-              <Badge>
-                {ui + 1} de {ucsDet.length}
-              </Badge>
-            </div>
-            <div className="grid grid-3">
-              <Field label="Tipo de solicitação" req>
-                <Sel
-                  value={u.solicitacao}
-                  onChange={(e) =>
-                    setUcDet(ui, { solicitacao: e.target.value })
-                  }
-                >
-                  <option>Conexão Nova</option>
-                  <option>Alteração de Carga</option>
-                  <option>Caixa Existente sem Alteração</option>
-                </Sel>
-              </Field>
-              <Field label="Atividade principal" req>
-                <Sel
-                  value={u.atividade}
-                  onChange={(e) => setUcDet(ui, { atividade: e.target.value })}
-                >
-                  <option value="">Selecionar</option>
-                  <option>Residencial</option>
-                  <option>Comercial</option>
-                  <option>Industrial</option>
-                  <option>Rural</option>
-                </Sel>
-              </Field>
-              <Field
-                label="Ramo de atividade"
-                req={u.atividade !== "Residencial"}
-              >
-                <Inp
-                  value={u.ramo}
-                  onChange={(e) => setUcDet(ui, { ramo: e.target.value })}
-                  placeholder={
-                    u.atividade === "Residencial" ? "—" : "Obrigatório"
-                  }
-                />
-              </Field>
-              <Field label="Nº Predial">
-                <div className="readonly-val">{obra.num || "Nº Predial"}</div>
-              </Field>
-              <Field label="Complemento" req={ucsDet.length > 1}>
-                <Inp
-                  value={u.complemento}
-                  onChange={(e) =>
-                    setUcDet(ui, { complemento: e.target.value })
-                  }
-                  placeholder="Casa 1"
-                />
-              </Field>
-              <Field label="Caixa / Identificação">
-                <Inp
-                  value={u.caixa}
-                  onChange={(e) => setUcDet(ui, { caixa: e.target.value })}
-                />
-              </Field>
-              <Field label="Unidade Consumidora">
-                <Inp
-                  value={u.unidadeConsumidora}
-                  onChange={(e) =>
-                    setUcDet(ui, { unidadeConsumidora: e.target.value })
-                  }
-                  placeholder="Identificação da UC (interna/externa)"
-                />
-              </Field>
-              {u.solicitacao !== "Conexão Nova" && (
-                <React.Fragment>
-                  <Field label="Nº Instalação / Medidor" req>
-                    <Inp
-                      value={u.instalacao}
-                      onChange={(e) =>
-                        setUcDet(ui, { instalacao: e.target.value })
-                      }
-                    />
-                  </Field>
-                  <Field label="Disjuntor atual">
-                    <Sel
-                      value={u.disjDe}
-                      onChange={(e) => setUcDet(ui, { disjDe: e.target.value })}
-                    >
-                      <option value="">Selecione…</option>
-                      {DISJ.map((d) => (
-                        <option key={d.fx} value={d.fx}>
-                          {d.fx}
-                        </option>
-                      ))}
-                    </Sel>
-                  </Field>
-                  {u.solicitacao === "Alteração de Carga" && (
-                    <Field label="Mudança de local">
-                      <Toggle
-                        value={u.mudancaLocal}
-                        onChange={(v) => setUcDet(ui, { mudancaLocal: v })}
-                        options={[
-                          { v: "Sim", l: "Sim" },
-                          { v: "Não", l: "Não" },
-                        ]}
-                      />
-                    </Field>
-                  )}
-                </React.Fragment>
-              )}
-            </div>
-          </div>
-        ))}
-      </Card>
-      {ucsDet.length > 1 && (
-        <div
-          className={
-            "alert " + (validacaoDisjuntores.ok ? "alert-ok" : "alert-warn")
-          }
-        >
-          <b>Regra de disjuntores (múltiplas UCs sem proteção geral):</b> no
-          máximo 1 tripolar de 63 A e/ou até 2 mono/bifásicos de 63 A.{" "}
-          {validacaoDisjuntores.ok ? "✔ " : "⚠ "}
-          {validacaoDisjuntores.msg}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function TabCargasColetivo({ ctx }) {
-  const {
-    aba,
-    setAba,
-    modalidade,
-    setModalidade,
-    atend,
-    setAtend,
-    prop,
-    setProp,
-    corr,
-    setCorr,
-    obra,
-    setObra,
-    gerador,
-    setGerador,
-    obs,
-    setObs,
-    cepStatus,
-    setCepStatus,
-    cnpjStatus,
-    setCnpjStatus,
-    logoPDF,
-    setLogoPDF,
-    ucsDet,
-    setUcsDet,
-    ucBlocos,
-    setUcBlocos,
-    blocos,
-    setBlocos,
-    abas,
-    buscarCEP,
-    buscarCNPJ,
-    coletivo,
-    coordObrigatoria,
-    coordPreenchida,
-    demandaPrevTotal,
-    demandaTotalGeral,
-    disjGeralObrigatorio,
-    docInfo,
-    gerarPDF,
-    hibrido,
-    idx,
-    irAnt,
-    irProx,
-    isAlteracaoColetivo,
-    maiorCorrenteUC,
-    multiTorres,
-    opcoesDisjGeral,
-    pessoaFisica,
-    prevTotalKw,
-    redeMono,
-    replicarPrevTodas,
-    replicarPrevTorre,
-    replicarPrimeiro,
-    replicarUC1Coletivo,
-    replicarUC1Torre,
-    setBloco,
-    setBlocoPrev,
-    setTorre,
-    setUcDet,
-    setUcTorre,
-    setUcTorrePrev,
-    sincronizarUCsTorre,
-    totalUcsEmpreendimento,
-    trocaDisjGeral,
-    validacaoDisjuntores,
-    validacaoHibrido,
-  } = ctx;
-  return (
-    <Card
-      eyebrow="Carga do agrupamento"
-      title="Previsão de Carga por Unidade Consumidora"
-      sub="Informe a previsão de carga instalada (kW) e a demanda prevista (kVA) de cada UC. A carga e a demanda totais são somadas automaticamente."
-    >
-      {ucBlocos.length > 1 && (
-        <div className="prev-toolbar">
-          <Btn variant="ghost" onClick={replicarPrevTodas}>
-            Replicar previsão da UC 1 para todas
-          </Btn>
-        </div>
-      )}
-      <div className="prev-table-wrap">
-        <table className="prev-table">
-          <thead>
-            <tr>
-              <th>Unidade</th>
-              <th>Ilum. (kW)</th>
-              <th>Tomada (kW)</th>
-              <th>Chuveiro (kW)</th>
-              <th>Ar Cond. (kW)</th>
-              <th>Outros (kW)</th>
-              <th>Carga (kW)</th>
-              <th className="col-demanda">Demanda (kVA) *</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ucBlocos.map((u, ui) => (
-              <tr key={ui}>
-                <td className="uc-name">{u.identificacao || `UC ${ui + 1}`}</td>
-                {["ilum", "tomada", "chuveiro", "ar", "outros"].map((k) => (
-                  <td key={k}>
-                    <input
-                      type="number"
-                      value={(u.prev || {})[k] || ""}
-                      onChange={(e) =>
-                        setBlocoPrev(ui, { [k]: e.target.value })
-                      }
-                      placeholder="0,0"
-                    />
-                  </td>
-                ))}
-                <td className="carga-cell">{fmt2(prevKwUC(u))}</td>
-                <td className="col-demanda">
-                  <input
-                    className="demanda-prev"
-                    type="number"
-                    value={(u.prev || {}).demanda || ""}
-                    onChange={(e) =>
-                      setBlocoPrev(ui, { demanda: e.target.value })
-                    }
-                    placeholder="0,0"
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr>
-              <td className="uc-name">Total</td>
-              <td colSpan={5}></td>
-              <td className="carga-cell">{fmt2(prevTotalKw)}</td>
-              <td className="col-demanda total-dem">
-                {fmt2(demandaPrevTotal)}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
       </div>
-      <div className="prev-total" style={{ marginTop: 14 }}>
-        <div className="kpi">
-          <div className="kpi-label">Total Carga Instalada</div>
-          <div className="kpi-value">{fmt2(prevTotalKw)} kW</div>
-        </div>
-        <div className="kpi dark">
-          <div className="kpi-label">Demanda do atendimento</div>
-          <div className="kpi-value" style={{ fontSize: 18 }}>
-            {fmt2(demandaTotalGeral)} kVA
-          </div>
-        </div>
+
+      <div className="gd-subhead">8 — Contato na Distribuidora</div>
+      <div className="gd-info-box">
+        <div><strong>{GD_CONTATO_CEMIG.responsavel}</strong></div>
+        <div>{GD_CONTATO_CEMIG.endereco}</div>
+        <div>Telefone: {GD_CONTATO_CEMIG.telefone} · E-mail: {GD_CONTATO_CEMIG.email}</div>
       </div>
-      {demandaTotalGeral > 304 && (
-        <div className="alert alert-info" style={{ marginTop: 14 }}>
-          Demanda total acima de 304 kVA: o atendimento fica condicionado à
-          apresentação do projeto elétrico com ART/TRT.
-        </div>
-      )}
+
+      <div className="gd-subhead">9 — Solicitações e Declarações</div>
+      <div className="grid">
+        <Field label="9.1 - O padrão está pronto para ser ligado e a usina está instalada?" span={3} hint="Se 'Não', solicite vistoria/ligação em até 120 dias após o orçamento de conexão.">
+          <Toggle value={d.decl81} onChange={(v) => set({ decl81: v })} options={GD_SN.map((o) => ({ v: o, l: o }))} />
+        </Field>
+      </div>
+      <div className="doc-list" style={{ marginTop: 10 }}>
+        <label className="doc-item"><input type="checkbox" checked={d.decl82} onChange={(e) => set({ decl82: e.target.checked })} /><span className="doc-text"><strong>9.2</strong> Renuncio ao direito de desistir do orçamento de conexão. (Opcional)</span></label>
+        <label className="doc-item"><input type="checkbox" checked={d.decl83} onChange={(e) => set({ decl83: e.target.checked })} /><span className="doc-text"><strong>9.3</strong> Autorizo a entrega dos contratos e meio de pagamento junto ao orçamento. (Opcional)</span></label>
+        <label className="doc-item"><input type="checkbox" checked={d.decl84} onChange={(e) => set({ decl84: e.target.checked })} /><span className="doc-text"><strong>9.4</strong> Declaro conformidade das instalações com normas da distribuidora, ABNT e órgãos oficiais. <span className="doc-req">(Obrigatório)</span></span></label>
+        <label className="doc-item"><input type="checkbox" checked={d.decl86} onChange={(e) => set({ decl86: e.target.checked })} /><span className="doc-text"><strong>9.6</strong> Declaro que todas as informações são verdadeiras. <span className="doc-req">(Obrigatório)</span></span></label>
+      </div>
+
+      <div className="gd-subhead">10 — Solicitante</div>
+      <div className="grid">
+        <Field label="Nome do Consumidor ou Procurador Legal" req span={3}><Inp value={d.solicitanteNome} onChange={(e) => set({ solicitanteNome: e.target.value })} /></Field>
+        <Field label="Endereço de Correspondência" req span={3}><Inp value={d.solicitanteEndereco} onChange={(e) => set({ solicitanteEndereco: e.target.value })} /></Field>
+        <Field label="Telefone"><Inp value={d.solicitanteTelefone} onChange={(e) => set({ solicitanteTelefone: mascararFixo(e.target.value) })} /></Field>
+        <Field label="Celular" req><Inp value={d.solicitanteCelular} onChange={(e) => set({ solicitanteCelular: mascararCelular(e.target.value) })} /></Field>
+        <Field label="E-mail" req><Inp value={d.solicitanteEmail} onChange={(e) => set({ solicitanteEmail: e.target.value })} /></Field>
+        <Field label="Observações" span={3}><textarea className="ta" value={d.obs} onChange={(e) => set({ obs: e.target.value })} rows={3} /></Field>
+      </div>
     </Card>
   );
 }
 
-function TabCargasIndividual({ ctx }) {
-  const {
-    aba,
-    setAba,
-    modalidade,
-    setModalidade,
-    atend,
-    setAtend,
-    prop,
-    setProp,
-    corr,
-    setCorr,
-    obra,
-    setObra,
-    gerador,
-    setGerador,
-    obs,
-    setObs,
-    cepStatus,
-    setCepStatus,
-    cnpjStatus,
-    setCnpjStatus,
-    logoPDF,
-    setLogoPDF,
-    ucsDet,
-    setUcsDet,
-    ucBlocos,
-    setUcBlocos,
-    blocos,
-    setBlocos,
-    abas,
-    buscarCEP,
-    buscarCNPJ,
-    coletivo,
-    coordObrigatoria,
-    coordPreenchida,
-    demandaPrevTotal,
-    demandaTotalGeral,
-    disjGeralObrigatorio,
-    docInfo,
-    gerarPDF,
-    hibrido,
-    idx,
-    irAnt,
-    irProx,
-    isAlteracaoColetivo,
-    maiorCorrenteUC,
-    multiTorres,
-    opcoesDisjGeral,
-    pessoaFisica,
-    prevTotalKw,
-    redeMono,
-    replicarPrevTodas,
-    replicarPrevTorre,
-    replicarPrimeiro,
-    replicarUC1Coletivo,
-    replicarUC1Torre,
-    setBloco,
-    setBlocoPrev,
-    setTorre,
-    setUcDet,
-    setUcTorre,
-    setUcTorrePrev,
-    sincronizarUCsTorre,
-    totalUcsEmpreendimento,
-    trocaDisjGeral,
-    validacaoDisjuntores,
-    validacaoHibrido,
-  } = ctx;
+// ---------- Revisão ----------
+function ViewRevisao({ ctx }) {
+  const { d, validacao, gerarPdf } = ctx;
+  const row = (label, val) => (<div className="rev-row"><span className="rev-label">{label}</span><span className="rev-val">{val || "—"}</span></div>);
   return (
-    <div>
-      {ucsDet.length > 1 && (
-        <div
-          className={
-            "alert " + (validacaoDisjuntores.ok ? "alert-ok" : "alert-warn")
-          }
-        >
-          <b>Regra de disjuntores:</b> máx. 1 tripolar 63 A e/ou 2
-          mono/bifásicos 63 A. {validacaoDisjuntores.ok ? "✔ " : "⚠ "}
-          {validacaoDisjuntores.msg}
-        </div>
+    <Card eyebrow="Revisão" title="Prévia & PDF">
+      {!validacao.ok ? (
+        <div className="rev-faltas"><strong>Preencha os campos obrigatórios antes de exportar:</strong><ul>{validacao.faltas.map((f) => (<li key={f}>{f}</li>))}</ul></div>
+      ) : (
+        <div className="rev-ok">Todos os campos obrigatórios preenchidos. Pronto para exportar.</div>
       )}
-      {ucsDet.map((u, ui) => (
-        <Card
-          key={ui}
-          eyebrow={`UC ${ui + 1} de ${ucsDet.length}`}
-          title={`Cargas da Unidade Consumidora ${ui + 1}`}
-          sub="Detalhe os equipamentos. A demanda e o disjuntor são calculados automaticamente (ND-5.1)."
-        >
-          <CalcDemanda
-            data={u.cargas}
-            onChange={(c) => setUcDet(ui, { cargas: c })}
-            redeMono={redeMono}
-            atividade={u.atividade}
-          />
-          <div className="kpi-row" style={{ marginTop: 12 }}>
-            <div className="kpi">
-              <div className="kpi-label">Carga Instalada</div>
-              <div className="kpi-value">
-                {fmt2(u.cargas?._cargaKw || 0)} kW
-              </div>
-            </div>
-            <div className="kpi">
-              <div className="kpi-label">Demanda Calculada</div>
-              <div className="kpi-value">
-                {fmt2(u.cargas?._demanda || 0)} kVA
-              </div>
-            </div>
-            <div className="kpi dark">
-              <div className="kpi-label">Disjuntor Sugerido</div>
-              <div className="kpi-value">
-                {u.cargas?._disjuntores?.length
-                  ? u.cargas._disjuntores.join(" · ")
-                  : "—"}
-              </div>
-            </div>
-          </div>
-          {u.cargas?._disjuntores?.length > 0 && (
-            <div style={{ marginTop: 12 }}>
-              <Field label={`Disjuntor escolhido para a UC ${ui + 1}`}>
-                <Sel
-                  value={u.disjEscolhido || u.cargas._disjuntores[0]}
-                  onChange={(e) =>
-                    setUcDet(ui, { disjEscolhido: e.target.value })
-                  }
-                >
-                  {u.cargas._disjuntores.map((dj) => (
-                    <option key={dj} value={dj}>
-                      {dj}
-                    </option>
-                  ))}
-                </Sel>
-              </Field>
-            </div>
-          )}
-        </Card>
-      ))}
-    </div>
-  );
-}
-
-function TabGerador({ ctx }) {
-  const {
-    aba,
-    setAba,
-    modalidade,
-    setModalidade,
-    atend,
-    setAtend,
-    prop,
-    setProp,
-    corr,
-    setCorr,
-    obra,
-    setObra,
-    gerador,
-    setGerador,
-    obs,
-    setObs,
-    cepStatus,
-    setCepStatus,
-    cnpjStatus,
-    setCnpjStatus,
-    logoPDF,
-    setLogoPDF,
-    ucsDet,
-    setUcsDet,
-    ucBlocos,
-    setUcBlocos,
-    blocos,
-    setBlocos,
-    abas,
-    buscarCEP,
-    buscarCNPJ,
-    coletivo,
-    coordObrigatoria,
-    coordPreenchida,
-    demandaPrevTotal,
-    demandaTotalGeral,
-    disjGeralObrigatorio,
-    docInfo,
-    gerarPDF,
-    hibrido,
-    idx,
-    irAnt,
-    irProx,
-    isAlteracaoColetivo,
-    maiorCorrenteUC,
-    multiTorres,
-    opcoesDisjGeral,
-    pessoaFisica,
-    prevTotalKw,
-    redeMono,
-    replicarPrevTodas,
-    replicarPrevTorre,
-    replicarPrimeiro,
-    replicarUC1Coletivo,
-    replicarUC1Torre,
-    setBloco,
-    setBlocoPrev,
-    setTorre,
-    setUcDet,
-    setUcTorre,
-    setUcTorrePrev,
-    sincronizarUCsTorre,
-    totalUcsEmpreendimento,
-    trocaDisjGeral,
-    validacaoDisjuntores,
-    validacaoHibrido,
-  } = ctx;
-  return (
-    <Card
-      eyebrow="Complementar"
-      title="Gerador de Emergência"
-      sub="Informe se a instalação possui gerador de emergência."
-    >
-      <Field label="Há gerador de emergência?" req>
-        <Toggle
-          value={gerador.possui}
-          onChange={(v) => setGerador({ ...gerador, possui: v })}
-          options={[
-            { v: "Sim", l: "Sim" },
-            { v: "Não", l: "Não" },
-          ]}
-        />
-      </Field>
-      {gerador.possui === "Sim" && (
-        <div className="grid grid-2" style={{ marginTop: 14 }}>
-          <Field label="Potência do gerador (kVA)">
-            <Inp
-              value={gerador.potencia}
-              onChange={(e) =>
-                setGerador({ ...gerador, potencia: e.target.value })
-              }
-            />
-          </Field>
-          <Field label="Fonte / Combustível">
-            <Sel
-              value={gerador.fonte}
-              onChange={(e) =>
-                setGerador({ ...gerador, fonte: e.target.value })
-              }
-            >
-              <option value="">Selecione</option>
-              <option>Diesel</option>
-              <option>Gasolina</option>
-              <option>Gás (GLP/GNV)</option>
-              <option>Outro</option>
-            </Sel>
-          </Field>
-          <Field label="Descrição / Observações do gerador" span={2}>
-            <Inp
-              value={gerador.descricao}
-              onChange={(e) =>
-                setGerador({ ...gerador, descricao: e.target.value })
-              }
-              placeholder="Modelo, finalidade, regime de operação..."
-            />
-          </Field>
-          <div className="col-span-2 callout">
-            O gerador de emergência opera de forma isolada (sem paralelismo com
-            a rede CEMIG).
-          </div>
-        </div>
-      )}
+      <div className="gd-subhead">1 — Identificação</div>
+      {row("Instalação", d.instalacao)}
+      {row("Titular", d.titular)}
+      {row("Grupo / Classe", `${d.grupo} / ${d.classe}`)}
+      {row("Endereço", `${d.logradouro}, ${d.numero} — ${d.bairro}, ${d.municipio}/${d.estado}`)}
+      <div className="gd-subhead">2 — Dados da UC</div>
+      {row("UTM", `Fuso ${d.fuso} · E ${d.utmE} · N ${d.utmN}`)}
+      {row("Solicitação", d.solicitacao)}
+      {row("Trafo (ligação/impedância)", `${d.tipoLigTrafo || "—"} · ${d.impedanciaTrafo || "—"}%`)}
+      {row("Demanda consumo / geração (kW)", `${d.demandaConsumo || "—"} / ${d.demandaGeracao || "—"}`)}
+      <div className="gd-subhead">4 — Geração</div>
+      {row("Qtd. fontes", d.qtdFontes)}
+      {row("Pot. Ativa Instalada (kW)", d.potAtivaInstalada)}
+      {row("Modalidade", d.modalidade)}
+      <div className="gd-subhead">10 — Solicitante</div>
+      {row("Nome", d.solicitanteNome)}
+      {row("Contato", `${d.solicitanteCelular || "—"} · ${d.solicitanteEmail || "—"}`)}
+      <div style={{ marginTop: 16 }}>
+        <Btn variant="dark" onClick={gerarPdf} disabled={!validacao.ok}>📄 Exportar PDF</Btn>
+      </div>
     </Card>
-  );
-}
-
-function TabObs({ ctx }) {
-  const {
-    aba,
-    setAba,
-    modalidade,
-    setModalidade,
-    atend,
-    setAtend,
-    prop,
-    setProp,
-    corr,
-    setCorr,
-    obra,
-    setObra,
-    gerador,
-    setGerador,
-    obs,
-    setObs,
-    cepStatus,
-    setCepStatus,
-    cnpjStatus,
-    setCnpjStatus,
-    logoPDF,
-    setLogoPDF,
-    ucsDet,
-    setUcsDet,
-    ucBlocos,
-    setUcBlocos,
-    blocos,
-    setBlocos,
-    abas,
-    buscarCEP,
-    buscarCNPJ,
-    coletivo,
-    coordObrigatoria,
-    coordPreenchida,
-    demandaPrevTotal,
-    demandaTotalGeral,
-    disjGeralObrigatorio,
-    docInfo,
-    gerarPDF,
-    hibrido,
-    idx,
-    irAnt,
-    irProx,
-    isAlteracaoColetivo,
-    maiorCorrenteUC,
-    multiTorres,
-    opcoesDisjGeral,
-    pessoaFisica,
-    prevTotalKw,
-    redeMono,
-    replicarPrevTodas,
-    replicarPrevTorre,
-    replicarPrimeiro,
-    replicarUC1Coletivo,
-    replicarUC1Torre,
-    setBloco,
-    setBlocoPrev,
-    setTorre,
-    setUcDet,
-    setUcTorre,
-    setUcTorrePrev,
-    sincronizarUCsTorre,
-    totalUcsEmpreendimento,
-    trocaDisjGeral,
-    validacaoDisjuntores,
-    validacaoHibrido,
-  } = ctx;
-  return (
-    <Card
-      eyebrow="Informações adicionais"
-      title="Observações"
-      sub="Inclua informações relevantes: justificativa de disjuntor, atendimento híbrido, geração já conectada, etc."
-    >
-      <Field>
-        <textarea
-          value={obs}
-          onChange={(e) => setObs(e.target.value)}
-          rows={6}
-        />
-      </Field>
-    </Card>
-  );
-}
-
-function TabRevisar({ ctx }) {
-  const {
-    aba,
-    setAba,
-    modalidade,
-    setModalidade,
-    atend,
-    setAtend,
-    prop,
-    setProp,
-    corr,
-    setCorr,
-    obra,
-    setObra,
-    gerador,
-    setGerador,
-    obs,
-    setObs,
-    cepStatus,
-    setCepStatus,
-    cnpjStatus,
-    setCnpjStatus,
-    logoPDF,
-    setLogoPDF,
-    ucsDet,
-    setUcsDet,
-    ucBlocos,
-    setUcBlocos,
-    blocos,
-    setBlocos,
-    abas,
-    buscarCEP,
-    buscarCNPJ,
-    coletivo,
-    coordObrigatoria,
-    coordPreenchida,
-    demandaPrevTotal,
-    demandaTotalGeral,
-    disjGeralObrigatorio,
-    docInfo,
-    gerarPDF,
-    hibrido,
-    idx,
-    irAnt,
-    irProx,
-    isAlteracaoColetivo,
-    maiorCorrenteUC,
-    multiTorres,
-    opcoesDisjGeral,
-    pessoaFisica,
-    prevTotalKw,
-    redeMono,
-    replicarPrevTodas,
-    replicarPrevTorre,
-    replicarPrimeiro,
-    replicarUC1Coletivo,
-    replicarUC1Torre,
-    setBloco,
-    setBlocoPrev,
-    setTorre,
-    setUcDet,
-    setUcTorre,
-    setUcTorrePrev,
-    sincronizarUCsTorre,
-    totalUcsEmpreendimento,
-    trocaDisjGeral,
-    validacaoDisjuntores,
-    validacaoHibrido,
-  } = ctx;
-  return (
-    <div>
-      <Card
-        eyebrow="Etapa final"
-        title="Prévia do Formulário"
-        sub="Confira os dados. Se algo estiver incorreto, volte às etapas anteriores pela barra lateral."
-      >
-        <div className="kpi-row">
-          <div className="kpi">
-            <div className="kpi-label">Proprietário</div>
-            <div className="kpi-value" style={{ fontSize: 14 }}>
-              {prop.nome || "—"}
-            </div>
-          </div>
-          <div className="kpi">
-            <div className="kpi-label">Unidades Consumidoras</div>
-            <div className="kpi-value">
-              {multiTorres
-                ? totalUcsEmpreendimento
-                : coletivo
-                  ? ucBlocos.length
-                  : ucsDet.length}
-            </div>
-          </div>
-          <div className="kpi dark">
-            <div className="kpi-label">Demanda Total</div>
-            <div className="kpi-value" style={{ fontSize: 18 }}>
-              {fmt2(demandaTotalGeral)} kVA
-            </div>
-          </div>
-        </div>
-        <div className="preview-block">
-          <h4>Modalidade</h4>
-          <div className="preview-item">
-            <span className="v">
-              {multiTorres
-                ? `Múltiplas Torres/Blocos · ${blocos.length} ${atend.atendA.toLowerCase()}(s)`
-                : coletivo
-                  ? "Coletivo — Agrupamento com Proteção Geral (APR Web)"
-                  : "Individual / até 3 caixas sem proteção geral"}
-              {coletivo ? ` · ${atend.solicitacao} · ${atend.escopo}` : ""}
-              {!multiTorres && atend.disjuntorGeral
-                ? ` · Disjuntor geral: ${atend.disjuntorGeral}`
-                : ""}
-            </span>
-          </div>
-        </div>
-        <div className="preview-block">
-          <h4>Obra</h4>
-          <div className="preview-grid">
-            <div className="preview-item">
-              <span className="k">Endereço</span>
-              <span className="v">
-                {obra.endereco || "—"}, {obra.num || "s/n"}
-              </span>
-            </div>
-            <div className="preview-item">
-              <span className="k">Cidade / UF</span>
-              <span className="v">
-                {obra.cidade || "—"} / {obra.estado}
-              </span>
-            </div>
-            <div className="preview-item">
-              <span className="k">Localização</span>
-              <span className="v">{obra.localizacao}</span>
-            </div>
-            <div className="preview-item">
-              <span className="k">Coordenada</span>
-              <span className="v">
-                {[obra.lat, obra.lng].filter(Boolean).join(", ") || "—"}
-              </span>
-            </div>
-          </div>
-        </div>
-        {multiTorres ? (
-          <div className="preview-block">
-            <h4>Torres / Blocos</h4>
-            {blocos.map((b, bi) => (
-              <div
-                key={bi}
-                className="preview-item"
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                }}
-              >
-                <span className="v">
-                  {atend.atendA} {b.nome || bi + 1} · {b.qtdUCs || 0} UCs ·
-                  Geral: {b.disjGeral || "—"} · Incêndio:{" "}
-                  {b.disjIncendio || "—"}
-                </span>
-                <span style={{ color: "var(--verde)", fontWeight: 700 }}>
-                  {fmt2(
-                    (b.ucs || []).reduce(
-                      (s, u) => s + num((u.prev || {}).demanda),
-                      0,
-                    ) + num(b.demandaIncendio),
-                  )}{" "}
-                  kVA
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : coletivo ? (
-          <div className="preview-block">
-            <h4>Previsão de carga e UCs</h4>
-            <div className="preview-item">
-              <span className="v">
-                Total {fmt2(prevTotalKw)} kW · Demanda {fmt2(demandaTotalGeral)}{" "}
-                kVA
-              </span>
-            </div>
-            {ucBlocos.map((u, ui) => (
-              <div
-                key={ui}
-                className="preview-item"
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                }}
-              >
-                <span className="v">
-                  {u.identificacao || `UC ${ui + 1}`} · {u.atividade} ·{" "}
-                  {u.solicitacao} {u.complemento ? `· ${u.complemento}` : ""}
-                </span>
-                <span style={{ color: "var(--verde)", fontWeight: 700 }}>
-                  {u.disjPara || "—"}
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="preview-block">
-            <h4>Unidades Consumidoras</h4>
-            {ucsDet.map((u, ui) => (
-              <div
-                key={ui}
-                className="preview-item"
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                }}
-              >
-                <span className="v">
-                  UC {ui + 1} · {u.atividade} · {u.solicitacao}{" "}
-                  {u.complemento ? `· ${u.complemento}` : ""}
-                </span>
-                <span style={{ color: "var(--verde)", fontWeight: 700 }}>
-                  {fmt2(u.cargas?._demanda || 0)} kVA ·{" "}
-                  {u.disjEscolhido || (u.cargas?._disjuntores || [])[0] || "—"}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
-      <Card sub="Anexe à solicitação: planta de situação (A4), ART/TRT de projeto (quando aplicável) e documentos de regularidade do imóvel, conforme as orientações da CEMIG.">
-        {hibrido && !validacaoHibrido.ok && (
-          <div className="alert alert-warn" style={{ marginBottom: 12 }}>
-            Corrija as pendências do atendimento híbrido (aba Unidades
-            Consumidoras) para liberar a exportação do PDF.
-          </div>
-        )}
-        {!ctx.validacaoObrigatorios.ok && (
-          <div className="alert alert-warn" style={{ marginBottom: 12 }}>
-            <strong>Preencha os campos obrigatórios para liberar o PDF:</strong>
-            <ul style={{ margin: "6px 0 0 18px" }}>
-              {ctx.validacaoObrigatorios.faltando.map((f, i) => (
-                <li key={i}>{f}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-        <Btn
-          variant="dark"
-          onClick={gerarPDF}
-          disabled={
-            !ctx.validacaoObrigatorios.ok || (hibrido && !validacaoHibrido.ok)
-          }
-        >
-          📄 Exportar PDF
-        </Btn>
-      </Card>
-    </div>
   );
 }

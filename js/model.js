@@ -209,7 +209,12 @@ const MODALIDADES_SECOES = [
         restrito: true, // fluxo simplificado: sem coletivo/híbrido/multitorres
         prefill: {
           atividade: "Residencial",
-          atend: { disjGeral: "Não", solicitacao: SOLICITACOES[0], escopo: "Ligação Nova", nUCs: 1 },
+          atend: {
+            disjGeral: "Não",
+            solicitacao: SOLICITACOES[0],
+            escopo: "Ligação Nova",
+            nUCs: 1,
+          },
           obra: { tipoRede: "Monofásica", localizacao: "Urbana" },
           cargas: {
             tipoA: "res",
@@ -232,7 +237,12 @@ const MODALIDADES_SECOES = [
         restrito: true, // fluxo simplificado: sem coletivo/híbrido/multitorres
         prefill: {
           atividade: "Residencial",
-          atend: { disjGeral: "Não", solicitacao: SOLICITACOES[0], escopo: "Ligação Nova", nUCs: 1 },
+          atend: {
+            disjGeral: "Não",
+            solicitacao: SOLICITACOES[0],
+            escopo: "Ligação Nova",
+            nUCs: 1,
+          },
           obra: { tipoRede: "Bifásica", localizacao: "Urbana" },
           cargas: {
             tipoA: "res",
@@ -255,7 +265,11 @@ const MODALIDADES_SECOES = [
         status: "ok",
         prefill: {
           atividade: "Residencial",
-          atend: { disjGeral: "Não", solicitacao: SOLICITACOES[0], escopo: "Ligação Nova" },
+          atend: {
+            disjGeral: "Não",
+            solicitacao: SOLICITACOES[0],
+            escopo: "Ligação Nova",
+          },
           obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
         },
       },
@@ -267,7 +281,11 @@ const MODALIDADES_SECOES = [
         status: "ok",
         prefill: {
           atividade: "Comercial",
-          atend: { disjGeral: "Não", solicitacao: SOLICITACOES[0], escopo: "Ligação Nova" },
+          atend: {
+            disjGeral: "Não",
+            solicitacao: SOLICITACOES[0],
+            escopo: "Ligação Nova",
+          },
           obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
         },
       },
@@ -279,7 +297,11 @@ const MODALIDADES_SECOES = [
         status: "ok",
         prefill: {
           atividade: "Industrial",
-          atend: { disjGeral: "Não", solicitacao: SOLICITACOES[0], escopo: "Ligação Nova" },
+          atend: {
+            disjGeral: "Não",
+            solicitacao: SOLICITACOES[0],
+            escopo: "Ligação Nova",
+          },
           obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
         },
       },
@@ -291,7 +313,11 @@ const MODALIDADES_SECOES = [
         status: "ok",
         prefill: {
           atividade: "Rural",
-          atend: { disjGeral: "Não", solicitacao: SOLICITACOES[0], escopo: "Ligação Nova" },
+          atend: {
+            disjGeral: "Não",
+            solicitacao: SOLICITACOES[0],
+            escopo: "Ligação Nova",
+          },
           obra: { tipoRede: "Trifásica", localizacao: "Rural" },
         },
       },
@@ -316,7 +342,13 @@ const MODALIDADES_SECOES = [
         status: "ok",
         prefill: {
           atividade: "Residencial",
-          atend: { disjGeral: "Sim", solicitacao: SOLICITACOES[4], escopo: "Ligação Nova", atendA: "Torre", nBlocos: 2 },
+          atend: {
+            disjGeral: "Sim",
+            solicitacao: SOLICITACOES[4],
+            escopo: "Ligação Nova",
+            atendA: "Torre",
+            nBlocos: 2,
+          },
           obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
         },
       },
@@ -328,7 +360,12 @@ const MODALIDADES_SECOES = [
         status: "ok",
         prefill: {
           atividade: "Residencial",
-          atend: { disjGeral: "Sim", solicitacao: SOLICITACOES[2], escopo: "Ligação Nova", nUCs: 2 },
+          atend: {
+            disjGeral: "Sim",
+            solicitacao: SOLICITACOES[2],
+            escopo: "Ligação Nova",
+            nUCs: 2,
+          },
           obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
         },
       },
@@ -337,16 +374,51 @@ const MODALIDADES_SECOES = [
   {
     titulo: "Média Tensão",
     cards: [
-      { id: "mt-industria", nome: "Indústria", sub: "Média Tensão (MT)", img: "assets/portal/img_industria_mt.png", status: "link", href: "mt/?atividade=Industrial" },
-      { id: "mt-outros", nome: "Outros estabelecimentos", sub: "Média Tensão (MT)", img: "assets/portal/img_outros_mt.png", status: "link", href: "mt/" },
-      { id: "mt-irrigante", nome: "Irrigante", sub: "Média Tensão (MT)", img: "assets/portal/img_irrigante.png", status: "link", href: "mt/?atividade=Irrigação" },
+      {
+        id: "mt-industria",
+        nome: "Indústria",
+        sub: "Média Tensão (MT)",
+        img: "assets/portal/img_industria_mt.png",
+        status: "link",
+        href: "mt/?atividade=Industrial",
+      },
+      {
+        id: "mt-outros",
+        nome: "Outros estabelecimentos",
+        sub: "Média Tensão (MT)",
+        img: "assets/portal/img_outros_mt.png",
+        status: "link",
+        href: "mt/",
+      },
+      {
+        id: "mt-irrigante",
+        nome: "Irrigante",
+        sub: "Média Tensão (MT)",
+        img: "assets/portal/img_irrigante.png",
+        status: "link",
+        href: "mt/?atividade=Irrigação",
+      },
     ],
   },
   {
     titulo: "Geração Distribuída",
     cards: [
-      { id: "gd-micro", nome: "Microgeração", sub: "Baixa Tensão (BT)", img: "", status: "link", href: "microgeracao/" },
-      { id: "gd-mini", nome: "Minigeração", sub: "Média Tensão (MT)", img: "", status: "link", href: "minigeracao/" },
+      {
+        id: "gd-micro",
+        nome: "Microgeração",
+        sub: "Baixa Tensão (BT)",
+        img: "assets/portal/mod-gd-micro.png",
+        status: "link",
+        href: "microgeracao/",
+      },
+      {
+        id: "gd-mini",
+        nome: "Minigeração",
+        sub: "Média Tensão (MT)",
+        img: "assets/portal/mod-gd-mini.png",
+        status: "link",
+        href: "minigeracao/",
+      },
     ],
   },
 ];

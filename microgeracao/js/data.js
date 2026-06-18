@@ -1,308 +1,125 @@
-/* ============================================================
-   CEMIG ND-5.1 / ND-5.2 — Constantes normativas
-   Tabelas de fatores de demanda, cargas e disjuntores
-   ============================================================ */
-
-// Tabela 10 — Fator de demanda iluminação/tomadas residencial
-const TABELA_10 = [
-  { min: 0, max: 1, fator: 0.86 },
-  { min: 1, max: 2, fator: 0.81 },
-  { min: 2, max: 3, fator: 0.76 },
-  { min: 3, max: 4, fator: 0.72 },
-  { min: 4, max: 5, fator: 0.68 },
-  { min: 5, max: 6, fator: 0.64 },
-  { min: 6, max: 7, fator: 0.6 },
-  { min: 7, max: 8, fator: 0.57 },
-  { min: 8, max: 9, fator: 0.54 },
-  { min: 9, max: 10, fator: 0.52 },
-  { min: 10, max: Infinity, fator: 0.45 },
+// ============================================================
+// MICROGERAÇÃO DISTRIBUÍDA — Dados normativos (CEMIG / REN 1.000/2021)
+// Extraído do Formulário Oficial MicroGD Rev. N4 (03/12/2024)
+// ============================================================
+const GD_GRUPOS = ["B", "A"];
+const GD_CLASSES = ["Residencial","Industrial","Comercial","Rural","Poder Público","Iluminação Pública","Serviço Público"];
+const GD_SOLICITACOES = [
+  "Ligação de Nova Unidade Consumidora COM Geração Distribuída",
+  "Conexão de GD em Unidade Consumidora Existente SEM Alteração de Potência Disponibilizada",
+  "Conexão de GD em Unidade Consumidora Existente COM Alteração de Potência Disponibilizada",
+  "GD Existente COM Alteração de Potência Ativa Instalada Total",
 ];
-
-// Tabela 11 — Fator de demanda iluminação/tomadas não-residencial
-const TABELA_11 = [
-  { d: "Oficina, indústrias e semelhantes", fp: 1.0, lim: 20, fe: 0.8 },
-  { d: "Hotéis e semelhantes", fp: 0.5, lim: 20, fe: 0.4 },
-  { d: "Auditórios, cinemas e semelhantes", fp: 1.0, lim: Infinity, fe: 1.0 },
-  { d: "Bancos e semelhantes", fp: 1.0, lim: Infinity, fe: 1.0 },
-  { d: "Barbearia, salões de beleza", fp: 1.0, lim: Infinity, fe: 1.0 },
-  { d: "Clubes e semelhantes", fp: 1.0, lim: Infinity, fe: 1.0 },
-  { d: "Escolas e semelhantes", fp: 1.0, lim: 12, fe: 0.5 },
-  { d: "Escritórios, lojas e salas comerciais", fp: 1.0, lim: 20, fe: 0.7 },
-  { d: "Garagens comerciais", fp: 1.0, lim: Infinity, fe: 1.0 },
-  { d: "Clínicas, hospitais e semelhantes", fp: 0.4, lim: 50, fe: 0.2 },
-  { d: "Igrejas, templos e semelhantes", fp: 1.0, lim: Infinity, fe: 1.0 },
-  { d: "Restaurantes, bares e semelhantes", fp: 1.0, lim: Infinity, fe: 1.0 },
-  { d: "Áreas comuns e condomínios", fp: 1.0, lim: 10, fe: 0.25 },
-  { d: "Salão de festas", fp: 1.0, lim: Infinity, fe: 1.0 },
+const GD_EDIFICACOES = [
+  "Edificação Individual",
+  "Edificação de Uso Coletivo (telhado coletivo ou em área comum do condomínio)",
+  "Edificação de Uso Coletivo (telhado independente e privativo)",
+  "Agrupamento",
 ];
-
-// Tabela 12 — Fogões/fornos (grupo b3)
-const TABELA_12 = [
-  { n: 1, a: 0.8, b: 1.0 },
-  { n: 2, a: 0.75, b: 1.0 },
-  { n: 3, a: 0.7, b: 0.8 },
-  { n: 4, a: 0.66, b: 0.65 },
-  { n: 5, a: 0.62, b: 0.55 },
-  { n: 6, a: 0.59, b: 0.5 },
-  { n: 7, a: 0.56, b: 0.45 },
-  { n: 8, a: 0.53, b: 0.43 },
-  { n: 9, a: 0.51, b: 0.4 },
-  { n: 10, a: 0.49, b: 0.36 },
-  { n: 11, a: 0.47, b: 0.35 },
-  { n: 12, a: 0.45, b: 0.34 },
-];
-
-// Tabela 13 — fator demais aparelhos (grupos b1,b2,b4,b5)
-const F13 = [
-  0, 1, 0.92, 0.84, 0.76, 0.7, 0.65, 0.6, 0.57, 0.54, 0.52, 0.49, 0.48, 0.46,
-  0.45, 0.44, 0.43, 0.42, 0.41, 0.4, 0.4,
-];
-function getFt13(n) {
-  if (n <= 0) return 0;
-  if (n <= 20) return F13[n];
-  if (n <= 25) return 0.38;
-  if (n <= 30) return 0.37;
-  if (n <= 40) return 0.36;
-  if (n <= 50) return 0.35;
-  if (n <= 60) return 0.34;
-  return 0.33;
-}
-
-// Tabela 14/15 — motores trifásicos/monofásicos (demanda absorvida kVA)
-const T14 = [
-  { cv: 0.25, l: "1/4", c1: 0.62, c2: 0.5, c3: 0.43, c4: 0.37 },
-  { cv: 0.33, l: "1/3", c1: 0.73, c2: 0.58, c3: 0.51, c4: 0.44 },
-  { cv: 0.5, l: "1/2", c1: 0.92, c2: 0.74, c3: 0.64, c4: 0.55 },
-  { cv: 0.75, l: "3/4", c1: 1.24, c2: 0.99, c3: 0.87, c4: 0.74 },
-  { cv: 1, l: "1,0", c1: 1.49, c2: 1.19, c3: 1.04, c4: 0.89 },
-  { cv: 1.5, l: "1,5", c1: 1.93, c2: 1.54, c3: 1.35, c4: 1.16 },
-  { cv: 2, l: "2,0", c1: 2.44, c2: 1.95, c3: 1.71, c4: 1.46 },
-  { cv: 3, l: "3,0", c1: 3.2, c2: 2.56, c3: 2.24, c4: 1.92 },
-  { cv: 4, l: "4,0", c1: 4.15, c2: 3.32, c3: 2.91, c4: 2.49 },
-  { cv: 5, l: "5,0", c1: 5.22, c2: 4.18, c3: 3.65, c4: 3.13 },
-  { cv: 7.5, l: "7,5", c1: 7.94, c2: 6.35, c3: 5.56, c4: 4.76 },
-  { cv: 10, l: "10", c1: 10.04, c2: 8.03, c3: 7.03, c4: 6.02 },
-  { cv: 12.5, l: "12,5", c1: 13.01, c2: 10.41, c3: 9.11, c4: 7.81 },
-];
-const T15 = [
-  { cv: 0.167, l: "1/6", c1: 0.37, c2: 0.3, c3: 0.26, c4: 0.22 },
-  { cv: 0.25, l: "1/4", c1: 0.48, c2: 0.38, c3: 0.34, c4: 0.29 },
-  { cv: 0.33, l: "1/3", c1: 0.56, c2: 0.45, c3: 0.39, c4: 0.34 },
-  { cv: 0.5, l: "1/2", c1: 0.72, c2: 0.58, c3: 0.5, c4: 0.43 },
-  { cv: 0.75, l: "3/4", c1: 1.08, c2: 0.86, c3: 0.76, c4: 0.65 },
-  { cv: 1, l: "1,0", c1: 1.38, c2: 1.1, c3: 0.97, c4: 0.83 },
-  { cv: 1.5, l: "1,5", c1: 2.03, c2: 1.62, c3: 1.42, c4: 1.22 },
-  { cv: 2, l: "2,0", c1: 2.4, c2: 1.92, c3: 1.68, c4: 1.44 },
-  { cv: 3, l: "3,0", c1: 3.64, c2: 2.91, c3: 2.55, c4: 2.18 },
-  { cv: 4, l: "4,0", c1: 4.96, c2: 3.97, c3: 3.47, c4: 2.98 },
-  { cv: 5, l: "5,0", c1: 5.62, c2: 4.5, c3: 3.93, c4: 3.37 },
-  { cv: 6, l: "6,0", c1: 6.49, c2: 5.19, c3: 4.54, c4: 3.89 },
-  { cv: 7.5, l: "7,5", c1: 8.12, c2: 6.5, c3: 5.68, c4: 4.87 },
-  { cv: 10, l: "10", c1: 10.76, c2: 8.61, c3: 7.53, c4: 6.46 },
-  { cv: 12.5, l: "12,5", c1: 13.25, c2: 10.6, c3: 9.28, c4: 7.95 },
-  { cv: 15, l: "15", c1: 14.98, c2: 11.98, c3: 10.49, c4: 8.99 },
-  { cv: 20, l: "20", c1: 20.67, c2: 16.54, c3: 14.47, c4: 12.4 },
-  { cv: 25, l: "25", c1: 24.66, c2: 19.73, c3: 17.26, c4: 14.8 },
-  { cv: 30, l: "30", c1: 29.59, c2: 23.67, c3: 20.71, c4: 17.76 },
-  { cv: 50, l: "50", c1: 49.27, c2: null, c3: null, c4: null },
-  { cv: 60, l: "60", c1: 57.7, c2: null, c3: null, c4: null },
-  { cv: 75, l: "75", c1: 70.48, c2: null, c3: null, c4: null },
-];
-
-// Disjuntores padronizados CEMIG ND-5.1
-const DISJ = [
-  { fx: "Monopolar 40 A", d: 5.0, tipo: "mono" },
-  { fx: "Monopolar 50 A", d: 6.0, tipo: "mono" },
-  { fx: "Monopolar 60 A", d: 7.6, tipo: "mono" },
-  { fx: "Monopolar 63 A", d: 7.6, tipo: "mono" },
-  { fx: "Bipolar 50 A", d: 12.0, tipo: "bi" },
-  { fx: "Bipolar 60 A", d: 15.1, tipo: "bi" },
-  { fx: "Bipolar 63 A", d: 15.1, tipo: "bi" },
-  { fx: "Bipolar 70 A", d: 16.8, tipo: "bi" },
-  { fx: "Bipolar 100 A", d: 24.0, tipo: "bi" },
-  { fx: "Bipolar 125 A", d: 30.0, tipo: "bi" },
-  { fx: "Bipolar 150 A", d: 36.0, tipo: "bi" },
-  { fx: "Bipolar 200 A", d: 50.0, tipo: "bi" },
-  { fx: "Tripolar 50 A", d: 19.0, tipo: "tri" },
-  { fx: "Tripolar 60 A", d: 24.0, tipo: "tri" },
-  { fx: "Tripolar 63 A", d: 24.0, tipo: "tri" },
-  { fx: "Tripolar 70 A", d: 26.6, tipo: "tri" },
-  { fx: "Tripolar 80 A", d: 30.5, tipo: "tri" },
-  { fx: "Tripolar 100 A", d: 38.1, tipo: "tri" },
-  { fx: "Tripolar 125 A", d: 47.6, tipo: "tri" },
-  { fx: "Tripolar 150 A", d: 57.1, tipo: "tri" },
-  { fx: "Tripolar 175 A", d: 66.0, tipo: "tri" },
-  { fx: "Tripolar 200 A", d: 75.0, tipo: "tri" },
-  { fx: "Tripolar 225 A", d: 86.0, tipo: "tri" },
-  { fx: "Tripolar 250 A", d: 95.0, tipo: "tri" },
-  { fx: "Tripolar 300/315/320 A", d: 114.0, tipo: "tri" },
-  { fx: "Tripolar 400 A", d: 152.0, tipo: "tri" },
-  { fx: "Tripolar 450 A", d: 171.0, tipo: "tri" },
-  { fx: "Tripolar 500 A", d: 188.0, tipo: "tri" },
-  { fx: "Tripolar 600/630 A", d: 228.0, tipo: "tri" },
-  { fx: "Tripolar 700 A", d: 266.0, tipo: "tri" },
-  { fx: "Tripolar 800 A", d: 304.0, tipo: "tri" },
-];
-
-const DISJ_CN = [
-  { fx: "Monopolar 63 A", d: 7.6, tipo: "mono" },
-  { fx: "Bipolar 63 A", d: 15.1, tipo: "bi" },
-  { fx: "Bipolar 100 A", d: 24.0, tipo: "bi" },
-  { fx: "Bipolar 125 A", d: 30.0, tipo: "bi" },
-  { fx: "Bipolar 150 A", d: 36.0, tipo: "bi" },
-  { fx: "Bipolar 200 A", d: 50.0, tipo: "bi" },
-  { fx: "Tripolar 63 A", d: 24.0, tipo: "tri" },
-  { fx: "Tripolar 80 A", d: 30.5, tipo: "tri" },
-  { fx: "Tripolar 100 A", d: 38.1, tipo: "tri" },
-  { fx: "Tripolar 125 A", d: 47.6, tipo: "tri" },
-  { fx: "Tripolar 150 A", d: 57.1, tipo: "tri" },
-  { fx: "Tripolar 175 A", d: 66.0, tipo: "tri" },
-  { fx: "Tripolar 200 A", d: 75.0, tipo: "tri" },
-  { fx: "Tripolar 225 A", d: 86.0, tipo: "tri" },
-  { fx: "Tripolar 250 A", d: 95.0, tipo: "tri" },
-  { fx: "Tripolar 300/315/320 A", d: 114.0, tipo: "tri" },
-  { fx: "Tripolar 400 A", d: 152.0, tipo: "tri" },
-  { fx: "Tripolar 450 A", d: 171.0, tipo: "tri" },
-  { fx: "Tripolar 500 A", d: 188.0, tipo: "tri" },
-  { fx: "Tripolar 600/630 A", d: 228.0, tipo: "tri" },
-  { fx: "Tripolar 700 A", d: 266.0, tipo: "tri" },
-  { fx: "Tripolar 800 A", d: 304.0, tipo: "tri" },
-];
-
-const DISJ_GER = [
-  { fx: "Bipolar 100 A", d: 24.0, tipo: "bi" },
-  { fx: "Bipolar 125 A", d: 30.0, tipo: "bi" },
-  { fx: "Bipolar 150 A", d: 36.0, tipo: "bi" },
-  { fx: "Bipolar 200 A", d: 50.0, tipo: "bi" },
-  { fx: "Tripolar 80 A", d: 30.5, tipo: "tri" },
-  { fx: "Tripolar 100 A", d: 38.1, tipo: "tri" },
-  { fx: "Tripolar 125 A", d: 47.6, tipo: "tri" },
-  { fx: "Tripolar 150 A", d: 57.1, tipo: "tri" },
-  { fx: "Tripolar 175 A", d: 66.0, tipo: "tri" },
-  { fx: "Tripolar 200 A", d: 75.0, tipo: "tri" },
-  { fx: "Tripolar 225 A", d: 86.0, tipo: "tri" },
-  { fx: "Tripolar 250 A", d: 95.0, tipo: "tri" },
-  { fx: "Tripolar 300/315/320 A", d: 114.0, tipo: "tri" },
-  { fx: "Tripolar 400 A", d: 152.0, tipo: "tri" },
-  { fx: "Tripolar 450 A", d: 171.0, tipo: "tri" },
-  { fx: "Tripolar 500 A", d: 188.0, tipo: "tri" },
-  { fx: "Tripolar 600/630 A", d: 228.0, tipo: "tri" },
-  { fx: "Tripolar 700 A", d: 266.0, tipo: "tri" },
-  { fx: "Tripolar 800 A", d: 304.0, tipo: "tri" },
-];
-
-// Catálogo de cargas
-const CAT = [
-  { n: "Chuveiro Elétrico 127V", w: 4400, g: "b1" },
-  { n: "Chuveiro Elétrico 220V", w: 6000, g: "b1" },
-  { n: "Chuveiro 4 estações", w: 6500, g: "b1" },
-  { n: "Chuveiro 9800W", w: 9800, g: "b1" },
-  { n: "Torneira elétrica", w: 2500, g: "b1" },
-  { n: "Cafeteira pequena", w: 600, g: "b1" },
-  { n: "Cafeteira comercial", w: 1200, g: "b1" },
-  { n: "Aquec. acumulação até 80L", w: 1500, g: "b2" },
-  { n: "Aquec. acumulação 100-150L", w: 2500, g: "b2" },
-  { n: "Aquec. acumulação 200-400L", w: 4000, g: "b2" },
-  { n: "Aquec. água por tampa", w: 6000, g: "b2" },
-  { n: "Aquec. água por passagem", w: 6000, g: "b2" },
-  { n: "Banheira hidromassagem", w: 6600, g: "b2" },
-  { n: "Fogão elétrico 4 bocas", w: 1500, g: "b3" },
-  { n: "Fogão elétrico 6b médio", w: 2100, g: "b3" },
-  { n: "Fogão elétrico 6b grande", w: 2700, g: "b3" },
-  { n: "Forno elétrico embutir", w: 4500, g: "b3" },
-  { n: "Forno micro-ondas", w: 750, g: "b3" },
-  { n: "Micro forno elétrico", w: 1000, g: "b3" },
-  { n: "Grill", w: 1200, g: "b3" },
-  { n: "Assadeira grande", w: 1000, g: "b3" },
-  { n: "Assadeira pequena", w: 500, g: "b3" },
-  { n: "Máq. lavar roupas", w: 1500, g: "b4" },
-  { n: "Máq. lavar c/ aquecimento", w: 1000, g: "b4" },
-  { n: "Máq. lavar louças", w: 1500, g: "b4" },
-  { n: "Máq. secar roupas", w: 3500, g: "b4" },
-  { n: "Ferro elétrico automático", w: 1000, g: "b4" },
-  { n: "Ferro elétrico simples", w: 500, g: "b4" },
-  { n: "Geladeira comum", w: 250, g: "b5" },
-  { n: "Geladeira duplex", w: 300, g: "b5" },
-  { n: "Freezer vertical", w: 300, g: "b5" },
-  { n: "Freezer horiz. médio", w: 400, g: "b5" },
-  { n: "Freezer horiz. grande", w: 500, g: "b5" },
-  { n: "Liquidificador", w: 200, g: "b5" },
-  { n: "Espremedor de frutas", w: 200, g: "b5" },
-  { n: "Batedeira de bolo", w: 100, g: "b5" },
-  { n: "Exaustor", w: 150, g: "b5" },
-  { n: "Ebulidor", w: 1000, g: "b5" },
-  { n: "Conjunto de som", w: 100, g: "b5" },
-  { n: "Televisor", w: 300, g: "b5" },
-  { n: "Micro computador", w: 250, g: "b5" },
-  { n: "Impressora a laser", w: 900, g: "b5" },
-  { n: "Impressora comum", w: 90, g: "b5" },
-  { n: "Aspirador de pó", w: 600, g: "b5" },
-  { n: "Enceradeira", w: 300, g: "b5" },
-  { n: "Aquecedor ambiente", w: 1000, g: "b5" },
-  { n: "Máq. costurar", w: 100, g: "b5" },
-  { n: "Panela elétrica", w: 1200, g: "b5" },
-  { n: "Sanduicheira", w: 640, g: "b5" },
-  { n: "Secador de cabelos", w: 1000, g: "b5" },
-  { n: "Sauna residencial", w: 4500, g: "b5" },
-  { n: "Sauna comercial", w: 12000, g: "b5" },
-  { n: "Fogão c/ acendedor", w: 90, g: "b5" },
-  { n: "Bebedouro elétrico", w: 210, g: "b5" },
-  { n: "Ventilador", w: 300, g: "b5" },
-  { n: "Ventilador de teto", w: 120, g: "b5" },
-  { n: "Torradeira", w: 800, g: "b5" },
-  { n: "Adega climatizada", w: 300, g: "b5" },
-  { n: "AC 7500 BTU", w: 1000, g: "c" },
-  { n: "AC 10000 BTU", w: 1350, g: "c" },
-  { n: "AC 12000 BTU", w: 1450, g: "c" },
-  { n: "AC 14000 BTU", w: 2000, g: "c" },
-  { n: "AC 18000 BTU", w: 2600, g: "c" },
-  { n: "AC 20000 BTU", w: 2800, g: "c" },
-  { n: "AC 30000 BTU", w: 3600, g: "c" },
-  { n: "Lâmpada LED 10W", w: 10, g: "il" },
-  { n: "Lâmpada LED 18W", w: 18, g: "il" },
-  { n: "Fluorescente 20W", w: 20, g: "il" },
-  { n: "Fluorescente 40W", w: 40, g: "il" },
-  { n: "Incandescente 60W", w: 60, g: "il" },
-  { n: "Incandescente 100W", w: 100, g: "il" },
-  { n: "Refletor odontológico", w: 150, g: "il" },
-  { n: "Raio X (dentista)", w: 1200, g: "f" },
-  { n: "Raio X (hospital)", w: 12100, g: "f" },
-  { n: "Raio X (25kW)", w: 25000, g: "f" },
-];
-
-const GL = {
-  il: "Iluminação e Tomadas",
-  b1: "b1 - Chuveiros/torneiras/cafeteiras",
-  b2: "b2 - Aquecedores de água",
-  b3: "b3 - Fornos/fogões/grill",
-  b4: "b4 - Lavadoras/secadoras/ferro",
-  b5: "b5 - Demais aparelhos",
-  c: "c - Condicionadores de ar",
-  f: "f - Raios-X",
+const GD_EDIF_TIPO = ["Edificação Individual","Edificação Coletiva ou Agrupamento"];
+const GD_TENSAO_A = ["13800","22000","34500"];
+const GD_TENSAO_B = ["127/220","120/240"];
+const GD_RAMAL = ["Aéreo","Subterrâneo"];
+const GD_TIPOS_SE = ["Nº 1","Nº 2","Nº 4","Nº 5","Nº 8"];
+const GD_TRAFO_POR_SE = {
+  "Nº 1":[75,112.5,150,225,300],"Nº 2":[75,112.5,150,225,300],"Nº 4":[75,112.5,150,225,300],
+  "Nº 5":[75,112.5,150,225,300],"Nº 8":[75,112.5,150,225,300],
 };
-const GO = ["il", "b1", "b2", "b3", "b4", "b5", "c", "f"];
+const GD_TRAFOS_PARTICULARES = [100,200,300,500,700];
+const GD_FONTES = ["Solar","Hidráulica","Biomassa","Cogeração Qualificada","Eólica"];
+const GD_TIPO_GERACAO = [
+  "Empregando máquina síncrona sem conversor","Empregando conversor eletrônico/inversor","Mista","Outra (especificar):",
+];
+const GD_MODALIDADES = ["Autoconsumo local","Autoconsumo remoto","Geração compartilhada","Múltiplas Unidades Consumidoras"];
+const GD_DISJ_FASES = ["Monopolar","Bipolar","Tripolar","Sem Disj. Geral"];
+const GD_DISJ_FASES_ALT = ["Monopolar","Bipolar","Tripolar","Sem Alter. Carga"];
+const GD_DISJ_REVISADA = [
+  {tipo:"Monopolar",a:40,kw:5},{tipo:"Monopolar",a:50,kw:6.5},{tipo:"Monopolar",a:63,kw:8},{tipo:"Monopolar",a:70,kw:10},
+  {tipo:"Bipolar",a:40,kw:10},{tipo:"Bipolar",a:50,kw:12},{tipo:"Bipolar",a:60,kw:15},{tipo:"Bipolar",a:63,kw:15.1},
+  {tipo:"Bipolar",a:70,kw:16.8},{tipo:"Bipolar",a:80,kw:20},{tipo:"Bipolar",a:90,kw:20},{tipo:"Bipolar",a:100,kw:24},
+  {tipo:"Bipolar",a:120,kw:30},{tipo:"Bipolar",a:125,kw:30},{tipo:"Bipolar",a:150,kw:36},{tipo:"Bipolar",a:200,kw:50},
+  {tipo:"Tripolar",a:40,kw:15},{tipo:"Tripolar",a:60,kw:23},{tipo:"Tripolar",a:63,kw:24},{tipo:"Tripolar",a:70,kw:27},
+  {tipo:"Tripolar",a:80,kw:30.5},{tipo:"Tripolar",a:100,kw:38.1},{tipo:"Tripolar",a:120,kw:47},{tipo:"Tripolar",a:125,kw:47.6},
+  {tipo:"Tripolar",a:150,kw:57.1},{tipo:"Tripolar",a:175,kw:66},{tipo:"Tripolar",a:200,kw:75},{tipo:"Tripolar",a:225,kw:86},
+  {tipo:"Tripolar",a:250,kw:95},{tipo:"Tripolar",a:300,kw:114},{tipo:"Tripolar",a:315,kw:114},{tipo:"Tripolar",a:320,kw:114},
+  {tipo:"Tripolar",a:400,kw:152},{tipo:"Tripolar",a:450,kw:171},{tipo:"Tripolar",a:500,kw:188},{tipo:"Tripolar",a:600,kw:228},
+  {tipo:"Tripolar",a:630,kw:228},{tipo:"Tripolar",a:700,kw:266},{tipo:"Tripolar",a:800,kw:304},
+];
+const GD_DISJ_ND51 = [
+  {tipo:"Monopolar",a:63,kw:8},{tipo:"Bipolar",a:63,kw:15.1},{tipo:"Bipolar",a:100,kw:24},{tipo:"Bipolar",a:125,kw:30},
+  {tipo:"Bipolar",a:150,kw:36},{tipo:"Bipolar",a:200,kw:50},{tipo:"Tripolar",a:63,kw:24},{tipo:"Tripolar",a:80,kw:30.5},
+  {tipo:"Tripolar",a:100,kw:38.1},{tipo:"Tripolar",a:125,kw:47.6},{tipo:"Tripolar",a:150,kw:57.1},{tipo:"Tripolar",a:200,kw:75},
+  {tipo:"Tripolar",a:225,kw:86},{tipo:"Tripolar",a:250,kw:95},{tipo:"Tripolar",a:300,kw:114},{tipo:"Tripolar",a:315,kw:114},
+  {tipo:"Tripolar",a:320,kw:114},{tipo:"Tripolar",a:400,kw:152},{tipo:"Tripolar",a:450,kw:171},{tipo:"Tripolar",a:500,kw:188},
+  {tipo:"Tripolar",a:600,kw:228},{tipo:"Tripolar",a:630,kw:228},{tipo:"Tripolar",a:700,kw:266},{tipo:"Tripolar",a:800,kw:304},
+];
+const GD_UTM_LIMITES = {
+  22:{eMin:487307,eMax:833012,nMin:7733378,nMax:7981566},
+  23:{eMin:161564,eMax:840139,nMin:7460145,nMax:8435094},
+  24:{eMin:164869,eMax:417150,nMin:7673180,nMax:8336360},
+};
+const GD_FUSOS = [22,23,24];
+const GD_BT_MT = ["BT - Baixa Tensão","MT - Média Tensão"];
+const GD_FAST_LIMITE_KW = 7.5;
+const GD_FAST_REGRAS = [
+  "8.5.1 - não injeção na rede de distribuição (\u201CGrid Zero\u201D)",
+  "8.5.2 - enquadramento nos critérios de gratuidade da REN 1.000/2021 e potência compatível com o consumo no horário de geração",
+  "8.5.3 - modalidade autoconsumo local, com potência instalada de geração igual ou inferior a 7,5 kW",
+];
+const GD_SN = ["Não","Sim"];
+function gdValidarUTM(fuso,e,n){
+  const lim=GD_UTM_LIMITES[parseInt(fuso)];
+  if(!lim) return {ok:false,msg:"Selecione o fuso."};
+  const E=parseFloat(e),N=parseFloat(n);
+  if(isNaN(E)||isNaN(N)) return {ok:false,msg:""};
+  if(E<lim.eMin||E>lim.eMax) return {ok:false,msg:`E fora da faixa (${lim.eMin}\u2013${lim.eMax}).`};
+  if(N<lim.nMin||N>lim.nMax) return {ok:false,msg:`N fora da faixa (${lim.nMin}\u2013${lim.nMax}).`};
+  return {ok:true,msg:""};
+}
+function gdLimiteInjecao(tipo,corrente,usarND51){
+  const tab=usarND51?GD_DISJ_ND51:GD_DISJ_REVISADA;
+  const r=tab.find((x)=>x.tipo===tipo&&x.a===parseInt(corrente));
+  return r?r.kw:null;
+}
 
-// ============================================================
-// MOTORES — Demanda individual absorvida da rede (kVA)
-// Colunas por faixa de QUANTIDADE TOTAL de motores na UC:
-//   c1 = 1 motor (I) | c2 = 2 motores (II) | c3 = 3 a 5 (III) | c4 = mais de 5 (IV)
-// Correção de rótulo: T14 = MONOFÁSICO, T15 = TRIFÁSICO.
-// ============================================================
-const MOTOR_MONO = T14;
-const MOTOR_TRI = T15;
-// Escolhe a coluna (c1..c4) pela contagem total de motores
-function motorColPorQtd(qtdTotal) {
-  const n = Number(qtdTotal) || 0;
-  if (n <= 1) return "c1";
-  if (n === 2) return "c2";
-  if (n <= 5) return "c3";
-  return "c4";
-}
-// Demanda unitária (kVA) de um motor: fase + CV + coluna
-function motorKvaUnit(fase, cv, col) {
-  const tab = fase === "mono" ? MOTOR_MONO : MOTOR_TRI;
-  const row = tab.find((r) => r.cv === parseFloat(cv));
-  if (!row) return 0;
-  const v = row[col];
-  return v == null ? 0 : v;
-}
+// Documentação a anexar (Seção 3) — textos oficiais MicroGD Rev N4
+const GD_DOCUMENTOS = [
+  { id: "3.1", req: true, txt: "Documentos de identificação do consumidor, conforme incisos I e II do art. 67 da Resolução Normativa nº 1.000/2021." },
+  { id: "3.2", req: true, txt: "Formulário de Análise de Carga, com os respectivos anexos necessários (para Ligação Nova de UC com GD ou conexão de GD com aumento/redução de potência disponibilizada)." },
+  { id: "3.3", req: true, txt: "Informação das cargas que possam provocar perturbações no sistema de distribuição." },
+  { id: "3.4", req: true, txt: "Informação e documentação das atividades desenvolvidas nas instalações." },
+  { id: "3.5", req: false, txt: "Licença ou declaração do órgão competente caso as instalações ocupem áreas protegidas (unidades de conservação, reservas legais, APP, territórios indígenas e quilombolas)." },
+  { id: "3.6.1", req: true, txt: "Documento com data que comprove a propriedade ou posse do imóvel onde será implantada a UC com microgeração distribuída (no caso de unidade flutuante, complementado por autorização/licença, observada possibilidade de dispensa da REN 1.000/2021)." },
+  { id: "3.6.2", req: false, txt: "Para imóveis rurais, apresentar o Cadastro Ambiental Rural – CAR (Lei nº 12.651/2012)." },
+  { id: "3.6.3", req: false, txt: "Documento que comprove direito de posse pelo proprietário da central geradora em casos de aluguel, cessão ou arrendamento de áreas, telhados ou estruturas. (Caso aplicável)" },
+  { id: "3.6.4", req: false, txt: "Documento do condomínio que comprove autorização de uso de área comum da edificação coletiva para instalação de central geradora de uso particular da unidade. (Caso aplicável)" },
+];
+
+// Documentação Técnica (Seção 6) — textos oficiais
+const GD_DOCS_TEC = [
+  { id: "6.1", req: true, txt: "Documento de responsabilidade técnica (projeto e execução) do conselho profissional competente, identificando registro válido, responsável técnico, local da obra e atividades desenvolvidas." },
+  { id: "6.2", req: true, txt: "Memorial descritivo da instalação com planta de situação e indicação do local do padrão de entrada (ND 5.1/5.2) ou da subestação de entrada (ND 5.3)." },
+  { id: "6.3", req: true, txt: "Diagrama unifilar e de blocos do sistema de geração, carga e proteção." },
+  { id: "6.4", req: true, txt: "Relatório de ensaio (português) atestando conformidade de todos os conversores de potência para a tensão nominal de conexão (incl. conversores de geração e armazenamento)." },
+  { id: "6.5", req: true, txt: "Dados necessários ao registro da central geradora distribuída conforme site da ANEEL." },
+  { id: "6.6", req: false, txt: "Lista de UCs participantes do sistema de compensação, indicando percentual/ordem de utilização dos excedentes. (Opcional)" },
+  { id: "6.7", req: false, txt: "Instrumento jurídico que comprove a participação dos integrantes (múltiplas UCs e geração compartilhada). (Caso aplicável)" },
+  { id: "6.8", req: false, txt: "Documento que comprove o reconhecimento pela ANEEL da cogeração qualificada. (Caso aplicável)" },
+  { id: "6.9", req: false, txt: "Dados de segurança de barragens para fontes hídricas (REN 696/2015). (Caso aplicável)" },
+  { id: "6.10", req: false, txt: "Para centrais FV despacháveis, comprovação de atendimento ao art. 655-B da REN 1.000/2021. (Caso aplicável)" },
+];
+
+// Contato na distribuidora (Seção 7 — fixo)
+const GD_CONTATO_CEMIG = {
+  responsavel: "Gerência de Processos Especiais da Expansão de Média e Baixa Tensão - EM/PE",
+  endereco: "Av. Barbacena, 1200, Santo Agostinho, CEP 30190-131, BH - MG",
+  telefone: "0800 721 0167",
+  email: "geracaodistribuida@cemig.com.br",
+};
+
+// Declarações 8.5 (dispensa art. 73-A)
+const GD_DECL_85 = [
+  "8.5.1 - não injeção na rede (“Grid Zero”)",
+  "8.5.2 - enquadramento nos critérios de gratuidade da REN 1.000/2021",
+  "8.5.3 - autoconsumo local, geração ≤ 7,5 kW",
+];

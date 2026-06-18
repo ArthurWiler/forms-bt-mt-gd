@@ -1070,3 +1070,92 @@ input[type="number"] { -moz-appearance: textfield; }
     text-transform: uppercase;
   }
 }
+
+/* ===== GD — Checklist de documentação ===== */
+.doc-list { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.doc-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  background: var(--card);
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.doc-item:hover { border-color: var(--verde-acento); }
+.doc-item input[type="checkbox"] {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--verde-cemig);
+  flex-shrink: 0;
+}
+.doc-text { font-size: 13px; line-height: 1.5; color: var(--texto); }
+.doc-text strong { color: var(--verde-cemig); margin-right: 4px; }
+.doc-req { color: var(--vermelho); font-size: 11px; font-weight: 700; }
+
+/* ===== GD — Subtítulo de seção ===== */
+.gd-subhead {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--verde-escuro);
+  margin: 18px 0 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--borda);
+}
+
+/* ===== GD — caixa informativa e textarea ===== */
+.gd-info-box {
+  background: var(--verde-claro);
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--texto);
+}
+textarea.ta {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  font: inherit;
+  resize: vertical;
+}
+
+/* ===== GD — Revisão ===== */
+.rev-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 7px 2px;
+  border-bottom: 1px solid var(--borda);
+  font-size: 13px;
+}
+.rev-label { color: var(--texto-suave); flex-shrink: 0; }
+.rev-val { font-weight: 600; color: var(--texto); text-align: right; }
+.rev-faltas {
+  background: #fff4f4;
+  border: 1px solid #f3c0c0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #a12a2a;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+.rev-faltas ul { margin: 8px 0 0; padding-left: 18px; }
+.rev-faltas li { margin: 2px 0; }
+.rev-ok {
+  background: var(--verde-claro);
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: var(--verde-escuro);
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
