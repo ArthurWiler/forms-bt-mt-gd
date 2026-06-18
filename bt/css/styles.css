@@ -5,7 +5,7 @@
 
 @font-face {
   font-family: "SS Broad";
-  src: url("../shared/css/ssbroad.otf") format("opentype");
+  src: url("../../shared/css/ssbroad.otf") format("opentype");
 }
 
 :root {
