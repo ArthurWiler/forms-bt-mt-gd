@@ -28,36 +28,39 @@ function Field({ label, req, children, hint, span }) {
 }
 
 // Input
-function Inp({ value, onChange, type = "text", placeholder }) {
+function Inp({ value, onChange, type = "text", placeholder, disabled, max }) {
   return (
     <input
       type={type}
       value={value || ""}
       onChange={onChange}
       placeholder={placeholder}
+      disabled={disabled}
+      max={max}
     />
   );
 }
 
 // Select
-function Sel({ value, onChange, children }) {
+function Sel({ value, onChange, children, disabled }) {
   return (
-    <select value={value} onChange={onChange}>
+    <select value={value} onChange={onChange} disabled={disabled}>
       {children}
     </select>
   );
 }
 
 // Toggle (Sim/Não etc.)
-function Toggle({ value, onChange, options }) {
+function Toggle({ value, onChange, options, disabled }) {
   return (
-    <div className="toggle-group">
+    <div className={"toggle-group" + (disabled ? " toggle-disabled" : "")}>
       {options.map((o) => (
         <button
           key={String(o.v)}
           type="button"
           className={"toggle-btn" + (value === o.v ? " on" : "")}
           onClick={() => onChange(o.v)}
+          disabled={disabled}
         >
           {o.l}
         </button>
@@ -108,13 +111,14 @@ function Badge({ children, lime }) {
 // ============================================================
 // CALCULADORA DE DEMANDA (embutida por Unidade Consumidora)
 // ============================================================
-function CalcDemanda({ data, onChange, redeMono, atividade }) {
+function CalcDemanda({ data, onChange, redeMono, atividade, minimizarPorPadrao }) {
   const d = data || {};
   const qtds = d.qtds || CAT.map(() => 0);
   const tipoA = d.tipoA || "";
   const catA = d.catA || 0;
   const mots = d.mots || [];
   const [busca, setBusca] = useState("");
+  const [minimizado, setMinimizado] = useState(!!minimizarPorPadrao);
 
   const upd = (patch) => onChange({ ...d, qtds, tipoA, catA, mots, ...patch });
 
@@ -255,52 +259,83 @@ function CalcDemanda({ data, onChange, redeMono, atividade }) {
       ) : (
         <React.Fragment>
 
-      <div style={{ marginTop: 12 }}>
-        <Field label="Buscar equipamento">
-          <Inp
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            placeholder="Ex: chuveiro, geladeira, ar..."
-          />
-        </Field>
+      <div className="carga-min-head" style={{ marginTop: 12 }}>
+        <span className="subbox-title">Equipamentos selecionados</span>
+        <button
+          type="button"
+          className="btn btn-ghost"
+          style={{ padding: "5px 12px", fontSize: 12 }}
+          onClick={() => setMinimizado((m) => !m)}
+        >
+          {minimizado ? "Editar lista de equipamentos" : "Minimizar lista"}
+        </button>
       </div>
 
-      <div className="carga-box" style={{ marginTop: 8 }}>
-        {GO.map((sg) => {
-          const items = catFiltrado.filter((c) => c.g === sg);
-          if (!items.length) return null;
-          return (
-            <div key={sg}>
-              <div className="carga-group-title">{GL[sg]}</div>
-              {items.map((c) => (
-                <div key={c.i} className="carga-row">
-                  <div>
-                    <div className="nome">
-                      {c.n} <span className="pot">({fmtW(c.w)} W)</span>
+      {minimizado ? (
+        <div className="carga-resumo">
+          {CAT.map((c, i) => ({ ...c, i, q: qtds[i] || 0 }))
+            .filter((c) => c.q > 0).length === 0 ? (
+            <div className="field-hint">Nenhum equipamento selecionado.</div>
+          ) : (
+            CAT.map((c, i) => ({ ...c, i, q: qtds[i] || 0 }))
+              .filter((c) => c.q > 0)
+              .map((c) => (
+                <span key={c.i} className="carga-resumo-chip">
+                  {c.q}x {c.n}
+                </span>
+              ))
+          )}
+        </div>
+      ) : (
+        <React.Fragment>
+          <div style={{ marginTop: 12 }}>
+            <Field label="Buscar equipamento">
+              <Inp
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Ex: chuveiro, geladeira, ar..."
+              />
+            </Field>
+          </div>
+
+          <div className="carga-box" style={{ marginTop: 8 }}>
+            {GO.map((sg) => {
+              const items = catFiltrado.filter((c) => c.g === sg);
+              if (!items.length) return null;
+              return (
+                <div key={sg}>
+                  <div className="carga-group-title">{GL[sg]}</div>
+                  {items.map((c) => (
+                    <div key={c.i} className="carga-row">
+                      <div>
+                        <div className="nome">
+                          {c.n} <span className="pot">({fmtW(c.w)} W)</span>
+                        </div>
+                      </div>
+                      <div className="qtd-ctrl">
+                        <button onClick={() => setQ(c.i, (qtds[c.i] || 0) - 1)}>
+                          −
+                        </button>
+                        <input
+                          type="number"
+                          value={qtds[c.i] || 0}
+                          onChange={(e) => setQ(c.i, parseInt(e.target.value) || 0)}
+                        />
+                        <button
+                          className="plus"
+                          onClick={() => setQ(c.i, (qtds[c.i] || 0) + 1)}
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                  <div className="qtd-ctrl">
-                    <button onClick={() => setQ(c.i, (qtds[c.i] || 0) - 1)}>
-                      −
-                    </button>
-                    <input
-                      type="number"
-                      value={qtds[c.i] || 0}
-                      onChange={(e) => setQ(c.i, parseInt(e.target.value) || 0)}
-                    />
-                    <button
-                      className="plus"
-                      onClick={() => setQ(c.i, (qtds[c.i] || 0) + 1)}
-                    >
-                      +
-                    </button>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
+        </React.Fragment>
+      )}
 
       {/* Motores */}
       <div className="subbox motores-box">

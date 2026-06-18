@@ -183,6 +183,18 @@ const blocoPadrao = (i) => ({
 // img: PNG esperado em imgs/ (gerado pelo usuário)
 // prefill: ajustes aplicados a atend/obra ao selecionar
 // ============================================================
+
+// Monta o array `qtds` (alinhado ao catálogo CAT) a partir de uma lista
+// [{ n: "Nome no CAT", q: quantidade }] — usado no prefill de cargas.
+function cargasQtdsPorNome(itens) {
+  const qtds = CAT.map(() => 0);
+  itens.forEach(({ n, q }) => {
+    const i = CAT.findIndex((c) => c.n === n);
+    if (i >= 0) qtds[i] = q;
+  });
+  return qtds;
+}
+
 const MODALIDADES_SECOES = [
   {
     titulo: "Residencial · Comercial · Rural — Baixa Tensão",
@@ -193,10 +205,21 @@ const MODALIDADES_SECOES = [
         sub: "Monofásico 63 A",
         img: "assets/portal/img_casa1.png",
         status: "ok",
+        restrito: true, // fluxo simplificado: sem coletivo/híbrido/multitorres
         prefill: {
           atividade: "Residencial",
-          atend: { disjGeral: "Não", solicitacao: SOLICITACOES[0], escopo: "Ligação Nova" },
+          atend: { disjGeral: "Não", solicitacao: SOLICITACOES[0], escopo: "Ligação Nova", nUCs: 1 },
           obra: { tipoRede: "Monofásica", localizacao: "Urbana" },
+          cargas: {
+            tipoA: "res",
+            qtds: cargasQtdsPorNome([
+              { n: "Chuveiro Elétrico 127V", q: 1 },
+              { n: "Lâmpada LED 10W", q: 4 },
+              { n: "Lâmpada LED 18W", q: 4 },
+              { n: "Geladeira comum", q: 1 },
+              { n: "Micro forno elétrico", q: 1 },
+            ]),
+          },
         },
       },
       {
@@ -205,10 +228,22 @@ const MODALIDADES_SECOES = [
         sub: "Bifásico 63 A",
         img: "assets/portal/img_casa2.png",
         status: "ok",
+        restrito: true, // fluxo simplificado: sem coletivo/híbrido/multitorres
         prefill: {
           atividade: "Residencial",
-          atend: { disjGeral: "Não", solicitacao: SOLICITACOES[0], escopo: "Ligação Nova" },
+          atend: { disjGeral: "Não", solicitacao: SOLICITACOES[0], escopo: "Ligação Nova", nUCs: 1 },
           obra: { tipoRede: "Bifásica", localizacao: "Urbana" },
+          cargas: {
+            tipoA: "res",
+            qtds: cargasQtdsPorNome([
+              { n: "Chuveiro 4 estações", q: 2 },
+              { n: "AC 7500 BTU", q: 1 },
+              { n: "Lâmpada LED 10W", q: 4 },
+              { n: "Lâmpada LED 18W", q: 4 },
+              { n: "Geladeira comum", q: 1 },
+              { n: "Micro forno elétrico", q: 1 },
+            ]),
+          },
         },
       },
       {

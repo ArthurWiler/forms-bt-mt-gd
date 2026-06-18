@@ -11,6 +11,10 @@ function App() {
   const [aba, setAba] = useState("orient");
   // Tela inicial: modalidade escolhida (null = ainda na tela inicial)
   const [modalidade, setModalidade] = useState(null);
+  // Card específico selecionado na tela inicial (ex.: "casa50", "casa100")
+  const [cardSelecionado, setCardSelecionado] = useState(null);
+  // Fluxo simplificado (Casa até 50m² / até 100m²): sem coletivo/híbrido/multitorres
+  const restrito = !!cardSelecionado?.restrito;
 
   // ---- Tipo de atendimento ----
   const [atend, setAtend] = useState({
@@ -691,7 +695,15 @@ function App() {
           })),
         );
       }
+      if (card.prefill.cargas) {
+        setUcsDet((p) =>
+          p.map((u, i) =>
+            i === 0 ? { ...u, cargas: { ...card.prefill.cargas } } : u,
+          ),
+        );
+      }
     }
+    setCardSelecionado(card);
     setAba("orient");
     setModalidade("BT"); // todos os cards habilitados entram no fluxo BT
   };
@@ -762,6 +774,7 @@ function App() {
     replicarPrimeiro,
     replicarUC1Coletivo,
     replicarUC1Torre,
+    restrito,
     setBloco,
     setBlocoPrev,
     setTorre,

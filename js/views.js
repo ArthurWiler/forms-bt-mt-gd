@@ -66,6 +66,7 @@ function TabOrient({ ctx }) {
     setUcTorre,
     setUcTorrePrev,
     sincronizarUCsTorre,
+    restrito,
     totalUcsEmpreendimento,
     trocaDisjGeral,
     validacaoDisjuntores,
@@ -113,24 +114,28 @@ function TabOrient({ ctx }) {
           </li>
         ))}
       </ul>
-      <div
-        style={{
-          fontWeight: 700,
-          color: "var(--verde-escuro)",
-          fontSize: 14,
-          margin: "18px 0 4px",
-        }}
-      >
-        {ORIENTACOES.coletivo.titulo}
-      </div>
-      <ul className="orient-list">
-        {ORIENTACOES.coletivo.itens.map((it, i) => (
-          <li key={i} className="orient-item">
-            <span className="orient-num">{i + 1}</span>
-            <p>{it}</p>
-          </li>
-        ))}
-      </ul>
+      {!restrito && (
+        <React.Fragment>
+          <div
+            style={{
+              fontWeight: 700,
+              color: "var(--verde-escuro)",
+              fontSize: 14,
+              margin: "18px 0 4px",
+            }}
+          >
+            {ORIENTACOES.coletivo.titulo}
+          </div>
+          <ul className="orient-list">
+            {ORIENTACOES.coletivo.itens.map((it, i) => (
+              <li key={i} className="orient-item">
+                <span className="orient-num">{i + 1}</span>
+                <p>{it}</p>
+              </li>
+            ))}
+          </ul>
+        </React.Fragment>
+      )}
       <div className="callout">{ORIENTACOES.callout}</div>
       <div className="legend">
         <span>
@@ -211,6 +216,7 @@ function TabTipo({ ctx }) {
     setTorre,
     setUcDet,
     setUcTorre,
+    restrito,
     setUcTorrePrev,
     sincronizarUCsTorre,
     totalUcsEmpreendimento,
@@ -228,6 +234,7 @@ function TabTipo({ ctx }) {
         <Field label="Solicitação" req>
           <Sel
             value={atend.solicitacao}
+            disabled={restrito}
             onChange={(e) =>
               setAtend({ ...atend, solicitacao: e.target.value })
             }
@@ -279,6 +286,7 @@ function TabTipo({ ctx }) {
         <Field label="Possui disjuntor geral (proteção geral)?" req>
           <Toggle
             value={atend.disjGeral}
+            disabled={restrito}
             onChange={(v) => setAtend({ ...atend, disjGeral: v })}
             options={[
               { v: "Não", l: "Não" },
@@ -290,14 +298,18 @@ function TabTipo({ ctx }) {
           <Field label="Nº de Unidades Consumidoras" req>
             <Inp
               type="number"
+              max={restrito ? 3 : undefined}
               value={atend.nUCs}
-              onChange={(e) =>
+              onChange={(e) => {
+                const n = restrito
+                  ? Math.min(3, Math.max(1, parseInt(e.target.value) || 1))
+                  : Math.max(1, parseInt(e.target.value));
                 setAtend({
                   ...atend,
-                  nUCs: Math.max(1, parseInt(e.target.value)),
-                  disjGeral: parseInt(e.target.value) > 3 ? "Sim" : "Não",
-                })
-              }
+                  nUCs: n,
+                  disjGeral: restrito ? "Não" : n > 3 ? "Sim" : "Não",
+                });
+              }}
               options={[
                 { v: true, l: "Sim" },
                 { v: false, l: "Não" },
@@ -311,6 +323,7 @@ function TabTipo({ ctx }) {
         <Field label="Há múltiplas unidades consumidoras com proteção acima de 63 A?">
           <Toggle
             value={atend.biAcima63}
+            disabled={restrito}
             onChange={(v) =>
               setAtend({
                 ...atend,
@@ -1969,6 +1982,7 @@ function TabUcsIndividual({ ctx }) {
     setUcDet,
     setUcTorre,
     setUcTorrePrev,
+    restrito,
     sincronizarUCsTorre,
     totalUcsEmpreendimento,
     trocaDisjGeral,
@@ -2006,6 +2020,7 @@ function TabUcsIndividual({ ctx }) {
               <Field label="Atividade principal" req>
                 <Sel
                   value={u.atividade}
+                  disabled={restrito}
                   onChange={(e) => setUcDet(ui, { atividade: e.target.value })}
                 >
                   <option value="">Selecionar</option>
@@ -2021,6 +2036,7 @@ function TabUcsIndividual({ ctx }) {
               >
                 <Inp
                   value={u.ramo}
+                  disabled={restrito}
                   onChange={(e) => setUcDet(ui, { ramo: e.target.value })}
                   placeholder={
                     u.atividade === "Residencial" ? "—" : "Obrigatório"
@@ -2334,6 +2350,7 @@ function TabCargasIndividual({ ctx }) {
     setTorre,
     setUcDet,
     setUcTorre,
+    restrito,
     setUcTorrePrev,
     sincronizarUCsTorre,
     totalUcsEmpreendimento,
@@ -2366,6 +2383,7 @@ function TabCargasIndividual({ ctx }) {
             onChange={(c) => setUcDet(ui, { cargas: c })}
             redeMono={redeMono}
             atividade={u.atividade}
+            minimizarPorPadrao={restrito}
           />
           <div className="kpi-row" style={{ marginTop: 12 }}>
             <div className="kpi">
