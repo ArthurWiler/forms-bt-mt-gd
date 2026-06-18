@@ -90,6 +90,14 @@ const ESCOPOS = {
   ],
 };
 
+// Previsão de carga padrão para UC Residencial no coletivo, conforme o
+// disjuntor solicitado (disjPara). Aplicada automaticamente quando a UC é
+// Residencial e o disjuntor solicitado é um dos dois tipos abaixo.
+const PRESET_PREV_RESIDENCIAL_COLETIVO = {
+  "Monopolar 63 A": { ilum: "1", tomada: "1.5", chuveiro: "4.4" },
+  "Bipolar 63 A": { ilum: "1", tomada: "1.5", ar: "1.3", chuveiro: "12" },
+};
+
 // Bloco de UC (identificação no coletivo) — valores padrão
 const ucBlocoPadrao = (i) => ({
   identificacao: `UC ${i + 1}`,

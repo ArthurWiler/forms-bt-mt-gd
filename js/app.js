@@ -29,6 +29,7 @@ function App() {
     disjGeralAtual: "", // disjuntor geral existente (alteração de carga com troca)
     demandaAtual: "", // demanda atual (kVA) em alteração de carga
     demandaNaoResidencial: "", // demanda geral (kVA) das UCs não residenciais, calculada pelo responsável técnico
+    demandaResidencialManual: "", // opcional: substitui a demanda ND-5.2 calculada, nunca pode ser menor que ela
     atendA: "Bloco", // múltiplas torres: atendimento a Bloco/Torre
     nBlocos: 1,
   });
@@ -183,17 +184,35 @@ function App() {
     [ucBlocos],
   );
 
+  // Demanda residencial manual (opcional): só é válida se preenchida E for
+  // maior ou igual à calculada pelo ND-5.2 — nunca pode reduzir a demanda.
+  const demandaResidencialManualInvalida =
+    !!demandaApartamentosND52 &&
+    String(atend.demandaResidencialManual).trim() !== "" &&
+    num(atend.demandaResidencialManual) < demandaApartamentosND52.demandaKVA;
+
   // Demanda prevista total do agrupamento:
-  // - Residencial: cálculo automático ND-5.2 (quando aplicável) ou, na falta
-  //   dele (< 4 apartamentos ou área > 1000 m²), soma manual por UC.
+  // - Residencial: cálculo automático ND-5.2 (quando aplicável), podendo ser
+  //   substituído por um valor manual informado pelo usuário desde que não
+  //   seja menor que o calculado; na falta do cálculo (< 4 apartamentos ou
+  //   área > 1000 m²), soma manual por UC.
   // - Não residencial: demanda geral única informada pelo responsável
   //   técnico (atend.demandaNaoResidencial), e não a soma das UCs.
   const demandaPrevTotal = useMemo(() => {
-    const demandaResidencial = demandaApartamentosND52
-      ? demandaApartamentosND52.demandaKVA
-      : ucBlocos
-          .filter((u) => u.atividade === "Residencial")
-          .reduce((s, u) => s + num((u.prev || {}).demanda), 0);
+    let demandaResidencial;
+    if (demandaApartamentosND52) {
+      const manual = num(atend.demandaResidencialManual);
+      const manualValida =
+        String(atend.demandaResidencialManual).trim() !== "" &&
+        manual >= demandaApartamentosND52.demandaKVA;
+      demandaResidencial = manualValida
+        ? manual
+        : demandaApartamentosND52.demandaKVA;
+    } else {
+      demandaResidencial = ucBlocos
+        .filter((u) => u.atividade === "Residencial")
+        .reduce((s, u) => s + num((u.prev || {}).demanda), 0);
+    }
     const demandaNaoResidencial = temUCNaoResidencial
       ? num(atend.demandaNaoResidencial)
       : 0;
@@ -203,6 +222,7 @@ function App() {
     demandaApartamentosND52,
     temUCNaoResidencial,
     atend.demandaNaoResidencial,
+    atend.demandaResidencialManual,
   ]);
   // Alteração de carga no coletivo / com troca de disjuntor geral
   const isAlteracaoColetivo =
@@ -386,6 +406,30 @@ function App() {
       });
     }
   }, [atend.nUCs, coletivo]);
+
+  // Pré-preenche a previsão de carga das UCs Residenciais do coletivo
+  // conforme o disjuntor solicitado (Monopolar/Bipolar 63 A). Reaplica
+  // sempre que a atividade ou o disjuntor da UC mudarem; não sobrescreve
+  // quando a UC não se encaixa em nenhum dos dois presets.
+  useEffect(() => {
+    if (!coletivo) return;
+    setUcBlocos((prevB) => {
+      let mudou = false;
+      const next = prevB.map((u) => {
+        if (u.atividade !== "Residencial") return u;
+        const preset = PRESET_PREV_RESIDENCIAL_COLETIVO[u.disjPara];
+        if (!preset) return u;
+        const atual = u.prev || {};
+        const jaAplicado = Object.keys(preset).every(
+          (k) => String(atual[k] ?? "") === String(preset[k]),
+        );
+        if (jaAplicado) return u;
+        mudou = true;
+        return { ...u, prev: { ...atual, ...preset } };
+      });
+      return mudou ? next : prevB;
+    });
+  }, [coletivo, ucBlocos]);
 
   // Sincroniza nº de torres/blocos
   useEffect(() => {
@@ -640,6 +684,10 @@ function App() {
         atend.demandaNaoResidencial,
         "Demanda geral não residencial (kVA)",
       );
+    if (demandaResidencialManualInvalida)
+      faltando.push(
+        "Demanda residencial manual não pode ser menor que a calculada (ND-5.2)",
+      );
     // Validações específicas já existentes
     if (hibrido && !validacaoHibrido.ok)
       faltando.push("Pendências do atendimento híbrido");
@@ -659,6 +707,7 @@ function App() {
     validacaoDisjuntores,
     temUCNaoResidencial,
     atend.demandaNaoResidencial,
+    demandaResidencialManualInvalida,
   ]);
 
   // ===== ABAS (barra vertical) — UCs vem ANTES de Cargas =====
@@ -821,6 +870,7 @@ function App() {
     coordPreenchida,
     demandaApartamentosND52,
     demandaPrevTotal,
+    demandaResidencialManualInvalida,
     demandaTotalGeral,
     disjGeralObrigatorio,
     docInfo,

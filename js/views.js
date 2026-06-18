@@ -1621,99 +1621,6 @@ function TabUcsColetivo({ ctx }) {
   } = ctx;
   return (
     <div>
-      {trocaDisjGeral && (
-        <Card
-          eyebrow="Alteração de carga"
-          title="Troca do Disjuntor Geral e Demandas"
-          sub="Informe o disjuntor geral existente e o novo, além da demanda atual e futura do agrupamento. A demanda futura corresponde à soma das demandas previstas das UCs."
-        >
-          <div className="grid grid-2">
-            <Field label="Disjuntor geral existente" req>
-              <Sel
-                value={atend.disjGeralAtual}
-                onChange={(e) =>
-                  setAtend({ ...atend, disjGeralAtual: e.target.value })
-                }
-              >
-                <option value="">Selecione…</option>
-                {DISJ.map((d) => (
-                  <option key={d.fx} value={d.fx}>
-                    {d.fx}
-                  </option>
-                ))}
-              </Sel>
-            </Field>
-            <Field label="Disjuntor geral novo" req>
-              <Sel
-                value={atend.disjuntorGeral}
-                onChange={(e) =>
-                  setAtend({ ...atend, disjuntorGeral: e.target.value })
-                }
-              >
-                <option value="">Selecione…</option>
-                {opcoesDisjGeral.map((o) => (
-                  <option key={o} value={o}>
-                    {o}
-                  </option>
-                ))}
-              </Sel>
-            </Field>
-            <Field label="Demanda atual (kVA)" req>
-              <Inp
-                type="number"
-                value={atend.demandaAtual}
-                onChange={(e) =>
-                  setAtend({ ...atend, demandaAtual: e.target.value })
-                }
-                placeholder="0,0"
-              />
-            </Field>
-            <Field label="Demanda futura (kVA)">
-              <div className="readonly-val">{fmt2(demandaPrevTotal)} kVA</div>
-            </Field>
-          </div>
-        </Card>
-      )}
-      {disjGeralObrigatorio && !trocaDisjGeral && (
-        <Card
-          eyebrow="Proteção geral"
-          title="Disjuntor Geral do Agrupamento"
-          sub={`Sugestão automática conforme seletividade (faixa superior ao maior disjuntor das UCs, acima de ${maiorCorrenteUC || "—"} A) e capacidade para a demanda total (${fmt2(demandaPrevTotal)} kVA).`}
-        >
-          <div className="geral-box" style={{ marginTop: 0 }}>
-            <Field label="Disjuntor geral" req>
-              <Sel
-                value={atend.disjuntorGeral}
-                onChange={(e) =>
-                  setAtend({ ...atend, disjuntorGeral: e.target.value })
-                }
-              >
-                <option value="">Selecione…</option>
-                {opcoesDisjGeral.map((o) => (
-                  <option key={o} value={o}>
-                    {o}
-                  </option>
-                ))}
-              </Sel>
-            </Field>
-            {opcoesDisjGeral.length === 0 && (
-              <div className="alert alert-info" style={{ marginTop: 10 }}>
-                Preencha os disjuntores das UCs acima para liberar as opções.
-              </div>
-            )}
-            {atend.disjuntorGeral &&
-              !opcoesDisjGeral.includes(atend.disjuntorGeral) && (
-                <div className="alert alert-warn" style={{ marginTop: 10 }}>
-                  ⚠ Esse disjuntor não atende à seletividade (faixa superior ao
-                  maior disjuntor das UCs, {maiorCorrenteUC} A) e/ou à
-                  capacidade para a demanda total ({fmt2(demandaPrevTotal)}{" "}
-                  kVA).
-                </div>
-              )}
-          </div>
-        </Card>
-      )}
-
       {hibrido && !validacaoHibrido.ok && (
         <div className="alert alert-warn" style={{ marginBottom: 14 }}>
           <strong>Atendimento híbrido — pendências:</strong>
@@ -2211,12 +2118,14 @@ function TabCargasColetivo({ ctx }) {
     setUcTorrePrev,
     sincronizarUCsTorre,
     temUCNaoResidencial,
+    demandaResidencialManualInvalida,
     totalUcsEmpreendimento,
     trocaDisjGeral,
     validacaoDisjuntores,
     validacaoHibrido,
   } = ctx;
   return (
+    <div>
     <Card
       eyebrow="Carga do agrupamento"
       title="Previsão de Carga por Unidade Consumidora"
@@ -2229,18 +2138,48 @@ function TabCargasColetivo({ ctx }) {
           </Btn>
         </div>
       )}
+      {quantidadeApartamentos > 0 && demandaApartamentosND52 && (
+        <div className="alert alert-ok" style={{ marginBottom: 14 }}>
+          <b>Demanda dos apartamentos residenciais (ND-5.2):</b>{" "}
+          {quantidadeApartamentos} apartamento(s) · área média ponderada{" "}
+          {fmt2(areaMediaPonderada)} m² · Fator F{" "}
+          {fmt2(demandaApartamentosND52.fatorF)} · A{" "}
+          {fmt2(demandaApartamentosND52.demandaAreaA)} → D ={" "}
+          {fmt2(demandaApartamentosND52.demandaKVA)} kVA (incluída
+          automaticamente na demanda total abaixo).
+        </div>
+      )}
+      {demandaApartamentosND52 && (
+        <div className="grid grid-2" style={{ marginBottom: 14 }}>
+          <Field
+            label="Demanda residencial manual (kVA) — opcional"
+            hint={`Substitui o valor calculado pelo ND-5.2 acima, se informado. Não pode ser menor que ${fmt2(demandaApartamentosND52.demandaKVA)} kVA.`}
+          >
+            <Inp
+              type="number"
+              value={atend.demandaResidencialManual}
+              onChange={(e) =>
+                setAtend({
+                  ...atend,
+                  demandaResidencialManual: e.target.value,
+                })
+              }
+              placeholder={fmt2(demandaApartamentosND52.demandaKVA)}
+            />
+          </Field>
+        </div>
+      )}
+      {demandaResidencialManualInvalida && (
+        <div className="alert alert-warn" style={{ marginBottom: 14 }}>
+          ⚠ A demanda residencial manual ({fmt2(atend.demandaResidencialManual)}{" "}
+          kVA) é menor que a calculada pelo ND-5.2 (
+          {fmt2(demandaApartamentosND52.demandaKVA)} kVA) e não pode ser
+          usada — corrija ou deixe em branco para usar o valor calculado.
+        </div>
+      )}
       {quantidadeApartamentos > 0 &&
-        (demandaApartamentosND52 ? (
-          <div className="alert alert-ok" style={{ marginBottom: 14 }}>
-            <b>Demanda dos apartamentos residenciais (ND-5.2):</b>{" "}
-            {quantidadeApartamentos} apartamento(s) · área média ponderada{" "}
-            {fmt2(areaMediaPonderada)} m² · Fator F{" "}
-            {fmt2(demandaApartamentosND52.fatorF)} · A{" "}
-            {fmt2(demandaApartamentosND52.demandaAreaA)} → D ={" "}
-            {fmt2(demandaApartamentosND52.demandaKVA)} kVA (incluída
-            automaticamente na demanda total abaixo).
-          </div>
-        ) : quantidadeApartamentos < 4 ? (
+        !demandaApartamentosND52 &&
+        (quantidadeApartamentos < 4 ? (
           <div className="alert alert-info" style={{ marginBottom: 14 }}>
             ND-5.2 exige no mínimo 4 apartamentos para o cálculo automático
             (atualmente {quantidadeApartamentos}). Informe a demanda
@@ -2347,6 +2286,99 @@ function TabCargasColetivo({ ctx }) {
         </div>
       )}
     </Card>
+      {trocaDisjGeral && (
+        <Card
+          eyebrow="Alteração de carga"
+          title="Troca do Disjuntor Geral e Demandas"
+          sub="Informe o disjuntor geral existente e o novo, além da demanda atual e futura do agrupamento. A demanda futura corresponde à demanda prevista total do agrupamento."
+        >
+          <div className="grid grid-2">
+            <Field label="Disjuntor geral existente" req>
+              <Sel
+                value={atend.disjGeralAtual}
+                onChange={(e) =>
+                  setAtend({ ...atend, disjGeralAtual: e.target.value })
+                }
+              >
+                <option value="">Selecione…</option>
+                {DISJ.map((d) => (
+                  <option key={d.fx} value={d.fx}>
+                    {d.fx}
+                  </option>
+                ))}
+              </Sel>
+            </Field>
+            <Field label="Disjuntor geral novo" req>
+              <Sel
+                value={atend.disjuntorGeral}
+                onChange={(e) =>
+                  setAtend({ ...atend, disjuntorGeral: e.target.value })
+                }
+              >
+                <option value="">Selecione…</option>
+                {opcoesDisjGeral.map((o) => (
+                  <option key={o} value={o}>
+                    {o}
+                  </option>
+                ))}
+              </Sel>
+            </Field>
+            <Field label="Demanda atual (kVA)" req>
+              <Inp
+                type="number"
+                value={atend.demandaAtual}
+                onChange={(e) =>
+                  setAtend({ ...atend, demandaAtual: e.target.value })
+                }
+                placeholder="0,0"
+              />
+            </Field>
+            <Field label="Demanda futura (kVA)">
+              <div className="readonly-val">{fmt2(demandaPrevTotal)} kVA</div>
+            </Field>
+          </div>
+        </Card>
+      )}
+      {disjGeralObrigatorio && !trocaDisjGeral && (
+        <Card
+          eyebrow="Proteção geral"
+          title="Disjuntor Geral do Agrupamento"
+          sub={`Sugestão automática conforme seletividade (faixa superior ao maior disjuntor das UCs, acima de ${maiorCorrenteUC || "—"} A) e capacidade para a demanda total (${fmt2(demandaPrevTotal)} kVA).`}
+        >
+          <div className="geral-box" style={{ marginTop: 0 }}>
+            <Field label="Disjuntor geral" req>
+              <Sel
+                value={atend.disjuntorGeral}
+                onChange={(e) =>
+                  setAtend({ ...atend, disjuntorGeral: e.target.value })
+                }
+              >
+                <option value="">Selecione…</option>
+                {opcoesDisjGeral.map((o) => (
+                  <option key={o} value={o}>
+                    {o}
+                  </option>
+                ))}
+              </Sel>
+            </Field>
+            {opcoesDisjGeral.length === 0 && (
+              <div className="alert alert-info" style={{ marginTop: 10 }}>
+                Preencha os disjuntores das UCs acima para liberar as opções.
+              </div>
+            )}
+            {atend.disjuntorGeral &&
+              !opcoesDisjGeral.includes(atend.disjuntorGeral) && (
+                <div className="alert alert-warn" style={{ marginTop: 10 }}>
+                  ⚠ Esse disjuntor não atende à seletividade (faixa superior ao
+                  maior disjuntor das UCs, {maiorCorrenteUC} A) e/ou à
+                  capacidade para a demanda total ({fmt2(demandaPrevTotal)}{" "}
+                  kVA).
+                </div>
+              )}
+          </div>
+        </Card>
+      )}
+    </div>
   );
 }
 
