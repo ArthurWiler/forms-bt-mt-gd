@@ -48,6 +48,57 @@ function calcBsg(items, sg) {
   return { kw, f, d: kw * f };
 }
 
+// ============================================================
+// ND-5.2 — Demanda de apartamentos residenciais (agrupamento)
+// D = 1,4 × F × A
+// ============================================================
+
+// Tabela 13 (ND-5.2): demanda por apartamento (A) pela área média ponderada.
+// Retorna null se a área for inválida ou exceder 1000 m² (fora da tabela).
+function nd52ObterA(area) {
+  if (!(area > 0) || area > 1000) return null;
+  const faixa = ND52_TABELA_A.find((r) => area <= r[0]);
+  return faixa ? faixa[1] : null;
+}
+
+// Tabela 12 (ND-5.2): fator F pela quantidade de apartamentos.
+// Válida a partir de 4 apartamentos; estabiliza em 83,00 a partir de 276.
+// Interpola linearmente os pontos não cadastrados em ND52_FATOR_F.
+function nd52ObterF(qtd) {
+  if (!(qtd >= 4)) return null;
+  if (qtd >= 276) return 83.0;
+  if (ND52_FATOR_F[qtd] != null) return ND52_FATOR_F[qtd];
+  const chaves = Object.keys(ND52_FATOR_F)
+    .map(Number)
+    .sort((a, b) => a - b);
+  let inf = null,
+    sup = null;
+  for (const k of chaves) {
+    if (k < qtd) inf = k;
+    if (k > qtd && sup == null) sup = k;
+  }
+  if (inf == null || sup == null) return null;
+  const fInf = ND52_FATOR_F[inf],
+    fSup = ND52_FATOR_F[sup];
+  return fInf + ((fSup - fInf) * (qtd - inf)) / (sup - inf);
+}
+
+// Calcula a demanda do agrupamento de apartamentos residenciais (ND-5.2).
+// Retorna null quando os parâmetros estão fora da faixa válida da norma
+// (qtd < 4 apartamentos ou área média ponderada > 1000 m²).
+function nd52CalcularDemandaApartamentos(areaMediaPonderada, quantidadeApartamentos) {
+  const A = nd52ObterA(areaMediaPonderada);
+  const F = nd52ObterF(quantidadeApartamentos);
+  if (A == null || F == null) return null;
+  return {
+    quantidadeApartamentos,
+    areaMediaPonderada,
+    fatorF: F,
+    demandaAreaA: A,
+    demandaKVA: 1.4 * F * A,
+  };
+}
+
 // Seleção de disjuntores conforme demanda e tipo de rede
 function selecionarDisjuntores(demanda, redeMono) {
   if (demanda <= 0) return [];
@@ -71,12 +122,21 @@ function correnteDisj(fx) {
   return m ? Number(m[1]) : 0;
 }
 
-// Lista de disjuntores GERAIS com faixa estritamente MAIOR que a maior UC.
+// Lista de disjuntores GERAIS válidos para o agrupamento, respeitando:
+// 1) Seletividade: corrente estritamente MAIOR que a maior UC (evita que o
+//    geral atue antes do disjuntor de uma UC individual).
+// 2) Capacidade: suporta a demanda total do agrupamento (d em kVA).
 // Considera apenas tripolares (proteção geral de agrupamento é trifásica).
-function disjuntoresGeraisAcima(maiorCorrenteUC) {
+// Ordenado do menor para o maior — o primeiro item é a sugestão automática.
+function disjuntoresGeraisAcima(maiorCorrenteUC, demandaTotal) {
   return DISJ_GER.filter(
-    (d) => d.tipo === "tri" && correnteDisj(d.fx) > maiorCorrenteUC,
-  ).map((d) => d.fx);
+    (d) =>
+      d.tipo === "tri" &&
+      correnteDisj(d.fx) > maiorCorrenteUC &&
+      (demandaTotal == null || d.d >= demandaTotal),
+  )
+    .sort((a, b) => correnteDisj(a.fx) - correnteDisj(b.fx))
+    .map((d) => d.fx);
 }
 
 /* ============================================================

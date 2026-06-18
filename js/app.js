@@ -28,6 +28,7 @@ function App() {
     disjuntorGeral: "",
     disjGeralAtual: "", // disjuntor geral existente (alteração de carga com troca)
     demandaAtual: "", // demanda atual (kVA) em alteração de carga
+    demandaNaoResidencial: "", // demanda geral (kVA) das UCs não residenciais, calculada pelo responsável técnico
     atendA: "Bloco", // múltiplas torres: atendimento a Bloco/Torre
     nBlocos: 1,
   });
@@ -153,10 +154,56 @@ function App() {
     () => ucBlocos.reduce((s, u) => s + prevKwUC(u), 0),
     [ucBlocos],
   );
-  const demandaPrevTotal = useMemo(
-    () => ucBlocos.reduce((s, u) => s + num((u.prev || {}).demanda), 0),
+
+  // ===== ND-5.2: demanda do agrupamento de apartamentos residenciais =====
+  // D = 1,4 × F × A, com F (Tabela 12) pela quantidade de apartamentos e
+  // A (Tabela 13) pela área média ponderada dos apartamentos residenciais.
+  const residenciaisColetivo = useMemo(
+    () => ucBlocos.filter((u) => u.atividade === "Residencial"),
     [ucBlocos],
   );
+  const quantidadeApartamentos = residenciaisColetivo.length;
+  const areaMediaPonderada = useMemo(() => {
+    if (!quantidadeApartamentos) return 0;
+    return (
+      residenciaisColetivo.reduce((s, u) => s + num(u.area), 0) /
+      quantidadeApartamentos
+    );
+  }, [residenciaisColetivo, quantidadeApartamentos]);
+  const demandaApartamentosND52 = useMemo(
+    () =>
+      nd52CalcularDemandaApartamentos(areaMediaPonderada, quantidadeApartamentos),
+    [areaMediaPonderada, quantidadeApartamentos],
+  );
+
+  // Existem UCs não residenciais no agrupamento? Para essas, a demanda geral
+  // é informada manualmente pelo responsável técnico (não é somada por UC).
+  const temUCNaoResidencial = useMemo(
+    () => ucBlocos.some((u) => u.atividade && u.atividade !== "Residencial"),
+    [ucBlocos],
+  );
+
+  // Demanda prevista total do agrupamento:
+  // - Residencial: cálculo automático ND-5.2 (quando aplicável) ou, na falta
+  //   dele (< 4 apartamentos ou área > 1000 m²), soma manual por UC.
+  // - Não residencial: demanda geral única informada pelo responsável
+  //   técnico (atend.demandaNaoResidencial), e não a soma das UCs.
+  const demandaPrevTotal = useMemo(() => {
+    const demandaResidencial = demandaApartamentosND52
+      ? demandaApartamentosND52.demandaKVA
+      : ucBlocos
+          .filter((u) => u.atividade === "Residencial")
+          .reduce((s, u) => s + num((u.prev || {}).demanda), 0);
+    const demandaNaoResidencial = temUCNaoResidencial
+      ? num(atend.demandaNaoResidencial)
+      : 0;
+    return demandaResidencial + demandaNaoResidencial;
+  }, [
+    ucBlocos,
+    demandaApartamentosND52,
+    temUCNaoResidencial,
+    atend.demandaNaoResidencial,
+  ]);
   // Alteração de carga no coletivo / com troca de disjuntor geral
   const isAlteracaoColetivo =
     coletivo && !multiTorres && /Alteração de Carga/.test(atend.escopo || "");
@@ -475,9 +522,20 @@ function App() {
   }, [multiTorres, coletivo, ucBlocos, ucsDet]);
 
   const opcoesDisjGeral = useMemo(
-    () => disjuntoresGeraisAcima(maiorCorrenteUC),
-    [maiorCorrenteUC],
+    () => disjuntoresGeraisAcima(maiorCorrenteUC, demandaPrevTotal),
+    [maiorCorrenteUC, demandaPrevTotal],
   );
+
+  // Sugestão automática: pré-seleciona o menor disjuntor geral válido
+  // (seletividade + capacidade de demanda). Se a escolha atual deixar de
+  // ser válida (ex.: demanda aumentou), sugere novamente automaticamente.
+  useEffect(() => {
+    if (!coletivo || multiTorres) return;
+    if (!opcoesDisjGeral.length) return;
+    if (atend.disjuntorGeral && opcoesDisjGeral.includes(atend.disjuntorGeral))
+      return;
+    setAtend((a) => ({ ...a, disjuntorGeral: opcoesDisjGeral[0] }));
+  }, [coletivo, multiTorres, opcoesDisjGeral]);
 
   // ===== Validação de disjuntores (individual com várias UCs) =====
   const validacaoDisjuntores = useMemo(() => {
@@ -577,6 +635,11 @@ function App() {
     // Carga declarada
     if (!(demandaTotalGeral > 0))
       faltando.push("Previsão de carga / demanda das UCs");
+    if (temUCNaoResidencial)
+      req(
+        atend.demandaNaoResidencial,
+        "Demanda geral não residencial (kVA)",
+      );
     // Validações específicas já existentes
     if (hibrido && !validacaoHibrido.ok)
       faltando.push("Pendências do atendimento híbrido");
@@ -594,6 +657,8 @@ function App() {
     hibrido,
     validacaoHibrido,
     validacaoDisjuntores,
+    temUCNaoResidencial,
+    atend.demandaNaoResidencial,
   ]);
 
   // ===== ABAS (barra vertical) — UCs vem ANTES de Cargas =====
@@ -750,9 +815,11 @@ function App() {
     abas,
     buscarCEP,
     buscarCNPJ,
+    areaMediaPonderada,
     coletivo,
     coordObrigatoria,
     coordPreenchida,
+    demandaApartamentosND52,
     demandaPrevTotal,
     demandaTotalGeral,
     disjGeralObrigatorio,
@@ -768,6 +835,7 @@ function App() {
     opcoesDisjGeral,
     pessoaFisica,
     prevTotalKw,
+    quantidadeApartamentos,
     redeMono,
     replicarPrevTodas,
     replicarPrevTorre,
@@ -784,6 +852,7 @@ function App() {
     sincronizarUCsTorre,
     totalUcsEmpreendimento,
     trocaDisjGeral,
+    temUCNaoResidencial,
     validacaoDisjuntores,
     validacaoHibrido,
     validacaoObrigatorios,

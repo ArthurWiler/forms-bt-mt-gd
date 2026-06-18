@@ -1678,7 +1678,7 @@ function TabUcsColetivo({ ctx }) {
         <Card
           eyebrow="Proteção geral"
           title="Disjuntor Geral do Agrupamento"
-          sub={`Obrigatório quando há UC bi/trifásica com proteção acima de 60/63 A. Faixas disponíveis: acima de ${maiorCorrenteUC || "—"} A.`}
+          sub={`Sugestão automática conforme seletividade (faixa superior ao maior disjuntor das UCs, acima de ${maiorCorrenteUC || "—"} A) e capacidade para a demanda total (${fmt2(demandaPrevTotal)} kVA).`}
         >
           <div className="geral-box" style={{ marginTop: 0 }}>
             <Field label="Disjuntor geral" req>
@@ -1702,10 +1702,12 @@ function TabUcsColetivo({ ctx }) {
               </div>
             )}
             {atend.disjuntorGeral &&
-              correnteDisj(atend.disjuntorGeral) <= maiorCorrenteUC && (
+              !opcoesDisjGeral.includes(atend.disjuntorGeral) && (
                 <div className="alert alert-warn" style={{ marginTop: 10 }}>
-                  ⚠ O disjuntor geral deve ter faixa superior ao maior disjuntor
-                  das UCs ({maiorCorrenteUC} A).
+                  ⚠ Esse disjuntor não atende à seletividade (faixa superior ao
+                  maior disjuntor das UCs, {maiorCorrenteUC} A) e/ou à
+                  capacidade para a demanda total ({fmt2(demandaPrevTotal)}{" "}
+                  kVA).
                 </div>
               )}
           </div>
@@ -1851,6 +1853,20 @@ function TabUcsColetivo({ ctx }) {
                   }
                 />
               </Field>
+              {u.atividade === "Residencial" && (
+                <Field
+                  label="Área (m²)"
+                  req
+                  hint="Área privativa do apartamento — usada no cálculo de demanda ND-5.2."
+                >
+                  <Inp
+                    type="number"
+                    value={u.area}
+                    onChange={(e) => setBloco(ui, { area: e.target.value })}
+                    placeholder="Ex: 65"
+                  />
+                </Field>
+              )}
               {u.solicitacao !== "Conexão Nova" && (
                 <Field label="Instalação" req>
                   <Inp
@@ -2160,9 +2176,11 @@ function TabCargasColetivo({ ctx }) {
     abas,
     buscarCEP,
     buscarCNPJ,
+    areaMediaPonderada,
     coletivo,
     coordObrigatoria,
     coordPreenchida,
+    demandaApartamentosND52,
     demandaPrevTotal,
     demandaTotalGeral,
     disjGeralObrigatorio,
@@ -2178,6 +2196,7 @@ function TabCargasColetivo({ ctx }) {
     opcoesDisjGeral,
     pessoaFisica,
     prevTotalKw,
+    quantidadeApartamentos,
     redeMono,
     replicarPrevTodas,
     replicarPrevTorre,
@@ -2191,6 +2210,7 @@ function TabCargasColetivo({ ctx }) {
     setUcTorre,
     setUcTorrePrev,
     sincronizarUCsTorre,
+    temUCNaoResidencial,
     totalUcsEmpreendimento,
     trocaDisjGeral,
     validacaoDisjuntores,
@@ -2200,13 +2220,55 @@ function TabCargasColetivo({ ctx }) {
     <Card
       eyebrow="Carga do agrupamento"
       title="Previsão de Carga por Unidade Consumidora"
-      sub="Informe a previsão de carga instalada (kW) e a demanda prevista (kVA) de cada UC. A carga e a demanda totais são somadas automaticamente."
+      sub="Informe a previsão de carga instalada (kW) de cada UC. A demanda total do agrupamento é calculada separadamente: parte residencial pelo ND-5.2, parte não residencial pelo campo abaixo."
     >
       {ucBlocos.length > 1 && (
         <div className="prev-toolbar">
           <Btn variant="ghost" onClick={replicarPrevTodas}>
             Replicar previsão da UC 1 para todas
           </Btn>
+        </div>
+      )}
+      {quantidadeApartamentos > 0 &&
+        (demandaApartamentosND52 ? (
+          <div className="alert alert-ok" style={{ marginBottom: 14 }}>
+            <b>Demanda dos apartamentos residenciais (ND-5.2):</b>{" "}
+            {quantidadeApartamentos} apartamento(s) · área média ponderada{" "}
+            {fmt2(areaMediaPonderada)} m² · Fator F{" "}
+            {fmt2(demandaApartamentosND52.fatorF)} · A{" "}
+            {fmt2(demandaApartamentosND52.demandaAreaA)} → D ={" "}
+            {fmt2(demandaApartamentosND52.demandaKVA)} kVA (incluída
+            automaticamente na demanda total abaixo).
+          </div>
+        ) : quantidadeApartamentos < 4 ? (
+          <div className="alert alert-info" style={{ marginBottom: 14 }}>
+            ND-5.2 exige no mínimo 4 apartamentos para o cálculo automático
+            (atualmente {quantidadeApartamentos}). Informe a demanda
+            manualmente para as UCs residenciais abaixo.
+          </div>
+        ) : (
+          <div className="alert alert-warn" style={{ marginBottom: 14 }}>
+            Área média ponderada inválida ou superior a 1000 m² (
+            {fmt2(areaMediaPonderada)} m²). Confira a área de cada apartamento
+            ou informe a demanda manualmente.
+          </div>
+        ))}
+      {temUCNaoResidencial && (
+        <div className="grid grid-2" style={{ marginBottom: 14 }}>
+          <Field
+            label="Demanda geral não residencial (kVA)"
+            req
+            hint="Demanda calculada pelo responsável técnico para o conjunto das UCs não residenciais (comercial/industrial/rural) do empreendimento — não é a soma das UCs abaixo."
+          >
+            <Inp
+              type="number"
+              value={atend.demandaNaoResidencial}
+              onChange={(e) =>
+                setAtend({ ...atend, demandaNaoResidencial: e.target.value })
+              }
+              placeholder="0,0"
+            />
+          </Field>
         </div>
       )}
       <div className="prev-table-wrap">

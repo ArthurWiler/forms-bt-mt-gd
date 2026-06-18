@@ -100,6 +100,7 @@ const ucBlocoPadrao = (i) => ({
   mudancaLocal: "",
   atividade: "",
   ramo: "",
+  area: "", // área privativa (m²) — usada no cálculo ND-5.2 quando Residencial
   instalacao: "",
   unidadeConsumidora: "",
   disjDe: "",
