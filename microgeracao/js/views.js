@@ -3,112 +3,93 @@
 // Cada seção recebe um ctx único com estado e setters.
 // ============================================================
 
-// ---------- Seção 1: Identificação da UC ----------
+// ---------- Seção 1: Identificação da UC (schema-driven) ----------
+// Schema = fonte única: renderização, validação de obrigatórios e PDF derivam daqui.
+const GD_SCHEMA_IDENTIFICACAO = [
+  {
+    k: "instalacao",
+    label: "Número da instalação",
+    req: true,
+    placeholder: "Nº da instalação CEMIG",
+    // dígitos apenas (equivale a replace(/\D/g,""))
+    mask: "soDigitos",
+  },
+  {
+    k: "fastTrack",
+    label: 'Enquadramento no inciso III do art. 73-A ("FAST TRACK")?',
+    type: "toggle",
+    options: GD_SN,
+    pdf: false,
+  },
+  {
+    k: "fastRegra",
+    label: "Regra de enquadramento (art. 73-A)",
+    type: "select",
+    span: 3,
+    options: GD_FAST_REGRAS,
+    show: (d) => d.fastTrack === "Sim",
+  },
+  {
+    k: "gridZero",
+    label: 'O empreendimento será "Grid Zero"?',
+    type: "toggle",
+    options: GD_SN,
+    pdf: false,
+  },
+  { k: "titular", label: "Titular da Unidade Consumidora", req: true, span: 3 },
+  {
+    k: "grupo",
+    label: "Grupo",
+    req: true,
+    type: "select",
+    placeholder: false,
+    options: GD_GRUPOS,
+  },
+  { k: "classe", label: "Classe", req: true, type: "select", options: GD_CLASSES },
+  {
+    k: "cpfCnpj",
+    label: "CPF/CNPJ",
+    req: true,
+    hintKey: "cnpjStatus",
+    placeholder: "Somente números",
+    mask: "mascararCpfCnpj",
+    onInput: (v, ctx) => {
+      if (ehCNPJ(v) && soDigitos(v).length === 14) ctx.buscarCnpj(v);
+    },
+  },
+  { k: "logradouro", label: "Logradouro", req: true, span: 2 },
+  { k: "numero", label: "Número", req: true },
+  { k: "complemento", label: "Complemento" },
+  { k: "bairro", label: "Bairro", req: true },
+  { k: "municipio", label: "Município", req: true },
+  {
+    k: "estado",
+    label: "Estado",
+    req: true,
+    type: "select",
+    placeholder: false,
+    options: ["MG"],
+  },
+  {
+    k: "cep",
+    label: "CEP",
+    req: true,
+    hintKey: "cepStatus",
+    mask: "mascararCEP",
+    onInput: (v, ctx) => {
+      if (soDigitos(v).length === 8) ctx.buscarCep(v);
+    },
+  },
+  { k: "telefone", label: "Telefone", mask: "mascararFixo" },
+  { k: "celular", label: "Celular", req: true, mask: "mascararCelular" },
+  { k: "email", label: "E-mail", req: true },
+];
+
 function ViewIdentificacao({ ctx }) {
-  const { d, set, cnpjStatus, buscarCnpj } = ctx;
-  const ehCnpj = ehCNPJ(d.cpfCnpj);
   return (
     <Card eyebrow="Seção 1" title="Identificação da Unidade Consumidora">
       <div className="grid">
-        <Field label="Número da instalação" req>
-          <Inp
-            value={d.instalacao}
-            onChange={(e) => set({ instalacao: e.target.value.replace(/\D/g, "") })}
-            placeholder="Nº da instalação CEMIG"
-          />
-        </Field>
-        <Field label='Enquadramento no inciso III do art. 73-A ("FAST TRACK")?'>
-          <Toggle
-            value={d.fastTrack}
-            onChange={(v) => set({ fastTrack: v })}
-            options={GD_SN.map((o) => ({ v: o, l: o }))}
-          />
-        </Field>
-        {d.fastTrack === "Sim" && (
-          <Field label="Regra de enquadramento (art. 73-A)" span={3}>
-            <Sel value={d.fastRegra} onChange={(e) => set({ fastRegra: e.target.value })}>
-              <option value="">Selecionar</option>
-              {GD_FAST_REGRAS.map((r) => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-            </Sel>
-          </Field>
-        )}
-        <Field label='O empreendimento será "Grid Zero"?'>
-          <Toggle
-            value={d.gridZero}
-            onChange={(v) => set({ gridZero: v })}
-            options={GD_SN.map((o) => ({ v: o, l: o }))}
-          />
-        </Field>
-        <Field label="Titular da Unidade Consumidora" req span={3}>
-          <Inp value={d.titular} onChange={(e) => set({ titular: e.target.value })} />
-        </Field>
-        <Field label="Grupo" req>
-          <Sel value={d.grupo} onChange={(e) => set({ grupo: e.target.value })}>
-            {GD_GRUPOS.map((g) => (
-              <option key={g} value={g}>{g}</option>
-            ))}
-          </Sel>
-        </Field>
-        <Field label="Classe" req>
-          <Sel value={d.classe} onChange={(e) => set({ classe: e.target.value })}>
-            <option value="">Selecionar</option>
-            {GD_CLASSES.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </Sel>
-        </Field>
-        <Field label="CPF/CNPJ" req hint={cnpjStatus}>
-          <Inp
-            value={d.cpfCnpj}
-            onChange={(e) => {
-              const v = mascararCpfCnpj(e.target.value);
-              set({ cpfCnpj: v });
-              if (ehCNPJ(v) && soDigitos(v).length === 14) buscarCnpj(v);
-            }}
-            placeholder="Somente números"
-          />
-        </Field>
-        <Field label="Logradouro" req span={2}>
-          <Inp value={d.logradouro} onChange={(e) => set({ logradouro: e.target.value })} />
-        </Field>
-        <Field label="Número" req>
-          <Inp value={d.numero} onChange={(e) => set({ numero: e.target.value })} />
-        </Field>
-        <Field label="Complemento">
-          <Inp value={d.complemento} onChange={(e) => set({ complemento: e.target.value })} />
-        </Field>
-        <Field label="Bairro" req>
-          <Inp value={d.bairro} onChange={(e) => set({ bairro: e.target.value })} />
-        </Field>
-        <Field label="Município" req>
-          <Inp value={d.municipio} onChange={(e) => set({ municipio: e.target.value })} />
-        </Field>
-        <Field label="Estado" req>
-          <Sel value={d.estado} onChange={(e) => set({ estado: e.target.value })}>
-            <option value="MG">MG</option>
-          </Sel>
-        </Field>
-        <Field label="CEP" req hint={ctx.cepStatus}>
-          <Inp
-            value={d.cep}
-            onChange={(e) => {
-              const v = mascararCEP(e.target.value);
-              set({ cep: v });
-              if (soDigitos(v).length === 8) ctx.buscarCep(v);
-            }}
-          />
-        </Field>
-        <Field label="Telefone">
-          <Inp value={d.telefone} onChange={(e) => set({ telefone: mascararFixo(e.target.value) })} />
-        </Field>
-        <Field label="Celular" req>
-          <Inp value={d.celular} onChange={(e) => set({ celular: mascararCelular(e.target.value) })} />
-        </Field>
-        <Field label="E-mail" req>
-          <Inp value={d.email} onChange={(e) => set({ email: e.target.value })} />
-        </Field>
+        <CamposSchema schema={GD_SCHEMA_IDENTIFICACAO} ctx={ctx} />
       </div>
     </Card>
   );

@@ -1,35 +1,12 @@
 // ============================================================
 // MINIGERAÇÃO DISTRIBUÍDA — Geração de PDF (padrão visual CEMIG)
+// Chassi (header/sec/kv) em shared/js/gd-pdf-base.js; sequência específica abaixo.
 // ============================================================
 function gerarPdfMiniGD(d) {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF("p", "mm", "a4");
-  const MG = 14, W = 210;
-  let cy = 18;
-  const VERDE = [16, 119, 98];
-  function header() {
-    doc.setFillColor(10, 47, 39); doc.rect(0, 0, W, 12, "F");
-    doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(10);
-    doc.text("CEMIG — Solicitação de Acesso — Minigeração Distribuída", MG, 8);
-    cy = 20;
-  }
-  function checkSpace(h) { if (cy + h > 285) { doc.addPage(); header(); } }
-  function sec(t) {
-    checkSpace(12); cy += 2;
-    doc.setFillColor(VERDE[0], VERDE[1], VERDE[2]); doc.rect(MG, cy, W - 2 * MG, 6, "F");
-    doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(9);
-    doc.text(t, MG + 2, cy + 4.2); cy += 9; doc.setTextColor(40, 40, 50);
-  }
-  function kv(label, val) {
-    checkSpace(7);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.text(label + ":", MG + 1, cy + 4);
-    doc.setFont("helvetica", "normal");
-    const txt = doc.splitTextToSize(String(val || "—"), W - MG - 56);
-    doc.text(txt, MG + 55, cy + 4);
-    cy += Math.max(6, txt.length * 4.5);
-  }
+  const { doc, sec, kv } = criarPdfGD(
+    "CEMIG — Solicitação de Acesso — Minigeração Distribuída"
+  );
 
-  header();
   sec("1 — Identificação da Unidade Consumidora");
   kv("Número da instalação", d.instalacao);
   kv("Titular", d.titular);
