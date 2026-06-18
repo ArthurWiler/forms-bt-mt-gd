@@ -120,7 +120,7 @@ function App() {
         /* imagem em outra origem / canvas tainted — ignora */
       }
     };
-    img.src = "imgs/logo-cemig-cor.png";
+    img.src = "shared/imgs/logos/logo-cemig-cor.png";
   }, []);
 
   // Pessoa física? (depende do documento digitado em CPF/CNPJ)

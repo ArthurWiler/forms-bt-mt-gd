@@ -3,10 +3,10 @@
    ============================================================ */
 const { useState, useMemo, useCallback, useRef, useEffect } = React;
 
-// Logo Cemig (imagem fornecida em imgs/logo-cemig.png)
+// Logo Cemig (imagem em shared/imgs/logos/)
 function LogoCemig() {
   return (
-    <img src="imgs/logo-cemig-branca.png" alt="Cemig" className="logo-img" />
+    <img src="shared/imgs/logos/logo-cemig-branca.png" alt="Cemig" className="logo-img" />
   );
 }
 
