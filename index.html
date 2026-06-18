@@ -20,7 +20,7 @@
     />
 
     <!-- Estilos -->
-    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="bt/css/styles.css" />
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -38,33 +38,89 @@
     <div id="root"></div>
 
     <!-- Dados normativos e cálculo (JS puro) -->
-    <script src="js/data.js"></script>
-    <script src="js/calc.js"></script>
-    <script src="js/model.js"></script>
-    <script src="js/pdf.js"></script>
+    <script src="bt/js/data.js"></script>
+    <script src="bt/js/calc.js"></script>
+    <script src="bt/js/model.js"></script>
+    <script src="bt/js/pdf.js"></script>
 
     <!-- Componentes React (JSX via Babel) -->
     <script
       type="text/babel"
-      src="js/components.js"
+      src="bt/js/components.js"
       data-presets="react"
     ></script>
-    <script type="text/babel" src="shared/js/geo.js" data-presets="react"></script>
-    <script type="text/babel" src="js/map.js" data-presets="react"></script>
-    <script type="text/babel" src="js/views/orient.js" data-presets="react"></script>
-    <script type="text/babel" src="js/views/tipo.js" data-presets="react"></script>
-    <script type="text/babel" src="js/views/proprietario.js" data-presets="react"></script>
-    <script type="text/babel" src="js/views/correspondencia.js" data-presets="react"></script>
-    <script type="text/babel" src="js/views/obra.js" data-presets="react"></script>
-    <script type="text/babel" src="js/views/blocos.js" data-presets="react"></script>
-    <script type="text/babel" src="js/views/ucs-coletivo.js" data-presets="react"></script>
-    <script type="text/babel" src="js/views/ucs-individual.js" data-presets="react"></script>
-    <script type="text/babel" src="js/views/cargas-coletivo.js" data-presets="react"></script>
-    <script type="text/babel" src="js/views/cargas-individual.js" data-presets="react"></script>
-    <script type="text/babel" src="js/views/gerador.js" data-presets="react"></script>
-    <script type="text/babel" src="js/views/obs.js" data-presets="react"></script>
-    <script type="text/babel" src="js/views/revisar.js" data-presets="react"></script>
-    <script type="text/babel" src="js/app.js" data-presets="react"></script>
+    <script
+      type="text/babel"
+      src="../shared/js/geo.js"
+      data-presets="react"
+    ></script>
+    <script type="text/babel" src="bt/js/map.js" data-presets="react"></script>
+    <script
+      type="text/babel"
+      src="bt/js/views/orient.js"
+      data-presets="react"
+    ></script>
+    <script
+      type="text/babel"
+      src="bt/js/views/tipo.js"
+      data-presets="react"
+    ></script>
+    <script
+      type="text/babel"
+      src="bt/js/views/proprietario.js"
+      data-presets="react"
+    ></script>
+    <script
+      type="text/babel"
+      src="bt/js/views/correspondencia.js"
+      data-presets="react"
+    ></script>
+    <script
+      type="text/babel"
+      src="bt/js/views/obra.js"
+      data-presets="react"
+    ></script>
+    <script
+      type="text/babel"
+      src="bt/js/views/blocos.js"
+      data-presets="react"
+    ></script>
+    <script
+      type="text/babel"
+      src="bt/js/views/ucs-coletivo.js"
+      data-presets="react"
+    ></script>
+    <script
+      type="text/babel"
+      src="bt/js/views/ucs-individual.js"
+      data-presets="react"
+    ></script>
+    <script
+      type="text/babel"
+      src="bt/js/views/cargas-coletivo.js"
+      data-presets="react"
+    ></script>
+    <script
+      type="text/babel"
+      src="bt/js/views/cargas-individual.js"
+      data-presets="react"
+    ></script>
+    <script
+      type="text/babel"
+      src="bt/js/views/gerador.js"
+      data-presets="react"
+    ></script>
+    <script
+      type="text/babel"
+      src="bt/js/views/obs.js"
+      data-presets="react"
+    ></script>
+    <script
+      type="text/babel"
+      src="bt/js/views/revisar.js"
+      data-presets="react"
+    ></script>
+    <script type="text/babel" src="bt/js/app.js" data-presets="react"></script>
 
     <!-- Aviso caso aberto via file:// (Babel não carrega scripts externos sem HTTP) -->
     <script>
