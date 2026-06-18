@@ -120,7 +120,7 @@ function App() {
         /* imagem em outra origem / canvas tainted — ignora */
       }
     };
-    img.src = "shared/imgs/logos/logo-cemig-cor.png";
+    img.src = "imgs/logos/logo-cemig-cor.png";
   }, []);
 
   // Pessoa física? (depende do documento digitado em CPF/CNPJ)
@@ -173,7 +173,10 @@ function App() {
   }, [residenciaisColetivo, quantidadeApartamentos]);
   const demandaApartamentosND52 = useMemo(
     () =>
-      nd52CalcularDemandaApartamentos(areaMediaPonderada, quantidadeApartamentos),
+      nd52CalcularDemandaApartamentos(
+        areaMediaPonderada,
+        quantidadeApartamentos,
+      ),
     [areaMediaPonderada, quantidadeApartamentos],
   );
 
@@ -626,10 +629,7 @@ function App() {
       return blocos.reduce(
         (s, b) =>
           s +
-          (b.ucs || []).reduce(
-            (su, u) => su + num((u.prev || {}).demanda),
-            0,
-          ) +
+          (b.ucs || []).reduce((su, u) => su + num((u.prev || {}).demanda), 0) +
           num(b.demandaIncendio),
         0,
       );
@@ -680,10 +680,7 @@ function App() {
     if (!(demandaTotalGeral > 0))
       faltando.push("Previsão de carga / demanda das UCs");
     if (temUCNaoResidencial)
-      req(
-        atend.demandaNaoResidencial,
-        "Demanda geral não residencial (kVA)",
-      );
+      req(atend.demandaNaoResidencial, "Demanda geral não residencial (kVA)");
     if (demandaResidencialManualInvalida)
       faltando.push(
         "Demanda residencial manual não pode ser menor que a calculada (ND-5.2)",
@@ -949,7 +946,8 @@ function App() {
                   <button
                     key={card.id}
                     className={
-                      "modalidade-card" + (card.status === "soon" ? " soon" : "")
+                      "modalidade-card" +
+                      (card.status === "soon" ? " soon" : "")
                     }
                     disabled={card.status === "soon"}
                     onClick={() => selectModalidade(card)}

@@ -6,7 +6,11 @@ const { useState, useMemo, useCallback, useRef, useEffect } = React;
 // Logo Cemig (imagem em shared/imgs/logos/)
 function LogoCemig() {
   return (
-    <img src="shared/imgs/logos/logo-cemig-branca.png" alt="Cemig" className="logo-img" />
+    <img
+      src="imgs/logos/logo-cemig-branca.png"
+      alt="Cemig"
+      className="logo-img"
+    />
   );
 }
 
@@ -111,7 +115,13 @@ function Badge({ children, lime }) {
 // ============================================================
 // CALCULADORA DE DEMANDA (embutida por Unidade Consumidora)
 // ============================================================
-function CalcDemanda({ data, onChange, redeMono, atividade, minimizarPorPadrao }) {
+function CalcDemanda({
+  data,
+  onChange,
+  redeMono,
+  atividade,
+  minimizarPorPadrao,
+}) {
   const d = data || {};
   const qtds = d.qtds || CAT.map(() => 0);
   const tipoA = d.tipoA || "";
@@ -258,188 +268,199 @@ function CalcDemanda({ data, onChange, redeMono, atividade, minimizarPorPadrao }
         </div>
       ) : (
         <React.Fragment>
-
-      <div className="carga-min-head" style={{ marginTop: 12 }}>
-        <span className="subbox-title">Equipamentos selecionados</span>
-        <button
-          type="button"
-          className="btn btn-ghost"
-          style={{ padding: "5px 12px", fontSize: 12 }}
-          onClick={() => setMinimizado((m) => !m)}
-        >
-          {minimizado ? "Editar lista de equipamentos" : "Minimizar lista"}
-        </button>
-      </div>
-
-      {minimizado ? (
-        <div className="carga-resumo">
-          {CAT.map((c, i) => ({ ...c, i, q: qtds[i] || 0 }))
-            .filter((c) => c.q > 0).length === 0 ? (
-            <div className="field-hint">Nenhum equipamento selecionado.</div>
-          ) : (
-            CAT.map((c, i) => ({ ...c, i, q: qtds[i] || 0 }))
-              .filter((c) => c.q > 0)
-              .map((c) => (
-                <span key={c.i} className="carga-resumo-chip">
-                  {c.q}x {c.n}
-                </span>
-              ))
-          )}
-        </div>
-      ) : (
-        <React.Fragment>
-          <div style={{ marginTop: 12 }}>
-            <Field label="Buscar equipamento">
-              <Inp
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                placeholder="Ex: chuveiro, geladeira, ar..."
-              />
-            </Field>
+          <div className="carga-min-head" style={{ marginTop: 12 }}>
+            <span className="subbox-title">Equipamentos selecionados</span>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              style={{ padding: "5px 12px", fontSize: 12 }}
+              onClick={() => setMinimizado((m) => !m)}
+            >
+              {minimizado ? "Editar lista de equipamentos" : "Minimizar lista"}
+            </button>
           </div>
 
-          <div className="carga-box" style={{ marginTop: 8 }}>
-            {GO.map((sg) => {
-              const items = catFiltrado.filter((c) => c.g === sg);
-              if (!items.length) return null;
-              return (
-                <div key={sg}>
-                  <div className="carga-group-title">{GL[sg]}</div>
-                  {items.map((c) => (
-                    <div key={c.i} className="carga-row">
-                      <div>
-                        <div className="nome">
-                          {c.n} <span className="pot">({fmtW(c.w)} W)</span>
-                        </div>
-                      </div>
-                      <div className="qtd-ctrl">
-                        <button onClick={() => setQ(c.i, (qtds[c.i] || 0) - 1)}>
-                          −
-                        </button>
-                        <input
-                          type="number"
-                          value={qtds[c.i] || 0}
-                          onChange={(e) => setQ(c.i, parseInt(e.target.value) || 0)}
-                        />
-                        <button
-                          className="plus"
-                          onClick={() => setQ(c.i, (qtds[c.i] || 0) + 1)}
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+          {minimizado ? (
+            <div className="carga-resumo">
+              {CAT.map((c, i) => ({ ...c, i, q: qtds[i] || 0 })).filter(
+                (c) => c.q > 0,
+              ).length === 0 ? (
+                <div className="field-hint">
+                  Nenhum equipamento selecionado.
                 </div>
-              );
-            })}
-          </div>
-        </React.Fragment>
-      )}
+              ) : (
+                CAT.map((c, i) => ({ ...c, i, q: qtds[i] || 0 }))
+                  .filter((c) => c.q > 0)
+                  .map((c) => (
+                    <span key={c.i} className="carga-resumo-chip">
+                      {c.q}x {c.n}
+                    </span>
+                  ))
+              )}
+            </div>
+          ) : (
+            <React.Fragment>
+              <div style={{ marginTop: 12 }}>
+                <Field label="Buscar equipamento">
+                  <Inp
+                    value={busca}
+                    onChange={(e) => setBusca(e.target.value)}
+                    placeholder="Ex: chuveiro, geladeira, ar..."
+                  />
+                </Field>
+              </div>
 
-      {/* Motores */}
-      <div className="subbox motores-box">
-        <div className="motores-head">
-          <span className="subbox-title">Motores / Cargas Especiais</span>
-          <button
-            type="button"
-            className="btn btn-primary"
-            style={{ padding: "5px 12px", fontSize: 12 }}
-            onClick={() =>
-              upd({ mots: [...mots, { fase: "mono", cv: "1", q: 1 }] })
-            }
-          >
-            + Motor
-          </button>
-        </div>
-        {mots.length === 0 ? (
-          <div style={{ fontSize: 12, color: "var(--texto-suave)" }}>
-            Nenhum motor adicionado.
-          </div>
-        ) : (
-          <table className="motores-table">
-            <thead>
-              <tr>
-                <th>Tipo</th>
-                <th>Potência (CV)</th>
-                <th>Qtd</th>
-                <th>Dem. unit. (kVA)</th>
-                <th>Dem. total (kVA)</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {mots.map((m, mi) => {
-                const linha = rD.det[mi] || {};
-                return (
-                  <tr key={mi}>
-                    <td>
-                      <select
-                        value={m.fase}
-                        onChange={(e) => {
-                          const n = [...mots];
-                          n[mi] = { ...m, fase: e.target.value };
-                          upd({ mots: n });
-                        }}
-                      >
-                        <option value="mono">Monofásico</option>
-                        <option value="tri">Trifásico</option>
-                      </select>
-                    </td>
-                    <td>
-                      <select
-                        value={m.cv}
-                        onChange={(e) => {
-                          const n = [...mots];
-                          n[mi] = { ...m, cv: e.target.value };
-                          upd({ mots: n });
-                        }}
-                      >
-                        {(m.fase === "mono" ? MOTOR_MONO : MOTOR_TRI).map(
-                          (r) => (
-                            <option key={r.cv} value={r.cv}>
-                              {r.l}
-                            </option>
-                          ),
-                        )}
-                      </select>
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        min="0"
-                        value={m.q}
-                        onChange={(e) => {
-                          const n = [...mots];
-                          n[mi] = { ...m, q: parseInt(e.target.value) || 0 };
-                          upd({ mots: n });
-                        }}
-                        style={{ width: 60 }}
-                      />
-                    </td>
-                    <td className="num">{fmt2(linha.kvaUnit || 0)}</td>
-                    <td className="num">{fmt2(linha.kva || 0)}</td>
-                    <td>
-                      <button
-                        type="button"
-                        onClick={() => upd({ mots: mots.filter((_, x) => x !== mi) })}
-                        className="motor-del"
-                      >
-                        ✕
-                      </button>
-                    </td>
+              <div className="carga-box" style={{ marginTop: 8 }}>
+                {GO.map((sg) => {
+                  const items = catFiltrado.filter((c) => c.g === sg);
+                  if (!items.length) return null;
+                  return (
+                    <div key={sg}>
+                      <div className="carga-group-title">{GL[sg]}</div>
+                      {items.map((c) => (
+                        <div key={c.i} className="carga-row">
+                          <div>
+                            <div className="nome">
+                              {c.n} <span className="pot">({fmtW(c.w)} W)</span>
+                            </div>
+                          </div>
+                          <div className="qtd-ctrl">
+                            <button
+                              onClick={() => setQ(c.i, (qtds[c.i] || 0) - 1)}
+                            >
+                              −
+                            </button>
+                            <input
+                              type="number"
+                              value={qtds[c.i] || 0}
+                              onChange={(e) =>
+                                setQ(c.i, parseInt(e.target.value) || 0)
+                              }
+                            />
+                            <button
+                              className="plus"
+                              onClick={() => setQ(c.i, (qtds[c.i] || 0) + 1)}
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            </React.Fragment>
+          )}
+
+          {/* Motores */}
+          <div className="subbox motores-box">
+            <div className="motores-head">
+              <span className="subbox-title">Motores / Cargas Especiais</span>
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ padding: "5px 12px", fontSize: 12 }}
+                onClick={() =>
+                  upd({ mots: [...mots, { fase: "mono", cv: "1", q: 1 }] })
+                }
+              >
+                + Motor
+              </button>
+            </div>
+            {mots.length === 0 ? (
+              <div style={{ fontSize: 12, color: "var(--texto-suave)" }}>
+                Nenhum motor adicionado.
+              </div>
+            ) : (
+              <table className="motores-table">
+                <thead>
+                  <tr>
+                    <th>Tipo</th>
+                    <th>Potência (CV)</th>
+                    <th>Qtd</th>
+                    <th>Dem. unit. (kVA)</th>
+                    <th>Dem. total (kVA)</th>
+                    <th></th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-        {rD.d > 0 && (
-          <div className="motores-total">
-            Demanda dos motores: {fmt2(rD.d)} kVA
+                </thead>
+                <tbody>
+                  {mots.map((m, mi) => {
+                    const linha = rD.det[mi] || {};
+                    return (
+                      <tr key={mi}>
+                        <td>
+                          <select
+                            value={m.fase}
+                            onChange={(e) => {
+                              const n = [...mots];
+                              n[mi] = { ...m, fase: e.target.value };
+                              upd({ mots: n });
+                            }}
+                          >
+                            <option value="mono">Monofásico</option>
+                            <option value="tri">Trifásico</option>
+                          </select>
+                        </td>
+                        <td>
+                          <select
+                            value={m.cv}
+                            onChange={(e) => {
+                              const n = [...mots];
+                              n[mi] = { ...m, cv: e.target.value };
+                              upd({ mots: n });
+                            }}
+                          >
+                            {(m.fase === "mono" ? MOTOR_MONO : MOTOR_TRI).map(
+                              (r) => (
+                                <option key={r.cv} value={r.cv}>
+                                  {r.l}
+                                </option>
+                              ),
+                            )}
+                          </select>
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            value={m.q}
+                            onChange={(e) => {
+                              const n = [...mots];
+                              n[mi] = {
+                                ...m,
+                                q: parseInt(e.target.value) || 0,
+                              };
+                              upd({ mots: n });
+                            }}
+                            style={{ width: 60 }}
+                          />
+                        </td>
+                        <td className="num">{fmt2(linha.kvaUnit || 0)}</td>
+                        <td className="num">{fmt2(linha.kva || 0)}</td>
+                        <td>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              upd({ mots: mots.filter((_, x) => x !== mi) })
+                            }
+                            className="motor-del"
+                          >
+                            ✕
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+            {rD.d > 0 && (
+              <div className="motores-total">
+                Demanda dos motores: {fmt2(rD.d)} kVA
+              </div>
+            )}
           </div>
-        )}
-      </div>
         </React.Fragment>
       )}
     </div>
