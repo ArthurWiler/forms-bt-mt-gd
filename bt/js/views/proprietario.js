@@ -1,6 +1,3 @@
-// ============================================================
-// CEMIG BT — Aba: TabProprietario  (extraído de js/views.js)
-// ============================================================
 function TabProprietario({ ctx }) {
   const {
     aba,
@@ -68,157 +65,127 @@ function TabProprietario({ ctx }) {
     totalUcsEmpreendimento,
     trocaDisjGeral,
     validacaoDisjuntores,
-    validacaoHibrido,
+    validacaoHibrido
   } = ctx;
-  return (
-    <Card
-      eyebrow="Dados"
-      title="Dados do Proprietário"
-      sub="Titular da conta de energia ou proprietário/possuidor do imóvel. (*) obrigatório · (**) obrigatório para pessoa física."
-    >
-      <div className="grid grid-2">
-        <Field label="Nome Completo (sem abreviações)" req span={2}>
-          <Inp
-            value={prop.nome}
-            onChange={(e) => setProp({ ...prop, nome: e.target.value })}
-          />
-        </Field>
-        <Field
-          label="CPF / CNPJ"
-          req
-          hint={
-            docInfo.valido === false
-              ? `${docInfo.tipo} inválido — verifique os dígitos.`
-              : docInfo.valido === true
-                ? `${docInfo.tipo} válido.`
-                : "Digite CPF (pessoa física) ou CNPJ (pessoa jurídica)."
+  return /* @__PURE__ */ React.createElement(
+    Card,
+    {
+      eyebrow: "Dados",
+      title: "Dados do Propriet\xE1rio",
+      sub: "Titular da conta de energia ou propriet\xE1rio/possuidor do im\xF3vel. (*) obrigat\xF3rio \xB7 (**) obrigat\xF3rio para pessoa f\xEDsica."
+    },
+    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2" }, /* @__PURE__ */ React.createElement(Field, { label: "Nome Completo (sem abrevia\xE7\xF5es)", req: true, span: 2 }, /* @__PURE__ */ React.createElement(
+      Inp,
+      {
+        value: prop.nome,
+        onChange: (e) => setProp({ ...prop, nome: e.target.value })
+      }
+    )), /* @__PURE__ */ React.createElement(
+      Field,
+      {
+        label: "CPF / CNPJ",
+        req: true,
+        hint: docInfo.valido === false ? `${docInfo.tipo} inv\xE1lido \u2014 verifique os d\xEDgitos.` : docInfo.valido === true ? `${docInfo.tipo} v\xE1lido.` : "Digite CPF (pessoa f\xEDsica) ou CNPJ (pessoa jur\xEDdica)."
+      },
+      /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center" } }, /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          value: prop.cpfCnpj || "",
+          onChange: (e) => {
+            const m = mascararCpfCnpj(e.target.value);
+            setProp({ ...prop, cpfCnpj: m });
+            if (ehCNPJ(m)) buscarCNPJ(m);
+            else setCnpjStatus("");
+          },
+          placeholder: "000.000.000-00",
+          style: {
+            borderColor: docInfo.valido === false ? "var(--vermelho)" : void 0
           }
-        >
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input
-              value={prop.cpfCnpj || ""}
-              onChange={(e) => {
-                const m = mascararCpfCnpj(e.target.value);
-                setProp({ ...prop, cpfCnpj: m });
-                if (ehCNPJ(m)) buscarCNPJ(m);
-                else setCnpjStatus("");
-              }}
-              placeholder="000.000.000-00"
-              style={{
-                borderColor:
-                  docInfo.valido === false ? "var(--vermelho)" : undefined,
-              }}
-            />
-            {cnpjStatus === "buscando" && <span className="spinner"></span>}
-            {cnpjStatus === "ok" && <Badge>dados preenchidos</Badge>}
-            {cnpjStatus === "erro" && (
-              <span style={{ color: "var(--vermelho)", fontSize: 12 }}>
-                CNPJ não encontrado
-              </span>
-            )}
-          </div>
-        </Field>
-        <Field label="E-mail" req>
-          <Inp
-            type="email"
-            value={prop.email}
-            onChange={(e) => setProp({ ...prop, email: e.target.value })}
-          />
-        </Field>
-        {pessoaFisica && (
-          <Field label="Filiação (Mãe ou Pai) **">
-            <Inp
-              value={prop.filiacao}
-              onChange={(e) => setProp({ ...prop, filiacao: e.target.value })}
-            />
-          </Field>
-        )}
-        {pessoaFisica && (
-          <Field label="RG / RNE / RANI **">
-            <Inp
-              value={prop.rg}
-              onChange={(e) =>
-                setProp({ ...prop, rg: mascararRG(e.target.value) })
-              }
-            />
-          </Field>
-        )}
-        {pessoaFisica && (
-          <Field label="Data de Nascimento **">
-            <Inp
-              type="date"
-              value={prop.nasc}
-              onChange={(e) => setProp({ ...prop, nasc: e.target.value })}
-            />
-          </Field>
-        )}
-        <Field label="Celular" req>
-          <Inp
-            value={prop.celular}
-            onChange={(e) =>
-              setProp({
-                ...prop,
-                celular: mascararCelular(e.target.value),
-              })
-            }
-          />
-        </Field>
-        <Field label="Telefone Fixo">
-          <Inp
-            value={prop.fixo}
-            onChange={(e) =>
-              setProp({ ...prop, fixo: mascararFixo(e.target.value) })
-            }
-          />
-        </Field>
-        <Field label="Telefone do Proprietário" req>
-          <Inp
-            value={prop.telProp}
-            onChange={(e) =>
-              setProp({
-                ...prop,
-                telProp: mascararTelefone(e.target.value),
-              })
-            }
-          />
-        </Field>
-        {pessoaFisica && (
-          <Field
-            label="Possui laudo médico (equipamentos essenciais)? **"
-            span={2}
-          >
-            <Toggle
-              value={prop.laudoMedico}
-              onChange={(v) => setProp({ ...prop, laudoMedico: v })}
-              options={[
-                { v: "Sim", l: "Sim" },
-                { v: "Não", l: "Não" },
-              ]}
-            />
-          </Field>
-        )}
-        {pessoaFisica && (
-          <Field label="Possui NIS para Tarifa Social? **">
-            <Toggle
-              value={prop.nis}
-              onChange={(v) => setProp({ ...prop, nis: v })}
-              options={[
-                { v: "Sim", l: "Sim" },
-                { v: "Não", l: "Não" },
-              ]}
-            />
-          </Field>
-        )}
-        {pessoaFisica && prop.nis === "Sim" && (
-          <Field label="Número do NIS" req>
-            <Inp
-              value={prop.numNis}
-              onChange={(e) => setProp({ ...prop, numNis: e.target.value })}
-            />
-          </Field>
-        )}
-      </div>
-    </Card>
+        }
+      ), cnpjStatus === "buscando" && /* @__PURE__ */ React.createElement("span", { className: "spinner" }), cnpjStatus === "ok" && /* @__PURE__ */ React.createElement(Badge, null, "dados preenchidos"), cnpjStatus === "erro" && /* @__PURE__ */ React.createElement("span", { style: { color: "var(--vermelho)", fontSize: 12 } }, "CNPJ n\xE3o encontrado"))
+    ), /* @__PURE__ */ React.createElement(Field, { label: "E-mail", req: true }, /* @__PURE__ */ React.createElement(
+      Inp,
+      {
+        type: "email",
+        value: prop.email,
+        onChange: (e) => setProp({ ...prop, email: e.target.value })
+      }
+    )), pessoaFisica && /* @__PURE__ */ React.createElement(Field, { label: "Filia\xE7\xE3o (M\xE3e ou Pai) **" }, /* @__PURE__ */ React.createElement(
+      Inp,
+      {
+        value: prop.filiacao,
+        onChange: (e) => setProp({ ...prop, filiacao: e.target.value })
+      }
+    )), pessoaFisica && /* @__PURE__ */ React.createElement(Field, { label: "RG / RNE / RANI **" }, /* @__PURE__ */ React.createElement(
+      Inp,
+      {
+        value: prop.rg,
+        onChange: (e) => setProp({ ...prop, rg: mascararRG(e.target.value) })
+      }
+    )), pessoaFisica && /* @__PURE__ */ React.createElement(Field, { label: "Data de Nascimento **" }, /* @__PURE__ */ React.createElement(
+      Inp,
+      {
+        type: "date",
+        value: prop.nasc,
+        onChange: (e) => setProp({ ...prop, nasc: e.target.value })
+      }
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Celular", req: true }, /* @__PURE__ */ React.createElement(
+      Inp,
+      {
+        value: prop.celular,
+        onChange: (e) => setProp({
+          ...prop,
+          celular: mascararCelular(e.target.value)
+        })
+      }
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Telefone Fixo" }, /* @__PURE__ */ React.createElement(
+      Inp,
+      {
+        value: prop.fixo,
+        onChange: (e) => setProp({ ...prop, fixo: mascararFixo(e.target.value) })
+      }
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Telefone do Propriet\xE1rio", req: true }, /* @__PURE__ */ React.createElement(
+      Inp,
+      {
+        value: prop.telProp,
+        onChange: (e) => setProp({
+          ...prop,
+          telProp: mascararTelefone(e.target.value)
+        })
+      }
+    )), pessoaFisica && /* @__PURE__ */ React.createElement(
+      Field,
+      {
+        label: "Possui laudo m\xE9dico (equipamentos essenciais)? **",
+        span: 2
+      },
+      /* @__PURE__ */ React.createElement(
+        Toggle,
+        {
+          value: prop.laudoMedico,
+          onChange: (v) => setProp({ ...prop, laudoMedico: v }),
+          options: [
+            { v: "Sim", l: "Sim" },
+            { v: "N\xE3o", l: "N\xE3o" }
+          ]
+        }
+      )
+    ), pessoaFisica && /* @__PURE__ */ React.createElement(Field, { label: "Possui NIS para Tarifa Social? **" }, /* @__PURE__ */ React.createElement(
+      Toggle,
+      {
+        value: prop.nis,
+        onChange: (v) => setProp({ ...prop, nis: v }),
+        options: [
+          { v: "Sim", l: "Sim" },
+          { v: "N\xE3o", l: "N\xE3o" }
+        ]
+      }
+    )), pessoaFisica && prop.nis === "Sim" && /* @__PURE__ */ React.createElement(Field, { label: "N\xFAmero do NIS", req: true }, /* @__PURE__ */ React.createElement(
+      Inp,
+      {
+        value: prop.numNis,
+        onChange: (e) => setProp({ ...prop, numNis: e.target.value })
+      }
+    )))
   );
 }
-

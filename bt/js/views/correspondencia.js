@@ -1,6 +1,3 @@
-// ============================================================
-// CEMIG BT — Aba: TabCorrespondencia  (extraído de js/views.js)
-// ============================================================
 function TabCorrespondencia({ ctx }) {
   const {
     aba,
@@ -68,149 +65,107 @@ function TabCorrespondencia({ ctx }) {
     totalUcsEmpreendimento,
     trocaDisjGeral,
     validacaoDisjuntores,
-    validacaoHibrido,
+    validacaoHibrido
   } = ctx;
-  return (
-    <Card
-      eyebrow="Dados"
-      title="Correspondência e Fatura"
-      sub="Como o cliente deseja receber a conta de energia."
-    >
-      <div className="grid grid-2">
-        <Field label="Deseja receber a fatura no e-mail informado?" req>
-          <Toggle
-            value={corr.receberEmail}
-            onChange={(v) => setCorr({ ...corr, receberEmail: v })}
-            options={[
-              { v: "Sim", l: "Sim" },
-              { v: "Não", l: "Não" },
-            ]}
-          />
-        </Field>
-        <Field label="Data de Vencimento da Fatura">
-          <Toggle
-            value={corr.vencimento}
-            onChange={(v) => setCorr({ ...corr, vencimento: v })}
-            options={DIAS_VENCIMENTO.map((d) => ({ v: d, l: d }))}
-          />
-        </Field>
-      </div>
-      {corr.receberEmail === "Não" && (
-        <div className="divider">
-          <Field label="Como deseja receber a fatura?" req>
-            <Toggle
-              value={corr.alternativa}
-              onChange={(v) => setCorr({ ...corr, alternativa: v })}
-              options={[
-                { v: "Endereço novo", l: "Novo endereço" },
-                { v: "Mesmo da obra", l: "Endereço da obra" },
-                { v: "Outro e-mail", l: "Outro e-mail" },
-              ]}
-            />
-          </Field>
-
-          {corr.alternativa === "Mesmo da obra" && (
-            <div className="alert alert-info" style={{ marginTop: 12 }}>
-              A fatura será enviada para o endereço informado em{" "}
-              <strong>Dados da Obra</strong>.
-            </div>
-          )}
-
-          {corr.alternativa === "Outro e-mail" && (
-            <div className="grid grid-2" style={{ marginTop: 12 }}>
-              <Field label="E-mail para envio da fatura" span={2} req>
-                <Inp
-                  type="email"
-                  value={corr.outroEmail}
-                  onChange={(e) =>
-                    setCorr({ ...corr, outroEmail: e.target.value })
-                  }
-                  placeholder="email@exemplo.com"
-                />
-              </Field>
-            </div>
-          )}
-
-          {corr.alternativa === "Endereço novo" && (
-            <div className="grid grid-2" style={{ marginTop: 12 }}>
-              <Field label="CEP" span={2}>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <div style={{ maxWidth: 180 }}>
-                    <Inp
-                      value={corr.cep}
-                      onChange={(e) => {
-                        const v = mascararCEP(e.target.value);
-                        setCorr({ ...corr, cep: v });
-                        buscarCEP(v, "corr");
-                      }}
-                      placeholder="00000-000"
-                    />
-                  </div>
-                  {cepStatus.corr === "buscando" && (
-                    <span className="spinner"></span>
-                  )}
-                  {cepStatus.corr === "ok" && (
-                    <Badge>Endereço encontrado</Badge>
-                  )}
-                  {cepStatus.corr === "erro" && (
-                    <span style={{ color: "var(--vermelho)", fontSize: 12 }}>
-                      CEP não encontrado
-                    </span>
-                  )}
-                </div>
-              </Field>
-              <Field label="Rua / Av." span={2}>
-                <Inp
-                  value={corr.rua}
-                  onChange={(e) => setCorr({ ...corr, rua: e.target.value })}
-                />
-              </Field>
-              <Field label="Nº">
-                <Inp
-                  value={corr.num}
-                  onChange={(e) => setCorr({ ...corr, num: e.target.value })}
-                />
-              </Field>
-              <Field label="Complemento">
-                <Inp
-                  value={corr.compl}
-                  onChange={(e) => setCorr({ ...corr, compl: e.target.value })}
-                />
-              </Field>
-              <Field label="Bairro / Distrito">
-                <Inp
-                  value={corr.bairro}
-                  onChange={(e) => setCorr({ ...corr, bairro: e.target.value })}
-                />
-              </Field>
-              <Field label="Município">
-                <Inp
-                  value={corr.municipio}
-                  onChange={(e) =>
-                    setCorr({ ...corr, municipio: e.target.value })
-                  }
-                />
-              </Field>
-              <Field label="Estado">
-                <Inp
-                  value={corr.estado}
-                  onChange={(e) => setCorr({ ...corr, estado: e.target.value })}
-                />
-              </Field>
-            </div>
-          )}
-        </div>
-      )}
-      <div style={{ marginTop: 14 }}>
-        <Field label="Conta globalizada (poder público — código de débito automático globalizado)">
-          <Inp
-            value={corr.contaGlobal}
-            onChange={(e) => setCorr({ ...corr, contaGlobal: e.target.value })}
-            placeholder="Opcional"
-          />
-        </Field>
-      </div>
-    </Card>
+  return /* @__PURE__ */ React.createElement(
+    Card,
+    {
+      eyebrow: "Dados",
+      title: "Correspond\xEAncia e Fatura",
+      sub: "Como o cliente deseja receber a conta de energia."
+    },
+    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2" }, /* @__PURE__ */ React.createElement(Field, { label: "Deseja receber a fatura no e-mail informado?", req: true }, /* @__PURE__ */ React.createElement(
+      Toggle,
+      {
+        value: corr.receberEmail,
+        onChange: (v) => setCorr({ ...corr, receberEmail: v }),
+        options: [
+          { v: "Sim", l: "Sim" },
+          { v: "N\xE3o", l: "N\xE3o" }
+        ]
+      }
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Data de Vencimento da Fatura" }, /* @__PURE__ */ React.createElement(
+      Toggle,
+      {
+        value: corr.vencimento,
+        onChange: (v) => setCorr({ ...corr, vencimento: v }),
+        options: DIAS_VENCIMENTO.map((d) => ({ v: d, l: d }))
+      }
+    ))),
+    corr.receberEmail === "N\xE3o" && /* @__PURE__ */ React.createElement("div", { className: "divider" }, /* @__PURE__ */ React.createElement(Field, { label: "Como deseja receber a fatura?", req: true }, /* @__PURE__ */ React.createElement(
+      Toggle,
+      {
+        value: corr.alternativa,
+        onChange: (v) => setCorr({ ...corr, alternativa: v }),
+        options: [
+          { v: "Endere\xE7o novo", l: "Novo endere\xE7o" },
+          { v: "Mesmo da obra", l: "Endere\xE7o da obra" },
+          { v: "Outro e-mail", l: "Outro e-mail" }
+        ]
+      }
+    )), corr.alternativa === "Mesmo da obra" && /* @__PURE__ */ React.createElement("div", { className: "alert alert-info", style: { marginTop: 12 } }, "A fatura ser\xE1 enviada para o endere\xE7o informado em", " ", /* @__PURE__ */ React.createElement("strong", null, "Dados da Obra"), "."), corr.alternativa === "Outro e-mail" && /* @__PURE__ */ React.createElement("div", { className: "grid grid-2", style: { marginTop: 12 } }, /* @__PURE__ */ React.createElement(Field, { label: "E-mail para envio da fatura", span: 2, req: true }, /* @__PURE__ */ React.createElement(
+      Inp,
+      {
+        type: "email",
+        value: corr.outroEmail,
+        onChange: (e) => setCorr({ ...corr, outroEmail: e.target.value }),
+        placeholder: "email@exemplo.com"
+      }
+    ))), corr.alternativa === "Endere\xE7o novo" && /* @__PURE__ */ React.createElement("div", { className: "grid grid-2", style: { marginTop: 12 } }, /* @__PURE__ */ React.createElement(Field, { label: "CEP", span: 2 }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 180 } }, /* @__PURE__ */ React.createElement(
+      Inp,
+      {
+        value: corr.cep,
+        onChange: (e) => {
+          const v = mascararCEP(e.target.value);
+          setCorr({ ...corr, cep: v });
+          buscarCEP(v, "corr");
+        },
+        placeholder: "00000-000"
+      }
+    )), cepStatus.corr === "buscando" && /* @__PURE__ */ React.createElement("span", { className: "spinner" }), cepStatus.corr === "ok" && /* @__PURE__ */ React.createElement(Badge, null, "Endere\xE7o encontrado"), cepStatus.corr === "erro" && /* @__PURE__ */ React.createElement("span", { style: { color: "var(--vermelho)", fontSize: 12 } }, "CEP n\xE3o encontrado"))), /* @__PURE__ */ React.createElement(Field, { label: "Rua / Av.", span: 2 }, /* @__PURE__ */ React.createElement(
+      Inp,
+      {
+        value: corr.rua,
+        onChange: (e) => setCorr({ ...corr, rua: e.target.value })
+      }
+    )), /* @__PURE__ */ React.createElement(Field, { label: "N\xBA" }, /* @__PURE__ */ React.createElement(
+      Inp,
+      {
+        value: corr.num,
+        onChange: (e) => setCorr({ ...corr, num: e.target.value })
+      }
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Complemento" }, /* @__PURE__ */ React.createElement(
+      Inp,
+      {
+        value: corr.compl,
+        onChange: (e) => setCorr({ ...corr, compl: e.target.value })
+      }
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Bairro / Distrito" }, /* @__PURE__ */ React.createElement(
+      Inp,
+      {
+        value: corr.bairro,
+        onChange: (e) => setCorr({ ...corr, bairro: e.target.value })
+      }
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Munic\xEDpio" }, /* @__PURE__ */ React.createElement(
+      Inp,
+      {
+        value: corr.municipio,
+        onChange: (e) => setCorr({ ...corr, municipio: e.target.value })
+      }
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Estado" }, /* @__PURE__ */ React.createElement(
+      Inp,
+      {
+        value: corr.estado,
+        onChange: (e) => setCorr({ ...corr, estado: e.target.value })
+      }
+    )))),
+    /* @__PURE__ */ React.createElement("div", { style: { marginTop: 14 } }, /* @__PURE__ */ React.createElement(Field, { label: "Conta globalizada (poder p\xFAblico \u2014 c\xF3digo de d\xE9bito autom\xE1tico globalizado)" }, /* @__PURE__ */ React.createElement(
+      Inp,
+      {
+        value: corr.contaGlobal,
+        onChange: (e) => setCorr({ ...corr, contaGlobal: e.target.value }),
+        placeholder: "Opcional"
+      }
+    )))
   );
 }
-

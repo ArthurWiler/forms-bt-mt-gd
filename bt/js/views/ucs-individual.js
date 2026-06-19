@@ -1,6 +1,3 @@
-// ============================================================
-// CEMIG BT — Aba: TabUcsIndividual  (extraído de js/views.js)
-// ============================================================
 function TabUcsIndividual({ ctx }) {
   const {
     aba,
@@ -69,143 +66,105 @@ function TabUcsIndividual({ ctx }) {
     totalUcsEmpreendimento,
     trocaDisjGeral,
     validacaoDisjuntores,
-    validacaoHibrido,
+    validacaoHibrido
   } = ctx;
-  return (
-    <div>
-      <Card
-        eyebrow="Identificação"
-        title={`Unidades Consumidoras (${ucsDet.length})`}
-        sub="Dados de identificação de cada unidade consumidora. O detalhamento das cargas é feito na próxima etapa. Em Conexão Nova não há disjuntor 'De' nem instalação."
-      >
-        {ucsDet.map((u, ui) => (
-          <div key={ui} className="uc-block">
-            <div className="uc-block-head">
-              <span className="uc-block-title">UC {ui + 1}</span>
-              <Badge>
-                {ui + 1} de {ucsDet.length}
-              </Badge>
-            </div>
-            <div className="grid grid-3">
-              <Field label="Tipo de solicitação" req>
-                <Sel
-                  value={u.solicitacao}
-                  onChange={(e) =>
-                    setUcDet(ui, { solicitacao: e.target.value })
-                  }
-                >
-                  <option>Conexão Nova</option>
-                  <option>Alteração de Carga</option>
-                  <option>Caixa Existente sem Alteração</option>
-                </Sel>
-              </Field>
-              <Field label="Atividade principal" req>
-                <Sel
-                  value={u.atividade}
-                  disabled={restrito}
-                  onChange={(e) => setUcDet(ui, { atividade: e.target.value })}
-                >
-                  <option value="">Selecionar</option>
-                  <option>Residencial</option>
-                  <option>Comercial</option>
-                  <option>Industrial</option>
-                  <option>Rural</option>
-                </Sel>
-              </Field>
-              <Field
-                label="Ramo de atividade"
-                req={u.atividade !== "Residencial"}
-              >
-                <Inp
-                  value={u.ramo}
-                  disabled={restrito}
-                  onChange={(e) => setUcDet(ui, { ramo: e.target.value })}
-                  placeholder={
-                    u.atividade === "Residencial" ? "—" : "Obrigatório"
-                  }
-                />
-              </Field>
-              <Field label="Nº Predial">
-                <div className="readonly-val">{obra.num || "Nº Predial"}</div>
-              </Field>
-              <Field label="Complemento" req={ucsDet.length > 1}>
-                <Inp
-                  value={u.complemento}
-                  onChange={(e) =>
-                    setUcDet(ui, { complemento: e.target.value })
-                  }
-                  placeholder="Casa 1"
-                />
-              </Field>
-              <Field label="Caixa / Identificação">
-                <Inp
-                  value={u.caixa}
-                  onChange={(e) => setUcDet(ui, { caixa: e.target.value })}
-                />
-              </Field>
-              <Field label="Unidade Consumidora">
-                <Inp
-                  value={u.unidadeConsumidora}
-                  onChange={(e) =>
-                    setUcDet(ui, { unidadeConsumidora: e.target.value })
-                  }
-                  placeholder="Identificação da UC (interna/externa)"
-                />
-              </Field>
-              {u.solicitacao !== "Conexão Nova" && (
-                <React.Fragment>
-                  <Field label="Nº Instalação / Medidor" req>
-                    <Inp
-                      value={u.instalacao}
-                      onChange={(e) =>
-                        setUcDet(ui, { instalacao: e.target.value })
-                      }
-                    />
-                  </Field>
-                  <Field label="Disjuntor atual">
-                    <Sel
-                      value={u.disjDe}
-                      onChange={(e) => setUcDet(ui, { disjDe: e.target.value })}
-                    >
-                      <option value="">Selecione…</option>
-                      {DISJ.map((d) => (
-                        <option key={d.fx} value={d.fx}>
-                          {d.fx}
-                        </option>
-                      ))}
-                    </Sel>
-                  </Field>
-                  {u.solicitacao === "Alteração de Carga" && (
-                    <Field label="Mudança de local">
-                      <Toggle
-                        value={u.mudancaLocal}
-                        onChange={(v) => setUcDet(ui, { mudancaLocal: v })}
-                        options={[
-                          { v: "Sim", l: "Sim" },
-                          { v: "Não", l: "Não" },
-                        ]}
-                      />
-                    </Field>
-                  )}
-                </React.Fragment>
-              )}
-            </div>
-          </div>
-        ))}
-      </Card>
-      {ucsDet.length > 1 && (
-        <div
-          className={
-            "alert " + (validacaoDisjuntores.ok ? "alert-ok" : "alert-warn")
-          }
-        >
-          <b>Regra de disjuntores (múltiplas UCs sem proteção geral):</b> no
-          máximo 1 tripolar de 63 A e/ou até 2 mono/bifásicos de 63 A.{" "}
-          {validacaoDisjuntores.ok ? "✔ " : "⚠ "}
-          {validacaoDisjuntores.msg}
-        </div>
-      )}
-    </div>
-  );
+  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(
+    Card,
+    {
+      eyebrow: "Identifica\xE7\xE3o",
+      title: `Unidades Consumidoras (${ucsDet.length})`,
+      sub: "Dados de identifica\xE7\xE3o de cada unidade consumidora. O detalhamento das cargas \xE9 feito na pr\xF3xima etapa. Em Conex\xE3o Nova n\xE3o h\xE1 disjuntor 'De' nem instala\xE7\xE3o."
+    },
+    ucsDet.map((u, ui) => /* @__PURE__ */ React.createElement("div", { key: ui, className: "uc-block" }, /* @__PURE__ */ React.createElement("div", { className: "uc-block-head" }, /* @__PURE__ */ React.createElement("span", { className: "uc-block-title" }, "UC ", ui + 1), /* @__PURE__ */ React.createElement(Badge, null, ui + 1, " de ", ucsDet.length)), /* @__PURE__ */ React.createElement("div", { className: "grid grid-3" }, /* @__PURE__ */ React.createElement(Field, { label: "Tipo de solicita\xE7\xE3o", req: true }, /* @__PURE__ */ React.createElement(
+      Sel,
+      {
+        value: u.solicitacao,
+        onChange: (e) => setUcDet(ui, { solicitacao: e.target.value })
+      },
+      /* @__PURE__ */ React.createElement("option", null, "Conex\xE3o Nova"),
+      /* @__PURE__ */ React.createElement("option", null, "Altera\xE7\xE3o de Carga"),
+      /* @__PURE__ */ React.createElement("option", null, "Caixa Existente sem Altera\xE7\xE3o")
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Atividade principal", req: true }, /* @__PURE__ */ React.createElement(
+      Sel,
+      {
+        value: u.atividade,
+        disabled: restrito,
+        onChange: (e) => setUcDet(ui, { atividade: e.target.value })
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecionar"),
+      /* @__PURE__ */ React.createElement("option", null, "Residencial"),
+      /* @__PURE__ */ React.createElement("option", null, "Comercial"),
+      /* @__PURE__ */ React.createElement("option", null, "Industrial"),
+      /* @__PURE__ */ React.createElement("option", null, "Rural")
+    )), /* @__PURE__ */ React.createElement(
+      Field,
+      {
+        label: "Ramo de atividade",
+        req: u.atividade !== "Residencial"
+      },
+      /* @__PURE__ */ React.createElement(
+        Inp,
+        {
+          value: u.ramo,
+          disabled: restrito,
+          onChange: (e) => setUcDet(ui, { ramo: e.target.value }),
+          placeholder: u.atividade === "Residencial" ? "\u2014" : "Obrigat\xF3rio"
+        }
+      )
+    ), /* @__PURE__ */ React.createElement(Field, { label: "N\xBA Predial" }, /* @__PURE__ */ React.createElement("div", { className: "readonly-val" }, obra.num || "N\xBA Predial")), /* @__PURE__ */ React.createElement(Field, { label: "Complemento", req: ucsDet.length > 1 }, /* @__PURE__ */ React.createElement(
+      Inp,
+      {
+        value: u.complemento,
+        onChange: (e) => setUcDet(ui, { complemento: e.target.value }),
+        placeholder: "Casa 1"
+      }
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Caixa / Identifica\xE7\xE3o" }, /* @__PURE__ */ React.createElement(
+      Inp,
+      {
+        value: u.caixa,
+        onChange: (e) => setUcDet(ui, { caixa: e.target.value })
+      }
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Unidade Consumidora" }, /* @__PURE__ */ React.createElement(
+      Inp,
+      {
+        value: u.unidadeConsumidora,
+        onChange: (e) => setUcDet(ui, { unidadeConsumidora: e.target.value }),
+        placeholder: "Identifica\xE7\xE3o da UC (interna/externa)"
+      }
+    )), u.solicitacao !== "Conex\xE3o Nova" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Field, { label: "N\xBA Instala\xE7\xE3o / Medidor", req: true }, /* @__PURE__ */ React.createElement(
+      Inp,
+      {
+        value: u.instalacao,
+        onChange: (e) => setUcDet(ui, { instalacao: e.target.value })
+      }
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Disjuntor atual" }, /* @__PURE__ */ React.createElement(
+      Sel,
+      {
+        value: u.disjDe,
+        onChange: (e) => setUcDet(ui, { disjDe: e.target.value })
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecione\u2026"),
+      DISJ.map((d) => /* @__PURE__ */ React.createElement("option", { key: d.fx, value: d.fx }, d.fx))
+    )), u.solicitacao === "Altera\xE7\xE3o de Carga" && /* @__PURE__ */ React.createElement(Field, { label: "Mudan\xE7a de local" }, /* @__PURE__ */ React.createElement(
+      Toggle,
+      {
+        value: u.mudancaLocal,
+        onChange: (v) => setUcDet(ui, { mudancaLocal: v }),
+        options: [
+          { v: "Sim", l: "Sim" },
+          { v: "N\xE3o", l: "N\xE3o" }
+        ]
+      }
+    ))))))
+  ), ucsDet.length > 1 && /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      className: "alert " + (validacaoDisjuntores.ok ? "alert-ok" : "alert-warn")
+    },
+    /* @__PURE__ */ React.createElement("b", null, "Regra de disjuntores (m\xFAltiplas UCs sem prote\xE7\xE3o geral):"),
+    " no m\xE1ximo 1 tripolar de 63 A e/ou at\xE9 2 mono/bif\xE1sicos de 63 A.",
+    " ",
+    validacaoDisjuntores.ok ? "\u2714 " : "\u26A0 ",
+    validacaoDisjuntores.msg
+  ));
 }
-

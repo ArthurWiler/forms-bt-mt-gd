@@ -1,6 +1,3 @@
-// ============================================================
-// CEMIG BT — Aba: TabOrient  (extraído de js/views.js)
-// ============================================================
 function TabOrient({ ctx }) {
   const {
     aba,
@@ -69,87 +66,55 @@ function TabOrient({ ctx }) {
     totalUcsEmpreendimento,
     trocaDisjGeral,
     validacaoDisjuntores,
-    validacaoHibrido,
+    validacaoHibrido
   } = ctx;
-  return (
-    <Card
-      eyebrow="Comece por aqui"
-      title="Orientações para preenchimento"
-      sub={ORIENTACOES.intro}
-    >
-      <div
-        style={{
+  return /* @__PURE__ */ React.createElement(
+    Card,
+    {
+      eyebrow: "Comece por aqui",
+      title: "Orienta\xE7\xF5es para preenchimento",
+      sub: ORIENTACOES.intro
+    },
+    /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        style: {
           fontWeight: 700,
           color: "var(--verde-escuro)",
           fontSize: 14,
-          marginBottom: 4,
-        }}
-      >
-        {ORIENTACOES.geral.titulo}
-      </div>
-      <ul className="orient-list">
-        {ORIENTACOES.geral.itens.map((it, i) => (
-          <li key={i} className="orient-item">
-            <span className="orient-num">{i + 1}</span>
-            <p>{it}</p>
-          </li>
-        ))}
-      </ul>
-      <div
-        style={{
+          marginBottom: 4
+        }
+      },
+      ORIENTACOES.geral.titulo
+    ),
+    /* @__PURE__ */ React.createElement("ul", { className: "orient-list" }, ORIENTACOES.geral.itens.map((it, i) => /* @__PURE__ */ React.createElement("li", { key: i, className: "orient-item" }, /* @__PURE__ */ React.createElement("span", { className: "orient-num" }, i + 1), /* @__PURE__ */ React.createElement("p", null, it)))),
+    /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        style: {
           fontWeight: 700,
           color: "var(--verde-escuro)",
           fontSize: 14,
-          margin: "18px 0 4px",
-        }}
-      >
-        {ORIENTACOES.individual.titulo}
-      </div>
-      <ul className="orient-list">
-        {ORIENTACOES.individual.itens.map((it, i) => (
-          <li key={i} className="orient-item">
-            <span className="orient-num">{i + 1}</span>
-            <p>{it}</p>
-          </li>
-        ))}
-      </ul>
-      {!restrito && (
-        <React.Fragment>
-          <div
-            style={{
-              fontWeight: 700,
-              color: "var(--verde-escuro)",
-              fontSize: 14,
-              margin: "18px 0 4px",
-            }}
-          >
-            {ORIENTACOES.coletivo.titulo}
-          </div>
-          <ul className="orient-list">
-            {ORIENTACOES.coletivo.itens.map((it, i) => (
-              <li key={i} className="orient-item">
-                <span className="orient-num">{i + 1}</span>
-                <p>{it}</p>
-              </li>
-            ))}
-          </ul>
-        </React.Fragment>
-      )}
-      <div className="callout">{ORIENTACOES.callout}</div>
-      <div className="legend">
-        <span>
-          <span className="req">*</span> Campo de preenchimento obrigatório
-        </span>
-        <span>
-          <span className="req">**</span> Obrigatório para pessoa física
-        </span>
-      </div>
-      <div style={{ marginTop: 16 }}>
-        <Btn variant="primary" onClick={irProx}>
-          Iniciar preenchimento →
-        </Btn>
-      </div>
-    </Card>
+          margin: "18px 0 4px"
+        }
+      },
+      ORIENTACOES.individual.titulo
+    ),
+    /* @__PURE__ */ React.createElement("ul", { className: "orient-list" }, ORIENTACOES.individual.itens.map((it, i) => /* @__PURE__ */ React.createElement("li", { key: i, className: "orient-item" }, /* @__PURE__ */ React.createElement("span", { className: "orient-num" }, i + 1), /* @__PURE__ */ React.createElement("p", null, it)))),
+    !restrito && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        style: {
+          fontWeight: 700,
+          color: "var(--verde-escuro)",
+          fontSize: 14,
+          margin: "18px 0 4px"
+        }
+      },
+      ORIENTACOES.coletivo.titulo
+    ), /* @__PURE__ */ React.createElement("ul", { className: "orient-list" }, ORIENTACOES.coletivo.itens.map((it, i) => /* @__PURE__ */ React.createElement("li", { key: i, className: "orient-item" }, /* @__PURE__ */ React.createElement("span", { className: "orient-num" }, i + 1), /* @__PURE__ */ React.createElement("p", null, it))))),
+    /* @__PURE__ */ React.createElement("div", { className: "callout" }, ORIENTACOES.callout),
+    /* @__PURE__ */ React.createElement("div", { className: "legend" }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("span", { className: "req" }, "*"), " Campo de preenchimento obrigat\xF3rio"), /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("span", { className: "req" }, "**"), " Obrigat\xF3rio para pessoa f\xEDsica")),
+    /* @__PURE__ */ React.createElement("div", { style: { marginTop: 16 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "primary", onClick: irProx }, "Iniciar preenchimento \u2192"))
   );
 }
-

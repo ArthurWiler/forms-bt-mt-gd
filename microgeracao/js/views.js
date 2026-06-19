@@ -1,25 +1,18 @@
-// ============================================================
-// MICROGERAÇÃO DISTRIBUÍDA — Views (seções do formulário)
-// Cada seção recebe um ctx único com estado e setters.
-// ============================================================
-
-// ---------- Seção 1: Identificação da UC (schema-driven) ----------
-// Schema = fonte única: renderização, validação de obrigatórios e PDF derivam daqui.
 const GD_SCHEMA_IDENTIFICACAO = [
   {
     k: "instalacao",
-    label: "Número da instalação",
+    label: "N\xFAmero da instala\xE7\xE3o",
     req: true,
-    placeholder: "Nº da instalação CEMIG",
+    placeholder: "N\xBA da instala\xE7\xE3o CEMIG",
     // dígitos apenas (equivale a replace(/\D/g,""))
-    mask: "soDigitos",
+    mask: "soDigitos"
   },
   {
     k: "fastTrack",
     label: 'Enquadramento no inciso III do art. 73-A ("FAST TRACK")?',
     type: "toggle",
     options: GD_SN,
-    pdf: false,
+    pdf: false
   },
   {
     k: "fastRegra",
@@ -27,14 +20,14 @@ const GD_SCHEMA_IDENTIFICACAO = [
     type: "select",
     span: 3,
     options: GD_FAST_REGRAS,
-    show: (d) => d.fastTrack === "Sim",
+    show: (d) => d.fastTrack === "Sim"
   },
   {
     k: "gridZero",
-    label: 'O empreendimento será "Grid Zero"?',
+    label: 'O empreendimento ser\xE1 "Grid Zero"?',
     type: "toggle",
     options: GD_SN,
-    pdf: false,
+    pdf: false
   },
   { k: "titular", label: "Titular da Unidade Consumidora", req: true, span: 3 },
   {
@@ -43,7 +36,7 @@ const GD_SCHEMA_IDENTIFICACAO = [
     req: true,
     type: "select",
     placeholder: false,
-    options: GD_GRUPOS,
+    options: GD_GRUPOS
   },
   { k: "classe", label: "Classe", req: true, type: "select", options: GD_CLASSES },
   {
@@ -51,24 +44,24 @@ const GD_SCHEMA_IDENTIFICACAO = [
     label: "CPF/CNPJ",
     req: true,
     hintKey: "cnpjStatus",
-    placeholder: "Somente números",
+    placeholder: "Somente n\xFAmeros",
     mask: "mascararCpfCnpj",
     onInput: (v, ctx) => {
       if (ehCNPJ(v) && soDigitos(v).length === 14) ctx.buscarCnpj(v);
-    },
+    }
   },
   { k: "logradouro", label: "Logradouro", req: true, span: 2 },
-  { k: "numero", label: "Número", req: true },
+  { k: "numero", label: "N\xFAmero", req: true },
   { k: "complemento", label: "Complemento" },
   { k: "bairro", label: "Bairro", req: true },
-  { k: "municipio", label: "Município", req: true },
+  { k: "municipio", label: "Munic\xEDpio", req: true },
   {
     k: "estado",
     label: "Estado",
     req: true,
     type: "select",
     placeholder: false,
-    options: ["MG"],
+    options: ["MG"]
   },
   {
     k: "cep",
@@ -78,558 +71,70 @@ const GD_SCHEMA_IDENTIFICACAO = [
     mask: "mascararCEP",
     onInput: (v, ctx) => {
       if (soDigitos(v).length === 8) ctx.buscarCep(v);
-    },
+    }
   },
   { k: "telefone", label: "Telefone", mask: "mascararFixo" },
   { k: "celular", label: "Celular", req: true, mask: "mascararCelular" },
-  { k: "email", label: "E-mail", req: true },
+  { k: "email", label: "E-mail", req: true }
 ];
-
 function ViewIdentificacao({ ctx }) {
-  return (
-    <Card eyebrow="Seção 1" title="Identificação da Unidade Consumidora">
-      <div className="grid">
-        <CamposSchema schema={GD_SCHEMA_IDENTIFICACAO} ctx={ctx} />
-      </div>
-    </Card>
-  );
+  return /* @__PURE__ */ React.createElement(Card, { eyebrow: "Se\xE7\xE3o 1", title: "Identifica\xE7\xE3o da Unidade Consumidora" }, /* @__PURE__ */ React.createElement("div", { className: "grid" }, /* @__PURE__ */ React.createElement(CamposSchema, { schema: GD_SCHEMA_IDENTIFICACAO, ctx })));
 }
-
-// ---------- Placeholders das próximas seções (preenchidas incrementalmente) ----------
 function ViewDadosUC({ ctx }) {
   const { d, set } = ctx;
   const utm = gdValidarUTM(d.fuso, d.utmE, d.utmN);
   const potTrafos = d.tipoSE ? GD_TRAFO_POR_SE[d.tipoSE] || [] : [];
-  const setTrafo = (i, patch) =>
-    set({ trafos: d.trafos.map((t, k) => (k === i ? { ...t, ...patch } : t)) });
+  const setTrafo = (i, patch) => set({ trafos: d.trafos.map((t, k) => k === i ? { ...t, ...patch } : t) });
   const addTrafo = () => set({ trafos: [...d.trafos, { se: d.tipoSE, qte: "", potencia: "" }] });
   const delTrafo = (i) => set({ trafos: d.trafos.filter((_, k) => k !== i) });
-  const semAlteracao = d.solicitacao && d.solicitacao.indexOf("SEM Alteração") >= 0;
+  const semAlteracao = d.solicitacao && d.solicitacao.indexOf("SEM Altera\xE7\xE3o") >= 0;
   const fasesDisj = semAlteracao ? GD_DISJ_FASES_ALT : GD_DISJ_FASES;
-  const correntesDisj = d.disjGeralFase
-    ? GD_DISJ_REVISADA.filter((x) => x.tipo === d.disjGeralFase).map((x) => x.a)
-    : [];
+  const correntesDisj = d.disjGeralFase ? GD_DISJ_REVISADA.filter((x) => x.tipo === d.disjGeralFase).map((x) => x.a) : [];
   const limiteInj = gdLimiteInjecao(d.disjGeralFase, d.disjGeralA, false);
-
-  return (
-    <Card eyebrow="Seção 2" title="Dados da Unidade Consumidora">
-      <div className="grid">
-        {/* Coordenadas UTM */}
-        <Field label="Fuso" req hint="Faixa de coordenadas conforme o fuso">
-          <Sel value={d.fuso} onChange={(e) => set({ fuso: e.target.value })}>
-            <option value="">Selecionar</option>
-            {GD_FUSOS.map((f) => (
-              <option key={f} value={f}>{f}</option>
-            ))}
-          </Sel>
-        </Field>
-        <Field label="E (Abscissa)" req hint={!utm.ok ? utm.msg : ""}>
-          <Inp value={d.utmE} onChange={(e) => set({ utmE: e.target.value.replace(/[^\d.]/g, "") })} placeholder="Coordenada Leste" />
-        </Field>
-        <Field label="N (Ordenada)" req hint={!utm.ok && d.utmN ? utm.msg : ""}>
-          <Inp value={d.utmN} onChange={(e) => set({ utmN: e.target.value.replace(/[^\d.]/g, "") })} placeholder="Coordenada Norte" />
-        </Field>
-
-        {/* Gerador de emergência */}
-        <Field label="Possui Grupo Motor Gerador de Emergência em Paralelo com a Cemig (Diesel/Gás)?" span={d.geradorEmergencia === "Sim" ? 2 : 3}>
-          <Toggle value={d.geradorEmergencia} onChange={(v) => set({ geradorEmergencia: v })} options={GD_SN.map((o) => ({ v: o, l: o }))} />
-        </Field>
-        {d.geradorEmergencia === "Sim" && (
-          <Field label="Potência (kVA)" req>
-            <Inp value={d.geradorPotencia} onChange={(e) => set({ geradorPotencia: e.target.value.replace(/[^\d.]/g, "") })} />
-          </Field>
-        )}
-
-        {/* Tipo de SE + trafos */}
-        <Field label="Tipo de Subestação (Conforme ND 5.3)">
-          <Sel value={d.tipoSE} onChange={(e) => set({ tipoSE: e.target.value })}>
-            <option value="">Selecionar</option>
-            {GD_TIPOS_SE.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </Sel>
-        </Field>
-      </div>
-
-      {d.tipoSE && (
-        <div className="subbox" style={{ marginTop: 12 }}>
-          <div className="motores-head">
-            <span className="subbox-title">Transformadores (Qte × Potência)</span>
-            <Btn variant="primary" onClick={addTrafo}>+ Trafo</Btn>
-          </div>
-          <table className="motores-table">
-            <thead>
-              <tr><th>Qte</th><th>Potência (kVA)</th><th></th></tr>
-            </thead>
-            <tbody>
-              {d.trafos.map((t, i) => (
-                <tr key={i}>
-                  <td>
-                    <input type="number" min="0" value={t.qte}
-                      onChange={(e) => setTrafo(i, { qte: e.target.value })} style={{ width: 70 }} />
-                  </td>
-                  <td>
-                    <select value={t.potencia} onChange={(e) => setTrafo(i, { potencia: e.target.value })}>
-                      <option value="">Selecionar</option>
-                      {potTrafos.map((p) => (
-                        <option key={p} value={p}>{p}</option>
-                      ))}
-                    </select>
-                  </td>
-                  <td>
-                    {d.trafos.length > 1 && (
-                      <button type="button" className="motor-del" onClick={() => delTrafo(i)}>✕</button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <div className="grid" style={{ marginTop: 12 }}>
-        {/* Tipo de solicitação / edificação */}
-        <Field label="Tipo de Solicitação" req span={3}>
-          <Sel value={d.solicitacao} onChange={(e) => set({ solicitacao: e.target.value })}>
-            <option value="">Selecionar</option>
-            {GD_SOLICITACOES.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </Sel>
-        </Field>
-        <Field label="Tipo de edificação" req span={3}>
-          <Sel value={d.edificacao} onChange={(e) => set({ edificacao: e.target.value })}>
-            <option value="">Selecionar</option>
-            {GD_EDIFICACOES.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </Sel>
-        </Field>
-
-        {/* Padrão de entrada */}
-        <Field label="Tipo de Padrão de Entrada">
-          <Sel value={d.edifTipo} onChange={(e) => set({ edifTipo: e.target.value })}>
-            <option value="">Selecionar</option>
-            {GD_EDIF_TIPO.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </Sel>
-        </Field>
-        <Field label="Tipo de Ramal">
-          <Sel value={d.ramal} onChange={(e) => set({ ramal: e.target.value })}>
-            {GD_RAMAL.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </Sel>
-        </Field>
-        <Field label="Disjuntor Individual Atual (A)">
-          <Inp value={d.disjAtualA} onChange={(e) => set({ disjAtualA: e.target.value.replace(/\D/g, "") })} />
-        </Field>
-
-        {/* Disjuntor geral */}
-        <Field label="Disjuntor Geral — Fase">
-          <Sel value={d.disjGeralFase} onChange={(e) => set({ disjGeralFase: e.target.value, disjGeralA: "" })}>
-            <option value="">Selecionar</option>
-            {fasesDisj.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </Sel>
-        </Field>
-        <Field label="Disjuntor Geral — Corrente (A)" hint={limiteInj != null ? `Limite injeção: ${fmt2(limiteInj)} kW` : ""}>
-          <Sel value={d.disjGeralA} onChange={(e) => set({ disjGeralA: e.target.value })}>
-            <option value="">Selecionar</option>
-            {correntesDisj.map((a) => (
-              <option key={a} value={a}>{a}</option>
-            ))}
-          </Sel>
-        </Field>
-        <Field label="Qte Disjuntor Geral">
-          <Inp value={d.qteDisjGeral} onChange={(e) => set({ qteDisjGeral: e.target.value.replace(/\D/g, "") })} />
-        </Field>
-
-        <Field label="Tensão de Atendimento (V)">
-          <Sel value={d.tensaoAtendimento} onChange={(e) => set({ tensaoAtendimento: e.target.value })}>
-            <option value="">Selecionar</option>
-            {(d.grupo === "A" ? GD_TENSAO_A : GD_TENSAO_B).map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </Sel>
-        </Field>
-        <Field label="Haverá Mudança de Local do Padrão de Entrada?" span={2}>
-          <Toggle value={d.mudancaLocal} onChange={(v) => set({ mudancaLocal: v })} options={GD_SN.map((o) => ({ v: o, l: o }))} />
-        </Field>
-
-        <Field label="O padrão a ser ligado está a menos de 30 m do poste da CEMIG?" span={3}>
-          <Toggle value={d.distMenor30} onChange={(v) => set({ distMenor30: v })} options={GD_SN.map((o) => ({ v: o, l: o }))} />
-        </Field>
-
-        {/* Telhado arrendado */}
-        <Field label="O telhado será arrendado para pessoa/empresa diferente do proprietário?" span={3}>
-          <Toggle value={d.telhadoArrendado} onChange={(v) => set({ telhadoArrendado: v })} options={GD_SN.map((o) => ({ v: o, l: o }))} />
-        </Field>
-        {d.telhadoArrendado === "Sim" && (
-          <Field label="As 2 instalações (existente + telhado) foram representadas no DUB e memorial descritivo?" span={3} hint="É necessário representar as 2 instalações no DUB e memorial descritivo">
-            <Toggle value={d.duasInstalacoesDUB} onChange={(v) => set({ duasInstalacoesDUB: v })} options={GD_SN.map((o) => ({ v: o, l: o }))} />
-          </Field>
-        )}
-
-        {/* Instalação existente */}
-        <Field label="Número da instalação existente no local" span={2}>
-          <Inp value={d.instExistente} onChange={(e) => set({ instExistente: e.target.value.replace(/\D/g, "") })} />
-        </Field>
-        <Field label="A instalação existente é atendida em BT ou MT?">
-          <Sel value={d.instExistenteBTMT} onChange={(e) => set({ instExistenteBTMT: e.target.value })}>
-            <option value="">Selecionar</option>
-            {GD_BT_MT.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </Sel>
-        </Field>
-
-        {/* Demandas */}
-        <Field label="Demanda contratada de consumo (kW)" req hint="Potência em relação ao consumo da UC (não incluir trafos/inversores/placas)">
-          <Inp value={d.demandaConsumo} onChange={(e) => set({ demandaConsumo: e.target.value.replace(/[^\d.]/g, "") })} />
-        </Field>
-        <Field label="Demanda contratada de geração (kW)">
-          <Inp value={d.demandaGeracao} onChange={(e) => set({ demandaGeracao: e.target.value.replace(/[^\d.]/g, "") })} />
-        </Field>
-      </div>
-    </Card>
-  );
+  return /* @__PURE__ */ React.createElement(Card, { eyebrow: "Se\xE7\xE3o 2", title: "Dados da Unidade Consumidora" }, /* @__PURE__ */ React.createElement("div", { className: "grid" }, /* @__PURE__ */ React.createElement(Field, { label: "Fuso", req: true, hint: "Faixa de coordenadas conforme o fuso" }, /* @__PURE__ */ React.createElement(Sel, { value: d.fuso, onChange: (e) => set({ fuso: e.target.value }) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecionar"), GD_FUSOS.map((f) => /* @__PURE__ */ React.createElement("option", { key: f, value: f }, f)))), /* @__PURE__ */ React.createElement(Field, { label: "E (Abscissa)", req: true, hint: !utm.ok ? utm.msg : "" }, /* @__PURE__ */ React.createElement(Inp, { value: d.utmE, onChange: (e) => set({ utmE: e.target.value.replace(/[^\d.]/g, "") }), placeholder: "Coordenada Leste" })), /* @__PURE__ */ React.createElement(Field, { label: "N (Ordenada)", req: true, hint: !utm.ok && d.utmN ? utm.msg : "" }, /* @__PURE__ */ React.createElement(Inp, { value: d.utmN, onChange: (e) => set({ utmN: e.target.value.replace(/[^\d.]/g, "") }), placeholder: "Coordenada Norte" })), /* @__PURE__ */ React.createElement(Field, { label: "Possui Grupo Motor Gerador de Emerg\xEAncia em Paralelo com a Cemig (Diesel/G\xE1s)?", span: d.geradorEmergencia === "Sim" ? 2 : 3 }, /* @__PURE__ */ React.createElement(Toggle, { value: d.geradorEmergencia, onChange: (v) => set({ geradorEmergencia: v }), options: GD_SN.map((o) => ({ v: o, l: o })) })), d.geradorEmergencia === "Sim" && /* @__PURE__ */ React.createElement(Field, { label: "Pot\xEAncia (kVA)", req: true }, /* @__PURE__ */ React.createElement(Inp, { value: d.geradorPotencia, onChange: (e) => set({ geradorPotencia: e.target.value.replace(/[^\d.]/g, "") }) })), /* @__PURE__ */ React.createElement(Field, { label: "Tipo de Subesta\xE7\xE3o (Conforme ND 5.3)" }, /* @__PURE__ */ React.createElement(Sel, { value: d.tipoSE, onChange: (e) => set({ tipoSE: e.target.value }) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecionar"), GD_TIPOS_SE.map((s) => /* @__PURE__ */ React.createElement("option", { key: s, value: s }, s))))), d.tipoSE && /* @__PURE__ */ React.createElement("div", { className: "subbox", style: { marginTop: 12 } }, /* @__PURE__ */ React.createElement("div", { className: "motores-head" }, /* @__PURE__ */ React.createElement("span", { className: "subbox-title" }, "Transformadores (Qte \xD7 Pot\xEAncia)"), /* @__PURE__ */ React.createElement(Btn, { variant: "primary", onClick: addTrafo }, "+ Trafo")), /* @__PURE__ */ React.createElement("table", { className: "motores-table" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "Qte"), /* @__PURE__ */ React.createElement("th", null, "Pot\xEAncia (kVA)"), /* @__PURE__ */ React.createElement("th", null))), /* @__PURE__ */ React.createElement("tbody", null, d.trafos.map((t, i) => /* @__PURE__ */ React.createElement("tr", { key: i }, /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "number",
+      min: "0",
+      value: t.qte,
+      onChange: (e) => setTrafo(i, { qte: e.target.value }),
+      style: { width: 70 }
+    }
+  )), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement("select", { value: t.potencia, onChange: (e) => setTrafo(i, { potencia: e.target.value }) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecionar"), potTrafos.map((p) => /* @__PURE__ */ React.createElement("option", { key: p, value: p }, p)))), /* @__PURE__ */ React.createElement("td", null, d.trafos.length > 1 && /* @__PURE__ */ React.createElement("button", { type: "button", className: "motor-del", onClick: () => delTrafo(i) }, "\u2715"))))))), /* @__PURE__ */ React.createElement("div", { className: "grid", style: { marginTop: 12 } }, /* @__PURE__ */ React.createElement(Field, { label: "Tipo de Solicita\xE7\xE3o", req: true, span: 3 }, /* @__PURE__ */ React.createElement(Sel, { value: d.solicitacao, onChange: (e) => set({ solicitacao: e.target.value }) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecionar"), GD_SOLICITACOES.map((s) => /* @__PURE__ */ React.createElement("option", { key: s, value: s }, s)))), /* @__PURE__ */ React.createElement(Field, { label: "Tipo de edifica\xE7\xE3o", req: true, span: 3 }, /* @__PURE__ */ React.createElement(Sel, { value: d.edificacao, onChange: (e) => set({ edificacao: e.target.value }) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecionar"), GD_EDIFICACOES.map((s) => /* @__PURE__ */ React.createElement("option", { key: s, value: s }, s)))), /* @__PURE__ */ React.createElement(Field, { label: "Tipo de Padr\xE3o de Entrada" }, /* @__PURE__ */ React.createElement(Sel, { value: d.edifTipo, onChange: (e) => set({ edifTipo: e.target.value }) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecionar"), GD_EDIF_TIPO.map((s) => /* @__PURE__ */ React.createElement("option", { key: s, value: s }, s)))), /* @__PURE__ */ React.createElement(Field, { label: "Tipo de Ramal" }, /* @__PURE__ */ React.createElement(Sel, { value: d.ramal, onChange: (e) => set({ ramal: e.target.value }) }, GD_RAMAL.map((s) => /* @__PURE__ */ React.createElement("option", { key: s, value: s }, s)))), /* @__PURE__ */ React.createElement(Field, { label: "Disjuntor Individual Atual (A)" }, /* @__PURE__ */ React.createElement(Inp, { value: d.disjAtualA, onChange: (e) => set({ disjAtualA: e.target.value.replace(/\D/g, "") }) })), /* @__PURE__ */ React.createElement(Field, { label: "Disjuntor Geral \u2014 Fase" }, /* @__PURE__ */ React.createElement(Sel, { value: d.disjGeralFase, onChange: (e) => set({ disjGeralFase: e.target.value, disjGeralA: "" }) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecionar"), fasesDisj.map((s) => /* @__PURE__ */ React.createElement("option", { key: s, value: s }, s)))), /* @__PURE__ */ React.createElement(Field, { label: "Disjuntor Geral \u2014 Corrente (A)", hint: limiteInj != null ? `Limite inje\xE7\xE3o: ${fmt2(limiteInj)} kW` : "" }, /* @__PURE__ */ React.createElement(Sel, { value: d.disjGeralA, onChange: (e) => set({ disjGeralA: e.target.value }) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecionar"), correntesDisj.map((a) => /* @__PURE__ */ React.createElement("option", { key: a, value: a }, a)))), /* @__PURE__ */ React.createElement(Field, { label: "Qte Disjuntor Geral" }, /* @__PURE__ */ React.createElement(Inp, { value: d.qteDisjGeral, onChange: (e) => set({ qteDisjGeral: e.target.value.replace(/\D/g, "") }) })), /* @__PURE__ */ React.createElement(Field, { label: "Tens\xE3o de Atendimento (V)" }, /* @__PURE__ */ React.createElement(Sel, { value: d.tensaoAtendimento, onChange: (e) => set({ tensaoAtendimento: e.target.value }) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecionar"), (d.grupo === "A" ? GD_TENSAO_A : GD_TENSAO_B).map((t) => /* @__PURE__ */ React.createElement("option", { key: t, value: t }, t)))), /* @__PURE__ */ React.createElement(Field, { label: "Haver\xE1 Mudan\xE7a de Local do Padr\xE3o de Entrada?", span: 2 }, /* @__PURE__ */ React.createElement(Toggle, { value: d.mudancaLocal, onChange: (v) => set({ mudancaLocal: v }), options: GD_SN.map((o) => ({ v: o, l: o })) })), /* @__PURE__ */ React.createElement(Field, { label: "O padr\xE3o a ser ligado est\xE1 a menos de 30 m do poste da CEMIG?", span: 3 }, /* @__PURE__ */ React.createElement(Toggle, { value: d.distMenor30, onChange: (v) => set({ distMenor30: v }), options: GD_SN.map((o) => ({ v: o, l: o })) })), /* @__PURE__ */ React.createElement(Field, { label: "O telhado ser\xE1 arrendado para pessoa/empresa diferente do propriet\xE1rio?", span: 3 }, /* @__PURE__ */ React.createElement(Toggle, { value: d.telhadoArrendado, onChange: (v) => set({ telhadoArrendado: v }), options: GD_SN.map((o) => ({ v: o, l: o })) })), d.telhadoArrendado === "Sim" && /* @__PURE__ */ React.createElement(Field, { label: "As 2 instala\xE7\xF5es (existente + telhado) foram representadas no DUB e memorial descritivo?", span: 3, hint: "\xC9 necess\xE1rio representar as 2 instala\xE7\xF5es no DUB e memorial descritivo" }, /* @__PURE__ */ React.createElement(Toggle, { value: d.duasInstalacoesDUB, onChange: (v) => set({ duasInstalacoesDUB: v }), options: GD_SN.map((o) => ({ v: o, l: o })) })), /* @__PURE__ */ React.createElement(Field, { label: "N\xFAmero da instala\xE7\xE3o existente no local", span: 2 }, /* @__PURE__ */ React.createElement(Inp, { value: d.instExistente, onChange: (e) => set({ instExistente: e.target.value.replace(/\D/g, "") }) })), /* @__PURE__ */ React.createElement(Field, { label: "A instala\xE7\xE3o existente \xE9 atendida em BT ou MT?" }, /* @__PURE__ */ React.createElement(Sel, { value: d.instExistenteBTMT, onChange: (e) => set({ instExistenteBTMT: e.target.value }) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecionar"), GD_BT_MT.map((s) => /* @__PURE__ */ React.createElement("option", { key: s, value: s }, s)))), /* @__PURE__ */ React.createElement(Field, { label: "Demanda contratada de consumo (kW)", req: true, hint: "Pot\xEAncia em rela\xE7\xE3o ao consumo da UC (n\xE3o incluir trafos/inversores/placas)" }, /* @__PURE__ */ React.createElement(Inp, { value: d.demandaConsumo, onChange: (e) => set({ demandaConsumo: e.target.value.replace(/[^\d.]/g, "") }) })), /* @__PURE__ */ React.createElement(Field, { label: "Demanda contratada de gera\xE7\xE3o (kW)" }, /* @__PURE__ */ React.createElement(Inp, { value: d.demandaGeracao, onChange: (e) => set({ demandaGeracao: e.target.value.replace(/[^\d.]/g, "") }) }))));
 }
 function ViewDocumentacao({ ctx }) {
   const { d, set } = ctx;
   const setDoc = (id, v) => set({ docs: { ...d.docs, [id]: v } });
-  return (
-    <Card eyebrow="Seção 3" title="Documentação a anexar (Nova UC ou Alteração de Potência)">
-      <p className="card-sub">
-        Marque os documentos que serão anexados à solicitação. Itens "Caso aplicável" só quando pertinentes.
-      </p>
-      <div className="doc-list">
-        {GD_DOCUMENTOS.map((doc) => (
-          <label key={doc.id} className="doc-item">
-            <input
-              type="checkbox"
-              checked={!!d.docs[doc.id]}
-              onChange={(e) => setDoc(doc.id, e.target.checked)}
-            />
-            <span className="doc-text">
-              <strong>{doc.id}</strong> {doc.txt}
-              {doc.req && <span className="doc-req"> (obrigatório)</span>}
-            </span>
-          </label>
-        ))}
-      </div>
-    </Card>
-  );
+  return /* @__PURE__ */ React.createElement(Card, { eyebrow: "Se\xE7\xE3o 3", title: "Documenta\xE7\xE3o a anexar (Nova UC ou Altera\xE7\xE3o de Pot\xEAncia)" }, /* @__PURE__ */ React.createElement("p", { className: "card-sub" }, 'Marque os documentos que ser\xE3o anexados \xE0 solicita\xE7\xE3o. Itens "Caso aplic\xE1vel" s\xF3 quando pertinentes.'), /* @__PURE__ */ React.createElement("div", { className: "doc-list" }, GD_DOCUMENTOS.map((doc) => /* @__PURE__ */ React.createElement("label", { key: doc.id, className: "doc-item" }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "checkbox",
+      checked: !!d.docs[doc.id],
+      onChange: (e) => setDoc(doc.id, e.target.checked)
+    }
+  ), /* @__PURE__ */ React.createElement("span", { className: "doc-text" }, /* @__PURE__ */ React.createElement("strong", null, doc.id), " ", doc.txt, doc.req && /* @__PURE__ */ React.createElement("span", { className: "doc-req" }, " (obrigat\xF3rio)"))))));
 }
 function ViewGeracao({ ctx }) {
   const { d, set } = ctx;
   const ehFV = d.fontePrimaria === "Solar";
-  // potências totais automáticas (qtd × nominal)
-  const potModulosCalc =
-    (parseFloat(d.qtdModulos) || 0) * (parseFloat(d.potNominalModulo) || 0) / 1000; // W -> kW
-  const potInversoresCalc =
-    (parseFloat(d.qtdInversores) || 0) * (parseFloat(d.potNominalInversor) || 0); // kW
-
-  return (
-    <Card eyebrow="Seção 4" title="Dados da Geração">
-      <div className="grid">
-        <Field label="Tipo de Fonte Primária" req>
-          <Sel value={d.fontePrimaria} onChange={(e) => set({ fontePrimaria: e.target.value })}>
-            {GD_FONTES.map((f) => (
-              <option key={f} value={f}>{f}</option>
-            ))}
-          </Sel>
-        </Field>
-        <Field label="Potência Ativa Instalada Total de Geração da Usina (kW)" req span={2}>
-          <Inp value={d.potAtivaInstalada} onChange={(e) => set({ potAtivaInstalada: e.target.value.replace(/[^\d.]/g, "") })} />
-        </Field>
-
-        <Field label="Tipo de geração" req span={d.tipoGeracao === "Outra (especificar):" ? 1 : 2}>
-          <Sel value={d.tipoGeracao} onChange={(e) => set({ tipoGeracao: e.target.value })}>
-            {GD_TIPO_GERACAO.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </Sel>
-        </Field>
-        {d.tipoGeracao === "Outra (especificar):" && (
-          <Field label="Especificar">
-            <Inp value={d.tipoGeracaoOutro} onChange={(e) => set({ tipoGeracaoOutro: e.target.value })} />
-          </Field>
-        )}
-
-        <Field label="Modalidade de compensação" req span={2}>
-          <Sel value={d.modalidade} onChange={(e) => set({ modalidade: e.target.value })}>
-            <option value="">Selecionar</option>
-            {GD_MODALIDADES.map((m) => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-          </Sel>
-        </Field>
-        <Field label="Qtde. de Instalações a receber o crédito">
-          <Inp value={d.qtdInstalacoesCredito} onChange={(e) => set({ qtdInstalacoesCredito: e.target.value.replace(/\D/g, "") })} />
-        </Field>
-      </div>
-
-      {ehFV && (
-        <React.Fragment>
-          <div className="gd-subhead">Central Geradora Fotovoltaica — Módulos</div>
-          <div className="grid">
-            <Field label="Modelo dos Módulos">
-              <Inp value={d.modeloModulos} onChange={(e) => set({ modeloModulos: e.target.value })} />
-            </Field>
-            <Field label="Fabricante dos Módulos">
-              <Inp value={d.fabricanteModulos} onChange={(e) => set({ fabricanteModulos: e.target.value })} />
-            </Field>
-            <Field label="Potência Nominal Módulo (W)">
-              <Inp value={d.potNominalModulo} onChange={(e) => set({ potNominalModulo: e.target.value.replace(/[^\d.]/g, "") })} />
-            </Field>
-            <Field label="Quantidade de Módulos">
-              <Inp value={d.qtdModulos} onChange={(e) => set({ qtdModulos: e.target.value.replace(/\D/g, "") })} />
-            </Field>
-            <Field label="Potência Total Módulos (kW)" hint="Calculado: qtd × nominal">
-              <Inp value={fmt2(potModulosCalc)} onChange={() => {}} />
-            </Field>
-            <Field label="Área dos Arranjos (m²)">
-              <Inp value={d.areaArranjos} onChange={(e) => set({ areaArranjos: e.target.value.replace(/[^\d.]/g, "") })} />
-            </Field>
-          </div>
-
-          <div className="gd-subhead">Central Geradora Fotovoltaica — Inversores</div>
-          <div className="grid">
-            <Field label="Modelo dos Inversores" hint="Para mais de 1 modelo, separar com barra (/)">
-              <Inp value={d.modeloInversores} onChange={(e) => set({ modeloInversores: e.target.value })} />
-            </Field>
-            <Field label="Fabricante dos Inversores">
-              <Inp value={d.fabricanteInversores} onChange={(e) => set({ fabricanteInversores: e.target.value })} />
-            </Field>
-            <Field label="Potência Nominal Inversor (kW)">
-              <Inp value={d.potNominalInversor} onChange={(e) => set({ potNominalInversor: e.target.value.replace(/[^\d.]/g, "") })} />
-            </Field>
-            <Field label="Quantidade de Inversores">
-              <Inp value={d.qtdInversores} onChange={(e) => set({ qtdInversores: e.target.value.replace(/\D/g, "") })} />
-            </Field>
-            <Field label="Potência Total dos Inversores (kW)" hint="Calculado: qtd × nominal">
-              <Inp value={fmt2(potInversoresCalc)} onChange={() => {}} />
-            </Field>
-            <Field label="Tensão de Conexão do Inversor (V)">
-              <Inp value={d.tensaoConexaoInversor} onChange={(e) => set({ tensaoConexaoInversor: e.target.value.replace(/[^\d.]/g, "") })} />
-            </Field>
-          </div>
-        </React.Fragment>
-      )}
-
-      <div className="gd-subhead">Outorga ou Registro (preencher somente se aplicável)</div>
-      <div className="grid">
-        <Field label="CEG do empreendimento" span={2}>
-          <Inp value={d.ceg} onChange={(e) => set({ ceg: e.target.value })} />
-        </Field>
-        <Field label="Número do Ato de Outorga ou Registro">
-          <Inp value={d.numAtoOutorga} onChange={(e) => set({ numAtoOutorga: e.target.value })} />
-        </Field>
-        <Field label="Nome da Usina" span={2}>
-          <Inp value={d.nomeUsina} onChange={(e) => set({ nomeUsina: e.target.value })} />
-        </Field>
-        <Field label="Ano do Ato de Outorga ou Registro">
-          <Inp value={d.anoAtoOutorga} onChange={(e) => set({ anoAtoOutorga: e.target.value.replace(/\D/g, "") })} />
-        </Field>
-        <Field label="Tipo do Ato de Outorga ou Registro" span={3}>
-          <Inp value={d.tipoAtoOutorga} onChange={(e) => set({ tipoAtoOutorga: e.target.value })} />
-        </Field>
-      </div>
-    </Card>
-  );
+  const potModulosCalc = (parseFloat(d.qtdModulos) || 0) * (parseFloat(d.potNominalModulo) || 0) / 1e3;
+  const potInversoresCalc = (parseFloat(d.qtdInversores) || 0) * (parseFloat(d.potNominalInversor) || 0);
+  return /* @__PURE__ */ React.createElement(Card, { eyebrow: "Se\xE7\xE3o 4", title: "Dados da Gera\xE7\xE3o" }, /* @__PURE__ */ React.createElement("div", { className: "grid" }, /* @__PURE__ */ React.createElement(Field, { label: "Tipo de Fonte Prim\xE1ria", req: true }, /* @__PURE__ */ React.createElement(Sel, { value: d.fontePrimaria, onChange: (e) => set({ fontePrimaria: e.target.value }) }, GD_FONTES.map((f) => /* @__PURE__ */ React.createElement("option", { key: f, value: f }, f)))), /* @__PURE__ */ React.createElement(Field, { label: "Pot\xEAncia Ativa Instalada Total de Gera\xE7\xE3o da Usina (kW)", req: true, span: 2 }, /* @__PURE__ */ React.createElement(Inp, { value: d.potAtivaInstalada, onChange: (e) => set({ potAtivaInstalada: e.target.value.replace(/[^\d.]/g, "") }) })), /* @__PURE__ */ React.createElement(Field, { label: "Tipo de gera\xE7\xE3o", req: true, span: d.tipoGeracao === "Outra (especificar):" ? 1 : 2 }, /* @__PURE__ */ React.createElement(Sel, { value: d.tipoGeracao, onChange: (e) => set({ tipoGeracao: e.target.value }) }, GD_TIPO_GERACAO.map((t) => /* @__PURE__ */ React.createElement("option", { key: t, value: t }, t)))), d.tipoGeracao === "Outra (especificar):" && /* @__PURE__ */ React.createElement(Field, { label: "Especificar" }, /* @__PURE__ */ React.createElement(Inp, { value: d.tipoGeracaoOutro, onChange: (e) => set({ tipoGeracaoOutro: e.target.value }) })), /* @__PURE__ */ React.createElement(Field, { label: "Modalidade de compensa\xE7\xE3o", req: true, span: 2 }, /* @__PURE__ */ React.createElement(Sel, { value: d.modalidade, onChange: (e) => set({ modalidade: e.target.value }) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecionar"), GD_MODALIDADES.map((m) => /* @__PURE__ */ React.createElement("option", { key: m, value: m }, m)))), /* @__PURE__ */ React.createElement(Field, { label: "Qtde. de Instala\xE7\xF5es a receber o cr\xE9dito" }, /* @__PURE__ */ React.createElement(Inp, { value: d.qtdInstalacoesCredito, onChange: (e) => set({ qtdInstalacoesCredito: e.target.value.replace(/\D/g, "") }) }))), ehFV && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "gd-subhead" }, "Central Geradora Fotovoltaica \u2014 M\xF3dulos"), /* @__PURE__ */ React.createElement("div", { className: "grid" }, /* @__PURE__ */ React.createElement(Field, { label: "Modelo dos M\xF3dulos" }, /* @__PURE__ */ React.createElement(Inp, { value: d.modeloModulos, onChange: (e) => set({ modeloModulos: e.target.value }) })), /* @__PURE__ */ React.createElement(Field, { label: "Fabricante dos M\xF3dulos" }, /* @__PURE__ */ React.createElement(Inp, { value: d.fabricanteModulos, onChange: (e) => set({ fabricanteModulos: e.target.value }) })), /* @__PURE__ */ React.createElement(Field, { label: "Pot\xEAncia Nominal M\xF3dulo (W)" }, /* @__PURE__ */ React.createElement(Inp, { value: d.potNominalModulo, onChange: (e) => set({ potNominalModulo: e.target.value.replace(/[^\d.]/g, "") }) })), /* @__PURE__ */ React.createElement(Field, { label: "Quantidade de M\xF3dulos" }, /* @__PURE__ */ React.createElement(Inp, { value: d.qtdModulos, onChange: (e) => set({ qtdModulos: e.target.value.replace(/\D/g, "") }) })), /* @__PURE__ */ React.createElement(Field, { label: "Pot\xEAncia Total M\xF3dulos (kW)", hint: "Calculado: qtd \xD7 nominal" }, /* @__PURE__ */ React.createElement(Inp, { value: fmt2(potModulosCalc), onChange: () => {
+  } })), /* @__PURE__ */ React.createElement(Field, { label: "\xC1rea dos Arranjos (m\xB2)" }, /* @__PURE__ */ React.createElement(Inp, { value: d.areaArranjos, onChange: (e) => set({ areaArranjos: e.target.value.replace(/[^\d.]/g, "") }) }))), /* @__PURE__ */ React.createElement("div", { className: "gd-subhead" }, "Central Geradora Fotovoltaica \u2014 Inversores"), /* @__PURE__ */ React.createElement("div", { className: "grid" }, /* @__PURE__ */ React.createElement(Field, { label: "Modelo dos Inversores", hint: "Para mais de 1 modelo, separar com barra (/)" }, /* @__PURE__ */ React.createElement(Inp, { value: d.modeloInversores, onChange: (e) => set({ modeloInversores: e.target.value }) })), /* @__PURE__ */ React.createElement(Field, { label: "Fabricante dos Inversores" }, /* @__PURE__ */ React.createElement(Inp, { value: d.fabricanteInversores, onChange: (e) => set({ fabricanteInversores: e.target.value }) })), /* @__PURE__ */ React.createElement(Field, { label: "Pot\xEAncia Nominal Inversor (kW)" }, /* @__PURE__ */ React.createElement(Inp, { value: d.potNominalInversor, onChange: (e) => set({ potNominalInversor: e.target.value.replace(/[^\d.]/g, "") }) })), /* @__PURE__ */ React.createElement(Field, { label: "Quantidade de Inversores" }, /* @__PURE__ */ React.createElement(Inp, { value: d.qtdInversores, onChange: (e) => set({ qtdInversores: e.target.value.replace(/\D/g, "") }) })), /* @__PURE__ */ React.createElement(Field, { label: "Pot\xEAncia Total dos Inversores (kW)", hint: "Calculado: qtd \xD7 nominal" }, /* @__PURE__ */ React.createElement(Inp, { value: fmt2(potInversoresCalc), onChange: () => {
+  } })), /* @__PURE__ */ React.createElement(Field, { label: "Tens\xE3o de Conex\xE3o do Inversor (V)" }, /* @__PURE__ */ React.createElement(Inp, { value: d.tensaoConexaoInversor, onChange: (e) => set({ tensaoConexaoInversor: e.target.value.replace(/[^\d.]/g, "") }) })))), /* @__PURE__ */ React.createElement("div", { className: "gd-subhead" }, "Outorga ou Registro (preencher somente se aplic\xE1vel)"), /* @__PURE__ */ React.createElement("div", { className: "grid" }, /* @__PURE__ */ React.createElement(Field, { label: "CEG do empreendimento", span: 2 }, /* @__PURE__ */ React.createElement(Inp, { value: d.ceg, onChange: (e) => set({ ceg: e.target.value }) })), /* @__PURE__ */ React.createElement(Field, { label: "N\xFAmero do Ato de Outorga ou Registro" }, /* @__PURE__ */ React.createElement(Inp, { value: d.numAtoOutorga, onChange: (e) => set({ numAtoOutorga: e.target.value }) })), /* @__PURE__ */ React.createElement(Field, { label: "Nome da Usina", span: 2 }, /* @__PURE__ */ React.createElement(Inp, { value: d.nomeUsina, onChange: (e) => set({ nomeUsina: e.target.value }) })), /* @__PURE__ */ React.createElement(Field, { label: "Ano do Ato de Outorga ou Registro" }, /* @__PURE__ */ React.createElement(Inp, { value: d.anoAtoOutorga, onChange: (e) => set({ anoAtoOutorga: e.target.value.replace(/\D/g, "") }) })), /* @__PURE__ */ React.createElement(Field, { label: "Tipo do Ato de Outorga ou Registro", span: 3 }, /* @__PURE__ */ React.createElement(Inp, { value: d.tipoAtoOutorga, onChange: (e) => set({ tipoAtoOutorga: e.target.value }) }))));
 }
 function ViewArmazenamento({ ctx }) {
   const { d, set } = ctx;
   const sim = d.possuiArmazenamento === "Sim";
-  return (
-    <Card eyebrow="Seção 5" title="Sistema de Armazenamento de Energia">
-      <div className="grid">
-        <Field label="Possui sistema de armazenamento de energia?" span={3}>
-          <Toggle value={d.possuiArmazenamento} onChange={(v) => set({ possuiArmazenamento: v })} options={GD_SN.map((o) => ({ v: o, l: o }))} />
-        </Field>
-        {sim && (
-          <React.Fragment>
-            <Field label="Sistema com possibilidade de operação ilhada?" span={3}>
-              <Toggle value={d.armOperacaoIlhada} onChange={(v) => set({ armOperacaoIlhada: v })} options={GD_SN.map((o) => ({ v: o, l: o }))} />
-            </Field>
-            {d.armOperacaoIlhada === "Sim" && (
-              <React.Fragment>
-                <Field label="Chave de desconexão física?">
-                  <Toggle value={d.armChaveDesconexao} onChange={(v) => set({ armChaveDesconexao: v })} options={GD_SN.map((o) => ({ v: o, l: o }))} />
-                </Field>
-                <Field label="Reconexão automática?">
-                  <Toggle value={d.armReconexaoAuto} onChange={(v) => set({ armReconexaoAuto: v })} options={GD_SN.map((o) => ({ v: o, l: o }))} />
-                </Field>
-              </React.Fragment>
-            )}
-            <Field label="Capacidade do banco de baterias (kWh)">
-              <Inp value={d.armCapacidadeKwh} onChange={(e) => set({ armCapacidadeKwh: e.target.value.replace(/[^\d.]/g, "") })} />
-            </Field>
-            <Field label="Potência total do banco de baterias (kW)">
-              <Inp value={d.armPotenciaKw} onChange={(e) => set({ armPotenciaKw: e.target.value.replace(/[^\d.]/g, "") })} />
-            </Field>
-            <Field label="Capacidade nominal do banco (Ah)">
-              <Inp value={d.armCapacidadeAh} onChange={(e) => set({ armCapacidadeAh: e.target.value.replace(/[^\d.]/g, "") })} />
-            </Field>
-            <Field label="Tensão do banco em CC (V)">
-              <Inp value={d.armTensaoCC} onChange={(e) => set({ armTensaoCC: e.target.value.replace(/[^\d.]/g, "") })} />
-            </Field>
-            <Field label="Profundidade de descarga (%)">
-              <Inp value={d.armProfundidadeDescarga} onChange={(e) => set({ armProfundidadeDescarga: e.target.value.replace(/[^\d.]/g, "") })} />
-            </Field>
-            <Field label="Produção mensal da central geradora (kWh)">
-              <Inp value={d.armProducaoMensal} onChange={(e) => set({ armProducaoMensal: e.target.value.replace(/[^\d.]/g, "") })} />
-            </Field>
-          </React.Fragment>
-        )}
-      </div>
-    </Card>
-  );
+  return /* @__PURE__ */ React.createElement(Card, { eyebrow: "Se\xE7\xE3o 5", title: "Sistema de Armazenamento de Energia" }, /* @__PURE__ */ React.createElement("div", { className: "grid" }, /* @__PURE__ */ React.createElement(Field, { label: "Possui sistema de armazenamento de energia?", span: 3 }, /* @__PURE__ */ React.createElement(Toggle, { value: d.possuiArmazenamento, onChange: (v) => set({ possuiArmazenamento: v }), options: GD_SN.map((o) => ({ v: o, l: o })) })), sim && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Field, { label: "Sistema com possibilidade de opera\xE7\xE3o ilhada?", span: 3 }, /* @__PURE__ */ React.createElement(Toggle, { value: d.armOperacaoIlhada, onChange: (v) => set({ armOperacaoIlhada: v }), options: GD_SN.map((o) => ({ v: o, l: o })) })), d.armOperacaoIlhada === "Sim" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Field, { label: "Chave de desconex\xE3o f\xEDsica?" }, /* @__PURE__ */ React.createElement(Toggle, { value: d.armChaveDesconexao, onChange: (v) => set({ armChaveDesconexao: v }), options: GD_SN.map((o) => ({ v: o, l: o })) })), /* @__PURE__ */ React.createElement(Field, { label: "Reconex\xE3o autom\xE1tica?" }, /* @__PURE__ */ React.createElement(Toggle, { value: d.armReconexaoAuto, onChange: (v) => set({ armReconexaoAuto: v }), options: GD_SN.map((o) => ({ v: o, l: o })) }))), /* @__PURE__ */ React.createElement(Field, { label: "Capacidade do banco de baterias (kWh)" }, /* @__PURE__ */ React.createElement(Inp, { value: d.armCapacidadeKwh, onChange: (e) => set({ armCapacidadeKwh: e.target.value.replace(/[^\d.]/g, "") }) })), /* @__PURE__ */ React.createElement(Field, { label: "Pot\xEAncia total do banco de baterias (kW)" }, /* @__PURE__ */ React.createElement(Inp, { value: d.armPotenciaKw, onChange: (e) => set({ armPotenciaKw: e.target.value.replace(/[^\d.]/g, "") }) })), /* @__PURE__ */ React.createElement(Field, { label: "Capacidade nominal do banco (Ah)" }, /* @__PURE__ */ React.createElement(Inp, { value: d.armCapacidadeAh, onChange: (e) => set({ armCapacidadeAh: e.target.value.replace(/[^\d.]/g, "") }) })), /* @__PURE__ */ React.createElement(Field, { label: "Tens\xE3o do banco em CC (V)" }, /* @__PURE__ */ React.createElement(Inp, { value: d.armTensaoCC, onChange: (e) => set({ armTensaoCC: e.target.value.replace(/[^\d.]/g, "") }) })), /* @__PURE__ */ React.createElement(Field, { label: "Profundidade de descarga (%)" }, /* @__PURE__ */ React.createElement(Inp, { value: d.armProfundidadeDescarga, onChange: (e) => set({ armProfundidadeDescarga: e.target.value.replace(/[^\d.]/g, "") }) })), /* @__PURE__ */ React.createElement(Field, { label: "Produ\xE7\xE3o mensal da central geradora (kWh)" }, /* @__PURE__ */ React.createElement(Inp, { value: d.armProducaoMensal, onChange: (e) => set({ armProducaoMensal: e.target.value.replace(/[^\d.]/g, "") }) })))));
 }
-
-// ---------- Seções 6, 7, 8, 9: Documentação técnica, contato, declarações, solicitante ----------
 function ViewDeclaracoes({ ctx }) {
   const { d, set } = ctx;
   const setDocTec = (id, v) => set({ docsTec: { ...d.docsTec, [id]: v } });
-  return (
-    <Card eyebrow="Seções 6 a 9" title="Documentação técnica, declarações e solicitante">
-      <div className="gd-subhead">6 — Documentação Técnica (obrigatória)</div>
-      <div className="doc-list">
-        {GD_DOCS_TEC.map((dc) => (
-          <label key={dc.id} className="doc-item">
-            <input type="checkbox" checked={!!d.docsTec[dc.id]} onChange={(e) => setDocTec(dc.id, e.target.checked)} />
-            <span className="doc-text">
-              <strong>{dc.id}</strong> {dc.txt}
-              {dc.req && <span className="doc-req"> (obrigatório)</span>}
-            </span>
-          </label>
-        ))}
-      </div>
-
-      <div className="gd-subhead">7 — Contato na Distribuidora</div>
-      <div className="gd-info-box">
-        <div><strong>{GD_CONTATO_CEMIG.responsavel}</strong></div>
-        <div>{GD_CONTATO_CEMIG.endereco}</div>
-        <div>Telefone: {GD_CONTATO_CEMIG.telefone} · E-mail: {GD_CONTATO_CEMIG.email}</div>
-      </div>
-
-      <div className="gd-subhead">8 — Solicitações e Declarações</div>
-      <div className="grid">
-        <Field label="8.1 - O padrão está pronto para ser ligado e a usina está instalada?" span={3} hint="Se 'Não', solicite vistoria/ligação em até 120 dias após o orçamento de conexão.">
-          <Toggle value={d.decl81} onChange={(v) => set({ decl81: v })} options={GD_SN.map((o) => ({ v: o, l: o }))} />
-        </Field>
-      </div>
-      <div className="doc-list" style={{ marginTop: 10 }}>
-        <label className="doc-item">
-          <input type="checkbox" checked={d.decl82} onChange={(e) => set({ decl82: e.target.checked })} />
-          <span className="doc-text"><strong>8.2</strong> Renuncio ao direito de desistir do orçamento de conexão nos termos da resolução ANEEL vigente. (Opcional)</span>
-        </label>
-        <label className="doc-item">
-          <input type="checkbox" checked={d.decl83} onChange={(e) => set({ decl83: e.target.checked })} />
-          <span className="doc-text"><strong>8.3</strong> Autorizo a distribuidora a entregar junto com o orçamento de conexão os contratos e o meio para pagamento de custos de minha responsabilidade. (Opcional)</span>
-        </label>
-        <label className="doc-item">
-          <input type="checkbox" checked={d.decl84} onChange={(e) => set({ decl84: e.target.checked })} />
-          <span className="doc-text"><strong>8.4</strong> Declaro que as instalações internas, incluindo a GD, atendem às normas da distribuidora, ABNT, órgãos oficiais e ao art. 8º da Lei nº 9.074/1995. <span className="doc-req">(Obrigatório)</span></span>
-        </label>
-        <label className="doc-item">
-          <input type="checkbox" checked={d.decl86} onChange={(e) => set({ decl86: e.target.checked })} />
-          <span className="doc-text"><strong>8.6</strong> Declaro que todas as informações prestadas neste documento são verdadeiras. <span className="doc-req">(Obrigatório)</span></span>
-        </label>
-      </div>
-      <div className="grid" style={{ marginTop: 10 }}>
-        <Field label="8.5 - Dispensa da análise de inversão de fluxo (art. 73-A) — selecione 1 (opcional)" span={3}>
-          <Sel value={d.decl85Regra} onChange={(e) => set({ decl85Regra: e.target.value })}>
-            <option value="">Nenhuma</option>
-            {GD_DECL_85.map((r) => (
-              <option key={r} value={r}>{r}</option>
-            ))}
-          </Sel>
-        </Field>
-      </div>
-
-      <div className="gd-subhead">9 — Solicitante</div>
-      <div className="grid">
-        <Field label="Nome do Consumidor ou Procurador Legal" req span={3}>
-          <Inp value={d.solicitanteNome} onChange={(e) => set({ solicitanteNome: e.target.value })} />
-        </Field>
-        <Field label="Endereço de Correspondência" req span={3}>
-          <Inp value={d.solicitanteEndereco} onChange={(e) => set({ solicitanteEndereco: e.target.value })} />
-        </Field>
-        <Field label="Telefone">
-          <Inp value={d.solicitanteTelefone} onChange={(e) => set({ solicitanteTelefone: mascararFixo(e.target.value) })} />
-        </Field>
-        <Field label="Celular" req>
-          <Inp value={d.solicitanteCelular} onChange={(e) => set({ solicitanteCelular: mascararCelular(e.target.value) })} />
-        </Field>
-        <Field label="E-mail" req>
-          <Inp value={d.solicitanteEmail} onChange={(e) => set({ solicitanteEmail: e.target.value })} />
-        </Field>
-        <Field label="Observações" span={3}>
-          <textarea className="ta" value={d.obs} onChange={(e) => set({ obs: e.target.value })} rows={3} />
-        </Field>
-      </div>
-    </Card>
-  );
+  return /* @__PURE__ */ React.createElement(Card, { eyebrow: "Se\xE7\xF5es 6 a 9", title: "Documenta\xE7\xE3o t\xE9cnica, declara\xE7\xF5es e solicitante" }, /* @__PURE__ */ React.createElement("div", { className: "gd-subhead" }, "6 \u2014 Documenta\xE7\xE3o T\xE9cnica (obrigat\xF3ria)"), /* @__PURE__ */ React.createElement("div", { className: "doc-list" }, GD_DOCS_TEC.map((dc) => /* @__PURE__ */ React.createElement("label", { key: dc.id, className: "doc-item" }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: !!d.docsTec[dc.id], onChange: (e) => setDocTec(dc.id, e.target.checked) }), /* @__PURE__ */ React.createElement("span", { className: "doc-text" }, /* @__PURE__ */ React.createElement("strong", null, dc.id), " ", dc.txt, dc.req && /* @__PURE__ */ React.createElement("span", { className: "doc-req" }, " (obrigat\xF3rio)"))))), /* @__PURE__ */ React.createElement("div", { className: "gd-subhead" }, "7 \u2014 Contato na Distribuidora"), /* @__PURE__ */ React.createElement("div", { className: "gd-info-box" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("strong", null, GD_CONTATO_CEMIG.responsavel)), /* @__PURE__ */ React.createElement("div", null, GD_CONTATO_CEMIG.endereco), /* @__PURE__ */ React.createElement("div", null, "Telefone: ", GD_CONTATO_CEMIG.telefone, " \xB7 E-mail: ", GD_CONTATO_CEMIG.email)), /* @__PURE__ */ React.createElement("div", { className: "gd-subhead" }, "8 \u2014 Solicita\xE7\xF5es e Declara\xE7\xF5es"), /* @__PURE__ */ React.createElement("div", { className: "grid" }, /* @__PURE__ */ React.createElement(Field, { label: "8.1 - O padr\xE3o est\xE1 pronto para ser ligado e a usina est\xE1 instalada?", span: 3, hint: "Se 'N\xE3o', solicite vistoria/liga\xE7\xE3o em at\xE9 120 dias ap\xF3s o or\xE7amento de conex\xE3o." }, /* @__PURE__ */ React.createElement(Toggle, { value: d.decl81, onChange: (v) => set({ decl81: v }), options: GD_SN.map((o) => ({ v: o, l: o })) }))), /* @__PURE__ */ React.createElement("div", { className: "doc-list", style: { marginTop: 10 } }, /* @__PURE__ */ React.createElement("label", { className: "doc-item" }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: d.decl82, onChange: (e) => set({ decl82: e.target.checked }) }), /* @__PURE__ */ React.createElement("span", { className: "doc-text" }, /* @__PURE__ */ React.createElement("strong", null, "8.2"), " Renuncio ao direito de desistir do or\xE7amento de conex\xE3o nos termos da resolu\xE7\xE3o ANEEL vigente. (Opcional)")), /* @__PURE__ */ React.createElement("label", { className: "doc-item" }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: d.decl83, onChange: (e) => set({ decl83: e.target.checked }) }), /* @__PURE__ */ React.createElement("span", { className: "doc-text" }, /* @__PURE__ */ React.createElement("strong", null, "8.3"), " Autorizo a distribuidora a entregar junto com o or\xE7amento de conex\xE3o os contratos e o meio para pagamento de custos de minha responsabilidade. (Opcional)")), /* @__PURE__ */ React.createElement("label", { className: "doc-item" }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: d.decl84, onChange: (e) => set({ decl84: e.target.checked }) }), /* @__PURE__ */ React.createElement("span", { className: "doc-text" }, /* @__PURE__ */ React.createElement("strong", null, "8.4"), " Declaro que as instala\xE7\xF5es internas, incluindo a GD, atendem \xE0s normas da distribuidora, ABNT, \xF3rg\xE3os oficiais e ao art. 8\xBA da Lei n\xBA 9.074/1995. ", /* @__PURE__ */ React.createElement("span", { className: "doc-req" }, "(Obrigat\xF3rio)"))), /* @__PURE__ */ React.createElement("label", { className: "doc-item" }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: d.decl86, onChange: (e) => set({ decl86: e.target.checked }) }), /* @__PURE__ */ React.createElement("span", { className: "doc-text" }, /* @__PURE__ */ React.createElement("strong", null, "8.6"), " Declaro que todas as informa\xE7\xF5es prestadas neste documento s\xE3o verdadeiras. ", /* @__PURE__ */ React.createElement("span", { className: "doc-req" }, "(Obrigat\xF3rio)")))), /* @__PURE__ */ React.createElement("div", { className: "grid", style: { marginTop: 10 } }, /* @__PURE__ */ React.createElement(Field, { label: "8.5 - Dispensa da an\xE1lise de invers\xE3o de fluxo (art. 73-A) \u2014 selecione 1 (opcional)", span: 3 }, /* @__PURE__ */ React.createElement(Sel, { value: d.decl85Regra, onChange: (e) => set({ decl85Regra: e.target.value }) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "Nenhuma"), GD_DECL_85.map((r) => /* @__PURE__ */ React.createElement("option", { key: r, value: r }, r))))), /* @__PURE__ */ React.createElement("div", { className: "gd-subhead" }, "9 \u2014 Solicitante"), /* @__PURE__ */ React.createElement("div", { className: "grid" }, /* @__PURE__ */ React.createElement(Field, { label: "Nome do Consumidor ou Procurador Legal", req: true, span: 3 }, /* @__PURE__ */ React.createElement(Inp, { value: d.solicitanteNome, onChange: (e) => set({ solicitanteNome: e.target.value }) })), /* @__PURE__ */ React.createElement(Field, { label: "Endere\xE7o de Correspond\xEAncia", req: true, span: 3 }, /* @__PURE__ */ React.createElement(Inp, { value: d.solicitanteEndereco, onChange: (e) => set({ solicitanteEndereco: e.target.value }) })), /* @__PURE__ */ React.createElement(Field, { label: "Telefone" }, /* @__PURE__ */ React.createElement(Inp, { value: d.solicitanteTelefone, onChange: (e) => set({ solicitanteTelefone: mascararFixo(e.target.value) }) })), /* @__PURE__ */ React.createElement(Field, { label: "Celular", req: true }, /* @__PURE__ */ React.createElement(Inp, { value: d.solicitanteCelular, onChange: (e) => set({ solicitanteCelular: mascararCelular(e.target.value) }) })), /* @__PURE__ */ React.createElement(Field, { label: "E-mail", req: true }, /* @__PURE__ */ React.createElement(Inp, { value: d.solicitanteEmail, onChange: (e) => set({ solicitanteEmail: e.target.value }) })), /* @__PURE__ */ React.createElement(Field, { label: "Observa\xE7\xF5es", span: 3 }, /* @__PURE__ */ React.createElement("textarea", { className: "ta", value: d.obs, onChange: (e) => set({ obs: e.target.value }), rows: 3 }))));
 }
 function ViewRevisao({ ctx }) {
   const { d, validacao, gerarPdf } = ctx;
-  const row = (label, val) => (
-    <div className="rev-row">
-      <span className="rev-label">{label}</span>
-      <span className="rev-val">{val || "—"}</span>
-    </div>
-  );
-  return (
-    <Card eyebrow="Revisão" title="Prévia & PDF">
-      {!validacao.ok ? (
-        <div className="rev-faltas">
-          <strong>Preencha os campos obrigatórios antes de exportar:</strong>
-          <ul>
-            {validacao.faltas.map((f) => (
-              <li key={f}>{f}</li>
-            ))}
-          </ul>
-        </div>
-      ) : (
-        <div className="rev-ok">Todos os campos obrigatórios preenchidos. Pronto para exportar.</div>
-      )}
-
-      <div className="gd-subhead">1 — Identificação</div>
-      {row("Instalação", d.instalacao)}
-      {row("Titular", d.titular)}
-      {row("Grupo / Classe", `${d.grupo} / ${d.classe}`)}
-      {row("CPF/CNPJ", d.cpfCnpj)}
-      {row("Endereço", `${d.logradouro}, ${d.numero} ${d.complemento} — ${d.bairro}, ${d.municipio}/${d.estado}`)}
-      {row("Fast Track / Grid Zero", `${d.fastTrack} / ${d.gridZero}`)}
-
-      <div className="gd-subhead">2 — Dados da UC</div>
-      {row("UTM", `Fuso ${d.fuso} · E ${d.utmE} · N ${d.utmN}`)}
-      {row("Solicitação", d.solicitacao)}
-      {row("Edificação", d.edificacao)}
-      {row("Disjuntor Geral", `${d.disjGeralFase || "—"} ${d.disjGeralA || ""}`)}
-      {row("Demanda consumo / geração (kW)", `${d.demandaConsumo || "—"} / ${d.demandaGeracao || "—"}`)}
-
-      <div className="gd-subhead">4 — Geração</div>
-      {row("Fonte", d.fontePrimaria)}
-      {row("Pot. Ativa Instalada (kW)", d.potAtivaInstalada)}
-      {row("Modalidade", d.modalidade)}
-      {d.fontePrimaria === "Solar" && row("Módulos / Inversores (kW)", `${d.potTotalModulos || "—"} / ${d.potTotalInversores || "—"}`)}
-
-      <div className="gd-subhead">5 — Armazenamento</div>
-      {row("Possui", d.possuiArmazenamento)}
-
-      <div className="gd-subhead">9 — Solicitante</div>
-      {row("Nome", d.solicitanteNome)}
-      {row("Contato", `${d.solicitanteCelular || "—"} · ${d.solicitanteEmail || "—"}`)}
-
-      <div style={{ marginTop: 16 }}>
-        <Btn variant="dark" onClick={gerarPdf} disabled={!validacao.ok}>📄 Exportar PDF</Btn>
-      </div>
-    </Card>
-  );
+  const row = (label, val) => /* @__PURE__ */ React.createElement("div", { className: "rev-row" }, /* @__PURE__ */ React.createElement("span", { className: "rev-label" }, label), /* @__PURE__ */ React.createElement("span", { className: "rev-val" }, val || "\u2014"));
+  return /* @__PURE__ */ React.createElement(Card, { eyebrow: "Revis\xE3o", title: "Pr\xE9via & PDF" }, !validacao.ok ? /* @__PURE__ */ React.createElement("div", { className: "rev-faltas" }, /* @__PURE__ */ React.createElement("strong", null, "Preencha os campos obrigat\xF3rios antes de exportar:"), /* @__PURE__ */ React.createElement("ul", null, validacao.faltas.map((f) => /* @__PURE__ */ React.createElement("li", { key: f }, f)))) : /* @__PURE__ */ React.createElement("div", { className: "rev-ok" }, "Todos os campos obrigat\xF3rios preenchidos. Pronto para exportar."), /* @__PURE__ */ React.createElement("div", { className: "gd-subhead" }, "1 \u2014 Identifica\xE7\xE3o"), row("Instala\xE7\xE3o", d.instalacao), row("Titular", d.titular), row("Grupo / Classe", `${d.grupo} / ${d.classe}`), row("CPF/CNPJ", d.cpfCnpj), row("Endere\xE7o", `${d.logradouro}, ${d.numero} ${d.complemento} \u2014 ${d.bairro}, ${d.municipio}/${d.estado}`), row("Fast Track / Grid Zero", `${d.fastTrack} / ${d.gridZero}`), /* @__PURE__ */ React.createElement("div", { className: "gd-subhead" }, "2 \u2014 Dados da UC"), row("UTM", `Fuso ${d.fuso} \xB7 E ${d.utmE} \xB7 N ${d.utmN}`), row("Solicita\xE7\xE3o", d.solicitacao), row("Edifica\xE7\xE3o", d.edificacao), row("Disjuntor Geral", `${d.disjGeralFase || "\u2014"} ${d.disjGeralA || ""}`), row("Demanda consumo / gera\xE7\xE3o (kW)", `${d.demandaConsumo || "\u2014"} / ${d.demandaGeracao || "\u2014"}`), /* @__PURE__ */ React.createElement("div", { className: "gd-subhead" }, "4 \u2014 Gera\xE7\xE3o"), row("Fonte", d.fontePrimaria), row("Pot. Ativa Instalada (kW)", d.potAtivaInstalada), row("Modalidade", d.modalidade), d.fontePrimaria === "Solar" && row("M\xF3dulos / Inversores (kW)", `${d.potTotalModulos || "\u2014"} / ${d.potTotalInversores || "\u2014"}`), /* @__PURE__ */ React.createElement("div", { className: "gd-subhead" }, "5 \u2014 Armazenamento"), row("Possui", d.possuiArmazenamento), /* @__PURE__ */ React.createElement("div", { className: "gd-subhead" }, "9 \u2014 Solicitante"), row("Nome", d.solicitanteNome), row("Contato", `${d.solicitanteCelular || "\u2014"} \xB7 ${d.solicitanteEmail || "\u2014"}`), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 16 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "dark", onClick: gerarPdf, disabled: !validacao.ok }, "\u{1F4C4} Exportar PDF")));
 }
