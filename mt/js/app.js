@@ -660,6 +660,8 @@ function renderPreview(){
   if(state.observacoes)h+=pvRow('Observações',state.observacoes);
   h+='</div>';
   $('#previewContent').innerHTML=h;
+  const btnMonomia=$('#btnCartaMonomia');
+  if(btnMonomia)btnMonomia.style.display=(state.monomia==='Sim')?'':'none';
 }
 function syncState(){$$('[data-k]').forEach(el=>{state[el.dataset.k]=el.value;});}
 

@@ -407,7 +407,11 @@
       <div id="previewContent" class="preview-doc"></div>
       <div class="form-nav"><button class="btn btn-ghost" onclick="goTo(4)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar e editar</button>
         <span class="progress-mini">Pronto para exportar</span>
-        <button class="btn btn-primary" onclick="exportarPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar PDF</button></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-ghost" id="btnCartaMonomia" style="display:none" onclick="gerarCartaMonomia()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar carta de tarifa monômia</button>
+          <button class="btn btn-primary" onclick="exportarPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar PDF</button>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -426,9 +430,11 @@
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="js/calculo.js"></script>
 <script src="js/dados.js"></script>
 <script src="js/subestacoes-b64.js"></script>
 <script src="js/app.js"></script>
+<script src="js/carta-monomia.js"></script>
 </body>
 </html>
