@@ -77,7 +77,16 @@ function TabCargasIndividual({ ctx }) {
     " máx. 1 tripolar 63 A e/ou 2 mono/bifásicos 63 A. ",
     validacaoDisjuntores.ok ? "✔ " : "⚠ ",
     validacaoDisjuntores.msg
-  ), ucsDet.map((u, ui) => /* @__PURE__ */ React.createElement(
+  ), ucsDet.map((u, ui) => ucSemAlteracao(u) ? /* @__PURE__ */ React.createElement(
+    Card,
+    {
+      key: ui,
+      eyebrow: `UC ${ui + 1} de ${ucsDet.length}`,
+      title: `Unidade Consumidora ${ui + 1}`,
+      sub: "Caixa existente sem alteração — não é necessário detalhar cargas."
+    },
+    /* @__PURE__ */ React.createElement("div", { className: "alert alert-info" }, "Esta UC foi marcada como ", /* @__PURE__ */ React.createElement("strong", null, "Caixa Existente sem Alteração"), ". O preenchimento de cargas foi omitido; ela aparecerá apenas no resumo do PDF.")
+  ) : /* @__PURE__ */ React.createElement(
     Card,
     {
       key: ui,

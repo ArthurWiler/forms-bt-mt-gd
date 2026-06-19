@@ -3,6 +3,7 @@ function App() {
   const [modalidade, setModalidade] = useState(null);
   const [cardSelecionado, setCardSelecionado] = useState(null);
   const restrito = !!cardSelecionado?.restrito;
+  const zonaTravada = !!cardSelecionado?.travaZonaRural;
   const [atend, setAtend] = useState({
     disjGeral: "Não",
     // possui disjuntor geral? Não=Individual, Sim=Coletivo
@@ -137,11 +138,15 @@ function App() {
       ),
     );
   const prevTotalKw = useMemo(
-    () => ucBlocos.reduce((s, u) => s + prevKwUC(u), 0),
+    () =>
+      ucBlocos.reduce((s, u) => s + (ucSemAlteracao(u) ? 0 : prevKwUC(u)), 0),
     [ucBlocos],
   );
   const residenciaisColetivo = useMemo(
-    () => ucBlocos.filter((u) => u.atividade === "Residencial"),
+    () =>
+      ucBlocos.filter(
+        (u) => u.atividade === "Residencial" && !ucSemAlteracao(u),
+      ),
     [ucBlocos],
   );
   const quantidadeApartamentos = residenciaisColetivo.length;
@@ -161,7 +166,11 @@ function App() {
     [areaMediaPonderada, quantidadeApartamentos],
   );
   const temUCNaoResidencial = useMemo(
-    () => ucBlocos.some((u) => u.atividade && u.atividade !== "Residencial"),
+    () =>
+      ucBlocos.some(
+        (u) =>
+          u.atividade && u.atividade !== "Residencial" && !ucSemAlteracao(u),
+      ),
     [ucBlocos],
   );
   const demandaResidencialManualInvalida =
@@ -180,7 +189,7 @@ function App() {
         : demandaApartamentosND52.demandaKVA;
     } else {
       demandaResidencial = ucBlocos
-        .filter((u) => u.atividade === "Residencial")
+        .filter((u) => u.atividade === "Residencial" && !ucSemAlteracao(u))
         .reduce((s, u) => s + num((u.prev || {}).demanda), 0);
     }
     const demandaNaoResidencial = temUCNaoResidencial
@@ -555,13 +564,14 @@ function App() {
     if (multiTorres)
       return blocos.reduce(
         (s, b) =>
-          s +
-          (b.ucs || []).reduce((su, u) => su + num((u.prev || {}).demanda), 0) +
-          num(b.demandaIncendio),
+          s + calcBlocoMultiTorres(b).demandaUcs + num(b.demandaIncendio),
         0,
       );
     if (coletivo) return demandaPrevTotal;
-    return ucsDet.reduce((s, u) => s + (u.cargas?._demanda || 0), 0);
+    return ucsDet.reduce(
+      (s, u) => s + (ucSemAlteracao(u) ? 0 : u.cargas?._demanda || 0),
+      0,
+    );
   }, [multiTorres, blocos, coletivo, demandaPrevTotal, ucsDet]);
   const coordObrigatoria =
     obra.localizacao === "Rural" && obra.distMenor30 === "Não";
@@ -604,6 +614,16 @@ function App() {
         atend.demandaNaoResidencial,
         "Demanda geral não residencial (kVA)",
       );
+    if (multiTorres)
+      blocos.forEach((b, bi) => {
+        if (
+          calcBlocoMultiTorres(b).temNaoResidencial &&
+          !String(b.demandaNaoResidencial || "").trim()
+        )
+          faltando.push(
+            `Demanda geral não residencial — ${atend.atendA} ${b.nome || bi + 1} (kVA)`,
+          );
+      });
     if (demandaResidencialManualInvalida)
       faltando.push(
         "Demanda residencial manual não pode ser menor que a calculada (ND-5.2)",
@@ -627,6 +647,9 @@ function App() {
     temUCNaoResidencial,
     atend.demandaNaoResidencial,
     demandaResidencialManualInvalida,
+    multiTorres,
+    blocos,
+    atend.atendA,
   ]);
   const abas = [
     { k: "orient", l: "Orientações" },
@@ -798,6 +821,7 @@ function App() {
     replicarUC1Coletivo,
     replicarUC1Torre,
     restrito,
+    zonaTravada,
     setBloco,
     setBlocoPrev,
     setTorre,

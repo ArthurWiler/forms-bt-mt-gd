@@ -96,6 +96,17 @@ function gerarPdfDoc(S) {
     doc.text(t, MG + 5, cy + 4.8);
     cy += 9;
   };
+  // Subseção (ex.: "4.1  UC 1") — cabeçalho leve sob uma seção principal
+  const subSec = (t) => {
+    checkSpace(8);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9.5);
+    doc.setTextColor(16, 119, 98);
+    doc.text(t, MG + 1, cy + 4);
+    doc.setDrawColor(200, 224, 216);
+    doc.line(MG + 1, cy + 5.6, MG + CW - 1, cy + 5.6);
+    cy += 8;
+  };
   const _vazio = (v) =>
     v === undefined ||
     v === null ||
@@ -297,16 +308,20 @@ function gerarPdfDoc(S) {
   cy += 2;
 
   sec("3.  DADOS DA OBRA (PADRÃO DE ENTRADA)");
-  const endObra = [
-    [obra.endereco, obra.num].filter(Boolean).join(", "),
-    obra.compl,
-    obra.bairro,
-    [obra.cidade, obra.estado].filter(Boolean).join("/"),
-    obra.cep ? "CEP " + obra.cep : "",
-  ]
-    .filter(Boolean)
-    .join(" - ");
-  fullLine("Endereço", endObra);
+  const obraRural = obra.localizacao === "Rural";
+  // Imprime apenas o endereço da zona ativa (evita misturar urbano e rural).
+  const endObra = obraRural
+    ? [obra.cidade, obra.estado].filter(Boolean).join("/")
+    : [
+        [obra.endereco, obra.num].filter(Boolean).join(", "),
+        obra.compl,
+        obra.bairro,
+        [obra.cidade, obra.estado].filter(Boolean).join("/"),
+        obra.cep ? "CEP " + obra.cep : "",
+      ]
+        .filter(Boolean)
+        .join(" - ");
+  fullLine(obraRural ? "Município" : "Endereço", endObra);
   const obraPairs = [["Localização", obra.localizacao]];
   if (coletivo) obraPairs.push(["Nº ART/TRT de Projeto", obra.art]);
   obraPairs.push(
@@ -353,9 +368,7 @@ function gerarPdfDoc(S) {
       blocos.map((b) => [
         b.nome,
         b.disjGeral,
-        fmt2(
-          (b.ucs || []).reduce((s, u) => s + num((u.prev || {}).demanda), 0),
-        ),
+        fmt2(calcBlocoMultiTorres(b).demandaUcs),
         b.qtdUCs,
         b.disjIncendio,
         b.demandaIncendio,
@@ -401,7 +414,7 @@ function gerarPdfDoc(S) {
           "Dem. (kVA)",
         ],
         [30, 20, 22, 20, 22, 20, 24, 24],
-        ucs.map((u, ui) => [
+        ucs.filter((u) => !ucSemAlteracao(u)).map((u, ui) => [
           u.identificacao || `UC ${ui + 1}`,
           (u.prev || {}).ilum || "—",
           (u.prev || {}).tomada || "—",
@@ -412,6 +425,30 @@ function gerarPdfDoc(S) {
           (u.prev || {}).demanda || "—",
         ]),
       );
+      cy += 2;
+      // Demanda da torre (ND-5.2 por torre): residencial + não residencial + incêndio
+      const cb = calcBlocoMultiTorres(b);
+      kvPairs([
+        cb.qtdApart
+          ? [
+              "Demanda residencial (ND-5.2)",
+              `${fmt2(cb.demResidencial)} kVA` +
+                (cb.nd52
+                  ? ` (${cb.qtdApart} ap. · área méd. ${fmt2(cb.areaMedia)} m²)`
+                  : " (manual)"),
+            ]
+          : null,
+        cb.temNaoResidencial
+          ? ["Demanda não residencial", `${fmt2(cb.demNaoResidencial)} kVA`]
+          : null,
+        num(b.demandaIncendio)
+          ? ["Demanda combate a incêndio", `${fmt2(num(b.demandaIncendio))} kVA`]
+          : null,
+        [
+          "Demanda total da torre",
+          `${fmt2(cb.demandaUcs + num(b.demandaIncendio))} kVA`,
+        ],
+      ]);
       cy += 2;
     });
   } else if (coletivo) {
@@ -455,7 +492,7 @@ function gerarPdfDoc(S) {
         "Dem. (kVA)",
       ],
       [30, 20, 22, 24, 22, 20, 22, 22],
-      ucBlocos.map((u) => [
+      ucBlocos.filter((u) => !ucSemAlteracao(u)).map((u) => [
         u.identificacao || "UC",
         (u.prev || {}).ilum || "—",
         (u.prev || {}).tomada || "—",
@@ -486,9 +523,12 @@ function gerarPdfDoc(S) {
       cy += 2;
     }
   } else {
-    // INDIVIDUAL: identificação + cargas detalhadas POR UC
+    // INDIVIDUAL: "4. Unidades Consumidoras" com subseções 4.1 UC 1, 4.2 UC 2...
+    // As caixas existentes sem alteração não são detalhadas aqui (só no resumo).
+    sec("4.  UNIDADES CONSUMIDORAS");
     ucsDet.forEach((u, ui) => {
-      sec(`4.${ui + 1}  UNIDADE CONSUMIDORA ${ui + 1}`);
+      if (ucSemAlteracao(u)) return;
+      subSec(`4.${ui + 1}  UC ${ui + 1}`);
       const pares = [
         ["Atividade principal", u.atividade],
         ["Ramo de atividade", u.ramo],
@@ -512,32 +552,6 @@ function gerarPdfDoc(S) {
           itens.map((it) => [it.n, fmtW(it.w), it.q, fmtW(it.q * it.w)]),
         );
       }
-      const motsUC = (u.cargas?.mots || []).filter((m) => (m.q || 0) > 0);
-      if (motsUC.length) {
-        sec(`4.${ui + 1}.1  CARGAS ESPECIAIS`);
-        const qtdTot = motsUC.reduce((s, m) => s + (parseInt(m.q) || 0), 0);
-        const colM = motorColPorQtd(qtdTot);
-        tabela(
-          ["Motor", "Tipo", "Pot. (CV)", "Qtd", "Dem. unit. (kVA)", "Dem. total (kVA)"],
-          [44, 28, 26, 16, 36, 32],
-          motsUC.map((m, mi) => {
-            const unit = motorKvaUnit(m.fase, m.cv, colM);
-            const lbl =
-              (m.fase === "mono" ? MOTOR_MONO : MOTOR_TRI).find(
-                (r) => r.cv === parseFloat(m.cv),
-              )?.l || m.cv;
-            return [
-              `Motor ${mi + 1}`,
-              m.fase === "mono" ? "Monofásico" : "Trifásico",
-              lbl,
-              m.q,
-              fmt2(unit),
-              fmt2((parseInt(m.q) || 0) * unit),
-            ];
-          }),
-        );
-        cy += 1;
-      }
       checkSpace(8);
       totRow(
         `Carga ${fmt2(u.cargas?._cargaKw || 0)} kW  |  Demanda`,
@@ -548,7 +562,41 @@ function gerarPdfDoc(S) {
         fullLine("Disjuntor anterior (De)", u.disjDe);
       cy += 2;
     });
-    // Resumo consolidado: solicitação, carga, demanda e disjuntor por UC
+    // 4.N  Cargas Especiais — consolidado: um motor por linha, identificando a UC.
+    const motoresConsolidados = [];
+    ucsDet.forEach((u, ui) => {
+      if (ucSemAlteracao(u)) return;
+      const motsUC = (u.cargas?.mots || []).filter((m) => (m.q || 0) > 0);
+      if (!motsUC.length) return;
+      const qtdTot = motsUC.reduce((s, m) => s + (parseInt(m.q) || 0), 0);
+      const colM = motorColPorQtd(qtdTot);
+      motsUC.forEach((m) => {
+        const unit = motorKvaUnit(m.fase, m.cv, colM);
+        const lbl =
+          (m.fase === "mono" ? MOTOR_MONO : MOTOR_TRI).find(
+            (r) => r.cv === parseFloat(m.cv),
+          )?.l || m.cv;
+        motoresConsolidados.push([
+          `UC ${ui + 1}`,
+          m.fase === "mono" ? "Monofásico" : "Trifásico",
+          lbl,
+          m.q,
+          fmt2(unit),
+          fmt2((parseInt(m.q) || 0) * unit),
+        ]);
+      });
+    });
+    if (motoresConsolidados.length) {
+      sec(`4.${ucsDet.length + 1}  CARGAS ESPECIAIS`);
+      tabela(
+        ["Unidade", "Tipo", "Pot. (CV)", "Qtd", "Dem. unit. (kVA)", "Dem. total (kVA)"],
+        [30, 30, 26, 16, 38, 30],
+        motoresConsolidados,
+      );
+      cy += 2;
+    }
+    // Resumo consolidado: solicitação, carga, demanda e disjuntor por UC.
+    // Inclui as caixas existentes sem alteração (que não foram detalhadas acima).
     sec("5.  RESUMO POR UNIDADE CONSUMIDORA");
     tabela(
       [
@@ -559,13 +607,17 @@ function gerarPdfDoc(S) {
         "Disjuntor",
       ],
       [26, 56, 28, 32, 40],
-      ucsDet.map((u, ui) => [
-        `UC ${ui + 1}`,
-        u.solicitacao,
-        fmt2(u.cargas?._cargaKw || 0),
-        fmt2(u.cargas?._demanda || 0),
-        u.disjEscolhido || (u.cargas?._disjuntores || [])[0] || "—",
-      ]),
+      ucsDet.map((u, ui) =>
+        ucSemAlteracao(u)
+          ? [`UC ${ui + 1}`, u.solicitacao, "—", "—", u.disjDe || "—"]
+          : [
+              `UC ${ui + 1}`,
+              u.solicitacao,
+              fmt2(u.cargas?._cargaKw || 0),
+              fmt2(u.cargas?._demanda || 0),
+              u.disjEscolhido || (u.cargas?._disjuntores || [])[0] || "—",
+            ],
+      ),
     );
     cy += 2;
     sec("6.  GERADOR DE EMERGÊNCIA");

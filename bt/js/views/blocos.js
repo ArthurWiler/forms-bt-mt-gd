@@ -126,12 +126,7 @@ function TabBlocos({ ctx }) {
         type: "text",
         readOnly: true,
         disabled: true,
-        value: fmt2(
-          (b.ucs || []).reduce(
-            (s, u) => s + num((u.prev || {}).demanda),
-            0
-          )
-        ),
+        value: fmt2(calcBlocoMultiTorres(b).demandaUcs),
         placeholder: "0"
       }
     )), /* @__PURE__ */ React.createElement(Field, { label: `Qtd. de UCs por ${atend.atendA}`, req: true }, /* @__PURE__ */ React.createElement(
@@ -158,7 +153,15 @@ function TabBlocos({ ctx }) {
         onChange: (e) => setTorre(bi, { demandaIncendio: e.target.value }),
         placeholder: "0"
       }
-    ))), (b.ucs || []).length > 0 && /* @__PURE__ */ React.createElement("div", { className: "uc-torre-wrap" }, /* @__PURE__ */ React.createElement(
+    )), calcBlocoMultiTorres(b).temNaoResidencial && /* @__PURE__ */ React.createElement(Field, { label: "Demanda geral não residencial (kVA)", req: true, hint: "Demanda calculada pelo responsável técnico para as UCs não residenciais desta torre — não é a soma das UCs." }, /* @__PURE__ */ React.createElement(
+      Inp,
+      {
+        type: "number",
+        value: b.demandaNaoResidencial,
+        onChange: (e) => setTorre(bi, { demandaNaoResidencial: e.target.value }),
+        placeholder: "0,0"
+      }
+    ))), calcBlocoMultiTorres(b).nd52 && /* @__PURE__ */ React.createElement("div", { className: "alert alert-ok", style: { marginTop: 6 } }, /* @__PURE__ */ React.createElement("b", null, "Demanda residencial (ND-5.2) desta torre:"), " ", calcBlocoMultiTorres(b).qtdApart, " apartamento(s) · área média ", fmt2(calcBlocoMultiTorres(b).areaMedia), " m² → ", fmt2(calcBlocoMultiTorres(b).nd52.demandaKVA), " kVA."), (b.ucs || []).length > 0 && /* @__PURE__ */ React.createElement("div", { className: "uc-torre-wrap" }, /* @__PURE__ */ React.createElement(
       "div",
       {
         style: {
@@ -235,6 +238,18 @@ function TabBlocos({ ctx }) {
           placeholder: "Obrigatório"
         }
       )
+    ), u.atividade === "Residencial" && /* @__PURE__ */ React.createElement(
+      Field,
+      { label: "Área (m²)", req: true, hint: "Área privativa do apartamento — usada no cálculo ND-5.2 por torre." },
+      /* @__PURE__ */ React.createElement(
+        Inp,
+        {
+          type: "number",
+          value: u.area,
+          onChange: (e) => setUcTorre(bi, ui, { area: e.target.value }),
+          placeholder: "Ex: 65"
+        }
+      )
     ), u.solicitacao !== "Conexão Nova" && /* @__PURE__ */ React.createElement(Field, { label: "Instalação", req: true }, /* @__PURE__ */ React.createElement(
       Inp,
       {
@@ -272,7 +287,7 @@ function TabBlocos({ ctx }) {
         }
       },
       "Previsão de carga das UCs"
-    ), b.ucs.length > 1 && /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: () => replicarPrevTorre(bi) }, "Replicar previsão da UC 1 para todas")), /* @__PURE__ */ React.createElement("table", { className: "prev-table" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "Unidade"), /* @__PURE__ */ React.createElement("th", null, "Ilum. (kW)"), /* @__PURE__ */ React.createElement("th", null, "Tomada (kW)"), /* @__PURE__ */ React.createElement("th", null, "Chuveiro (kW)"), /* @__PURE__ */ React.createElement("th", null, "Ar Cond. (kW)"), /* @__PURE__ */ React.createElement("th", null, "Outros (kW)"), /* @__PURE__ */ React.createElement("th", null, "Carga (kW)"), /* @__PURE__ */ React.createElement("th", { className: "col-demanda" }, "Demanda (kVA)"))), /* @__PURE__ */ React.createElement("tbody", null, b.ucs.map((u, ui) => /* @__PURE__ */ React.createElement("tr", { key: ui }, /* @__PURE__ */ React.createElement("td", { className: "uc-name" }, u.identificacao || `UC ${ui + 1}`), ["ilum", "tomada", "chuveiro", "ar", "outros"].map(
+    ), b.ucs.length > 1 && /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: () => replicarPrevTorre(bi) }, "Replicar previsão da UC 1 para todas")), /* @__PURE__ */ React.createElement("table", { className: "prev-table" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "Unidade"), /* @__PURE__ */ React.createElement("th", null, "Ilum. (kW)"), /* @__PURE__ */ React.createElement("th", null, "Tomada (kW)"), /* @__PURE__ */ React.createElement("th", null, "Chuveiro (kW)"), /* @__PURE__ */ React.createElement("th", null, "Ar Cond. (kW)"), /* @__PURE__ */ React.createElement("th", null, "Outros (kW)"), /* @__PURE__ */ React.createElement("th", null, "Carga (kW)"), /* @__PURE__ */ React.createElement("th", { className: "col-demanda" }, "Demanda (kVA)"))), /* @__PURE__ */ React.createElement("tbody", null, b.ucs.map((u, ui) => ucSemAlteracao(u) ? /* @__PURE__ */ React.createElement("tr", { key: ui }, /* @__PURE__ */ React.createElement("td", { className: "uc-name" }, u.identificacao || `UC ${ui + 1}`), /* @__PURE__ */ React.createElement("td", { colSpan: 7, className: "field-hint" }, "Caixa existente sem alteração — não entra na previsão de carga.")) : /* @__PURE__ */ React.createElement("tr", { key: ui }, /* @__PURE__ */ React.createElement("td", { className: "uc-name" }, u.identificacao || `UC ${ui + 1}`), ["ilum", "tomada", "chuveiro", "ar", "outros"].map(
       (k) => /* @__PURE__ */ React.createElement("td", { key: k }, /* @__PURE__ */ React.createElement(
         "input",
         {
@@ -295,12 +310,7 @@ function TabBlocos({ ctx }) {
         }),
         placeholder: "0,0"
       }
-    ))))), /* @__PURE__ */ React.createElement("tfoot", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { className: "uc-name" }, "Total do bloco"), /* @__PURE__ */ React.createElement("td", { colSpan: 5 }), /* @__PURE__ */ React.createElement("td", { className: "carga-cell" }, fmt2(b.ucs.reduce((s, u) => s + prevKwUC(u), 0))), /* @__PURE__ */ React.createElement("td", { className: "col-demanda total-dem" }, fmt2(
-      b.ucs.reduce(
-        (s, u) => s + num((u.prev || {}).demanda),
-        0
-      )
-    )))))))),
+    ))))), /* @__PURE__ */ React.createElement("tfoot", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { className: "uc-name" }, "Total do bloco"), /* @__PURE__ */ React.createElement("td", { colSpan: 5 }), /* @__PURE__ */ React.createElement("td", { className: "carga-cell" }, fmt2(b.ucs.reduce((s, u) => s + prevKwUC(u), 0))), /* @__PURE__ */ React.createElement("td", { className: "col-demanda total-dem" }, fmt2(calcBlocoMultiTorres(b).demandaUcs)))))))),
     demandaTotalGeral > 304 && /* @__PURE__ */ React.createElement("div", { className: "alert alert-info", style: { marginTop: 10 } }, "Demanda total acima de 304 kVA: o atendimento fica condicionado à apresentação do projeto elétrico com ART/TRT.")
   ));
 }

@@ -80,7 +80,7 @@ function TabTipo({ ctx }) {
       Sel,
       {
         value: atend.solicitacao,
-        disabled: restrito,
+        disabled: restrito || coletivo || multiTorres,
         onChange: (e) => setAtend({ ...atend, solicitacao: e.target.value })
       },
       SOLICITACOES.map((s) => /* @__PURE__ */ React.createElement("option", { key: s }, s))

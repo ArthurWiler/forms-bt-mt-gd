@@ -126,6 +126,11 @@ const ucBlocoPadrao = (i) => ({
   },
 });
 
+// UC marcada como "Caixa Existente sem Alteração": não tem preenchimento de
+// carga e não entra nos totais/previsões — aparece apenas na identificação/resumo.
+const ucSemAlteracao = (u) =>
+  (u && u.solicitacao) === "Caixa Existente sem Alteração";
+
 // Soma de carga prevista (kW) de uma UC do coletivo
 const prevKwUC = (u) =>
   ["ilum", "tomada", "chuveiro", "ar", "outros"].reduce(
@@ -160,6 +165,7 @@ const ucTorrePadrao = (i) => ({
   solicitacao: "Conexão Nova",
   atividade: "",
   ramo: "",
+  area: "", // área privativa (m²) — usada no cálculo ND-5.2 por torre
   instalacao: "",
   unidadeConsumidora: "",
   disjPara: "",
@@ -182,6 +188,7 @@ const blocoPadrao = (i) => ({
   qtdUCs: "",
   disjIncendio: "",
   demandaIncendio: "",
+  demandaNaoResidencial: "", // demanda geral das UCs não residenciais da torre (kVA)
   ucs: [ucTorrePadrao(0)],
 });
 
@@ -318,6 +325,7 @@ const SEC_BT_RESIDENCIAL = {
       sub: "Baixa Tensão (BT)",
       img: "imgs/img_rural.png",
       status: "ok",
+      travaZonaRural: true, // zona de localização fixa em Rural (não editável)
       prefill: {
         atividade: "Rural",
         atend: {

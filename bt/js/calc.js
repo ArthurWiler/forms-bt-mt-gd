@@ -99,6 +99,45 @@ function nd52CalcularDemandaApartamentos(areaMediaPonderada, quantidadeApartamen
   };
 }
 
+// ============================================================
+// MÚLTIPLAS TORRES / BLOCOS — demanda por torre (ND-5.2 por torre)
+// A parte residencial de cada torre é calculada pelo ND-5.2 (área média
+// ponderada + quantidade de apartamentos DA TORRE); a parte não residencial
+// vem do campo informado pelo responsável técnico para a torre.
+// Não inclui o disjuntor/demanda de combate a incêndio (somado à parte).
+// ============================================================
+function calcBlocoMultiTorres(b) {
+  const ucs = (b && b.ucs) || [];
+  const ativos = ucs.filter((u) => !ucSemAlteracao(u));
+  const residenciais = ativos.filter((u) => u.atividade === "Residencial");
+  const qtdApart = residenciais.length;
+  let areaMedia = 0,
+    nd52 = null,
+    demResidencial = 0;
+  if (qtdApart > 0) {
+    areaMedia = residenciais.reduce((s, u) => s + num(u.area), 0) / qtdApart;
+    nd52 = nd52CalcularDemandaApartamentos(areaMedia, qtdApart);
+    // Fallback (qtd < 4 apartamentos ou área fora da tabela): soma das demandas
+    // informadas manualmente por UC residencial.
+    demResidencial = nd52
+      ? nd52.demandaKVA
+      : residenciais.reduce((s, u) => s + num((u.prev || {}).demanda), 0);
+  }
+  const temNaoResidencial = ativos.some(
+    (u) => u.atividade && u.atividade !== "Residencial",
+  );
+  const demNaoResidencial = num(b && b.demandaNaoResidencial);
+  return {
+    qtdApart,
+    areaMedia,
+    nd52,
+    demResidencial,
+    temNaoResidencial,
+    demNaoResidencial,
+    demandaUcs: demResidencial + demNaoResidencial,
+  };
+}
+
 // Seleção de disjuntores conforme demanda e tipo de rede
 function selecionarDisjuntores(demanda, redeMono) {
   if (demanda <= 0) return [];

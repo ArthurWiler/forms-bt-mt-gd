@@ -81,15 +81,18 @@ function CalcDemanda({
   const [busca, setBusca] = useState("");
   const [minimizado, setMinimizado] = useState(!!minimizarPorPadrao);
   const upd = (patch) => onChange({ ...d, qtds, tipoA, catA, mots, ...patch });
-  const tipoCargaBloqueado = atividade === "Residencial";
+  const tipoCargaBloqueado =
+    atividade === "Residencial" ||
+    atividade === "Comercial" ||
+    atividade === "Industrial";
   useEffect(() => {
     if (atividade === "Residencial") {
       if (tipoA !== "res") upd({ tipoA: "res" });
       return;
     }
-    if (tipoA) return;
-    if (atividade === "Comercial" || atividade === "Industrial")
-      upd({ tipoA: "nr" });
+    if (atividade === "Comercial" || atividade === "Industrial") {
+      if (tipoA !== "nr") upd({ tipoA: "nr" });
+    }
   }, [atividade]);
   const setQ = (i, v) => {
     const n = [...qtds];

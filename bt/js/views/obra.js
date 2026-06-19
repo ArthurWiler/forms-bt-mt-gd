@@ -65,8 +65,18 @@ function TabObra({ ctx }) {
     totalUcsEmpreendimento,
     trocaDisjGeral,
     validacaoDisjuntores,
-    validacaoHibrido
+    validacaoHibrido,
+    zonaTravada
   } = ctx;
+  // Troca de zona limpa os campos da zona oposta para evitar que dados antigos
+  // (urbano/rural) vazem para a saída do PDF. Mantém Município/Estado (comuns).
+  const trocarZona = (v) => {
+    if (v === obra.localizacao) return;
+    if (v === "Rural")
+      setObra({ ...obra, localizacao: v, cep: "", endereco: "", num: "", compl: "", bairro: "" });
+    else
+      setObra({ ...obra, localizacao: v, distritoComunidade: "", nomePropriedade: "", pontoRef: "", instProxima: "" });
+  };
   return /* @__PURE__ */ React.createElement(
     Card,
     {
@@ -74,11 +84,12 @@ function TabObra({ ctx }) {
       title: "Dados da Obra",
       sub: "Endereço do padrão de entrada / ponto de entrega."
     },
-    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2" }, /* @__PURE__ */ React.createElement(Field, { label: "Zona de localização", req: true }, /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2" }, /* @__PURE__ */ React.createElement(Field, { label: "Zona de localização", req: true, hint: zonaTravada ? "Modalidade rural: zona fixada em Rural." : void 0 }, /* @__PURE__ */ React.createElement(
       Toggle,
       {
         value: obra.localizacao,
-        onChange: (v) => setObra({ ...obra, localizacao: v }),
+        disabled: zonaTravada,
+        onChange: trocarZona,
         options: [
           { v: "Urbana", l: "Urbana" },
           { v: "Rural", l: "Rural" }
