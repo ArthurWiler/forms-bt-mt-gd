@@ -68,19 +68,6 @@ function gerarPdfDoc(S) {
       MG,
       13.5,
     );
-    // Logo Cemig (canto superior direito da barra), preservando proporção
-    if (logoPDF) {
-      const logoH = 10; // altura em mm — ajuste aqui se necessário
-      const logoW = logoH * (logoPDF.w / logoPDF.h);
-      doc.addImage(
-        logoPDF.url,
-        "PNG",
-        PW - MG - logoW,
-        (18 - logoH) / 2,
-        logoW,
-        logoH,
-      );
-    }
     cy = 24;
   };
   const footer = () => {
@@ -108,6 +95,17 @@ function gerarPdfDoc(S) {
     doc.setTextColor(16, 119, 98);
     doc.text(t, MG + 5, cy + 4.8);
     cy += 9;
+  };
+  // Subseção (ex.: "4.1  UC 1") — cabeçalho leve sob uma seção principal
+  const subSec = (t) => {
+    checkSpace(8);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9.5);
+    doc.setTextColor(16, 119, 98);
+    doc.text(t, MG + 1, cy + 4);
+    doc.setDrawColor(200, 224, 216);
+    doc.line(MG + 1, cy + 5.6, MG + CW - 1, cy + 5.6);
+    cy += 8;
   };
   const _vazio = (v) =>
     v === undefined ||
@@ -310,16 +308,20 @@ function gerarPdfDoc(S) {
   cy += 2;
 
   sec("3.  DADOS DA OBRA (PADRÃO DE ENTRADA)");
-  const endObra = [
-    [obra.endereco, obra.num].filter(Boolean).join(", "),
-    obra.compl,
-    obra.bairro,
-    [obra.cidade, obra.estado].filter(Boolean).join("/"),
-    obra.cep ? "CEP " + obra.cep : "",
-  ]
-    .filter(Boolean)
-    .join(" - ");
-  fullLine("Endereço", endObra);
+  const obraRural = obra.localizacao === "Rural";
+  // Imprime apenas o endereço da zona ativa (evita misturar urbano e rural).
+  const endObra = obraRural
+    ? [obra.cidade, obra.estado].filter(Boolean).join("/")
+    : [
+        [obra.endereco, obra.num].filter(Boolean).join(", "),
+        obra.compl,
+        obra.bairro,
+        [obra.cidade, obra.estado].filter(Boolean).join("/"),
+        obra.cep ? "CEP " + obra.cep : "",
+      ]
+        .filter(Boolean)
+        .join(" - ");
+  fullLine(obraRural ? "Município" : "Endereço", endObra);
   const obraPairs = [["Localização", obra.localizacao]];
   if (coletivo) obraPairs.push(["Nº ART/TRT de Projeto", obra.art]);
   obraPairs.push(
@@ -366,9 +368,7 @@ function gerarPdfDoc(S) {
       blocos.map((b) => [
         b.nome,
         b.disjGeral,
-        fmt2(
-          (b.ucs || []).reduce((s, u) => s + num((u.prev || {}).demanda), 0),
-        ),
+        fmt2(calcBlocoMultiTorres(b).demandaUcs),
         b.qtdUCs,
         b.disjIncendio,
         b.demandaIncendio,
@@ -414,7 +414,7 @@ function gerarPdfDoc(S) {
           "Dem. (kVA)",
         ],
         [30, 20, 22, 20, 22, 20, 24, 24],
-        ucs.map((u, ui) => [
+        ucs.filter((u) => !ucSemAlteracao(u)).map((u, ui) => [
           u.identificacao || `UC ${ui + 1}`,
           (u.prev || {}).ilum || "—",
           (u.prev || {}).tomada || "—",
@@ -425,6 +425,30 @@ function gerarPdfDoc(S) {
           (u.prev || {}).demanda || "—",
         ]),
       );
+      cy += 2;
+      // Demanda da torre (ND-5.2 por torre): residencial + não residencial + incêndio
+      const cb = calcBlocoMultiTorres(b);
+      kvPairs([
+        cb.qtdApart
+          ? [
+              "Demanda residencial (ND-5.2)",
+              `${fmt2(cb.demResidencial)} kVA` +
+                (cb.nd52
+                  ? ` (${cb.qtdApart} ap. · área méd. ${fmt2(cb.areaMedia)} m²)`
+                  : " (manual)"),
+            ]
+          : null,
+        cb.temNaoResidencial
+          ? ["Demanda não residencial", `${fmt2(cb.demNaoResidencial)} kVA`]
+          : null,
+        num(b.demandaIncendio)
+          ? ["Demanda combate a incêndio", `${fmt2(num(b.demandaIncendio))} kVA`]
+          : null,
+        [
+          "Demanda total da torre",
+          `${fmt2(cb.demandaUcs + num(b.demandaIncendio))} kVA`,
+        ],
+      ]);
       cy += 2;
     });
   } else if (coletivo) {
@@ -468,7 +492,7 @@ function gerarPdfDoc(S) {
         "Dem. (kVA)",
       ],
       [30, 20, 22, 24, 22, 20, 22, 22],
-      ucBlocos.map((u) => [
+      ucBlocos.filter((u) => !ucSemAlteracao(u)).map((u) => [
         u.identificacao || "UC",
         (u.prev || {}).ilum || "—",
         (u.prev || {}).tomada || "—",
@@ -499,11 +523,13 @@ function gerarPdfDoc(S) {
       cy += 2;
     }
   } else {
-    // INDIVIDUAL: identificação + cargas detalhadas POR UC
+    // INDIVIDUAL: "4. Unidades Consumidoras" com subseções 4.1 UC 1, 4.2 UC 2...
+    // As caixas existentes sem alteração não são detalhadas aqui (só no resumo).
+    sec("4.  UNIDADES CONSUMIDORAS");
     ucsDet.forEach((u, ui) => {
-      sec(`4.${ui + 1}  UNIDADE CONSUMIDORA ${ui + 1}`);
+      if (ucSemAlteracao(u)) return;
+      subSec(`4.${ui + 1}  UC ${ui + 1}`);
       const pares = [
-        ["Solicitação", u.solicitacao],
         ["Atividade principal", u.atividade],
         ["Ramo de atividade", u.ramo],
         ["Nº Predial", obra.num],
@@ -526,50 +552,75 @@ function gerarPdfDoc(S) {
           itens.map((it) => [it.n, fmtW(it.w), it.q, fmtW(it.q * it.w)]),
         );
       }
-      const motsUC = (u.cargas?.mots || []).filter((m) => (m.q || 0) > 0);
-      if (motsUC.length) {
-        const qtdTot = motsUC.reduce((s, m) => s + (parseInt(m.q) || 0), 0);
-        const colM = motorColPorQtd(qtdTot);
-        tabela(
-          ["Motor", "Tipo", "Pot. (CV)", "Qtd", "Dem. unit. (kVA)", "Dem. total (kVA)"],
-          [44, 28, 26, 16, 36, 32],
-          motsUC.map((m, mi) => {
-            const unit = motorKvaUnit(m.fase, m.cv, colM);
-            const lbl =
-              (m.fase === "mono" ? MOTOR_MONO : MOTOR_TRI).find(
-                (r) => r.cv === parseFloat(m.cv),
-              )?.l || m.cv;
-            return [
-              `Motor ${mi + 1}`,
-              m.fase === "mono" ? "Monofásico" : "Trifásico",
-              lbl,
-              m.q,
-              fmt2(unit),
-              fmt2((parseInt(m.q) || 0) * unit),
-            ];
-          }),
-        );
-        cy += 1;
-      }
       checkSpace(8);
       totRow(
         `Carga ${fmt2(u.cargas?._cargaKw || 0)} kW  |  Demanda`,
         `${fmt2(u.cargas?._demanda || 0)} kVA`,
       );
-      // Disjuntores — informação consolidada em um único bloco
+      // Disjuntor anterior (apenas em alteração de carga; o escolhido vai no resumo)
       if (u.solicitacao !== "Conexão Nova" && u.disjDe)
         fullLine("Disjuntor anterior (De)", u.disjDe);
-      fullLine(
-        "Disjuntor sugerido (ND-5.1)",
-        (u.cargas?._disjuntores || []).join("  ·  ") || "—",
-      );
-      fullLine(
-        "Disjuntor escolhido",
-        u.disjEscolhido || (u.cargas?._disjuntores || [])[0] || "—",
-      );
       cy += 2;
     });
-    sec("5.  GERADOR DE EMERGÊNCIA");
+    // 4.N  Cargas Especiais — consolidado: um motor por linha, identificando a UC.
+    const motoresConsolidados = [];
+    ucsDet.forEach((u, ui) => {
+      if (ucSemAlteracao(u)) return;
+      const motsUC = (u.cargas?.mots || []).filter((m) => (m.q || 0) > 0);
+      if (!motsUC.length) return;
+      const qtdTot = motsUC.reduce((s, m) => s + (parseInt(m.q) || 0), 0);
+      const colM = motorColPorQtd(qtdTot);
+      motsUC.forEach((m) => {
+        const unit = motorKvaUnit(m.fase, m.cv, colM);
+        const lbl =
+          (m.fase === "mono" ? MOTOR_MONO : MOTOR_TRI).find(
+            (r) => r.cv === parseFloat(m.cv),
+          )?.l || m.cv;
+        motoresConsolidados.push([
+          `UC ${ui + 1}`,
+          m.fase === "mono" ? "Monofásico" : "Trifásico",
+          lbl,
+          m.q,
+          fmt2(unit),
+          fmt2((parseInt(m.q) || 0) * unit),
+        ]);
+      });
+    });
+    if (motoresConsolidados.length) {
+      sec(`4.${ucsDet.length + 1}  CARGAS ESPECIAIS`);
+      tabela(
+        ["Unidade", "Tipo", "Pot. (CV)", "Qtd", "Dem. unit. (kVA)", "Dem. total (kVA)"],
+        [30, 30, 26, 16, 38, 30],
+        motoresConsolidados,
+      );
+      cy += 2;
+    }
+    // Resumo consolidado: solicitação, carga, demanda e disjuntor por UC.
+    // Inclui as caixas existentes sem alteração (que não foram detalhadas acima).
+    sec("5.  RESUMO POR UNIDADE CONSUMIDORA");
+    tabela(
+      [
+        "Unidade",
+        "Tipo de solicitação",
+        "Carga (kW)",
+        "Demanda (kVA)",
+        "Disjuntor",
+      ],
+      [26, 56, 28, 32, 40],
+      ucsDet.map((u, ui) =>
+        ucSemAlteracao(u)
+          ? [`UC ${ui + 1}`, u.solicitacao, "—", "—", u.disjDe || "—"]
+          : [
+              `UC ${ui + 1}`,
+              u.solicitacao,
+              fmt2(u.cargas?._cargaKw || 0),
+              fmt2(u.cargas?._demanda || 0),
+              u.disjEscolhido || (u.cargas?._disjuntores || [])[0] || "—",
+            ],
+      ),
+    );
+    cy += 2;
+    sec("6.  GERADOR DE EMERGÊNCIA");
     const gp = [["Há gerador de emergência?", gerador.possui]];
     if (gerador.possui === "Sim")
       gp.push(
@@ -606,4 +657,79 @@ function gerarPdfDoc(S) {
   doc.save(
     `CEMIG_${multiTorres ? "torres" : coletivo ? "coletivo" : "individual"}_${nomeArq}.pdf`,
   );
+}
+
+/* ============================================================
+   CEMIG — Lista de documentos para a solicitação.
+   Gera um checklist em PDF. Os itens são placeholders, a serem
+   ajustados conforme a regra de negócio definitiva.
+   ============================================================ */
+// Itens placeholder da lista de documentos.
+const LISTA_DOCUMENTOS_PLACEHOLDER = [
+  "Documento de identificação com foto e CPF do titular",
+  "Comprovante de propriedade ou posse do imóvel",
+  "Comprovante de regularidade do imóvel (área urbana)",
+  "ART/TRT de projeto paga (quando aplicável)",
+  "Planta de situação conforme ND-5.2 (quando aplicável)",
+  "Procuração do responsável técnico (solicitações de terceiros)",
+  "Documento de regularização ambiental (quando aplicável)",
+  "[Documento adicional 1 — placeholder]",
+  "[Documento adicional 2 — placeholder]",
+];
+
+function gerarListaDocumentosDoc(S) {
+  const { prop } = S || {};
+  if (!window.jspdf) {
+    alert("Biblioteca jsPDF não carregada.");
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const PW = 210,
+    PH = 297,
+    MG = 14,
+    CW = PW - 2 * MG;
+  let cy = MG;
+
+  // Barra superior (mesmo estilo do formulário, sem logo)
+  doc.setFillColor(10, 47, 39);
+  doc.rect(0, 0, PW, 18, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(255, 255, 255);
+  doc.text("Lista de Documentos — Orçamento de Conexão BT", MG, 8);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.setTextColor(169, 230, 191);
+  doc.text("Documentos a apresentar na solicitação", MG, 13.5);
+  cy = 28;
+
+  if (prop && prop.nome) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(30, 32, 42);
+    doc.text(`Solicitante: ${prop.nome}`, MG, cy);
+    cy += 9;
+  }
+
+  doc.setFontSize(11);
+  LISTA_DOCUMENTOS_PLACEHOLDER.forEach((item) => {
+    if (cy > PH - 20) {
+      doc.addPage();
+      cy = MG + 6;
+    }
+    // checkbox
+    doc.setDrawColor(16, 119, 98);
+    doc.rect(MG, cy - 3.6, 4.2, 4.2);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(30, 32, 42);
+    const linhas = doc.splitTextToSize(item, CW - 10);
+    doc.text(linhas, MG + 7, cy);
+    cy += Math.max(6, linhas.length * 5 + 2.5);
+  });
+
+  const nomeArq = (prop?.nome || "documentos")
+    .replace(/[^a-zA-Z0-9]/g, "_")
+    .slice(0, 30);
+  doc.save(`CEMIG_lista_documentos_${nomeArq}.pdf`);
 }

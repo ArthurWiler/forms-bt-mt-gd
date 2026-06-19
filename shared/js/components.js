@@ -1,107 +1,60 @@
-/* ============================================================
-   CEMIG — Componentes de interface (React + Babel)
-   ============================================================ */
 const { useState, useMemo, useCallback, useRef, useEffect } = React;
-
-// Logo Cemig (imagem em shared/imgs/logos/)
 function LogoCemig() {
-  return (
-    <img src="../shared/imgs/logos/logo-cemig-branca.png" alt="Cemig" className="logo-img" />
-  );
+  return /* @__PURE__ */ React.createElement("img", { src: "../imgs/logos/logo-cemig-branca.png", alt: "Cemig", className: "logo-img" });
 }
-
-// Campo de formulário
 function Field({ label, req, children, hint, span }) {
-  const cls =
-    "field" + (span === 2 ? " col-span-2" : span === 3 ? " col-span-3" : "");
-  return (
-    <div className={cls}>
-      {label && (
-        <label>
-          {label} {req && <span className="req">*</span>}
-        </label>
-      )}
-      {children}
-      {hint && <span className="field-hint">{hint}</span>}
-    </div>
+  const cls = "field" + (span === 2 ? " col-span-2" : span === 3 ? " col-span-3" : "");
+  return /* @__PURE__ */ React.createElement("div", { className: cls }, label && /* @__PURE__ */ React.createElement("label", null, label, " ", req && /* @__PURE__ */ React.createElement("span", { className: "req" }, "*")), children, hint && /* @__PURE__ */ React.createElement("span", { className: "field-hint" }, hint));
+}
+function Inp({ value, onChange, type = "text", placeholder, disabled }) {
+  return /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type,
+      value: value || "",
+      onChange,
+      placeholder,
+      disabled
+    }
   );
 }
-
-// Input
-function Inp({ value, onChange, type = "text", placeholder }) {
-  return (
-    <input
-      type={type}
-      value={value || ""}
-      onChange={onChange}
-      placeholder={placeholder}
-    />
-  );
+function Sel({ value, onChange, children, disabled }) {
+  return /* @__PURE__ */ React.createElement("select", { value, onChange, disabled }, children);
 }
-
-// Select
-function Sel({ value, onChange, children }) {
-  return (
-    <select value={value} onChange={onChange}>
-      {children}
-    </select>
-  );
+function Toggle({ value, onChange, options, disabled }) {
+  return /* @__PURE__ */ React.createElement("div", { className: "toggle-group" + (disabled ? " is-locked" : "") }, options.map((o) => /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      key: String(o.v),
+      type: "button",
+      className: "toggle-btn" + (value === o.v ? " on" : ""),
+      disabled,
+      onClick: disabled ? void 0 : () => onChange(o.v)
+    },
+    o.l
+  )));
 }
-
-// Toggle (Sim/Não etc.)
-function Toggle({ value, onChange, options }) {
-  return (
-    <div className="toggle-group">
-      {options.map((o) => (
-        <button
-          key={String(o.v)}
-          type="button"
-          className={"toggle-btn" + (value === o.v ? " on" : "")}
-          onClick={() => onChange(o.v)}
-        >
-          {o.l}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-// Card
 function Card({ title, sub, eyebrow, children }) {
-  return (
-    <div className="card">
-      {eyebrow && <div className="section-eyebrow">{eyebrow}</div>}
-      {title && <h3 className="card-title">{title}</h3>}
-      {sub && <p className="card-sub">{sub}</p>}
-      {children}
-    </div>
-  );
+  return /* @__PURE__ */ React.createElement("div", { className: "card" }, eyebrow && /* @__PURE__ */ React.createElement("div", { className: "section-eyebrow" }, eyebrow), title && /* @__PURE__ */ React.createElement("h3", { className: "card-title" }, title), sub && /* @__PURE__ */ React.createElement("p", { className: "card-sub" }, sub), children);
 }
-
-// Botão
 function Btn({ children, onClick, variant = "ghost", disabled }) {
   const map = {
     primary: "btn-primary",
     dark: "btn-dark",
     ghost: "btn-ghost",
-    danger: "btn-danger-ghost",
+    danger: "btn-danger-ghost"
   };
-  return (
-    <button
-      type="button"
-      className={"btn " + (map[variant] || "btn-ghost")}
-      onClick={onClick}
-      disabled={disabled}
-    >
-      {children}
-    </button>
+  return /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      className: "btn " + (map[variant] || "btn-ghost"),
+      onClick,
+      disabled
+    },
+    children
   );
 }
-
-// Badge
 function Badge({ children, lime }) {
-  return (
-    <span className={"badge" + (lime ? " badge-lime" : "")}>{children}</span>
-  );
+  return /* @__PURE__ */ React.createElement("span", { className: "badge" + (lime ? " badge-lime" : "") }, children);
 }
-

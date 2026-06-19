@@ -88,6 +88,15 @@ body {
   letter-spacing: 0.3px;
 }
 .topbar-links a:hover { background: #fff; color: var(--verde-escuro); border-color: #fff; }
+.app-title { font-family: "DM Sans", system-ui, -apple-system, sans-serif; font-size: 19px; font-weight: 800; color: #fff; letter-spacing: 0.3px; }
+.topbar-left { display: flex; align-items: center; gap: 14px; }
+.topbar-home {
+  font-family: inherit; font-size: 12px; font-weight: 700; color: #fff;
+  background: transparent; border: 1px solid rgba(255, 255, 255, 0.4);
+  padding: 7px 14px; border-radius: 999px; cursor: pointer; text-decoration: none;
+  transition: all 0.15s; letter-spacing: 0.3px;
+}
+.topbar-home:hover { background: #fff; color: var(--verde-escuro); border-color: #fff; }
 
 /* ---------- CABEÇALHO DO FORMULÁRIO ---------- */
 .form-header {
@@ -319,6 +328,27 @@ input[type="number"] { -moz-appearance: textfield; }
   transition: all 0.15s;
 }
 .toggle-btn.on { background: var(--verde); color: #fff; border-color: var(--verde); }
+.toggle-btn:disabled { cursor: not-allowed; }
+.toggle-group.is-locked { opacity: 0.85; }
+.toggle-group.is-locked .toggle-btn:not(.on) { opacity: 0.45; }
+input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-claro); color: var(--texto-suave); }
+
+/* ===== GD — banner de modalidade pré-definida (Fast Track / Grid Zero) ===== */
+.gd-modo-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--verde-claro);
+  border: 1px solid var(--verde);
+  border-left-width: 4px;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--texto);
+}
+.gd-modo-banner strong { color: var(--verde-escuro); }
 
 /* ---------- BOTÕES ---------- */
 .btn {

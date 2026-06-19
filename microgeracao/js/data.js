@@ -62,7 +62,7 @@ const GD_FUSOS = [22,23,24];
 const GD_BT_MT = ["BT - Baixa Tensão","MT - Média Tensão"];
 const GD_FAST_LIMITE_KW = 7.5;
 const GD_FAST_REGRAS = [
-  "8.5.1 - não injeção na rede de distribuição (\u201CGrid Zero\u201D)",
+  "8.5.1 - não injeção na rede de distribuição (“Grid Zero”)",
   "8.5.2 - enquadramento nos critérios de gratuidade da REN 1.000/2021 e potência compatível com o consumo no horário de geração",
   "8.5.3 - modalidade autoconsumo local, com potência instalada de geração igual ou inferior a 7,5 kW",
 ];
@@ -72,8 +72,8 @@ function gdValidarUTM(fuso,e,n){
   if(!lim) return {ok:false,msg:"Selecione o fuso."};
   const E=parseFloat(e),N=parseFloat(n);
   if(isNaN(E)||isNaN(N)) return {ok:false,msg:""};
-  if(E<lim.eMin||E>lim.eMax) return {ok:false,msg:`E fora da faixa (${lim.eMin}\u2013${lim.eMax}).`};
-  if(N<lim.nMin||N>lim.nMax) return {ok:false,msg:`N fora da faixa (${lim.nMin}\u2013${lim.nMax}).`};
+  if(E<lim.eMin||E>lim.eMax) return {ok:false,msg:`E fora da faixa (${lim.eMin}–${lim.eMax}).`};
+  if(N<lim.nMin||N>lim.nMax) return {ok:false,msg:`N fora da faixa (${lim.nMin}–${lim.nMax}).`};
   return {ok:true,msg:""};
 }
 function gdLimiteInjecao(tipo,corrente,usarND51){

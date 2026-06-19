@@ -1,7 +1,3 @@
-// ============================================================
-// MINIGERAÇÃO DISTRIBUÍDA — App principal
-// ============================================================
-
 const GD_ABAS = [
   { id: "ident", n: "Identificação", c: ViewIdentificacao },
   { id: "uc", n: "Dados da UC", c: ViewDadosUC },
@@ -9,17 +5,14 @@ const GD_ABAS = [
   { id: "ger", n: "Dados da Geração", c: ViewGeracao },
   { id: "arm", n: "Armazenamento", c: ViewArmazenamento },
   { id: "decl", n: "Declarações", c: ViewDeclaracoes },
-  { id: "rev", n: "Prévia & PDF", c: ViewRevisao },
+  { id: "rev", n: "Prévia & PDF", c: ViewRevisao }
 ];
-
 function App() {
   const [d, setD] = useState(gdEstadoInicial());
   const [aba, setAba] = useState("ident");
   const [cepStatus, setCepStatus] = useState("");
   const [cnpjStatus, setCnpjStatus] = useState("");
   const set = (patch) => setD((s) => ({ ...s, ...patch }));
-
-  // Consultas externas (ViaCEP / BrasilAPI) — helper compartilhado
   const { buscarCep, buscarCnpj } = criarConsultasExternas({
     d,
     set,
@@ -27,9 +20,8 @@ function App() {
     mascararFixo,
     mascararCEP,
     setCepStatus,
-    setCnpjStatus,
+    setCnpjStatus
   });
-
   const validacao = useMemo(() => {
     const faltas = [];
     const req = (v, label) => {
@@ -71,7 +63,6 @@ function App() {
     req(d.solicitanteEmail, "E-mail do solicitante");
     return { ok: faltas.length === 0, faltas };
   }, [d]);
-
   const ctx = {
     d,
     set,
@@ -80,69 +71,45 @@ function App() {
     buscarCep,
     buscarCnpj,
     validacao,
-    gerarPdf: () => gerarPdfMiniGD(d),
+    gerarPdf: () => gerarPdfMiniGD(d)
   };
-
   const idx = GD_ABAS.findIndex((a) => a.id === aba);
   const Atual = GD_ABAS[idx].c;
   const irProx = () => idx < GD_ABAS.length - 1 && setAba(GD_ABAS[idx + 1].id);
   const irAnt = () => idx > 0 && setAba(GD_ABAS[idx - 1].id);
-
-  return (
-    <div>
-      <div className="topbar">
-        <div className="topbar-inner">
-          <a className="logo-cemig" href="../index.html">
-            <LogoCemig />
-          </a>
-          <div className="topbar-links">
-            <span style={{ fontWeight: 700 }}>Minigeração Distribuída</span>
-            <a href="../index.html">← Início</a>
-          </div>
-        </div>
-      </div>
-      <div className="layout">
-        <aside className="sidebar">
-          <div className="sidebar-title">Progresso do preenchimento</div>
-          {GD_ABAS.map((a, i) => (
-            <button
-              key={a.id}
-              className={
-                "vstep" + (a.id === aba ? " active" : i < idx ? " done" : "")
-              }
-              onClick={() => setAba(a.id)}
-            >
-              <span className="vstep-num">{i + 1}</span>
-              <span className="vstep-label">{a.n}</span>
-            </button>
-          ))}
-        </aside>
-        <main className="main-col fade-in" key={aba}>
-          <Atual ctx={ctx} />
-          <div className="nav-bottom">
-            <Btn variant="ghost" onClick={irAnt} disabled={idx === 0}>
-              ← Voltar
-            </Btn>
-            <span className="nav-step-info">
-              Etapa {idx + 1} de {GD_ABAS.length}
-            </span>
-            {idx < GD_ABAS.length - 1 ? (
-              <Btn variant="primary" onClick={irProx}>
-                Avançar →
-              </Btn>
-            ) : (
-              <Btn
-                variant="primary"
-                onClick={() => gerarPdfMiniGD(d)}
-                disabled={!validacao.ok}
-              >
-                📄 Exportar PDF
-              </Btn>
-            )}
-          </div>
-        </main>
-      </div>
-    </div>
-  );
+  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "topbar" }, /* @__PURE__ */ React.createElement("div", { className: "topbar-inner" }, /* @__PURE__ */ React.createElement("div", { className: "topbar-left" }, /* @__PURE__ */ React.createElement("a", { className: "topbar-home", href: "../index.html" }, "← Início"), /* @__PURE__ */ React.createElement("span", { className: "app-title" }, "Assistente de formulário")), /* @__PURE__ */ React.createElement("div", { className: "topbar-links" }, /* @__PURE__ */ React.createElement(
+    "a",
+    {
+      href: "https://atende.cemig.com.br/Login",
+      target: "_blank",
+      rel: "noreferrer"
+    },
+    "CEMIG ATENDE"
+  ), /* @__PURE__ */ React.createElement(
+    "a",
+    {
+      href: "https://partapr.cemig.com.br/PARTAPR/SelecaoModulo.aspx",
+      target: "_blank",
+      rel: "noreferrer"
+    },
+    "APR Web"
+  )))), /* @__PURE__ */ React.createElement("div", { className: "layout" }, /* @__PURE__ */ React.createElement("aside", { className: "sidebar" }, /* @__PURE__ */ React.createElement("div", { className: "sidebar-title" }, "Progresso do preenchimento"), GD_ABAS.map((a, i) => /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      key: a.id,
+      className: "vstep" + (a.id === aba ? " active" : i < idx ? " done" : ""),
+      onClick: () => setAba(a.id)
+    },
+    /* @__PURE__ */ React.createElement("span", { className: "vstep-num" }, i + 1),
+    /* @__PURE__ */ React.createElement("span", { className: "vstep-label" }, a.n)
+  ))), /* @__PURE__ */ React.createElement("main", { className: "main-col fade-in", key: aba }, /* @__PURE__ */ React.createElement(Atual, { ctx }), /* @__PURE__ */ React.createElement("div", { className: "nav-bottom" }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: irAnt, disabled: idx === 0 }, "← Voltar"), /* @__PURE__ */ React.createElement("span", { className: "nav-step-info" }, "Etapa ", idx + 1, " de ", GD_ABAS.length), idx < GD_ABAS.length - 1 ? /* @__PURE__ */ React.createElement(Btn, { variant: "primary", onClick: irProx }, "Avançar →") : /* @__PURE__ */ React.createElement(
+    Btn,
+    {
+      variant: "primary",
+      onClick: () => gerarPdfMiniGD(d),
+      disabled: !validacao.ok
+    },
+    "📄 Exportar PDF"
+  )))));
 }
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+ReactDOM.createRoot(document.getElementById("root")).render(/* @__PURE__ */ React.createElement(App, null));
