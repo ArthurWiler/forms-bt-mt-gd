@@ -81,8 +81,9 @@ body {
 .logo-cemig svg { height: 34px; width: auto; }
 .logo-cemig .logo-img { height: 34px; width: auto; display: block; }
 .app-title {
-  font-family: "SS Broad", "DM Sans", system-ui, -apple-system, sans-serif;
-  font-size: 22px;
+  font-family: "DM Sans", system-ui, -apple-system, sans-serif;
+  font-size: 19px;
+  font-weight: 800;
   color: #fff;
   letter-spacing: 0.3px;
 }
