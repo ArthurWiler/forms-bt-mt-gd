@@ -68,19 +68,6 @@ function gerarPdfDoc(S) {
       MG,
       13.5,
     );
-    // Logo Cemig (canto superior direito da barra), preservando proporção
-    if (logoPDF) {
-      const logoH = 10; // altura em mm — ajuste aqui se necessário
-      const logoW = logoH * (logoPDF.w / logoPDF.h);
-      doc.addImage(
-        logoPDF.url,
-        "PNG",
-        PW - MG - logoW,
-        (18 - logoH) / 2,
-        logoW,
-        logoH,
-      );
-    }
     cy = 24;
   };
   const footer = () => {
@@ -503,7 +490,6 @@ function gerarPdfDoc(S) {
     ucsDet.forEach((u, ui) => {
       sec(`4.${ui + 1}  UNIDADE CONSUMIDORA ${ui + 1}`);
       const pares = [
-        ["Solicitação", u.solicitacao],
         ["Atividade principal", u.atividade],
         ["Ramo de atividade", u.ramo],
         ["Nº Predial", obra.num],
@@ -528,6 +514,7 @@ function gerarPdfDoc(S) {
       }
       const motsUC = (u.cargas?.mots || []).filter((m) => (m.q || 0) > 0);
       if (motsUC.length) {
+        sec(`4.${ui + 1}.1  CARGAS ESPECIAIS`);
         const qtdTot = motsUC.reduce((s, m) => s + (parseInt(m.q) || 0), 0);
         const colM = motorColPorQtd(qtdTot);
         tabela(
@@ -556,20 +543,32 @@ function gerarPdfDoc(S) {
         `Carga ${fmt2(u.cargas?._cargaKw || 0)} kW  |  Demanda`,
         `${fmt2(u.cargas?._demanda || 0)} kVA`,
       );
-      // Disjuntores — informação consolidada em um único bloco
+      // Disjuntor anterior (apenas em alteração de carga; o escolhido vai no resumo)
       if (u.solicitacao !== "Conexão Nova" && u.disjDe)
         fullLine("Disjuntor anterior (De)", u.disjDe);
-      fullLine(
-        "Disjuntor sugerido (ND-5.1)",
-        (u.cargas?._disjuntores || []).join("  ·  ") || "—",
-      );
-      fullLine(
-        "Disjuntor escolhido",
-        u.disjEscolhido || (u.cargas?._disjuntores || [])[0] || "—",
-      );
       cy += 2;
     });
-    sec("5.  GERADOR DE EMERGÊNCIA");
+    // Resumo consolidado: solicitação, carga, demanda e disjuntor por UC
+    sec("5.  RESUMO POR UNIDADE CONSUMIDORA");
+    tabela(
+      [
+        "Unidade",
+        "Tipo de solicitação",
+        "Carga (kW)",
+        "Demanda (kVA)",
+        "Disjuntor",
+      ],
+      [26, 56, 28, 32, 40],
+      ucsDet.map((u, ui) => [
+        `UC ${ui + 1}`,
+        u.solicitacao,
+        fmt2(u.cargas?._cargaKw || 0),
+        fmt2(u.cargas?._demanda || 0),
+        u.disjEscolhido || (u.cargas?._disjuntores || [])[0] || "—",
+      ]),
+    );
+    cy += 2;
+    sec("6.  GERADOR DE EMERGÊNCIA");
     const gp = [["Há gerador de emergência?", gerador.possui]];
     if (gerador.possui === "Sim")
       gp.push(
@@ -606,4 +605,79 @@ function gerarPdfDoc(S) {
   doc.save(
     `CEMIG_${multiTorres ? "torres" : coletivo ? "coletivo" : "individual"}_${nomeArq}.pdf`,
   );
+}
+
+/* ============================================================
+   CEMIG — Lista de documentos para a solicitação.
+   Gera um checklist em PDF. Os itens são placeholders, a serem
+   ajustados conforme a regra de negócio definitiva.
+   ============================================================ */
+// Itens placeholder da lista de documentos.
+const LISTA_DOCUMENTOS_PLACEHOLDER = [
+  "Documento de identificação com foto e CPF do titular",
+  "Comprovante de propriedade ou posse do imóvel",
+  "Comprovante de regularidade do imóvel (área urbana)",
+  "ART/TRT de projeto paga (quando aplicável)",
+  "Planta de situação conforme ND-5.2 (quando aplicável)",
+  "Procuração do responsável técnico (solicitações de terceiros)",
+  "Documento de regularização ambiental (quando aplicável)",
+  "[Documento adicional 1 — placeholder]",
+  "[Documento adicional 2 — placeholder]",
+];
+
+function gerarListaDocumentosDoc(S) {
+  const { prop } = S || {};
+  if (!window.jspdf) {
+    alert("Biblioteca jsPDF não carregada.");
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const PW = 210,
+    PH = 297,
+    MG = 14,
+    CW = PW - 2 * MG;
+  let cy = MG;
+
+  // Barra superior (mesmo estilo do formulário, sem logo)
+  doc.setFillColor(10, 47, 39);
+  doc.rect(0, 0, PW, 18, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(255, 255, 255);
+  doc.text("Lista de Documentos — Orçamento de Conexão BT", MG, 8);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.setTextColor(169, 230, 191);
+  doc.text("Documentos a apresentar na solicitação", MG, 13.5);
+  cy = 28;
+
+  if (prop && prop.nome) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(30, 32, 42);
+    doc.text(`Solicitante: ${prop.nome}`, MG, cy);
+    cy += 9;
+  }
+
+  doc.setFontSize(11);
+  LISTA_DOCUMENTOS_PLACEHOLDER.forEach((item) => {
+    if (cy > PH - 20) {
+      doc.addPage();
+      cy = MG + 6;
+    }
+    // checkbox
+    doc.setDrawColor(16, 119, 98);
+    doc.rect(MG, cy - 3.6, 4.2, 4.2);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(30, 32, 42);
+    const linhas = doc.splitTextToSize(item, CW - 10);
+    doc.text(linhas, MG + 7, cy);
+    cy += Math.max(6, linhas.length * 5 + 2.5);
+  });
+
+  const nomeArq = (prop?.nome || "documentos")
+    .replace(/[^a-zA-Z0-9]/g, "_")
+    .slice(0, 30);
+  doc.save(`CEMIG_lista_documentos_${nomeArq}.pdf`);
 }

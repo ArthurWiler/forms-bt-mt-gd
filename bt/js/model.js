@@ -204,229 +204,255 @@ function cargasQtdsPorNome(itens) {
   return qtds;
 }
 
+const SEC_BT_RESIDENCIAL = {
+  titulo: "Residencial · Comercial · Rural — Baixa Tensão",
+  cards: [
+    {
+      id: "casa50",
+      nome: "Casa até 50m²",
+      sub: "Monofásico 63 A",
+      img: "imgs/img_casa1.png",
+      status: "ok",
+      restrito: true, // fluxo simplificado: sem coletivo/híbrido/multitorres
+      prefill: {
+        atividade: "Residencial",
+        atend: {
+          disjGeral: "Não",
+          solicitacao: SOLICITACOES[0],
+          escopo: "Ligação Nova",
+          nUCs: 1,
+        },
+        obra: { tipoRede: "Monofásica", localizacao: "Urbana" },
+        cargas: {
+          tipoA: "res",
+          qtds: cargasQtdsPorNome([
+            { n: "Chuveiro Elétrico 127V", q: 1 },
+            { n: "Lâmpada LED 10W", q: 4 },
+            { n: "Lâmpada LED 18W", q: 4 },
+            { n: "Geladeira comum", q: 1 },
+            { n: "Micro forno elétrico", q: 1 },
+          ]),
+        },
+      },
+    },
+    {
+      id: "casa100",
+      nome: "Casa até 100m²",
+      sub: "Bifásico 63 A",
+      img: "imgs/img_casa2.png",
+      status: "ok",
+      restrito: true, // fluxo simplificado: sem coletivo/híbrido/multitorres
+      prefill: {
+        atividade: "Residencial",
+        atend: {
+          disjGeral: "Não",
+          solicitacao: SOLICITACOES[0],
+          escopo: "Ligação Nova",
+          nUCs: 1,
+        },
+        obra: { tipoRede: "Bifásica", localizacao: "Urbana" },
+        cargas: {
+          tipoA: "res",
+          qtds: cargasQtdsPorNome([
+            { n: "Chuveiro 4 estações", q: 2 },
+            { n: "AC 7500 BTU", q: 1 },
+            { n: "Lâmpada LED 10W", q: 4 },
+            { n: "Lâmpada LED 18W", q: 4 },
+            { n: "Geladeira comum", q: 1 },
+            { n: "Micro forno elétrico", q: 1 },
+          ]),
+        },
+      },
+    },
+    {
+      id: "casaluxo",
+      nome: "Casa > 100m²",
+      sub: "Baixa Tensão",
+      img: "imgs/img_casa3.png",
+      status: "ok",
+      prefill: {
+        atividade: "Residencial",
+        atend: {
+          disjGeral: "Não",
+          solicitacao: SOLICITACOES[0],
+          escopo: "Ligação Nova",
+        },
+        obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
+      },
+    },
+    {
+      id: "comercio",
+      nome: "Comércio",
+      sub: "Baixa Tensão (BT)",
+      img: "imgs/img_comercio.png",
+      status: "ok",
+      prefill: {
+        atividade: "Comercial",
+        atend: {
+          disjGeral: "Não",
+          solicitacao: SOLICITACOES[0],
+          escopo: "Ligação Nova",
+        },
+        obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
+      },
+    },
+    {
+      id: "industriabt",
+      nome: "Indústria",
+      sub: "Baixa Tensão (BT)",
+      img: "imgs/img_industria_bt.png",
+      status: "ok",
+      prefill: {
+        atividade: "Industrial",
+        atend: {
+          disjGeral: "Não",
+          solicitacao: SOLICITACOES[0],
+          escopo: "Ligação Nova",
+        },
+        obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
+      },
+    },
+    {
+      id: "rural",
+      nome: "Rural",
+      sub: "Baixa Tensão (BT)",
+      img: "imgs/img_rural.png",
+      status: "ok",
+      prefill: {
+        atividade: "Rural",
+        atend: {
+          disjGeral: "Não",
+          solicitacao: SOLICITACOES[0],
+          escopo: "Ligação Nova",
+        },
+        obra: { tipoRede: "Trifásica", localizacao: "Rural" },
+      },
+    },
+  ],
+};
+const SEC_BT_EMPREENDIMENTOS = {
+  titulo: "Empreendimentos — Baixa Tensão",
+  cards: [
+    {
+      id: "loteamento",
+      nome: "Loteamento",
+      sub: "Baixa Tensão (BT)",
+      img: "imgs/img_loteamento.png",
+      status: "link",
+      href: "loteamento/",
+    },
+    {
+      id: "condominiotorres",
+      nome: "Condomínio de torres",
+      sub: "Baixa Tensão (BT)",
+      img: "imgs/img_condominio.png",
+      status: "ok",
+      prefill: {
+        atividade: "Residencial",
+        atend: {
+          disjGeral: "Sim",
+          solicitacao: SOLICITACOES[4],
+          escopo: "Ligação Nova",
+          atendA: "Torre",
+          nBlocos: 2,
+        },
+        obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
+      },
+    },
+    {
+      id: "coletivo",
+      nome: "Atendimento coletivo",
+      sub: "Baixa Tensão (BT)",
+      img: "imgs/img_coletivo.png",
+      status: "ok",
+      prefill: {
+        atividade: "Residencial",
+        atend: {
+          disjGeral: "Sim",
+          solicitacao: SOLICITACOES[2],
+          escopo: "Ligação Nova",
+          nUCs: 2,
+        },
+        obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
+      },
+    },
+  ],
+};
+const SEC_MT = {
+  titulo: "Média Tensão",
+  cards: [
+    {
+      id: "mt-industria",
+      nome: "Indústria",
+      sub: "Média Tensão (MT)",
+      img: "imgs/img_industria_mt.png",
+      status: "link",
+      href: "mt/?atividade=Industrial",
+    },
+    {
+      id: "mt-outros",
+      nome: "Outros estabelecimentos",
+      sub: "Média Tensão (MT)",
+      img: "imgs/img_outros_mt.png",
+      status: "link",
+      href: "mt/",
+    },
+    {
+      id: "mt-irrigante",
+      nome: "Irrigante",
+      sub: "Média Tensão (MT)",
+      img: "imgs/img_irrigante.png",
+      status: "link",
+      href: "mt/?atividade=Irrigação",
+    },
+  ],
+};
+const SEC_GD_MINI = {
+  titulo: "Geração Distribuída — Minigeração",
+  cards: [
+    {
+      id: "gd-mini",
+      nome: "Minigeração",
+      sub: "Média Tensão (MT)",
+      img: "imgs/mod-gd-mini.png",
+      status: "link",
+      href: "minigeracao/",
+    },
+  ],
+};
+const SEC_GD_MICRO = {
+  titulo: "Geração Distribuída — Microgeração",
+  cards: [
+    {
+      id: "gd-micro",
+      nome: "Microgeração",
+      sub: "Baixa Tensão (BT)",
+      img: "imgs/mod-gd-micro.png",
+      status: "link",
+      href: "microgeracao/",
+    },
+    {
+      id: "gd-micro-fast",
+      nome: "Fast Track",
+      sub: "Microgeração · art. 73-A (REN 1.000/2021)",
+      img: "imgs/mod-gd-micro.png",
+      status: "link",
+      href: "microgeracao/?modo=fasttrack",
+    },
+    {
+      id: "gd-micro-gridzero",
+      nome: "Grid Zero",
+      sub: "Microgeração · sem injeção na rede",
+      img: "imgs/mod-gd-micro.png",
+      status: "link",
+      href: "microgeracao/?modo=gridzero",
+    },
+  ],
+};
 const MODALIDADES_SECOES = [
-  {
-    titulo: "Residencial · Comercial · Rural — Baixa Tensão",
-    cards: [
-      {
-        id: "casa50",
-        nome: "Casa até 50m²",
-        sub: "Monofásico 63 A",
-        img: "imgs/img_casa1.png",
-        status: "ok",
-        restrito: true, // fluxo simplificado: sem coletivo/híbrido/multitorres
-        prefill: {
-          atividade: "Residencial",
-          atend: {
-            disjGeral: "Não",
-            solicitacao: SOLICITACOES[0],
-            escopo: "Ligação Nova",
-            nUCs: 1,
-          },
-          obra: { tipoRede: "Monofásica", localizacao: "Urbana" },
-          cargas: {
-            tipoA: "res",
-            qtds: cargasQtdsPorNome([
-              { n: "Chuveiro Elétrico 127V", q: 1 },
-              { n: "Lâmpada LED 10W", q: 4 },
-              { n: "Lâmpada LED 18W", q: 4 },
-              { n: "Geladeira comum", q: 1 },
-              { n: "Micro forno elétrico", q: 1 },
-            ]),
-          },
-        },
-      },
-      {
-        id: "casa100",
-        nome: "Casa até 100m²",
-        sub: "Bifásico 63 A",
-        img: "imgs/img_casa2.png",
-        status: "ok",
-        restrito: true, // fluxo simplificado: sem coletivo/híbrido/multitorres
-        prefill: {
-          atividade: "Residencial",
-          atend: {
-            disjGeral: "Não",
-            solicitacao: SOLICITACOES[0],
-            escopo: "Ligação Nova",
-            nUCs: 1,
-          },
-          obra: { tipoRede: "Bifásica", localizacao: "Urbana" },
-          cargas: {
-            tipoA: "res",
-            qtds: cargasQtdsPorNome([
-              { n: "Chuveiro 4 estações", q: 2 },
-              { n: "AC 7500 BTU", q: 1 },
-              { n: "Lâmpada LED 10W", q: 4 },
-              { n: "Lâmpada LED 18W", q: 4 },
-              { n: "Geladeira comum", q: 1 },
-              { n: "Micro forno elétrico", q: 1 },
-            ]),
-          },
-        },
-      },
-      {
-        id: "casaluxo",
-        nome: "Casa > 100m²",
-        sub: "Baixa Tensão",
-        img: "imgs/img_casa3.png",
-        status: "ok",
-        prefill: {
-          atividade: "Residencial",
-          atend: {
-            disjGeral: "Não",
-            solicitacao: SOLICITACOES[0],
-            escopo: "Ligação Nova",
-          },
-          obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
-        },
-      },
-      {
-        id: "comercio",
-        nome: "Comércio",
-        sub: "Baixa Tensão (BT)",
-        img: "imgs/img_comercio.png",
-        status: "ok",
-        prefill: {
-          atividade: "Comercial",
-          atend: {
-            disjGeral: "Não",
-            solicitacao: SOLICITACOES[0],
-            escopo: "Ligação Nova",
-          },
-          obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
-        },
-      },
-      {
-        id: "industriabt",
-        nome: "Indústria",
-        sub: "Baixa Tensão (BT)",
-        img: "imgs/img_industria_bt.png",
-        status: "ok",
-        prefill: {
-          atividade: "Industrial",
-          atend: {
-            disjGeral: "Não",
-            solicitacao: SOLICITACOES[0],
-            escopo: "Ligação Nova",
-          },
-          obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
-        },
-      },
-      {
-        id: "rural",
-        nome: "Rural",
-        sub: "Baixa Tensão (BT)",
-        img: "imgs/img_rural.png",
-        status: "ok",
-        prefill: {
-          atividade: "Rural",
-          atend: {
-            disjGeral: "Não",
-            solicitacao: SOLICITACOES[0],
-            escopo: "Ligação Nova",
-          },
-          obra: { tipoRede: "Trifásica", localizacao: "Rural" },
-        },
-      },
-    ],
-  },
-  {
-    titulo: "Empreendimentos — Baixa Tensão",
-    cards: [
-      {
-        id: "loteamento",
-        nome: "Loteamento",
-        sub: "Baixa Tensão (BT)",
-        img: "imgs/img_loteamento.png",
-        status: "link",
-        href: "loteamento/",
-      },
-      {
-        id: "condominiotorres",
-        nome: "Condomínio de torres",
-        sub: "Baixa Tensão (BT)",
-        img: "imgs/img_condominio.png",
-        status: "ok",
-        prefill: {
-          atividade: "Residencial",
-          atend: {
-            disjGeral: "Sim",
-            solicitacao: SOLICITACOES[4],
-            escopo: "Ligação Nova",
-            atendA: "Torre",
-            nBlocos: 2,
-          },
-          obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
-        },
-      },
-      {
-        id: "coletivo",
-        nome: "Atendimento coletivo",
-        sub: "Baixa Tensão (BT)",
-        img: "imgs/img_coletivo.png",
-        status: "ok",
-        prefill: {
-          atividade: "Residencial",
-          atend: {
-            disjGeral: "Sim",
-            solicitacao: SOLICITACOES[2],
-            escopo: "Ligação Nova",
-            nUCs: 2,
-          },
-          obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
-        },
-      },
-    ],
-  },
-  {
-    titulo: "Média Tensão",
-    cards: [
-      {
-        id: "mt-industria",
-        nome: "Indústria",
-        sub: "Média Tensão (MT)",
-        img: "imgs/img_industria_mt.png",
-        status: "link",
-        href: "mt/?atividade=Industrial",
-      },
-      {
-        id: "mt-outros",
-        nome: "Outros estabelecimentos",
-        sub: "Média Tensão (MT)",
-        img: "imgs/img_outros_mt.png",
-        status: "link",
-        href: "mt/",
-      },
-      {
-        id: "mt-irrigante",
-        nome: "Irrigante",
-        sub: "Média Tensão (MT)",
-        img: "imgs/img_irrigante.png",
-        status: "link",
-        href: "mt/?atividade=Irrigação",
-      },
-    ],
-  },
-  {
-    titulo: "Geração Distribuída",
-    cards: [
-      {
-        id: "gd-micro",
-        nome: "Microgeração",
-        sub: "Baixa Tensão (BT)",
-        img: "imgs/mod-gd-micro.png",
-        status: "link",
-        href: "microgeracao/",
-      },
-      {
-        id: "gd-mini",
-        nome: "Minigeração",
-        sub: "Média Tensão (MT)",
-        img: "imgs/mod-gd-mini.png",
-        status: "link",
-        href: "minigeracao/",
-      },
-    ],
-  },
+  SEC_MT,
+  SEC_GD_MINI,
+  SEC_GD_MICRO,
+  SEC_BT_RESIDENCIAL,
+  SEC_BT_EMPREENDIMENTOS,
 ];

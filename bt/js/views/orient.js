@@ -72,7 +72,7 @@ function TabOrient({ ctx }) {
     Card,
     {
       eyebrow: "Comece por aqui",
-      title: "Orienta\xE7\xF5es para preenchimento",
+      title: "Orientações para preenchimento",
       sub: ORIENTACOES.intro
     },
     /* @__PURE__ */ React.createElement(
@@ -114,7 +114,7 @@ function TabOrient({ ctx }) {
       ORIENTACOES.coletivo.titulo
     ), /* @__PURE__ */ React.createElement("ul", { className: "orient-list" }, ORIENTACOES.coletivo.itens.map((it, i) => /* @__PURE__ */ React.createElement("li", { key: i, className: "orient-item" }, /* @__PURE__ */ React.createElement("span", { className: "orient-num" }, i + 1), /* @__PURE__ */ React.createElement("p", null, it))))),
     /* @__PURE__ */ React.createElement("div", { className: "callout" }, ORIENTACOES.callout),
-    /* @__PURE__ */ React.createElement("div", { className: "legend" }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("span", { className: "req" }, "*"), " Campo de preenchimento obrigat\xF3rio"), /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("span", { className: "req" }, "**"), " Obrigat\xF3rio para pessoa f\xEDsica")),
-    /* @__PURE__ */ React.createElement("div", { style: { marginTop: 16 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "primary", onClick: irProx }, "Iniciar preenchimento \u2192"))
+    /* @__PURE__ */ React.createElement("div", { className: "legend" }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("span", { className: "req" }, "*"), " Campo de preenchimento obrigatório"), /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("span", { className: "req" }, "**"), " Obrigatório para pessoa física")),
+    /* @__PURE__ */ React.createElement("div", { style: { marginTop: 16 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "primary", onClick: irProx }, "Iniciar preenchimento →"))
   );
 }

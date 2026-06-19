@@ -5,17 +5,17 @@ const SISEMA_CAMADAS = [
   // { id, rotulo, typeName }  — typeName DEVE ser confirmado no GetCapabilities
   {
     id: "ape",
-    rotulo: "\xC1reas de Prote\xE7\xE3o Especial",
+    rotulo: "Áreas de Proteção Especial",
     typeName: "IDE:ide_2010_mg_areas_protecao_especial_pol"
   },
   {
     id: "uce",
-    rotulo: "Unidades de Conserva\xE7\xE3o Estaduais",
+    rotulo: "Unidades de Conservação Estaduais",
     typeName: "IDE:ide_2010_mg_unidades_conservacao_estaduais_pol"
   },
   {
     id: "ucf",
-    rotulo: "Unidades de Conserva\xE7\xE3o Federais",
+    rotulo: "Unidades de Conservação Federais",
     typeName: "IDE:ide_2010_mg_unidades_conservacao_federais_pol"
   },
   {
@@ -25,7 +25,7 @@ const SISEMA_CAMADAS = [
   },
   {
     id: "ti",
-    rotulo: "Terras Ind\xEDgenas",
+    rotulo: "Terras Indígenas",
     typeName: "IDE:ide_2003_mg_terras_indigenas_pol"
   }
 ];
@@ -75,7 +75,7 @@ function _urlWfs(typeName, lat, lng) {
   return `${SISEMA_WFS}?${q.toString()}`;
 }
 async function consultarRestricoes(lat, lng) {
-  if (!window.turf) throw new Error("Turf.js n\xE3o carregado.");
+  if (!window.turf) throw new Error("Turf.js não carregado.");
   const ponto = window.turf.point([lng, lat]);
   const out = [];
   for (const cam of SISEMA_CAMADAS) {
@@ -116,7 +116,7 @@ function RestricaoAmbiental({ obra }) {
       const c = await geocodObra(obra);
       if (!c) {
         setStatus(
-          "N\xE3o foi poss\xEDvel obter as coordenadas (preencha o endere\xE7o ou a coordenada)."
+          "Não foi possível obter as coordenadas (preencha o endereço ou a coordenada)."
         );
         return;
       }
@@ -130,13 +130,13 @@ function RestricaoAmbiental({ obra }) {
   };
   const algumaErro = resultados && resultados.some((r) => r.erro);
   const algumaDentro = resultados && resultados.some((r) => r.dentro);
-  return /* @__PURE__ */ React.createElement("div", { className: "restricao-amb" }, /* @__PURE__ */ React.createElement("div", { className: "mapa-actions" }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: consultar }, "\u{1F33F} Consultar restri\xE7\xE3o ambiental (IDE-Sisema)"), status === "loading" && /* @__PURE__ */ React.createElement("span", { className: "field-hint" }, "Consultando camadas\u2026"), status && status !== "loading" && /* @__PURE__ */ React.createElement("span", { className: "field-hint", style: { color: "var(--vermelho)" } }, status)), resultados && /* @__PURE__ */ React.createElement("div", { className: "restricao-result" }, coords && /* @__PURE__ */ React.createElement("div", { className: "field-hint", style: { marginBottom: 8 } }, "Ponto consultado: ", coords.lat.toFixed(6), ", ", coords.lng.toFixed(6)), /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { className: "restricao-amb" }, /* @__PURE__ */ React.createElement("div", { className: "mapa-actions" }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: consultar }, "🌿 Consultar restrição ambiental (IDE-Sisema)"), status === "loading" && /* @__PURE__ */ React.createElement("span", { className: "field-hint" }, "Consultando camadas…"), status && status !== "loading" && /* @__PURE__ */ React.createElement("span", { className: "field-hint", style: { color: "var(--vermelho)" } }, status)), resultados && /* @__PURE__ */ React.createElement("div", { className: "restricao-result" }, coords && /* @__PURE__ */ React.createElement("div", { className: "field-hint", style: { marginBottom: 8 } }, "Ponto consultado: ", coords.lat.toFixed(6), ", ", coords.lng.toFixed(6)), /* @__PURE__ */ React.createElement(
     "div",
     {
       className: "alert " + (algumaDentro ? "alert-warn" : "alert-ok"),
       style: { marginBottom: 10 }
     },
-    algumaDentro ? "\u26A0 O ponto intersecta ao menos uma restri\xE7\xE3o ambiental. Verifique as camadas abaixo." : "Nenhuma restri\xE7\xE3o ambiental encontrada nas camadas consultadas para o ponto."
+    algumaDentro ? "⚠ O ponto intersecta ao menos uma restrição ambiental. Verifique as camadas abaixo." : "Nenhuma restrição ambiental encontrada nas camadas consultadas para o ponto."
   ), /* @__PURE__ */ React.createElement("div", { className: "restricao-chips" }, resultados.map((r) => /* @__PURE__ */ React.createElement(
     "span",
     {

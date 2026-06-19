@@ -4,7 +4,7 @@ function App() {
   const [cardSelecionado, setCardSelecionado] = useState(null);
   const restrito = !!cardSelecionado?.restrito;
   const [atend, setAtend] = useState({
-    disjGeral: "N\xE3o",
+    disjGeral: "Não",
     // possui disjuntor geral? Não=Individual, Sim=Coletivo
     nUCs: 1,
     biAcima63: false,
@@ -12,7 +12,7 @@ function App() {
     acima75: false,
     solicitacao: SOLICITACOES[0],
     // padrão (coletivo)
-    escopo: "Liga\xE7\xE3o Nova",
+    escopo: "Ligação Nova",
     // padrão
     disjuntorGeral: "",
     disjGeralAtual: "",
@@ -25,7 +25,7 @@ function App() {
     // opcional: substitui a demanda ND-5.2 calculada, nunca pode ser menor que ela
     atendA: "Bloco",
     // múltiplas torres: atendimento a Bloco/Torre
-    nBlocos: 1
+    nBlocos: 1,
   });
   const coletivo = atend.disjGeral === "Sim";
   const multiTorres = coletivo && atend.solicitacao === SOLICITACOES[4];
@@ -38,15 +38,15 @@ function App() {
     celular: "",
     fixo: "",
     cpfCnpj: "",
-    laudoMedico: "N\xE3o",
+    laudoMedico: "Não",
     telProp: "",
-    nis: "N\xE3o",
-    numNis: ""
+    nis: "Não",
+    numNis: "",
   });
   const [corr, setCorr] = useState({
     vencimento: "",
     receberEmail: "Sim",
-    alternativa: "Endere\xE7o novo",
+    alternativa: "Endereço novo",
     // quando não recebe no e-mail informado
     outroEmail: "",
     rua: "",
@@ -56,11 +56,11 @@ function App() {
     municipio: "",
     cep: "",
     estado: "MG",
-    contaGlobal: ""
+    contaGlobal: "",
   });
   const [obra, setObra] = useState({
     art: "",
-    prontoLigar: "N\xE3o",
+    prontoLigar: "Não",
     restricaoAmbiental: "",
     // autopreenchido após a consulta (Sim/Não)
     restricoesTexto: "",
@@ -78,18 +78,18 @@ function App() {
     lat: "",
     lng: "",
     distMenor30: "Sim",
-    tipoRede: "Trif\xE1sica",
+    tipoRede: "Trifásica",
     transformador: "",
     pontoRef: "",
     nomePropriedade: "",
     distritoComunidade: "",
-    instProxima: ""
+    instProxima: "",
   });
   const [gerador, setGerador] = useState({
-    possui: "N\xE3o",
+    possui: "Não",
     potencia: "",
     fonte: "",
-    descricao: ""
+    descricao: "",
   });
   const [obs, setObs] = useState("");
   const [cepStatus, setCepStatus] = useState({ obra: "", corr: "" });
@@ -107,75 +107,102 @@ function App() {
         setLogoPDF({
           url: c.toDataURL("image/png"),
           w: img.naturalWidth,
-          h: img.naturalHeight
+          h: img.naturalHeight,
         });
-      } catch (e) {
-      }
+      } catch (e) {}
     };
     img.src = "imgs/logos/logo-cemig-cor.png";
   }, []);
   const docInfo = useMemo(() => validarCpfCnpj(prop.cpfCnpj), [prop.cpfCnpj]);
   const pessoaFisica = docInfo.tipo !== "CNPJ";
   const [ucsDet, setUcsDet] = useState([ucDetalhadaPadrao()]);
-  const setUcDet = (i, patch) => setUcsDet((p) => p.map((u, idx2) => idx2 === i ? { ...u, ...patch } : u));
+  const [cargasPadrao, setCargasPadrao] = useState(null);
+  const setUcDet = (i, patch) =>
+    setUcsDet((p) => p.map((u, idx2) => (idx2 === i ? { ...u, ...patch } : u)));
   const [ucBlocos, setUcBlocos] = useState([ucBlocoPadrao(0)]);
-  const setBloco = (i, patch) => setUcBlocos((p) => p.map((u, idx2) => idx2 === i ? { ...u, ...patch } : u));
-  const setBlocoPrev = (i, patch) => setUcBlocos(
-    (p) => p.map(
-      (u, idx2) => idx2 === i ? { ...u, prev: { ...u.prev || {}, ...patch } } : u
-    )
-  );
-  const replicarPrevTodas = () => setUcBlocos(
-    (p) => p.map(
-      (u, idx2) => idx2 === 0 ? u : { ...u, prev: { ...p[0].prev || {} } }
-    )
-  );
+  const setBloco = (i, patch) =>
+    setUcBlocos((p) =>
+      p.map((u, idx2) => (idx2 === i ? { ...u, ...patch } : u)),
+    );
+  const setBlocoPrev = (i, patch) =>
+    setUcBlocos((p) =>
+      p.map((u, idx2) =>
+        idx2 === i ? { ...u, prev: { ...(u.prev || {}), ...patch } } : u,
+      ),
+    );
+  const replicarPrevTodas = () =>
+    setUcBlocos((p) =>
+      p.map((u, idx2) =>
+        idx2 === 0 ? u : { ...u, prev: { ...(p[0].prev || {}) } },
+      ),
+    );
   const prevTotalKw = useMemo(
     () => ucBlocos.reduce((s, u) => s + prevKwUC(u), 0),
-    [ucBlocos]
+    [ucBlocos],
   );
   const residenciaisColetivo = useMemo(
     () => ucBlocos.filter((u) => u.atividade === "Residencial"),
-    [ucBlocos]
+    [ucBlocos],
   );
   const quantidadeApartamentos = residenciaisColetivo.length;
   const areaMediaPonderada = useMemo(() => {
     if (!quantidadeApartamentos) return 0;
-    return residenciaisColetivo.reduce((s, u) => s + num(u.area), 0) / quantidadeApartamentos;
+    return (
+      residenciaisColetivo.reduce((s, u) => s + num(u.area), 0) /
+      quantidadeApartamentos
+    );
   }, [residenciaisColetivo, quantidadeApartamentos]);
   const demandaApartamentosND52 = useMemo(
-    () => nd52CalcularDemandaApartamentos(
-      areaMediaPonderada,
-      quantidadeApartamentos
-    ),
-    [areaMediaPonderada, quantidadeApartamentos]
+    () =>
+      nd52CalcularDemandaApartamentos(
+        areaMediaPonderada,
+        quantidadeApartamentos,
+      ),
+    [areaMediaPonderada, quantidadeApartamentos],
   );
   const temUCNaoResidencial = useMemo(
     () => ucBlocos.some((u) => u.atividade && u.atividade !== "Residencial"),
-    [ucBlocos]
+    [ucBlocos],
   );
-  const demandaResidencialManualInvalida = !!demandaApartamentosND52 && String(atend.demandaResidencialManual).trim() !== "" && num(atend.demandaResidencialManual) < demandaApartamentosND52.demandaKVA;
+  const demandaResidencialManualInvalida =
+    !!demandaApartamentosND52 &&
+    String(atend.demandaResidencialManual).trim() !== "" &&
+    num(atend.demandaResidencialManual) < demandaApartamentosND52.demandaKVA;
   const demandaPrevTotal = useMemo(() => {
     let demandaResidencial;
     if (demandaApartamentosND52) {
       const manual = num(atend.demandaResidencialManual);
-      const manualValida = String(atend.demandaResidencialManual).trim() !== "" && manual >= demandaApartamentosND52.demandaKVA;
-      demandaResidencial = manualValida ? manual : demandaApartamentosND52.demandaKVA;
+      const manualValida =
+        String(atend.demandaResidencialManual).trim() !== "" &&
+        manual >= demandaApartamentosND52.demandaKVA;
+      demandaResidencial = manualValida
+        ? manual
+        : demandaApartamentosND52.demandaKVA;
     } else {
-      demandaResidencial = ucBlocos.filter((u) => u.atividade === "Residencial").reduce((s, u) => s + num((u.prev || {}).demanda), 0);
+      demandaResidencial = ucBlocos
+        .filter((u) => u.atividade === "Residencial")
+        .reduce((s, u) => s + num((u.prev || {}).demanda), 0);
     }
-    const demandaNaoResidencial = temUCNaoResidencial ? num(atend.demandaNaoResidencial) : 0;
+    const demandaNaoResidencial = temUCNaoResidencial
+      ? num(atend.demandaNaoResidencial)
+      : 0;
     return demandaResidencial + demandaNaoResidencial;
   }, [
     ucBlocos,
     demandaApartamentosND52,
     temUCNaoResidencial,
     atend.demandaNaoResidencial,
-    atend.demandaResidencialManual
+    atend.demandaResidencialManual,
   ]);
-  const isAlteracaoColetivo = coletivo && !multiTorres && /Alteração de Carga/.test(atend.escopo || "");
-  const trocaDisjGeral = coletivo && !multiTorres && atend.escopo === "Altera\xE7\xE3o de Carga com altera\xE7\xE3o do disjuntor geral";
-  const hibrido = coletivo && !multiTorres && atend.solicitacao === SOLICITACOES[3];
+  const isAlteracaoColetivo =
+    coletivo && !multiTorres && /Alteração de Carga/.test(atend.escopo || "");
+  const trocaDisjGeral =
+    coletivo &&
+    !multiTorres &&
+    atend.escopo ===
+      "Alteração de Carga com alteração do disjuntor geral";
+  const hibrido =
+    coletivo && !multiTorres && atend.solicitacao === SOLICITACOES[3];
   const validacaoHibrido = useMemo(() => {
     if (!hibrido) return { ok: true, erros: [] };
     const erros = [];
@@ -183,116 +210,133 @@ function App() {
     const u52 = ucBlocos.filter((u) => u.nd === "5.2");
     const pred51 = u51.map((u) => (u.nPredial || "").trim());
     if (pred51.some((p) => !p))
-      erros.push("ND 5.1: informe o n\xBA predial de todas as UCs 5.1.");
+      erros.push("ND 5.1: informe o nº predial de todas as UCs 5.1.");
     const dup51 = pred51.filter(
-      (p) => p && pred51.indexOf(p) !== pred51.lastIndexOf(p)
+      (p) => p && pred51.indexOf(p) !== pred51.lastIndexOf(p),
     );
     if (dup51.length)
       erros.push(
-        "ND 5.1: os n\xFAmeros prediais devem ser distintos entre as UCs 5.1."
+        "ND 5.1: os números prediais devem ser distintos entre as UCs 5.1.",
       );
     const comp52 = u52.map((u) => (u.complemento || "").trim());
     if (u52.length > 1 && comp52.some((c) => !c))
       erros.push(
-        "ND 5.2: informe o complemento de todas as UCs 5.2 (elas compartilham o mesmo n\xBA predial)."
+        "ND 5.2: informe o complemento de todas as UCs 5.2 (elas compartilham o mesmo nº predial).",
       );
     const dup52 = comp52.filter(
-      (c) => c && comp52.indexOf(c) !== comp52.lastIndexOf(c)
+      (c) => c && comp52.indexOf(c) !== comp52.lastIndexOf(c),
     );
     if (dup52.length)
       erros.push(
-        "ND 5.2: os complementos devem ser distintos (mesmo predial, diferindo s\xF3 pelo complemento)."
+        "ND 5.2: os complementos devem ser distintos (mesmo predial, diferindo só pelo complemento).",
       );
     return { ok: erros.length === 0, erros };
   }, [hibrido, ucBlocos]);
-  const replicarUC1Coletivo = () => setUcBlocos((p) => {
-    const base = p[0];
-    if (!base) return p;
-    return p.map(
-      (u, k) => k === 0 ? u : {
-        ...base,
-        identificacao: u.identificacao || `UC ${k + 1}`,
-        nPredial: u.nPredial,
-        complemento: u.complemento,
-        caixa: u.caixa,
-        instalacao: u.instalacao,
-        unidadeConsumidora: u.unidadeConsumidora
-      }
-    );
-  });
+  const replicarUC1Coletivo = () =>
+    setUcBlocos((p) => {
+      const base = p[0];
+      if (!base) return p;
+      return p.map((u, k) =>
+        k === 0
+          ? u
+          : {
+              ...base,
+              identificacao: u.identificacao || `UC ${k + 1}`,
+              nPredial: u.nPredial,
+              complemento: u.complemento,
+              caixa: u.caixa,
+              instalacao: u.instalacao,
+              unidadeConsumidora: u.unidadeConsumidora,
+            },
+      );
+    });
   const [blocos, setBlocos] = useState([blocoPadrao(0)]);
-  const setTorre = (i, patch) => setBlocos((p) => p.map((b, idx2) => idx2 === i ? { ...b, ...patch } : b));
-  const replicarPrimeiro = () => setBlocos(
-    (p) => p.map(
-      (b, i) => i === 0 ? b : {
-        ...p[0],
-        nome: `${i + 1}`,
-        ucs: (p[0].ucs || []).map((u, k) => ({ ...u }))
-      }
-    )
-  );
+  const setTorre = (i, patch) =>
+    setBlocos((p) => p.map((b, idx2) => (idx2 === i ? { ...b, ...patch } : b)));
+  const replicarPrimeiro = () =>
+    setBlocos((p) =>
+      p.map((b, i) =>
+        i === 0
+          ? b
+          : {
+              ...p[0],
+              nome: `${i + 1}`,
+              ucs: (p[0].ucs || []).map((u, k) => ({ ...u })),
+            },
+      ),
+    );
   const sincronizarUCsTorre = (i, qtd) => {
     const n = Math.max(1, parseInt(qtd) || 1);
-    setBlocos(
-      (p) => p.map((b, idx2) => {
+    setBlocos((p) =>
+      p.map((b, idx2) => {
         if (idx2 !== i) return b;
-        const arr = [...b.ucs || []];
+        const arr = [...(b.ucs || [])];
         while (arr.length < n) arr.push(ucTorrePadrao(arr.length));
         while (arr.length > n) arr.pop();
         return { ...b, qtdUCs: qtd, ucs: arr };
-      })
+      }),
     );
   };
-  const setUcTorre = (bi, ui, patch) => setBlocos(
-    (p) => p.map(
-      (b, idx2) => idx2 === bi ? {
-        ...b,
-        ucs: (b.ucs || []).map(
-          (u, k) => k === ui ? { ...u, ...patch } : u
-        )
-      } : b
-    )
-  );
-  const setUcTorrePrev = (bi, ui, patch) => setBlocos(
-    (p) => p.map(
-      (b, idx2) => idx2 === bi ? {
-        ...b,
-        ucs: (b.ucs || []).map(
-          (u, k) => k === ui ? { ...u, prev: { ...u.prev || {}, ...patch } } : u
-        )
-      } : b
-    )
-  );
-  const replicarPrevTorre = (bi) => setBlocos(
-    (p) => p.map((b, idx2) => {
-      if (idx2 !== bi) return b;
-      const base = ((b.ucs || [])[0] || {}).prev || {};
-      return {
-        ...b,
-        ucs: (b.ucs || []).map(
-          (u, k) => k === 0 ? u : { ...u, prev: { ...base } }
-        )
-      };
-    })
-  );
-  const replicarUC1Torre = (bi) => setBlocos(
-    (p) => p.map((b, idx2) => {
-      if (idx2 !== bi) return b;
-      const base = (b.ucs || [])[0];
-      if (!base) return b;
-      return {
-        ...b,
-        ucs: b.ucs.map(
-          (u, k) => k === 0 ? u : {
-            ...base,
-            identificacao: `UC ${k + 1}`,
-            instalacao: u.instalacao,
-            unidadeConsumidora: u.unidadeConsumidora
-          }
-        )
-      };
-    })
-  );
+  const setUcTorre = (bi, ui, patch) =>
+    setBlocos((p) =>
+      p.map((b, idx2) =>
+        idx2 === bi
+          ? {
+              ...b,
+              ucs: (b.ucs || []).map((u, k) =>
+                k === ui ? { ...u, ...patch } : u,
+              ),
+            }
+          : b,
+      ),
+    );
+  const setUcTorrePrev = (bi, ui, patch) =>
+    setBlocos((p) =>
+      p.map((b, idx2) =>
+        idx2 === bi
+          ? {
+              ...b,
+              ucs: (b.ucs || []).map((u, k) =>
+                k === ui ? { ...u, prev: { ...(u.prev || {}), ...patch } } : u,
+              ),
+            }
+          : b,
+      ),
+    );
+  const replicarPrevTorre = (bi) =>
+    setBlocos((p) =>
+      p.map((b, idx2) => {
+        if (idx2 !== bi) return b;
+        const base = ((b.ucs || [])[0] || {}).prev || {};
+        return {
+          ...b,
+          ucs: (b.ucs || []).map((u, k) =>
+            k === 0 ? u : { ...u, prev: { ...base } },
+          ),
+        };
+      }),
+    );
+  const replicarUC1Torre = (bi) =>
+    setBlocos((p) =>
+      p.map((b, idx2) => {
+        if (idx2 !== bi) return b;
+        const base = (b.ucs || [])[0];
+        if (!base) return b;
+        return {
+          ...b,
+          ucs: b.ucs.map((u, k) =>
+            k === 0
+              ? u
+              : {
+                  ...base,
+                  identificacao: `UC ${k + 1}`,
+                  instalacao: u.instalacao,
+                  unidadeConsumidora: u.unidadeConsumidora,
+                },
+          ),
+        };
+      }),
+    );
   useEffect(() => {
     const n = Math.max(1, Number(atend.nUCs) || 1);
     if (coletivo) {
@@ -308,7 +352,11 @@ function App() {
       setUcsDet((prevD) => {
         if (prevD.length === ni) return prevD;
         const arr = [...prevD];
-        while (arr.length < ni) arr.push(ucDetalhadaPadrao());
+        while (arr.length < ni) {
+          const nova = ucDetalhadaPadrao();
+          if (cargasPadrao) nova.cargas = { ...cargasPadrao };
+          arr.push(nova);
+        }
         while (arr.length > ni) arr.pop();
         return arr;
       });
@@ -324,7 +372,7 @@ function App() {
         if (!preset) return u;
         const atual = u.prev || {};
         const jaAplicado = Object.keys(preset).every(
-          (k) => String(atual[k] ?? "") === String(preset[k])
+          (k) => String(atual[k] ?? "") === String(preset[k]),
         );
         if (jaAplicado) return u;
         mudou = true;
@@ -354,12 +402,19 @@ function App() {
     const c = String(obra.compl || "").trim();
     if (!c || lastComplRef.current === c) return;
     lastComplRef.current = c;
-    const fill = (u) => String(u.complemento || "").trim() ? u : { ...u, complemento: c };
+    const fill = (u) =>
+      String(u.complemento || "").trim() ? u : { ...u, complemento: c };
     setUcsDet((p) => p.map(fill));
     setUcBlocos((p) => p.map(fill));
     setBlocos((p) => p.map((b) => ({ ...b, ucs: (b.ucs || []).map(fill) })));
   }, [obra.compl]);
-  const redeMono = obra.tipoRede === "Monof\xE1sica" || obra.tipoRede === "Bif\xE1sica";
+  const redeMono =
+    obra.tipoRede === "Monofásica" || obra.tipoRede === "Bifásica";
+  const rural = obra.localizacao === "Rural";
+  useEffect(() => {
+    if (rural && Number(atend.nUCs) !== 1)
+      setAtend((a) => ({ ...a, nUCs: 1, disjGeral: "Não" }));
+  }, [rural]);
   const buscarCEP = async (cep, alvo) => {
     const limpo = (cep || "").replace(/\D/g, "");
     if (limpo.length !== 8) {
@@ -380,7 +435,7 @@ function App() {
           endereco: dd.logradouro || o.endereco,
           bairro: dd.bairro || o.bairro,
           cidade: dd.localidade || o.cidade,
-          estado: dd.uf || o.estado
+          estado: dd.uf || o.estado,
         }));
       else
         setCorr((c) => ({
@@ -388,7 +443,7 @@ function App() {
           rua: dd.logradouro || c.rua,
           bairro: dd.bairro || c.bairro,
           municipio: dd.localidade || c.municipio,
-          estado: dd.uf || c.estado
+          estado: dd.uf || c.estado,
         }));
       setCepStatus((p) => ({ ...p, [alvo]: "ok" }));
     } catch (e) {
@@ -413,7 +468,10 @@ function App() {
         ...p,
         nome: dd.razao_social || dd.nome_fantasia || p.nome,
         email: dd.email || p.email,
-        fixo: dd.ddd_telefone_1 && !p.fixo ? mascararTelefone(dd.ddd_telefone_1) : p.fixo
+        fixo:
+          dd.ddd_telefone_1 && !p.fixo
+            ? mascararTelefone(dd.ddd_telefone_1)
+            : p.fixo,
       }));
       setObra((o) => ({
         ...o,
@@ -423,20 +481,22 @@ function App() {
         compl: dd.complemento || o.compl,
         bairro: dd.bairro || o.bairro,
         cidade: dd.municipio || o.cidade,
-        estado: dd.uf || o.estado
+        estado: dd.uf || o.estado,
       }));
       setCnpjStatus("ok");
     } catch (e) {
       setCnpjStatus("erro");
     }
   };
-  const disjGeralObrigatorio = atend.biAcima63 || atend.triAcima63 || atend.disjGeral === "Sim";
+  const disjGeralObrigatorio =
+    atend.biAcima63 || atend.triAcima63 || atend.disjGeral === "Sim";
   const maiorCorrenteUC = useMemo(() => {
     if (multiTorres) return 0;
     if (coletivo)
       return ucBlocos.reduce(
-        (mx, u) => Math.max(mx, correnteDisj(u.disjPara), correnteDisj(u.disjDe)),
-        0
+        (mx, u) =>
+          Math.max(mx, correnteDisj(u.disjPara), correnteDisj(u.disjDe)),
+        0,
       );
     return ucsDet.reduce((mx, u) => {
       const esc = u.disjEscolhido || (u.cargas?._disjuntores || [])[0] || "";
@@ -445,7 +505,7 @@ function App() {
   }, [multiTorres, coletivo, ucBlocos, ucsDet]);
   const opcoesDisjGeral = useMemo(
     () => disjuntoresGeraisAcima(maiorCorrenteUC, demandaPrevTotal),
-    [maiorCorrenteUC, demandaPrevTotal]
+    [maiorCorrenteUC, demandaPrevTotal],
   );
   useEffect(() => {
     if (!coletivo || multiTorres) return;
@@ -456,7 +516,8 @@ function App() {
   }, [coletivo, multiTorres, opcoesDisjGeral]);
   const validacaoDisjuntores = useMemo(() => {
     if (coletivo || ucsDet.length <= 1) return { ok: true, msg: "" };
-    let tri = 0, monoBi = 0;
+    let tri = 0,
+      monoBi = 0;
     ucsDet.forEach((u) => {
       const esc = u.disjEscolhido || (u.cargas?._disjuntores || [])[0] || "";
       if (/Tripolar/i.test(esc)) tri++;
@@ -469,38 +530,43 @@ function App() {
     if (acima63)
       return {
         ok: false,
-        msg: "H\xE1 UC com disjuntor acima de 63 A \u2014 o atendimento exige prote\xE7\xE3o geral (coletivo). Ajuste o Tipo de Atendimento."
+        msg: "Há UC com disjuntor acima de 63 A — o atendimento exige proteção geral (coletivo). Ajuste o Tipo de Atendimento.",
       };
     if (tri > 1)
       return {
         ok: false,
-        msg: `Permitido no m\xE1ximo 1 disjuntor tripolar de 63 A (atual: ${tri}).`
+        msg: `Permitido no máximo 1 disjuntor tripolar de 63 A (atual: ${tri}).`,
       };
-    if (monoBi > 2)
+    if (monoBi > 3)
       return {
         ok: false,
-        msg: `Permitidos no m\xE1ximo 2 disjuntores mono/bif\xE1sicos de 63 A (atual: ${monoBi}).`
+        msg: `Permitidos no máximo 3 disjuntores mono/bifásicos de 63 A (atual: ${monoBi}).`,
       };
     return {
       ok: true,
-      msg: `Combina\xE7\xE3o v\xE1lida: ${tri} tripolar(es) + ${monoBi} mono/bif\xE1sico(s) de 63 A.`
+      msg: `Combinação válida: ${tri} tripolar(es) + ${monoBi} mono/bifásico(s) de 63 A.`,
     };
   }, [coletivo, ucsDet]);
   const totalUcsEmpreendimento = useMemo(
     () => blocos.reduce((s, b) => s + (parseInt(b.qtdUCs) || 0), 0),
-    [blocos]
+    [blocos],
   );
   const demandaTotalGeral = useMemo(() => {
     if (multiTorres)
       return blocos.reduce(
-        (s, b) => s + (b.ucs || []).reduce((su, u) => su + num((u.prev || {}).demanda), 0) + num(b.demandaIncendio),
-        0
+        (s, b) =>
+          s +
+          (b.ucs || []).reduce((su, u) => su + num((u.prev || {}).demanda), 0) +
+          num(b.demandaIncendio),
+        0,
       );
     if (coletivo) return demandaPrevTotal;
     return ucsDet.reduce((s, u) => s + (u.cargas?._demanda || 0), 0);
   }, [multiTorres, blocos, coletivo, demandaPrevTotal, ucsDet]);
-  const coordObrigatoria = obra.localizacao === "Rural" && obra.distMenor30 === "N\xE3o";
-  const coordPreenchida = !!String(obra.lat).trim() && !!String(obra.lng).trim();
+  const coordObrigatoria =
+    obra.localizacao === "Rural" && obra.distMenor30 === "Não";
+  const coordPreenchida =
+    !!String(obra.lat).trim() && !!String(obra.lng).trim();
   const validacaoObrigatorios = useMemo(() => {
     const faltando = [];
     const req = (v, label) => {
@@ -508,41 +574,44 @@ function App() {
     };
     req(
       prop.nome,
-      pessoaFisica ? "Nome completo do propriet\xE1rio" : "Raz\xE3o social"
+      pessoaFisica ? "Nome completo do proprietário" : "Razão social",
     );
     req(prop.cpfCnpj, "CPF/CNPJ");
     req(prop.email, "E-mail");
     req(prop.celular, "Celular");
-    if (corr.receberEmail === "N\xE3o") {
+    if (corr.receberEmail === "Não") {
       if (corr.alternativa === "Outro e-mail")
         req(corr.outroEmail, "E-mail alternativo da fatura");
-      else if (corr.alternativa === "Endere\xE7o novo") {
-        req(corr.cep, "CEP de correspond\xEAncia");
-        req(corr.rua, "Rua/Av. de correspond\xEAncia");
-        req(corr.num, "N\xBA de correspond\xEAncia");
-        req(corr.bairro, "Bairro de correspond\xEAncia");
-        req(corr.municipio, "Munic\xEDpio de correspond\xEAncia");
+      else if (corr.alternativa === "Endereço novo") {
+        req(corr.cep, "CEP de correspondência");
+        req(corr.rua, "Rua/Av. de correspondência");
+        req(corr.num, "Nº de correspondência");
+        req(corr.bairro, "Bairro de correspondência");
+        req(corr.municipio, "Município de correspondência");
       }
     }
-    req(obra.endereco, "Endere\xE7o da obra");
-    req(obra.num, "N\xBA da obra");
+    req(obra.endereco, "Endereço da obra");
+    req(obra.num, "Nº da obra");
     req(obra.bairro, "Bairro da obra");
     req(obra.cidade, "Cidade da obra");
     req(obra.cep, "CEP da obra");
     if (coordObrigatoria && !coordPreenchida)
       faltando.push("Coordenada (latitude/longitude) da obra");
     if (!(demandaTotalGeral > 0))
-      faltando.push("Previs\xE3o de carga / demanda das UCs");
+      faltando.push("Previsão de carga / demanda das UCs");
     if (temUCNaoResidencial)
-      req(atend.demandaNaoResidencial, "Demanda geral n\xE3o residencial (kVA)");
+      req(
+        atend.demandaNaoResidencial,
+        "Demanda geral não residencial (kVA)",
+      );
     if (demandaResidencialManualInvalida)
       faltando.push(
-        "Demanda residencial manual n\xE3o pode ser menor que a calculada (ND-5.2)"
+        "Demanda residencial manual não pode ser menor que a calculada (ND-5.2)",
       );
     if (hibrido && !validacaoHibrido.ok)
-      faltando.push("Pend\xEAncias do atendimento h\xEDbrido");
+      faltando.push("Pendências do atendimento híbrido");
     if (validacaoDisjuntores && validacaoDisjuntores.ok === false)
-      faltando.push("Combina\xE7\xE3o de disjuntores inv\xE1lida");
+      faltando.push("Combinação de disjuntores inválida");
     return { ok: faltando.length === 0, faltando };
   }, [
     prop,
@@ -557,14 +626,14 @@ function App() {
     validacaoDisjuntores,
     temUCNaoResidencial,
     atend.demandaNaoResidencial,
-    demandaResidencialManualInvalida
+    demandaResidencialManualInvalida,
   ]);
   const abas = [
-    { k: "orient", l: "Orienta\xE7\xF5es" },
+    { k: "orient", l: "Orientações" },
     { k: "tipo", l: "Tipo de Atendimento" },
-    { k: "prop", l: "Propriet\xE1rio" },
-    { k: "corr", l: "Correspond\xEAncia" },
-    { k: "obra", l: "Dados da Obra" }
+    { k: "prop", l: "Proprietário" },
+    { k: "corr", l: "Correspondência" },
+    { k: "obra", l: "Dados da Obra" },
   ];
   if (multiTorres) {
     abas.push({ k: "blocos", l: "Torres / Blocos" });
@@ -572,13 +641,13 @@ function App() {
     abas.push({ k: "ucs", l: "Unidades Consumidoras" });
     abas.push({
       k: "cargas",
-      l: coletivo ? "Previs\xE3o de Carga" : "Cargas das UCs"
+      l: coletivo ? "Previsão de Carga" : "Cargas das UCs",
     });
   }
-  if (!coletivo) abas.push({ k: "gerador", l: "Gerador de Emerg\xEAncia" });
+  if (!coletivo) abas.push({ k: "gerador", l: "Gerador de Emergência" });
   abas.push(
-    { k: "obs", l: "Observa\xE7\xF5es" },
-    { k: "revisar", l: "Pr\xE9via & PDF" }
+    { k: "obs", l: "Observações" },
+    { k: "revisar", l: "Prévia & PDF" },
   );
   const idx = abas.findIndex((a) => a.k === aba);
   const irProx = () => setAba(abas[Math.min(idx + 1, abas.length - 1)].k);
@@ -610,9 +679,11 @@ function App() {
       obs,
       demandaTotalGeral,
       logoPDF,
-      pessoaFisica
+      pessoaFisica,
     });
   };
+  const gerarListaDocs = () =>
+    gerarListaDocumentosDoc({ prop, obra, atend, coletivo, multiTorres });
   const selectModalidade = (card) => {
     if (card.status === "link" && card.href) {
       window.location.href = card.href;
@@ -629,30 +700,31 @@ function App() {
       if (card.prefill.atividade) {
         const a = card.prefill.atividade;
         const tipoA = a === "Comercial" || a === "Industrial" ? "nr" : "res";
-        setUcsDet(
-          (p) => p.map((u) => ({
+        setUcsDet((p) =>
+          p.map((u) => ({
             ...u,
             atividade: a,
             cargas: {
-              ...u.cargas || {},
-              tipoA: (u.cargas || {}).tipoA || tipoA
-            }
-          }))
+              ...(u.cargas || {}),
+              tipoA: (u.cargas || {}).tipoA || tipoA,
+            },
+          })),
         );
         setUcBlocos((p) => p.map((u) => ({ ...u, atividade: a })));
-        setBlocos(
-          (p) => p.map((b) => ({
+        setBlocos((p) =>
+          p.map((b) => ({
             ...b,
-            ucs: (b.ucs || []).map((u) => ({ ...u, atividade: a }))
-          }))
+            ucs: (b.ucs || []).map((u) => ({ ...u, atividade: a })),
+          })),
         );
       }
       if (card.prefill.cargas) {
-        setUcsDet(
-          (p) => p.map(
-            (u, i) => i === 0 ? { ...u, cargas: { ...card.prefill.cargas } } : u
-          )
+        setCargasPadrao(card.prefill.cargas);
+        setUcsDet((p) =>
+          p.map((u) => ({ ...u, cargas: { ...card.prefill.cargas } })),
         );
+      } else {
+        setCargasPadrao(null);
       }
     }
     setCardSelecionado(card);
@@ -661,7 +733,7 @@ function App() {
   };
   const todasModalidades = MODALIDADES_SECOES.flatMap((s) => s.cards);
   const modSoon = todasModalidades.find(
-    (c) => c.id === modalidade && c.status === "soon"
+    (c) => c.id === modalidade && c.status === "soon",
   );
   const ctx = {
     aba,
@@ -706,6 +778,7 @@ function App() {
     disjGeralObrigatorio,
     docInfo,
     gerarPDF,
+    gerarListaDocs,
     hibrido,
     idx,
     irAnt,
@@ -718,6 +791,7 @@ function App() {
     prevTotalKw,
     quantidadeApartamentos,
     redeMono,
+    rural,
     replicarPrevTodas,
     replicarPrevTorre,
     replicarPrimeiro,
@@ -736,85 +810,321 @@ function App() {
     temUCNaoResidencial,
     validacaoDisjuntores,
     validacaoHibrido,
-    validacaoObrigatorios
+    validacaoObrigatorios,
   };
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "topbar" }, /* @__PURE__ */ React.createElement("div", { className: "topbar-inner" }, /* @__PURE__ */ React.createElement("div", { className: "topbar-left" }, modalidade && /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      className: "topbar-home",
-      onClick: () => setModalidade(null)
-    },
-    "\u2190 In\xEDcio"
-  ), /* @__PURE__ */ React.createElement("span", { className: "app-title" }, "Assistente de formul\xE1rio")), /* @__PURE__ */ React.createElement("div", { className: "topbar-links" }, /* @__PURE__ */ React.createElement(
-    "a",
-    {
-      href: "https://atende.cemig.com.br/Login",
-      target: "_blank",
-      rel: "noreferrer"
-    },
-    "CEMIG ATENDE"
-  ), /* @__PURE__ */ React.createElement(
-    "a",
-    {
-      href: "https://partapr.cemig.com.br/PARTAPR/SelecaoModulo.aspx",
-      target: "_blank",
-      rel: "noreferrer"
-    },
-    "APR Web"
-  )))), !modalidade ? /* @__PURE__ */ React.createElement("div", { className: "modalidade-screen" }, /* @__PURE__ */ React.createElement("div", { className: "modalidade-head" }, /* @__PURE__ */ React.createElement("h1", null, "Selecione a modalidade de atendimento"), /* @__PURE__ */ React.createElement("p", null, "Escolha a modalidade para iniciar o preenchimento. Alguns campos do formul\xE1rio j\xE1 v\xEAm pr\xE9-configurados conforme a op\xE7\xE3o.")), MODALIDADES_SECOES.map((sec) => /* @__PURE__ */ React.createElement("div", { className: "modalidade-secao", key: sec.titulo }, /* @__PURE__ */ React.createElement("h2", { className: "modalidade-secao-titulo" }, sec.titulo), /* @__PURE__ */ React.createElement("div", { className: "modalidade-grid" }, sec.cards.map((card) => /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      key: card.id,
-      className: "modalidade-card" + (card.status === "soon" ? " soon" : ""),
-      disabled: card.status === "soon",
-      onClick: () => selectModalidade(card)
-    },
+  return /* @__PURE__ */ React.createElement(
+    "div",
+    null,
     /* @__PURE__ */ React.createElement(
-      "span",
-      {
-        className: "modalidade-tag" + (card.status === "soon" ? "" : " avail")
-      },
-      card.status === "soon" ? "Em breve" : "Dispon\xEDvel"
+      "div",
+      { className: "topbar" },
+      /* @__PURE__ */ React.createElement(
+        "div",
+        { className: "topbar-inner" },
+        /* @__PURE__ */ React.createElement(
+          "div",
+          { className: "topbar-left" },
+          modalidade &&
+            /* @__PURE__ */ React.createElement(
+              "button",
+              {
+                className: "topbar-home",
+                onClick: () => setModalidade(null),
+              },
+              "← Início",
+            ),
+          /* @__PURE__ */ React.createElement(
+            "span",
+            { className: "app-title" },
+            "Assistente de formulário",
+          ),
+        ),
+        /* @__PURE__ */ React.createElement(
+          "div",
+          { className: "topbar-links" },
+          /* @__PURE__ */ React.createElement(
+            "a",
+            {
+              href: "https://atende.cemig.com.br/Login",
+              target: "_blank",
+              rel: "noreferrer",
+            },
+            "CEMIG ATENDE",
+          ),
+          /* @__PURE__ */ React.createElement(
+            "a",
+            {
+              href: "https://partapr.cemig.com.br/PARTAPR/SelecaoModulo.aspx",
+              target: "_blank",
+              rel: "noreferrer",
+            },
+            "APR Web",
+          ),
+        ),
+      ),
     ),
-    /* @__PURE__ */ React.createElement("span", { className: "modalidade-img" }, /* @__PURE__ */ React.createElement(
-      "img",
-      {
-        src: card.img,
-        alt: card.nome,
-        loading: "lazy",
-        onError: (e) => {
-          e.target.style.display = "none";
-          e.target.parentNode.classList.add("ph");
-        }
-      }
-    )),
-    /* @__PURE__ */ React.createElement("span", { className: "modalidade-card-body" }, /* @__PURE__ */ React.createElement("strong", null, card.nome), /* @__PURE__ */ React.createElement("span", { className: "modalidade-sub" }, card.sub))
-  )))))) : modSoon ? /* @__PURE__ */ React.createElement("div", { className: "modalidade-soon" }, /* @__PURE__ */ React.createElement("h1", null, modSoon.nome), /* @__PURE__ */ React.createElement("p", null, "Esta modalidade (", modSoon.sub, ") ainda est\xE1 em desenvolvimento e ser\xE1 disponibilizada em breve."), /* @__PURE__ */ React.createElement(Btn, { variant: "primary", onClick: () => setModalidade(null) }, "\u2190 Voltar \xE0 sele\xE7\xE3o")) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "form-header" }, /* @__PURE__ */ React.createElement("h1", null, "Formul\xE1rio de Or\xE7amento de Conex\xE3o / Altera\xE7\xE3o de Carga em Baixa Tens\xE3o"), /* @__PURE__ */ React.createElement("p", null, "Preenchimento digital unificado para solicita\xE7\xF5es em BT, conforme as normas CEMIG ND-5.1 / ND-5.2 e a REN ANEEL n\xBA 1.000/2021."), /* @__PURE__ */ React.createElement("span", { className: "flow-badge" }, multiTorres ? "M\xFAltiplas Torres / Blocos" : coletivo ? "Coletivo \u2014 Prote\xE7\xE3o Geral" : "Individual / at\xE9 3 caixas", " ", "\xB7 Demanda ", fmt2(demandaTotalGeral), " kVA")), /* @__PURE__ */ React.createElement("div", { className: "layout" }, /* @__PURE__ */ React.createElement("aside", { className: "sidebar" }, /* @__PURE__ */ React.createElement("div", { className: "sidebar-title" }, "Progresso do preenchimento"), abas.map((a, i) => /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      key: a.k,
-      className: "vstep" + (a.k === aba ? " active" : i < idx ? " done" : ""),
-      onClick: () => setAba(a.k)
-    },
-    /* @__PURE__ */ React.createElement("span", { className: "vstep-num" }, i === 0 ? "i" : i),
-    /* @__PURE__ */ React.createElement("span", { className: "vstep-label" }, a.l)
-  ))), /* @__PURE__ */ React.createElement("main", { className: "main-col fade-in", key: aba }, aba === "orient" && /* @__PURE__ */ React.createElement(TabOrient, { ctx }), aba === "tipo" && /* @__PURE__ */ React.createElement(TabTipo, { ctx }), aba === "prop" && /* @__PURE__ */ React.createElement(TabProprietario, { ctx }), aba === "corr" && /* @__PURE__ */ React.createElement(TabCorrespondencia, { ctx }), aba === "obra" && /* @__PURE__ */ React.createElement(TabObra, { ctx }), aba === "blocos" && multiTorres && /* @__PURE__ */ React.createElement(TabBlocos, { ctx }), aba === "ucs" && coletivo && !multiTorres && /* @__PURE__ */ React.createElement(TabUcsColetivo, { ctx }), aba === "ucs" && !coletivo && /* @__PURE__ */ React.createElement(TabUcsIndividual, { ctx }), aba === "cargas" && coletivo && !multiTorres && /* @__PURE__ */ React.createElement(TabCargasColetivo, { ctx }), aba === "cargas" && !coletivo && /* @__PURE__ */ React.createElement(TabCargasIndividual, { ctx }), aba === "gerador" && !coletivo && /* @__PURE__ */ React.createElement(TabGerador, { ctx }), aba === "obs" && /* @__PURE__ */ React.createElement(TabObs, { ctx }), aba === "revisar" && /* @__PURE__ */ React.createElement(TabRevisar, { ctx }), /* @__PURE__ */ React.createElement("div", { className: "nav-bottom" }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: irAnt, disabled: idx <= 0 }, "\u2190 Voltar"), /* @__PURE__ */ React.createElement("span", { className: "nav-step-info" }, "Etapa ", Math.max(idx, 0) + 1, " de ", abas.length), aba === "revisar" ? /* @__PURE__ */ React.createElement(
-    Btn,
-    {
-      variant: "primary",
-      onClick: gerarPDF,
-      disabled: hibrido && !validacaoHibrido.ok
-    },
-    "\u{1F4C4} Exportar PDF"
-  ) : /* @__PURE__ */ React.createElement(Btn, { variant: "primary", onClick: irProx }, "Avan\xE7ar \u2192")))), /* @__PURE__ */ React.createElement("div", { className: "footer" }, "Documento gerado eletronicamente \xB7 n\xE3o substitui o formul\xE1rio oficial CEMIG \xB7", /* @__PURE__ */ React.createElement(
-    "a",
-    {
-      href: "https://www.cemig.com.br/como-solicitar-os-principais-servicos/ligacao-nova-e-aumento-de-carga/ligacao-nova-ou-alteracao-de-carga-para-demandas-especificas/",
-      target: "_blank",
-      rel: "noreferrer"
-    },
-    " ",
-    "Saiba mais no portal Cemig"
-  ))));
+    !modalidade
+      ? /* @__PURE__ */ React.createElement(
+          "div",
+          { className: "modalidade-screen" },
+          /* @__PURE__ */ React.createElement(
+            "div",
+            { className: "modalidade-head" },
+            /* @__PURE__ */ React.createElement(
+              "h1",
+              null,
+              "Selecione a modalidade de atendimento",
+            ),
+            /* @__PURE__ */ React.createElement(
+              "p",
+              null,
+              "Escolha a modalidade para iniciar o preenchimento. Alguns campos do formulário já vêm pré-configurados conforme a opção.",
+            ),
+          ),
+          MODALIDADES_SECOES.map((sec) =>
+            /* @__PURE__ */ React.createElement(
+              "div",
+              { className: "modalidade-secao", key: sec.titulo },
+              /* @__PURE__ */ React.createElement(
+                "h2",
+                { className: "modalidade-secao-titulo" },
+                sec.titulo,
+              ),
+              /* @__PURE__ */ React.createElement(
+                "div",
+                { className: "modalidade-grid" },
+                sec.cards.map((card) =>
+                  /* @__PURE__ */ React.createElement(
+                    "button",
+                    {
+                      key: card.id,
+                      className:
+                        "modalidade-card" +
+                        (card.status === "soon" ? " soon" : ""),
+                      disabled: card.status === "soon",
+                      onClick: () => selectModalidade(card),
+                    },
+                    /* @__PURE__ */ React.createElement(
+                      "span",
+                      {
+                        className:
+                          "modalidade-tag" +
+                          (card.status === "soon" ? "" : " avail"),
+                      },
+                      card.status === "soon" ? "Em breve" : "Disponível",
+                    ),
+                    /* @__PURE__ */ React.createElement(
+                      "span",
+                      { className: "modalidade-img" },
+                      /* @__PURE__ */ React.createElement("img", {
+                        src: card.img,
+                        alt: card.nome,
+                        loading: "lazy",
+                        onError: (e) => {
+                          e.target.style.display = "none";
+                          e.target.parentNode.classList.add("ph");
+                        },
+                      }),
+                    ),
+                    /* @__PURE__ */ React.createElement(
+                      "span",
+                      { className: "modalidade-card-body" },
+                      /* @__PURE__ */ React.createElement(
+                        "strong",
+                        null,
+                        card.nome,
+                      ),
+                      /* @__PURE__ */ React.createElement(
+                        "span",
+                        { className: "modalidade-sub" },
+                        card.sub,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        )
+      : modSoon
+        ? /* @__PURE__ */ React.createElement(
+            "div",
+            { className: "modalidade-soon" },
+            /* @__PURE__ */ React.createElement("h1", null, modSoon.nome),
+            /* @__PURE__ */ React.createElement(
+              "p",
+              null,
+              "Esta modalidade (",
+              modSoon.sub,
+              ") ainda está em desenvolvimento e será disponibilizada em breve.",
+            ),
+            /* @__PURE__ */ React.createElement(
+              Btn,
+              { variant: "primary", onClick: () => setModalidade(null) },
+              "← Voltar à seleção",
+            ),
+          )
+        : /* @__PURE__ */ React.createElement(
+            React.Fragment,
+            null,
+            /* @__PURE__ */ React.createElement(
+              "div",
+              { className: "form-header" },
+              /* @__PURE__ */ React.createElement(
+                "h1",
+                null,
+                "Formulário de Orçamento de Conexão / Alteração de Carga em Baixa Tensão",
+              ),
+              /* @__PURE__ */ React.createElement(
+                "p",
+                null,
+                "Preenchimento digital unificado para solicitações em BT, conforme as normas CEMIG ND-5.1 / ND-5.2 e a REN ANEEL nº 1.000/2021.",
+              ),
+              /* @__PURE__ */ React.createElement(
+                "span",
+                { className: "flow-badge" },
+                multiTorres
+                  ? "Múltiplas Torres / Blocos"
+                  : coletivo
+                    ? "Coletivo — Proteção Geral"
+                    : "Individual / até 3 caixas",
+                " ",
+                "· Demanda ",
+                fmt2(demandaTotalGeral),
+                " kVA",
+              ),
+            ),
+            /* @__PURE__ */ React.createElement(
+              "div",
+              { className: "layout" },
+              /* @__PURE__ */ React.createElement(
+                "aside",
+                { className: "sidebar" },
+                /* @__PURE__ */ React.createElement(
+                  "div",
+                  { className: "sidebar-title" },
+                  "Progresso do preenchimento",
+                ),
+                abas.map((a, i) =>
+                  /* @__PURE__ */ React.createElement(
+                    "button",
+                    {
+                      key: a.k,
+                      className:
+                        "vstep" +
+                        (a.k === aba ? " active" : i < idx ? " done" : ""),
+                      onClick: () => setAba(a.k),
+                    },
+                    /* @__PURE__ */ React.createElement(
+                      "span",
+                      { className: "vstep-num" },
+                      i === 0 ? "i" : i,
+                    ),
+                    /* @__PURE__ */ React.createElement(
+                      "span",
+                      { className: "vstep-label" },
+                      a.l,
+                    ),
+                  ),
+                ),
+              ),
+              /* @__PURE__ */ React.createElement(
+                "main",
+                { className: "main-col fade-in", key: aba },
+                aba === "orient" &&
+                  /* @__PURE__ */ React.createElement(TabOrient, { ctx }),
+                aba === "tipo" &&
+                  /* @__PURE__ */ React.createElement(TabTipo, { ctx }),
+                aba === "prop" &&
+                  /* @__PURE__ */ React.createElement(TabProprietario, { ctx }),
+                aba === "corr" &&
+                  /* @__PURE__ */ React.createElement(TabCorrespondencia, {
+                    ctx,
+                  }),
+                aba === "obra" &&
+                  /* @__PURE__ */ React.createElement(TabObra, { ctx }),
+                aba === "blocos" &&
+                  multiTorres &&
+                  /* @__PURE__ */ React.createElement(TabBlocos, { ctx }),
+                aba === "ucs" &&
+                  coletivo &&
+                  !multiTorres &&
+                  /* @__PURE__ */ React.createElement(TabUcsColetivo, { ctx }),
+                aba === "ucs" &&
+                  !coletivo &&
+                  /* @__PURE__ */ React.createElement(TabUcsIndividual, {
+                    ctx,
+                  }),
+                aba === "cargas" &&
+                  coletivo &&
+                  !multiTorres &&
+                  /* @__PURE__ */ React.createElement(TabCargasColetivo, {
+                    ctx,
+                  }),
+                aba === "cargas" &&
+                  !coletivo &&
+                  /* @__PURE__ */ React.createElement(TabCargasIndividual, {
+                    ctx,
+                  }),
+                aba === "gerador" &&
+                  !coletivo &&
+                  /* @__PURE__ */ React.createElement(TabGerador, { ctx }),
+                aba === "obs" &&
+                  /* @__PURE__ */ React.createElement(TabObs, { ctx }),
+                aba === "revisar" &&
+                  /* @__PURE__ */ React.createElement(TabRevisar, { ctx }),
+                /* @__PURE__ */ React.createElement(
+                  "div",
+                  { className: "nav-bottom" },
+                  /* @__PURE__ */ React.createElement(
+                    Btn,
+                    { variant: "ghost", onClick: irAnt, disabled: idx <= 0 },
+                    "← Voltar",
+                  ),
+                  /* @__PURE__ */ React.createElement(
+                    "span",
+                    { className: "nav-step-info" },
+                    "Etapa ",
+                    Math.max(idx, 0) + 1,
+                    " de ",
+                    abas.length,
+                  ),
+                  aba === "revisar"
+                    ? /* @__PURE__ */ React.createElement(
+                        Btn,
+                        {
+                          variant: "primary",
+                          onClick: gerarPDF,
+                          disabled: hibrido && !validacaoHibrido.ok,
+                        },
+                        "📄 Exportar PDF",
+                      )
+                    : /* @__PURE__ */ React.createElement(
+                        Btn,
+                        { variant: "primary", onClick: irProx },
+                        "Avançar →",
+                      ),
+                ),
+              ),
+            ),
+            /* @__PURE__ */ React.createElement(
+              "div",
+              { className: "footer" },
+              "Documento gerado eletronicamente · não substitui o formulário oficial CEMIG ·",
+              /* @__PURE__ */ React.createElement(
+                "a",
+                {
+                  href: "https://www.cemig.com.br/como-solicitar-os-principais-servicos/ligacao-nova-e-aumento-de-carga/ligacao-nova-ou-alteracao-de-carga-para-demandas-especificas/",
+                  target: "_blank",
+                  rel: "noreferrer",
+                },
+                " ",
+                "Saiba mais no portal Cemig",
+              ),
+            ),
+          ),
+  );
 }
-ReactDOM.createRoot(document.getElementById("root")).render(/* @__PURE__ */ React.createElement(App, null));
+ReactDOM.createRoot(document.getElementById("root")).render(
+  /* @__PURE__ */ React.createElement(App, null),
+);

@@ -81,11 +81,15 @@ function CalcDemanda({
   const [busca, setBusca] = useState("");
   const [minimizado, setMinimizado] = useState(!!minimizarPorPadrao);
   const upd = (patch) => onChange({ ...d, qtds, tipoA, catA, mots, ...patch });
+  const tipoCargaBloqueado = atividade === "Residencial";
   useEffect(() => {
+    if (atividade === "Residencial") {
+      if (tipoA !== "res") upd({ tipoA: "res" });
+      return;
+    }
     if (tipoA) return;
     if (atividade === "Comercial" || atividade === "Industrial")
       upd({ tipoA: "nr" });
-    else if (atividade === "Residencial") upd({ tipoA: "res" });
   }, [atividade]);
   const setQ = (i, v) => {
     const n = [...qtds];
@@ -170,7 +174,7 @@ function CalcDemanda({
   const catFiltrado = CAT.map((c, i) => ({ ...c, i })).filter(
     (c) => !busca || c.n.toLowerCase().includes(busca.toLowerCase())
   );
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(Field, { label: "Tipo de carga", req: true }, /* @__PURE__ */ React.createElement("div", { className: "toggle-group", style: { alignItems: "center" } }, /* @__PURE__ */ React.createElement(Sel, { value: tipoA, onChange: (e) => upd({ tipoA: e.target.value }) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecionar"), /* @__PURE__ */ React.createElement("option", { value: "res" }, "Residencial"), /* @__PURE__ */ React.createElement("option", { value: "nr" }, "N\xE3o-Residencial")), tipoA === "nr" && /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(Field, { label: "Tipo de carga", req: true }, /* @__PURE__ */ React.createElement("div", { className: "toggle-group", style: { alignItems: "center" } }, /* @__PURE__ */ React.createElement(Sel, { value: tipoA, disabled: tipoCargaBloqueado, onChange: (e) => upd({ tipoA: e.target.value }) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecionar"), /* @__PURE__ */ React.createElement("option", { value: "res" }, "Residencial"), /* @__PURE__ */ React.createElement("option", { value: "nr" }, "Não-Residencial")), tipoA === "nr" && /* @__PURE__ */ React.createElement(
     "select",
     {
       value: catA,
@@ -204,7 +208,7 @@ function CalcDemanda({
       {
         onClick: () => setQ(c.i, (qtds[c.i] || 0) - 1)
       },
-      "\u2212"
+      "−"
     ), /* @__PURE__ */ React.createElement(
       "input",
       {
@@ -229,7 +233,7 @@ function CalcDemanda({
       onClick: () => upd({ mots: [...mots, { fase: "mono", cv: "1", q: 1 }] })
     },
     "+ Motor"
-  )), mots.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "var(--texto-suave)" } }, "Nenhum motor adicionado.") : /* @__PURE__ */ React.createElement("table", { className: "motores-table" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "Tipo"), /* @__PURE__ */ React.createElement("th", null, "Pot\xEAncia (CV)"), /* @__PURE__ */ React.createElement("th", null, "Qtd"), /* @__PURE__ */ React.createElement("th", null, "Dem. unit. (kVA)"), /* @__PURE__ */ React.createElement("th", null, "Dem. total (kVA)"), /* @__PURE__ */ React.createElement("th", null))), /* @__PURE__ */ React.createElement("tbody", null, mots.map((m, mi) => {
+  )), mots.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "var(--texto-suave)" } }, "Nenhum motor adicionado.") : /* @__PURE__ */ React.createElement("table", { className: "motores-table" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "Tipo"), /* @__PURE__ */ React.createElement("th", null, "Potência (CV)"), /* @__PURE__ */ React.createElement("th", null, "Qtd"), /* @__PURE__ */ React.createElement("th", null, "Dem. unit. (kVA)"), /* @__PURE__ */ React.createElement("th", null, "Dem. total (kVA)"), /* @__PURE__ */ React.createElement("th", null))), /* @__PURE__ */ React.createElement("tbody", null, mots.map((m, mi) => {
     const linha = rD.det[mi] || {};
     return /* @__PURE__ */ React.createElement("tr", { key: mi }, /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement(
       "select",
@@ -241,8 +245,8 @@ function CalcDemanda({
           upd({ mots: n });
         }
       },
-      /* @__PURE__ */ React.createElement("option", { value: "mono" }, "Monof\xE1sico"),
-      /* @__PURE__ */ React.createElement("option", { value: "tri" }, "Trif\xE1sico")
+      /* @__PURE__ */ React.createElement("option", { value: "mono" }, "Monofásico"),
+      /* @__PURE__ */ React.createElement("option", { value: "tri" }, "Trifásico")
     )), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement(
       "select",
       {
@@ -279,7 +283,7 @@ function CalcDemanda({
         onClick: () => upd({ mots: mots.filter((_, x) => x !== mi) }),
         className: "motor-del"
       },
-      "\u2715"
+      "✕"
     )));
   }))), rD.d > 0 && /* @__PURE__ */ React.createElement("div", { className: "motores-total" }, "Demanda dos motores: ", fmt2(rD.d), " kVA"))));
 }

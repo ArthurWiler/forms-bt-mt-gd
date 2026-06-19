@@ -6,28 +6,30 @@ function Field({ label, req, children, hint, span }) {
   const cls = "field" + (span === 2 ? " col-span-2" : span === 3 ? " col-span-3" : "");
   return /* @__PURE__ */ React.createElement("div", { className: cls }, label && /* @__PURE__ */ React.createElement("label", null, label, " ", req && /* @__PURE__ */ React.createElement("span", { className: "req" }, "*")), children, hint && /* @__PURE__ */ React.createElement("span", { className: "field-hint" }, hint));
 }
-function Inp({ value, onChange, type = "text", placeholder }) {
+function Inp({ value, onChange, type = "text", placeholder, disabled }) {
   return /* @__PURE__ */ React.createElement(
     "input",
     {
       type,
       value: value || "",
       onChange,
-      placeholder
+      placeholder,
+      disabled
     }
   );
 }
-function Sel({ value, onChange, children }) {
-  return /* @__PURE__ */ React.createElement("select", { value, onChange }, children);
+function Sel({ value, onChange, children, disabled }) {
+  return /* @__PURE__ */ React.createElement("select", { value, onChange, disabled }, children);
 }
-function Toggle({ value, onChange, options }) {
-  return /* @__PURE__ */ React.createElement("div", { className: "toggle-group" }, options.map((o) => /* @__PURE__ */ React.createElement(
+function Toggle({ value, onChange, options, disabled }) {
+  return /* @__PURE__ */ React.createElement("div", { className: "toggle-group" + (disabled ? " is-locked" : "") }, options.map((o) => /* @__PURE__ */ React.createElement(
     "button",
     {
       key: String(o.v),
       type: "button",
       className: "toggle-btn" + (value === o.v ? " on" : ""),
-      onClick: () => onChange(o.v)
+      disabled,
+      onClick: disabled ? void 0 : () => onChange(o.v)
     },
     o.l
   )));

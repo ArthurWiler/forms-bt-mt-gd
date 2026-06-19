@@ -74,8 +74,8 @@ function TabCargasIndividual({ ctx }) {
       className: "alert " + (validacaoDisjuntores.ok ? "alert-ok" : "alert-warn")
     },
     /* @__PURE__ */ React.createElement("b", null, "Regra de disjuntores:"),
-    " m\xE1x. 1 tripolar 63 A e/ou 2 mono/bif\xE1sicos 63 A. ",
-    validacaoDisjuntores.ok ? "\u2714 " : "\u26A0 ",
+    " máx. 1 tripolar 63 A e/ou 2 mono/bifásicos 63 A. ",
+    validacaoDisjuntores.ok ? "✔ " : "⚠ ",
     validacaoDisjuntores.msg
   ), ucsDet.map((u, ui) => /* @__PURE__ */ React.createElement(
     Card,
@@ -83,7 +83,7 @@ function TabCargasIndividual({ ctx }) {
       key: ui,
       eyebrow: `UC ${ui + 1} de ${ucsDet.length}`,
       title: `Cargas da Unidade Consumidora ${ui + 1}`,
-      sub: "Detalhe os equipamentos. A demanda e o disjuntor s\xE3o calculados automaticamente (ND-5.1)."
+      sub: "Detalhe os equipamentos. A demanda e o disjuntor são calculados automaticamente (ND-5.1)."
     },
     /* @__PURE__ */ React.createElement(
       CalcDemanda,
@@ -95,7 +95,7 @@ function TabCargasIndividual({ ctx }) {
         minimizarPorPadrao: restrito
       }
     ),
-    /* @__PURE__ */ React.createElement("div", { className: "kpi-row", style: { marginTop: 12 } }, /* @__PURE__ */ React.createElement("div", { className: "kpi" }, /* @__PURE__ */ React.createElement("div", { className: "kpi-label" }, "Carga Instalada"), /* @__PURE__ */ React.createElement("div", { className: "kpi-value" }, fmt2(u.cargas?._cargaKw || 0), " kW")), /* @__PURE__ */ React.createElement("div", { className: "kpi" }, /* @__PURE__ */ React.createElement("div", { className: "kpi-label" }, "Demanda Calculada"), /* @__PURE__ */ React.createElement("div", { className: "kpi-value" }, fmt2(u.cargas?._demanda || 0), " kVA")), /* @__PURE__ */ React.createElement("div", { className: "kpi dark" }, /* @__PURE__ */ React.createElement("div", { className: "kpi-label" }, "Disjuntor Sugerido"), /* @__PURE__ */ React.createElement("div", { className: "kpi-value" }, u.cargas?._disjuntores?.length ? u.cargas._disjuntores.join(" \xB7 ") : "\u2014"))),
+    /* @__PURE__ */ React.createElement("div", { className: "kpi-row", style: { marginTop: 12 } }, /* @__PURE__ */ React.createElement("div", { className: "kpi" }, /* @__PURE__ */ React.createElement("div", { className: "kpi-label" }, "Carga Instalada"), /* @__PURE__ */ React.createElement("div", { className: "kpi-value" }, fmt2(u.cargas?._cargaKw || 0), " kW")), /* @__PURE__ */ React.createElement("div", { className: "kpi" }, /* @__PURE__ */ React.createElement("div", { className: "kpi-label" }, "Demanda Calculada"), /* @__PURE__ */ React.createElement("div", { className: "kpi-value" }, fmt2(u.cargas?._demanda || 0), " kVA")), /* @__PURE__ */ React.createElement("div", { className: "kpi dark" }, /* @__PURE__ */ React.createElement("div", { className: "kpi-label" }, "Disjuntor Sugerido"), /* @__PURE__ */ React.createElement("div", { className: "kpi-value" }, u.cargas?._disjuntores?.length ? u.cargas._disjuntores.join(" · ") : "—"))),
     u.cargas?._disjuntores?.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 12 } }, /* @__PURE__ */ React.createElement(Field, { label: `Disjuntor escolhido para a UC ${ui + 1}` }, /* @__PURE__ */ React.createElement(
       Sel,
       {
@@ -103,6 +103,6 @@ function TabCargasIndividual({ ctx }) {
         onChange: (e) => setUcDet(ui, { disjEscolhido: e.target.value })
       },
       u.cargas._disjuntores.map((dj) => /* @__PURE__ */ React.createElement("option", { key: dj, value: dj }, dj))
-    )))
+    )), ucsDet.length > 1 && !validacaoDisjuntores.ok && /* @__PURE__ */ React.createElement("div", { className: "alert alert-warn", style: { marginTop: 8 } }, /* @__PURE__ */ React.createElement("b", null, "Combinação de disjuntores inválida:"), " ", validacaoDisjuntores.msg))
   )));
 }

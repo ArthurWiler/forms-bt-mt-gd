@@ -50,6 +50,7 @@ function TabTipo({ ctx }) {
     pessoaFisica,
     prevTotalKw,
     redeMono,
+    rural,
     replicarPrevTodas,
     replicarPrevTorre,
     replicarPrimeiro,
@@ -73,9 +74,9 @@ function TabTipo({ ctx }) {
     {
       eyebrow: "Etapa 1",
       title: "Tipo de Atendimento",
-      sub: "O tipo de formul\xE1rio \xE9 definido pela presen\xE7a ou n\xE3o de disjuntor geral. Os campos seguintes se adaptam \xE0 sua escolha."
+      sub: "O tipo de formulário é definido pela presença ou não de disjuntor geral. Os campos seguintes se adaptam à sua escolha."
     },
-    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2 divider" }, /* @__PURE__ */ React.createElement(Field, { label: "Solicita\xE7\xE3o", req: true }, /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2 divider" }, /* @__PURE__ */ React.createElement(Field, { label: "Solicitação", req: true }, /* @__PURE__ */ React.createElement(
       Sel,
       {
         value: atend.solicitacao,
@@ -100,7 +101,7 @@ function TabTipo({ ctx }) {
           { v: "Torre", l: "Torre" }
         ]
       }
-    )), /* @__PURE__ */ React.createElement(Field, { label: "N\xBA de Blocos / Torres", req: true }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Nº de Blocos / Torres", req: true }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         type: "number",
@@ -111,38 +112,43 @@ function TabTipo({ ctx }) {
         })
       }
     )))),
-    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2" }, /* @__PURE__ */ React.createElement(Field, { label: "Possui disjuntor geral (prote\xE7\xE3o geral)?", req: true }, /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2" }, /* @__PURE__ */ React.createElement(Field, { label: "Possui disjuntor geral (proteção geral)?", req: true }, /* @__PURE__ */ React.createElement(
       Toggle,
       {
         value: atend.disjGeral,
         disabled: restrito,
         onChange: (v) => setAtend({ ...atend, disjGeral: v }),
         options: [
-          { v: "N\xE3o", l: "N\xE3o" },
+          { v: "Não", l: "Não" },
           { v: "Sim", l: "Sim" }
         ]
       }
-    )), !multiTorres && /* @__PURE__ */ React.createElement(Field, { label: "N\xBA de Unidades Consumidoras", req: true }, /* @__PURE__ */ React.createElement(
+    )), !multiTorres && /* @__PURE__ */ React.createElement(Field, { label: "Nº de Unidades Consumidoras", req: true, hint: rural ? "Pedido rural é limitado a 1 unidade consumidora." : void 0 }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         type: "number",
-        max: restrito ? 3 : void 0,
+        max: rural ? 1 : restrito ? 3 : void 0,
+        disabled: rural,
         value: atend.nUCs,
         onChange: (e) => {
+          if (rural) {
+            setAtend({ ...atend, nUCs: 1, disjGeral: "Não" });
+            return;
+          }
           const n = restrito ? Math.min(3, Math.max(1, parseInt(e.target.value) || 1)) : Math.max(1, parseInt(e.target.value));
           setAtend({
             ...atend,
             nUCs: n,
-            disjGeral: restrito ? "N\xE3o" : n > 3 ? "Sim" : "N\xE3o"
+            disjGeral: restrito ? "Não" : n > 3 ? "Sim" : "Não"
           });
         },
         options: [
           { v: true, l: "Sim" },
-          { v: false, l: "N\xE3o" }
+          { v: false, l: "Não" }
         ]
       }
     ))),
-    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2 divider" }, /* @__PURE__ */ React.createElement(Field, { label: "H\xE1 m\xFAltiplas unidades consumidoras com prote\xE7\xE3o acima de 63 A?" }, /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2 divider" }, /* @__PURE__ */ React.createElement(Field, { label: "Há múltiplas unidades consumidoras com proteção acima de 63 A?" }, /* @__PURE__ */ React.createElement(
       Toggle,
       {
         value: atend.biAcima63,
@@ -151,12 +157,12 @@ function TabTipo({ ctx }) {
           ...atend,
           biAcima63: v,
           triAcima63: v,
-          disjGeral: v ? "Sim" : "N\xE3o"
+          disjGeral: v ? "Sim" : "Não"
           // converte booleano para string
         }),
         options: [
           { v: true, l: "Sim" },
-          { v: false, l: "N\xE3o" }
+          { v: false, l: "Não" }
         ]
       }
     ))),
@@ -166,7 +172,7 @@ function TabTipo({ ctx }) {
         className: "alert " + (coletivo ? "alert-ok" : "alert-info"),
         style: { marginTop: 16 }
       },
-      multiTorres ? "Atendimento caracterizado como empreendimento com 'M\xFAltiplas Torres ou Blocos'." : coletivo ? "Atendimento caracterizado como 'Coletivo'." : "Atendimento caracterizado como 'Individual'."
+      multiTorres ? "Atendimento caracterizado como empreendimento com 'Múltiplas Torres ou Blocos'." : coletivo ? "Atendimento caracterizado como 'Coletivo'." : "Atendimento caracterizado como 'Individual'."
     )
   );
 }

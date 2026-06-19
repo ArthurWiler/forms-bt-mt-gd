@@ -71,8 +71,8 @@ function TabBlocos({ ctx }) {
     Card,
     {
       eyebrow: "Empreendimento",
-      title: "Atendimento a Empreendimento com M\xFAltiplas Torres ou Blocos",
-      sub: `Cada ${atend.atendA.toLowerCase()} pode ter seu disjuntor geral e seu disjuntor de combate a inc\xEAndio. Preencha o primeiro e use "Replicar" para preenchimento em massa.`
+      title: "Atendimento a Empreendimento com Múltiplas Torres ou Blocos",
+      sub: `Cada ${atend.atendA.toLowerCase()} pode ter seu disjuntor geral e seu disjuntor de combate a incêndio. Preencha o primeiro e use "Replicar" para preenchimento em massa.`
     },
     /* @__PURE__ */ React.createElement("div", { className: "kpi-row" }, /* @__PURE__ */ React.createElement("div", { className: "kpi" }, /* @__PURE__ */ React.createElement("div", { className: "kpi-label" }, "Atendimento a"), /* @__PURE__ */ React.createElement("div", { className: "kpi-value", style: { fontSize: 15 } }, atend.atendA)), /* @__PURE__ */ React.createElement("div", { className: "kpi" }, /* @__PURE__ */ React.createElement("div", { className: "kpi-label" }, "Total de UCs do empreendimento"), /* @__PURE__ */ React.createElement("div", { className: "kpi-value" }, totalUcsEmpreendimento)), /* @__PURE__ */ React.createElement("div", { className: "kpi dark" }, /* @__PURE__ */ React.createElement("div", { className: "kpi-label" }, "Demanda total do empreendimento"), /* @__PURE__ */ React.createElement("div", { className: "kpi-value", style: { fontSize: 18 } }, fmt2(demandaTotalGeral), " kVA"))),
     /* @__PURE__ */ React.createElement(
@@ -89,7 +89,7 @@ function TabBlocos({ ctx }) {
       /* @__PURE__ */ React.createElement(
         Field,
         {
-          label: `N\xBA de ${atend.atendA === "Bloco" ? "Blocos" : "Torres"}`
+          label: `Nº de ${atend.atendA === "Bloco" ? "Blocos" : "Torres"}`
         },
         /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 120 } }, /* @__PURE__ */ React.createElement(
           Inp,
@@ -103,9 +103,9 @@ function TabBlocos({ ctx }) {
           }
         ))
       ),
-      /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: replicarPrimeiro }, "\u29C9 Replicar ", atend.atendA, " 1 para todos")
+      /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: replicarPrimeiro }, "⧉ Replicar ", atend.atendA, " 1 para todos")
     ),
-    blocos.map((b, bi) => /* @__PURE__ */ React.createElement("div", { key: bi, className: "uc-block" }, /* @__PURE__ */ React.createElement("div", { className: "uc-block-head" }, /* @__PURE__ */ React.createElement("span", { className: "uc-block-title" }, atend.atendA, " ", b.nome || bi + 1), /* @__PURE__ */ React.createElement(Badge, null, bi + 1, " de ", blocos.length)), /* @__PURE__ */ React.createElement("div", { className: "grid grid-3" }, /* @__PURE__ */ React.createElement(Field, { label: `Identifica\xE7\xE3o do ${atend.atendA.toLowerCase()}` }, /* @__PURE__ */ React.createElement(
+    blocos.map((b, bi) => /* @__PURE__ */ React.createElement("div", { key: bi, className: "uc-block" }, /* @__PURE__ */ React.createElement("div", { className: "uc-block-head" }, /* @__PURE__ */ React.createElement("span", { className: "uc-block-title" }, atend.atendA, " ", b.nome || bi + 1), /* @__PURE__ */ React.createElement(Badge, null, bi + 1, " de ", blocos.length)), /* @__PURE__ */ React.createElement("div", { className: "grid grid-3" }, /* @__PURE__ */ React.createElement(Field, { label: `Identificação do ${atend.atendA.toLowerCase()}` }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         value: b.nome,
@@ -118,7 +118,7 @@ function TabBlocos({ ctx }) {
         value: b.disjGeral,
         onChange: (e) => setTorre(bi, { disjGeral: e.target.value })
       },
-      /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecione\u2026"),
+      /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecione…"),
       DISJ_GER.filter((d) => d.tipo === "tri").map((d) => /* @__PURE__ */ React.createElement("option", { key: d.fx, value: d.fx }, d.fx))
     )), /* @__PURE__ */ React.createElement(Field, { label: `Demanda do ${atend.atendA} (kVA)` }, /* @__PURE__ */ React.createElement(
       Inp,
@@ -142,15 +142,15 @@ function TabBlocos({ ctx }) {
         onChange: (e) => sincronizarUCsTorre(bi, e.target.value),
         placeholder: "0"
       }
-    )), /* @__PURE__ */ React.createElement(Field, { label: "Disjuntor do Condom\xEDnio / Sist. Combate Inc\xEAndio" }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Disjuntor do Condomínio / Sist. Combate Incêndio" }, /* @__PURE__ */ React.createElement(
       Sel,
       {
         value: b.disjIncendio,
         onChange: (e) => setTorre(bi, { disjIncendio: e.target.value })
       },
-      /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecione\u2026"),
+      /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecione…"),
       DISJ_CN.map((d) => /* @__PURE__ */ React.createElement("option", { key: d.fx, value: d.fx }, d.fx))
-    )), /* @__PURE__ */ React.createElement(Field, { label: "Demanda Condom\xEDnio / Combate Inc\xEAndio (kVA)" }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Demanda Condomínio / Combate Incêndio (kVA)" }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         type: "number",
@@ -171,8 +171,8 @@ function TabBlocos({ ctx }) {
         }
       },
       /* @__PURE__ */ React.createElement("span", { className: "subbox-title" }, "Unidades consumidoras do ", atend.atendA.toLowerCase(), " (", b.ucs.length, ")"),
-      b.ucs.length > 1 && /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: () => replicarUC1Torre(bi) }, "\u29C9 Replicar UC 1 para todas")
-    ), b.ucs.map((u, ui) => /* @__PURE__ */ React.createElement("div", { key: ui, className: "uc-mini" }, /* @__PURE__ */ React.createElement("div", { className: "uc-mini-head" }, "UC ", ui + 1, ui === 0 && b.ucs.length > 1 && /* @__PURE__ */ React.createElement("span", { className: "uc-mini-tag" }, "modelo p/ replicar")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-3" }, /* @__PURE__ */ React.createElement(Field, { label: "Identifica\xE7\xE3o" }, /* @__PURE__ */ React.createElement(
+      b.ucs.length > 1 && /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: () => replicarUC1Torre(bi) }, "⧉ Replicar UC 1 para todas")
+    ), b.ucs.map((u, ui) => /* @__PURE__ */ React.createElement("div", { key: ui, className: "uc-mini" }, /* @__PURE__ */ React.createElement("div", { className: "uc-mini-head" }, "UC ", ui + 1, ui === 0 && b.ucs.length > 1 && /* @__PURE__ */ React.createElement("span", { className: "uc-mini-tag" }, "modelo p/ replicar")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-3" }, /* @__PURE__ */ React.createElement(Field, { label: "Identificação" }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         value: u.identificacao,
@@ -189,7 +189,7 @@ function TabBlocos({ ctx }) {
         }),
         placeholder: "999"
       }
-    )), /* @__PURE__ */ React.createElement(Field, { label: "N\xBA Predial" }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Nº Predial" }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         value: u.nPredial,
@@ -197,7 +197,7 @@ function TabBlocos({ ctx }) {
           nPredial: e.target.value
         })
       }
-    )), /* @__PURE__ */ React.createElement(Field, { label: "Solicita\xE7\xE3o", req: true }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Solicitação", req: true }, /* @__PURE__ */ React.createElement(
       Sel,
       {
         value: u.solicitacao,
@@ -205,9 +205,9 @@ function TabBlocos({ ctx }) {
           solicitacao: e.target.value
         })
       },
-      /* @__PURE__ */ React.createElement("option", null, "Conex\xE3o Nova"),
-      /* @__PURE__ */ React.createElement("option", null, "Altera\xE7\xE3o de Carga"),
-      /* @__PURE__ */ React.createElement("option", null, "Caixa Existente sem Altera\xE7\xE3o")
+      /* @__PURE__ */ React.createElement("option", null, "Conexão Nova"),
+      /* @__PURE__ */ React.createElement("option", null, "Alteração de Carga"),
+      /* @__PURE__ */ React.createElement("option", null, "Caixa Existente sem Alteração")
     )), /* @__PURE__ */ React.createElement(Field, { label: "Atividade", req: true }, /* @__PURE__ */ React.createElement(
       Sel,
       {
@@ -221,37 +221,37 @@ function TabBlocos({ ctx }) {
       /* @__PURE__ */ React.createElement("option", null, "Comercial"),
       /* @__PURE__ */ React.createElement("option", null, "Industrial"),
       /* @__PURE__ */ React.createElement("option", null, "Rural")
-    )), /* @__PURE__ */ React.createElement(
+    )), u.atividade !== "Residencial" && /* @__PURE__ */ React.createElement(
       Field,
       {
         label: "Ramo de atividade",
-        req: u.atividade !== "Residencial"
+        req: true
       },
       /* @__PURE__ */ React.createElement(
         Inp,
         {
           value: u.ramo,
           onChange: (e) => setUcTorre(bi, ui, { ramo: e.target.value }),
-          placeholder: u.atividade === "Residencial" ? "\u2014" : "Obrigat\xF3rio"
+          placeholder: "Obrigatório"
         }
       )
-    ), u.solicitacao !== "Conex\xE3o Nova" && /* @__PURE__ */ React.createElement(Field, { label: "Instala\xE7\xE3o", req: true }, /* @__PURE__ */ React.createElement(
+    ), u.solicitacao !== "Conexão Nova" && /* @__PURE__ */ React.createElement(Field, { label: "Instalação", req: true }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         value: u.instalacao,
         onChange: (e) => setUcTorre(bi, ui, {
           instalacao: e.target.value
         }),
-        placeholder: "N\xBA instala\xE7\xE3o existente"
+        placeholder: "Nº instalação existente"
       }
-    )), /* @__PURE__ */ React.createElement(Field, { label: "Unidade Consumidora" }, /* @__PURE__ */ React.createElement(
+    )), u.solicitacao !== "Conexão Nova" && /* @__PURE__ */ React.createElement(Field, { label: "Unidade Consumidora" }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         value: u.unidadeConsumidora,
         onChange: (e) => setUcTorre(bi, ui, {
           unidadeConsumidora: e.target.value
         }),
-        placeholder: "Identifica\xE7\xE3o da UC"
+        placeholder: "Identificação da UC"
       }
     )), /* @__PURE__ */ React.createElement(Field, { label: "Disjuntor da UC" }, /* @__PURE__ */ React.createElement(
       Sel,
@@ -261,7 +261,7 @@ function TabBlocos({ ctx }) {
           disjPara: e.target.value
         })
       },
-      /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecione\u2026"),
+      /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecione…"),
       DISJ.map((d) => /* @__PURE__ */ React.createElement("option", { key: d.fx, value: d.fx }, d.fx))
     )))))), (b.ucs || []).length > 0 && /* @__PURE__ */ React.createElement("div", { className: "prev-table-wrap", style: { marginTop: 14 } }, /* @__PURE__ */ React.createElement("div", { className: "prev-toolbar" }, /* @__PURE__ */ React.createElement(
       "strong",
@@ -271,8 +271,8 @@ function TabBlocos({ ctx }) {
           color: "var(--verde-escuro)"
         }
       },
-      "Previs\xE3o de carga das UCs"
-    ), b.ucs.length > 1 && /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: () => replicarPrevTorre(bi) }, "Replicar previs\xE3o da UC 1 para todas")), /* @__PURE__ */ React.createElement("table", { className: "prev-table" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "Unidade"), /* @__PURE__ */ React.createElement("th", null, "Ilum. (kW)"), /* @__PURE__ */ React.createElement("th", null, "Tomada (kW)"), /* @__PURE__ */ React.createElement("th", null, "Chuveiro (kW)"), /* @__PURE__ */ React.createElement("th", null, "Ar Cond. (kW)"), /* @__PURE__ */ React.createElement("th", null, "Outros (kW)"), /* @__PURE__ */ React.createElement("th", null, "Carga (kW)"), /* @__PURE__ */ React.createElement("th", { className: "col-demanda" }, "Demanda (kVA)"))), /* @__PURE__ */ React.createElement("tbody", null, b.ucs.map((u, ui) => /* @__PURE__ */ React.createElement("tr", { key: ui }, /* @__PURE__ */ React.createElement("td", { className: "uc-name" }, u.identificacao || `UC ${ui + 1}`), ["ilum", "tomada", "chuveiro", "ar", "outros"].map(
+      "Previsão de carga das UCs"
+    ), b.ucs.length > 1 && /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: () => replicarPrevTorre(bi) }, "Replicar previsão da UC 1 para todas")), /* @__PURE__ */ React.createElement("table", { className: "prev-table" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "Unidade"), /* @__PURE__ */ React.createElement("th", null, "Ilum. (kW)"), /* @__PURE__ */ React.createElement("th", null, "Tomada (kW)"), /* @__PURE__ */ React.createElement("th", null, "Chuveiro (kW)"), /* @__PURE__ */ React.createElement("th", null, "Ar Cond. (kW)"), /* @__PURE__ */ React.createElement("th", null, "Outros (kW)"), /* @__PURE__ */ React.createElement("th", null, "Carga (kW)"), /* @__PURE__ */ React.createElement("th", { className: "col-demanda" }, "Demanda (kVA)"))), /* @__PURE__ */ React.createElement("tbody", null, b.ucs.map((u, ui) => /* @__PURE__ */ React.createElement("tr", { key: ui }, /* @__PURE__ */ React.createElement("td", { className: "uc-name" }, u.identificacao || `UC ${ui + 1}`), ["ilum", "tomada", "chuveiro", "ar", "outros"].map(
       (k) => /* @__PURE__ */ React.createElement("td", { key: k }, /* @__PURE__ */ React.createElement(
         "input",
         {
@@ -301,6 +301,6 @@ function TabBlocos({ ctx }) {
         0
       )
     )))))))),
-    demandaTotalGeral > 304 && /* @__PURE__ */ React.createElement("div", { className: "alert alert-info", style: { marginTop: 10 } }, "Demanda total acima de 304 kVA: o atendimento fica condicionado \xE0 apresenta\xE7\xE3o do projeto el\xE9trico com ART/TRT.")
+    demandaTotalGeral > 304 && /* @__PURE__ */ React.createElement("div", { className: "alert alert-info", style: { marginTop: 10 } }, "Demanda total acima de 304 kVA: o atendimento fica condicionado à apresentação do projeto elétrico com ART/TRT.")
   ));
 }

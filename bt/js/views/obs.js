@@ -70,9 +70,9 @@ function TabObs({ ctx }) {
   return /* @__PURE__ */ React.createElement(
     Card,
     {
-      eyebrow: "Informa\xE7\xF5es adicionais",
-      title: "Observa\xE7\xF5es",
-      sub: "Inclua informa\xE7\xF5es relevantes: justificativa de disjuntor, atendimento h\xEDbrido, gera\xE7\xE3o j\xE1 conectada, etc."
+      eyebrow: "Informações adicionais",
+      title: "Observações",
+      sub: "Inclua informações relevantes: justificativa de disjuntor, atendimento híbrido, geração já conectada, etc."
     },
     /* @__PURE__ */ React.createElement(Field, null, /* @__PURE__ */ React.createElement(
       "textarea",

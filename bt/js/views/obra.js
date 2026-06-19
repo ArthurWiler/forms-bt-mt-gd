@@ -72,9 +72,9 @@ function TabObra({ ctx }) {
     {
       eyebrow: "Dados",
       title: "Dados da Obra",
-      sub: "Endere\xE7o do padr\xE3o de entrada / ponto de entrega."
+      sub: "Endereço do padrão de entrada / ponto de entrega."
     },
-    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2" }, /* @__PURE__ */ React.createElement(Field, { label: "Zona de localiza\xE7\xE3o", req: true }, /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2" }, /* @__PURE__ */ React.createElement(Field, { label: "Zona de localização", req: true }, /* @__PURE__ */ React.createElement(
       Toggle,
       {
         value: obra.localizacao,
@@ -84,7 +84,7 @@ function TabObra({ ctx }) {
           { v: "Rural", l: "Rural" }
         ]
       }
-    )), coletivo && /* @__PURE__ */ React.createElement(Field, { label: "N\xBA ART/TRT de Projeto", req: true }, /* @__PURE__ */ React.createElement(
+    )), coletivo && /* @__PURE__ */ React.createElement(Field, { label: "Nº ART/TRT de Projeto", req: true }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         value: obra.art,
@@ -102,13 +102,13 @@ function TabObra({ ctx }) {
         },
         placeholder: "00000-000"
       }
-    )), cepStatus.obra === "buscando" && /* @__PURE__ */ React.createElement("span", { className: "spinner" }), cepStatus.obra === "ok" && /* @__PURE__ */ React.createElement(Badge, null, "Endere\xE7o encontrado"), cepStatus.obra === "erro" && /* @__PURE__ */ React.createElement("span", { style: { color: "var(--vermelho)", fontSize: 12 } }, "CEP n\xE3o encontrado"))), /* @__PURE__ */ React.createElement(Field, { label: "Endere\xE7o", req: true, span: 2 }, /* @__PURE__ */ React.createElement(
+    )), cepStatus.obra === "buscando" && /* @__PURE__ */ React.createElement("span", { className: "spinner" }), cepStatus.obra === "ok" && /* @__PURE__ */ React.createElement(Badge, null, "Endereço encontrado"), cepStatus.obra === "erro" && /* @__PURE__ */ React.createElement("span", { style: { color: "var(--vermelho)", fontSize: 12 } }, "CEP não encontrado"))), /* @__PURE__ */ React.createElement(Field, { label: "Endereço", req: true, span: 2 }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         value: obra.endereco,
         onChange: (e) => setObra({ ...obra, endereco: e.target.value })
       }
-    )), /* @__PURE__ */ React.createElement(Field, { label: "N\xBA", req: true }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Nº", req: true }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         value: obra.num,
@@ -126,7 +126,7 @@ function TabObra({ ctx }) {
         value: obra.bairro,
         onChange: (e) => setObra({ ...obra, bairro: e.target.value })
       }
-    )), /* @__PURE__ */ React.createElement(Field, { label: "Cidade / Munic\xEDpio", req: true }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Cidade / Município", req: true }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         value: obra.cidade,
@@ -139,7 +139,7 @@ function TabObra({ ctx }) {
         onChange: (e) => setObra({ ...obra, estado: e.target.value })
       }
     ))),
-    obra.localizacao === "Rural" && /* @__PURE__ */ React.createElement("div", { className: "grid grid-2", style: { marginTop: 14 } }, /* @__PURE__ */ React.createElement(Field, { label: "Munic\xEDpio", req: true }, /* @__PURE__ */ React.createElement(
+    obra.localizacao === "Rural" && /* @__PURE__ */ React.createElement("div", { className: "grid grid-2", style: { marginTop: 14 } }, /* @__PURE__ */ React.createElement(Field, { label: "Município", req: true }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         value: obra.cidade,
@@ -151,7 +151,7 @@ function TabObra({ ctx }) {
         value: obra.estado,
         onChange: (e) => setObra({ ...obra, estado: e.target.value })
       }
-    )), /* @__PURE__ */ React.createElement(Field, { label: "Distrito / Comunidade / Regi\xE3o" }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Distrito / Comunidade / Região" }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         value: obra.distritoComunidade,
@@ -163,13 +163,13 @@ function TabObra({ ctx }) {
         value: obra.nomePropriedade,
         onChange: (e) => setObra({ ...obra, nomePropriedade: e.target.value })
       }
-    )), /* @__PURE__ */ React.createElement(Field, { label: "Ponto de refer\xEAncia" }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Ponto de referência" }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         value: obra.pontoRef,
         onChange: (e) => setObra({ ...obra, pontoRef: e.target.value })
       }
-    )), /* @__PURE__ */ React.createElement(Field, { label: "N\xBA instala\xE7\xE3o mais pr\xF3xima" }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Nº instalação mais próxima" }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         value: obra.instProxima,
@@ -179,7 +179,7 @@ function TabObra({ ctx }) {
     /* @__PURE__ */ React.createElement("div", { className: "grid grid-2 divider" }, /* @__PURE__ */ React.createElement(
       Field,
       {
-        label: coordObrigatoria ? "Latitude" : "Latitude \u2014 opcional",
+        label: coordObrigatoria ? "Latitude" : "Latitude — opcional",
         req: coordObrigatoria
       },
       /* @__PURE__ */ React.createElement(
@@ -193,7 +193,7 @@ function TabObra({ ctx }) {
     ), /* @__PURE__ */ React.createElement(
       Field,
       {
-        label: coordObrigatoria ? "Longitude" : "Longitude \u2014 opcional",
+        label: coordObrigatoria ? "Longitude" : "Longitude — opcional",
         req: coordObrigatoria
       },
       /* @__PURE__ */ React.createElement(
@@ -205,24 +205,24 @@ function TabObra({ ctx }) {
         }
       )
     )),
-    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2 divider" }, /* @__PURE__ */ React.createElement(Field, { label: "Dist\xE2ncia padr\xE3o\u2192rede CEMIG inferior a 30 m?" }, /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2 divider" }, /* @__PURE__ */ React.createElement(Field, { label: "Distância padrão→rede CEMIG inferior a 30 m?" }, /* @__PURE__ */ React.createElement(
       Toggle,
       {
         value: obra.distMenor30,
         onChange: (v) => setObra({ ...obra, distMenor30: v }),
         options: [
           { v: "Sim", l: "Sim" },
-          { v: "N\xE3o", l: "N\xE3o" }
+          { v: "Não", l: "Não" }
         ]
       }
-    )), /* @__PURE__ */ React.createElement(Field, { label: "O padr\xE3o est\xE1 pronto para ser ligado?", req: true }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(Field, { label: "O padrão está pronto para ser ligado?", req: true }, /* @__PURE__ */ React.createElement(
       Toggle,
       {
         value: obra.prontoLigar,
         onChange: (v) => setObra({ ...obra, prontoLigar: v }),
         options: [
           { v: "Sim", l: "Sim" },
-          { v: "N\xE3o", l: "N\xE3o" }
+          { v: "Não", l: "Não" }
         ]
       }
     )), /* @__PURE__ */ React.createElement(Field, { label: "Tipo de rede BT que atende o local" }, /* @__PURE__ */ React.createElement(
@@ -231,18 +231,18 @@ function TabObra({ ctx }) {
         value: obra.tipoRede,
         onChange: (e) => setObra({ ...obra, tipoRede: e.target.value })
       },
-      /* @__PURE__ */ React.createElement("option", null, "Monof\xE1sica"),
-      /* @__PURE__ */ React.createElement("option", null, "Bif\xE1sica"),
-      /* @__PURE__ */ React.createElement("option", null, "Trif\xE1sica")
-    )), /* @__PURE__ */ React.createElement(Field, { label: "C\xF3digo do transformador mais pr\xF3ximo" }, /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("option", null, "Monofásica"),
+      /* @__PURE__ */ React.createElement("option", null, "Bifásica"),
+      /* @__PURE__ */ React.createElement("option", null, "Trifásica")
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Código do transformador mais próximo" }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         value: obra.transformador,
         onChange: (e) => setObra({ ...obra, transformador: e.target.value })
       }
     ))),
-    coordObrigatoria && !coordPreenchida && /* @__PURE__ */ React.createElement("div", { className: "alert alert-warn", style: { marginTop: 8 } }, "\u26A0 Em \xE1rea rural com dist\xE2ncia superior a 30 m da rede CEMIG, a coordenada \xE9 obrigat\xF3ria para localiza\xE7\xE3o da propriedade."),
+    coordObrigatoria && !coordPreenchida && /* @__PURE__ */ React.createElement("div", { className: "alert alert-warn", style: { marginTop: 8 } }, "⚠ Em área rural com distância superior a 30 m da rede CEMIG, a coordenada é obrigatória para localização da propriedade."),
     /* @__PURE__ */ React.createElement(LocalizacaoObra, { obra, setObra }),
-    /* @__PURE__ */ React.createElement("div", { className: "field", style: { marginTop: 14 } }, /* @__PURE__ */ React.createElement("label", null, "Unidade consumidora em \xE1rea de restri\xE7\xE3o ambiental?"), !obra.restricaoAmbiental && /* @__PURE__ */ React.createElement("div", { className: "alert alert-info" }, "Consulte a coordenada no mapa acima para verificar a restri\xE7\xE3o ambiental."), obra.restricaoAmbiental === "Sim" && /* @__PURE__ */ React.createElement("div", { className: "alert alert-warn restricao-destaque" }, /* @__PURE__ */ React.createElement("strong", null, "\u26A0 SIM \u2014 em \xE1rea de restri\xE7\xE3o ambiental."), obra.restricoesTexto && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 6 } }, obra.restricoesTexto)), obra.restricaoAmbiental === "N\xE3o" && /* @__PURE__ */ React.createElement("div", { className: "alert alert-ok restricao-destaque" }, /* @__PURE__ */ React.createElement("strong", null, "N\xE3o h\xE1 restri\xE7\xE3o ambiental.")))
+    /* @__PURE__ */ React.createElement("div", { className: "field", style: { marginTop: 14 } }, /* @__PURE__ */ React.createElement("label", null, "Unidade consumidora em área de restrição ambiental?"), !obra.restricaoAmbiental && /* @__PURE__ */ React.createElement("div", { className: "alert alert-info" }, "Consulte a coordenada no mapa acima para verificar a restrição ambiental."), obra.restricaoAmbiental === "Sim" && /* @__PURE__ */ React.createElement("div", { className: "alert alert-warn restricao-destaque" }, /* @__PURE__ */ React.createElement("strong", null, "⚠ SIM — em área de restrição ambiental."), obra.restricoesTexto && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 6 } }, obra.restricoesTexto)), obra.restricaoAmbiental === "Não" && /* @__PURE__ */ React.createElement("div", { className: "alert alert-ok restricao-destaque" }, /* @__PURE__ */ React.createElement("strong", null, "Não há restrição ambiental.")))
   );
 }

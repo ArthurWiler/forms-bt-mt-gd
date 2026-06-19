@@ -71,19 +71,19 @@ function TabUcsIndividual({ ctx }) {
   return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(
     Card,
     {
-      eyebrow: "Identifica\xE7\xE3o",
+      eyebrow: "Identificação",
       title: `Unidades Consumidoras (${ucsDet.length})`,
-      sub: "Dados de identifica\xE7\xE3o de cada unidade consumidora. O detalhamento das cargas \xE9 feito na pr\xF3xima etapa. Em Conex\xE3o Nova n\xE3o h\xE1 disjuntor 'De' nem instala\xE7\xE3o."
+      sub: "Dados de identificação de cada unidade consumidora. O detalhamento das cargas é feito na próxima etapa. Em Conexão Nova não há disjuntor 'De' nem instalação."
     },
-    ucsDet.map((u, ui) => /* @__PURE__ */ React.createElement("div", { key: ui, className: "uc-block" }, /* @__PURE__ */ React.createElement("div", { className: "uc-block-head" }, /* @__PURE__ */ React.createElement("span", { className: "uc-block-title" }, "UC ", ui + 1), /* @__PURE__ */ React.createElement(Badge, null, ui + 1, " de ", ucsDet.length)), /* @__PURE__ */ React.createElement("div", { className: "grid grid-3" }, /* @__PURE__ */ React.createElement(Field, { label: "Tipo de solicita\xE7\xE3o", req: true }, /* @__PURE__ */ React.createElement(
+    ucsDet.map((u, ui) => /* @__PURE__ */ React.createElement("div", { key: ui, className: "uc-block" }, /* @__PURE__ */ React.createElement("div", { className: "uc-block-head" }, /* @__PURE__ */ React.createElement("span", { className: "uc-block-title" }, "UC ", ui + 1), /* @__PURE__ */ React.createElement(Badge, null, ui + 1, " de ", ucsDet.length)), /* @__PURE__ */ React.createElement("div", { className: "grid grid-3" }, /* @__PURE__ */ React.createElement(Field, { label: "Tipo de solicitação", req: true }, /* @__PURE__ */ React.createElement(
       Sel,
       {
         value: u.solicitacao,
         onChange: (e) => setUcDet(ui, { solicitacao: e.target.value })
       },
-      /* @__PURE__ */ React.createElement("option", null, "Conex\xE3o Nova"),
-      /* @__PURE__ */ React.createElement("option", null, "Altera\xE7\xE3o de Carga"),
-      /* @__PURE__ */ React.createElement("option", null, "Caixa Existente sem Altera\xE7\xE3o")
+      /* @__PURE__ */ React.createElement("option", null, "Conexão Nova"),
+      /* @__PURE__ */ React.createElement("option", null, "Alteração de Carga"),
+      /* @__PURE__ */ React.createElement("option", null, "Caixa Existente sem Alteração")
     )), /* @__PURE__ */ React.createElement(Field, { label: "Atividade principal", req: true }, /* @__PURE__ */ React.createElement(
       Sel,
       {
@@ -96,11 +96,11 @@ function TabUcsIndividual({ ctx }) {
       /* @__PURE__ */ React.createElement("option", null, "Comercial"),
       /* @__PURE__ */ React.createElement("option", null, "Industrial"),
       /* @__PURE__ */ React.createElement("option", null, "Rural")
-    )), /* @__PURE__ */ React.createElement(
+    )), u.atividade !== "Residencial" && /* @__PURE__ */ React.createElement(
       Field,
       {
         label: "Ramo de atividade",
-        req: u.atividade !== "Residencial"
+        req: true
       },
       /* @__PURE__ */ React.createElement(
         Inp,
@@ -108,30 +108,30 @@ function TabUcsIndividual({ ctx }) {
           value: u.ramo,
           disabled: restrito,
           onChange: (e) => setUcDet(ui, { ramo: e.target.value }),
-          placeholder: u.atividade === "Residencial" ? "\u2014" : "Obrigat\xF3rio"
+          placeholder: "Obrigatório"
         }
       )
-    ), /* @__PURE__ */ React.createElement(Field, { label: "N\xBA Predial" }, /* @__PURE__ */ React.createElement("div", { className: "readonly-val" }, obra.num || "N\xBA Predial")), /* @__PURE__ */ React.createElement(Field, { label: "Complemento", req: ucsDet.length > 1 }, /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement(Field, { label: "Nº Predial" }, /* @__PURE__ */ React.createElement("div", { className: "readonly-val" }, obra.num || "Nº Predial")), /* @__PURE__ */ React.createElement(Field, { label: "Complemento", req: ucsDet.length > 1 }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         value: u.complemento,
         onChange: (e) => setUcDet(ui, { complemento: e.target.value }),
         placeholder: "Casa 1"
       }
-    )), /* @__PURE__ */ React.createElement(Field, { label: "Caixa / Identifica\xE7\xE3o" }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Caixa / Identificação" }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         value: u.caixa,
         onChange: (e) => setUcDet(ui, { caixa: e.target.value })
       }
-    )), /* @__PURE__ */ React.createElement(Field, { label: "Unidade Consumidora" }, /* @__PURE__ */ React.createElement(
+    )), u.solicitacao !== "Conexão Nova" && /* @__PURE__ */ React.createElement(Field, { label: "Unidade Consumidora" }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         value: u.unidadeConsumidora,
         onChange: (e) => setUcDet(ui, { unidadeConsumidora: e.target.value }),
-        placeholder: "Identifica\xE7\xE3o da UC (interna/externa)"
+        placeholder: "Identificação da UC (interna/externa)"
       }
-    )), u.solicitacao !== "Conex\xE3o Nova" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Field, { label: "N\xBA Instala\xE7\xE3o / Medidor", req: true }, /* @__PURE__ */ React.createElement(
+    )), u.solicitacao !== "Conexão Nova" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Field, { label: "Nº Instalação / Medidor", req: true }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         value: u.instalacao,
@@ -143,16 +143,16 @@ function TabUcsIndividual({ ctx }) {
         value: u.disjDe,
         onChange: (e) => setUcDet(ui, { disjDe: e.target.value })
       },
-      /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecione\u2026"),
+      /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecione…"),
       DISJ.map((d) => /* @__PURE__ */ React.createElement("option", { key: d.fx, value: d.fx }, d.fx))
-    )), u.solicitacao === "Altera\xE7\xE3o de Carga" && /* @__PURE__ */ React.createElement(Field, { label: "Mudan\xE7a de local" }, /* @__PURE__ */ React.createElement(
+    )), u.solicitacao === "Alteração de Carga" && /* @__PURE__ */ React.createElement(Field, { label: "Mudança de local" }, /* @__PURE__ */ React.createElement(
       Toggle,
       {
         value: u.mudancaLocal,
         onChange: (v) => setUcDet(ui, { mudancaLocal: v }),
         options: [
           { v: "Sim", l: "Sim" },
-          { v: "N\xE3o", l: "N\xE3o" }
+          { v: "Não", l: "Não" }
         ]
       }
     ))))))
@@ -161,10 +161,10 @@ function TabUcsIndividual({ ctx }) {
     {
       className: "alert " + (validacaoDisjuntores.ok ? "alert-ok" : "alert-warn")
     },
-    /* @__PURE__ */ React.createElement("b", null, "Regra de disjuntores (m\xFAltiplas UCs sem prote\xE7\xE3o geral):"),
-    " no m\xE1ximo 1 tripolar de 63 A e/ou at\xE9 2 mono/bif\xE1sicos de 63 A.",
+    /* @__PURE__ */ React.createElement("b", null, "Regra de disjuntores (múltiplas UCs sem proteção geral):"),
+    " no máximo 1 tripolar de 63 A e/ou até 2 mono/bifásicos de 63 A.",
     " ",
-    validacaoDisjuntores.ok ? "\u2714 " : "\u26A0 ",
+    validacaoDisjuntores.ok ? "✔ " : "⚠ ",
     validacaoDisjuntores.msg
   ));
 }

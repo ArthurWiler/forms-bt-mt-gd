@@ -71,10 +71,10 @@ function TabProprietario({ ctx }) {
     Card,
     {
       eyebrow: "Dados",
-      title: "Dados do Propriet\xE1rio",
-      sub: "Titular da conta de energia ou propriet\xE1rio/possuidor do im\xF3vel. (*) obrigat\xF3rio \xB7 (**) obrigat\xF3rio para pessoa f\xEDsica."
+      title: "Dados do Proprietário",
+      sub: "Titular da conta de energia ou proprietário/possuidor do imóvel. (*) obrigatório · (**) obrigatório para pessoa física."
     },
-    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2" }, /* @__PURE__ */ React.createElement(Field, { label: "Nome Completo (sem abrevia\xE7\xF5es)", req: true, span: 2 }, /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2" }, /* @__PURE__ */ React.createElement(Field, { label: "Nome Completo (sem abreviações)", req: true, span: 2 }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         value: prop.nome,
@@ -85,7 +85,7 @@ function TabProprietario({ ctx }) {
       {
         label: "CPF / CNPJ",
         req: true,
-        hint: docInfo.valido === false ? `${docInfo.tipo} inv\xE1lido \u2014 verifique os d\xEDgitos.` : docInfo.valido === true ? `${docInfo.tipo} v\xE1lido.` : "Digite CPF (pessoa f\xEDsica) ou CNPJ (pessoa jur\xEDdica)."
+        hint: docInfo.valido === false ? `${docInfo.tipo} inválido — verifique os dígitos.` : docInfo.valido === true ? `${docInfo.tipo} válido.` : "Digite CPF (pessoa física) ou CNPJ (pessoa jurídica)."
       },
       /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center" } }, /* @__PURE__ */ React.createElement(
         "input",
@@ -102,7 +102,7 @@ function TabProprietario({ ctx }) {
             borderColor: docInfo.valido === false ? "var(--vermelho)" : void 0
           }
         }
-      ), cnpjStatus === "buscando" && /* @__PURE__ */ React.createElement("span", { className: "spinner" }), cnpjStatus === "ok" && /* @__PURE__ */ React.createElement(Badge, null, "dados preenchidos"), cnpjStatus === "erro" && /* @__PURE__ */ React.createElement("span", { style: { color: "var(--vermelho)", fontSize: 12 } }, "CNPJ n\xE3o encontrado"))
+      ), cnpjStatus === "buscando" && /* @__PURE__ */ React.createElement("span", { className: "spinner" }), cnpjStatus === "ok" && /* @__PURE__ */ React.createElement(Badge, null, "dados preenchidos"), cnpjStatus === "erro" && /* @__PURE__ */ React.createElement("span", { style: { color: "var(--vermelho)", fontSize: 12 } }, "CNPJ não encontrado"))
     ), /* @__PURE__ */ React.createElement(Field, { label: "E-mail", req: true }, /* @__PURE__ */ React.createElement(
       Inp,
       {
@@ -110,7 +110,7 @@ function TabProprietario({ ctx }) {
         value: prop.email,
         onChange: (e) => setProp({ ...prop, email: e.target.value })
       }
-    )), pessoaFisica && /* @__PURE__ */ React.createElement(Field, { label: "Filia\xE7\xE3o (M\xE3e ou Pai) **" }, /* @__PURE__ */ React.createElement(
+    )), pessoaFisica && /* @__PURE__ */ React.createElement(Field, { label: "Filiação (Mãe ou Pai) **" }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         value: prop.filiacao,
@@ -144,7 +144,7 @@ function TabProprietario({ ctx }) {
         value: prop.fixo,
         onChange: (e) => setProp({ ...prop, fixo: mascararFixo(e.target.value) })
       }
-    )), /* @__PURE__ */ React.createElement(Field, { label: "Telefone do Propriet\xE1rio", req: true }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Telefone do Proprietário", req: true }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         value: prop.telProp,
@@ -156,7 +156,7 @@ function TabProprietario({ ctx }) {
     )), pessoaFisica && /* @__PURE__ */ React.createElement(
       Field,
       {
-        label: "Possui laudo m\xE9dico (equipamentos essenciais)? **",
+        label: "Possui laudo médico (equipamentos essenciais)? **",
         span: 2
       },
       /* @__PURE__ */ React.createElement(
@@ -166,7 +166,7 @@ function TabProprietario({ ctx }) {
           onChange: (v) => setProp({ ...prop, laudoMedico: v }),
           options: [
             { v: "Sim", l: "Sim" },
-            { v: "N\xE3o", l: "N\xE3o" }
+            { v: "Não", l: "Não" }
           ]
         }
       )
@@ -177,10 +177,10 @@ function TabProprietario({ ctx }) {
         onChange: (v) => setProp({ ...prop, nis: v }),
         options: [
           { v: "Sim", l: "Sim" },
-          { v: "N\xE3o", l: "N\xE3o" }
+          { v: "Não", l: "Não" }
         ]
       }
-    )), pessoaFisica && prop.nis === "Sim" && /* @__PURE__ */ React.createElement(Field, { label: "N\xFAmero do NIS", req: true }, /* @__PURE__ */ React.createElement(
+    )), pessoaFisica && prop.nis === "Sim" && /* @__PURE__ */ React.createElement(Field, { label: "Número do NIS", req: true }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         value: prop.numNis,

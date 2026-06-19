@@ -81,7 +81,7 @@ function gdValidarUTM(fuso,e,n){
   if(!lim) return {ok:false,msg:"Selecione o fuso."};
   const E=parseFloat(e),N=parseFloat(n);
   if(isNaN(E)||isNaN(N)) return {ok:false,msg:""};
-  if(E<lim.eMin||E>lim.eMax) return {ok:false,msg:`E fora da faixa (${lim.eMin}\u2013${lim.eMax}).`};
-  if(N<lim.nMin||N>lim.nMax) return {ok:false,msg:`N fora da faixa (${lim.nMin}\u2013${lim.nMax}).`};
+  if(E<lim.eMin||E>lim.eMax) return {ok:false,msg:`E fora da faixa (${lim.eMin}–${lim.eMax}).`};
+  if(N<lim.nMin||N>lim.nMax) return {ok:false,msg:`N fora da faixa (${lim.nMin}–${lim.nMax}).`};
   return {ok:true,msg:""};
 }

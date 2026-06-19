@@ -13,8 +13,10 @@ function CampoSchema({ c, ctx }) {
   const { d, set } = ctx;
   if (c.show && !c.show(d)) return null;
   const tipo = c.type || "text";
+  const travado = !!(ctx.locked && ctx.locked[c.k]);
   const hint = c.hintKey ? ctx[c.hintKey] : c.hint;
   const aoMudarValor = (raw) => {
+    if (travado) return;
     const v = gdAplicarMascara(c.mask, raw);
     set({ [c.k]: v });
     if (c.onInput) c.onInput(v, ctx);
@@ -25,7 +27,9 @@ function CampoSchema({ c, ctx }) {
       Toggle,
       {
         value: d[c.k],
+        disabled: travado,
         onChange: (v) => {
+          if (travado) return;
           set({ [c.k]: v });
           if (c.onInput) c.onInput(v, ctx);
         },
@@ -33,12 +37,13 @@ function CampoSchema({ c, ctx }) {
       }
     );
   } else if (tipo === "select") {
-    controle = /* @__PURE__ */ React.createElement(Sel, { value: d[c.k], onChange: (e) => aoMudarValor(e.target.value) }, c.placeholder !== false && /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecionar"), gdNormOptions(c.options).map((o) => /* @__PURE__ */ React.createElement("option", { key: o.v, value: o.v }, o.l)));
+    controle = /* @__PURE__ */ React.createElement(Sel, { value: d[c.k], disabled: travado, onChange: (e) => aoMudarValor(e.target.value) }, c.placeholder !== false && /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecionar"), gdNormOptions(c.options).map((o) => /* @__PURE__ */ React.createElement("option", { key: o.v, value: o.v }, o.l)));
   } else {
     controle = /* @__PURE__ */ React.createElement(
       Inp,
       {
         value: d[c.k],
+        disabled: travado,
         onChange: (e) => aoMudarValor(e.target.value),
         placeholder: typeof c.placeholder === "string" ? c.placeholder : void 0
       }

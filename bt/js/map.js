@@ -6,9 +6,9 @@ function _nomeFeicaoObra(props) {
   return k ? String(props[k]).trim() : null;
 }
 async function _consultarTodasRestricoes(lat, lng) {
-  if (!window.turf) throw new Error("Turf.js n\xE3o carregado.");
+  if (!window.turf) throw new Error("Turf.js não carregado.");
   if (typeof SISEMA_CAMADAS === "undefined")
-    throw new Error("Configura\xE7\xE3o do Sisema (geo.js) n\xE3o carregada.");
+    throw new Error("Configuração do Sisema (geo.js) não carregada.");
   const ponto = window.turf.point([lng, lat]);
   const d = 8e-4;
   const out = [];
@@ -66,7 +66,7 @@ function LocalizacaoObra({ obra, setObra }) {
     const map = window.L.map(divRef.current).setView([-19.9167, -43.9345], 12);
     window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
-      attribution: "\xA9 OpenStreetMap"
+      attribution: "© OpenStreetMap"
     }).addTo(map);
     mapRef.current = map;
     setTimeout(() => map.invalidateSize(), 200);
@@ -89,7 +89,7 @@ function LocalizacaoObra({ obra, setObra }) {
       if (errosTodos) {
         setObra((p) => ({ ...p, restricaoAmbiental: "", restricoesTexto: "" }));
         setStatus(
-          "N\xE3o foi poss\xEDvel consultar a restri\xE7\xE3o ambiental (verifique conex\xE3o/camadas)."
+          "Não foi possível consultar a restrição ambiental (verifique conexão/camadas)."
         );
         return;
       }
@@ -98,12 +98,12 @@ function LocalizacaoObra({ obra, setObra }) {
       ).join("; ");
       setObra((p) => ({
         ...p,
-        restricaoAmbiental: dentros.length ? "Sim" : "N\xE3o",
+        restricaoAmbiental: dentros.length ? "Sim" : "Não",
         restricoesTexto: texto
       }));
       setStatus("");
     } catch (e) {
-      setStatus(e && e.message || "Falha na consulta de restri\xE7\xF5es.");
+      setStatus(e && e.message || "Falha na consulta de restrições.");
     }
   };
   const buscarPorEndereco = async () => {
@@ -124,7 +124,7 @@ function LocalizacaoObra({ obra, setObra }) {
       );
       const data = await resp.json();
       if (!data || !data.length) {
-        setStatus("Endere\xE7o n\xE3o encontrado. Informe a coordenada manualmente.");
+        setStatus("Endereço não encontrado. Informe a coordenada manualmente.");
         return;
       }
       setStatus("");
@@ -134,7 +134,7 @@ function LocalizacaoObra({ obra, setObra }) {
         lng: String(parseFloat(data[0].lon))
       }));
     } catch (e) {
-      setStatus("Falha ao geocodificar o endere\xE7o.");
+      setStatus("Falha ao geocodificar o endereço.");
     }
   };
   const lastGeoRef = useRef("");
@@ -164,5 +164,5 @@ function LocalizacaoObra({ obra, setObra }) {
     }, 600);
     return () => clearTimeout(t);
   }, [obra.lat, obra.lng]);
-  return /* @__PURE__ */ React.createElement("div", { className: "mapa-obra" }, /* @__PURE__ */ React.createElement("div", { className: "mapa-actions" }, status === "geo" && /* @__PURE__ */ React.createElement("span", { className: "field-hint" }, "Buscando coordenada\u2026"), status === "restr" && /* @__PURE__ */ React.createElement("span", { className: "field-hint" }, "Consultando restri\xE7\xF5es\u2026"), status && status !== "geo" && status !== "restr" && /* @__PURE__ */ React.createElement("span", { className: "field-hint", style: { color: "var(--vermelho)" } }, status)), /* @__PURE__ */ React.createElement("div", { ref: divRef, className: "mapa-canvas" }));
+  return /* @__PURE__ */ React.createElement("div", { className: "mapa-obra" }, /* @__PURE__ */ React.createElement("div", { className: "mapa-actions" }, status === "geo" && /* @__PURE__ */ React.createElement("span", { className: "field-hint" }, "Buscando coordenada…"), status === "restr" && /* @__PURE__ */ React.createElement("span", { className: "field-hint" }, "Consultando restrições…"), status && status !== "geo" && status !== "restr" && /* @__PURE__ */ React.createElement("span", { className: "field-hint", style: { color: "var(--vermelho)" } }, status)), /* @__PURE__ */ React.createElement("div", { ref: divRef, className: "mapa-canvas" }));
 }
