@@ -4,6 +4,10 @@
    já informados no formulário (state global de js/app.js).
    ============================================================ */
 function gerarCartaMonomia() {
+  if (typeof atualizarGateExportacao === "function" && atualizarGateExportacao().length) {
+    goTo(5);
+    return;
+  }
   if (!window.jspdf) {
     alert("Biblioteca jsPDF não carregada.");
     return;

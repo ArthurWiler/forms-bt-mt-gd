@@ -344,10 +344,10 @@
       <div class="subhead">Tarifação e Demanda</div>
       <div class="grid cols-3">
         <div class="field"><label>Faturada por tarifa monômia? <span class="req">*</span></label>
-          <select id="f_monomia" data-k="monomia" onchange="recalcTecnico()"><option value="">Selecione…</option><option>Sim</option><option>Não</option></select></div>
-        <div class="field"><label>Modalidade tarifária horária <span class="req">*</span></label>
+          <select id="f_monomia" data-k="monomia" onchange="onMonomia()"><option value="">Selecione…</option><option>Sim</option><option>Não</option></select></div>
+        <div class="field" id="boxModalidade"><label>Modalidade tarifária horária <span class="req">*</span></label>
           <select id="f_modalidade" data-k="modalidade" onchange="onModalidade()"><option value="">Selecione…</option><option>Verde</option><option>Azul</option></select></div>
-        <div class="field"><label>Haverá demanda escalonada? <span class="req">*</span></label>
+        <div class="field" id="boxEscalonada"><label>Haverá demanda escalonada? <span class="req">*</span></label>
           <select id="f_escalonada" data-k="escalonada" onchange="onEscalonada()"><option value="">Selecione…</option><option>Sim</option><option>Não</option></select></div>
       </div>
       <div id="monomiaAlert"></div>
@@ -411,11 +411,12 @@
     <div class="card-body">
       <div class="alert info no-print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><div>Confira os dados abaixo. Se algo estiver incorreto, volte às etapas anteriores. Quando estiver tudo certo, exporte o PDF.</div></div>
       <div id="previewContent" class="preview-doc"></div>
+      <div id="exportAlert"></div>
       <div class="form-nav"><button class="btn btn-ghost" onclick="goTo(4)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar e editar</button>
-        <span class="progress-mini">Pronto para exportar</span>
+        <span class="progress-mini" id="exportProgressMini">Pronto para exportar</span>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           <button class="btn btn-ghost" id="btnCartaMonomia" style="display:none" onclick="gerarCartaMonomia()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar carta de tarifa monômia</button>
-          <button class="btn btn-primary" onclick="exportarPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar PDF</button>
+          <button class="btn btn-primary" id="btnExportarPDF" onclick="exportarPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar PDF</button>
         </div>
       </div>
     </div>

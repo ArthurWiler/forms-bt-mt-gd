@@ -436,6 +436,19 @@ function selecionarSE(selectId,value){
   renderGaleriaSE(SE_GALLERY_MAP[selectId],selectId);
 }
 
+function onMonomia(){
+  state.monomia=$('#f_monomia').value;
+  const isMonomia=(state.monomia==='Sim');
+  const boxModalidade=$('#boxModalidade'),boxEscalonada=$('#boxEscalonada'),demandaBox=$('#demandaBox');
+  if(boxModalidade)boxModalidade.style.display=isMonomia?'none':'';
+  if(boxEscalonada)boxEscalonada.style.display=isMonomia?'none':'';
+  if(demandaBox)demandaBox.style.display=isMonomia?'none':'';
+  if(isMonomia){
+    const escBox=$('#escalonadaBox'); if(escBox)escBox.style.display='none';
+    $('#demandaAlert').innerHTML='';
+  }
+  recalcTecnico();
+}
 function onModalidade(){state.modalidade=$('#f_modalidade').value;updateDemandaLabels();validarDemandas();}
 function onEscalonada(){
   state.escalonada=$('#f_escalonada').value;
@@ -464,6 +477,7 @@ function updateDemandaLabels(){
   }
 }
 function validarDemandas(){
+  if(state.monomia==='Sim'){ $('#demandaAlert').innerHTML=''; return; }
   const azul=(state.modalidade==='Azul');
   const ehAlteracao=(state.finalidade==='Aumento de Demanda'||state.finalidade==='Redução de Demanda');
   const out=[];
@@ -569,6 +583,59 @@ function alertHTML(tipo,msg){
   return `<div class="alert ${tipo}">${icon}<div>${msg}</div></div>`;
 }
 
+/* ===== Validação de campos obrigatórios (gate de exportação) ===== */
+// Considera "irrelevante" um elemento dentro de um bloco condicional oculto via
+// style.display (ex.: blocoRural quando Urbana). Ignora a troca de página (.page),
+// que usa classe CSS, não style inline, para não excluir campos de outras etapas.
+function elementoRelevante(el){
+  let node=el;
+  while(node && !(node.classList && node.classList.contains('page'))){
+    if(node.style && node.style.display==='none') return false;
+    node=node.parentElement;
+  }
+  return true;
+}
+function camposObrigatoriosFaltando(){
+  syncState();
+  const faltando=[];
+  $$('.field').forEach(field=>{
+    if(!field.querySelector('.req')) return;
+    if(!elementoRelevante(field)) return;
+    const ctrl=field.querySelector('[data-k]');
+    if(!ctrl) return;
+    const v=String(state[ctrl.dataset.k]??'').trim();
+    if(!v){
+      const label=field.querySelector('label');
+      faltando.push(label?label.textContent.replace('*','').trim():ctrl.dataset.k);
+    }
+  });
+  const blocoTrafos=$('#blocoTrafosIndividual');
+  if(blocoTrafos && elementoRelevante(blocoTrafos)){
+    const ok=trafos.length>0 && trafos.every(t=>String(t.potencia).trim()!=='' && String(t.quantidade).trim()!=='');
+    if(!ok) faltando.push('Transformador(es)');
+  }
+  if(state.compartilhada==='Sim'){
+    const ok=cubiculos.length>0 && cubiculos.every(c=>c.trafos.length>0 && c.trafos.every(t=>String(t.potencia).trim()!=='' && String(t.quantidade).trim()!==''));
+    if(!ok) faltando.push('Transformadores dos cubículos da subestação compartilhada');
+  }
+  if(state.ramalIndice==null) faltando.push('Ramal de Entrada');
+  return [...new Set(faltando)];
+}
+function atualizarGateExportacao(){
+  const faltando=camposObrigatoriosFaltando();
+  const box=$('#exportAlert');
+  const mini=$('#exportProgressMini');
+  if(box) box.innerHTML = faltando.length
+    ? alertHTML('err','Preencha os campos obrigatórios antes de exportar: '+faltando.join(', ')+'.')
+    : '';
+  if(mini) mini.textContent = faltando.length ? 'Faltam campos obrigatórios' : 'Pronto para exportar';
+  ['#btnExportarPDF','#btnCartaMonomia'].forEach(sel=>{
+    const b=$(sel);
+    if(b) b.disabled = faltando.length>0;
+  });
+  return faltando;
+}
+
 /* ===== Prévia ===== */
 function pvRow(k,v){const empty=(v==null||v==='');return `<div class="pv-row"><div class="k">${k}</div><div class="v ${empty?'empty':''}">${empty?'—':v}</div></div>`;}
 function renderPreview(){
@@ -662,6 +729,7 @@ function renderPreview(){
   $('#previewContent').innerHTML=h;
   const btnMonomia=$('#btnCartaMonomia');
   if(btnMonomia)btnMonomia.style.display=(state.monomia==='Sim')?'':'none';
+  atualizarGateExportacao();
 }
 function syncState(){$$('[data-k]').forEach(el=>{state[el.dataset.k]=el.value;});}
 
@@ -706,7 +774,10 @@ async function onCEP(prefixo){
 }
 
 /* ===== Exportar PDF ===== */
-function exportarPDF(){ window.print(); }
+function exportarPDF(){
+  if(atualizarGateExportacao().length){ goTo(5); return; }
+  window.print();
+}
 
 /* ===== Modal Anexo II ===== */
 function abrirAnexoII(){$('#modalAnexo').classList.add('show');}
