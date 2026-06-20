@@ -969,6 +969,15 @@ function App() {
               ),
             ),
           ),
+          /* @__PURE__ */ React.createElement(
+            "div",
+            { className: "modalidade-footer-link" },
+            /* @__PURE__ */ React.createElement(
+              "a",
+              { href: "desistencia/index.html", className: "link-desistencia" },
+              "TERMO DE DESISTÊNCIA DE OBRA",
+            ),
+          ),
         )
       : modSoon
         ? /* @__PURE__ */ React.createElement(

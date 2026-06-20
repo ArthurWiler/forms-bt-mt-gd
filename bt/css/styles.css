@@ -730,6 +730,26 @@ select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
 .modalidade-secao {
   margin-bottom: 34px;
 }
+.modalidade-footer-link {
+  text-align: center;
+  margin: 18px 0 40px;
+}
+.link-desistencia {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--texto-suave);
+  text-decoration: none;
+  padding: 10px 18px;
+  border-radius: var(--raio-sm);
+  transition: all 0.15s;
+}
+.link-desistencia:hover {
+  color: var(--verde-escuro);
+  background: var(--verde-claro);
+  text-decoration: underline;
+}
 .modalidade-secao-titulo {
   font-size: 13px;
   font-weight: 800;
