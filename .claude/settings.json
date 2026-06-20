@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c//**)",
+      "Bash(git commit -m ' *)",
+      "Bash(node -e ' *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8000/shared/css/ssbroad.otf)",
+      "Bash(curl -s -o /dev/null -w \"index: %{http_code}\\\\n\" http://localhost:8000/index.html)",
+      "Bash(curl -s -o /dev/null -w \"font: %{http_code}\\\\n\" http://localhost:8000/shared/css/ssbroad.otf)",
+      "Bash(curl -s -o /dev/null -w \"css: %{http_code}\\\\n\" http://localhost:8000/bt/css/styles.css)",
+      "Bash(git commit *)",
+      "Bash(node --check /c/Projetos/forms-bt-mt-gd/mt/js/carta-monomia.js)",
+      "Bash(node --check /c/Projetos/forms-bt-mt-gd/mt/js/app.js)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8000/mt/index.html)",
+      "Bash(curl -s -o /dev/null -w \"carta-monomia.js: %{http_code}\\\\n\" http://localhost:8000/mt/js/carta-monomia.js)",
+      "Bash(curl -s -o /dev/null -w \"mt: %{http_code}\\\\n\" http://localhost:8000/mt/index.html)",
+      "Bash(curl -s -o /dev/null -w \"app.js: %{http_code}\\\\n\" http://localhost:8000/mt/js/app.js)",
+      "Bash(cp -r /tmp/babcheck/node_modules /c/Projetos/forms-bt-mt-gd/node_modules_test)",
+      "Bash(NODE_PATH=./node_modules_test node -e \"require\\('module'\\).Module._initPaths\\(\\); require\\('./test-gate.js'\\);\")",
+      "Bash(npm install *)",
+      "Bash(node test-monomia.js)"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
+    ]
+  }
+}

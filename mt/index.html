@@ -76,7 +76,7 @@
     <div class="card-body">
       <div class="grid cols-2">
         <div class="field"><label>Opção de Atendimento <span class="req">*</span></label>
-          <select id="f_opcaoAtend" data-k="opcaoAtend"><option value="">Selecione…</option><option>Mercado Cativo</option><option>Mercado Livre</option></select></div>
+          <select id="f_opcaoAtend" data-k="opcaoAtend"><option value="">Selecione…</option><option>Cativo</option><option>Livre</option></select></div>
         <div class="field"><label>Finalidade <span class="req">*</span></label>
           <select id="f_finalidade" data-k="finalidade" onchange="onFinalidade()"><option value="">Selecione…</option>
             <option>Conexão Nova</option><option>Aumento de Demanda</option><option>Redução de Demanda</option>
@@ -117,16 +117,21 @@
 
       <div class="subhead">3. E-mail ou Endereço para Correspondência / Entrega da Conta</div>
       <div class="grid cols-3">
-        <div class="field"><label>Deseja escolher data de vencimento? <span class="req">*</span></label>
-          <select data-k="desejaVenc" onchange="onVenc()"><option value="">Selecione…</option><option>Sim</option><option>Não</option></select></div>
-        <div class="field" id="vencDiaBox" style="display:none"><label>Dia do vencimento</label>
-          <select data-k="diaVenc"><option value="">—</option><option>1</option><option>6</option><option>11</option><option>17</option><option>22</option><option>27</option></select></div>
+        <div class="field span-2"><label>Dia do vencimento <span class="req">*</span></label>
+          <div id="cardsDiaVenc"></div>
+          <select data-k="desejaVenc" style="display:none" aria-hidden="true"><option value="">Selecione…</option><option>Sim</option><option>Não</option></select>
+          <select data-k="diaVenc" style="display:none" aria-hidden="true"><option value="">—</option><option>1</option><option>6</option><option>11</option><option>17</option><option>22</option><option>27</option></select>
+        </div>
         <div class="field"><label>Modalidade da obra <span class="opt">(se houver)</span></label>
-          <select data-k="modalidadeObra"><option value="">—</option><option>PART</option><option>CEMIG</option></select></div>
+          <div id="cardsModalidadeObra"></div>
+          <select data-k="modalidadeObra" style="display:none" aria-hidden="true"><option value="">—</option><option>PART</option><option>CEMIG</option></select>
+        </div>
       </div>
       <div class="grid cols-2" style="margin-top:16px">
         <div class="field"><label>Como deseja receber a correspondência?</label>
-          <select data-k="formaCorresp" onchange="onCorresp()"><option value="">Selecione…</option><option>E-mail</option><option>Endereço</option><option>Agência Correios(Caixa Postal)</option></select></div>
+          <div id="cardsFormaCorresp"></div>
+          <select data-k="formaCorresp" onchange="onCorresp()" style="display:none" aria-hidden="true"><option value="">Selecione…</option><option>E-mail</option><option>Endereço</option><option>Agência Correios(Caixa Postal)</option></select>
+        </div>
         <div class="field" id="correspEmailBox" style="display:none"><label>Informar e-mail</label><input type="email" data-k="emailCorresp" placeholder="email@exemplo.com" onblur="onEmail('emailCorresp')"><span id="status-emailCorresp" class="cep-status"></span></div>
       </div>
 
@@ -170,7 +175,9 @@
 
       <div class="grid cols-4" style="margin-top:16px">
         <div class="field"><label>Localização <span class="req">*</span></label>
-          <select id="f_localizacao" data-k="localizacao" onchange="onLocalizacao()"><option value="">Selecione…</option><option>Urbana</option><option>Rural</option></select></div>
+          <div id="cardsLocalizacao"></div>
+          <select id="f_localizacao" data-k="localizacao" onchange="onLocalizacao()" style="display:none" aria-hidden="true"><option value="">Selecione…</option><option>Urbana</option><option>Rural</option></select>
+        </div>
         <div class="field"><label>CEP <span class="req">*</span></label><input type="text" data-k="uc_cep" placeholder="00000-000" onblur="onCEP('uc')"><span id="cep-status-uc" class="cep-status"></span></div>
         <div class="field"><label>Município <span class="req">*</span></label><input type="text" data-k="uc_municipio"></div>
         <div class="field"><label>Estado <span class="req">*</span></label><input type="text" data-k="uc_estado" value="MG"></div>
@@ -185,7 +192,10 @@
         </select>
       </div>
       <div class="grid cols-4">
-        <div class="field"><label>Fuso</label><select data-k="fuso"><option value="">—</option><option>22°</option><option>23°</option><option>24°</option></select></div>
+        <div class="field"><label>Fuso</label>
+          <div id="cardsFuso"></div>
+          <select data-k="fuso" style="display:none" aria-hidden="true"><option value="">—</option><option>22°</option><option>23°</option><option>24°</option></select>
+        </div>
         <div class="field"><label id="latLabel">Latitude <span class="req">*</span></label><input type="number" step="any" data-k="latitude" placeholder="-19.92" oninput="onCoord()"></div>
         <div class="field"><label id="lonLabel">Longitude <span class="req">*</span></label><input type="number" step="any" data-k="longitude" placeholder="-43.94" oninput="onCoord()"></div>
         <div class="field"><label>Coordenada em UTM</label><input type="text" data-k="utm" placeholder="(calculado)" readonly></div>
@@ -223,11 +233,11 @@
       </div>
 
       <div class="subhead">Questões ambientais</div>
-      <div class="grid cols-2">
+      <div class="grid cols-2" id="gridAmbiental">
         <div class="field"><label>A UC está inserida em Área de Preservação Permanente (APP) e/ou Unidade de Conservação?</label>
-          <select data-k="app" onchange="onAmbiental()"><option value="">Selecione…</option><option>Sim</option><option>Não</option></select></div>
+          <select data-k="app" onchange="onAmbiental()"><option value="">Selecione…</option><option>Sim</option><option selected>Não</option></select></div>
         <div class="field"><label>A UC está inserida em Reserva Legal?</label>
-          <select data-k="reservaLegal" onchange="onAmbiental()"><option value="">Selecione…</option><option>Sim</option><option>Não</option></select></div>
+          <select data-k="reservaLegal" onchange="onAmbiental()"><option value="">Selecione…</option><option>Sim</option><option selected>Não</option></select></div>
       </div>
       <div id="ambientalAlert"></div>
 
@@ -251,7 +261,9 @@
     <div class="card-body">
       <div class="grid cols-3">
         <div class="field"><label>Nível de tensão da rede MT <span class="req">*</span></label>
-          <select id="f_tensaoMT" data-k="tensaoMT" onchange="recalcTecnico()"><option value="">Selecione…</option><option value="13.8">13,8 kV</option><option value="22">22 kV</option><option value="34.5">34,5 kV</option></select></div>
+          <div id="cardsTensaoMT"></div>
+          <select id="f_tensaoMT" data-k="tensaoMT" onchange="recalcTecnico()" style="display:none" aria-hidden="true"><option value="">Selecione…</option><option value="13.8">13,8 kV</option><option value="22">22 kV</option><option value="34.5">34,5 kV</option></select>
+        </div>
         <div class="field"><label>Subestação compartilhada (multimedição)?</label>
           <select id="f_compartilhada" data-k="compartilhada" onchange="onCompartilhada()"><option value="">Selecione…</option><option>Sim</option><option>Não</option></select></div>
         <div class="field" id="qtdCubiculosBox" style="display:none"><label>Quantos cubículos?</label><input type="number" min="1" data-k="qtdCubiculos" placeholder="Ex.: 2" oninput="sincronizarCubiculos()"></div>
@@ -346,7 +358,9 @@
         <div class="field"><label>Faturada por tarifa monômia? <span class="req">*</span></label>
           <select id="f_monomia" data-k="monomia" onchange="onMonomia()"><option value="">Selecione…</option><option>Sim</option><option>Não</option></select></div>
         <div class="field" id="boxModalidade"><label>Modalidade tarifária horária <span class="req">*</span></label>
-          <select id="f_modalidade" data-k="modalidade" onchange="onModalidade()"><option value="">Selecione…</option><option>Verde</option><option>Azul</option></select></div>
+          <div id="cardsModalidade"></div>
+          <select id="f_modalidade" data-k="modalidade" onchange="onModalidade()" style="display:none" aria-hidden="true"><option value="">Selecione…</option><option>Verde</option><option>Azul</option></select>
+        </div>
         <div class="field" id="boxEscalonada"><label>Haverá demanda escalonada? <span class="req">*</span></label>
           <select id="f_escalonada" data-k="escalonada" onchange="onEscalonada()"><option value="">Selecione…</option><option>Sim</option><option>Não</option></select></div>
       </div>
@@ -443,5 +457,6 @@
 <script src="js/dados.js"></script>
 <script src="js/app.js"></script>
 <script src="js/carta-monomia.js"></script>
+<script src="js/toggle-cards.js"></script>
 </body>
 </html>

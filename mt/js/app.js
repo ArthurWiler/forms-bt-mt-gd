@@ -1,3 +1,99 @@
+/* ============================================================
+   CARDS DE SELEÇÃO (caixas robustas, sem ícones) — CONFIGURAÇÃO
+   ------------------------------------------------------------
+   REGRA DE OURO: textos, valores de estado e classes CSS de
+   cada card ficam SOMENTE aqui. O motor de renderização (mais
+   abaixo) só lê este objeto — para alterar texto/cor/valor de
+   uma opção, edite apenas esta constante.
+   ============================================================ */
+const CAMPOS_CARDS_CONFIG = {
+  // Classes CSS aplicadas pelo motor de renderização (ver shared/css/mt-loteamento.css).
+  // Reaproveita o mesmo visual dos cards Sim/Não do formulário BT.
+  classes: {
+    grid: "toggle-group",
+    card: "toggle-btn",
+    active: "on",
+    destaque: "toggle-btn-destaque",
+  },
+  // Campos com seleção simples (1 <select data-k> por campo).
+  // gridId: id do container (já existente no HTML) onde os cards entram.
+  campos: [
+    {
+      chave: "modalidadeObra",
+      gridId: "cardsModalidadeObra",
+      valorPadrao: "CEMIG",
+      opcoes: [
+        { valor: "CEMIG", texto: "CEMIG" },
+        { valor: "PART", texto: "PART" },
+      ],
+    },
+    {
+      chave: "formaCorresp",
+      gridId: "cardsFormaCorresp",
+      opcoes: [
+        { valor: "E-mail", texto: "E-mail" },
+        { valor: "Endereço", texto: "Endereço" },
+        { valor: "Agência Correios(Caixa Postal)", texto: "Agência dos Correios (Caixa Postal)" },
+      ],
+    },
+    {
+      chave: "localizacao",
+      gridId: "cardsLocalizacao",
+      opcoes: [
+        { valor: "Urbana", texto: "Urbana" },
+        { valor: "Rural", texto: "Rural" },
+      ],
+    },
+    {
+      chave: "fuso",
+      gridId: "cardsFuso",
+      valorPadrao: "23°",
+      opcoes: [
+        { valor: "22°", texto: "22°" },
+        { valor: "23°", texto: "23°" },
+        { valor: "24°", texto: "24°" },
+      ],
+    },
+    {
+      chave: "tensaoMT",
+      gridId: "cardsTensaoMT",
+      valorPadrao: "13.8",
+      opcoes: [
+        { valor: "13.8", texto: "13,8 kV" },
+        { valor: "22", texto: "22 kV" },
+        { valor: "34.5", texto: "34,5 kV" },
+      ],
+    },
+    {
+      chave: "modalidade",
+      gridId: "cardsModalidade",
+      valorPadrao: "Verde",
+      opcoes: [
+        { valor: "Verde", texto: "Verde" },
+        { valor: "Azul", texto: "Azul" },
+      ],
+    },
+  ],
+  // Campo especial "Dia do vencimento": substitui a antiga pergunta
+  // "Deseja escolher data de vencimento?" — escolher um dia define
+  // desejaVenc='Sim'; o card de destaque "Não informar" define
+  // desejaVenc='Não' e limpa o dia.
+  diaVencimento: {
+    chaveDia: "diaVenc",
+    chaveDecisao: "desejaVenc",
+    gridId: "cardsDiaVenc",
+    dias: [
+      { valor: "1", texto: "01" },
+      { valor: "6", texto: "06" },
+      { valor: "11", texto: "11" },
+      { valor: "17", texto: "17" },
+      { valor: "22", texto: "22" },
+      { valor: "27", texto: "27" },
+    ],
+    naoInformar: { texto: "Não informar" },
+  },
+};
+
 /* ===== Estado global ===== */
 const state = {};
 let trafos = [];   // {potencia, quantidade, relacao}
@@ -12,6 +108,83 @@ let ramalSelecionado = null;
 const $ = (s,el=document)=>el.querySelector(s);
 const $$ = (s,el=document)=>[...el.querySelectorAll(s)];
 const fmt = (n,d=2)=> (n==null||isNaN(n))?'—':Number(n).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+
+/* ============================================================
+   CARDS DE SELEÇÃO — motor de renderização
+   Lê exclusivamente CAMPOS_CARDS_CONFIG (topo do arquivo). Mantém
+   o <select data-k> original oculto como fonte da verdade: o
+   clique no card define select.value e dispara input/change,
+   preservando syncState(), renderPreview(), camposObrigatoriosFaltando()
+   e toda a reatividade nativa (onCorresp, onLocalizacao, onModalidade...)
+   sem precisar alterá-las.
+   ============================================================ */
+function _campoCardBotao(texto, ativo, destaque, onSelecionar){
+  const cls=CAMPOS_CARDS_CONFIG.classes;
+  const btn=document.createElement('button');
+  btn.type='button';
+  btn.className=cls.card+(destaque?' '+cls.destaque:'')+(ativo?' '+cls.active:'');
+  btn.textContent=texto;
+  btn.addEventListener('click',onSelecionar);
+  return btn;
+}
+function _campoCardDispatch(select,valor){
+  select.value=valor;
+  state[select.dataset.k]=valor;
+  select.dispatchEvent(new Event('input',{bubbles:true}));
+  select.dispatchEvent(new Event('change',{bubbles:true}));
+}
+function _campoCardsMontar(campo){
+  const select=$(`select[data-k="${campo.chave}"]`);
+  const grid=document.getElementById(campo.gridId);
+  if(!select||!grid||select.dataset.cardMontado) return;
+  select.dataset.cardMontado='1';
+  grid.className=CAMPOS_CARDS_CONFIG.classes.grid;
+  if(campo.valorPadrao && !select.value) _campoCardDispatch(select,campo.valorPadrao);
+  const render=()=>{
+    grid.innerHTML='';
+    campo.opcoes.forEach(op=>{
+      const ativo=select.value===op.valor;
+      grid.appendChild(_campoCardBotao(op.texto,ativo,false,()=>{
+        if(select.disabled) return;
+        _campoCardDispatch(select,op.valor);
+        render();
+      }));
+    });
+  };
+  render();
+  select.style.display='none';
+  select.setAttribute('aria-hidden','true');
+}
+function _diaVencimentoMontar(){
+  const cfg=CAMPOS_CARDS_CONFIG.diaVencimento;
+  const selDia=$(`select[data-k="${cfg.chaveDia}"]`);
+  const selDecisao=$(`select[data-k="${cfg.chaveDecisao}"]`);
+  const grid=document.getElementById(cfg.gridId);
+  if(!selDia||!selDecisao||!grid||selDia.dataset.cardMontado) return;
+  selDia.dataset.cardMontado='1';
+  grid.className=CAMPOS_CARDS_CONFIG.classes.grid;
+  const aplicar=(diaValor,decisaoValor)=>{
+    _campoCardDispatch(selDia,diaValor);
+    _campoCardDispatch(selDecisao,decisaoValor);
+    render();
+  };
+  const render=()=>{
+    grid.innerHTML='';
+    cfg.dias.forEach(d=>{
+      const ativo=selDecisao.value==='Sim'&&selDia.value===d.valor;
+      grid.appendChild(_campoCardBotao(d.texto,ativo,false,()=>aplicar(d.valor,'Sim')));
+    });
+    const ativoNao=selDecisao.value==='Não';
+    grid.appendChild(_campoCardBotao(cfg.naoInformar.texto,ativoNao,true,()=>aplicar('','Não')));
+  };
+  render();
+  selDia.style.display='none'; selDia.setAttribute('aria-hidden','true');
+  selDecisao.style.display='none'; selDecisao.setAttribute('aria-hidden','true');
+}
+function inicializarCamposCards(){
+  CAMPOS_CARDS_CONFIG.campos.forEach(_campoCardsMontar);
+  _diaVencimentoMontar();
+}
 
 /* ===== Navegação ===== */
 function goTo(n){
@@ -74,7 +247,6 @@ async function onCpfCnpj(){
     msg.textContent=r.tipo+' válido ✓';msg.className='field-ok';
   }
 }
-function onVenc(){const v=event.target.value;state.desejaVenc=v;$('#vencDiaBox').style.display=(v==='Sim')?'flex':'none';}
 function onCorresp(){const v=event.target.value;state.formaCorresp=v;
   $('#correspEmailBox').style.display=(v==='E-mail')?'flex':'none';
   $('#endCorrespBox').style.display=(v==='Endereço'||v==='Agência Correios(Caixa Postal)')?'block':'none';}
@@ -279,6 +451,18 @@ function totaisCubiculos(){
   });
   return {potenciaTotal,quantidadeTotal,demandaTotal};
 }
+// Cards de Modalidade tarifária horária dentro de cada cubículo — mesmo
+// estilo (CAMPOS_CARDS_CONFIG.classes) dos demais cards do formulário.
+function _cubiculoModalidadeCardsHTML(i,atual){
+  const cls=CAMPOS_CARDS_CONFIG.classes;
+  return `<div class="${cls.grid}">`+['Verde','Azul'].map(valor=>
+    `<button type="button" class="${cls.card}${atual===valor?' '+cls.active:''}" onclick="setCubiculoModalidade(${i},'${valor}')">${valor}</button>`
+  ).join('')+`</div>`;
+}
+function setCubiculoModalidade(i,valor){
+  cubiculos[i].modalidade=valor;
+  renderCubiculos();
+}
 function renderCubiculos(){
   const box=$('#cubiculosCards'); if(!box) return;
   box.innerHTML = cubiculos.map((c,i)=>{
@@ -307,8 +491,7 @@ function renderCubiculos(){
       </div>
       <button class="btn-add" onclick="addTrafoCub(${i})"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Adicionar transformador</button>
       <div class="grid cols-2" style="margin-top:14px">
-        <div class="field"><label>Modalidade tarifária horária</label>
-          <select onchange="cubiculos[${i}].modalidade=this.value;renderCubiculos()"><option value="">Selecione…</option><option ${c.modalidade==='Verde'?'selected':''}>Verde</option><option ${c.modalidade==='Azul'?'selected':''}>Azul</option></select></div>
+        <div class="field"><label>Modalidade tarifária horária</label>${_cubiculoModalidadeCardsHTML(i,c.modalidade)}</div>
         ${demandaFields}
       </div>
       <div id="cubDemandaAlert${i}"></div>
@@ -793,6 +976,7 @@ function aplicarAtividadeDaURL(){
 }
 document.addEventListener('DOMContentLoaded',()=>{
   fillAtividades(); bindInputs();
+  inicializarCamposCards();
   addTrafo(); // começa com 1 linha de trafo
   aplicarAtividadeDaURL();
   // stepper clicável
