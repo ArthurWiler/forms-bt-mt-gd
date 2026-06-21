@@ -120,6 +120,37 @@ function App() {
   const [cargasPadrao, setCargasPadrao] = useState(null);
   const setUcDet = (i, patch) =>
     setUcsDet((p) => p.map((u, idx2) => (idx2 === i ? { ...u, ...patch } : u)));
+
+  /* ===== Análise de Partida de Motores (varredura em ucsDet[].cargas.mots) =====
+     Motor Pesado: (fase tri e cv>50) OU (fase mono e cv>15). */
+  const [mostrarAnaliseMotores, setMostrarAnaliseMotores] = useState(false);
+  const motorPesadoBT = (m) => {
+    const cv = parseFloat(m?.cv) || 0;
+    if (!cv) return false;
+    return m.fase === "mono" ? cv > 15 : cv > 50;
+  };
+  const motoresPesadosBT = useMemo(() => {
+    const lista = [];
+    ucsDet.forEach((u, ui) => {
+      (u.cargas?.mots || []).forEach((m, mi) => {
+        if (motorPesadoBT(m))
+          lista.push({ ucIndex: ui, motorIndex: mi, motor: m });
+      });
+    });
+    return lista;
+  }, [ucsDet]);
+  const setMotorAnalisePartida = (ucIndex, motorIndex, patch) =>
+    setUcsDet((p) =>
+      p.map((u, ui) => {
+        if (ui !== ucIndex) return u;
+        const mots = (u.cargas?.mots || []).map((m, mi) =>
+          mi === motorIndex
+            ? { ...m, analisePartida: { ...(m.analisePartida || {}), ...patch } }
+            : m,
+        );
+        return { ...u, cargas: { ...u.cargas, mots } };
+      }),
+    );
   const [ucBlocos, setUcBlocos] = useState([ucBlocoPadrao(0)]);
   const setBloco = (i, patch) =>
     setUcBlocos((p) =>
@@ -609,7 +640,7 @@ function App() {
       faltando.push("Coordenada (latitude/longitude) da obra");
     if (!(demandaTotalGeral > 0))
       faltando.push("Previsão de carga / demanda das UCs");
-    if (temUCNaoResidencial)
+    if (coletivo && temUCNaoResidencial)
       req(
         atend.demandaNaoResidencial,
         "Demanda geral não residencial (kVA)",
@@ -644,6 +675,7 @@ function App() {
     hibrido,
     validacaoHibrido,
     validacaoDisjuntores,
+    coletivo,
     temUCNaoResidencial,
     atend.demandaNaoResidencial,
     demandaResidencialManualInvalida,
@@ -763,6 +795,10 @@ function App() {
     setAba,
     modalidade,
     setModalidade,
+    mostrarAnaliseMotores,
+    setMostrarAnaliseMotores,
+    motoresPesadosBT,
+    setMotorAnalisePartida,
     atend,
     setAtend,
     prop,
@@ -1064,80 +1100,127 @@ function App() {
               /* @__PURE__ */ React.createElement(
                 "main",
                 { className: "main-col fade-in", key: aba },
-                aba === "orient" &&
-                  /* @__PURE__ */ React.createElement(TabOrient, { ctx }),
-                aba === "tipo" &&
-                  /* @__PURE__ */ React.createElement(TabTipo, { ctx }),
-                aba === "prop" &&
-                  /* @__PURE__ */ React.createElement(TabProprietario, { ctx }),
-                aba === "corr" &&
-                  /* @__PURE__ */ React.createElement(TabCorrespondencia, {
-                    ctx,
-                  }),
-                aba === "obra" &&
-                  /* @__PURE__ */ React.createElement(TabObra, { ctx }),
-                aba === "blocos" &&
-                  multiTorres &&
-                  /* @__PURE__ */ React.createElement(TabBlocos, { ctx }),
-                aba === "ucs" &&
-                  coletivo &&
-                  !multiTorres &&
-                  /* @__PURE__ */ React.createElement(TabUcsColetivo, { ctx }),
-                aba === "ucs" &&
-                  !coletivo &&
-                  /* @__PURE__ */ React.createElement(TabUcsIndividual, {
-                    ctx,
-                  }),
-                aba === "cargas" &&
-                  coletivo &&
-                  !multiTorres &&
-                  /* @__PURE__ */ React.createElement(TabCargasColetivo, {
-                    ctx,
-                  }),
-                aba === "cargas" &&
-                  !coletivo &&
-                  /* @__PURE__ */ React.createElement(TabCargasIndividual, {
-                    ctx,
-                  }),
-                aba === "gerador" &&
-                  !coletivo &&
-                  /* @__PURE__ */ React.createElement(TabGerador, { ctx }),
-                aba === "obs" &&
-                  /* @__PURE__ */ React.createElement(TabObs, { ctx }),
-                aba === "revisar" &&
-                  /* @__PURE__ */ React.createElement(TabRevisar, { ctx }),
-                /* @__PURE__ */ React.createElement(
-                  "div",
-                  { className: "nav-bottom" },
-                  /* @__PURE__ */ React.createElement(
-                    Btn,
-                    { variant: "ghost", onClick: irAnt, disabled: idx <= 0 },
-                    "← Voltar",
-                  ),
-                  /* @__PURE__ */ React.createElement(
-                    "span",
-                    { className: "nav-step-info" },
-                    "Etapa ",
-                    Math.max(idx, 0) + 1,
-                    " de ",
-                    abas.length,
-                  ),
-                  aba === "revisar"
-                    ? /* @__PURE__ */ React.createElement(
-                        Btn,
-                        {
-                          variant: "primary",
-                          onClick: gerarPDF,
-                          disabled: hibrido && !validacaoHibrido.ok,
-                        },
-                        "📄 Exportar PDF",
-                      )
-                    : /* @__PURE__ */ React.createElement(
-                        Btn,
-                        { variant: "primary", onClick: irProx },
-                        "Avançar →",
+                mostrarAnaliseMotores
+                  ? /* @__PURE__ */ React.createElement(
+                      React.Fragment,
+                      null,
+                      /* @__PURE__ */ React.createElement(TabAnaliseMotoresBT, {
+                        ctx,
+                      }),
+                      /* @__PURE__ */ React.createElement(
+                        "div",
+                        { className: "nav-bottom" },
+                        /* @__PURE__ */ React.createElement(
+                          Btn,
+                          {
+                            variant: "ghost",
+                            onClick: () => setMostrarAnaliseMotores(false),
+                          },
+                          "← Voltar à prévia",
+                        ),
+                        /* @__PURE__ */ React.createElement(
+                          "span",
+                          { className: "nav-step-info" },
+                          "Análise de Partida de Motores",
+                        ),
+                        /* @__PURE__ */ React.createElement(
+                          Btn,
+                          {
+                            variant: "primary",
+                            onClick: () => exportarPDFPartidaBT(ctx),
+                          },
+                          "📄 Exportar Relatório de Motores",
+                        ),
                       ),
-                ),
+                    )
+                  : /* @__PURE__ */ React.createElement(
+                      React.Fragment,
+                      null,
+                      aba === "orient" &&
+                        /* @__PURE__ */ React.createElement(TabOrient, { ctx }),
+                      aba === "tipo" &&
+                        /* @__PURE__ */ React.createElement(TabTipo, { ctx }),
+                      aba === "prop" &&
+                        /* @__PURE__ */ React.createElement(TabProprietario, {
+                          ctx,
+                        }),
+                      aba === "corr" &&
+                        /* @__PURE__ */ React.createElement(
+                          TabCorrespondencia,
+                          { ctx },
+                        ),
+                      aba === "obra" &&
+                        /* @__PURE__ */ React.createElement(TabObra, { ctx }),
+                      aba === "blocos" &&
+                        multiTorres &&
+                        /* @__PURE__ */ React.createElement(TabBlocos, { ctx }),
+                      aba === "ucs" &&
+                        coletivo &&
+                        !multiTorres &&
+                        /* @__PURE__ */ React.createElement(TabUcsColetivo, {
+                          ctx,
+                        }),
+                      aba === "ucs" &&
+                        !coletivo &&
+                        /* @__PURE__ */ React.createElement(TabUcsIndividual, {
+                          ctx,
+                        }),
+                      aba === "cargas" &&
+                        coletivo &&
+                        !multiTorres &&
+                        /* @__PURE__ */ React.createElement(TabCargasColetivo, {
+                          ctx,
+                        }),
+                      aba === "cargas" &&
+                        !coletivo &&
+                        /* @__PURE__ */ React.createElement(
+                          TabCargasIndividual,
+                          { ctx },
+                        ),
+                      aba === "gerador" &&
+                        !coletivo &&
+                        /* @__PURE__ */ React.createElement(TabGerador, { ctx }),
+                      aba === "obs" &&
+                        /* @__PURE__ */ React.createElement(TabObs, { ctx }),
+                      aba === "revisar" &&
+                        /* @__PURE__ */ React.createElement(TabRevisar, { ctx }),
+                      /* @__PURE__ */ React.createElement(
+                        "div",
+                        { className: "nav-bottom" },
+                        /* @__PURE__ */ React.createElement(
+                          Btn,
+                          {
+                            variant: "ghost",
+                            onClick: irAnt,
+                            disabled: idx <= 0,
+                          },
+                          "← Voltar",
+                        ),
+                        /* @__PURE__ */ React.createElement(
+                          "span",
+                          { className: "nav-step-info" },
+                          "Etapa ",
+                          Math.max(idx, 0) + 1,
+                          " de ",
+                          abas.length,
+                        ),
+                        aba === "revisar"
+                          ? /* @__PURE__ */ React.createElement(
+                              Btn,
+                              {
+                                variant: "primary",
+                                onClick: gerarPDF,
+                                disabled: hibrido && !validacaoHibrido.ok,
+                              },
+                              "📄 Exportar PDF",
+                            )
+                          : /* @__PURE__ */ React.createElement(
+                              Btn,
+                              { variant: "primary", onClick: irProx },
+                              "Avançar →",
+                            ),
+                      ),
+                    ),
               ),
             ),
             /* @__PURE__ */ React.createElement(
