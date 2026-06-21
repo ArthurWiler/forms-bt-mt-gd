@@ -92,6 +92,15 @@ const CAMPOS_CARDS_CONFIG = {
     ],
     naoInformar: { texto: "Não informar" },
   },
+  // Dispositivo auxiliar de partida (Análise de Partida de Motores).
+  // labelShort é o texto do botão (e o valor salvo); labelFull entra no
+  // atributo title, exibindo a descrição completa ao passar o mouse.
+  dispositivosPartida: [
+    { labelShort: "Chave Estrela-Triângulo", labelFull: "Chave de partida estrela-triângulo (Y-Δ): reduz a tensão nos terminais do motor durante a partida." },
+    { labelShort: "Chave Compensadora", labelFull: "Chave compensadora (autotransformador de partida): reduz a tensão de partida por meio de taps percentuais ajustáveis." },
+    { labelShort: "Soft-Starter", labelFull: "Soft-starter: dispositivo eletrônico que controla a rampa de tensão na partida do motor." },
+    { labelShort: "Inversor de Frequência", labelFull: "Inversor de frequência: controla a partida e a velocidade do motor variando frequência e tensão." },
+  ],
 };
 
 /* ===== Estado global ===== */
@@ -118,12 +127,13 @@ const fmt = (n,d=2)=> (n==null||isNaN(n))?'—':Number(n).toLocaleString('pt-BR'
    e toda a reatividade nativa (onCorresp, onLocalizacao, onModalidade...)
    sem precisar alterá-las.
    ============================================================ */
-function _campoCardBotao(texto, ativo, destaque, onSelecionar){
+function _campoCardBotao(texto, titulo, ativo, destaque, onSelecionar){
   const cls=CAMPOS_CARDS_CONFIG.classes;
   const btn=document.createElement('button');
   btn.type='button';
   btn.className=cls.card+(destaque?' '+cls.destaque:'')+(ativo?' '+cls.active:'');
   btn.textContent=texto;
+  if(titulo) btn.title=titulo;
   btn.addEventListener('click',onSelecionar);
   return btn;
 }
@@ -139,12 +149,20 @@ function _campoCardsMontar(campo){
   if(!select||!grid||select.dataset.cardMontado) return;
   select.dataset.cardMontado='1';
   grid.className=CAMPOS_CARDS_CONFIG.classes.grid;
+  // Normaliza os dois formatos de opção aceitos: {valor,texto} (genérico)
+  // ou {labelShort,labelFull} — labelFull também vira o atributo title do
+  // botão, exibindo a descrição completa ao passar o mouse (hover).
+  const norm=(op)=>({
+    valor: op.valor ?? op.labelFull ?? op.labelShort,
+    texto: op.texto ?? op.labelShort,
+    titulo: op.labelFull ?? null,
+  });
   if(campo.valorPadrao && !select.value) _campoCardDispatch(select,campo.valorPadrao);
   const render=()=>{
     grid.innerHTML='';
-    campo.opcoes.forEach(op=>{
+    campo.opcoes.map(norm).forEach(op=>{
       const ativo=select.value===op.valor;
-      grid.appendChild(_campoCardBotao(op.texto,ativo,false,()=>{
+      grid.appendChild(_campoCardBotao(op.texto,op.titulo,ativo,false,()=>{
         if(select.disabled) return;
         _campoCardDispatch(select,op.valor);
         render();
@@ -172,10 +190,10 @@ function _diaVencimentoMontar(){
     grid.innerHTML='';
     cfg.dias.forEach(d=>{
       const ativo=selDecisao.value==='Sim'&&selDia.value===d.valor;
-      grid.appendChild(_campoCardBotao(d.texto,ativo,false,()=>aplicar(d.valor,'Sim')));
+      grid.appendChild(_campoCardBotao(d.texto,null,ativo,false,()=>aplicar(d.valor,'Sim')));
     });
     const ativoNao=selDecisao.value==='Não';
-    grid.appendChild(_campoCardBotao(cfg.naoInformar.texto,ativoNao,true,()=>aplicar('','Não')));
+    grid.appendChild(_campoCardBotao(cfg.naoInformar.texto,null,ativoNao,true,()=>aplicar('','Não')));
   };
   render();
   selDia.style.display='none'; selDia.setAttribute('aria-hidden','true');
@@ -224,27 +242,50 @@ function onFinalidade(){
 }
 
 /* ===== Etapa 2: CPF/CNPJ, vencimento, correspondência ===== */
+// Máscaras CPF/CNPJ (validação híbrida no blur — ver onCpfCnpj)
+function mascararCPF(v){
+  const d=String(v||'').replace(/\D/g,'').slice(0,11);
+  if(d.length>9) return d.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/,'$1.$2.$3-$4');
+  if(d.length>6) return d.replace(/(\d{3})(\d{3})(\d{1,3})/,'$1.$2.$3');
+  if(d.length>3) return d.replace(/(\d{3})(\d{1,3})/,'$1.$2');
+  return d;
+}
+function mascararCNPJ(v){
+  const d=String(v||'').replace(/\D/g,'').slice(0,14);
+  if(d.length>12) return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{1,2})/,'$1.$2.$3/$4-$5');
+  if(d.length>8) return d.replace(/(\d{2})(\d{3})(\d{3})(\d{1,4})/,'$1.$2.$3/$4');
+  if(d.length>5) return d.replace(/(\d{2})(\d{3})(\d{1,3})/,'$1.$2.$3');
+  if(d.length>2) return d.replace(/(\d{2})(\d{1,3})/,'$1.$2');
+  return d;
+}
+// Validação híbrida: disparada no blur do campo único de CPF/CNPJ.
+// Limpa os caracteres não numéricos e decide o tipo automaticamente
+// pela quantidade de dígitos (<=11 → CPF; >11 → CNPJ).
 async function onCpfCnpj(){
-  const el=$('#f_cpfcnpj'), msg=$('#cpfMsg'); state.cpfCnpj=el.value;
-  const r=CalculoMT.validarCpfCnpj(el.value);
-  if(!el.value){el.classList.remove('invalid');msg.textContent='';msg.className='field-note';return;}
-  if(!r.valido){el.classList.add('invalid');msg.textContent=(r.tipo||'Documento')+' inválido';msg.className='field-err';return;}
+  const el=$('#f_cpfcnpj'), msg=$('#cpfMsg');
+  const d=CalculoMT.soDigitos(el.value);
+  if(!d){state.cpfCnpj='';el.classList.remove('invalid');msg.textContent='';msg.className='field-note';return;}
+  const tipo = d.length<=11 ? 'CPF' : 'CNPJ';
+  el.value = tipo==='CPF' ? mascararCPF(d) : mascararCNPJ(d);
+  state.cpfCnpj=el.value;
+  const valido = tipo==='CPF' ? CalculoMT.validarCPF(d) : CalculoMT.validarCNPJ(d);
+  if(!valido){el.classList.add('invalid');msg.textContent=tipo+' inválido';msg.className='field-err';return;}
   el.classList.remove('invalid');
-  if(r.tipo==='CNPJ'){
+  if(tipo==='CNPJ'){
     msg.textContent='verificando empresa…';msg.className='field-note';
     try{
-      const res=await fetch(`https://brasilapi.com.br/api/cnpj/v1/${el.value.replace(/\D/g,'')}`);
+      const res=await fetch(`https://brasilapi.com.br/api/cnpj/v1/${d}`);
       if(res.ok){
-        const d=await res.json();
-        const ativo=(d.descricao_situacao_cadastral||'').toUpperCase()==='ATIVA';
-        msg.textContent=`✓ ${d.razao_social} — ${d.descricao_situacao_cadastral}`;
+        const dd=await res.json();
+        const ativo=(dd.descricao_situacao_cadastral||'').toUpperCase()==='ATIVA';
+        msg.textContent=`✓ ${dd.razao_social} — ${dd.descricao_situacao_cadastral}`;
         msg.className=ativo?'field-ok':'field-err';
         const nomeEl=$('[data-k="nome"]');
-        if(nomeEl&&!nomeEl.value){nomeEl.value=d.razao_social;nomeEl.dispatchEvent(new Event('input'));}
+        if(nomeEl&&!nomeEl.value){nomeEl.value=dd.razao_social;nomeEl.dispatchEvent(new Event('input'));}
       } else {msg.textContent='CNPJ válido ✓';msg.className='field-ok';}
     }catch(_){msg.textContent='CNPJ válido ✓';msg.className='field-ok';}
   } else {
-    msg.textContent=r.tipo+' válido ✓';msg.className='field-ok';
+    msg.textContent='CPF válido ✓';msg.className='field-ok';
   }
 }
 function onCorresp(){const v=event.target.value;state.formaCorresp=v;
@@ -502,31 +543,290 @@ function renderCubiculos(){
 }
 
 /* --- Motores --- */
-function addMotor(){ motores.push({tipo:'Motor',cv:'',fp:'',rend:'',volts:'',ipIn:'',tempo:'',dispositivo:''}); renderMotores(); }
+function addMotor(){ motores.push({tipo:'Motor',fases:'Trifásico',cv:'',fp:'',rend:'',volts:'',ipIn:'',tempo:'',dispositivo:'',tap:''}); renderMotores(); }
 function delMotor(i){ motores.splice(i,1); renderMotores(); }
+// Faixa de resultados calculados, no rodapé do card — sumário leve, não
+// uma caixa pesada separada.
+function _motorCardCalcHTML(c){
+  return `<div class="motor-card-calc">
+    <div class="item"><span class="lbl">Pot (kVA)</span><span class="val" data-campo="potkVA">${fmt(c.potkVA)}</span></div>
+    <div class="item"><span class="lbl">Pot (kW)</span><span class="val" data-campo="potkW">${fmt(c.potkW)}</span></div>
+    <div class="item"><span class="lbl">I nom (A)</span><span class="val" data-campo="iNominal">${fmt(c.iNominal)}</span></div>
+    <div class="item"><span class="lbl">I part (A)</span><span class="val" data-campo="iPartida">${fmt(c.iPartida)}</span></div>
+    <div class="item"><span class="lbl">Ip prim (A)</span><span class="val" data-campo="ipPrimario">${c.ipPrimario==null?'—':fmt(c.ipPrimario)}</span></div>
+  </div>`;
+}
 function renderMotores(){
-  const tb=$('#motorBody'); tb.innerHTML='';
+  const box=$('#motoresCardsContainer'); if(!box) return;
+  box.innerHTML='';
   const tMT=parseFloat(state.tensaoMT);
   motores.forEach((m,i)=>{
     const c=CalculoMT.calcularMotor({potenciaCV:m.cv,fp:m.fp,rendimento:m.rend,tensaoV:m.volts,relacaoIpIn:m.ipIn},tMT);
     const dispOpts=DISPOSITIVOS.map(d=>`<option ${m.dispositivo===d?'selected':''}>${d}</option>`).join('');
-    const tr=document.createElement('tr');
-    tr.innerHTML=`
-      <td><input type="text" value="${m.tipo}" placeholder="Ex.: Motor" oninput="motores[${i}].tipo=this.value"></td>
-      <td><input type="number" step="any" value="${m.cv}" placeholder="Ex.: 150" oninput="motores[${i}].cv=this.value;renderMotores()"></td>
-      <td><input type="number" step="any" value="${m.fp}" placeholder="0,88" oninput="motores[${i}].fp=this.value;renderMotores()"></td>
-      <td><input type="number" step="any" value="${m.rend}" placeholder="0,92" oninput="motores[${i}].rend=this.value;renderMotores()"></td>
-      <td><input type="number" step="any" value="${m.volts}" placeholder="380" oninput="motores[${i}].volts=this.value;renderMotores()"></td>
-      <td><input type="number" step="any" value="${m.ipIn}" placeholder="6" oninput="motores[${i}].ipIn=this.value;renderMotores()"></td>
-      <td class="calc">${fmt(c.potkVA)}</td><td class="calc">${fmt(c.potkW)}</td>
-      <td class="calc">${fmt(c.iNominal)}</td><td class="calc">${fmt(c.iPartida)}</td>
-      <td><input type="number" step="any" value="${m.tempo}" placeholder="10" oninput="motores[${i}].tempo=this.value"></td>
-      <td class="calc">${c.ipPrimario==null?'—':fmt(c.ipPrimario)}</td>
-      <td><select onchange="motores[${i}].dispositivo=this.value"><option value="">—</option>${dispOpts}</select></td>
-      <td><button class="btn-del" onclick="delMotor(${i})">×</button></td>`;
-    tb.appendChild(tr);
+    const compensadora=m.dispositivo==='Chave Compensadora';
+    const card=document.createElement('div');
+    card.className='motor-card';
+    card.dataset.motorRow=i;
+    card.innerHTML=`
+      <div class="motor-card-head">
+        <span class="motor-titulo">Motor #${String(i+1).padStart(2,'0')}</span>
+        <button type="button" class="motor-del" onclick="delMotor(${i})" title="Remover motor">×</button>
+      </div>
+      <div class="motor-card-grid">
+        <div class="field"><label>Tipo</label><input type="text" value="${m.tipo}" placeholder="Ex.: Motor" oninput="motores[${i}].tipo=this.value"></div>
+        <div class="field"><label>Fases</label><select onchange="motores[${i}].fases=this.value"><option ${m.fases==='Monofásico'?'selected':''}>Monofásico</option><option ${m.fases!=='Monofásico'?'selected':''}>Trifásico</option></select></div>
+        <div class="field"><label>CV</label><input type="number" step="any" value="${m.cv}" placeholder="150" oninput="motores[${i}].cv=this.value" onchange="atualizarCalculosMotor(this)"></div>
+        <div class="field"><label>FP</label><input type="number" step="any" value="${m.fp}" placeholder="0,88" oninput="motores[${i}].fp=this.value" onchange="atualizarCalculosMotor(this)"></div>
+        <div class="field"><label>Rendimento</label><input type="number" step="any" value="${m.rend}" placeholder="0,92" oninput="motores[${i}].rend=this.value" onchange="atualizarCalculosMotor(this)"></div>
+        <div class="field"><label>Tensao(V)</label><input type="number" step="any" value="${m.volts}" placeholder="380" oninput="motores[${i}].volts=this.value" onchange="atualizarCalculosMotor(this)"></div>
+        <div class="field"><label>Ip/In</label><input type="number" step="any" value="${m.ipIn}" placeholder="6" oninput="motores[${i}].ipIn=this.value" onchange="atualizarCalculosMotor(this)"></div>
+        <div class="field"><label>Tempo Ip (s)</label><input type="number" step="any" value="${m.tempo}" placeholder="10" oninput="motores[${i}].tempo=this.value"></div>
+        <div class="field"><label>Disp. partida</label><select onchange="onDispositivoMotorChange(this,${i})"><option value="">—</option>${dispOpts}</select></div>
+        <div class="field motor-tap-field" style="display:${compensadora?'':'none'}"><label>Tap (%)</label><input type="number" step="any" value="${m.tap||''}" placeholder="65" oninput="motores[${i}].tap=this.value"></div>
+      </div>
+      ${_motorCardCalcHTML(c)}`;
+    box.appendChild(card);
   });
 }
+// Recalcula só os valores elétricos de UM motor (change/blur dos inputs
+// numéricos) e atualiza pontualmente os itens .val do card — isolado via
+// this.closest('.motor-card'), sem reconstruir o contêiner geral, o que
+// manteria o foco instável e travaria a digitação a cada caractere.
+function atualizarCalculosMotor(inputEl){
+  const card=inputEl.closest('.motor-card');
+  if(!card) return;
+  const i=parseInt(card.dataset.motorRow,10);
+  const m=motores[i];
+  if(!m) return;
+  const tMT=parseFloat(state.tensaoMT);
+  const c=CalculoMT.calcularMotor({potenciaCV:m.cv,fp:m.fp,rendimento:m.rend,tensaoV:m.volts,relacaoIpIn:m.ipIn},tMT);
+  const setCalc=(campo,val)=>{ const el=card.querySelector(`.val[data-campo="${campo}"]`); if(el) el.textContent=val; };
+  setCalc('potkVA',fmt(c.potkVA));
+  setCalc('potkW',fmt(c.potkW));
+  setCalc('iNominal',fmt(c.iNominal));
+  setCalc('iPartida',fmt(c.iPartida));
+  setCalc('ipPrimario',c.ipPrimario==null?'—':fmt(c.ipPrimario));
+}
+// Mostra/oculta o sub-campo Tap (%) isolado no card do motor alterado,
+// sem reconstruir o contêiner geral.
+function onDispositivoMotorChange(selectEl,i){
+  motores[i].dispositivo=selectEl.value;
+  const compensadora=selectEl.value==='Chave Compensadora';
+  if(!compensadora) motores[i].tap='';
+  const card=selectEl.closest('.motor-card');
+  if(!card) return;
+  const tapField=card.querySelector('.motor-tap-field');
+  if(!tapField) return;
+  tapField.style.display=compensadora?'':'none';
+  const tapInput=tapField.querySelector('input');
+  if(tapInput && !compensadora) tapInput.value='';
+}
+
+/* ============================================================
+   ANÁLISE DE PARTIDA DE MOTORES PESADOS
+   Critério Cemig: trifásico > 50 CV OU monofásico > 15 CV.
+   Cada motor pesado recebe uma ficha própria em motores[i].analisePartida.
+   ============================================================ */
+function motorPesado(m){
+  const cv=parseFloat(m.cv)||0;
+  if(!cv) return false;
+  return m.fases==='Monofásico' ? cv>15 : cv>50; // Trifásico é o padrão
+}
+function motoresPesadosIdx(){
+  return motores.map((m,i)=>i).filter(i=>motorPesado(motores[i]));
+}
+function ensureAnalisePartida(m){
+  if(!m.analisePartida){
+    m.analisePartida={
+      fpPartida:'',dispositivo:'',tap:'',numPartidas:'',ordemPartida:'',
+      cargaOperanteKVA:'',cargaOperanteFP:'',cargaSensivelTipo:'',cargaSensivelPercentual:'',
+      simultaneidade:'',impedanciaZ:'',
+    };
+  }
+  return m.analisePartida;
+}
+function _dispositivoPartidaCardsHTML(i,atual){
+  const cls=CAMPOS_CARDS_CONFIG.classes;
+  return `<div class="${cls.grid}">`+CAMPOS_CARDS_CONFIG.dispositivosPartida.map(op=>{
+    const ativo=atual===op.labelShort;
+    return `<button type="button" class="${cls.card}${ativo?' '+cls.active:''}" title="${op.labelFull}" onclick='setDispositivoPartida(${i},${JSON.stringify(op.labelShort)})'>${op.labelShort}</button>`;
+  }).join('')+`</div>`;
+}
+function setDispositivoPartida(i,valor){
+  const ap=ensureAnalisePartida(motores[i]);
+  ap.dispositivo=valor;
+  if(valor!=='Chave Compensadora') ap.tap='';
+  renderAnaliseMotores();
+}
+function renderAnaliseMotores(){
+  const box=$('#analiseMotoresCards');
+  if(!box) return;
+  const idxs=motoresPesadosIdx();
+  const tMT=parseFloat(state.tensaoMT);
+  if(!idxs.length){
+    box.innerHTML='<div class="field-note">Nenhum motor pesado identificado (trifásico acima de 50 CV ou monofásico acima de 15 CV).</div>';
+    return;
+  }
+  box.innerHTML=idxs.map(i=>{
+    const m=motores[i];
+    const ap=ensureAnalisePartida(m);
+    const c=CalculoMT.calcularMotor({potenciaCV:m.cv,fp:m.fp,rendimento:m.rend,tensaoV:m.volts,relacaoIpIn:m.ipIn},tMT);
+    return `<div class="conditional motor-pesado-card" style="margin-top:14px">
+      <div class="conditional-tag">Motor ${i+1} — ${m.tipo||'Motor'} (${m.fases||'Trifásico'}, ${m.cv||'—'} CV)</div>
+      <div class="grid cols-3">
+        <div class="field"><label>Potência do transformador (kVA)</label><input type="text" value="${fmt(state.potTotalTrafos)}" readonly></div>
+        <div class="field"><label>Corrente de partida (A)</label><input type="text" value="${c.iPartida==null?'—':fmt(c.iPartida)}" readonly></div>
+        <div class="field"><label>Fator de potência na partida</label><input type="number" step="any" value="${ap.fpPartida}" placeholder="Ex.: 0,35" oninput="motores[${i}].analisePartida.fpPartida=this.value"></div>
+      </div>
+      <div class="subhead">Dispositivo auxiliar de partida</div>
+      ${_dispositivoPartidaCardsHTML(i,ap.dispositivo)}
+      ${ap.dispositivo==='Chave Compensadora'?`<div class="grid cols-3" style="margin-top:12px">
+        <div class="field"><label>Tap (%)</label><input type="number" step="any" value="${ap.tap}" placeholder="Ex.: 65" oninput="motores[${i}].analisePartida.tap=this.value"></div>
+      </div>`:''}
+      <div class="grid cols-4" style="margin-top:16px">
+        <div class="field"><label>Número de partidas</label><input type="number" value="${ap.numPartidas}" oninput="motores[${i}].analisePartida.numPartidas=this.value"></div>
+        <div class="field"><label>Ordem de partida</label><input type="number" value="${ap.ordemPartida}" oninput="motores[${i}].analisePartida.ordemPartida=this.value"></div>
+        <div class="field"><label>Carga operando (kVA)</label><input type="number" step="any" value="${ap.cargaOperanteKVA}" oninput="motores[${i}].analisePartida.cargaOperanteKVA=this.value"></div>
+        <div class="field"><label>Carga operando (FP)</label><input type="number" step="any" value="${ap.cargaOperanteFP}" oninput="motores[${i}].analisePartida.cargaOperanteFP=this.value"></div>
+      </div>
+      <div class="grid cols-4" style="margin-top:16px">
+        <div class="field"><label>Carga sensível — Tipo</label><input type="text" value="${ap.cargaSensivelTipo}" placeholder="Ex.: CLP, iluminação" oninput="motores[${i}].analisePartida.cargaSensivelTipo=this.value"></div>
+        <div class="field"><label>Carga sensível — % admissível</label><input type="number" step="any" value="${ap.cargaSensivelPercentual}" oninput="motores[${i}].analisePartida.cargaSensivelPercentual=this.value"></div>
+        <div class="field"><label>Simultaneidade</label>
+          <select onchange="motores[${i}].analisePartida.simultaneidade=this.value">
+            <option value="">Selecione…</option>
+            <option ${ap.simultaneidade==='Sim'?'selected':''}>Sim</option>
+            <option ${ap.simultaneidade==='Não'?'selected':''}>Não</option>
+          </select></div>
+        <div class="field"><label>Impedância do transformador — %Z</label><input type="number" step="any" value="${ap.impedanciaZ}" oninput="motores[${i}].analisePartida.impedanciaZ=this.value"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function abrirAnaliseMotores(){
+  renderAnaliseMotores();
+  $$('.page').forEach(p=>p.classList.remove('show'));
+  $('#page-analise-motores').classList.add('show');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function voltarDaAnalise(){
+  goTo(5);
+}
+
+/* ============================================================
+   RELATÓRIO DE MOTORES — impressão dedicada (folha oficial Cemig)
+   "FORMULÁRIO PARA A ANÁLISE DE PARTIDA DE MOTORES": bloco de
+   Identificação (só "Cliente:", sem NS), dados do motor com texto
+   direto (sem checkbox) e Notas 1/2 originais no rodapé. Campos
+   vazios saem com sublinhado para preenchimento manual.
+   ============================================================ */
+function _campoImpresso(valor,unidade){
+  const v=String(valor??'').trim();
+  if(!v) return `<span class="linha-vazia"></span>`;
+  return `${v}${unidade?(' '+unidade):''}`;
+}
+function renderDocumentoMotoresImpressao(){
+  syncState();
+  const box=$('#documentoMotoresImpressao');
+  if(!box) return;
+  const idxs=motoresPesadosIdx();
+  const tMT=parseFloat(state.tensaoMT);
+  const hoje=new Date();
+  const dataExtenso=`${String(hoje.getDate()).padStart(2,'0')} de ${hoje.toLocaleDateString('pt-BR',{month:'long'})} de ${hoje.getFullYear()}`;
+  const notas=`<div class="doc-notas">
+    <p>1 - Em caso de partida sequencial de motores, preencher uma folha para cada motor, indicando a ordem de partida.</p>
+    <p>2 - Anexar, sempre que possível, a(s) folha(s) das características elétricas, fornecida(s) pelo fabricante do motor.</p>
+  </div>`;
+  const assinatura=`<div class="doc-assinatura">
+    <div class="linha"></div>
+    <div>Responsável pelas informações</div>
+  </div>`;
+  if(!idxs.length){
+    box.innerHTML=`<div class="folha-motor">
+      <div class="doc-titulo">FORMULÁRIO PARA A ANÁLISE DE PARTIDA DE MOTORES</div>
+      <div class="doc-sec">IDENTIFICAÇÃO</div>
+      <div class="doc-kv"><b>Cliente:</b><span>${_campoImpresso(state.nome)}</span></div>
+      <div class="doc-kv" style="margin-top:10px"><b>&nbsp;</b><span>Nenhum motor pesado identificado (trifásico acima de 50 CV ou monofásico acima de 15 CV).</span></div>
+      <div class="doc-sec">NOTAS</div>
+      ${notas}
+      <div class="doc-kv" style="margin-top:14px"><b>Data:</b><span>${dataExtenso}</span></div>
+      ${assinatura}
+    </div>`;
+    return;
+  }
+  box.innerHTML=idxs.map(i=>{
+    const m=motores[i];
+    const ap=ensureAnalisePartida(m);
+    const c=CalculoMT.calcularMotor({potenciaCV:m.cv,fp:m.fp,rendimento:m.rend,tensaoV:m.volts,relacaoIpIn:m.ipIn},tMT);
+    const dispositivoTexto = ap.dispositivo
+      ? ap.dispositivo + (ap.dispositivo==='Chave Compensadora' ? ` — Tap: ${_campoImpresso(ap.tap,'%')}` : '')
+      : `<span class="linha-vazia"></span>`;
+    return `<div class="folha-motor">
+      <div class="doc-titulo">FORMULÁRIO PARA A ANÁLISE DE PARTIDA DE MOTORES</div>
+
+      <div class="doc-sec">IDENTIFICAÇÃO</div>
+      <div class="doc-kv"><b>Cliente:</b><span>${_campoImpresso(state.nome)}</span></div>
+
+      <div class="doc-sec">TIPO DO MOTOR / NÚMERO DE FASES</div>
+      <div class="doc-kv"><b>Tipo do motor:</b><span>${_campoImpresso(m.tipo)}</span></div>
+      <div class="doc-kv"><b>Número de fases:</b><span>${_campoImpresso(m.fases||'Trifásico')}</span></div>
+
+      <div class="doc-sec">DADOS ELÉTRICOS</div>
+      <div class="doc-kv"><b>Potência do motor:</b><span>${_campoImpresso(m.cv,'CV')}</span></div>
+      <div class="doc-kv"><b>Tensão no motor:</b><span>${_campoImpresso(m.volts,'V')}</span></div>
+      <div class="doc-kv"><b>Corrente de partida (sem dispositivo de partida):</b><span>${_campoImpresso(c.iPartida==null?'':fmt(c.iPartida),'A')}</span></div>
+      <div class="doc-kv"><b>Corrente nominal:</b><span>${_campoImpresso(c.iNominal==null?'':fmt(c.iNominal),'A')}</span></div>
+      <div class="doc-kv"><b>Relação Ip/In:</b><span>${_campoImpresso(m.ipIn)}</span></div>
+      <div class="doc-kv"><b>Fator de potência em regime:</b><span>${_campoImpresso(m.fp)}</span></div>
+      <div class="doc-kv"><b>Fator de potência na partida:</b><span>${_campoImpresso(ap.fpPartida)}</span></div>
+
+      <div class="doc-sec">NÚMERO DE PARTIDAS</div>
+      <div class="doc-kv"><b>Número de partidas:</b><span>${_campoImpresso(ap.numPartidas)}</span></div>
+
+      <div class="doc-sec">DISPOSITIVO AUXILIAR DE PARTIDA (QUANDO HOUVER)</div>
+      <div class="doc-kv"><b>Dispositivo:</b><span>${dispositivoTexto}</span></div>
+
+      <div class="doc-sec">ORDEM DE PARTIDA DO MOTOR (CASOS DE DOIS OU MAIS MOTORES)</div>
+      <div class="doc-kv"><b>Ordem de partida:</b><span>${_campoImpresso(ap.ordemPartida)}</span></div>
+
+      <div class="doc-sec">CARGAS OPERANDO ENQUANTO O MOTOR PARTE (QUANDO HOUVER)</div>
+      <div class="doc-kv"><b>Potência:</b><span>${_campoImpresso(ap.cargaOperanteKVA,'kVA')}</span></div>
+      <div class="doc-kv"><b>Fator de potência:</b><span>${_campoImpresso(ap.cargaOperanteFP)}</span></div>
+
+      <div class="doc-sec">CARGAS SENSÍVEIS A FLUTUAÇÕES DE TENSÃO</div>
+      <div class="doc-kv"><b>Tipo:</b><span>${_campoImpresso(ap.cargaSensivelTipo)}</span></div>
+      <div class="doc-kv"><b>Flutuação admissível:</b><span>${_campoImpresso(ap.cargaSensivelPercentual,'%')}</span></div>
+
+      <div class="doc-sec">SIMULTANEIDADE DE PARTIDA</div>
+      <div class="doc-kv"><b>Em caso de simultaneidade, relacionar os motores e suas características elétricas:</b><span>${_campoImpresso(ap.simultaneidade)}</span></div>
+
+      <div class="doc-sec">TRANSFORMADOR DO CONSUMIDOR</div>
+      <div class="doc-kv"><b>Potência do transformador:</b><span>${_campoImpresso(fmt(state.potTotalTrafos),'kVA')}</span></div>
+      <div class="doc-kv"><b>Impedância percentual do transformador:</b><span>${_campoImpresso(ap.impedanciaZ,'%')}</span></div>
+
+      <div class="doc-sec">NOTAS</div>
+      ${notas}
+
+      <div class="doc-kv" style="margin-top:14px"><b>Data:</b><span>${dataExtenso}</span></div>
+      ${assinatura}
+    </div>`;
+  }).join('');
+}
+// Nomeia o PDF dinamicamente: como a exportação é via impressão do
+// navegador (Salvar como PDF), o nome sugerido no diálogo de impressão
+// segue o document.title — por isso ele é trocado temporariamente.
+function exportarPDFPartida(){
+  renderDocumentoMotoresImpressao();
+  const tituloOriginal=document.title;
+  const nomeCliente=(state.nome||'Cliente').trim().replace(/\s+/g,'_');
+  document.title=`Analise_Partida_Motores_${nomeCliente}`;
+  document.body.classList.add('print-motores-only');
+  window.print();
+  document.title=tituloOriginal;
+}
+window.addEventListener('afterprint',()=>{
+  document.body.classList.remove('print-motores-only');
+});
 
 /* ===== Recalcular bloco técnico (trafos, tipo SE, demanda) ===== */
 function recalcTecnico(){
@@ -912,6 +1212,13 @@ function renderPreview(){
   $('#previewContent').innerHTML=h;
   const btnMonomia=$('#btnCartaMonomia');
   if(btnMonomia)btnMonomia.style.display=(state.monomia==='Sim')?'':'none';
+  const alertaMotores=$('#alertaMotoresPesados');
+  if(alertaMotores){
+    const idxs=motoresPesadosIdx();
+    alertaMotores.innerHTML = idxs.length
+      ? alertHTML('warn',`A solicitação possui ${idxs.length} motor(es) pesado(s) que exige(m) mais informações, favor preencher o formulário: <button type="button" class="btn btn-primary no-print" style="margin-left:8px" onclick="abrirAnaliseMotores()">Preencher Análise de Partida</button>`)
+      : '';
+  }
   atualizarGateExportacao();
 }
 function syncState(){$$('[data-k]').forEach(el=>{state[el.dataset.k]=el.value;});}
