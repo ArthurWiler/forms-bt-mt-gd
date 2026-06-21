@@ -14,11 +14,7 @@ const GD_TENSAO_A = ["13800","22000","34500"];
 const GD_TENSAO_B = ["127/220","120/240"];
 const GD_RAMAL = ["Aéreo","Subterrâneo"];
 const GD_TIPOS_SE = ["Nº 1","Nº 2","Nº 4","Nº 5","Nº 8"];
-const GD_TRAFO_POR_SE = {
-  "Nº 1":[75,112.5,150,225,300],"Nº 2":[75,112.5,150,225,300],"Nº 4":[75,112.5,150,225,300],
-  "Nº 5":[75,112.5,150,225,300],"Nº 8":[75,112.5,150,225,300],
-};
-const GD_TRAFOS_PARTICULARES = [100,200,300,500,700];
+// Transformadores: campo livre (qualquer potência, inclusive > RT, ex.: 1500/2000 kVA). Sem lista fixa.
 const GD_TIPO_LIG_TRAFO = ["∆-Y","∆-∆","Y-∆","Y-Y"];
 const GD_ENTRADA_ENERGIA = ["Subestação Individual","Subestação Compartilhada"];
 const GD_FONTES = ["Solar","Hidráulica","Biomassa","Cogeração Qualificada","Eólica"];
@@ -36,6 +32,23 @@ const GD_FUSOS = [22,23,24];
 const GD_BT_MT = ["BT - Baixa Tensão","MT - Média Tensão"];
 const GD_SN = ["Não","Sim"];
 const GD_GFC_LIMITE_KW = 500; // garantia de fiel cumprimento acima de 500 kW
+
+// Formas de apresentação da Garantia de Fiel Cumprimento (art. 655-C)
+const GD_GARANTIA_FORMAS = ["Caução em dinheiro","Fiança bancária","Títulos da dívida pública"];
+const GD_GARANTIA_FAQ_URL = "https://www.cemig.com.br/duvidas-frequentes/";
+
+// Tipos de subestação que ficam indisponíveis em BT (migrada para MT como ligação nova)
+const GD_TIPOS_SE_BLOQ_BT = ["Nº 1","Nº 2"];
+// Tipo de subestação indisponível em Ligação Nova atendida em 13,8 kV
+const GD_TIPO_SE_BLOQ_LIGNOVA_138 = "Nº 2";
+const GD_TENSAO_LIGNOVA_138 = "13800";
+const GD_SOLICITACAO_LIG_NOVA = "Ligação de Nova Unidade Consumidora COM Geração Distribuída";
+// Solicitações que exigem o preenchimento do Formulário de Carga (aumento de demanda / ligação nova)
+const GD_SOLICITACOES_FORM_CARGA = [
+  "Conexão de GD em Unidade Consumidora Existente COM Alteração de Demanda Contratada",
+  "Ligação de Nova Unidade Consumidora COM Geração Distribuída",
+];
+const GD_ENTRADA_COMPARTILHADA = "Subestação Compartilhada";
 
 // Documentação da UC (Seção 3) — MiniGD
 const GD_DOCUMENTOS = [
@@ -75,6 +88,13 @@ const GD_CONTATO_CEMIG = {
 const GD_DECL_85 = [
   "não injeção na rede (“Grid Zero”)",
 ];
+
+// GFC exigida acima de 500 kW, EXCETO Geração Compartilhada com consórcio verificado (Regra 5/8).
+function gdExigeGFC(d){
+  if((parseFloat(d.potAtivaInstalada)||0) <= GD_GFC_LIMITE_KW) return false;
+  if(d.modalidade==="Geração Compartilhada" && d.consorcioVerificado==="Sim") return false;
+  return true;
+}
 
 function gdValidarUTM(fuso,e,n){
   const lim=GD_UTM_LIMITES[parseInt(fuso)];

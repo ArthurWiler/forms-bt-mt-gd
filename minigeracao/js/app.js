@@ -45,6 +45,8 @@ function App() {
     if (d.fuso && d.utmE && d.utmN && !utm.ok)
       faltas.push("Coordenada UTM fora da faixa do fuso");
     req(d.impedanciaTrafo, "Impedância do transformador");
+    if (d.entradaEnergia === GD_ENTRADA_COMPARTILHADA)
+      req(d.qtdCubiculos, "Quantidade de Cubículos");
     req(d.solicitacao, "Tipo de Solicitação");
     req(d.demandaConsumo, "Demanda contratada de consumo");
     req(d.potAtivaInstalada, "Potência Ativa Instalada Total");
@@ -53,8 +55,10 @@ function App() {
       req(f.fontePrimaria, `Fonte ${i + 1}: tipo de fonte`);
       req(f.potencia, `Fonte ${i + 1}: potência`);
     });
-    if ((parseFloat(d.potAtivaInstalada) || 0) > GD_GFC_LIMITE_KW)
+    if (gdExigeGFC(d)) {
       req(d.gfcValor, "Garantia de Fiel Cumprimento (> 500 kW)");
+      req(d.garantiaForma, "Forma de apresentação da garantia");
+    }
     if (!d.decl84) faltas.push("Declaração 9.4 (obrigatória)");
     if (!d.decl86) faltas.push("Declaração 9.6 (obrigatória)");
     req(d.solicitanteNome, "Nome do solicitante");

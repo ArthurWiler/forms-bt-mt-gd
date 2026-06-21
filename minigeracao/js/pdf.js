@@ -28,11 +28,14 @@ function gerarPdfMiniGD(d) {
   kv("Gerador de Emergência (kVA)", d.geradorPotencia);
   kv("Tensão de Atendimento (V)", d.tensaoAtendimento);
   kv("Entrada de Energia", d.entradaEnergia);
+  if (d.entradaEnergia === GD_ENTRADA_COMPARTILHADA) kv("Quantidade de Cubículos", d.qtdCubiculos);
   kv("Tipo de Solicitação", d.solicitacao);
   kv("Demanda geração / consumo (kW)", `${d.demandaGeracao || "—"} / ${d.demandaConsumo || "—"}`);
+  kv("Demanda de consumo atual (kW)", d.demandaConsumoAtual);
   kv("Grid Zero", d.gridZero);
   kv("Telhado arrendado", d.telhadoArrendado);
   if (d.telhadoArrendado === "Sim") kv("2 instalações no DUB/memorial", d.duasInstalacoesDUB);
+  kv("Número da Unidade Consumidora", d.numUC);
   kv("Instalação existente no local", d.instExistente);
   kv("Instalação existente BT/MT", d.instExistenteBTMT);
 
@@ -45,6 +48,7 @@ function gerarPdfMiniGD(d) {
   kv("Modalidade de compensação", d.modalidade);
   kv("Qtde. instalações a receber crédito", d.qtdInstalacoesCredito);
   kv("Anexou contrato de constituição", d.anexouContrato);
+  if (d.modalidade === "Geração Compartilhada") kv("Documentação do consórcio verificada", d.consorcioVerificado);
   (d.fontes || []).forEach((f, i) => {
     sec(`4.${i + 1} — Fonte de Geração ${i + 1}`);
     kv("Tipo de Fonte Primária", f.fontePrimaria);
@@ -76,7 +80,12 @@ function gerarPdfMiniGD(d) {
   }
 
   sec("6 — Garantia de Fiel Cumprimento");
-  kv("Garantia (> 500 kW)", d.gfcValor);
+  if (d.modalidade === "Geração Compartilhada" && d.consorcioVerificado === "Sim" && (parseFloat(d.potAtivaInstalada) || 0) > GD_GFC_LIMITE_KW) {
+    kv("Garantia (> 500 kW)", "Dispensada — Geração Compartilhada com consórcio verificado");
+  } else {
+    kv("Forma de apresentação", d.garantiaForma);
+    kv("Garantia (> 500 kW)", d.gfcValor);
+  }
 
   sec("7 — Documentação Técnica");
   GD_DOCS_TEC.forEach((dc) => kv(`${dc.id} ${d.docsTec && d.docsTec[dc.id] ? "[X]" : "[ ]"}`, dc.txt));

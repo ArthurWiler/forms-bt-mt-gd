@@ -46,9 +46,12 @@ function gdEstadoInicial() {
     geradorPotencia: "",
     tensaoAtendimento: "",
     entradaEnergia: "",
+    qtdCubiculos: "",
     solicitacao: "",
     demandaGeracao: "",
     demandaConsumo: "",
+    demandaConsumoAtual: "",
+    numUC: "",
     gridZero: "Não",
     telhadoArrendado: "Não",
     duasInstalacoesDUB: "Não",
@@ -62,6 +65,7 @@ function gdEstadoInicial() {
     modalidade: "",
     qtdInstalacoesCredito: "",
     anexouContrato: "Não",
+    consorcioVerificado: "Não",
     fontes: [gdFontePadrao()],
     // 5 - Armazenamento
     possuiArmazenamento: "Não",
@@ -72,6 +76,7 @@ function gdEstadoInicial() {
     armTensaoCC: "", armProfundidadeDescarga: "", armProducaoMensal: "",
     // 6 - Garantia de Fiel Cumprimento
     gfcValor: "",
+    garantiaForma: "",
     // 7 - Documentação técnica
     docsTec: {},
     // 8 - Declarações
