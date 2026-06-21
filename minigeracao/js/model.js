@@ -59,6 +59,10 @@ function gdEstadoInicial() {
     instExistenteBTMT: "",
     // 3 - Documentação
     docs: {},
+    // Formulário de Carga (Item 11) — reutiliza a estrutura do formulário BT.
+    // cargas: { qtds, tipoA, catA, mots, extras, _demanda, _cargaKw, _disjuntores }
+    cargas: { qtds: [], tipoA: "", catA: 0, mots: [], extras: [] },
+    cargaDisjEscolhido: "",
     // 4 - Geração (múltiplas fontes)
     qtdFontes: 1,
     potAtivaInstalada: "",

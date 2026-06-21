@@ -2,6 +2,7 @@ const GD_ABAS = [
   { id: "ident", n: "Identificação", c: ViewIdentificacao },
   { id: "uc", n: "Dados da UC", c: ViewDadosUC },
   { id: "doc", n: "Documentação", c: ViewDocumentacao },
+  { id: "carga", n: "Formulário de Carga", c: ViewFormularioCarga },
   { id: "ger", n: "Dados da Geração", c: ViewGeracao },
   { id: "arm", n: "Armazenamento", c: ViewArmazenamento },
   { id: "decl", n: "Declarações", c: ViewDeclaracoes },
@@ -78,10 +79,25 @@ function App() {
       faltas.push("Coordenada UTM fora da faixa do fuso");
     req(d.solicitacao, "Tipo de Solicitação");
     req(d.edificacao, "Tipo de edificação");
-    req(d.demandaConsumo, "Demanda contratada de consumo");
+    // Formulário de Carga obrigatório para Ligação Nova / Aumento de Carga.
+    if (GD_SOLICITACOES_FORM_CARGA.includes(d.solicitacao)) {
+      const c = d.cargas || {};
+      const temCarga = (c.qtds || []).some((q) => (q || 0) > 0) ||
+        (c.mots || []).some((m) => (parseInt(m.q) || 0) > 0) ||
+        (c.extras || []).some((m) => (parseInt(m.q) || 0) > 0);
+      if (!temCarga) faltas.push("Formulário de Carga (declarar as cargas elétricas)");
+    }
+    // Regra 3: em Baixa Tensão (Grupo B) não há contratação de demanda de consumo.
+    if (d.grupo !== "B") req(d.demandaConsumo, "Demanda contratada de consumo");
+    // Regra 1: Aumento de Potência exige declaração da nova proteção.
+    if (GD_SOLICITACOES_AUMENTO_POTENCIA.includes(d.solicitacao))
+      req(d.novaProtecao, "Nova Proteção (Aumento de Potência)");
     req(d.fontePrimaria, "Tipo de Fonte Primária");
     req(d.potAtivaInstalada, "Potência Ativa Instalada Total");
     req(d.modalidade, "Modalidade de compensação");
+    // Regra 5: no Fast Track, a potência da usina não pode exceder 7,5 MW.
+    if (d.fastTrack === "Sim" && (parseFloat(d.potAtivaInstalada) || 0) > GD_FAST_LIMITE_USINA_KW)
+      faltas.push(`Potência da usina acima do limite Fast Track (${GD_FAST_LIMITE_MW} MW)`);
     if (!d.decl84) faltas.push("Declaração 8.4 (obrigatória)");
     if (!d.decl86) faltas.push("Declaração 8.6 (obrigatória)");
     req(d.solicitanteNome, "Nome do solicitante");

@@ -48,10 +48,15 @@ function gdEstadoInicial() {
     duasInstalacoesDUB: "Não",
     instExistente: "",
     instExistenteBTMT: "",
+    novaProtecao: "",
     demandaConsumo: "",
     demandaGeracao: "",
     // 3 - Documentação (checklist)
     docs: {},
+    // Formulário de Carga — reutiliza a estrutura do formulário BT (CalcDemanda).
+    // cargas: { qtds, tipoA, catA, mots, extras, _demanda, _cargaKw, _disjuntores }
+    cargas: { qtds: [], tipoA: "", catA: 0, mots: [], extras: [] },
+    cargaDisjEscolhido: "",
     // 4 - Dados da geração
     fontePrimaria: "Solar",
     tipoGeracao: "Empregando conversor eletrônico/inversor",

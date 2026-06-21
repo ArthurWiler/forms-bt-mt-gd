@@ -31,6 +31,23 @@ const GD_TIPO_GERACAO = [
   "Empregando máquina síncrona sem conversor","Empregando conversor eletrônico/inversor","Mista","Outra (especificar):",
 ];
 const GD_MODALIDADES = ["Autoconsumo local","Autoconsumo remoto","Geração compartilhada","Múltiplas Unidades Consumidoras"];
+const GD_MODALIDADE_AUTOCONSUMO_LOCAL = "Autoconsumo local";
+// Fast Track: potência máxima da usina (REN 1.000/2021) — 7,5 MW = 7500 kW.
+const GD_FAST_LIMITE_MW = 7.5;
+const GD_FAST_LIMITE_USINA_KW = 7500;
+// Solicitações que correspondem a Aumento de Potência (exigem nova proteção).
+const GD_SOLICITACOES_AUMENTO_POTENCIA = [
+  "Conexão de GD em Unidade Consumidora Existente COM Alteração de Potência Disponibilizada",
+  "GD Existente COM Alteração de Potência Ativa Instalada Total",
+];
+// Tipos de subestação indisponíveis em Baixa Tensão (BT/Grupo B).
+const GD_TIPOS_SE_BLOQ_BT = ["Nº 1", "Nº 2"];
+// Solicitações que exigem o preenchimento do Formulário de Carga:
+// Ligação Nova e Aumento/Alteração de Carga (alteração de potência disponibilizada).
+const GD_SOLICITACOES_FORM_CARGA = [
+  "Ligação de Nova Unidade Consumidora COM Geração Distribuída",
+  "Conexão de GD em Unidade Consumidora Existente COM Alteração de Potência Disponibilizada",
+];
 const GD_DISJ_FASES = ["Monopolar","Bipolar","Tripolar","Sem Disj. Geral"];
 const GD_DISJ_FASES_ALT = ["Monopolar","Bipolar","Tripolar","Sem Alter. Carga"];
 const GD_DISJ_REVISADA = [

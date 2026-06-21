@@ -30,7 +30,9 @@ function gerarPdfMiniGD(d) {
   kv("Entrada de Energia", d.entradaEnergia);
   if (d.entradaEnergia === GD_ENTRADA_COMPARTILHADA) kv("Quantidade de Cubículos", d.qtdCubiculos);
   kv("Tipo de Solicitação", d.solicitacao);
-  kv("Demanda geração / consumo (kW)", `${d.demandaGeracao || "—"} / ${d.demandaConsumo || "—"}`);
+  if (GD_SOLICITACOES_FORM_CARGA.includes(d.solicitacao)) kv("Formulário de Carga", "Obrigatório — declarar todas as cargas elétricas");
+  const demGer = d.modalidade === GD_MODALIDADE_AUTOCONSUMO_LOCAL ? "0 (Autoconsumo Local)" : (d.demandaGeracao || "—");
+  kv("Demanda geração / consumo (kW)", `${demGer} / ${d.demandaConsumo || "—"}`);
   kv("Demanda de consumo atual (kW)", d.demandaConsumoAtual);
   kv("Grid Zero", d.gridZero);
   kv("Telhado arrendado", d.telhadoArrendado);
@@ -41,6 +43,24 @@ function gerarPdfMiniGD(d) {
 
   sec("3 — Documentação da UC a anexar");
   GD_DOCUMENTOS.forEach((dc) => kv(`${dc.id} ${d.docs && d.docs[dc.id] ? "[X]" : "[ ]"}`, dc.txt));
+
+  sec("Item 11 — Formulário de Carga");
+  const c = d.cargas || {};
+  if (GD_SOLICITACOES_FORM_CARGA.includes(d.solicitacao)) kv("Preenchimento", "Obrigatório (Ligação Nova / Aumento de Demanda)");
+  kv("Tipo de carga", c.tipoA === "res" ? "Residencial" : c.tipoA === "nr" ? "Não-Residencial" + (TABELA_11[c.catA] ? ` (${TABELA_11[c.catA].d})` : "") : "—");
+  (CAT || []).forEach((cat, i) => {
+    const q = (c.qtds || [])[i] || 0;
+    if (q > 0) kv(`Carga: ${cat.n}`, `${q} un × ${fmtW(cat.w)} W`);
+  });
+  (c.mots || []).forEach((m, i) => {
+    if ((parseInt(m.q) || 0) > 0) kv(`Motor ${i + 1}`, `${m.fase === "mono" ? "Monofásico" : "Trifásico"} · ${m.cv} CV · ${m.q} un`);
+  });
+  (c.extras || []).forEach((m, i) => {
+    if ((parseInt(m.q) || 0) > 0) kv(`Carga Adicional ${i + 1}`, `${m.fase === "mono" ? "Monofásico" : "Trifásico"} · ${m.cv} CV · ${m.q} un`);
+  });
+  kv("Carga Instalada (kW)", fmt2(c._cargaKw || 0));
+  kv("Demanda Calculada (kVA)", fmt2(c._demanda || 0));
+  kv("Disjuntor sugerido / escolhido", `${(c._disjuntores || []).join(" · ") || "—"}${d.cargaDisjEscolhido ? " → " + d.cargaDisjEscolhido : ""}`);
 
   sec("4 — Dados da Geração");
   kv("Quantidade de fontes", d.qtdFontes);

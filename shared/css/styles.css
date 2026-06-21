@@ -471,6 +471,27 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
 .kpi.dark .kpi-value { color: #fff; font-size: 14px; line-height: 1.2; }
 
 /* ---------- TABELA DE CARGAS ---------- */
+.carga-min-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.carga-resumo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  margin-bottom: 14px;
+}
+.carga-resumo-chip {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--verde-escuro);
+  background: var(--verde-claro);
+  border-radius: 999px;
+  padding: 6px 12px;
+}
 .carga-box {
   border: 1px solid var(--borda);
   border-radius: var(--raio-sm);

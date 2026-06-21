@@ -22,6 +22,7 @@ const GD_TIPO_GERACAO = [
   "Empregando máquina síncrona sem conversor","Empregando conversor eletrônico/inversor","Mista","Outra (especificar):",
 ];
 const GD_MODALIDADES = ["Autoconsumo Local","Autoconsumo Remoto","Geração Compartilhada","Empreendimento de Múltiplas Unidades Consumidoras"];
+const GD_MODALIDADE_AUTOCONSUMO_LOCAL = "Autoconsumo Local";
 const GD_QTD_FONTES = [1,2];
 const GD_UTM_LIMITES = {
   22:{eMin:487307,eMax:833012,nMin:7733378,nMax:7981566},

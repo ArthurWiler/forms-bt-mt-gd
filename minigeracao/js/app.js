@@ -2,6 +2,7 @@ const GD_ABAS = [
   { id: "ident", n: "Identificação", c: ViewIdentificacao },
   { id: "uc", n: "Dados da UC", c: ViewDadosUC },
   { id: "doc", n: "Documentação", c: ViewDocumentacao },
+  { id: "carga", n: "Formulário de Carga", c: ViewFormularioCarga },
   { id: "ger", n: "Dados da Geração", c: ViewGeracao },
   { id: "arm", n: "Armazenamento", c: ViewArmazenamento },
   { id: "decl", n: "Declarações", c: ViewDeclaracoes },
@@ -48,6 +49,14 @@ function App() {
     if (d.entradaEnergia === GD_ENTRADA_COMPARTILHADA)
       req(d.qtdCubiculos, "Quantidade de Cubículos");
     req(d.solicitacao, "Tipo de Solicitação");
+    // Formulário de Carga obrigatório para Ligação Nova / Aumento de Demanda Contratada.
+    if (GD_SOLICITACOES_FORM_CARGA.includes(d.solicitacao)) {
+      const c = d.cargas || {};
+      const temCarga = (c.qtds || []).some((q) => (q || 0) > 0) ||
+        (c.mots || []).some((m) => (parseInt(m.q) || 0) > 0) ||
+        (c.extras || []).some((m) => (parseInt(m.q) || 0) > 0);
+      if (!temCarga) faltas.push("Formulário de Carga (declarar as cargas elétricas)");
+    }
     req(d.demandaConsumo, "Demanda contratada de consumo");
     req(d.potAtivaInstalada, "Potência Ativa Instalada Total");
     req(d.modalidade, "Modalidade de compensação");

@@ -24,14 +24,20 @@ function gerarPdfMicroGD(d) {
   kv("Celular", d.celular);
   kv("E-mail", d.email);
 
+  const ehBT = d.grupo === "B";
   sec("2 — Dados da Unidade Consumidora");
   kv("Coordenadas UTM", `Fuso ${d.fuso || "—"} · E ${d.utmE || "—"} · N ${d.utmN || "—"}`);
   kv("Gerador de emergência", d.geradorEmergencia + (d.geradorEmergencia === "Sim" ? ` (${d.geradorPotencia} kVA)` : ""));
-  kv("Tipo de Subestação (ND 5.3)", d.tipoSE);
-  (d.trafos || []).forEach((t, i) => {
-    if (t.qte || t.potencia) kv(`Trafo ${i + 1}`, `${t.qte || "—"} × ${t.potencia || "—"} kVA`);
-  });
+  if (ehBT) {
+    kv("Tipo de Subestação (ND 5.3)", "Não se aplica — Baixa Tensão (sem subestação)");
+  } else {
+    kv("Tipo de Subestação (ND 5.3)", d.tipoSE);
+    (d.trafos || []).forEach((t, i) => {
+      if (t.qte || t.potencia) kv(`Trafo ${i + 1}`, `${t.qte || "—"} × ${t.potencia || "—"} kVA`);
+    });
+  }
   kv("Tipo de Solicitação", d.solicitacao);
+  if (GD_SOLICITACOES_AUMENTO_POTENCIA.includes(d.solicitacao)) kv("Nova Proteção", d.novaProtecao || "—");
   kv("Tipo de edificação", d.edificacao);
   kv("Padrão de Entrada", d.edifTipo);
   kv("Ramal", d.ramal);
@@ -44,8 +50,12 @@ function gerarPdfMicroGD(d) {
   if (d.telhadoArrendado === "Sim") kv("2 instalações no DUB/memorial", d.duasInstalacoesDUB);
   kv("Instalação existente no local", d.instExistente);
   kv("Instalação existente BT/MT", d.instExistenteBTMT);
-  kv("Demanda contratada consumo (kW)", d.demandaConsumo);
-  kv("Demanda contratada geração (kW)", d.demandaGeracao);
+  if (ehBT) {
+    kv("Demanda contratada consumo (kW)", d.demandaConsumo ? d.demandaConsumo : "Não se aplica — Baixa Tensão");
+  } else {
+    kv("Demanda contratada consumo (kW)", d.demandaConsumo);
+    kv("Demanda contratada geração (kW)", d.demandaGeracao);
+  }
 
   sec("3 — Documentação a anexar");
   GD_DOCUMENTOS.forEach((dc) => {
@@ -53,11 +63,29 @@ function gerarPdfMicroGD(d) {
     kv(`${dc.id} ${marcado ? "[X]" : "[ ]"}`, dc.txt);
   });
 
+  sec("Formulário de Carga");
+  const c = d.cargas || {};
+  if (GD_SOLICITACOES_FORM_CARGA.includes(d.solicitacao)) kv("Preenchimento", "Obrigatório (Ligação Nova / Aumento de Carga)");
+  kv("Tipo de carga", c.tipoA === "res" ? "Residencial" : c.tipoA === "nr" ? "Não-Residencial" + (TABELA_11[c.catA] ? ` (${TABELA_11[c.catA].d})` : "") : "—");
+  (CAT || []).forEach((cat, i) => {
+    const q = (c.qtds || [])[i] || 0;
+    if (q > 0) kv(`Carga: ${cat.n}`, `${q} un × ${fmtW(cat.w)} W`);
+  });
+  (c.mots || []).forEach((m, i) => {
+    if ((parseInt(m.q) || 0) > 0) kv(`Motor ${i + 1}`, `${m.fase === "mono" ? "Monofásico" : "Trifásico"} · ${m.cv} CV · ${m.q} un`);
+  });
+  (c.extras || []).forEach((m, i) => {
+    if ((parseInt(m.q) || 0) > 0) kv(`Carga Adicional ${i + 1}`, `${m.fase === "mono" ? "Monofásico" : "Trifásico"} · ${m.cv} CV · ${m.q} un`);
+  });
+  kv("Carga Instalada (kW)", fmt2(c._cargaKw || 0));
+  kv("Demanda Calculada (kVA)", fmt2(c._demanda || 0));
+  kv("Disjuntor sugerido / escolhido", `${(c._disjuntores || []).join(" · ") || "—"}${d.cargaDisjEscolhido ? " → " + d.cargaDisjEscolhido : ""}`);
+
   sec("4 — Dados da Geração");
   kv("Tipo de Fonte Primária", d.fontePrimaria);
-  kv("Potência Ativa Instalada Total (kW)", d.potAtivaInstalada);
+  kv("Potência Ativa Instalada Total (kW)", d.potAtivaInstalada + (d.fastTrack === "Sim" ? ` (limite Fast Track: ${GD_FAST_LIMITE_MW} MW)` : ""));
   kv("Tipo de geração", d.tipoGeracao === "Outra (especificar):" ? `Outra: ${d.tipoGeracaoOutro}` : d.tipoGeracao);
-  kv("Modalidade de compensação", d.modalidade);
+  kv("Modalidade de compensação", d.modalidade + (d.fastTrack === "Sim" ? " (travada — Fast Track)" : ""));
   kv("Qtde. instalações a receber crédito", d.qtdInstalacoesCredito);
   if (d.fontePrimaria === "Solar") {
     kv("Módulos — Modelo/Fabricante", `${d.modeloModulos || "—"} / ${d.fabricanteModulos || "—"}`);
