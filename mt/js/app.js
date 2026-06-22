@@ -294,12 +294,68 @@ function onCorresp(){const v=event.target.value;state.formaCorresp=v;
 
 /* ===== Etapa 3: atividade, localização, coordenadas, ambiental ===== */
 function fillAtividades(){const s=$('#f_atividade');ATIVIDADES.forEach(a=>{const o=document.createElement('option');o.textContent=a;s.appendChild(o);});}
+// Detecta atividades de irrigação (e variantes, ex.: "Irrigação Noturna",
+// "Agropecuária Rural Irrigação") para disparar os campos da Solicitação
+// de Desconto para Irrigante/Aquicultor.
+function ehAtividadeIrrigacao(){
+  return /irriga[cç][aã]o/i.test(state.atividade||'');
+}
 function onAtividade(){
   const v=$('#f_atividade').value; state.atividade=v;
   const box=$('#irrigacaoAlert');
   const r=CalculoMT.alertaIrrigacao(v);
   box.innerHTML = r.nivel==='alerta' ? alertHTML('warn',r.msg) : '';
+  if(!ehAtividadeIrrigacao()){
+    // Atividade deixou de ser irrigação: limpa silenciosamente os dados
+    // do bloco opcional (Aba 5) para não deixar dados fantasmas em
+    // background numa solicitação que não precisa mais deles.
+    state.irrigacaoHorarioInicio='';
+    motores.forEach(m=>{ delete m.destinadoIrrigacao; });
+  }
+  renderMotores();
   recalcRamal();
+}
+// Máscara/validação no blur do campo opcional "Horário para Início do
+// Desconto" (card da Aba 5): aceita digitação livre (ex.: "2130",
+// "21h30") e normaliza para HH:MM; marca o input como inválido só
+// visualmente (campo é opcional e nunca bloqueia a exportação).
+function onIrrigacaoHorarioBlur(input){
+  let v=String(input.value||'').trim();
+  if(v && !/^\d{1,2}:\d{2}$/.test(v)){
+    const digits=v.replace(/\D/g,'');
+    if(digits.length===3) v=`0${digits[0]}:${digits.slice(1)}`;
+    else if(digits.length===4) v=`${digits.slice(0,2)}:${digits.slice(2)}`;
+  }
+  const valido=/^([01]\d|2[0-3]):[0-5]\d$/.test(v);
+  if(valido){
+    const [hh,mm]=v.split(':');
+    v=`${hh.padStart(2,'0')}:${mm}`;
+  }
+  input.value=v;
+  state.irrigacaoHorarioInicio=v;
+  input.classList.toggle('invalid', !!v && !valido);
+}
+// Card opcional da Aba 5 (Prévia): só aparece para atividades de
+// irrigação/aquicultura, fundo suave + borda tracejada, totalmente
+// no-print (não entra no PDF principal) e não bloqueia a exportação.
+function renderIrrigacaoOpcionalCard(){
+  const box=$('#irrigacaoOpcionalCard');
+  if(!box) return;
+  if(!ehAtividadeIrrigacao()){ box.innerHTML=''; return; }
+  const valor=state.irrigacaoHorarioInicio||'';
+  const invalido=!!valor && !/^([01]\d|2[0-3]):[0-5]\d$/.test(valor);
+  box.innerHTML=`
+    <div class="card no-print" style="background:var(--cemig-green-soft-2,#f3f8f6);border:1px dashed #ccc;margin-top:16px;padding:16px;border-radius:10px;box-shadow:none">
+      <div class="subhead" style="margin-top:0">Solicitação de Desconto para Irrigante/Aquicultor <span class="opt">(opcional)</span></div>
+      <div class="field" style="max-width:280px">
+        <label>Horário para Início do Desconto</label>
+        <input type="text" id="f_irrigacaoHorarioInicio" value="${valor}" placeholder="HH:MM (ex.: 21:30)" class="${invalido?'invalid':''}" oninput="state.irrigacaoHorarioInicio=this.value" onblur="onIrrigacaoHorarioBlur(this)">
+        <span class="field-note">A distribuidora garante janela contínua de 8h30 entre 21h30 e 06h00. Este bloco é totalmente opcional e não bloqueia a exportação do formulário principal.</span>
+      </div>
+      <div class="form-nav no-print" style="margin-top:14px;justify-content:flex-start">
+        <button type="button" class="btn btn-ghost" id="btnExportarIrrigante" onclick="exportarPDFIrrigante()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar Solicitação de Desconto</button>
+      </div>
+    </div>`;
 }
 function onLocalizacao(){
   const v=$('#f_localizacao').value; state.localizacao=v;
@@ -584,6 +640,7 @@ function renderMotores(){
         <div class="field"><label>Disp. partida</label><select onchange="onDispositivoMotorChange(this,${i})"><option value="">—</option>${dispOpts}</select></div>
         <div class="field motor-tap-field" style="display:${compensadora?'':'none'}"><label>Tap (%)</label><input type="number" step="any" value="${m.tap||''}" placeholder="65" oninput="motores[${i}].tap=this.value"></div>
       </div>
+      ${ehAtividadeIrrigacao()?`<label class="motor-irrigacao-check"><input type="checkbox" ${m.destinadoIrrigacao?'checked':''} onchange="motores[${i}].destinadoIrrigacao=this.checked"> Destinado à Irrigação</label>`:''}
       ${_motorCardCalcHTML(c)}`;
     box.appendChild(card);
   });
@@ -826,6 +883,73 @@ function exportarPDFPartida(){
 }
 window.addEventListener('afterprint',()=>{
   document.body.classList.remove('print-motores-only');
+});
+
+/* ============================================================
+   Solicitação de Desconto para Irrigante/Aquicultor (Versão D) —
+   folha única A4, dados do cliente vindos da Aba 2/3, tabela de
+   cargas só com motores destinadoIrrigacao===true (CV convertido
+   para kW a 0,7355) e Notas/assinatura no rodapé.
+   ============================================================ */
+function renderDocumentoIrrigacaoImpressao(){
+  syncState();
+  const box=$('#documentoIrrigacaoImpressao');
+  if(!box) return;
+  const hoje=new Date();
+  const dataExtenso=`${String(hoje.getDate()).padStart(2,'0')} de ${hoje.toLocaleDateString('pt-BR',{month:'long'})} de ${hoje.getFullYear()}`;
+  const motoresIrrigacao=motores.filter(m=>m.destinadoIrrigacao===true);
+  const linhasMotores=motoresIrrigacao.length
+    ? motoresIrrigacao.map(m=>{
+        const cv=parseFloat(m.cv);
+        const kw=isNaN(cv)?null:cv*0.7355;
+        const potenciaTexto=kw==null?`<span class="linha-vazia"></span>`:`${fmt(kw)} kW (${fmt(cv)} CV)`;
+        return `<tr><td>${_campoImpresso(m.tipo||'Motor')}</td><td>${_campoImpresso(m.fases||'Trifásico')}</td><td>${potenciaTexto}</td></tr>`;
+      }).join('')
+    : `<tr><td colspan="3">Nenhum motor destinado à irrigação foi marcado.</td></tr>`;
+  box.innerHTML=`<div class="folha-motor">
+    <div class="doc-titulo">SOLICITAÇÃO DE DESCONTO PARA IRRIGANTE / AQUICULTOR</div>
+
+    <div class="doc-sec">IDENTIFICAÇÃO DO CLIENTE</div>
+    <div class="doc-kv"><b>Cliente:</b><span>${_campoImpresso(state.nome)}</span></div>
+    <div class="doc-kv"><b>Município:</b><span>${_campoImpresso(state.uc_municipio)}</span></div>
+    <div class="doc-kv"><b>Nº da Instalação:</b><span>${_campoImpresso(state.numInstalacao)}</span></div>
+    <div class="doc-kv"><b>CPF/CNPJ:</b><span>${_campoImpresso(state.cpfCnpj)}</span></div>
+    <div class="doc-kv"><b>E-mail:</b><span>${_campoImpresso(state.emailCliente)}</span></div>
+    <div class="doc-kv"><b>Telefone:</b><span>${_campoImpresso(state.telCliente)}</span></div>
+
+    <div class="doc-sec">HORÁRIO PARA INÍCIO DO DESCONTO</div>
+    <div class="doc-kv"><b>Horário:</b><span>${_campoImpresso(state.irrigacaoHorarioInicio)}</span></div>
+    <div class="doc-kv"><b>&nbsp;</b><span>A distribuidora garante janela contínua de 8h30 entre 21h30 e 06h00.</span></div>
+
+    <div class="doc-sec">CARGAS DESTINADAS À IRRIGAÇÃO</div>
+    <table class="doc-tabela">
+      <thead><tr><th>Tipo</th><th>Fases</th><th>Potência</th></tr></thead>
+      <tbody>${linhasMotores}</tbody>
+    </table>
+
+    <div class="doc-notas">
+      <p>1 - O desconto na tarifa de energia elétrica para irrigantes e aquicultores está condicionado à comprovação de licença ambiental e outorga de uso de recursos hídricos vigentes (REN nº 1.000/2021, §7º; Lei nº 12.787/2013, arts. 22 e 23).</p>
+      <p>2 - A distribuidora garante a janela contínua de 8h30 (oito horas e trinta minutos) entre 21h30 e 06h00 para o horário reduzido, conforme horário de início informado pelo cliente.</p>
+    </div>
+
+    <div class="doc-kv" style="margin-top:14px"><b>Data:</b><span>${dataExtenso}</span></div>
+    <div class="doc-assinatura">
+      <div class="linha"></div>
+      <div>Responsável pelas informações</div>
+    </div>
+  </div>`;
+}
+function exportarPDFIrrigante(){
+  renderDocumentoIrrigacaoImpressao();
+  const tituloOriginal=document.title;
+  const nomeCliente=(state.nome||'Cliente').trim().replace(/\s+/g,'_');
+  document.title=`Solicitacao_Desconto_Irrigante_${nomeCliente}`;
+  document.body.classList.add('print-irrigante-only');
+  window.print();
+  document.title=tituloOriginal;
+}
+window.addEventListener('afterprint',()=>{
+  document.body.classList.remove('print-irrigante-only');
 });
 
 /* ===== Recalcular bloco técnico (trafos, tipo SE, demanda) ===== */
@@ -1212,6 +1336,7 @@ function renderPreview(){
   $('#previewContent').innerHTML=h;
   const btnMonomia=$('#btnCartaMonomia');
   if(btnMonomia)btnMonomia.style.display=(state.monomia==='Sim')?'':'none';
+  renderIrrigacaoOpcionalCard();
   const alertaMotores=$('#alertaMotoresPesados');
   if(alertaMotores){
     const idxs=motoresPesadosIdx();

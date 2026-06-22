@@ -247,23 +247,32 @@ input.invalid,select.invalid{border-color:var(--danger);box-shadow:0 0 0 4px rgb
   .page.show{display:block!important}
   .alert.info.no-print{display:none!important}
 }
-/* Relatório de Motores: documento dedicado, 1 motor pesado por folha,
-   no padrão oficial da planilha Cemig (texto direto, sem checkboxes) */
-#documentoMotoresImpressao{display:none}
+/* Relatório de Motores e Solicitação de Desconto Irrigante/Aquicultor:
+   documentos dedicados de impressão (texto direto, sem checkboxes). */
+#documentoMotoresImpressao,#documentoIrrigacaoImpressao{display:none}
 @media print{
   body.print-motores-only .mt-layout,
   body.print-motores-only header.site,
   body.print-motores-only .service-hero{display:none!important}
   body.print-motores-only #documentoMotoresImpressao{display:block!important}
+  body.print-irrigante-only .mt-layout,
+  body.print-irrigante-only header.site,
+  body.print-irrigante-only .service-hero{display:none!important}
+  body.print-irrigante-only #documentoIrrigacaoImpressao{display:block!important}
 }
-#documentoMotoresImpressao{font-family:var(--font);color:#1a1a1a}
+#documentoMotoresImpressao,#documentoIrrigacaoImpressao{font-family:var(--font);color:#1a1a1a}
 #documentoMotoresImpressao .folha-motor{page-break-after:always;break-after:page}
 #documentoMotoresImpressao .folha-motor:last-child{page-break-after:auto;break-after:auto}
-#documentoMotoresImpressao .doc-titulo{text-align:center;font-size:14px;font-weight:800;border-bottom:2px solid #0a2f27;padding-bottom:8px;margin-bottom:10px}
-#documentoMotoresImpressao .doc-sec{background:#0a2f27;color:#fff;font-size:10px;font-weight:800;padding:3px 8px;margin:10px 0 4px;page-break-after:avoid}
-#documentoMotoresImpressao .doc-kv{display:flex;gap:6px;font-size:9.5px;line-height:1.7;page-break-inside:avoid}
-#documentoMotoresImpressao .doc-kv b{flex:0 0 280px;font-weight:700}
-#documentoMotoresImpressao .linha-vazia{display:inline-block;min-width:90px;border-bottom:1px solid #333}
-#documentoMotoresImpressao .doc-notas p{font-size:9px;line-height:1.4;margin-bottom:3px}
-#documentoMotoresImpressao .doc-assinatura{margin-top:30px;font-size:9.5px;page-break-inside:avoid}
-#documentoMotoresImpressao .doc-assinatura .linha{border-top:1px solid #333;width:60%;margin-bottom:4px}
+#documentoMotoresImpressao .doc-titulo,#documentoIrrigacaoImpressao .doc-titulo{text-align:center;font-size:14px;font-weight:800;border-bottom:2px solid #0a2f27;padding-bottom:8px;margin-bottom:10px}
+#documentoMotoresImpressao .doc-sec,#documentoIrrigacaoImpressao .doc-sec{background:#0a2f27;color:#fff;font-size:10px;font-weight:800;padding:3px 8px;margin:10px 0 4px;page-break-after:avoid}
+#documentoMotoresImpressao .doc-kv,#documentoIrrigacaoImpressao .doc-kv{display:flex;gap:6px;font-size:9.5px;line-height:1.7;page-break-inside:avoid}
+#documentoMotoresImpressao .doc-kv b,#documentoIrrigacaoImpressao .doc-kv b{flex:0 0 280px;font-weight:700}
+#documentoMotoresImpressao .linha-vazia,#documentoIrrigacaoImpressao .linha-vazia{display:inline-block;min-width:90px;border-bottom:1px solid #333}
+#documentoMotoresImpressao .doc-notas p,#documentoIrrigacaoImpressao .doc-notas p{font-size:9px;line-height:1.4;margin-bottom:3px}
+#documentoMotoresImpressao .doc-assinatura,#documentoIrrigacaoImpressao .doc-assinatura{margin-top:30px;font-size:9.5px;page-break-inside:avoid}
+#documentoMotoresImpressao .doc-assinatura .linha,#documentoIrrigacaoImpressao .doc-assinatura .linha{border-top:1px solid #333;width:60%;margin-bottom:4px}
+#documentoIrrigacaoImpressao .doc-tabela{width:100%;border-collapse:collapse;margin-top:6px;font-size:9.5px}
+#documentoIrrigacaoImpressao .doc-tabela th,#documentoIrrigacaoImpressao .doc-tabela td{border:1px solid #333;padding:4px 6px;text-align:left}
+#documentoIrrigacaoImpressao .doc-tabela th{background:#e6f2ee;font-weight:700}
+.motor-irrigacao-check{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-soft);margin-top:8px}
+.motor-irrigacao-check input{width:auto}
