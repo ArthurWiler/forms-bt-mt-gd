@@ -68,7 +68,8 @@ function TabRevisar({ ctx }) {
     validacaoDisjuntores,
     validacaoHibrido,
     motoresPesadosBT,
-    setMostrarAnaliseMotores
+    setMostrarAnaliseMotores,
+    exibeTermoGrupoB
   } = ctx;
   return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(
     Card,
@@ -141,6 +142,13 @@ function TabRevisar({ ctx }) {
       onClick: gerarListaDocs
     },
     "📋 Gerar lista de documentos"
+  ), exibeTermoGrupoB && /* @__PURE__ */ React.createElement(
+    Btn,
+    {
+      variant: "ghost",
+      onClick: () => gerarTermoGrupoB(ctx)
+    },
+    "📄 Exportar Termo de Opção - Grupo B"
   ))));
 }
 

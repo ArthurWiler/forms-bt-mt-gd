@@ -604,6 +604,26 @@ function App() {
       0,
     );
   }, [multiTorres, blocos, coletivo, demandaPrevTotal, ucsDet]);
+
+  /* ===== Termo de Opção pelo Atendimento em Baixa Tensão (Grupo B) =====
+     Disparado para atendimento individual (não coletivo) quando a
+     demanda calculada OU a soma das potências de placa de motores e
+     cargas instaladas ultrapassa 75 kW/kVA (ND-5.1, Cap. 2, Item 12). */
+  const potenciaPlacaTotal = useMemo(() => {
+    if (coletivo) return 0;
+    return ucsDet.reduce((s, u) => {
+      if (ucSemAlteracao(u)) return s;
+      const cargaKw = u.cargas?._cargaKw || 0;
+      const motoresKw = (u.cargas?.mots || []).reduce(
+        (sm, m) => sm + (parseFloat(m.cv) || 0) * 0.7355 * (parseInt(m.q) || 0),
+        0,
+      );
+      return s + cargaKw + motoresKw;
+    }, 0);
+  }, [coletivo, ucsDet]);
+  const exibeTermoGrupoB =
+    !coletivo && (demandaTotalGeral > 75 || potenciaPlacaTotal > 75);
+
   const coordObrigatoria =
     obra.localizacao === "Rural" && obra.distMenor30 === "Não";
   const coordPreenchida =
@@ -799,6 +819,7 @@ function App() {
     setMostrarAnaliseMotores,
     motoresPesadosBT,
     setMotorAnalisePartida,
+    exibeTermoGrupoB,
     atend,
     setAtend,
     prop,
