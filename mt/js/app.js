@@ -512,9 +512,9 @@ function renderRestricaoAmbiental(){
   const ra=state.restricaoAmbiental;
   if(ra==='Sim'){
     const det=state.restricoesTexto?`<div style="margin-top:6px">${state.restricoesTexto}</div>`:'';
-    box.innerHTML=alertHTML('warn',`<strong>⚠ SIM — em área de restrição ambiental.</strong>${det}`);
+    box.innerHTML=alertHTML('err',`<div class="restricao-destaque"><strong>⚠ SIM — em área de restrição ambiental.</strong>${det}</div>`);
   } else if(ra==='Não'){
-    box.innerHTML=alertHTML('info','<strong>Não há restrição ambiental.</strong>');
+    box.innerHTML=alertHTML('info','<div class="restricao-destaque"><strong>Não há restrição ambiental.</strong></div>');
   } else {
     box.innerHTML=alertHTML('info','Consulte a coordenada no mapa acima para verificar a restrição ambiental.');
   }

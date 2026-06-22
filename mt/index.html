@@ -688,6 +688,55 @@
                 </div>
               </div>
 
+              <!-- Bloco URBANO -->
+              <div id="blocoUrbano" style="display: none">
+                <div class="subhead">Endereço (Urbano)</div>
+                <div class="grid cols-4">
+                  <div class="field span-3">
+                    <label>Endereço <span class="req">*</span></label
+                    ><input type="text" data-k="urb_endereco" onblur="onEnderecoUrbanoMT()" />
+                  </div>
+                  <div class="field">
+                    <label>Nº <span class="req">*</span></label
+                    ><input type="text" data-k="urb_num" onblur="onEnderecoUrbanoMT()" />
+                  </div>
+                  <div class="field span-2">
+                    <label>Bairro <span class="req">*</span></label
+                    ><input type="text" data-k="urb_bairro" onblur="onEnderecoUrbanoMT()" />
+                  </div>
+                  <div class="field span-2">
+                    <label>Complemento</label
+                    ><input type="text" data-k="urb_compl" />
+                  </div>
+                </div>
+              </div>
+              <!-- Bloco RURAL -->
+              <div id="blocoRural" style="display: none">
+                <div class="subhead">Endereço (Rural)</div>
+                <div class="grid cols-2">
+                  <div class="field">
+                    <label
+                      >Distrito / Comunidade / Região
+                      <span class="req">*</span></label
+                    ><input type="text" data-k="rur_distrito" />
+                  </div>
+                  <div class="field">
+                    <label>Nome da Propriedade <span class="req">*</span></label
+                    ><input type="text" data-k="rur_propriedade" />
+                  </div>
+                </div>
+              </div>
+              <div class="grid cols-2" style="margin-top: 16px">
+                <div class="field">
+                  <label>Ponto de Referência</label
+                  ><input type="text" data-k="pontoReferencia" />
+                </div>
+                <div class="field">
+                  <label>Nº Instalação do Vizinho</label
+                  ><input type="text" data-k="instalVizinho" />
+                </div>
+              </div>
+
               <div class="subhead">Coordenadas do local de atendimento</div>
               <p class="field-note" id="coordHint" style="margin-bottom: 12px">
                 Informe as coordenadas do local de atendimento.
@@ -808,55 +857,6 @@
                 </div>
               </div>
               <div id="coordAlert"></div>
-
-              <!-- Bloco URBANO -->
-              <div id="blocoUrbano" style="display: none">
-                <div class="subhead">Endereço (Urbano)</div>
-                <div class="grid cols-4">
-                  <div class="field span-3">
-                    <label>Endereço <span class="req">*</span></label
-                    ><input type="text" data-k="urb_endereco" onblur="onEnderecoUrbanoMT()" />
-                  </div>
-                  <div class="field">
-                    <label>Nº <span class="req">*</span></label
-                    ><input type="text" data-k="urb_num" onblur="onEnderecoUrbanoMT()" />
-                  </div>
-                  <div class="field span-2">
-                    <label>Bairro <span class="req">*</span></label
-                    ><input type="text" data-k="urb_bairro" onblur="onEnderecoUrbanoMT()" />
-                  </div>
-                  <div class="field span-2">
-                    <label>Complemento</label
-                    ><input type="text" data-k="urb_compl" />
-                  </div>
-                </div>
-              </div>
-              <!-- Bloco RURAL -->
-              <div id="blocoRural" style="display: none">
-                <div class="subhead">Endereço (Rural)</div>
-                <div class="grid cols-2">
-                  <div class="field">
-                    <label
-                      >Distrito / Comunidade / Região
-                      <span class="req">*</span></label
-                    ><input type="text" data-k="rur_distrito" />
-                  </div>
-                  <div class="field">
-                    <label>Nome da Propriedade <span class="req">*</span></label
-                    ><input type="text" data-k="rur_propriedade" />
-                  </div>
-                </div>
-              </div>
-              <div class="grid cols-2" style="margin-top: 16px">
-                <div class="field">
-                  <label>Ponto de Referência</label
-                  ><input type="text" data-k="pontoReferencia" />
-                </div>
-                <div class="field">
-                  <label>Nº Instalação do Vizinho</label
-                  ><input type="text" data-k="instalVizinho" />
-                </div>
-              </div>
 
               <div class="subhead">Questões ambientais</div>
               <div class="field" id="restricaoAmbientalBox">

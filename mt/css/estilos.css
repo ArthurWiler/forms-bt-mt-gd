@@ -115,6 +115,10 @@ input.invalid,select.invalid{border-color:var(--danger);box-shadow:0 0 0 4px rgb
 .alert.warn{background:var(--amber-soft);color:#6b5114;border-left:4px solid var(--amber)}
 .alert.err{background:var(--danger-soft);color:#7d241d;border-left:4px solid var(--danger)}
 .alert.info{background:var(--cemig-green-soft);color:var(--cemig-green-700);border-left:4px solid var(--cemig-green)}
+/* Destaque do resultado de restrição ambiental — espelha bt/css/styles.css (.restricao-destaque).
+   Sem padding extra: o .alert já tem o seu; aqui só o realce de fonte/strong. */
+.restricao-destaque{font-size:14px;line-height:1.45}
+.restricao-destaque strong{display:block;font-size:14.5px}
 .tbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
 .tbl th{background:var(--cemig-green-soft);color:var(--cemig-green-700);font-weight:700;text-align:left;padding:9px 10px;font-size:12px;border:1px solid var(--line)}
 .tbl td{padding:6px 8px;border:1px solid var(--line);vertical-align:middle}
