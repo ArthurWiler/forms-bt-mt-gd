@@ -13,7 +13,7 @@ function Field({ label, req, children, hint, span }) {
   const cls = "field" + (span === 2 ? " col-span-2" : span === 3 ? " col-span-3" : "");
   return /* @__PURE__ */ React.createElement("div", { className: cls }, label && /* @__PURE__ */ React.createElement("label", null, label, " ", req && /* @__PURE__ */ React.createElement("span", { className: "req" }, "*")), children, hint && /* @__PURE__ */ React.createElement("span", { className: "field-hint" }, hint));
 }
-function Inp({ value, onChange, type = "text", placeholder, disabled, max }) {
+function Inp({ value, onChange, type = "text", placeholder, disabled, max, readOnly }) {
   return /* @__PURE__ */ React.createElement(
     "input",
     {
@@ -22,7 +22,8 @@ function Inp({ value, onChange, type = "text", placeholder, disabled, max }) {
       onChange,
       placeholder,
       disabled,
-      max
+      max,
+      readOnly
     }
   );
 }

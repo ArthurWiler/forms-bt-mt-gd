@@ -67,8 +67,10 @@ function TabTipo({ ctx }) {
     totalUcsEmpreendimento,
     trocaDisjGeral,
     validacaoDisjuntores,
-    validacaoHibrido
+    validacaoHibrido,
+    solicitacoesPermitidas
   } = ctx;
+  const opcoesSolicitacao = solicitacoesPermitidas || SOLICITACOES;
   return /* @__PURE__ */ React.createElement(
     Card,
     {
@@ -80,10 +82,10 @@ function TabTipo({ ctx }) {
       Sel,
       {
         value: atend.solicitacao,
-        disabled: restrito || coletivo || multiTorres,
+        disabled: restrito || multiTorres,
         onChange: (e) => setAtend({ ...atend, solicitacao: e.target.value })
       },
-      SOLICITACOES.map((s) => /* @__PURE__ */ React.createElement("option", { key: s }, s))
+      opcoesSolicitacao.map((s) => /* @__PURE__ */ React.createElement("option", { key: s }, s))
     )), /* @__PURE__ */ React.createElement(Field, { label: "Escopo do Atendimento", req: true }, /* @__PURE__ */ React.createElement(
       Sel,
       {

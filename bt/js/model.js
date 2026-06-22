@@ -90,6 +90,33 @@ const ESCOPOS = {
   ],
 };
 
+// Estado padrão da Etapa "Tipo de Atendimento". Centralizado aqui para que a
+// troca de modalidade (selectModalidade) possa restaurar os valores iniciais e
+// evitar que dados de uma categoria anterior persistam na próxima (Regra 8).
+const atendPadrao = () => ({
+  disjGeral: "Não",
+  nUCs: 1,
+  biAcima63: false,
+  triAcima63: false,
+  acima75: false,
+  solicitacao: SOLICITACOES[0],
+  escopo: "Ligação Nova",
+  disjuntorGeral: "",
+  disjGeralAtual: "",
+  demandaAtual: "",
+  demandaNaoResidencial: "",
+  demandaResidencialManual: "",
+  atendA: "Bloco",
+  nBlocos: 1,
+});
+
+// Opções de "Solicitação" (Service Options) liberadas por família de
+// atendimento. Para categorias individuais (Residencial > 100 m², Comercial,
+// Industrial, Rural) só os disjuntores individuais ficam disponíveis; no
+// atendimento coletivo libera-se também o Atendimento Híbrido (Regra 5).
+const SOLICITACOES_INDIVIDUAIS = [SOLICITACOES[0], SOLICITACOES[1]];
+const SOLICITACOES_COLETIVAS = [SOLICITACOES[2], SOLICITACOES[3]];
+
 // Previsão de carga padrão para UC Residencial no coletivo, conforme o
 // disjuntor solicitado (disjPara). Aplicada automaticamente quando a UC é
 // Residencial e o disjuntor solicitado é um dos dois tipos abaixo.
@@ -277,6 +304,8 @@ const SEC_BT_RESIDENCIAL = {
       sub: "Baixa Tensão",
       img: "imgs/img_casa3.png",
       status: "ok",
+      atividadeFixa: true, // Residencial > 100 m²: atividade travada (Regra 1)
+      solicitacoesPermitidas: SOLICITACOES_INDIVIDUAIS,
       prefill: {
         atividade: "Residencial",
         atend: {
@@ -293,6 +322,8 @@ const SEC_BT_RESIDENCIAL = {
       sub: "Baixa Tensão (BT)",
       img: "imgs/img_comercio.png",
       status: "ok",
+      atividadeFixa: true, // Comercial: atividade travada (Regra 2)
+      solicitacoesPermitidas: SOLICITACOES_INDIVIDUAIS,
       prefill: {
         atividade: "Comercial",
         atend: {
@@ -309,6 +340,8 @@ const SEC_BT_RESIDENCIAL = {
       sub: "Baixa Tensão (BT)",
       img: "imgs/img_industria_bt.png",
       status: "ok",
+      atividadeFixa: true, // Industrial: atividade travada (Regra 3)
+      solicitacoesPermitidas: SOLICITACOES_INDIVIDUAIS,
       prefill: {
         atividade: "Industrial",
         atend: {
@@ -326,6 +359,8 @@ const SEC_BT_RESIDENCIAL = {
       img: "imgs/img_rural.png",
       status: "ok",
       travaZonaRural: true, // zona de localização fixa em Rural (não editável)
+      atividadeFixa: true, // Rural: atividade travada (Regra 4)
+      solicitacoesPermitidas: SOLICITACOES_INDIVIDUAIS,
       prefill: {
         atividade: "Rural",
         atend: {

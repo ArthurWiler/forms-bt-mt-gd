@@ -1,50 +1,73 @@
-function _nomeFeicaoObra(props) {
-  if (!props) return null;
-  const k = Object.keys(props).find(
-    (key) => /nome|^nm_|name|denom|titulo|t_tulo|unidade|categoria/i.test(key) && props[key] != null && String(props[key]).trim() !== ""
-  );
-  return k ? String(props[k]).trim() : null;
+// A consulta de restrições agora vive em shared/js/geo.js (consultarRestricoesObra),
+// compartilhada com o MT para garantir critério/UX idênticos (Regras 2 e 3).
+// Mantém-se o nome local como fino encaminhamento para não tocar no restante.
+const _consultarTodasRestricoes = (lat, lng) => consultarRestricoesObra(lat, lng);
+/* ============================================================
+   Conversão Geográfica → UTM (WGS-84)
+   A zona/fuso é determinada automaticamente a partir da longitude
+   e a letra de banda a partir da latitude (Regra 6). Replica a
+   implementação usada no formulário MT para manter consistência.
+   ============================================================ */
+function _utmBandLetterBT(lat) {
+  const B = "CDEFGHJKLMNPQRSTUVWXX";
+  return lat < -80 ? "C" : lat > 84 ? "X" : B[Math.floor((lat + 80) / 8)];
 }
-async function _consultarTodasRestricoes(lat, lng) {
-  if (!window.turf) throw new Error("Turf.js não carregado.");
-  if (typeof SISEMA_CAMADAS === "undefined")
-    throw new Error("Configuração do Sisema (geo.js) não carregada.");
-  const ponto = window.turf.point([lng, lat]);
-  const d = 8e-4;
-  const out = [];
-  for (const cam of SISEMA_CAMADAS) {
-    try {
-      const box = typeof SISEMA_FLIP_BBOX !== "undefined" && SISEMA_FLIP_BBOX ? `${lat - d},${lng - d},${lat + d},${lng + d}` : `${lng - d},${lat - d},${lng + d},${lat + d}`;
-      const q = new URLSearchParams({
-        service: "WFS",
-        version: SISEMA_VERSION,
-        request: "GetFeature",
-        typeName: cam.typeName,
-        outputFormat: "application/json",
-        srsName: "EPSG:4326",
-        maxFeatures: "50",
-        bbox: `${box},EPSG:4326`
-      });
-      const resp = await fetch(`${SISEMA_WFS}?${q.toString()}`);
-      if (!resp.ok) {
-        out.push({ ...cam, erro: `HTTP ${resp.status}` });
-        continue;
-      }
-      const gj = await resp.json();
-      const feats = gj && gj.features || [];
-      const dentro = feats.filter(
-        (f) => f.geometry && (f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon") && window.turf.booleanPointInPolygon(ponto, f)
-      );
-      out.push({
-        ...cam,
-        dentro: dentro.length > 0,
-        nomes: dentro.map((f) => _nomeFeicaoObra(f.properties)).filter(Boolean)
-      });
-    } catch (e) {
-      out.push({ ...cam, erro: "Falha de rede/CORS" });
-    }
-  }
-  return out;
+function latLonParaUTM(lat, lon) {
+  const a = 6378137,
+    f = 1 / 298.257223563,
+    k0 = 0.9996;
+  const b = a * (1 - f),
+    e2 = 1 - (b * b) / (a * a);
+  const latR = (lat * Math.PI) / 180,
+    lonR = (lon * Math.PI) / 180;
+  const zona = Math.floor((lon + 180) / 6) + 1;
+  const lonC = (((zona - 1) * 6 - 180 + 3) * Math.PI) / 180;
+  const sinL = Math.sin(latR),
+    cosL = Math.cos(latR),
+    tanL = Math.tan(latR);
+  const N = a / Math.sqrt(1 - e2 * sinL ** 2);
+  const T = tanL ** 2,
+    C = (e2 / (1 - e2)) * cosL ** 2,
+    A = cosL * (lonR - lonC);
+  const e4 = e2 * e2,
+    e6 = e4 * e2,
+    ep2 = e2 / (1 - e2);
+  const M =
+    a *
+    ((1 - e2 / 4 - (3 * e4) / 64 - (5 * e6) / 256) * latR -
+      ((3 * e2) / 8 + (3 * e4) / 32 + (45 * e6) / 1024) * Math.sin(2 * latR) +
+      ((15 * e4) / 256 + (45 * e6) / 1024) * Math.sin(4 * latR) -
+      ((35 * e6) / 3072) * Math.sin(6 * latR));
+  const E =
+    k0 *
+      N *
+      (A +
+        ((1 - T + C) * A ** 3) / 6 +
+        ((5 - 18 * T + T * T + 72 * C - 58 * ep2) * A ** 5) / 120) +
+    500000;
+  let Nort =
+    k0 *
+    (M +
+      N *
+        tanL *
+        ((A * A) / 2 +
+          ((5 - T + 9 * C + 4 * C * C) * A ** 4) / 24 +
+          ((61 - 58 * T + T * T + 600 * C - 330 * ep2) * A ** 6) / 720));
+  if (lat < 0) Nort += 1e7;
+  return {
+    zona,
+    hemisferio: lat < 0 ? "S" : "N",
+    easting: Math.round(E),
+    northing: Math.round(Nort),
+  };
+}
+// String amigável "23K E:611111 N:7795555" a partir de lat/lng (ou "").
+function utmString(lat, lng) {
+  const la = parseFloat(String(lat).replace(",", "."));
+  const lo = parseFloat(String(lng).replace(",", "."));
+  if (isNaN(la) || isNaN(lo)) return "";
+  const u = latLonParaUTM(la, lo);
+  return `${u.zona}${_utmBandLetterBT(la)} E:${u.easting} N:${u.northing}`;
 }
 function LocalizacaoObra({ obra, setObra }) {
   const divRef = useRef(null);
@@ -62,7 +85,12 @@ function LocalizacaoObra({ obra, setObra }) {
   };
   const nDig = (s) => (String(s || "").match(/\d/g) || []).length;
   const aplicarCoord = (lat, lng) => {
-    setObra((p) => ({ ...p, lat: String(lat), lng: String(lng) }));
+    setObra((p) => ({
+      ...p,
+      lat: String(lat),
+      lng: String(lng),
+      utm: utmString(lat, lng),
+    }));
   };
   useEffect(() => {
     if (!window.L || !divRef.current || mapRef.current) return;
@@ -144,7 +172,8 @@ function LocalizacaoObra({ obra, setObra }) {
       setObra((p) => ({
         ...p,
         lat: String(parseFloat(data[0].lat)),
-        lng: String(parseFloat(data[0].lon))
+        lng: String(parseFloat(data[0].lon)),
+        utm: utmString(data[0].lat, data[0].lon)
       }));
     } catch (e) {
       setStatus("Falha ao geocodificar o endereço.");

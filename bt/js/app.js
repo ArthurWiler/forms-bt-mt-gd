@@ -4,32 +4,19 @@ function App() {
   const [cardSelecionado, setCardSelecionado] = useState(null);
   const restrito = !!cardSelecionado?.restrito;
   const zonaTravada = !!cardSelecionado?.travaZonaRural;
-  const [atend, setAtend] = useState({
-    disjGeral: "Não",
-    // possui disjuntor geral? Não=Individual, Sim=Coletivo
-    nUCs: 1,
-    biAcima63: false,
-    triAcima63: false,
-    acima75: false,
-    solicitacao: SOLICITACOES[0],
-    // padrão (coletivo)
-    escopo: "Ligação Nova",
-    // padrão
-    disjuntorGeral: "",
-    disjGeralAtual: "",
-    // disjuntor geral existente (alteração de carga com troca)
-    demandaAtual: "",
-    // demanda atual (kVA) em alteração de carga
-    demandaNaoResidencial: "",
-    // demanda geral (kVA) das UCs não residenciais, calculada pelo responsável técnico
-    demandaResidencialManual: "",
-    // opcional: substitui a demanda ND-5.2 calculada, nunca pode ser menor que ela
-    atendA: "Bloco",
-    // múltiplas torres: atendimento a Bloco/Torre
-    nBlocos: 1,
-  });
+  const [atend, setAtend] = useState(atendPadrao());
   const coletivo = atend.disjGeral === "Sim";
   const multiTorres = coletivo && atend.solicitacao === SOLICITACOES[4];
+  // Categoria fixa a atividade principal (Residencial > 100 m², Comercial,
+  // Industrial, Rural). No coletivo cada UC mantém atividade própria.
+  const atividadeTravada =
+    !coletivo && !!cardSelecionado?.prefill?.atividade;
+  // Opções de "Solicitação" disponíveis: no coletivo libera-se o Híbrido;
+  // nas categorias individuais restringe-se aos disjuntores individuais.
+  const solicitacoesPermitidas =
+    coletivo && !multiTorres
+      ? SOLICITACOES_COLETIVAS
+      : cardSelecionado?.solicitacoesPermitidas || null;
   const [prop, setProp] = useState({
     nome: "",
     filiacao: "",
@@ -78,6 +65,7 @@ function App() {
     coordenada: "",
     lat: "",
     lng: "",
+    utm: "", // coordenada UTM (zona/fuso calculados automaticamente)
     distMenor30: "Sim",
     tipoRede: "Trifásica",
     transformador: "",
@@ -437,6 +425,13 @@ function App() {
     if (!ops.includes(atend.escopo))
       setAtend((a) => ({ ...a, escopo: ops[0] || "" }));
   }, [atend.solicitacao]);
+  // Mantém a Solicitação dentro das opções liberadas pela categoria/família
+  // de atendimento (ex.: ao alternar disjuntor geral Não→Sim).
+  useEffect(() => {
+    if (!solicitacoesPermitidas) return;
+    if (!solicitacoesPermitidas.includes(atend.solicitacao))
+      setAtend((a) => ({ ...a, solicitacao: solicitacoesPermitidas[0] }));
+  }, [solicitacoesPermitidas, atend.solicitacao]);
   const lastComplRef = useRef(null);
   useEffect(() => {
     const c = String(obra.compl || "").trim();
@@ -768,40 +763,41 @@ function App() {
       setModalidade(card.id);
       return;
     }
-    if (card.prefill) {
-      if (card.prefill.atend)
-        setAtend((s) => ({ ...s, ...card.prefill.atend }));
-      if (card.prefill.obra) setObra((s) => ({ ...s, ...card.prefill.obra }));
-      if (card.prefill.atividade) {
-        const a = card.prefill.atividade;
-        const tipoA = a === "Comercial" || a === "Industrial" ? "nr" : "res";
-        setUcsDet((p) =>
-          p.map((u) => ({
-            ...u,
-            atividade: a,
-            cargas: {
-              ...(u.cargas || {}),
-              tipoA: (u.cargas || {}).tipoA || tipoA,
-            },
-          })),
-        );
-        setUcBlocos((p) => p.map((u) => ({ ...u, atividade: a })));
-        setBlocos((p) =>
-          p.map((b) => ({
-            ...b,
-            ucs: (b.ucs || []).map((u) => ({ ...u, atividade: a })),
-          })),
-        );
-      }
-      if (card.prefill.cargas) {
-        setCargasPadrao(card.prefill.cargas);
-        setUcsDet((p) =>
-          p.map((u) => ({ ...u, cargas: { ...card.prefill.cargas } })),
-        );
-      } else {
-        setCargasPadrao(null);
-      }
-    }
+    // Troca de categoria reinicia TODOS os campos dependentes (atividade, tipo
+    // de carga, cargas, UCs, solicitação/escopo) para que valores de uma
+    // categoria anterior não persistam na próxima (Regras 8/9/10). O endereço,
+    // o proprietário e a correspondência são preservados (independem da
+    // categoria). A partir do estado limpo aplicamos o prefill do card.
+    const a = card.prefill?.atividade || "";
+    // Tipo de carga (Load Type) derivado da categoria: Comercial/Industrial =
+    // Não-Residencial; Residencial = Residencial; Rural fica em aberto.
+    const tipoA =
+      a === "Comercial" || a === "Industrial"
+        ? "nr"
+        : a === "Residencial"
+          ? "res"
+          : "";
+    const cargasBase = card.prefill?.cargas || null;
+
+    setAtend({ ...atendPadrao(), ...(card.prefill?.atend || {}) });
+    if (card.prefill?.obra) setObra((s) => ({ ...s, ...card.prefill.obra }));
+
+    const novaUcDet = ucDetalhadaPadrao();
+    if (a) novaUcDet.atividade = a;
+    novaUcDet.cargas = cargasBase
+      ? { ...cargasBase }
+      : { ...novaUcDet.cargas, tipoA };
+    setUcsDet([novaUcDet]);
+    setCargasPadrao(cargasBase);
+
+    const novoBloco = ucBlocoPadrao(0);
+    if (a) novoBloco.atividade = a;
+    setUcBlocos([novoBloco]);
+
+    const novaTorre = blocoPadrao(0);
+    if (a) novaTorre.ucs = (novaTorre.ucs || []).map((u) => ({ ...u, atividade: a }));
+    setBlocos([novaTorre]);
+
     setCardSelecionado(card);
     setAba("orient");
     setModalidade("BT");
@@ -879,6 +875,8 @@ function App() {
     replicarUC1Torre,
     restrito,
     zonaTravada,
+    atividadeTravada,
+    solicitacoesPermitidas,
     setBloco,
     setBlocoPrev,
     setTorre,

@@ -105,6 +105,91 @@ async function consultarRestricoes(lat, lng) {
   }
   return out;
 }
+/* ============================================================
+   Restrição ambiental (IDE-Sisema) — consulta COMPARTILHADA
+   Fonte única de verdade usada de forma idêntica pelo BT
+   (bt/js/map.js) e pelo MT (mt/js/app.js), garantindo o MESMO
+   critério, as MESMAS camadas e a MESMA formatação de resultado
+   nos dois fluxos (Regras 2 e 3). Alterar a lógica aqui reflete
+   automaticamente em ambas as tensões.
+   ============================================================ */
+// Extrai um nome legível da feição (varre props por chaves de rótulo comuns).
+function nomeFeicaoRestricao(props) {
+  if (!props) return null;
+  const k = Object.keys(props).find(
+    (key) =>
+      /nome|^nm_|name|denom|titulo|t_tulo|unidade|categoria/i.test(key) &&
+      props[key] != null &&
+      String(props[key]).trim() !== ""
+  );
+  return k ? String(props[k]).trim() : null;
+}
+// Consulta todas as camadas do Sisema e retorna, por camada,
+// { ...cam, dentro:Boolean, nomes:[...] } ou { ...cam, erro:"..." }.
+async function consultarRestricoesObra(lat, lng) {
+  if (!window.turf) throw new Error("Turf.js não carregado.");
+  if (typeof SISEMA_CAMADAS === "undefined")
+    throw new Error("Configuração do Sisema (geo.js) não carregada.");
+  const ponto = window.turf.point([lng, lat]);
+  const d = 8e-4;
+  const out = [];
+  for (const cam of SISEMA_CAMADAS) {
+    try {
+      const box =
+        typeof SISEMA_FLIP_BBOX !== "undefined" && SISEMA_FLIP_BBOX
+          ? `${lat - d},${lng - d},${lat + d},${lng + d}`
+          : `${lng - d},${lat - d},${lng + d},${lat + d}`;
+      const q = new URLSearchParams({
+        service: "WFS",
+        version: SISEMA_VERSION,
+        request: "GetFeature",
+        typeName: cam.typeName,
+        outputFormat: "application/json",
+        srsName: "EPSG:4326",
+        maxFeatures: "50",
+        bbox: `${box},EPSG:4326`
+      });
+      const resp = await fetch(`${SISEMA_WFS}?${q.toString()}`);
+      if (!resp.ok) {
+        out.push({ ...cam, erro: `HTTP ${resp.status}` });
+        continue;
+      }
+      const gj = await resp.json();
+      const feats = (gj && gj.features) || [];
+      const dentro = feats.filter(
+        (f) =>
+          f.geometry &&
+          (f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon") &&
+          window.turf.booleanPointInPolygon(ponto, f)
+      );
+      out.push({
+        ...cam,
+        dentro: dentro.length > 0,
+        nomes: dentro.map((f) => nomeFeicaoRestricao(f.properties)).filter(Boolean)
+      });
+    } catch (e) {
+      out.push({ ...cam, erro: "Falha de rede/CORS" });
+    }
+  }
+  return out;
+}
+// Resume a lista de camadas no formato consumido pela UI (idêntico ao BT):
+// restricaoAmbiental "Sim"/"Não" (ou "" se todas as camadas falharam) e
+// restricoesTexto "Rótulo (nome1, nome2); Rótulo2 …".
+function resumirRestricoes(res) {
+  const lista = res || [];
+  const dentros = lista.filter((r) => r.dentro);
+  const errosTodos = lista.length > 0 && lista.every((r) => r.erro);
+  const restricoesTexto = dentros
+    .map((r) => r.rotulo + (r.nomes && r.nomes.length ? " (" + r.nomes.join(", ") + ")" : ""))
+    .join("; ");
+  return {
+    errosTodos,
+    algumaDentro: dentros.length > 0,
+    restricaoAmbiental: errosTodos ? "" : dentros.length ? "Sim" : "Não",
+    restricoesTexto
+  };
+}
 function RestricaoAmbiental({ obra }) {
   const [status, setStatus] = useState("");
   const [coords, setCoords] = useState(null);

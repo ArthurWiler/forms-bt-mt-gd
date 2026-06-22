@@ -31,8 +31,6 @@ const TOGGLE_CARDS_CONFIG = {
   // "Dia do vencimento" (CAMPOS_CARDS_CONFIG.diaVencimento em app.js).
   camposSimNao: [
     "mudancaLocal",
-    "app",
-    "reservaLegal",
     "subPronta",
     "compartilhada",
     "alt_troca",

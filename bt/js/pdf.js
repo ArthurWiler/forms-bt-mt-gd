@@ -326,6 +326,11 @@ function gerarPdfDoc(S) {
   if (coletivo) obraPairs.push(["Nº ART/TRT de Projeto", obra.art]);
   obraPairs.push(
     ["Coordenadas", coordFmt()],
+    [
+      "Coordenada UTM",
+      obra.utm ||
+        (typeof utmString === "function" ? utmString(obra.lat, obra.lng) : ""),
+    ],
     ["Padrão pronto p/ ligar?", obra.prontoLigar],
     [
       "Em área de restrição ambiental?",

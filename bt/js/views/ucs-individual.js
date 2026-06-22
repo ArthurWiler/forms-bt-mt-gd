@@ -66,8 +66,10 @@ function TabUcsIndividual({ ctx }) {
     totalUcsEmpreendimento,
     trocaDisjGeral,
     validacaoDisjuntores,
-    validacaoHibrido
+    validacaoHibrido,
+    atividadeTravada
   } = ctx;
+  const atividadeBloqueada = restrito || atividadeTravada;
   return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(
     Card,
     {
@@ -88,7 +90,7 @@ function TabUcsIndividual({ ctx }) {
       Sel,
       {
         value: u.atividade,
-        disabled: restrito,
+        disabled: atividadeBloqueada,
         onChange: (e) => setUcDet(ui, { atividade: e.target.value })
       },
       /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecionar"),

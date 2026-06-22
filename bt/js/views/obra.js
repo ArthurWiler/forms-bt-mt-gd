@@ -187,7 +187,7 @@ function TabObra({ ctx }) {
         onChange: (e) => setObra({ ...obra, instProxima: e.target.value })
       }
     ))),
-    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2 divider" }, /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("div", { className: "grid grid-3 divider" }, /* @__PURE__ */ React.createElement(
       Field,
       {
         label: coordObrigatoria ? "Latitude" : "Latitude — opcional",
@@ -197,7 +197,7 @@ function TabObra({ ctx }) {
         Inp,
         {
           value: obra.lat,
-          onChange: (e) => setObra({ ...obra, lat: e.target.value }),
+          onChange: (e) => setObra({ ...obra, lat: e.target.value, utm: utmString(e.target.value, obra.lng) }),
           placeholder: ""
         }
       )
@@ -211,8 +211,22 @@ function TabObra({ ctx }) {
         Inp,
         {
           value: obra.lng,
-          onChange: (e) => setObra({ ...obra, lng: e.target.value }),
+          onChange: (e) => setObra({ ...obra, lng: e.target.value, utm: utmString(obra.lat, e.target.value) }),
           placeholder: ""
+        }
+      )
+    ), /* @__PURE__ */ React.createElement(
+      Field,
+      {
+        label: "Coordenada UTM (fuso automático)",
+        hint: "Calculada automaticamente a partir de lat/long."
+      },
+      /* @__PURE__ */ React.createElement(
+        Inp,
+        {
+          value: utmString(obra.lat, obra.lng) || obra.utm || "",
+          readOnly: true,
+          placeholder: "(calculado)"
         }
       )
     )),

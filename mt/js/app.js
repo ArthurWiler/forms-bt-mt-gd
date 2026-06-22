@@ -214,7 +214,7 @@ function goTo(n){
   const steps=$$('.step');
   steps.forEach((s,i)=>{s.classList.remove('active','done'); if(i<n)s.classList.add('done'); if(i===n)s.classList.add('active');});
   window.scrollTo({top:0,behavior:'smooth'});
-  if(n===3){ initMapaObra(); if(mapaObra) setTimeout(()=>mapaObra.invalidateSize(),50); }
+  if(n===3){ initMapaObra(); renderRestricaoAmbiental(); if(mapaObra) setTimeout(()=>mapaObra.invalidateSize(),50); }
   if(n===5) renderPreview();
 }
 
@@ -427,6 +427,11 @@ function onCoord(imediato){
     const u=latLonParaUTM(lat,lon);
     const utmEl=$('[data-k=utm]');
     if(utmEl) utmEl.value=`${u.zona}${_utmBandLetter(lat)} E:${u.easting} N:${u.northing}`;
+    setFusoAuto(u.zona); // determina o fuso (zona UTM) automaticamente pela longitude
+    // Validação ambiental automática a cada mudança de coordenada (como no BT):
+    // clique/arraste no mapa aplicam de imediato; digitação usa debounce.
+    clearTimeout(_mtRestrDebounce);
+    _mtRestrDebounce=setTimeout(()=>consultarRestricaoAmbientalMT(lat,lon), imediato?150:700);
   }
   sincronizarMapaComCoordenadas(lat,lon,imediato);
   let erros=[];
@@ -444,6 +449,104 @@ function onCoord(imediato){
   $('#coordAlert').innerHTML = erros.length ? alertHTML('err',erros.join(' ')) : '';
 }
 
+// Define automaticamente o "Fuso" (zona UTM) com base na zona calculada a
+// partir da longitude. Só atua nas zonas suportadas pelos cards (22-24);
+// fora dessa faixa a seleção manual é preservada. Atualiza o select oculto
+// (fonte da verdade) e o destaque visual dos cards (#cardsFuso).
+function setFusoAuto(zona){
+  const valor=`${zona}°`;
+  const sel=$('select[data-k="fuso"]');
+  if(!sel) return;
+  if(!['22°','23°','24°'].includes(valor)) return;
+  if(sel.value===valor) return;
+  sel.value=valor; state.fuso=valor;
+  const grid=document.getElementById('cardsFuso');
+  if(grid){
+    [...grid.children].forEach(btn=>{
+      btn.classList.toggle(CAMPOS_CARDS_CONFIG.classes.active, btn.textContent.trim()===valor);
+    });
+  }
+}
+
+/* ===== Geolocalização automática a partir do endereço (Etapa 3) =====
+   Espelha o comportamento do formulário BT (bt/js/map.js): assim que o
+   endereço urbano (logradouro + número + município) está preenchido, o
+   ponto é geocodificado, o alfinete é reposicionado e a validação
+   ambiental é executada automaticamente (Regra 7). */
+let _mtGeoDebounce=null, _mtLastGeoKey='', _mtLastRestrKey='', _mtRestrDebounce=null;
+const _nDig=(s)=>(String(s||'').match(/\d/g)||[]).length;
+async function geocodificarEnderecoMT(){
+  // Só geocodifica em zona urbana e quando ainda não há coordenada definida
+  // manualmente (preserva coordenada digitada/clicada pelo usuário).
+  if(state.localizacao!=='Urbana') return;
+  if(_nDig(state.latitude)>=5 && _nDig(state.longitude)>=5) return;
+  const endereco=[
+    [state.urb_endereco, state.urb_num].filter(Boolean).join(', '),
+    state.urb_bairro, state.uc_municipio, state.uc_estado, state.uc_cep, 'Brasil'
+  ].filter(Boolean).join(', ');
+  // Exige pelo menos logradouro + número + município para buscar
+  if(!String(state.urb_endereco||'').trim() || !String(state.urb_num||'').trim() || !String(state.uc_municipio||'').trim()) return;
+  const key=endereco.toLowerCase();
+  if(_mtLastGeoKey===key) return;
+  try{
+    const resp=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(endereco),{headers:{'Accept-Language':'pt-BR'}});
+    const data=await resp.json();
+    if(!data||!data.length) return;
+    _mtLastGeoKey=key;
+    // _aplicarCoordDoMapa → onCoord dispara o reposicionamento do alfinete e a
+    // validação ambiental automática (exatamente como no BT).
+    _aplicarCoordDoMapa(parseFloat(data[0].lat), parseFloat(data[0].lon));
+  }catch(_){}
+}
+// Disparado no blur dos campos de endereço urbano (debounce de 800 ms).
+function onEnderecoUrbanoMT(){
+  clearTimeout(_mtGeoDebounce);
+  _mtGeoDebounce=setTimeout(geocodificarEnderecoMT,800);
+}
+// Bloco "Unidade consumidora em área de restrição ambiental?" — espelha
+// exatamente os três estados do BT (bt/js/views/obra.js): orientação inicial,
+// SIM (com a lista das camadas intersectadas) e NÃO.
+function renderRestricaoAmbiental(){
+  const box=$('#restricaoAmbientalConteudo');
+  if(!box) return;
+  const ra=state.restricaoAmbiental;
+  if(ra==='Sim'){
+    const det=state.restricoesTexto?`<div style="margin-top:6px">${state.restricoesTexto}</div>`:'';
+    box.innerHTML=alertHTML('warn',`<strong>⚠ SIM — em área de restrição ambiental.</strong>${det}`);
+  } else if(ra==='Não'){
+    box.innerHTML=alertHTML('info','<strong>Não há restrição ambiental.</strong>');
+  } else {
+    box.innerHTML=alertHTML('info','Consulte a coordenada no mapa acima para verificar a restrição ambiental.');
+  }
+}
+// Validação ambiental automática (IDE-Sisema), idêntica ao BT: usa a consulta
+// compartilhada de shared/js/geo.js. Requer turf.js + geo.js; sem eles, o
+// bloco mantém a orientação inicial e nada é preenchido automaticamente.
+async function consultarRestricaoAmbientalMT(lat,lon){
+  if(!window.turf || typeof consultarRestricoesObra!=='function') return;
+  if(isNaN(lat)||isNaN(lon)) return;
+  const key=lat.toFixed(5)+','+lon.toFixed(5);
+  if(_mtLastRestrKey===key) return;
+  _mtLastRestrKey=key;
+  const box=$('#restricaoAmbientalConteudo');
+  if(box) box.innerHTML=alertHTML('info','Consultando restrição ambiental (IDE-Sisema)…');
+  try{
+    const res=await consultarRestricoesObra(lat,lon);
+    const resumo=resumirRestricoes(res);
+    if(resumo.errosTodos){
+      state.restricaoAmbiental=''; state.restricoesTexto='';
+      _mtLastRestrKey='';
+      if(box) box.innerHTML=alertHTML('warn','Não foi possível consultar a restrição ambiental (verifique conexão/camadas).');
+      return;
+    }
+    state.restricaoAmbiental=resumo.restricaoAmbiental;
+    state.restricoesTexto=resumo.restricoesTexto;
+    renderRestricaoAmbiental();
+  }catch(_){
+    _mtLastRestrKey='';
+    if(box) box.innerHTML=alertHTML('warn','Falha na consulta de restrição ambiental.');
+  }
+}
 /* ===== Mapa interativo de localização (Etapa 3) =====
    Adaptado de bt/js/map.js (LocalizacaoObra) para o estado plano do
    MT: lê/escreve diretamente state.latitude/state.longitude (em vez
@@ -486,13 +589,6 @@ function sincronizarMapaComCoordenadas(lat,lon,imediato){
   };
   if(imediato) atualizar();
   else _mapaObraDebounce=setTimeout(atualizar,600);
-}
-function onAmbiental(){
-  state.app=$('[data-k=app]').value; state.reservaLegal=$('[data-k=reservaLegal]').value;
-  const box=$('#ambientalAlert');
-  if(state.app==='Sim'||state.reservaLegal==='Sim')
-    box.innerHTML=alertHTML('warn','O RT deverá providenciar documentos referentes à autorização ambiental e anexá-los ao pedido de solicitação de orçamento.');
-  else box.innerHTML='';
 }
 function onSubPronta(){
   state.subPronta=event.target.value;
@@ -1319,7 +1415,9 @@ function renderPreview(){
   if(state.finalidade && state.finalidade!=='Conexão Nova')h+=pvRow('Coordenadas novas',[state.latitudeNova,state.longitudeNova].filter(Boolean).join(' , '));
   if(state.localizacao==='Urbana')h+=pvRow('Endereço',[state.urb_endereco,state.urb_num,state.urb_bairro,state.urb_compl].filter(Boolean).join(', '));
   if(state.localizacao==='Rural')h+=pvRow('Distrito / Propriedade',[state.rur_distrito,state.rur_propriedade].filter(Boolean).join(' / '));
-  h+=pvRow('APP / Unid. Conservação',state.app)+pvRow('Reserva Legal',state.reservaLegal)+pvRow('Subestação pronta?',state.subPronta);
+  h+=pvRow('Área de restrição ambiental?',state.restricaoAmbiental||'Não consultada');
+  if(state.restricaoAmbiental==='Sim'&&state.restricoesTexto)h+=pvRow('Restrições identificadas',state.restricoesTexto);
+  h+=pvRow('Subestação pronta?',state.subPronta);
   h+=`<h4>5. Dados Técnicos</h4>`;
   h+=pvRow('Nível de tensão MT',state.tensaoMT?state.tensaoMT.replace('.',',')+' kV':'')+pvRow('Compartilhada?',state.compartilhada);
   if(state.compartilhada==='Sim'){
