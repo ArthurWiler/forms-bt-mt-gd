@@ -110,6 +110,9 @@ let motores = [];  // {tipo, cv, fp, rend, volts, ipIn, tempo, dispositivo}
 let cubiculos = []; // Anexo I — cubículos adicionais da subestação compartilhada
                      // {instalacao, trafos:[{potencia,quantidade,relacao}], modalidade, demanda, demandaPonta, demandaForaPonta}
 let ramalSelecionado = null;
+let mapaObra = null;     // instância Leaflet (lazy, criada ao entrar na Etapa 3)
+let marcadorObra = null; // pino arrastável sincronizado com state.latitude/longitude
+let _mapaObraDebounce = null;
 
 /* ATIVIDADES e DISPOSITIVOS agora em dados.js */
 
@@ -211,6 +214,7 @@ function goTo(n){
   const steps=$$('.step');
   steps.forEach((s,i)=>{s.classList.remove('active','done'); if(i<n)s.classList.add('done'); if(i===n)s.classList.add('active');});
   window.scrollTo({top:0,behavior:'smooth'});
+  if(n===3){ initMapaObra(); if(mapaObra) setTimeout(()=>mapaObra.invalidateSize(),50); }
   if(n===5) renderPreview();
 }
 
@@ -413,7 +417,7 @@ function latLonParaUTM(lat,lon){
   return {zona,hemisferio:lat<0?'S':'N',easting:Math.round(E),northing:Math.round(Nort)};
 }
 
-function onCoord(){
+function onCoord(imediato){
   state.latitude=$('[data-k=latitude]').value; state.longitude=$('[data-k=longitude]').value;
   state.latitudeNova=$('[data-k=latitudeNova]')?.value||'';
   state.longitudeNova=$('[data-k=longitudeNova]')?.value||'';
@@ -424,6 +428,7 @@ function onCoord(){
     const utmEl=$('[data-k=utm]');
     if(utmEl) utmEl.value=`${u.zona}${_utmBandLetter(lat)} E:${u.easting} N:${u.northing}`;
   }
+  sincronizarMapaComCoordenadas(lat,lon,imediato);
   let erros=[];
   if(r.nivel==='erro') erros.push(r.msg);
   if($('#coordNovaBox').style.display!=='none'){
@@ -437,6 +442,50 @@ function onCoord(){
     }
   }
   $('#coordAlert').innerHTML = erros.length ? alertHTML('err',erros.join(' ')) : '';
+}
+
+/* ===== Mapa interativo de localização (Etapa 3) =====
+   Adaptado de bt/js/map.js (LocalizacaoObra) para o estado plano do
+   MT: lê/escreve diretamente state.latitude/state.longitude (em vez
+   do sub-objeto obra.lat/obra.lng usado em BT), via onCoord(). */
+function _aplicarCoordDoMapa(lat,lon){
+  const latEl=$('[data-k=latitude]'), lonEl=$('[data-k=longitude]');
+  if(latEl) latEl.value=lat;
+  if(lonEl) lonEl.value=lon;
+  onCoord(true); // clique/arraste no mapa é intencional: aplica na hora, sem debounce
+}
+function initMapaObra(){
+  const div=$('#map');
+  if(!div || !window.L || mapaObra) return;
+  mapaObra=window.L.map(div).setView([-19.9167,-43.9345],12);
+  window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:19,attribution:'© OpenStreetMap'
+  }).addTo(mapaObra);
+  mapaObra.on('click',(e)=>{ _aplicarCoordDoMapa(e.latlng.lat,e.latlng.lng); });
+  setTimeout(()=>mapaObra.invalidateSize(),200);
+  // Caso já existam coordenadas preenchidas (ex.: voltando de outra etapa)
+  const lat=parseFloat(state.latitude),lon=parseFloat(state.longitude);
+  if(!isNaN(lat)&&!isNaN(lon)) sincronizarMapaComCoordenadas(lat,lon,true);
+}
+function sincronizarMapaComCoordenadas(lat,lon,imediato){
+  if(isNaN(lat)||isNaN(lon)) return;
+  clearTimeout(_mapaObraDebounce);
+  const atualizar=()=>{
+    if(!mapaObra) return;
+    const ll=window.L.latLng(lat,lon);
+    if(!mapaObra.getBounds().contains(ll)) mapaObra.setView(ll,Math.max(mapaObra.getZoom(),17));
+    if(marcadorObra) marcadorObra.setLatLng([lat,lon]);
+    else{
+      marcadorObra=window.L.marker([lat,lon],{draggable:true}).addTo(mapaObra);
+      marcadorObra.on('dragend',(e)=>{
+        const p=e.target.getLatLng();
+        _aplicarCoordDoMapa(p.lat,p.lng);
+      });
+    }
+    setTimeout(()=>mapaObra.invalidateSize(),100);
+  };
+  if(imediato) atualizar();
+  else _mapaObraDebounce=setTimeout(atualizar,600);
 }
 function onAmbiental(){
   state.app=$('[data-k=app]').value; state.reservaLegal=$('[data-k=reservaLegal]').value;
