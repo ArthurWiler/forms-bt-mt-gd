@@ -61,6 +61,9 @@ function LocalizacaoObra({ obra, setObra }) {
     return isNaN(v) ? null : v;
   };
   const nDig = (s) => (String(s || "").match(/\d/g) || []).length;
+  const aplicarCoord = (lat, lng) => {
+    setObra((p) => ({ ...p, lat: String(lat), lng: String(lng) }));
+  };
   useEffect(() => {
     if (!window.L || !divRef.current || mapRef.current) return;
     const map = window.L.map(divRef.current).setView([-19.9167, -43.9345], 12);
@@ -68,15 +71,25 @@ function LocalizacaoObra({ obra, setObra }) {
       maxZoom: 19,
       attribution: "© OpenStreetMap"
     }).addTo(map);
+    map.on("click", (e) => {
+      aplicarCoord(e.latlng.lat, e.latlng.lng);
+    });
     mapRef.current = map;
     setTimeout(() => map.invalidateSize(), 200);
   }, []);
   const executar = async (lat, lng, label) => {
     const map = mapRef.current;
     if (map) {
-      map.setView([lat, lng], 17);
+      const ll = window.L.latLng(lat, lng);
+      if (!map.getBounds().contains(ll)) map.setView(ll, Math.max(map.getZoom(), 17));
       if (markerRef.current) markerRef.current.setLatLng([lat, lng]);
-      else markerRef.current = window.L.marker([lat, lng]).addTo(map);
+      else {
+        markerRef.current = window.L.marker([lat, lng], { draggable: true }).addTo(map);
+        markerRef.current.on("dragend", (e) => {
+          const p = e.target.getLatLng();
+          aplicarCoord(p.lat, p.lng);
+        });
+      }
       if (label) markerRef.current.bindPopup(label);
       setTimeout(() => map.invalidateSize(), 100);
     }
