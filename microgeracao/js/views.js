@@ -113,8 +113,14 @@ function ViewDadosUC({ ctx }) {
     ? GD_DISJ_REVISADA.filter((x) => x.tipo === d.disjGeralFase).map((x) => x.a)
     : [];
   const limiteInj = gdLimiteInjecao(d.disjGeralFase, d.disjGeralA, false);
-  // Regra 2/3: Baixa Tensão (Grupo B). Em BT não há subestação nem exigência de demanda contratada.
+  // Regra 2/3: Baixa Tensão (Grupo B). Em BT não há exigência de demanda contratada.
   const ehBT = d.grupo === "B";
+  // Regra 2: a seleção de subestação só está disponível em Média Tensão (Grupo A)
+  // ou em migração BT→MT (instalação existente em BT conectando em MT). Em BT pura
+  // a seção inteira é ocultada — sem cards, imagens ou controles de seleção.
+  const ehMV = d.grupo === "A";
+  const ehMigracaoBTtoMT = ehMV && d.instExistenteBTMT === GD_BT_BAIXA;
+  const mostrarSE = ehMV || ehMigracaoBTtoMT;
   // Regra 1: Aumento de Potência exige declaração da nova proteção.
   const ehAumentoPotencia = GD_SOLICITACOES_AUMENTO_POTENCIA.includes(
     d.solicitacao,
@@ -122,21 +128,33 @@ function ViewDadosUC({ ctx }) {
   // Regra 3: em Ligação de Nova UC não há instalação/disjuntor existentes — ocultar campos
   // de instalação existente para evitar contradição com o tipo de solicitação.
   const ehLigacaoNova = (d.solicitacao || "").indexOf("Nova Unidade") >= 0;
-  // Em BT, limpa eventual subestação/trafos previamente selecionados (não se aplicam).
-  React.useEffect(() => {
-    if (ehBT && (d.tipoSE || (d.trafos || []).some((t) => t.qte || t.potencia)))
-      set({ tipoSE: "", trafos: [gdTrafoPadrao()] });
-  }, [ehBT]);
-  // Regra 5/7: filtragem dinâmica das subestações pela potência (limite de 300
-  // kVA das SE Nº 1, 5, 6 e 8), espelhando o módulo MT/minigeração.
-  const _seLimite300 = ["Nº 1", "Nº 5", "Nº 6", "Nº 8"];
+  // Regra 4: filtragem dinâmica das subestações — disponibilidade por tensão ×
+  // tipo de solicitação × migração BT→MT (espelha o módulo MT/minigeração) e
+  // limite de 300 kVA das SE Nº 1, 5 e 8.
+  const seCtx = {
+    solicitacao: d.solicitacao,
+    tensao: d.tensaoAtendimento,
+    instExistenteBTMT: d.instExistenteBTMT,
+  };
+  const seDesabilitado = (s) => !gdSEDisponivel(s, seCtx).ok;
+  const seBloqueioMsg = d.tipoSE ? gdSEDisponivel(d.tipoSE, seCtx).msg : "";
   const _potInst = parseFloat(d.potAtivaInstalada) || 0;
   const tiposSEvisiveis = GD_TIPOS_SE.filter(
-    (s) => !(_seLimite300.includes(s) && _potInst > 300),
+    (s) => !(GD_SE_LIMITE_300.includes(s) && _potInst > GD_SE_LIMITE_KW),
   );
+  // Limpa a subestação/trafos quando a seção não se aplica (BT pura) ou quando o
+  // tipo selecionado deixa de ser válido para o cenário/potência.
   React.useEffect(() => {
-    if (d.tipoSE && !tiposSEvisiveis.includes(d.tipoSE)) set({ tipoSE: "" });
-  }, [_potInst]);
+    if (!mostrarSE) {
+      if (d.tipoSE || (d.trafos || []).some((t) => t.qte || t.potencia))
+        set({ tipoSE: "", trafos: [gdTrafoPadrao()] });
+    } else if (
+      d.tipoSE &&
+      (seDesabilitado(d.tipoSE) || !tiposSEvisiveis.includes(d.tipoSE))
+    ) {
+      set({ tipoSE: "" });
+    }
+  }, [mostrarSE, d.solicitacao, d.tensaoAtendimento, d.instExistenteBTMT, _potInst]);
   return /* @__PURE__ */ React.createElement(
     Card,
     { eyebrow: "Seção 2", title: "Dados da Unidade Consumidora" },
@@ -212,32 +230,23 @@ function ViewDadosUC({ ctx }) {
               set({ geradorPotencia: e.target.value.replace(/[^\d.]/g, "") }),
           }),
         ),
-      ehBT
-        ? /* @__PURE__ */ React.createElement(
-            "div",
-            { className: "field col-span-2" },
-            /* @__PURE__ */ React.createElement(
-              "div",
-              { className: "alert alert-info" },
-              /* @__PURE__ */ React.createElement(
-                "strong",
-                null,
-                "Atendimento em Baixa Tensão (BT). ",
-              ),
-              "Não há configuração de subestação. As Subestações Nº 1 e Nº 2 não estão disponíveis para clientes atendidos em Baixa Tensão.",
-            ),
-          )
-        : /* @__PURE__ */ React.createElement(
-            Field,
-            { label: "Tipo de Subestação (Conforme ND 5.3)", span: 3 },
-            /* @__PURE__ */ React.createElement(GdSeGaleria, {
-              tipos: tiposSEvisiveis,
-              value: d.tipoSE,
-              onSelect: (t) => set({ tipoSE: t }),
-            }),
-          ),
+      mostrarSE &&
+        /* @__PURE__ */ React.createElement(
+          Field,
+          {
+            label: "Tipo de Subestação (Conforme ND 5.3)",
+            hint: seBloqueioMsg,
+            span: 3,
+          },
+          /* @__PURE__ */ React.createElement(GdSeGaleria, {
+            tipos: tiposSEvisiveis,
+            value: d.tipoSE,
+            onSelect: (t) => set({ tipoSE: t }),
+            disabledFn: seDesabilitado,
+          }),
+        ),
     ),
-    !ehBT &&
+    mostrarSE &&
       d.tipoSE &&
       /* @__PURE__ */ React.createElement(
         "div",

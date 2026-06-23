@@ -42,6 +42,38 @@ const GD_SOLICITACOES_AUMENTO_POTENCIA = [
 ];
 // Tipos de subestação indisponíveis em Baixa Tensão (BT/Grupo B).
 const GD_TIPOS_SE_BLOQ_BT = ["Nº 1", "Nº 2"];
+
+// ===== Disponibilidade da subestação (Regras de MT/GD) — espelha minigeração =====
+const GD_SOLICITACAO_LIG_NOVA = "Ligação de Nova Unidade Consumidora COM Geração Distribuída";
+const GD_BT_BAIXA = "BT - Baixa Tensão"; // valor de instExistenteBTMT que caracteriza migração BT→MT
+const GD_TENSAO_LIGNOVA_138 = "13800";   // 13,8 kV
+// Somente as subestações Nº 1, 5 e 8 possuem limite de 300 kVA (filtragem por potência).
+const GD_SE_LIMITE_300 = ["Nº 1", "Nº 5", "Nº 8"];
+const GD_SE_LIMITE_KW = 300;
+// Acima deste valor, sugere-se atendimento em alta tensão.
+const GD_SE_SUGESTAO_AT_KW = 2500;
+
+// Regra 4: aceitação das subestações por tipo × tensão × tipo de solicitação.
+//  - "Ligação nova" inclui a migração de BT→MT (instalação existente em BT).
+//  ctx = { solicitacao, tensao, instExistenteBTMT }
+function gdSEDisponivel(tipo, ctx) {
+  const e138 = ctx.tensao === GD_TENSAO_LIGNOVA_138;
+  const ehBTtoMT = ctx.instExistenteBTMT === GD_BT_BAIXA;
+  const novaConexao = ctx.solicitacao === GD_SOLICITACAO_LIG_NOVA || ehBTtoMT;
+  switch (tipo) {
+    case "Nº 1":
+      if (novaConexao)
+        return { ok: false, msg: "Subestação Nº 1 não aceita ligação nova / migração BT→MT." };
+      return { ok: true, msg: "" };
+    case "Nº 2":
+      if (novaConexao && e138)
+        return { ok: false, msg: "Subestação Nº 2 não aceita ligação nova em 13,8 kV (disponível em 22 kV e 34,5 kV)." };
+      return { ok: true, msg: "" };
+    // Nº 4, Nº 5 e Nº 8 aceitam ligação nova em qualquer tensão.
+    default:
+      return { ok: true, msg: "" };
+  }
+}
 // Solicitações que exigem o preenchimento do Formulário de Carga:
 // Ligação Nova e Aumento/Alteração de Carga (alteração de potência disponibilizada).
 const GD_SOLICITACOES_FORM_CARGA = [
