@@ -751,14 +751,56 @@ select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
   text-decoration: underline;
 }
 .modalidade-secao-titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  font-family: inherit;
   font-size: 13px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--verde-escuro);
   margin: 0 0 14px;
-  padding-bottom: 10px;
+  padding: 0 0 10px;
+  border: none;
   border-bottom: 1px solid var(--borda);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.modalidade-secao-titulo:hover {
+  opacity: 0.72;
+}
+.modalidade-secao-titulo:focus-visible {
+  outline: 2px solid var(--verde-escuro);
+  outline-offset: 2px;
+}
+.modalidade-secao-chevron {
+  flex: none;
+  font-size: 28px;
+  line-height: 1;
+  transition: transform 0.3s ease;
+}
+.modalidade-secao.is-collapsed .modalidade-secao-chevron {
+  transform: rotate(-90deg);
+}
+/* Corpo colapsável: anima via grid-template-rows (1fr -> 0fr), sem alterar
+   o layout interno do .modalidade-grid (os cards permanecem idênticos). */
+.modalidade-secao-corpo {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.3s ease;
+}
+.modalidade-secao.is-collapsed .modalidade-secao-corpo {
+  grid-template-rows: 0fr;
+}
+.modalidade-secao-corpo > .modalidade-grid {
+  overflow: hidden;
+  min-height: 0;
 }
 .modalidade-grid {
   display: grid;

@@ -961,68 +961,11 @@ function App() {
             ),
           ),
           MODALIDADES_SECOES.map((sec) =>
-            /* @__PURE__ */ React.createElement(
-              "div",
-              { className: "modalidade-secao", key: sec.titulo },
-              /* @__PURE__ */ React.createElement(
-                "h2",
-                { className: "modalidade-secao-titulo" },
-                sec.titulo,
-              ),
-              /* @__PURE__ */ React.createElement(
-                "div",
-                { className: "modalidade-grid" },
-                sec.cards.map((card) =>
-                  /* @__PURE__ */ React.createElement(
-                    "button",
-                    {
-                      key: card.id,
-                      className:
-                        "modalidade-card" +
-                        (card.status === "soon" ? " soon" : ""),
-                      disabled: card.status === "soon",
-                      onClick: () => selectModalidade(card),
-                    },
-                    /* @__PURE__ */ React.createElement(
-                      "span",
-                      {
-                        className:
-                          "modalidade-tag" +
-                          (card.status === "soon" ? "" : " avail"),
-                      },
-                      card.status === "soon" ? "Em breve" : "Disponível",
-                    ),
-                    /* @__PURE__ */ React.createElement(
-                      "span",
-                      { className: "modalidade-img" },
-                      /* @__PURE__ */ React.createElement("img", {
-                        src: card.img,
-                        alt: card.nome,
-                        loading: "lazy",
-                        onError: (e) => {
-                          e.target.style.display = "none";
-                          e.target.parentNode.classList.add("ph");
-                        },
-                      }),
-                    ),
-                    /* @__PURE__ */ React.createElement(
-                      "span",
-                      { className: "modalidade-card-body" },
-                      /* @__PURE__ */ React.createElement(
-                        "strong",
-                        null,
-                        card.nome,
-                      ),
-                      /* @__PURE__ */ React.createElement(
-                        "span",
-                        { className: "modalidade-sub" },
-                        card.sub,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            /* @__PURE__ */ React.createElement(SecaoModalidade, {
+              key: sec.titulo,
+              sec,
+              onSelect: selectModalidade,
+            }),
           ),
           /* @__PURE__ */ React.createElement(
             "div",
