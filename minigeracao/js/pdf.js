@@ -32,16 +32,20 @@ function gerarPdfMiniGD(d) {
   if (d.entradaEnergia === GD_ENTRADA_COMPARTILHADA) kv("Quantidade de Cubículos", d.qtdCubiculos);
   kv("Tipo de Solicitação", d.solicitacao);
   if (GD_SOLICITACOES_FORM_CARGA.includes(d.solicitacao)) kv("Formulário de Carga", "Obrigatório — declarar todas as cargas elétricas");
+  // Em Ligação de Nova UC não há unidade consumidora existente — omitir dados de instalação prévia.
+  const ehLigacaoNova = d.solicitacao === GD_SOLICITACAO_LIG_NOVA;
   const demGer = d.gridZero === "Sim" ? "0 (Grid Zero)" : (d.demandaGeracao || "—");
   const demCons = (d.solicitacao || "").indexOf("SEM Alteração de Demanda") >= 0 ? "Sem alteração" : (d.demandaConsumo || "—");
   kv("Demanda geração / consumo (kW)", `${demGer} / ${demCons}`);
-  kv("Demanda de consumo atual (kW)", d.demandaConsumoAtual);
+  if (!ehLigacaoNova) kv("Demanda de consumo atual (kW)", d.demandaConsumoAtual);
   kv("Grid Zero", d.gridZero);
   kv("Telhado arrendado", d.telhadoArrendado);
   if (d.telhadoArrendado === "Sim") kv("2 instalações no DUB/memorial", d.duasInstalacoesDUB);
-  kv("Número da Unidade Consumidora", d.numUC);
-  kv("Instalação existente no local", d.instExistente);
-  kv("Instalação existente BT/MT", d.instExistenteBTMT);
+  if (!ehLigacaoNova) {
+    kv("Número da Unidade Consumidora", d.numUC);
+    kv("Instalação existente no local", d.instExistente);
+    kv("Instalação existente BT/MT", d.instExistenteBTMT);
+  }
 
   sec("3 — Documentação da UC a anexar");
   GD_DOCUMENTOS.forEach((dc) => kv(`${dc.id} ${d.docs && d.docs[dc.id] ? "[X]" : "[ ]"}`, dc.txt));

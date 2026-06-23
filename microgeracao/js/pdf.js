@@ -41,15 +41,19 @@ function gerarPdfMicroGD(d) {
   kv("Tipo de edificação", d.edificacao);
   kv("Padrão de Entrada", d.edifTipo);
   kv("Ramal", d.ramal);
-  kv("Disjuntor Individual Atual (A)", d.disjAtualA);
+  // Em Ligação de Nova UC não há instalação/disjuntor existentes — omitir do PDF.
+  const ehLigacaoNova = (d.solicitacao || "").indexOf("Nova Unidade") >= 0;
+  if (!ehLigacaoNova) kv("Disjuntor Individual Atual (A)", d.disjAtualA);
   kv("Disjuntor Geral", `${d.disjGeralFase || "—"} ${d.disjGeralA || ""}${d.qteDisjGeral ? " · Qte " + d.qteDisjGeral : ""}`);
   kv("Tensão de Atendimento (V)", d.tensaoAtendimento);
   kv("Mudança de Local do Padrão", d.mudancaLocal);
   kv("Distância < 30 m do poste", d.distMenor30);
   kv("Telhado arrendado", d.telhadoArrendado);
   if (d.telhadoArrendado === "Sim") kv("2 instalações no DUB/memorial", d.duasInstalacoesDUB);
-  kv("Instalação existente no local", d.instExistente);
-  kv("Instalação existente BT/MT", d.instExistenteBTMT);
+  if (!ehLigacaoNova) {
+    kv("Instalação existente no local", d.instExistente);
+    kv("Instalação existente BT/MT", d.instExistenteBTMT);
+  }
   if (ehBT) {
     kv("Demanda contratada consumo (kW)", d.demandaConsumo ? d.demandaConsumo : "Não se aplica — Baixa Tensão");
   } else {

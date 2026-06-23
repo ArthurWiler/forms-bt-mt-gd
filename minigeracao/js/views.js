@@ -557,18 +557,19 @@ function ViewDadosUC({ ctx }) {
             set({ demandaGeracao: e.target.value.replace(/[^\d.]/g, "") }),
         }),
       ),
-      /* @__PURE__ */ React.createElement(
-        Field,
-        {
-          label: "Demanda de consumo atual (kW)",
-          hint: "Demanda atualmente contratada da UC existente",
-        },
-        /* @__PURE__ */ React.createElement(Inp, {
-          value: d.demandaConsumoAtual,
-          onChange: (e) =>
-            set({ demandaConsumoAtual: e.target.value.replace(/[^\d.]/g, "") }),
-        }),
-      ),
+      !ehLigacaoNova &&
+        /* @__PURE__ */ React.createElement(
+          Field,
+          {
+            label: "Demanda de consumo atual (kW)",
+            hint: "Demanda atualmente contratada da UC existente",
+          },
+          /* @__PURE__ */ React.createElement(Inp, {
+            value: d.demandaConsumoAtual,
+            onChange: (e) =>
+              set({ demandaConsumoAtual: e.target.value.replace(/[^\d.]/g, "") }),
+          }),
+        ),
       !semAlteracaoDemanda &&
         /* @__PURE__ */ React.createElement(
           Field,
