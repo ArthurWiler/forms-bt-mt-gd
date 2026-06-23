@@ -781,7 +781,7 @@ select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
 }
 .modalidade-secao-chevron {
   flex: none;
-  font-size: 28px;
+  font-size: 20px;
   line-height: 1;
   transition: transform 0.3s ease;
 }

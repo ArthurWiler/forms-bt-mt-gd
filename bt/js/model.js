@@ -239,7 +239,7 @@ function cargasQtdsPorNome(itens) {
 }
 
 const SEC_BT_RESIDENCIAL = {
-  titulo: "Residencial · Comercial · Rural — Baixa Tensão",
+  titulo: "Baixa Tensão — Residencial · Comercial · Rural",
   cards: [
     {
       id: "casa50",
@@ -374,7 +374,7 @@ const SEC_BT_RESIDENCIAL = {
   ],
 };
 const SEC_BT_EMPREENDIMENTOS = {
-  titulo: "Empreendimentos — Baixa Tensão",
+  titulo: "Baixa Tensão — Empreendimentos",
   cards: [
     {
       id: "loteamento",
@@ -493,9 +493,9 @@ const SEC_GD_MICRO = {
   ],
 };
 const MODALIDADES_SECOES = [
-  SEC_MT,
-  SEC_GD_MINI,
-  SEC_GD_MICRO,
   SEC_BT_RESIDENCIAL,
   SEC_BT_EMPREENDIMENTOS,
+  SEC_GD_MICRO,
+  SEC_MT,
+  SEC_GD_MINI,
 ];

@@ -680,7 +680,11 @@
                 </div>
                 <div class="field">
                   <label>Município <span class="req">*</span></label
-                  ><input type="text" data-k="uc_municipio" onblur="onEnderecoUrbanoMT()" />
+                  ><input
+                    type="text"
+                    data-k="uc_municipio"
+                    onblur="onEnderecoUrbanoMT()"
+                  />
                 </div>
                 <div class="field">
                   <label>Estado <span class="req">*</span></label
@@ -694,15 +698,27 @@
                 <div class="grid cols-4">
                   <div class="field span-3">
                     <label>Endereço <span class="req">*</span></label
-                    ><input type="text" data-k="urb_endereco" onblur="onEnderecoUrbanoMT()" />
+                    ><input
+                      type="text"
+                      data-k="urb_endereco"
+                      onblur="onEnderecoUrbanoMT()"
+                    />
                   </div>
                   <div class="field">
                     <label>Nº <span class="req">*</span></label
-                    ><input type="text" data-k="urb_num" onblur="onEnderecoUrbanoMT()" />
+                    ><input
+                      type="text"
+                      data-k="urb_num"
+                      onblur="onEnderecoUrbanoMT()"
+                    />
                   </div>
                   <div class="field span-2">
                     <label>Bairro <span class="req">*</span></label
-                    ><input type="text" data-k="urb_bairro" onblur="onEnderecoUrbanoMT()" />
+                    ><input
+                      type="text"
+                      data-k="urb_bairro"
+                      onblur="onEnderecoUrbanoMT()"
+                    />
                   </div>
                   <div class="field span-2">
                     <label>Complemento</label
@@ -782,7 +798,6 @@
                     type="number"
                     step="any"
                     data-k="latitude"
-                    placeholder="-19.92"
                     oninput="onCoord()"
                   />
                 </div>
@@ -793,18 +808,12 @@
                     type="number"
                     step="any"
                     data-k="longitude"
-                    placeholder="-43.94"
                     oninput="onCoord()"
                   />
                 </div>
                 <div class="field">
                   <label>Coordenada em UTM</label
-                  ><input
-                    type="text"
-                    data-k="utm"
-                    placeholder="(calculado)"
-                    readonly
-                  />
+                  ><input type="text" data-k="utm" readonly />
                 </div>
               </div>
               <p class="field-note" style="margin-top: 8px">
@@ -848,12 +857,7 @@
                 </div>
                 <div class="field">
                   <label>UTM (novo)</label
-                  ><input
-                    type="text"
-                    data-k="utmNova"
-                    readonly
-                    placeholder="(calculado)"
-                  />
+                  ><input type="text" data-k="utmNova" readonly />
                 </div>
               </div>
               <div id="coordAlert"></div>
@@ -1136,7 +1140,7 @@
                   <div class="grid cols-3">
                     <div class="field">
                       <label
-                        >Potência (Trafos) atual
+                        >Potência total (Trafos) atual
                         <span class="req">*</span></label
                       ><input
                         type="number"
@@ -1152,7 +1156,7 @@
                     <div class="field"></div>
                     <div class="field">
                       <label
-                        >Potência (Trafos) futura
+                        >Potência total (Trafos) futura
                         <span class="req">*</span></label
                       ><input
                         type="text"

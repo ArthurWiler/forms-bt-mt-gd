@@ -9,8 +9,7 @@ function App() {
   const multiTorres = coletivo && atend.solicitacao === SOLICITACOES[4];
   // Categoria fixa a atividade principal (Residencial > 100 m², Comercial,
   // Industrial, Rural). No coletivo cada UC mantém atividade própria.
-  const atividadeTravada =
-    !coletivo && !!cardSelecionado?.prefill?.atividade;
+  const atividadeTravada = !coletivo && !!cardSelecionado?.prefill?.atividade;
   // Opções de "Solicitação" disponíveis: no coletivo libera-se o Híbrido;
   // nas categorias individuais restringe-se aos disjuntores individuais.
   const solicitacoesPermitidas =
@@ -133,7 +132,10 @@ function App() {
         if (ui !== ucIndex) return u;
         const mots = (u.cargas?.mots || []).map((m, mi) =>
           mi === motorIndex
-            ? { ...m, analisePartida: { ...(m.analisePartida || {}), ...patch } }
+            ? {
+                ...m,
+                analisePartida: { ...(m.analisePartida || {}), ...patch },
+              }
             : m,
         );
         return { ...u, cargas: { ...u.cargas, mots } };
@@ -227,8 +229,7 @@ function App() {
   const trocaDisjGeral =
     coletivo &&
     !multiTorres &&
-    atend.escopo ===
-      "Alteração de Carga com alteração do disjuntor geral";
+    atend.escopo === "Alteração de Carga com alteração do disjuntor geral";
   const hibrido =
     coletivo && !multiTorres && atend.solicitacao === SOLICITACOES[3];
   const validacaoHibrido = useMemo(() => {
@@ -656,10 +657,7 @@ function App() {
     if (!(demandaTotalGeral > 0))
       faltando.push("Previsão de carga / demanda das UCs");
     if (coletivo && temUCNaoResidencial)
-      req(
-        atend.demandaNaoResidencial,
-        "Demanda geral não residencial (kVA)",
-      );
+      req(atend.demandaNaoResidencial, "Demanda geral não residencial (kVA)");
     if (multiTorres)
       blocos.forEach((b, bi) => {
         if (
@@ -795,7 +793,11 @@ function App() {
     setUcBlocos([novoBloco]);
 
     const novaTorre = blocoPadrao(0);
-    if (a) novaTorre.ucs = (novaTorre.ucs || []).map((u) => ({ ...u, atividade: a }));
+    if (a)
+      novaTorre.ucs = (novaTorre.ucs || []).map((u) => ({
+        ...u,
+        atividade: a,
+      }));
     setBlocos([novaTorre]);
 
     setCardSelecionado(card);
@@ -1141,11 +1143,15 @@ function App() {
                         ),
                       aba === "gerador" &&
                         !coletivo &&
-                        /* @__PURE__ */ React.createElement(TabGerador, { ctx }),
+                        /* @__PURE__ */ React.createElement(TabGerador, {
+                          ctx,
+                        }),
                       aba === "obs" &&
                         /* @__PURE__ */ React.createElement(TabObs, { ctx }),
                       aba === "revisar" &&
-                        /* @__PURE__ */ React.createElement(TabRevisar, { ctx }),
+                        /* @__PURE__ */ React.createElement(TabRevisar, {
+                          ctx,
+                        }),
                       /* @__PURE__ */ React.createElement(
                         "div",
                         { className: "nav-bottom" },

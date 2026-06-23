@@ -391,7 +391,14 @@ function gerarPdfDoc(S) {
       );
       // Tabela 1: identificação das UCs
       tabela(
-        ["Unidade", "Compl.", "Unid. Consum.", "Instalação", "Solicitação", "Disjuntor"],
+        [
+          "Unidade",
+          "Compl.",
+          "Unid. Consum.",
+          "Instalação",
+          "Solicitação",
+          "Disjuntor",
+        ],
         [26, 22, 30, 28, 38, 26],
         ucs.map((u, ui) => [
           u.identificacao || `UC ${ui + 1}`,
@@ -419,16 +426,18 @@ function gerarPdfDoc(S) {
           "Dem. (kVA)",
         ],
         [30, 20, 22, 20, 22, 20, 24, 24],
-        ucs.filter((u) => !ucSemAlteracao(u)).map((u, ui) => [
-          u.identificacao || `UC ${ui + 1}`,
-          (u.prev || {}).ilum || "—",
-          (u.prev || {}).tomada || "—",
-          (u.prev || {}).chuveiro || "—",
-          (u.prev || {}).ar || "—",
-          (u.prev || {}).outros || "—",
-          fmt2(prevKwUC(u)),
-          (u.prev || {}).demanda || "—",
-        ]),
+        ucs
+          .filter((u) => !ucSemAlteracao(u))
+          .map((u, ui) => [
+            u.identificacao || `UC ${ui + 1}`,
+            (u.prev || {}).ilum || "—",
+            (u.prev || {}).tomada || "—",
+            (u.prev || {}).chuveiro || "—",
+            (u.prev || {}).ar || "—",
+            (u.prev || {}).outros || "—",
+            fmt2(prevKwUC(u)),
+            (u.prev || {}).demanda || "—",
+          ]),
       );
       cy += 2;
       // Demanda da torre (ND-5.2 por torre): residencial + não residencial + incêndio
@@ -447,7 +456,10 @@ function gerarPdfDoc(S) {
           ? ["Demanda não residencial", `${fmt2(cb.demNaoResidencial)} kVA`]
           : null,
         num(b.demandaIncendio)
-          ? ["Demanda combate a incêndio", `${fmt2(num(b.demandaIncendio))} kVA`]
+          ? [
+              "Demanda combate a incêndio",
+              `${fmt2(num(b.demandaIncendio))} kVA`,
+            ]
           : null,
         [
           "Demanda total da torre",
@@ -459,7 +471,15 @@ function gerarPdfDoc(S) {
   } else if (coletivo) {
     sec("4.  UNIDADES CONSUMIDORAS");
     tabela(
-      ["Unidade", "Nº Predial", "Compl.", "Unid. Consum.", "Instalação", "Solicitação", "Disjuntor"],
+      [
+        "Unidade",
+        "Nº Predial",
+        "Compl.",
+        "Unid. Consum.",
+        "Instalação",
+        "Solicitação",
+        "Disjuntor",
+      ],
       [24, 22, 20, 28, 26, 32, 22],
       ucBlocos.map((u, ui) => [
         u.identificacao || "UC " + (ui + 1),
@@ -497,16 +517,18 @@ function gerarPdfDoc(S) {
         "Dem. (kVA)",
       ],
       [30, 20, 22, 24, 22, 20, 22, 22],
-      ucBlocos.filter((u) => !ucSemAlteracao(u)).map((u) => [
-        u.identificacao || "UC",
-        (u.prev || {}).ilum || "—",
-        (u.prev || {}).tomada || "—",
-        (u.prev || {}).chuveiro || "—",
-        (u.prev || {}).ar || "—",
-        (u.prev || {}).outros || "—",
-        fmt2(prevKwUC(u)),
-        (u.prev || {}).demanda || "—",
-      ]),
+      ucBlocos
+        .filter((u) => !ucSemAlteracao(u))
+        .map((u) => [
+          u.identificacao || "UC",
+          (u.prev || {}).ilum || "—",
+          (u.prev || {}).tomada || "—",
+          (u.prev || {}).chuveiro || "—",
+          (u.prev || {}).ar || "—",
+          (u.prev || {}).outros || "—",
+          fmt2(prevKwUC(u)),
+          (u.prev || {}).demanda || "—",
+        ]),
     );
     totRow(
       `Total ${fmt2(prevTotalKw)} kW  |  Demanda`,
@@ -564,7 +586,7 @@ function gerarPdfDoc(S) {
       );
       // Disjuntor anterior (apenas em alteração de carga; o escolhido vai no resumo)
       if (u.solicitacao !== "Conexão Nova" && u.disjDe)
-        fullLine("Disjuntor anterior (De)", u.disjDe);
+        fullLine("Disjuntor atual", u.disjDe);
       cy += 2;
     });
     // 4.N  Cargas Especiais — consolidado: um motor por linha, identificando a UC.
@@ -594,7 +616,14 @@ function gerarPdfDoc(S) {
     if (motoresConsolidados.length) {
       sec(`4.${ucsDet.length + 1}  CARGAS ESPECIAIS`);
       tabela(
-        ["Unidade", "Tipo", "Pot. (CV)", "Qtd", "Dem. unit. (kVA)", "Dem. total (kVA)"],
+        [
+          "Unidade",
+          "Tipo",
+          "Pot. (CV)",
+          "Qtd",
+          "Dem. unit. (kVA)",
+          "Dem. total (kVA)",
+        ],
         [30, 30, 26, 16, 38, 30],
         motoresConsolidados,
       );
