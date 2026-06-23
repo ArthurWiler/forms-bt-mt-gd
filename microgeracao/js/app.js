@@ -13,23 +13,32 @@ function gdModoDaURL() {
   try {
     modo = new URLSearchParams(location.search).get("modo") || "";
   } catch (e) {}
+  // Regra 1/2: Fast Track e Grid Zero são definidos pela porta de entrada (modo) e
+  // ficam SEMPRE travados. Quando o modo não for selecionado, o campo é travado em "Não".
   if (modo === "fasttrack")
     return {
       modo,
       label: "Fast Track",
       descricao: 'Enquadramento no inciso III do art. 73-A — campo definido pela modalidade e bloqueado.',
-      overrides: { fastTrack: "Sim" },
-      locked: { fastTrack: true }
+      overrides: { fastTrack: "Sim", gridZero: "Não" },
+      locked: { fastTrack: true, gridZero: true }
     };
   if (modo === "gridzero")
     return {
       modo,
       label: "Grid Zero",
       descricao: "Empreendimento sem injeção de energia na rede — campo definido pela modalidade e bloqueado.",
-      overrides: { gridZero: "Sim" },
-      locked: { gridZero: true }
+      overrides: { gridZero: "Sim", fastTrack: "Não" },
+      locked: { gridZero: true, fastTrack: true }
     };
-  return { modo: "", label: "", descricao: "", overrides: {}, locked: {} };
+  // Sem modo: nem Fast Track nem Grid Zero foram selecionados ⇒ ambos travados em "Não".
+  return {
+    modo: "",
+    label: "",
+    descricao: "",
+    overrides: { fastTrack: "Não", gridZero: "Não" },
+    locked: { fastTrack: true, gridZero: true }
+  };
 }
 const GD_MODO = gdModoDaURL();
 function App() {
@@ -43,9 +52,18 @@ function App() {
     const pi = (parseFloat(d.qtdInversores) || 0) * (parseFloat(d.potNominalInversor) || 0);
     const pmS = pm ? String(pm) : "";
     const piS = pi ? String(pi) : "";
-    if (pmS !== d.potTotalModulos || piS !== d.potTotalInversores)
-      setD((s) => ({ ...s, potTotalModulos: pmS, potTotalInversores: piS }));
-  }, [d.qtdModulos, d.potNominalModulo, d.qtdInversores, d.potNominalInversor]);
+    const patch = {};
+    if (pmS !== d.potTotalModulos) patch.potTotalModulos = pmS;
+    if (piS !== d.potTotalInversores) patch.potTotalInversores = piS;
+    // Regra 6: em FV, a Potência Ativa Instalada de geração é calculada automaticamente
+    // como o MENOR valor entre a potência total de módulos e a potência total de inversores.
+    if (d.fontePrimaria === "Solar") {
+      const calc = pm > 0 && pi > 0 ? Math.min(pm, pi) : (pm || pi || 0);
+      const calcS = calc ? String(calc) : "";
+      if (calcS !== d.potAtivaInstalada) patch.potAtivaInstalada = calcS;
+    }
+    if (Object.keys(patch).length) setD((s) => ({ ...s, ...patch }));
+  }, [d.qtdModulos, d.potNominalModulo, d.qtdInversores, d.potNominalInversor, d.fontePrimaria]);
   const { buscarCep, buscarCnpj } = criarConsultasExternas({
     d,
     set,
@@ -94,6 +112,9 @@ function App() {
       req(d.novaProtecao, "Nova Proteção (Aumento de Potência)");
     req(d.fontePrimaria, "Tipo de Fonte Primária");
     req(d.potAtivaInstalada, "Potência Ativa Instalada Total");
+    // Regra 4: usina já existente exige informar a potência de geração já conectada.
+    if ((d.solicitacao || "").indexOf("GD Existente") >= 0)
+      req(d.potGeracaoExistente, "Potência de geração já existente");
     req(d.modalidade, "Modalidade de compensação");
     // Regra 5: no Fast Track, a potência da usina não pode exceder 7,5 MW.
     if (d.fastTrack === "Sim" && (parseFloat(d.potAtivaInstalada) || 0) > GD_FAST_LIMITE_USINA_KW)

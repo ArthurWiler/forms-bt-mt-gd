@@ -22,6 +22,7 @@ function gerarPdfMiniGD(d) {
   sec("2 — Dados da Unidade Consumidora");
   kv("Coordenadas UTM", `Fuso ${d.fuso || "—"} · E ${d.utmE || "—"} · N ${d.utmN || "—"}`);
   kv("Tipo de Subestação (ND 5.3)", d.tipoSE);
+  kv("Mudança de local da subestação", d.mudancaSE);
   (d.trafos || []).forEach((t, i) => { if (t.qte || t.potencia) kv(`Trafo ${i + 1}`, `${t.qte || "—"} × ${t.potencia || "—"} kVA`); });
   kv("Ligação do Transformador", d.tipoLigTrafo);
   kv("Impedância do Transformador (%)", d.impedanciaTrafo);
@@ -31,8 +32,9 @@ function gerarPdfMiniGD(d) {
   if (d.entradaEnergia === GD_ENTRADA_COMPARTILHADA) kv("Quantidade de Cubículos", d.qtdCubiculos);
   kv("Tipo de Solicitação", d.solicitacao);
   if (GD_SOLICITACOES_FORM_CARGA.includes(d.solicitacao)) kv("Formulário de Carga", "Obrigatório — declarar todas as cargas elétricas");
-  const demGer = d.modalidade === GD_MODALIDADE_AUTOCONSUMO_LOCAL ? "0 (Autoconsumo Local)" : (d.demandaGeracao || "—");
-  kv("Demanda geração / consumo (kW)", `${demGer} / ${d.demandaConsumo || "—"}`);
+  const demGer = d.gridZero === "Sim" ? "0 (Grid Zero)" : (d.demandaGeracao || "—");
+  const demCons = (d.solicitacao || "").indexOf("SEM Alteração de Demanda") >= 0 ? "Sem alteração" : (d.demandaConsumo || "—");
+  kv("Demanda geração / consumo (kW)", `${demGer} / ${demCons}`);
   kv("Demanda de consumo atual (kW)", d.demandaConsumoAtual);
   kv("Grid Zero", d.gridZero);
   kv("Telhado arrendado", d.telhadoArrendado);
@@ -65,6 +67,7 @@ function gerarPdfMiniGD(d) {
   sec("4 — Dados da Geração");
   kv("Quantidade de fontes", d.qtdFontes);
   kv("Potência Ativa Instalada Total (kW)", d.potAtivaInstalada);
+  if ((d.solicitacao || "").indexOf("GD Existente") >= 0) kv("Potência de Geração Atual (kW)", d.potGeracaoAtual);
   kv("Modalidade de compensação", d.modalidade);
   kv("Qtde. instalações a receber crédito", d.qtdInstalacoesCredito);
   kv("Anexou contrato de constituição", d.anexouContrato);
@@ -100,11 +103,16 @@ function gerarPdfMiniGD(d) {
   }
 
   sec("6 — Garantia de Fiel Cumprimento");
-  if (d.modalidade === "Geração Compartilhada" && d.consorcioVerificado === "Sim" && (parseFloat(d.potAtivaInstalada) || 0) > GD_GFC_LIMITE_KW) {
-    kv("Garantia (> 500 kW)", "Dispensada — Geração Compartilhada com consórcio verificado");
+  if (!gdExigeGFC(d)) {
+    const motivo = (parseFloat(d.potAtivaInstalada) || 0) <= GD_GFC_LIMITE_KW
+      ? "Não aplicável (potência instalada ≤ 500 kW)"
+      : d.modalidade === GD_GFC_MODALIDADE_EMUC
+        ? "Dispensada — não se aplica a EMUC"
+        : "Dispensada — Geração Compartilhada com consórcio verificado";
+    kv("Garantia (> 500 kW)", motivo);
   } else {
     kv("Forma de apresentação", d.garantiaForma);
-    kv("Garantia (> 500 kW)", d.gfcValor);
+    kv("Valor da GFC (R$)", fmt2(gdCalcularGFC(d)));
   }
 
   sec("7 — Documentação Técnica");
@@ -120,6 +128,7 @@ function gerarPdfMiniGD(d) {
   kv("9.2 Renúncia ao direito de desistir", d.decl82 ? "Sim" : "Não");
   kv("9.3 Autorizo entrega contratos/pagamento", d.decl83 ? "Sim" : "Não");
   kv("9.4 Declaração de conformidade (obrig.)", d.decl84 ? "Sim" : "Não");
+  if (d.gridZero === "Sim") kv("9.5 Dispensa análise de inversão de fluxo (Grid Zero)", d.decl95 ? "Sim" : "Não");
   kv("9.6 Informações verdadeiras (obrig.)", d.decl86 ? "Sim" : "Não");
 
   sec("10 — Solicitante");

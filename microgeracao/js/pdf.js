@@ -84,6 +84,7 @@ function gerarPdfMicroGD(d) {
   sec("4 — Dados da Geração");
   kv("Tipo de Fonte Primária", d.fontePrimaria);
   kv("Potência Ativa Instalada Total (kW)", d.potAtivaInstalada + (d.fastTrack === "Sim" ? ` (limite Fast Track: ${GD_FAST_LIMITE_MW} MW)` : ""));
+  if ((d.solicitacao || "").indexOf("GD Existente") >= 0) kv("Potência de geração já existente (kW)", d.potGeracaoExistente);
   kv("Tipo de geração", d.tipoGeracao === "Outra (especificar):" ? `Outra: ${d.tipoGeracaoOutro}` : d.tipoGeracao);
   kv("Modalidade de compensação", d.modalidade + (d.fastTrack === "Sim" ? " (travada — Fast Track)" : ""));
   kv("Qtde. instalações a receber crédito", d.qtdInstalacoesCredito);

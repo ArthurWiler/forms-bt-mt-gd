@@ -13,7 +13,7 @@ const GD_SOLICITACOES = [
 const GD_TENSAO_A = ["13800","22000","34500"];
 const GD_TENSAO_B = ["127/220","120/240"];
 const GD_RAMAL = ["Aéreo","Subterrâneo"];
-const GD_TIPOS_SE = ["Nº 1","Nº 2","Nº 4","Nº 5","Nº 8"];
+const GD_TIPOS_SE = ["Nº 1","Nº 2","Nº 3","Nº 4","Nº 5","Nº 6","Nº 8"];
 // Transformadores: campo livre (qualquer potência, inclusive > RT, ex.: 1500/2000 kVA). Sem lista fixa.
 const GD_TIPO_LIG_TRAFO = ["∆-Y","∆-∆","Y-∆","Y-Y"];
 const GD_ENTRADA_ENERGIA = ["Subestação Individual","Subestação Compartilhada"];
@@ -33,17 +33,83 @@ const GD_FUSOS = [22,23,24];
 const GD_BT_MT = ["BT - Baixa Tensão","MT - Média Tensão"];
 const GD_SN = ["Não","Sim"];
 const GD_GFC_LIMITE_KW = 500; // garantia de fiel cumprimento acima de 500 kW
+const GD_GFC_MODALIDADE_EMUC = "Empreendimento de Múltiplas Unidades Consumidoras";
 
 // Formas de apresentação da Garantia de Fiel Cumprimento (art. 655-C)
 const GD_GARANTIA_FORMAS = ["Caução em dinheiro","Fiança bancária","Títulos da dívida pública"];
-const GD_GARANTIA_FAQ_URL = "https://www.cemig.com.br/duvidas-frequentes/";
+// Regra 20: o link de dúvidas frequentes da GFC deve apontar para a seção de Geração Distribuída.
+const GD_GARANTIA_FAQ_URL = "https://www.cemig.com.br/geracao-distribuida/duvidas-frequentes/";
+// Custo de investimento (R$/kW) por fonte primária — base de cálculo da GFC.
+const GD_GFC_CUSTO_INVESTIMENTO = {
+  "Solar": 4000,
+  "Hidráulica": 5000,
+  "Biomassa": 4000,
+  "Cogeração Qualificada": 4000,
+  "Eólica": 4500,
+};
 
-// Tipos de subestação que ficam indisponíveis em BT (migrada para MT como ligação nova)
-const GD_TIPOS_SE_BLOQ_BT = ["Nº 1","Nº 2"];
+// Regra 19: a GFC é calculada automaticamente pelo sistema (não é preenchida pelo cliente).
+// GFC = Percentual × Potência líquida × Custo de investimento.
+//   Potência líquida = Potência instalada − Geração já existente.
+//   Percentual = 0% (≤500 kW) · 2,5% (500<x<1000) · 5% (≥1000 kW).
+// Regra 21: GFC não se aplica a Geração Compartilhada nem a EMUC (retorna 0).
+function gdCalcularGFC(d) {
+  const mod = d.modalidade;
+  if (mod === "Geração Compartilhada" || mod === GD_GFC_MODALIDADE_EMUC) return 0;
+  const instalada = parseFloat(d.potAtivaInstalada) || 0;
+  const existente = parseFloat(d.potGeracaoAtual) || 0;
+  const liquida = Math.max(0, instalada - existente);
+  let perc = 0;
+  if (liquida >= 1000) perc = 0.05;
+  else if (liquida > GD_GFC_LIMITE_KW) perc = 0.025;
+  const fonte = (d.fontes && d.fontes[0] && d.fontes[0].fontePrimaria) || "Solar";
+  const custo = GD_GFC_CUSTO_INVESTIMENTO[fonte] || 4000;
+  return perc * liquida * custo;
+}
+
 // Tipo de subestação indisponível em Ligação Nova atendida em 13,8 kV
 const GD_TIPO_SE_BLOQ_LIGNOVA_138 = "Nº 2";
 const GD_TENSAO_LIGNOVA_138 = "13800";
 const GD_SOLICITACAO_LIG_NOVA = "Ligação de Nova Unidade Consumidora COM Geração Distribuída";
+const GD_BT_BAIXA = "BT - Baixa Tensão";
+
+// Regra 9: somente as subestações Nº 1, 5, 6 e 8 possuem limite de 300 kVA.
+const GD_SE_LIMITE_300 = ["Nº 1", "Nº 5", "Nº 6", "Nº 8"];
+const GD_SE_LIMITE_KW = 300;
+// Acima deste valor, o planejamento deve sugerir atendimento em alta tensão.
+const GD_SE_SUGESTAO_AT_KW = 2500;
+
+// Regras de aceitação das subestações por tipo × tensão × tipo de solicitação (Regras 7,8,14).
+//  - "Ligação nova" inclui também a migração de BT para MT (tratada como ligação nova).
+//  - "Mudança de local" = campo "Haverá mudança de local da subestação?" (Regra 12).
+function gdSEDisponivel(tipo, ctx) {
+  const t = ctx.tensao;
+  const e138 = t === GD_TENSAO_LIGNOVA_138;
+  const ehBTtoMT = ctx.instExistenteBTMT === GD_BT_BAIXA;
+  const novaConexao = ctx.solicitacao === GD_SOLICITACAO_LIG_NOVA || ehBTtoMT;
+  const mudancaLocal = ctx.mudancaSE === "Sim";
+  switch (tipo) {
+    case "Nº 1":
+      if (novaConexao) return { ok: false, msg: "Subestação Nº 1 não aceita ligação nova." };
+      if (mudancaLocal) return { ok: false, msg: "Subestação Nº 1 não aceita mudança de local." };
+      return { ok: true, msg: "" };
+    case "Nº 2":
+      if (novaConexao && e138) return { ok: false, msg: "Subestação Nº 2 não aceita ligação nova em 13,8 kV (disponível em 22 kV e 34,5 kV)." };
+      if (mudancaLocal && e138) return { ok: false, msg: "Subestação Nº 2 não aceita mudança de local em 13,8 kV (disponível em 22 kV e 34,5 kV)." };
+      return { ok: true, msg: "" };
+    case "Nº 3":
+      if (novaConexao) return { ok: false, msg: "Subestação Nº 3 não aceita ligação nova." };
+      if (mudancaLocal) return { ok: false, msg: "Subestação Nº 3 não aceita mudança de local em nenhum nível de tensão." };
+      return { ok: true, msg: "" };
+    case "Nº 6":
+      if (novaConexao) return { ok: false, msg: "Subestação Nº 6 (adaptação da Nº 1 para o mercado livre) aceita apenas mudança para ACL." };
+      if (mudancaLocal) return { ok: false, msg: "Subestação Nº 6 aceita apenas mudança para ACL, não mudança de local." };
+      return { ok: true, msg: "" };
+    // Nº 4, Nº 5 e Nº 8 aceitam ligação nova e mudança de local em qualquer tensão.
+    default:
+      return { ok: true, msg: "" };
+  }
+}
 // Solicitações que exigem o preenchimento do Formulário de Carga (aumento de demanda / ligação nova)
 const GD_SOLICITACOES_FORM_CARGA = [
   "Conexão de GD em Unidade Consumidora Existente COM Alteração de Demanda Contratada",
@@ -90,10 +156,13 @@ const GD_DECL_85 = [
   "não injeção na rede (“Grid Zero”)",
 ];
 
-// GFC exigida acima de 500 kW, EXCETO Geração Compartilhada com consórcio verificado (Regra 5/8).
+// GFC exigida acima de 500 kW, EXCETO:
+//  - Geração Compartilhada com consórcio verificado;
+//  - Geração Compartilhada / EMUC (Regra 21: GFC não se aplica a EMUC).
 function gdExigeGFC(d){
   if((parseFloat(d.potAtivaInstalada)||0) <= GD_GFC_LIMITE_KW) return false;
   if(d.modalidade==="Geração Compartilhada" && d.consorcioVerificado==="Sim") return false;
+  if(d.modalidade===GD_GFC_MODALIDADE_EMUC) return false;
   return true;
 }
 

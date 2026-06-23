@@ -40,6 +40,8 @@ function gdEstadoInicial() {
     // 2 - Dados da UC
     fuso: "", utmE: "", utmN: "",
     tipoSE: "",
+    // Regra 12: haverá mudança de local da subestação?
+    mudancaSE: "Não",
     trafos: [gdTrafoPadrao()],
     tipoLigTrafo: "",
     impedanciaTrafo: "",
@@ -66,6 +68,8 @@ function gdEstadoInicial() {
     // 4 - Geração (múltiplas fontes)
     qtdFontes: 1,
     potAtivaInstalada: "",
+    // Regra 11: potência de geração já existente (GD existente COM alteração de potência ativa).
+    potGeracaoAtual: "",
     modalidade: "",
     qtdInstalacoesCredito: "",
     anexouContrato: "Não",
@@ -86,6 +90,8 @@ function gdEstadoInicial() {
     // 8 - Declarações
     decl81: "Não",
     decl82: false, decl83: false, decl84: true, decl85Regra: "", decl86: true,
+    // Regra 22: item 9.5 — dispensa de análise de inversão de fluxo (obrigatório quando Grid Zero = Sim).
+    decl95: false,
     // 9 - Solicitante
     solicitanteNome: "", solicitanteEndereco: "",
     solicitanteTelefone: "", solicitanteCelular: "", solicitanteEmail: "",

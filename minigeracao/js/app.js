@@ -57,18 +57,25 @@ function App() {
         (c.extras || []).some((m) => (parseInt(m.q) || 0) > 0);
       if (!temCarga) faltas.push("Formulário de Carga (declarar as cargas elétricas)");
     }
-    req(d.demandaConsumo, "Demanda contratada de consumo");
+    // Regra 10: "SEM Alteração de Demanda Contratada" não solicita nova demanda de consumo.
+    if ((d.solicitacao || "").indexOf("SEM Alteração de Demanda") < 0)
+      req(d.demandaConsumo, "Demanda contratada de consumo");
     req(d.potAtivaInstalada, "Potência Ativa Instalada Total");
+    // Regra 11: GD existente COM alteração de potência ativa exige a geração já existente.
+    if ((d.solicitacao || "").indexOf("GD Existente") >= 0)
+      req(d.potGeracaoAtual, "Potência de Geração Atual");
     req(d.modalidade, "Modalidade de compensação");
     (d.fontes || []).forEach((f, i) => {
       req(f.fontePrimaria, `Fonte ${i + 1}: tipo de fonte`);
       req(f.potencia, `Fonte ${i + 1}: potência`);
     });
+    // Regra 19: a GFC é calculada automaticamente — o cliente só escolhe a forma de apresentação.
     if (gdExigeGFC(d)) {
-      req(d.gfcValor, "Garantia de Fiel Cumprimento (> 500 kW)");
       req(d.garantiaForma, "Forma de apresentação da garantia");
     }
     if (!d.decl84) faltas.push("Declaração 9.4 (obrigatória)");
+    // Regra 22: item 9.5 obrigatório quando Grid Zero = Sim.
+    if (d.gridZero === "Sim" && !d.decl95) faltas.push("Declaração 9.5 (obrigatória para Grid Zero)");
     if (!d.decl86) faltas.push("Declaração 9.6 (obrigatória)");
     req(d.solicitanteNome, "Nome do solicitante");
     req(d.solicitanteEndereco, "Endereço de correspondência");

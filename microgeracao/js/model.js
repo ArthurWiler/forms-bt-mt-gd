@@ -64,6 +64,8 @@ function gdEstadoInicial() {
     modalidade: "",
     qtdInstalacoesCredito: "",
     potAtivaInstalada: "",
+    // Potência de geração já existente/conectada (somente para "GD Existente COM Alteração").
+    potGeracaoExistente: "",
     // Fotovoltaica - módulos
     modeloModulos: "",
     fabricanteModulos: "",
