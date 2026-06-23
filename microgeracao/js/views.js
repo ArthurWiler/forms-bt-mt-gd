@@ -127,6 +127,16 @@ function ViewDadosUC({ ctx }) {
     if (ehBT && (d.tipoSE || (d.trafos || []).some((t) => t.qte || t.potencia)))
       set({ tipoSE: "", trafos: [gdTrafoPadrao()] });
   }, [ehBT]);
+  // Regra 5/7: filtragem dinâmica das subestações pela potência (limite de 300
+  // kVA das SE Nº 1, 5, 6 e 8), espelhando o módulo MT/minigeração.
+  const _seLimite300 = ["Nº 1", "Nº 5", "Nº 6", "Nº 8"];
+  const _potInst = parseFloat(d.potAtivaInstalada) || 0;
+  const tiposSEvisiveis = GD_TIPOS_SE.filter(
+    (s) => !(_seLimite300.includes(s) && _potInst > 300),
+  );
+  React.useEffect(() => {
+    if (d.tipoSE && !tiposSEvisiveis.includes(d.tipoSE)) set({ tipoSE: "" });
+  }, [_potInst]);
   return /* @__PURE__ */ React.createElement(
     Card,
     { eyebrow: "Seção 2", title: "Dados da Unidade Consumidora" },
@@ -219,26 +229,12 @@ function ViewDadosUC({ ctx }) {
           )
         : /* @__PURE__ */ React.createElement(
             Field,
-            { label: "Tipo de Subestação (Conforme ND 5.3)" },
-            /* @__PURE__ */ React.createElement(
-              Sel,
-              {
-                value: d.tipoSE,
-                onChange: (e) => set({ tipoSE: e.target.value }),
-              },
-              /* @__PURE__ */ React.createElement(
-                "option",
-                { value: "" },
-                "Selecionar",
-              ),
-              GD_TIPOS_SE.map((s) =>
-                /* @__PURE__ */ React.createElement(
-                  "option",
-                  { key: s, value: s },
-                  s,
-                ),
-              ),
-            ),
+            { label: "Tipo de Subestação (Conforme ND 5.3)", span: 3 },
+            /* @__PURE__ */ React.createElement(GdSeGaleria, {
+              tipos: tiposSEvisiveis,
+              value: d.tipoSE,
+              onSelect: (t) => set({ tipoSE: t }),
+            }),
           ),
     ),
     !ehBT &&

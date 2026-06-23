@@ -219,6 +219,19 @@ function gerarPdfDoc(S) {
       cy += 5;
     });
   };
+  // Regra 2 (PDF): variante de `tabela` que omite colunas inteiramente vazias
+  // ou não aplicáveis (ex.: "Unid. Consum." / "Instalação" quando todas as UCs
+  // são Conexão Nova). Preserva sempre a 1ª coluna (identificação da UC).
+  const tabelaAuto = (headers, widths, rows) => {
+    const manter = headers.map(
+      (_, ci) => ci === 0 || rows.some((r) => !_vazio(r[ci])),
+    );
+    tabela(
+      headers.filter((_, i) => manter[i]),
+      widths.filter((_, i) => manter[i]),
+      rows.map((r) => r.filter((_, i) => manter[i])),
+    );
+  };
 
   drawTopBar();
 
@@ -390,7 +403,7 @@ function gerarPdfDoc(S) {
         `4.${bi + 1}  ${atend.atendA.toUpperCase()} ${b.nome || bi + 1} — UNIDADES CONSUMIDORAS`,
       );
       // Tabela 1: identificação das UCs
-      tabela(
+      tabelaAuto(
         [
           "Unidade",
           "Compl.",
@@ -470,7 +483,7 @@ function gerarPdfDoc(S) {
     });
   } else if (coletivo) {
     sec("4.  UNIDADES CONSUMIDORAS");
-    tabela(
+    tabelaAuto(
       [
         "Unidade",
         "Nº Predial",
@@ -559,7 +572,7 @@ function gerarPdfDoc(S) {
       const pares = [
         ["Atividade principal", u.atividade],
         ["Ramo de atividade", u.ramo],
-        ["Nº Predial", obra.num],
+        ["Nº Predial", u.nPredial || obra.num],
         ["Complemento", u.complemento],
         ["Caixa / Identificação", u.caixa],
       ];

@@ -178,14 +178,22 @@ function ViewDadosUC({ ctx }) {
   };
   const seDesabilitado = (s) => !gdSEDisponivel(s, seCtx).ok;
   const seBloqueioMsg = d.tipoSE ? gdSEDisponivel(d.tipoSE, seCtx).msg : "";
-  // Se o tipo selecionado passou a ser inválido, limpa a seleção.
-  React.useEffect(() => {
-    if (d.tipoSE && seDesabilitado(d.tipoSE)) set({ tipoSE: "" });
-  }, [d.solicitacao, d.tensaoAtendimento, d.mudancaSE, d.instExistenteBTMT]);
   // Regra 9: limite de 300 kVA (SE Nº 1, 5, 6 e 8) e sugestão de alta tensão acima de 2500 kW.
   const potInstalada = parseFloat(d.potAtivaInstalada) || 0;
   const seLimite300 = d.tipoSE && GD_SE_LIMITE_300.includes(d.tipoSE);
   const excede300 = seLimite300 && potInstalada > GD_SE_LIMITE_KW;
+  // Regra 5/7: filtragem dinâmica — só exibe (em cards) as subestações permitidas
+  // pela norma para a potência informada. As Nº 1, 5, 6 e 8 (limite 300 kVA) são
+  // removidas automaticamente quando a potência instalada excede 300 kVA.
+  const tiposSEvisiveis = GD_TIPOS_SE.filter(
+    (s) => !(GD_SE_LIMITE_300.includes(s) && potInstalada > GD_SE_LIMITE_KW),
+  );
+  // Se o tipo selecionado passou a ser inválido (cenário) ou foi removido por
+  // exceder o limite de potência, limpa a seleção.
+  React.useEffect(() => {
+    if (d.tipoSE && (seDesabilitado(d.tipoSE) || !tiposSEvisiveis.includes(d.tipoSE)))
+      set({ tipoSE: "" });
+  }, [d.solicitacao, d.tensaoAtendimento, d.mudancaSE, d.instExistenteBTMT, potInstalada]);
   const sugereAT = potInstalada > GD_SE_SUGESTAO_AT_KW;
   // Regra 4: Formulário de Carga obrigatório (alteração de demanda / ligação nova).
   const exigeFormCarga = GD_SOLICITACOES_FORM_CARGA.includes(d.solicitacao);
@@ -248,23 +256,13 @@ function ViewDadosUC({ ctx }) {
       ),
       /* @__PURE__ */ React.createElement(
         Field,
-        { label: "Tipo de Subestação (ND 5.3)", hint: seBloqueioMsg },
-        /* @__PURE__ */ React.createElement(
-          Sel,
-          { value: d.tipoSE, onChange: (e) => set({ tipoSE: e.target.value }) },
-          /* @__PURE__ */ React.createElement(
-            "option",
-            { value: "" },
-            "Selecionar",
-          ),
-          GD_TIPOS_SE.map((s) =>
-            /* @__PURE__ */ React.createElement(
-              "option",
-              { key: s, value: s, disabled: seDesabilitado(s) },
-              s + (seDesabilitado(s) ? " (indisponível)" : ""),
-            ),
-          ),
-        ),
+        { label: "Tipo de Subestação (ND 5.3)", hint: seBloqueioMsg, span: 3 },
+        /* @__PURE__ */ React.createElement(GdSeGaleria, {
+          tipos: tiposSEvisiveis,
+          value: d.tipoSE,
+          onSelect: (t) => set({ tipoSE: t }),
+          disabledFn: seDesabilitado,
+        }),
       ),
       /* @__PURE__ */ React.createElement(
         Field,

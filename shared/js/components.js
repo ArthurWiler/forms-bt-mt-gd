@@ -58,3 +58,59 @@ function Btn({ children, onClick, variant = "ghost", disabled }) {
 function Badge({ children, lime }) {
   return /* @__PURE__ */ React.createElement("span", { className: "badge" + (lime ? " badge-lime" : "") }, children);
 }
+
+// Descrições resumidas (ND-5.3) dos tipos de subestação — texto idêntico ao
+// usado no módulo MT (mt/js/dados.js), para o tooltip "i" dos cards.
+const SUBESTACAO_INFO = {
+  1: "Aérea em poste: transformador instalado na rede aérea, para pequenas potências. Medição e proteção na base.",
+  2: "Medição e proteção (com ou sem transformação), em alvenaria. Desde 03/07/2023 não se aplica a fornecimento individual em 13,8 kV; desde 01/01/2024 também não em compartilhado 13,8 kV. Permitida em 22/34,5 kV e uso compartilhado.",
+  4: "Blindada: cubículo metálico compartimentado, com alívio de pressão e ventilação, abrigado ou ao tempo. Proteção na média tensão, sem transformação. Atende demandas de até 2500 kW.",
+  5: "Medição, proteção e transformação, em alvenaria. Até 300 kW, com um transformador de 75 a 300 kVA. Proteção por chave fusível tripolar; medição a 3 elementos na média tensão.",
+  8: "Blindada Simplificada (SEBS): subestação blindada metálica para uma única unidade, até 300 kW. Medição na média tensão, proteção por chave fusível tripolar e disjuntor de baixa tensão."
+};
+// Extrai o número da subestação de um rótulo como "Nº 5" → 5.
+function _seNumero(label) {
+  const m = String(label || "").match(/(\d+)/);
+  return m ? m[1] : null;
+}
+// Galeria visual de seleção de tipo de subestação — mesma experiência por
+// cards do módulo MT (mt/js/app.js renderGaleriaSE). As imagens vêm de
+// SUBESTACAO_IMGS_B64 (mt/js/subestacoes-b64.js, incluído no index do módulo).
+// Props:
+//   tipos       : lista de rótulos (ex.: ["Nº 1","Nº 2",...])
+//   value       : rótulo selecionado
+//   onSelect    : (rótulo) => void
+//   disabledFn  : (rótulo) => bool — card cinza, não clicável (filtragem dinâmica)
+function GdSeGaleria({ tipos, value, onSelect, disabledFn }) {
+  const imgs = typeof SUBESTACAO_IMGS_B64 !== "undefined" ? SUBESTACAO_IMGS_B64 : {};
+  return /* @__PURE__ */ React.createElement(
+    "div",
+    { className: "se-gallery" },
+    (tipos || []).map((tipo) => {
+      const n = _seNumero(tipo);
+      const img = n && imgs[n];
+      const info = n && SUBESTACAO_INFO[n];
+      const desabilitado = disabledFn ? disabledFn(tipo) : false;
+      const selecionado = value === tipo;
+      return /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          key: tipo,
+          className:
+            "se-card" + (selecionado ? " selected" : "") + (desabilitado ? " disabled" : ""),
+          onClick: desabilitado ? void 0 : () => onSelect && onSelect(tipo),
+        },
+        info &&
+          /* @__PURE__ */ React.createElement(
+            "span",
+            { className: "se-info" },
+            "i",
+            /* @__PURE__ */ React.createElement("span", { className: "se-tooltip" }, info),
+          ),
+        img &&
+          /* @__PURE__ */ React.createElement("img", { src: img, alt: tipo }),
+        /* @__PURE__ */ React.createElement("div", { className: "lbl" }, tipo, desabilitado ? " (indisponível)" : ""),
+      );
+    }),
+  );
+}

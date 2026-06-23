@@ -359,10 +359,12 @@ const SEC_BT_RESIDENCIAL = {
       img: "imgs/img_rural.png",
       status: "ok",
       travaZonaRural: true, // zona de localização fixa em Rural (não editável)
-      atividadeFixa: true, // Rural: atividade travada (Regra 4)
+      // Regras 8/9: a categoria Rural NÃO trava nem força a "Atividade principal".
+      // O usuário escolhe livremente (Residencial/Comercial/Industrial/Rural) e,
+      // em atividades não-rurais, libera-se o "Nº Predial" editável (Regra 1). As
+      // demais regras rurais (zona travada em Rural, limite de 1 UC) permanecem.
       solicitacoesPermitidas: SOLICITACOES_INDIVIDUAIS,
       prefill: {
-        atividade: "Rural",
         atend: {
           disjGeral: "Não",
           solicitacao: SOLICITACOES[0],

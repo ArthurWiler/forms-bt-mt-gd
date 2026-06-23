@@ -1229,7 +1229,7 @@ function updateDemandaLabels(){
   }
 }
 function validarDemandas(){
-  if(state.monomia==='Sim'){ $('#demandaAlert').innerHTML=''; return; }
+  if(state.monomia==='Sim'){ $('#demandaAlert').innerHTML=''; return []; }
   const azul=(state.modalidade==='Azul');
   const ehAlteracao=(state.finalidade==='Aumento de Demanda'||state.finalidade==='Redução de Demanda');
   const out=[];
@@ -1260,6 +1260,7 @@ function validarDemandas(){
     if(rFut.nivel)out.push(rFut);
   }
   $('#demandaAlert').innerHTML=out.map(r=>alertHTML('err',r.msg)).join('');
+  return out;
 }
 
 /* ===== Demanda Escalonada ===== */
@@ -1375,17 +1376,25 @@ function camposObrigatoriosFaltando(){
 }
 function atualizarGateExportacao(){
   const faltando=camposObrigatoriosFaltando();
+  // Regra 3: validações bloqueantes (ex.: demanda contratada/futura > potência
+  // total instalada dos transformadores) impedem a geração do PDF e o envio do
+  // formulário — não apenas exibem alerta na etapa de dados.
+  const errosValidacao=(validarDemandas()||[]).filter(r=>r.nivel==='erro');
   const box=$('#exportAlert');
   const mini=$('#exportProgressMini');
-  if(box) box.innerHTML = faltando.length
-    ? alertHTML('err','Preencha os campos obrigatórios antes de exportar: '+faltando.join(', ')+'.')
-    : '';
-  if(mini) mini.textContent = faltando.length ? 'Faltam campos obrigatórios' : 'Pronto para exportar';
+  const partes=[];
+  if(faltando.length) partes.push('Preencha os campos obrigatórios antes de exportar: '+faltando.join(', ')+'.');
+  errosValidacao.forEach(e=>partes.push(e.msg));
+  if(box) box.innerHTML = partes.length ? partes.map(m=>alertHTML('err',m)).join('') : '';
+  const bloqueado = faltando.length>0 || errosValidacao.length>0;
+  if(mini) mini.textContent = bloqueado
+    ? (faltando.length ? 'Faltam campos obrigatórios' : 'Há erros de validação')
+    : 'Pronto para exportar';
   ['#btnExportarPDF','#btnCartaMonomia'].forEach(sel=>{
     const b=$(sel);
-    if(b) b.disabled = faltando.length>0;
+    if(b) b.disabled = bloqueado;
   });
-  return faltando;
+  return [...faltando, ...errosValidacao.map(e=>e.msg)];
 }
 
 /* ===== Prévia ===== */

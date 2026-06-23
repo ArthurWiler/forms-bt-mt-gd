@@ -62,6 +62,7 @@ function TabUcsIndividual({ ctx }) {
     setUcTorre,
     setUcTorrePrev,
     restrito,
+    rural,
     sincronizarUCsTorre,
     totalUcsEmpreendimento,
     trocaDisjGeral,
@@ -70,6 +71,12 @@ function TabUcsIndividual({ ctx }) {
     atividadeTravada,
   } = ctx;
   const atividadeBloqueada = restrito || atividadeTravada;
+  // Regra 1 (Rural): em área rural, o "Nº Predial" deixa de ser herdado do
+  // endereço (que não existe em zona rural) e passa a ser um campo editável
+  // opcional. Vale só no atendimento individual e para atividades
+  // Residencial/Comercial/Industrial (não para a atividade "Rural").
+  const numPredialEditavel = (u) =>
+    rural && ["Residencial", "Comercial", "Industrial"].includes(u.atividade);
   return /* @__PURE__ */ React.createElement(
     "div",
     null,
@@ -178,15 +185,25 @@ function TabUcsIndividual({ ctx }) {
                   placeholder: "Obrigatório",
                 }),
               ),
-            /* @__PURE__ */ React.createElement(
-              Field,
-              { label: "Nº Predial" },
-              /* @__PURE__ */ React.createElement(
-                "div",
-                { className: "readonly-val" },
-                obra.num,
-              ),
-            ),
+            numPredialEditavel(u)
+              ? /* @__PURE__ */ React.createElement(
+                  Field,
+                  { label: "Nº Predial" },
+                  /* @__PURE__ */ React.createElement(Inp, {
+                    value: u.nPredial,
+                    onChange: (e) => setUcDet(ui, { nPredial: e.target.value }),
+                    placeholder: "Opcional",
+                  }),
+                )
+              : /* @__PURE__ */ React.createElement(
+                  Field,
+                  { label: "Nº Predial" },
+                  /* @__PURE__ */ React.createElement(
+                    "div",
+                    { className: "readonly-val" },
+                    obra.num,
+                  ),
+                ),
             /* @__PURE__ */ React.createElement(
               Field,
               { label: "Complemento", req: ucsDet.length > 1 },
