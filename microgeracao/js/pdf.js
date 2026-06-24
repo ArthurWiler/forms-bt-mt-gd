@@ -130,7 +130,7 @@ function gerarPdfMicroGD(d) {
     "Potência Ativa Instalada Total (kW)",
     d.potAtivaInstalada +
       (d.fastTrack === "Sim"
-        ? ` (limite Fast Track: ${GD_FAST_LIMITE_MW} MW)`
+        ? ` (limite Fast Track: ${GD_FAST_LIMITE_kW} kW)`
         : ""),
   );
   if ((d.solicitacao || "").indexOf("GD Existente") >= 0)

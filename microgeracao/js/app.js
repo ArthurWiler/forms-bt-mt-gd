@@ -6,7 +6,7 @@ const GD_ABAS = [
   { id: "ger", n: "Dados da Geração", c: ViewGeracao },
   { id: "arm", n: "Armazenamento", c: ViewArmazenamento },
   { id: "decl", n: "Declarações", c: ViewDeclaracoes },
-  { id: "rev", n: "Prévia & PDF", c: ViewRevisao }
+  { id: "rev", n: "Prévia & PDF", c: ViewRevisao },
 ];
 function gdModoDaURL() {
   let modo = "";
@@ -19,17 +19,19 @@ function gdModoDaURL() {
     return {
       modo,
       label: "Fast Track",
-      descricao: 'Enquadramento no inciso III do art. 73-A — campo definido pela modalidade e bloqueado.',
+      descricao:
+        "Enquadramento no inciso III do art. 73-A — campo definido pela modalidade e bloqueado.",
       overrides: { fastTrack: "Sim", gridZero: "Não" },
-      locked: { fastTrack: true, gridZero: true }
+      locked: { fastTrack: true, gridZero: true },
     };
   if (modo === "gridzero")
     return {
       modo,
       label: "Grid Zero",
-      descricao: "Empreendimento sem injeção de energia na rede — campo definido pela modalidade e bloqueado.",
+      descricao:
+        "Empreendimento sem injeção de energia na rede — campo definido pela modalidade e bloqueado.",
       overrides: { gridZero: "Sim", fastTrack: "Não" },
-      locked: { gridZero: true, fastTrack: true }
+      locked: { gridZero: true, fastTrack: true },
     };
   // Sem modo: nem Fast Track nem Grid Zero foram selecionados ⇒ ambos travados em "Não".
   return {
@@ -37,19 +39,27 @@ function gdModoDaURL() {
     label: "",
     descricao: "",
     overrides: { fastTrack: "Não", gridZero: "Não" },
-    locked: { fastTrack: true, gridZero: true }
+    locked: { fastTrack: true, gridZero: true },
   };
 }
 const GD_MODO = gdModoDaURL();
 function App() {
-  const [d, setD] = useState(() => ({ ...gdEstadoInicial(), ...GD_MODO.overrides }));
+  const [d, setD] = useState(() => ({
+    ...gdEstadoInicial(),
+    ...GD_MODO.overrides,
+  }));
   const [aba, setAba] = useState("ident");
   const [cepStatus, setCepStatus] = useState("");
   const [cnpjStatus, setCnpjStatus] = useState("");
   const set = (patch) => setD((s) => ({ ...s, ...patch }));
   useEffect(() => {
-    const pm = (parseFloat(d.qtdModulos) || 0) * (parseFloat(d.potNominalModulo) || 0) / 1e3;
-    const pi = (parseFloat(d.qtdInversores) || 0) * (parseFloat(d.potNominalInversor) || 0);
+    const pm =
+      ((parseFloat(d.qtdModulos) || 0) *
+        (parseFloat(d.potNominalModulo) || 0)) /
+      1e3;
+    const pi =
+      (parseFloat(d.qtdInversores) || 0) *
+      (parseFloat(d.potNominalInversor) || 0);
     const pmS = pm ? String(pm) : "";
     const piS = pi ? String(pi) : "";
     const patch = {};
@@ -58,12 +68,18 @@ function App() {
     // Regra 6: em FV, a Potência Ativa Instalada de geração é calculada automaticamente
     // como o MENOR valor entre a potência total de módulos e a potência total de inversores.
     if (d.fontePrimaria === "Solar") {
-      const calc = pm > 0 && pi > 0 ? Math.min(pm, pi) : (pm || pi || 0);
+      const calc = pm > 0 && pi > 0 ? Math.min(pm, pi) : pm || pi || 0;
       const calcS = calc ? String(calc) : "";
       if (calcS !== d.potAtivaInstalada) patch.potAtivaInstalada = calcS;
     }
     if (Object.keys(patch).length) setD((s) => ({ ...s, ...patch }));
-  }, [d.qtdModulos, d.potNominalModulo, d.qtdInversores, d.potNominalInversor, d.fontePrimaria]);
+  }, [
+    d.qtdModulos,
+    d.potNominalModulo,
+    d.qtdInversores,
+    d.potNominalInversor,
+    d.fontePrimaria,
+  ]);
   const { buscarCep, buscarCnpj } = criarConsultasExternas({
     d,
     set,
@@ -71,7 +87,7 @@ function App() {
     mascararFixo,
     mascararCEP,
     setCepStatus,
-    setCnpjStatus
+    setCnpjStatus,
   });
   const validacao = useMemo(() => {
     const faltas = [];
@@ -100,10 +116,12 @@ function App() {
     // Formulário de Carga obrigatório para Ligação Nova / Aumento de Carga.
     if (GD_SOLICITACOES_FORM_CARGA.includes(d.solicitacao)) {
       const c = d.cargas || {};
-      const temCarga = (c.qtds || []).some((q) => (q || 0) > 0) ||
+      const temCarga =
+        (c.qtds || []).some((q) => (q || 0) > 0) ||
         (c.mots || []).some((m) => (parseInt(m.q) || 0) > 0) ||
         (c.extras || []).some((m) => (parseInt(m.q) || 0) > 0);
-      if (!temCarga) faltas.push("Formulário de Carga (declarar as cargas elétricas)");
+      if (!temCarga)
+        faltas.push("Formulário de Carga (declarar as cargas elétricas)");
     }
     // Regra 3: em Baixa Tensão (Grupo B) não há contratação de demanda de consumo.
     if (d.grupo !== "B") req(d.demandaConsumo, "Demanda contratada de consumo");
@@ -116,9 +134,14 @@ function App() {
     if ((d.solicitacao || "").indexOf("GD Existente") >= 0)
       req(d.potGeracaoExistente, "Potência de geração já existente");
     req(d.modalidade, "Modalidade de compensação");
-    // Regra 5: no Fast Track, a potência da usina não pode exceder 7,5 MW.
-    if (d.fastTrack === "Sim" && (parseFloat(d.potAtivaInstalada) || 0) > GD_FAST_LIMITE_USINA_KW)
-      faltas.push(`Potência da usina acima do limite Fast Track (${GD_FAST_LIMITE_MW} MW)`);
+    // Regra 5: no Fast Track, a potência da usina não pode exceder 7,5 kW.
+    if (
+      d.fastTrack === "Sim" &&
+      (parseFloat(d.potAtivaInstalada) || 0) > GD_FAST_LIMITE_USINA_KW
+    )
+      faltas.push(
+        `Potência da usina acima do limite Fast Track (${GD_FAST_LIMITE_kW} kW)`,
+      );
     if (!d.decl84) faltas.push("Declaração 8.4 (obrigatória)");
     if (!d.decl86) faltas.push("Declaração 8.6 (obrigatória)");
     req(d.solicitanteNome, "Nome do solicitante");
@@ -138,45 +161,149 @@ function App() {
     buscarCnpj,
     validacao,
     locked: GD_MODO.locked,
-    gerarPdf: () => gerarPdfMicroGD(d)
+    gerarPdf: () => gerarPdfMicroGD(d),
   };
   const idx = GD_ABAS.findIndex((a) => a.id === aba);
   const Atual = GD_ABAS[idx].c;
   const irProx = () => idx < GD_ABAS.length - 1 && setAba(GD_ABAS[idx + 1].id);
   const irAnt = () => idx > 0 && setAba(GD_ABAS[idx - 1].id);
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "topbar" }, /* @__PURE__ */ React.createElement("div", { className: "topbar-inner" }, /* @__PURE__ */ React.createElement("div", { className: "topbar-left" }, /* @__PURE__ */ React.createElement("a", { className: "topbar-home", href: "../index.html" }, "← Início"), /* @__PURE__ */ React.createElement("span", { className: "app-title" }, "Assistente de formulário")), /* @__PURE__ */ React.createElement("div", { className: "topbar-links" }, /* @__PURE__ */ React.createElement(
-    "a",
-    {
-      href: "https://atende.cemig.com.br/Login",
-      target: "_blank",
-      rel: "noreferrer"
-    },
-    "CEMIG ATENDE"
-  ), /* @__PURE__ */ React.createElement(
-    "a",
-    {
-      href: "https://partapr.cemig.com.br/PARTAPR/SelecaoModulo.aspx",
-      target: "_blank",
-      rel: "noreferrer"
-    },
-    "APR Web"
-  )))), /* @__PURE__ */ React.createElement("div", { className: "layout" }, /* @__PURE__ */ React.createElement("aside", { className: "sidebar" }, /* @__PURE__ */ React.createElement("div", { className: "sidebar-title" }, "Progresso do preenchimento"), GD_ABAS.map((a, i) => /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      key: a.id,
-      className: "vstep" + (a.id === aba ? " active" : i < idx ? " done" : ""),
-      onClick: () => setAba(a.id)
-    },
-    /* @__PURE__ */ React.createElement("span", { className: "vstep-num" }, i + 1),
-    /* @__PURE__ */ React.createElement("span", { className: "vstep-label" }, a.n)
-  ))), /* @__PURE__ */ React.createElement("main", { className: "main-col fade-in", key: aba }, GD_MODO.modo && /* @__PURE__ */ React.createElement("div", { className: "gd-modo-banner" }, /* @__PURE__ */ React.createElement("strong", null, "Modalidade: ", GD_MODO.label), GD_MODO.descricao && /* @__PURE__ */ React.createElement("span", null, GD_MODO.descricao)), /* @__PURE__ */ React.createElement(Atual, { ctx }), /* @__PURE__ */ React.createElement("div", { className: "nav-bottom" }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: irAnt, disabled: idx === 0 }, "← Voltar"), /* @__PURE__ */ React.createElement("span", { className: "nav-step-info" }, "Etapa ", idx + 1, " de ", GD_ABAS.length), idx < GD_ABAS.length - 1 ? /* @__PURE__ */ React.createElement(Btn, { variant: "primary", onClick: irProx }, "Avançar →") : /* @__PURE__ */ React.createElement(
-    Btn,
-    {
-      variant: "primary",
-      onClick: () => gerarPdfMicroGD(d),
-      disabled: !validacao.ok
-    },
-    "📄 Exportar PDF"
-  )))));
+  return /* @__PURE__ */ React.createElement(
+    "div",
+    null,
+    /* @__PURE__ */ React.createElement(
+      "div",
+      { className: "topbar" },
+      /* @__PURE__ */ React.createElement(
+        "div",
+        { className: "topbar-inner" },
+        /* @__PURE__ */ React.createElement(
+          "div",
+          { className: "topbar-left" },
+          /* @__PURE__ */ React.createElement(
+            "a",
+            { className: "topbar-home", href: "../index.html" },
+            "← Início",
+          ),
+          /* @__PURE__ */ React.createElement(
+            "span",
+            { className: "app-title" },
+            "Assistente de formulário",
+          ),
+        ),
+        /* @__PURE__ */ React.createElement(
+          "div",
+          { className: "topbar-links" },
+          /* @__PURE__ */ React.createElement(
+            "a",
+            {
+              href: "https://atende.cemig.com.br/Login",
+              target: "_blank",
+              rel: "noreferrer",
+            },
+            "CEMIG ATENDE",
+          ),
+          /* @__PURE__ */ React.createElement(
+            "a",
+            {
+              href: "https://partapr.cemig.com.br/PARTAPR/SelecaoModulo.aspx",
+              target: "_blank",
+              rel: "noreferrer",
+            },
+            "APR Web",
+          ),
+        ),
+      ),
+    ),
+    /* @__PURE__ */ React.createElement(
+      "div",
+      { className: "layout" },
+      /* @__PURE__ */ React.createElement(
+        "aside",
+        { className: "sidebar" },
+        /* @__PURE__ */ React.createElement(
+          "div",
+          { className: "sidebar-title" },
+          "Progresso do preenchimento",
+        ),
+        GD_ABAS.map((a, i) =>
+          /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              key: a.id,
+              className:
+                "vstep" + (a.id === aba ? " active" : i < idx ? " done" : ""),
+              onClick: () => setAba(a.id),
+            },
+            /* @__PURE__ */ React.createElement(
+              "span",
+              { className: "vstep-num" },
+              i + 1,
+            ),
+            /* @__PURE__ */ React.createElement(
+              "span",
+              { className: "vstep-label" },
+              a.n,
+            ),
+          ),
+        ),
+      ),
+      /* @__PURE__ */ React.createElement(
+        "main",
+        { className: "main-col fade-in", key: aba },
+        GD_MODO.modo &&
+          /* @__PURE__ */ React.createElement(
+            "div",
+            { className: "gd-modo-banner" },
+            /* @__PURE__ */ React.createElement(
+              "strong",
+              null,
+              "Modalidade: ",
+              GD_MODO.label,
+            ),
+            GD_MODO.descricao &&
+              /* @__PURE__ */ React.createElement(
+                "span",
+                null,
+                GD_MODO.descricao,
+              ),
+          ),
+        /* @__PURE__ */ React.createElement(Atual, { ctx }),
+        /* @__PURE__ */ React.createElement(
+          "div",
+          { className: "nav-bottom" },
+          /* @__PURE__ */ React.createElement(
+            Btn,
+            { variant: "ghost", onClick: irAnt, disabled: idx === 0 },
+            "← Voltar",
+          ),
+          /* @__PURE__ */ React.createElement(
+            "span",
+            { className: "nav-step-info" },
+            "Etapa ",
+            idx + 1,
+            " de ",
+            GD_ABAS.length,
+          ),
+          idx < GD_ABAS.length - 1
+            ? /* @__PURE__ */ React.createElement(
+                Btn,
+                { variant: "primary", onClick: irProx },
+                "Avançar →",
+              )
+            : /* @__PURE__ */ React.createElement(
+                Btn,
+                {
+                  variant: "primary",
+                  onClick: () => gerarPdfMicroGD(d),
+                  disabled: !validacao.ok,
+                },
+                "📄 Exportar PDF",
+              ),
+        ),
+      ),
+    ),
+  );
 }
-ReactDOM.createRoot(document.getElementById("root")).render(/* @__PURE__ */ React.createElement(App, null));
+ReactDOM.createRoot(document.getElementById("root")).render(
+  /* @__PURE__ */ React.createElement(App, null),
+);

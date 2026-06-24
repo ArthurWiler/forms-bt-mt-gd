@@ -154,7 +154,13 @@ function ViewDadosUC({ ctx }) {
     ) {
       set({ tipoSE: "" });
     }
-  }, [mostrarSE, d.solicitacao, d.tensaoAtendimento, d.instExistenteBTMT, _potInst]);
+  }, [
+    mostrarSE,
+    d.solicitacao,
+    d.tensaoAtendimento,
+    d.instExistenteBTMT,
+    _potInst,
+  ]);
   return /* @__PURE__ */ React.createElement(
     Card,
     { eyebrow: "Seção 2", title: "Dados da Unidade Consumidora" },
@@ -713,7 +719,7 @@ function ViewGeracao({ ctx }) {
   const potInversoresCalc =
     (parseFloat(d.qtdInversores) || 0) *
     (parseFloat(d.potNominalInversor) || 0);
-  // Regra 5: Fast Track ⇒ usina ≤ 7,5 MW e Modalidade travada em Autoconsumo local.
+  // Regra 5: Fast Track ⇒ usina ≤ 7,5 kW e Modalidade travada em Autoconsumo local.
   const ehFastTrack = d.fastTrack === "Sim";
   React.useEffect(() => {
     if (ehFastTrack && d.modalidade !== GD_MODALIDADE_AUTOCONSUMO_LOCAL)
@@ -757,7 +763,7 @@ function ViewGeracao({ ctx }) {
                 ? " Valor acima do limite Fast Track."
                 : "")
             : ehFastTrack
-              ? `Fast Track: máximo de ${GD_FAST_LIMITE_MW} MW (${GD_FAST_LIMITE_USINA_KW} kW).` +
+              ? `Fast Track: máximo de ${GD_FAST_LIMITE_kW} kW (${GD_FAST_LIMITE_USINA_KW} kW).` +
                 (fastExcedeLimite ? " Valor acima do limite permitido." : "")
               : "",
         },
@@ -798,7 +804,7 @@ function ViewGeracao({ ctx }) {
               null,
               "Limite do Fast Track excedido. ",
             ),
-            `No enquadramento Fast Track, a potência da usina não pode ser superior a ${GD_FAST_LIMITE_MW} MW (${GD_FAST_LIMITE_USINA_KW} kW).`,
+            `No enquadramento Fast Track, a potência da usina não pode ser superior a ${GD_FAST_LIMITE_kW} kW (${GD_FAST_LIMITE_USINA_KW} kW).`,
           ),
         ),
       /* @__PURE__ */ React.createElement(
@@ -878,7 +884,7 @@ function ViewGeracao({ ctx }) {
             /* @__PURE__ */ React.createElement(
               "span",
               null,
-              `Como o empreendimento é Fast Track (art. 73-A), a modalidade de compensação fica travada em Autoconsumo local e a potência da usina é limitada a ${GD_FAST_LIMITE_MW} MW.`,
+              `Como o empreendimento é Fast Track (art. 73-A), a modalidade de compensação fica travada em Autoconsumo local e a potência da usina é limitada a ${GD_FAST_LIMITE_kW} kW.`,
             ),
           ),
         ),
