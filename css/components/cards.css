@@ -1,0 +1,204 @@
+/* ============================================================
+   CEMIG Design System — Cards & Accordion (modality selector)
+   ------------------------------------------------------------
+   Restyles the existing modality-selector markup
+   (bt/js/components.js → SecaoModalidade) with the new CEMIG identity.
+   No markup change is required for the accordion: the component already
+   renders `.modalidade-secao(.is-collapsed)`, `.modalidade-secao-titulo`,
+   `.modalidade-secao-chevron`, `.modalidade-secao-corpo`, `.modalidade-grid`
+   and `.modalidade-card`.
+
+   OVERRIDE STRATEGY: every rule is scoped under `.modalidade-screen`
+   (specificity 0,2,0) so it beats the legacy single-class rules
+   (0,1,0) in bt/css/styles.css regardless of load order, and never
+   leaks into the BT form rendered later in the same document.
+   ============================================================ */
+
+/* ---- Section head: title + intro + info notice ---- */
+.modalidade-screen .modalidade-head {
+  text-align: left;
+  margin-bottom: var(--cmg-space-12);
+  display: flex;
+  flex-direction: column;
+  gap: var(--cmg-space-8);
+}
+.modalidade-screen .modalidade-head h1 {
+  font-size: var(--cmg-fs-title);
+  line-height: var(--cmg-lh-title);
+  font-weight: var(--cmg-fw-regular);
+  letter-spacing: var(--cmg-ls-wide);
+  color: var(--cmg-text-strong);
+}
+.modalidade-screen .modalidade-head p {
+  max-width: none;
+  margin: 0;
+  font-size: var(--cmg-fs-body-lg);
+  line-height: var(--cmg-lh-body-lg);
+  letter-spacing: var(--cmg-ls-tight);
+  color: var(--cmg-text);
+}
+
+/* Info notice ("aviso") — additive node rendered in the head */
+.modalidade-screen .modalidade-aviso {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--cmg-neutral-200);
+  border-radius: var(--cmg-radius);
+  overflow: hidden;
+}
+.modalidade-screen .modalidade-aviso-icon {
+  flex: none;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  background: var(--cmg-neutral-200);
+}
+/* circular "i" info glyph (markup is an empty span) */
+.modalidade-screen .modalidade-aviso-icon::before {
+  content: "i";
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--cmg-neutral-600);
+  border-radius: 50%;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--cmg-neutral-600);
+}
+.modalidade-screen .modalidade-aviso p {
+  margin: 0;
+  padding: var(--cmg-space-4) var(--cmg-space-6);
+  display: flex;
+  align-items: center;
+  font-size: var(--cmg-fs-body);
+  line-height: var(--cmg-lh-body);
+  color: var(--cmg-text);
+  background: var(--cmg-surface);
+}
+
+/* ---- Accordion section ---- */
+.modalidade-screen .modalidade-secao {
+  margin-bottom: 0;
+}
+.modalidade-screen .modalidade-secao-titulo {
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-subtitle);
+  line-height: var(--cmg-lh-subtitle);
+  font-weight: var(--cmg-fw-bold);
+  letter-spacing: var(--cmg-ls-wide);
+  text-transform: none;
+  color: var(--cmg-text);
+  margin: 0;
+  padding: var(--cmg-space-4);
+  border: none;
+  border-top: 1px solid var(--cmg-divider);
+  background: transparent;
+}
+/* collapse the doubled divider between consecutive rows */
+.modalidade-screen .modalidade-secao:last-of-type .modalidade-secao-titulo {
+  border-bottom: 1px solid var(--cmg-divider);
+}
+.modalidade-screen .modalidade-secao-titulo:hover {
+  opacity: 1;
+  color: var(--cmg-green-600);
+}
+.modalidade-screen .modalidade-secao-titulo:focus-visible {
+  outline: 2px solid var(--cmg-green-600);
+  outline-offset: -2px;
+}
+.modalidade-screen .modalidade-secao-chevron {
+  color: var(--cmg-neutral-600);
+  font-size: 18px;
+}
+/* Chevron points DOWN when collapsed and UP when open (the legacy rule
+   rotates it -90deg, which reads as a sideways arrow — override it). */
+.modalidade-screen .modalidade-secao.is-collapsed .modalidade-secao-chevron {
+  transform: none;
+}
+.modalidade-screen .modalidade-secao:not(.is-collapsed) .modalidade-secao-chevron {
+  transform: rotate(180deg);
+}
+
+/* ---- Expanded panel ---- */
+.modalidade-screen .modalidade-secao-corpo > .modalidade-grid {
+  padding: var(--cmg-space-4) var(--cmg-space-4) var(--cmg-space-6);
+  transition: padding 0.3s ease;
+}
+/* When collapsed, zero the vertical padding so the panel fully collapses.
+   The grid-rows 1fr→0fr technique clips content via overflow:hidden, but the
+   grid's own top/bottom padding does NOT collapse and would otherwise leave a
+   sliver showing the top edge of the cards (the stray lines). */
+.modalidade-screen .modalidade-secao.is-collapsed .modalidade-secao-corpo > .modalidade-grid {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.modalidade-screen .modalidade-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--cmg-space-6);
+}
+
+/* ---- Modality card ---- */
+.modalidade-screen .modalidade-card {
+  background: var(--cmg-surface);
+  border: 1px solid var(--cmg-border);
+  border-radius: var(--cmg-radius);
+  box-shadow: none;
+  overflow: hidden;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+.modalidade-screen .modalidade-card:not(:disabled):hover {
+  transform: translateY(-2px);
+  border-color: var(--cmg-green-600);
+  box-shadow: var(--cmg-shadow-card-hover);
+}
+.modalidade-screen .modalidade-img {
+  aspect-ratio: auto;
+  height: 200px;
+  background: var(--cmg-surface);
+}
+.modalidade-screen .modalidade-img img {
+  object-fit: cover;
+}
+.modalidade-screen .modalidade-card-body {
+  padding: var(--cmg-space-6) var(--cmg-space-3);
+  gap: var(--cmg-space-2);
+  background: var(--cmg-surface);
+  transition: background 0.15s ease;
+}
+.modalidade-screen .modalidade-card:not(:disabled):hover .modalidade-card-body {
+  background: var(--cmg-surface-accent);
+}
+.modalidade-screen .modalidade-card-body strong {
+  font-size: var(--cmg-fs-subtitle);
+  line-height: var(--cmg-lh-subtitle);
+  font-weight: var(--cmg-fw-regular);
+  letter-spacing: var(--cmg-ls-wide);
+  color: var(--cmg-text);
+}
+.modalidade-screen .modalidade-sub {
+  font-size: var(--cmg-fs-body);
+  line-height: var(--cmg-lh-body);
+  letter-spacing: var(--cmg-ls-tight);
+  color: var(--cmg-text-muted);
+}
+
+/* ---- Availability tag ---- */
+.modalidade-screen .modalidade-tag {
+  border-radius: var(--cmg-radius-pill);
+  letter-spacing: var(--cmg-ls-wide);
+}
+.modalidade-screen .modalidade-tag.avail {
+  background: var(--cmg-green-600);
+  color: #fff;
+  border-color: transparent;
+}

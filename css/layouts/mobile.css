@@ -1,0 +1,12 @@
+/* ============================================================
+   CEMIG Design System — Mobile layout (stub)
+   ------------------------------------------------------------
+   The dedicated CEMIG mobile identity has NOT been delivered yet.
+   Per the migration plan, mobile currently INHERITS the existing
+   responsive behavior (the legacy `@media (max-width: …)` rules in
+   bt/css/styles.css remain in effect). This file is the reserved
+   home for mobile-specific overrides once the mobile spec arrives.
+
+   Until then it intentionally adds nothing, so the current mobile
+   experience is preserved unchanged.
+   ============================================================ */

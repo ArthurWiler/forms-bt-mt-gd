@@ -1,0 +1,12 @@
+/* ============================================================
+   CEMIG Design System — Buttons (placeholder)
+   ------------------------------------------------------------
+   Reserved for the shared CEMIG button component, to be populated
+   when a button spec is delivered in a future phase.
+
+   Conventions for this file (see /css/README.md):
+   - Consume tokens from base/variables.css (--cmg-*).
+   - Scope rules to the migrated surface until a page is fully
+     migrated, so legacy `.btn-*` styles are not disturbed.
+   - Expose a single reusable class (e.g. `.cmg-btn` with modifiers).
+   ============================================================ */

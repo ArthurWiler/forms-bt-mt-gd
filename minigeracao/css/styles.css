@@ -75,20 +75,6 @@ body {
 }
 .logo-cemig svg { height: 34px; width: auto; }
 .logo-cemig .logo-img { height: 34px; width: auto; display: block; }
-.topbar-links { display: flex; gap: 8px; flex-wrap: wrap; }
-.topbar-links a {
-  font-size: 12px;
-  font-weight: 700;
-  text-decoration: none;
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  padding: 7px 14px;
-  border-radius: 999px;
-  transition: all 0.15s;
-  letter-spacing: 0.3px;
-}
-.topbar-links a:hover { background: #fff; color: var(--verde-escuro); border-color: #fff; }
-
 /* ---------- CABEÇALHO DO FORMULÁRIO ---------- */
 .form-header {
   max-width: 1360px;

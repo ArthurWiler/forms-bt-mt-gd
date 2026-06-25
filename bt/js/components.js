@@ -82,7 +82,7 @@ function SecaoModalidade({ sec, onSelect }) {
 }
 function LogoCemig() {
   return /* @__PURE__ */ React.createElement("img", {
-    src: "imgs/logos/logo-cemig-branca.png",
+    src: "imgs/logos/logo-cemig-branca-com-verde.png",
     alt: "Cemig",
     className: "logo-img",
   });

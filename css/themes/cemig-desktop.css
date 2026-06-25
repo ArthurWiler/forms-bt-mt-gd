@@ -1,0 +1,35 @@
+/* ============================================================
+   CEMIG Theme — Desktop (entry point)
+   ------------------------------------------------------------
+   Single stylesheet a desktop page links to. Composes the design
+   system layers in cascade order:
+     1. base      — tokens, reset, typography, utilities
+     2. components — reusable UI (cards/accordion populated; others
+                     are placeholders for upcoming phases)
+     3. layouts    — page-level desktop layout
+
+   Load this AFTER a page's legacy stylesheet so same-specificity
+   container rules (e.g. `.modalidade-screen`) are overridden, while
+   child rules win on specificity (scoped descendant selectors).
+   See /css/README.md for the full strategy and phase status.
+   ============================================================ */
+
+/* 1. base */
+@import url("../base/variables.css");
+@import url("../base/reset.css");
+@import url("../base/typography.css");
+@import url("../base/utilities.css");
+
+/* 2. components */
+@import url("../components/buttons.css");
+@import url("../components/cards.css");
+@import url("../components/forms.css");
+@import url("../components/tables.css");
+@import url("../components/modals.css");
+@import url("../components/navigation.css");
+
+/* 3. layouts */
+@import url("../layouts/desktop.css");
+
+/* 4. pages (page-specific composition) */
+@import url("../pages/home.css");

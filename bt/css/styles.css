@@ -82,24 +82,11 @@ body {
 .logo-cemig .logo-img { height: 34px; width: auto; display: block; }
 .app-title {
   font-family: "DM Sans", system-ui, -apple-system, sans-serif;
-  font-size: 19px;
-  font-weight: 800;
+  font-size: 36px;
+  font-weight: 400;
   color: #fff;
   letter-spacing: 0.3px;
 }
-.topbar-links { display: flex; gap: 8px; flex-wrap: wrap; }
-.topbar-links a {
-  font-size: 12px;
-  font-weight: 700;
-  text-decoration: none;
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  padding: 7px 14px;
-  border-radius: 999px;
-  transition: all 0.15s;
-  letter-spacing: 0.3px;
-}
-.topbar-links a:hover { background: #fff; color: var(--verde-escuro); border-color: #fff; }
 .topbar-left { display: flex; align-items: center; gap: 14px; }
 .topbar-home {
   font-family: inherit;
@@ -118,7 +105,8 @@ body {
 
 /* ---------- CABEÇALHO DO FORMULÁRIO ---------- */
 .form-header {
-  max-width: 1360px;
+  max-width: 1366px;
+  height: 80px;
   margin: 0 auto;
   padding: 28px 20px 8px;
 }
@@ -729,10 +717,6 @@ select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
 }
 .modalidade-secao {
   margin-bottom: 34px;
-}
-.modalidade-footer-link {
-  text-align: center;
-  margin: 18px 0 40px;
 }
 .link-desistencia {
   display: inline-block;

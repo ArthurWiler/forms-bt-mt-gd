@@ -6,7 +6,7 @@ const GD_ABAS = [
   { id: "ger", n: "Dados da Geração", c: ViewGeracao },
   { id: "arm", n: "Armazenamento", c: ViewArmazenamento },
   { id: "decl", n: "Declarações", c: ViewDeclaracoes },
-  { id: "rev", n: "Prévia & PDF", c: ViewRevisao }
+  { id: "rev", n: "Prévia & PDF", c: ViewRevisao },
 ];
 function App() {
   const [d, setD] = useState(gdEstadoInicial());
@@ -21,7 +21,7 @@ function App() {
     mascararFixo,
     mascararCEP,
     setCepStatus,
-    setCnpjStatus
+    setCnpjStatus,
   });
   const validacao = useMemo(() => {
     const faltas = [];
@@ -52,10 +52,12 @@ function App() {
     // Formulário de Carga obrigatório para Ligação Nova / Aumento de Demanda Contratada.
     if (GD_SOLICITACOES_FORM_CARGA.includes(d.solicitacao)) {
       const c = d.cargas || {};
-      const temCarga = (c.qtds || []).some((q) => (q || 0) > 0) ||
+      const temCarga =
+        (c.qtds || []).some((q) => (q || 0) > 0) ||
         (c.mots || []).some((m) => (parseInt(m.q) || 0) > 0) ||
         (c.extras || []).some((m) => (parseInt(m.q) || 0) > 0);
-      if (!temCarga) faltas.push("Formulário de Carga (declarar as cargas elétricas)");
+      if (!temCarga)
+        faltas.push("Formulário de Carga (declarar as cargas elétricas)");
     }
     // Regra 10: "SEM Alteração de Demanda Contratada" não solicita nova demanda de consumo.
     if ((d.solicitacao || "").indexOf("SEM Alteração de Demanda") < 0)
@@ -75,7 +77,8 @@ function App() {
     }
     if (!d.decl84) faltas.push("Declaração 9.4 (obrigatória)");
     // Regra 22: item 9.5 obrigatório quando Grid Zero = Sim.
-    if (d.gridZero === "Sim" && !d.decl95) faltas.push("Declaração 9.5 (obrigatória para Grid Zero)");
+    if (d.gridZero === "Sim" && !d.decl95)
+      faltas.push("Declaração 9.5 (obrigatória para Grid Zero)");
     if (!d.decl86) faltas.push("Declaração 9.6 (obrigatória)");
     req(d.solicitanteNome, "Nome do solicitante");
     req(d.solicitanteEndereco, "Endereço de correspondência");
@@ -91,45 +94,110 @@ function App() {
     buscarCep,
     buscarCnpj,
     validacao,
-    gerarPdf: () => gerarPdfMiniGD(d)
+    gerarPdf: () => gerarPdfMiniGD(d),
   };
   const idx = GD_ABAS.findIndex((a) => a.id === aba);
   const Atual = GD_ABAS[idx].c;
   const irProx = () => idx < GD_ABAS.length - 1 && setAba(GD_ABAS[idx + 1].id);
   const irAnt = () => idx > 0 && setAba(GD_ABAS[idx - 1].id);
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "topbar" }, /* @__PURE__ */ React.createElement("div", { className: "topbar-inner" }, /* @__PURE__ */ React.createElement("div", { className: "topbar-left" }, /* @__PURE__ */ React.createElement("a", { className: "topbar-home", href: "../index.html" }, "← Início"), /* @__PURE__ */ React.createElement("span", { className: "app-title" }, "Assistente de formulário")), /* @__PURE__ */ React.createElement("div", { className: "topbar-links" }, /* @__PURE__ */ React.createElement(
-    "a",
-    {
-      href: "https://atende.cemig.com.br/Login",
-      target: "_blank",
-      rel: "noreferrer"
-    },
-    "CEMIG ATENDE"
-  ), /* @__PURE__ */ React.createElement(
-    "a",
-    {
-      href: "https://partapr.cemig.com.br/PARTAPR/SelecaoModulo.aspx",
-      target: "_blank",
-      rel: "noreferrer"
-    },
-    "APR Web"
-  )))), /* @__PURE__ */ React.createElement("div", { className: "layout" }, /* @__PURE__ */ React.createElement("aside", { className: "sidebar" }, /* @__PURE__ */ React.createElement("div", { className: "sidebar-title" }, "Progresso do preenchimento"), GD_ABAS.map((a, i) => /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      key: a.id,
-      className: "vstep" + (a.id === aba ? " active" : i < idx ? " done" : ""),
-      onClick: () => setAba(a.id)
-    },
-    /* @__PURE__ */ React.createElement("span", { className: "vstep-num" }, i + 1),
-    /* @__PURE__ */ React.createElement("span", { className: "vstep-label" }, a.n)
-  ))), /* @__PURE__ */ React.createElement("main", { className: "main-col fade-in", key: aba }, /* @__PURE__ */ React.createElement(Atual, { ctx }), /* @__PURE__ */ React.createElement("div", { className: "nav-bottom" }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: irAnt, disabled: idx === 0 }, "← Voltar"), /* @__PURE__ */ React.createElement("span", { className: "nav-step-info" }, "Etapa ", idx + 1, " de ", GD_ABAS.length), idx < GD_ABAS.length - 1 ? /* @__PURE__ */ React.createElement(Btn, { variant: "primary", onClick: irProx }, "Avançar →") : /* @__PURE__ */ React.createElement(
-    Btn,
-    {
-      variant: "primary",
-      onClick: () => gerarPdfMiniGD(d),
-      disabled: !validacao.ok
-    },
-    "📄 Exportar PDF"
-  )))));
+  return /* @__PURE__ */ React.createElement(
+    "div",
+    null,
+    /* @__PURE__ */ React.createElement(
+      "div",
+      { className: "topbar" },
+      /* @__PURE__ */ React.createElement(
+        "div",
+        { className: "topbar-inner" },
+        /* @__PURE__ */ React.createElement(
+          "div",
+          { className: "topbar-left" },
+          /* @__PURE__ */ React.createElement(
+            "a",
+            { className: "topbar-home", href: "../index.html" },
+            "← Início",
+          ),
+          /* @__PURE__ */ React.createElement(
+            "span",
+            { className: "app-title" },
+            "Assistente de formulário",
+          ),
+        ),
+      ),
+    ),
+    /* @__PURE__ */ React.createElement(
+      "div",
+      { className: "layout" },
+      /* @__PURE__ */ React.createElement(
+        "aside",
+        { className: "sidebar" },
+        /* @__PURE__ */ React.createElement(
+          "div",
+          { className: "sidebar-title" },
+          "Progresso do preenchimento",
+        ),
+        GD_ABAS.map((a, i) =>
+          /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              key: a.id,
+              className:
+                "vstep" + (a.id === aba ? " active" : i < idx ? " done" : ""),
+              onClick: () => setAba(a.id),
+            },
+            /* @__PURE__ */ React.createElement(
+              "span",
+              { className: "vstep-num" },
+              i + 1,
+            ),
+            /* @__PURE__ */ React.createElement(
+              "span",
+              { className: "vstep-label" },
+              a.n,
+            ),
+          ),
+        ),
+      ),
+      /* @__PURE__ */ React.createElement(
+        "main",
+        { className: "main-col fade-in", key: aba },
+        /* @__PURE__ */ React.createElement(Atual, { ctx }),
+        /* @__PURE__ */ React.createElement(
+          "div",
+          { className: "nav-bottom" },
+          /* @__PURE__ */ React.createElement(
+            Btn,
+            { variant: "ghost", onClick: irAnt, disabled: idx === 0 },
+            "← Voltar",
+          ),
+          /* @__PURE__ */ React.createElement(
+            "span",
+            { className: "nav-step-info" },
+            "Etapa ",
+            idx + 1,
+            " de ",
+            GD_ABAS.length,
+          ),
+          idx < GD_ABAS.length - 1
+            ? /* @__PURE__ */ React.createElement(
+                Btn,
+                { variant: "primary", onClick: irProx },
+                "Avançar →",
+              )
+            : /* @__PURE__ */ React.createElement(
+                Btn,
+                {
+                  variant: "primary",
+                  onClick: () => gerarPdfMiniGD(d),
+                  disabled: !validacao.ok,
+                },
+                "📄 Exportar PDF",
+              ),
+        ),
+      ),
+    ),
+  );
 }
-ReactDOM.createRoot(document.getElementById("root")).render(/* @__PURE__ */ React.createElement(App, null));
+ReactDOM.createRoot(document.getElementById("root")).render(
+  /* @__PURE__ */ React.createElement(App, null),
+);

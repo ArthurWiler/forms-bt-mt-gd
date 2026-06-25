@@ -1,0 +1,104 @@
+/* ============================================================
+   CEMIG Design System — Page: Home / modality selector
+   ------------------------------------------------------------
+   Page-specific composition for the landing ("página inicial"):
+   the institutional green header and the dark footer.
+
+   SCOPE: everything is under `.cemig-portal`, the class applied to
+   the app shell ONLY while the modality selector is visible
+   (bt/js/app.js → outer wrapper `modalidade ? "" : "cemig-portal"`).
+   This is what keeps the new green header/footer OFF the BT form
+   steps, which share the same global `.topbar` markup but render
+   without the `.cemig-portal` wrapper. See /css/README.md.
+   ============================================================ */
+.cemig-portal {
+  background: var(--cmg-surface);
+}
+
+/* ---- Institutional header (green bar) ----
+   Robust 3-track grid — NO absolute positioning, so it stays stable at any
+   zoom / viewport width:
+
+     [ 1fr | content-column (≤862px) | 1fr ]
+       logo        title (centered)     links
+
+   The centered middle track mirrors the body content column, so the title's
+   left edge lines up with the page heading on desktop. As width shrinks, the
+   gutters give up space first and the title wraps inside its track — the
+   tracks never overlap, so logo/title/links can't collide.
+
+   The wrapper DIVs (`.topbar-inner`, `.topbar-left`) are flattened with
+   `display: contents` so the logo, title and links become direct grid items
+   of `.topbar` without changing the React markup. Scoped to `.cemig-portal`,
+   so the BT form header (no wrapper class) keeps its legacy flex layout. */
+.cemig-portal .topbar {
+  display: grid;
+  grid-template-columns: 1fr minmax(0, var(--cmg-content-max)) 1fr;
+  align-items: center;
+  column-gap: var(--cmg-space-6);
+  padding: var(--cmg-space-3) var(--cmg-space-8);
+  min-height: var(--cmg-header-height);
+  height: auto;
+  background: var(--cmg-green-600);
+  border: none;
+}
+.cemig-portal .topbar-inner,
+.cemig-portal .topbar-left {
+  display: contents;
+}
+.cemig-portal .topbar .logo-img {
+  grid-column: 1;
+  justify-self: start;
+  width: 112px;
+  max-width: 100%;
+  height: auto;
+}
+.cemig-portal .app-title {
+  grid-column: 2;
+  justify-self: start;
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
+  color: var(--cmg-neutral-0);
+  font-family: var(--cmg-font-family);
+  font-weight: var(--cmg-fw-regular);
+  letter-spacing: var(--cmg-ls-wide);
+  /* título/grande (36px) — scales down gracefully as the column narrows */
+  font-size: clamp(18px, 2.2vw, var(--cmg-fs-display));
+  line-height: 1.2;
+}
+/* Preserve the existing navigation links (req: keep navigation); re-skin them
+   to read on the green bar. */
+/* Intermediate widths: tighten the gutters/gap so the title keeps more room
+   before it needs to wrap. */
+@media (max-width: 1024px) {
+  .cemig-portal .topbar {
+    column-gap: var(--cmg-space-4);
+    padding-left: var(--cmg-space-6);
+    padding-right: var(--cmg-space-6);
+  }
+}
+
+/* ---- Institutional footer (dark bar) ---- */
+.cemig-portal .portal-footer {
+  background: var(--cmg-neutral-700);
+  padding: var(--cmg-space-12) var(--cmg-space-8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--cmg-space-6);
+}
+.cemig-portal .portal-footer .logo-img {
+  width: 144px;
+  height: auto;
+}
+.cemig-portal .portal-footer-copy {
+  margin: 0;
+  color: var(--cmg-neutral-0);
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-caption);
+  line-height: var(--cmg-lh-caption);
+  letter-spacing: var(--cmg-ls-tight);
+  text-align: center;
+}

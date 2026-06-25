@@ -1,0 +1,13 @@
+/* ============================================================
+   CEMIG Design System — Navigation (placeholder)
+   ------------------------------------------------------------
+   Reserved for a REUSABLE/global institutional header (green bar
+   #0F6C58 + logo) and footer to be shared across the BT form steps
+   and the other modules (MT, GD, Loteamento).
+
+   NOTE: the landing-page header/footer are already implemented, but
+   scoped to the landing only, in `pages/home.css` (under `.cemig-portal`).
+   Promoting them to a global component touches screens not in the
+   current delivery, so it stays here for a dedicated phase. Populate
+   following the token + scoping conventions in /css/README.md.
+   ============================================================ */

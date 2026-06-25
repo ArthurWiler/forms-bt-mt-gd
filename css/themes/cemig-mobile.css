@@ -1,0 +1,22 @@
+/* ============================================================
+   CEMIG Theme — Mobile (entry point, stub)
+   ------------------------------------------------------------
+   Reserved entry for the dedicated mobile experience. The mobile
+   visual identity has not been delivered yet, so for now this theme
+   reuses the shared base tokens and lets the legacy responsive rules
+   drive the mobile layout (see layouts/mobile.css).
+
+   When the mobile spec arrives, populate layouts/mobile.css and the
+   mobile component variants, then link this theme from mobile-served
+   pages. Keeping a separate entry now guarantees desktop and mobile
+   can evolve independently without refactors.
+   ============================================================ */
+
+/* base tokens are shared across experiences */
+@import url("../base/variables.css");
+@import url("../base/reset.css");
+@import url("../base/typography.css");
+@import url("../base/utilities.css");
+
+/* mobile-specific layout (currently inherits legacy responsive rules) */
+@import url("../layouts/mobile.css");

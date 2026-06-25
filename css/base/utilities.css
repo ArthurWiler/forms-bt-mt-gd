@@ -1,0 +1,32 @@
+/* ============================================================
+   CEMIG Design System — Utilities (scoped)
+   ------------------------------------------------------------
+   Small, single-purpose helpers consumed by the portal. Kept scoped
+   to `.modalidade-screen` during migration to avoid leaking into
+   legacy screens. Expand as later phases need shared helpers.
+   ============================================================ */
+.modalidade-screen .cmg-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.modalidade-screen .cmg-stack {
+  display: flex;
+  flex-direction: column;
+}
+.modalidade-screen .cmg-gap-4 {
+  gap: var(--cmg-space-4);
+}
+.modalidade-screen .cmg-gap-6 {
+  gap: var(--cmg-space-6);
+}
+.modalidade-screen .cmg-gap-8 {
+  gap: var(--cmg-space-8);
+}

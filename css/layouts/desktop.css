@@ -1,0 +1,35 @@
+/* ============================================================
+   CEMIG Design System — Desktop layout (portal / landing)
+   ------------------------------------------------------------
+   Page-level layout for the modality selector on desktop. Scoped to
+   `.modalidade-screen` so it overrides the legacy container rule
+   (bt/css/styles.css `.modalidade-screen`, specificity 0,1,0 — this
+   file is loaded after it) without affecting the BT form.
+   ============================================================ */
+/* Content column = Figma "Conteúdo da página": 862px wide, centered, with
+   32px top / 60px bottom rhythm. No inner side padding on desktop so the
+   heading sits flush at the column edge (252px on a 1366 frame) — the header
+   title uses the same column (pages/home.css) and therefore lines up. */
+.modalidade-screen {
+  max-width: var(--cmg-content-max);
+  margin: var(--cmg-space-8) auto var(--cmg-space-15);
+  padding: 0;
+}
+
+/* Block flow on purpose: the accordion rows must sit FLUSH so their 1px
+   top borders form a single continuous divider (matching the design).
+   Spacing between the head and the accordion comes from the head's own
+   margin-bottom (components/cards.css); the footer link carries its own
+   margins. Do NOT use a flex `gap` here — it would space every row apart. */
+
+/* ---- Narrow desktop: add side breathing room (keep in sync with the
+   header column in pages/home.css so the two stay aligned). ---- */
+@media (max-width: 960px) {
+  .modalidade-screen {
+    padding-left: var(--cmg-space-6);
+    padding-right: var(--cmg-space-6);
+  }
+  .modalidade-screen .modalidade-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+}

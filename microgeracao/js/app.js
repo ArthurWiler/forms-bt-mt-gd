@@ -190,28 +190,6 @@ function App() {
             "Assistente de formulário",
           ),
         ),
-        /* @__PURE__ */ React.createElement(
-          "div",
-          { className: "topbar-links" },
-          /* @__PURE__ */ React.createElement(
-            "a",
-            {
-              href: "https://atende.cemig.com.br/Login",
-              target: "_blank",
-              rel: "noreferrer",
-            },
-            "CEMIG ATENDE",
-          ),
-          /* @__PURE__ */ React.createElement(
-            "a",
-            {
-              href: "https://partapr.cemig.com.br/PARTAPR/SelecaoModulo.aspx",
-              target: "_blank",
-              rel: "noreferrer",
-            },
-            "APR Web",
-          ),
-        ),
       ),
     ),
     /* @__PURE__ */ React.createElement(

@@ -895,7 +895,7 @@ function App() {
   };
   return /* @__PURE__ */ React.createElement(
     "div",
-    null,
+    { className: modalidade ? "" : "cemig-portal" },
     /* @__PURE__ */ React.createElement(
       "div",
       { className: "topbar" },
@@ -905,6 +905,7 @@ function App() {
         /* @__PURE__ */ React.createElement(
           "div",
           { className: "topbar-left" },
+          !modalidade && /* @__PURE__ */ React.createElement(LogoCemig),
           modalidade &&
             /* @__PURE__ */ React.createElement(
               "button",
@@ -917,65 +918,65 @@ function App() {
           /* @__PURE__ */ React.createElement(
             "span",
             { className: "app-title" },
-            "Assistente de formulário",
-          ),
-        ),
-        /* @__PURE__ */ React.createElement(
-          "div",
-          { className: "topbar-links" },
-          /* @__PURE__ */ React.createElement(
-            "a",
-            {
-              href: "https://atende.cemig.com.br/Login",
-              target: "_blank",
-              rel: "noreferrer",
-            },
-            "CEMIG ATENDE",
-          ),
-          /* @__PURE__ */ React.createElement(
-            "a",
-            {
-              href: "https://partapr.cemig.com.br/PARTAPR/SelecaoModulo.aspx",
-              target: "_blank",
-              rel: "noreferrer",
-            },
-            "APR Web",
+            modalidade
+              ? "Assistente de formulário"
+              : "Formulário de Ligação Nova e Alteração de Carga",
           ),
         ),
       ),
     ),
     !modalidade
       ? /* @__PURE__ */ React.createElement(
-          "div",
-          { className: "modalidade-screen" },
+          React.Fragment,
+          null,
           /* @__PURE__ */ React.createElement(
             "div",
-            { className: "modalidade-head" },
+            { className: "modalidade-screen" },
             /* @__PURE__ */ React.createElement(
-              "h1",
-              null,
-              "Selecione a modalidade de atendimento",
+              "div",
+              { className: "modalidade-head" },
+              /* @__PURE__ */ React.createElement(
+                "h1",
+                null,
+                "Selecione uma modalidade",
+              ),
+              /* @__PURE__ */ React.createElement(
+                "p",
+                null,
+                "Para iniciar o processo de preenchimento do formulário, identifique e selecione a modalidade correspondente ao seu perfil de consumo. Dependendo da modalidade escolhida, alguns campos do formulário poderão aparecer pré-preenchidos.",
+              ),
+              /* @__PURE__ */ React.createElement(
+                "div",
+                { className: "modalidade-aviso" },
+                /* @__PURE__ */ React.createElement("span", {
+                  className: "modalidade-aviso-icon",
+                  "aria-hidden": "true",
+                }),
+                /* @__PURE__ */ React.createElement(
+                  "p",
+                  null,
+                  "Antes de dar início ao preenchimento, certifique-se de ter em mãos a lista dos equipamentos e a documentação do imóvel.",
+                ),
+              ),
             ),
+            MODALIDADES_SECOES.map((sec) =>
+              /* @__PURE__ */ React.createElement(SecaoModalidade, {
+                key: sec.titulo,
+                sec,
+                onSelect: selectModalidade,
+              }),
+            ),
+          ),
+          /* @__PURE__ */ React.createElement(
+            "footer",
+            { className: "portal-footer" },
+            /* @__PURE__ */ React.createElement(LogoCemig),
             /* @__PURE__ */ React.createElement(
               "p",
-              null,
-              "Escolha a modalidade para iniciar o preenchimento. Alguns campos do formulário já vêm pré-configurados conforme a opção.",
-            ),
-          ),
-          MODALIDADES_SECOES.map((sec) =>
-            /* @__PURE__ */ React.createElement(SecaoModalidade, {
-              key: sec.titulo,
-              sec,
-              onSelect: selectModalidade,
-            }),
-          ),
-          /* @__PURE__ */ React.createElement(
-            "div",
-            { className: "modalidade-footer-link" },
-            /* @__PURE__ */ React.createElement(
-              "a",
-              { href: "desistencia/index.html", className: "link-desistencia" },
-              "TERMO DE DESISTÊNCIA DE OBRA",
+              { className: "portal-footer-copy" },
+              "CEMIG " +
+                new Date().getFullYear() +
+                "© - Todos os Direitos Reservados",
             ),
           ),
         )
