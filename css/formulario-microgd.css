@@ -48,7 +48,7 @@ body {
 }
 .logo-cemig svg { height: 34px; width: auto; }
 .logo-cemig .logo-img { height: 34px; width: auto; display: block; }
-.app-title { font-family: "DM Sans", system-ui, -apple-system, sans-serif; font-size: 19px; font-weight: 800; color: #fff; letter-spacing: 0.3px; }
+/* .app-title styling (incl. responsive 36/32/26 sizing) lives in shared.css (`.cemig-form .app-title`); the local rule was fully overridden. */
 .topbar-left { display: flex; align-items: center; gap: 14px; }
 .topbar-home {
   font-family: inherit; font-size: 12px; font-weight: 700; color: #fff;

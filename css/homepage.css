@@ -54,8 +54,9 @@ body {
   font-family: "Open Sans", system-ui, -apple-system, sans-serif;
   font-style: normal;
   font-weight: 400;
-  font-size: clamp(24px, 2.8vw, 36px);
-  line-height: clamp(32px, 3.5vw, 46px);
+  /* Responsive size lives in shared.css (`.cemig-portal .app-title`):
+     36/46 desktop → 32/42 ≤1024 (tablet) → 26/38 ≤600 (mobile). The old
+     clamp() here was overridden and removed to avoid confusion. */
   color: #fff;
   letter-spacing: 0.4px;
   flex: none;
@@ -71,7 +72,10 @@ body {
   align-items: flex-start;
   padding: 0px;
   gap: 32px;
-  width: 862px;
+  /* Fluid: was a fixed `width: 862px` that overflowed below ~862px
+     (every tablet/mobile width). The gutter container handles centering. */
+  width: 100%;
+  max-width: 862px;
 }
 .modalidade-head h1 {
   font-family: 'Open Sans';
@@ -172,14 +176,12 @@ body {
   flex-direction: column;
   align-items: flex-start;
   padding: 0px;
-  width: 268.67px;
-  min-width: 260px;
-  height: 287px;
+  /* Fluid card: was fixed 268.67px × 287px (clipped wrapped titles and
+     left the card narrower than its grid track). Let the grid size it. */
+  width: 100%;
+  min-width: 0;
   border: 1px solid #8c9895;
   border-radius: 8px;
-  flex: none;
-  order: 3;
-  flex-grow: 1;
 }
 .modalidade-card:not(:disabled):hover {
   transform: translateY(-3px);
@@ -215,8 +217,8 @@ body {
   align-items: flex-start;
   padding: 24px 12px;
   gap: 16px;
-  width: 268.67px;
-  height: 87px;
+  /* Fluid: was fixed 268.67px × 87px which clipped text on small screens. */
+  width: 100%;
   background: #ffffff;
   flex: none;
   order: 1;
@@ -224,7 +226,6 @@ body {
   flex-grow: 0;
 }
 .modalidade-card-body strong {
-  height: 13px;
   font-family: 'Open Sans';
   font-style: normal;
   font-weight: 400;
@@ -234,7 +235,6 @@ body {
   color: #364B46;
 }
 .modalidade-sub {
-  height: 10px;
   font-family: 'Open Sans';
   font-style: normal;
   font-weight: 400;
@@ -275,13 +275,7 @@ body {
 .modalidade-card.soon .modalidade-card-body strong {
   color: var(--texto-suave);
 }
-@media (max-width: 900px) {
-  .modalidade-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-@media (max-width: 560px) {
-  .modalidade-grid {
-    grid-template-columns: 1fr;
-  }
-}
+/* The responsive column counts live in shared.css
+   (`.modalidade-screen .modalidade-grid`, an auto-fill grid that wins on
+   specificity over the single-class rules here). The former 900px/560px
+   overrides in this file were dead code and have been removed. */

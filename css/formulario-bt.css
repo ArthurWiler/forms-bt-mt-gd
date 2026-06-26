@@ -37,7 +37,11 @@ body {
   align-items: center;
   padding: 0px 32px;
   gap: 108px;
-  width: 1366px;
+  /* Was a fixed `width: 1366px` which forced horizontal scroll on every
+     viewport narrower than 1366px. The shared `.cmg-container` caps the
+     max-width; here we only need it to be fluid. */
+  width: 100%;
+  max-width: 1366px;
   background: #0F6C58;
   flex: none;
   order: 0;
@@ -51,13 +55,8 @@ body {
 }
 .logo-cemig svg { height: 34px; width: auto; }
 .logo-cemig .logo-img { height: 34px; width: auto; display: block; }
-.app-title {
-  font-family: "DM Sans", system-ui, -apple-system, sans-serif;
-  font-size: 36px;
-  font-weight: 400;
-  color: #fff;
-  letter-spacing: 0.3px;
-}
+/* .app-title styling (incl. responsive 36/32/26 sizing) lives in shared.css
+   (`.cemig-form .app-title`); the local rule was fully overridden. */
 .topbar-left { display: flex; align-items: center; gap: 14px; }
 .topbar-home {
   font-family: inherit;

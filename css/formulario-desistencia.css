@@ -47,7 +47,7 @@ header.site .wrap{max-width:1180px;margin:0 auto;padding:8px 24px;display:flex;a
 .header-cta{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);font-weight:700;font-size:12.5px;padding:8px 16px;border-radius:999px;cursor:pointer;text-decoration:none;letter-spacing:.3px;transition:.18s}
 .header-cta:hover{background:#fff;color:var(--cemig-green-dark);border-color:#fff}
 .topbar-left{display:flex;align-items:center;gap:14px}
-.app-title{font-family:'DM Sans',system-ui,-apple-system,sans-serif;font-size:19px;font-weight:800;color:#fff;letter-spacing:.3px}
+/* .app-title styling (incl. responsive 36/32/26 sizing) lives in shared.css (`.cemig-mt .app-title`); the local rule was fully overridden. */
 .topbar-home{font-family:inherit;font-size:12px;font-weight:700;color:#fff;background:transparent;border:1px solid rgba(255,255,255,.4);padding:7px 14px;border-radius:999px;cursor:pointer;text-decoration:none;transition:all .15s;letter-spacing:.3px}
 .topbar-home:hover{background:#fff;color:var(--cemig-green-dark);border-color:#fff}
 .service-hero{background:transparent;color:var(--ink);position:relative}
@@ -158,7 +158,7 @@ input.invalid,select.invalid{border-color:var(--danger);box-shadow:0 0 0 4px rgb
 .btn-add:hover{background:var(--cemig-green-soft-2)}
 .btn-del{background:var(--danger-soft);color:var(--danger);border:none;border-radius:7px;width:30px;height:30px;cursor:pointer;font-size:16px;display:grid;place-items:center;transition:.15s}
 .btn-del:hover{background:var(--danger);color:#fff}
-.ramal-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:16px;margin-top:8px}
+.ramal-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(420px,100%),1fr));gap:16px;margin-top:8px}
 .ramal-card{border:2px solid var(--line);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:.18s;background:#fff;display:flex;flex-direction:column}
 .ramal-card:hover{border-color:var(--cemig-green);box-shadow:var(--shadow-md);transform:translateY(-2px)}
 .ramal-card.selected{border-color:var(--cemig-green);box-shadow:0 0 0 4px rgba(16,119,97,.15)}
@@ -193,7 +193,7 @@ input.invalid,select.invalid{border-color:var(--danger);box-shadow:0 0 0 4px rgb
 .toggle-btn-destaque.on{border-style:solid}
 
 /* ---------- MOTORES / CARGAS ESPECIAIS — cards verticais (clean) ---------- */
-.motores-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;margin-top:10px}
+.motores-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:16px;margin-top:10px}
 .motor-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius-sm);padding:16px;display:flex;flex-direction:column;gap:12px}
 .motor-card-head{display:flex;align-items:center;justify-content:space-between}
 .motor-card-head .motor-titulo{font-size:12px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.5px}

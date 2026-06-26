@@ -348,8 +348,11 @@ html {
   order: 2;
   align-self: stretch;
   flex-grow: 0;
-  width: 862px;
-  height: 74px;
+  /* Fluid: was fixed 862px × 74px which overflowed below 862px and clipped
+     the message once it wrapped to a second line on narrow screens. */
+  width: 100%;
+  max-width: 862px;
+  min-height: 74px;
   overflow: hidden;
 }
 .modalidade-screen .modalidade-aviso-icon {
@@ -359,9 +362,8 @@ html {
   padding: 20px;
   gap: 10px;
   width: 72px;
-  height: 74px;
-  background: #D1D4D3;
-  border-radius: 8px 0px 0px 8px;
+  /* height comes from `align-self: stretch` so the icon column matches the
+     notice height even when the text wraps (was a fixed 74px). */
   flex: none;
   order: 0;
   align-self: stretch;
@@ -1487,6 +1489,72 @@ body.cemig-mt {
   font-size: var(--cmg-fs-caption);
   text-align: center;
 }
+
+/* ---- MT / Loteamento / Desistência — responsive ----
+   The `.cemig-mt` restyle above sets desktop sizing (240px sticky step
+   rail, 36px header title, 32px layout gutters). Those rules are more
+   specific than the page stylesheets' own breakpoints, so without the
+   mirrors below they leaked into mobile/tablet (e.g. the step rail stayed
+   240px wide and the title stayed at 36px). These follow the same
+   600/900/1024 system as `.cemig-portal` / `.cemig-form`. */
+@media (max-width: 1024px) {
+  .cemig-mt .app-title {
+    font-size: 32px;
+    line-height: 42px;
+  }
+}
+@media (max-width: 900px) {
+  /* Collapse the two-column step-rail layout to a single column with a
+     horizontally scrollable step rail (matches the BT/GD form shell). */
+  .cemig-mt .mt-layout {
+    flex-direction: column;
+  }
+  .cemig-mt .mt-layout .stepper-bar {
+    position: static;
+    width: 100%;
+    top: auto;
+    padding: var(--cmg-space-2) var(--cmg-space-3);
+    border-bottom: 1px solid var(--cmg-divider);
+  }
+  .cemig-mt .mt-layout .stepper {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: var(--cmg-space-1);
+    padding: 0;
+  }
+  .cemig-mt .mt-layout .step {
+    width: auto;
+    white-space: nowrap;
+  }
+  .cemig-mt .stepper-title {
+    display: none;
+  }
+}
+@media (max-width: 600px) {
+  .cemig-mt .app-title {
+    font-size: 26px;
+    line-height: 38px;
+  }
+  .cemig-mt .topbar-left {
+    flex-wrap: wrap;
+    gap: var(--cmg-space-3);
+  }
+  .cemig-mt header.site .wrap {
+    padding-inline: var(--cmg-space-3);
+  }
+  .cemig-mt .service-hero .wrap {
+    padding-inline: var(--cmg-space-3);
+  }
+  .cemig-mt .mt-layout {
+    padding-inline: var(--cmg-space-3);
+  }
+  .cemig-mt main,
+  .cemig-mt .mt-layout main {
+    padding-inline: var(--cmg-space-3);
+  }
+}
+
 @media print {
   .cemig-mt .portal-footer {
     display: none !important;
