@@ -169,25 +169,21 @@ function App() {
   const irAnt = () => idx > 0 && setAba(GD_ABAS[idx - 1].id);
   return /* @__PURE__ */ React.createElement(
     "div",
-    null,
+    { className: "cemig-form" },
     /* @__PURE__ */ React.createElement(
       "div",
       { className: "topbar" },
       /* @__PURE__ */ React.createElement(
         "div",
-        { className: "topbar-inner" },
+        { className: "topbar-inner cmg-container" },
         /* @__PURE__ */ React.createElement(
           "div",
           { className: "topbar-left" },
-          /* @__PURE__ */ React.createElement(
-            "a",
-            { className: "topbar-home", href: "../index.html" },
-            "← Início",
-          ),
+          /* @__PURE__ */ React.createElement(LogoCemig),
           /* @__PURE__ */ React.createElement(
             "span",
             { className: "app-title" },
-            "Assistente de formulário",
+            "Formulário de Microgeração Distribuída",
           ),
         ),
       ),
@@ -198,6 +194,11 @@ function App() {
       /* @__PURE__ */ React.createElement(
         "aside",
         { className: "sidebar" },
+        /* @__PURE__ */ React.createElement(
+          "a",
+          { className: "form-back", href: "../index.html" },
+          "← VOLTAR",
+        ),
         /* @__PURE__ */ React.createElement(
           "div",
           { className: "sidebar-title" },
@@ -215,7 +216,7 @@ function App() {
             /* @__PURE__ */ React.createElement(
               "span",
               { className: "vstep-num" },
-              i + 1,
+              i < idx ? "✓" : i + 1,
             ),
             /* @__PURE__ */ React.createElement(
               "span",
@@ -277,6 +278,22 @@ function App() {
                 },
                 "📄 Exportar PDF",
               ),
+        ),
+      ),
+    ),
+    /* @__PURE__ */ React.createElement(
+      "footer",
+      { className: "portal-footer" },
+      /* @__PURE__ */ React.createElement(
+        "div",
+        { className: "portal-footer-inner" },
+        /* @__PURE__ */ React.createElement(LogoCemig),
+        /* @__PURE__ */ React.createElement(
+          "p",
+          { className: "portal-footer-copy" },
+          "CEMIG " +
+            new Date().getFullYear() +
+            "© - Todos os Direitos Reservados",
         ),
       ),
     ),

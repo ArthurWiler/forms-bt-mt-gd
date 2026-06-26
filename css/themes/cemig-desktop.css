@@ -33,3 +33,5 @@
 
 /* 4. pages (page-specific composition) */
 @import url("../pages/home.css");
+@import url("../pages/form.css");
+@import url("../pages/form-mt.css");

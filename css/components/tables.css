@@ -1,7 +1,104 @@
 /* ============================================================
-   CEMIG Design System — Tables (placeholder)
+   CEMIG Design System — Tables (data / entry)
    ------------------------------------------------------------
-   Reserved for shared data / entry tables (e.g. transformers,
-   loads, UC lists) in the new identity. Populate when a table spec
-   is delivered. Follow token + scoping conventions (/css/README.md).
+   New CEMIG identity for the form's data/entry tables (load preview,
+   motors, load groups), applied by restyling the existing table
+   markup inside a migrated form root.
+
+   SCOPE: scoped to a migrated form root so legacy tables elsewhere are
+   untouched; the theme loads after each module's legacy stylesheet
+   (see /css/README.md). The roll-out adds each module's root to the
+   selector lists.
    ============================================================ */
+
+.cemig-form .prev-table-wrap,
+.cemig-form .carga-box {
+  border: 1px solid var(--cmg-divider);
+  border-radius: var(--cmg-radius);
+}
+
+.cemig-form .prev-table,
+.cemig-form .motores-table {
+  font-family: var(--cmg-font-family);
+}
+
+/* Header rows — green tint + brand text */
+.cemig-form .prev-table th,
+.cemig-form .carga-group-title {
+  background: var(--cmg-surface-accent);
+  color: var(--cmg-green-600);
+  font-weight: var(--cmg-fw-bold);
+  letter-spacing: var(--cmg-ls-tight);
+}
+.cemig-form .motores-table thead th {
+  color: var(--cmg-text-muted);
+  border-bottom: 1px solid var(--cmg-divider);
+  letter-spacing: var(--cmg-ls-tight);
+}
+
+/* Body rows — hairline separators in the neutral palette */
+.cemig-form .prev-table td,
+.cemig-form .motores-table tbody td,
+.cemig-form .carga-row {
+  border-top: 1px solid var(--cmg-divider);
+}
+.cemig-form .motores-table tbody td {
+  border-top: none;
+  border-bottom: 1px solid var(--cmg-divider);
+}
+.cemig-form .prev-table tbody tr:nth-child(even) {
+  background: var(--cmg-surface);
+}
+
+/* In-cell inputs adopt the field styling */
+.cemig-form .prev-table input,
+.cemig-form .motores-table input,
+.cemig-form .motores-table select,
+.cemig-form .qtd-ctrl input {
+  border: 1px solid var(--cmg-border);
+  border-radius: 4px;
+  background: var(--cmg-surface);
+  font-family: var(--cmg-font-family);
+  color: var(--cmg-text-strong);
+}
+.cemig-form .prev-table input:focus,
+.cemig-form .motores-table input:focus,
+.cemig-form .motores-table select:focus {
+  outline: none;
+  border-color: var(--cmg-green-600);
+  box-shadow: 0 0 0 2px var(--cmg-focus-ring);
+}
+
+/* Emphasised demand column / totals */
+.cemig-form .prev-table .col-demanda {
+  background: var(--cmg-surface-accent);
+  border-left: 2px solid var(--cmg-green-600);
+}
+.cemig-form .prev-table input.demanda-prev {
+  border-color: var(--cmg-green-600);
+  font-weight: var(--cmg-fw-bold);
+  color: var(--cmg-green-600);
+}
+.cemig-form .prev-table tfoot td {
+  border-top: 2px solid var(--cmg-green-600);
+  font-weight: var(--cmg-fw-bold);
+  background: var(--cmg-surface-accent);
+}
+.cemig-form .prev-table tfoot .total-dem,
+.cemig-form .motores-total,
+.cemig-form .motores-table td.num {
+  color: var(--cmg-green-600);
+}
+
+/* Quantity stepper buttons */
+.cemig-form .qtd-ctrl button {
+  border: 1px solid var(--cmg-border);
+  border-radius: 6px;
+  background: var(--cmg-surface);
+  color: var(--cmg-text-strong);
+}
+.cemig-form .qtd-ctrl button.plus {
+  background: var(--cmg-green-600);
+  border-color: var(--cmg-green-600);
+  color: var(--cmg-neutral-0);
+}

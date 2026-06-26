@@ -12,20 +12,33 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap"
       rel="stylesheet"
     />
+    <!-- Open Sans: identidade visual CEMIG -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="../shared/css/mt-loteamento.css" />
+    <!-- Design system CEMIG (Desktop) — carregado APÓS o CSS legado para
+         aplicar a nova identidade ao formulário (escopo .cemig-mt). -->
+    <link rel="stylesheet" href="../css/themes/cemig-desktop.css" />
   </head>
-  <body>
+  <body class="cemig-mt">
     <header class="site">
       <div class="wrap">
         <div class="topbar-left">
-          <a href="../index.html" class="topbar-home">← Início</a>
-          <span class="app-title">Assistente de formulário</span>
+          <img
+            src="../imgs/logos/logo-cemig-branca-com-verde.png"
+            alt="Cemig"
+            class="logo-img"
+          />
+          <span class="app-title">Formulário de Fornecimento para Loteamentos</span>
         </div>
       </div>
     </header>
 
     <section class="service-hero">
       <div class="wrap">
+        <a href="../index.html" class="form-back">← VOLTAR</a>
         <h1 class="hero-title">
           <span class="hero-title-main">Formulário</span>
           <span class="hero-title-sub"
@@ -460,6 +473,19 @@
         </div>
       </section>
     </main>
+
+    <footer class="portal-footer">
+      <div class="portal-footer-inner">
+        <img
+          src="../imgs/logos/logo-cemig-branca-com-verde.png"
+          alt="Cemig"
+          class="logo-img"
+        />
+        <p class="portal-footer-copy">
+          CEMIG 2025© - Todos os Direitos Reservados
+        </p>
+      </div>
+    </footer>
 
     <script src="js/app.js"></script>
   </body>

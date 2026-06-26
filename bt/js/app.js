@@ -895,7 +895,7 @@ function App() {
   };
   return /* @__PURE__ */ React.createElement(
     "div",
-    { className: modalidade ? "" : "cemig-portal" },
+    { className: modalidade ? "cemig-form" : "cemig-portal" },
     /* @__PURE__ */ React.createElement(
       "div",
       { className: "topbar" },
@@ -905,22 +905,11 @@ function App() {
         /* @__PURE__ */ React.createElement(
           "div",
           { className: "topbar-left" },
-          !modalidade && /* @__PURE__ */ React.createElement(LogoCemig),
-          modalidade &&
-            /* @__PURE__ */ React.createElement(
-              "button",
-              {
-                className: "topbar-home",
-                onClick: () => setModalidade(null),
-              },
-              "← Início",
-            ),
+          /* @__PURE__ */ React.createElement(LogoCemig),
           /* @__PURE__ */ React.createElement(
             "span",
             { className: "app-title" },
-            modalidade
-              ? "Assistente de formulário"
-              : "Formulário de Ligação Nova e Alteração de Carga",
+            "Formulário de Ligação Nova e Alteração de Carga",
           ),
         ),
       ),
@@ -1007,37 +996,18 @@ function App() {
             null,
             /* @__PURE__ */ React.createElement(
               "div",
-              { className: "form-header" },
-              /* @__PURE__ */ React.createElement(
-                "h1",
-                null,
-                "Formulário de Orçamento de Conexão / Alteração de Carga em Baixa Tensão",
-              ),
-              /* @__PURE__ */ React.createElement(
-                "p",
-                null,
-                "Preenchimento digital unificado para solicitações em BT, conforme as normas CEMIG ND-5.1 / ND-5.2 e a REN ANEEL nº 1.000/2021.",
-              ),
-              /* @__PURE__ */ React.createElement(
-                "span",
-                { className: "flow-badge" },
-                multiTorres
-                  ? "Múltiplas Torres / Blocos"
-                  : coletivo
-                    ? "Coletivo — Proteção Geral"
-                    : "Individual / até 3 caixas",
-                " ",
-                "· Demanda ",
-                fmt2(demandaTotalGeral),
-                " kVA",
-              ),
-            ),
-            /* @__PURE__ */ React.createElement(
-              "div",
               { className: "layout" },
               /* @__PURE__ */ React.createElement(
                 "aside",
                 { className: "sidebar" },
+                /* @__PURE__ */ React.createElement(
+                  "button",
+                  {
+                    className: "form-back",
+                    onClick: () => setModalidade(null),
+                  },
+                  "← VOLTAR",
+                ),
                 /* @__PURE__ */ React.createElement(
                   "div",
                   { className: "sidebar-title" },
@@ -1056,7 +1026,7 @@ function App() {
                     /* @__PURE__ */ React.createElement(
                       "span",
                       { className: "vstep-num" },
-                      i === 0 ? "i" : i,
+                      i < idx ? "✓" : i + 1,
                     ),
                     /* @__PURE__ */ React.createElement(
                       "span",
@@ -1069,6 +1039,33 @@ function App() {
               /* @__PURE__ */ React.createElement(
                 "main",
                 { className: "main-col fade-in", key: aba },
+                /* @__PURE__ */ React.createElement(
+                  "div",
+                  { className: "form-header" },
+                  /* @__PURE__ */ React.createElement(
+                    "h1",
+                    null,
+                    "Formulário de Orçamento de Conexão / Alteração de Carga em Baixa Tensão",
+                  ),
+                  /* @__PURE__ */ React.createElement(
+                    "p",
+                    null,
+                    "Preenchimento digital unificado para solicitações em BT, conforme as normas CEMIG ND-5.1 / ND-5.2 e a REN ANEEL nº 1.000/2021.",
+                  ),
+                  /* @__PURE__ */ React.createElement(
+                    "span",
+                    { className: "flow-badge" },
+                    multiTorres
+                      ? "Múltiplas Torres / Blocos"
+                      : coletivo
+                        ? "Coletivo — Proteção Geral"
+                        : "Individual / até 3 caixas",
+                    " ",
+                    "· Demanda ",
+                    fmt2(demandaTotalGeral),
+                    " kVA",
+                  ),
+                ),
                 mostrarAnaliseMotores
                   ? /* @__PURE__ */ React.createElement(
                       React.Fragment,
@@ -1197,18 +1194,36 @@ function App() {
               ),
             ),
             /* @__PURE__ */ React.createElement(
-              "div",
-              { className: "footer" },
-              "Documento gerado eletronicamente · não substitui o formulário oficial CEMIG ·",
+              "footer",
+              { className: "portal-footer" },
               /* @__PURE__ */ React.createElement(
-                "a",
+                "div",
                 {
-                  href: "https://www.cemig.com.br/como-solicitar-os-principais-servicos/ligacao-nova-e-aumento-de-carga/ligacao-nova-ou-alteracao-de-carga-para-demandas-especificas/",
-                  target: "_blank",
-                  rel: "noreferrer",
+                  className:
+                    "portal-footer-inner cmg-container cmg-container--gutter",
                 },
-                " ",
-                "Saiba mais no portal Cemig",
+                /* @__PURE__ */ React.createElement(LogoCemig),
+                /* @__PURE__ */ React.createElement(
+                  "p",
+                  { className: "portal-footer-copy" },
+                  "CEMIG " +
+                    new Date().getFullYear() +
+                    "© - Todos os Direitos Reservados",
+                ),
+                /* @__PURE__ */ React.createElement(
+                  "p",
+                  { className: "portal-footer-note" },
+                  "Documento gerado eletronicamente · não substitui o formulário oficial CEMIG · ",
+                  /* @__PURE__ */ React.createElement(
+                    "a",
+                    {
+                      href: "https://www.cemig.com.br/como-solicitar-os-principais-servicos/ligacao-nova-e-aumento-de-carga/ligacao-nova-ou-alteracao-de-carga-para-demandas-especificas/",
+                      target: "_blank",
+                      rel: "noreferrer",
+                    },
+                    "Saiba mais no portal Cemig",
+                  ),
+                ),
               ),
             ),
           ),
