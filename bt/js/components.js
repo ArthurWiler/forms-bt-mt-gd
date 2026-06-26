@@ -45,14 +45,6 @@ function SecaoModalidade({ sec, onSelect }) {
             },
             /* @__PURE__ */ React.createElement(
               "span",
-              {
-                className:
-                  "modalidade-tag" + (card.status === "soon" ? "" : " avail"),
-              },
-              card.status === "soon" ? "Em breve" : "Disponível",
-            ),
-            /* @__PURE__ */ React.createElement(
-              "span",
               { className: "modalidade-img" },
               /* @__PURE__ */ React.createElement("img", {
                 src: card.img,
@@ -82,7 +74,7 @@ function SecaoModalidade({ sec, onSelect }) {
 }
 function LogoCemig() {
   return /* @__PURE__ */ React.createElement("img", {
-    src: "imgs/logos/logo-cemig-branca-com-verde.png",
+    src: "../imgs/logos/logo-cemig-branca-com-verde.png",
     alt: "Cemig",
     className: "logo-img",
   });

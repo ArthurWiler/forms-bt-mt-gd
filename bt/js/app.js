@@ -99,7 +99,7 @@ function App() {
         });
       } catch (e) {}
     };
-    img.src = "imgs/logos/logo-cemig-cor.png";
+    img.src = "../imgs/logos/logo-cemig-cor.png";
   }, []);
   const docInfo = useMemo(() => validarCpfCnpj(prop.cpfCnpj), [prop.cpfCnpj]);
   const pessoaFisica = docInfo.tipo !== "CNPJ";
@@ -808,6 +808,25 @@ function App() {
   const modSoon = todasModalidades.find(
     (c) => c.id === modalidade && c.status === "soon",
   );
+  // A seleção de modalidade vive na homepage (../). Esta SPA é apenas o
+  // formulário BT: ao entrar com `?mod=<id>` aplicamos o pré-preenchimento do
+  // card correspondente (mesmo fluxo de selectModalidade); sem modalidade
+  // válida, voltamos para a homepage.
+  const irParaHome = () => {
+    window.location.href = "../";
+  };
+  useEffect(() => {
+    const mod = new URLSearchParams(window.location.search).get("mod");
+    if (mod) {
+      const card = todasModalidades.find((c) => c.id === mod);
+      if (card && card.status !== "link") {
+        selectModalidade(card);
+        return;
+      }
+    }
+    if (!modalidade) irParaHome();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const ctx = {
     aba,
     setAba,
@@ -920,7 +939,10 @@ function App() {
           null,
           /* @__PURE__ */ React.createElement(
             "div",
-            { className: "modalidade-screen cmg-container cmg-container--gutter" },
+            {
+              className:
+                "modalidade-screen cmg-container cmg-container--gutter",
+            },
             /* @__PURE__ */ React.createElement(
               "div",
               { className: "modalidade-head" },
@@ -961,7 +983,10 @@ function App() {
             { className: "portal-footer" },
             /* @__PURE__ */ React.createElement(
               "div",
-              { className: "portal-footer-inner cmg-container cmg-container--gutter" },
+              {
+                className:
+                  "portal-footer-inner cmg-container cmg-container--gutter",
+              },
               /* @__PURE__ */ React.createElement(LogoCemig),
               /* @__PURE__ */ React.createElement(
                 "p",
@@ -987,7 +1012,7 @@ function App() {
             ),
             /* @__PURE__ */ React.createElement(
               Btn,
-              { variant: "primary", onClick: () => setModalidade(null) },
+              { variant: "primary", onClick: irParaHome },
               "← Voltar à seleção",
             ),
           )
@@ -1004,7 +1029,7 @@ function App() {
                   "button",
                   {
                     className: "form-back",
-                    onClick: () => setModalidade(null),
+                    onClick: irParaHome,
                   },
                   "← VOLTAR",
                 ),
@@ -1212,8 +1237,6 @@ function App() {
                 ),
                 /* @__PURE__ */ React.createElement(
                   "p",
-                  { className: "portal-footer-note" },
-                  "Documento gerado eletronicamente · não substitui o formulário oficial CEMIG · ",
                   /* @__PURE__ */ React.createElement(
                     "a",
                     {

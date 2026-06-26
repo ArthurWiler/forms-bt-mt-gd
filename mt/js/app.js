@@ -7,7 +7,7 @@
    uma opção, edite apenas esta constante.
    ============================================================ */
 const CAMPOS_CARDS_CONFIG = {
-  // Classes CSS aplicadas pelo motor de renderização (ver shared/css/mt-loteamento.css).
+  // Classes CSS aplicadas pelo motor de renderização (ver css/formulario-mt.css).
   // Reaproveita o mesmo visual dos cards Sim/Não do formulário BT.
   classes: {
     grid: "toggle-group",

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=5"
+    />
+    <title>Formulário Orçamento de Conexão BT — Cemig</title>
+    <meta
+      name="description"
+      content="Formulário digital para orçamento de conexão / alteração de carga em Baixa Tensão (BT) — atendimento individual ou em agrupamento até 3 caixas e agrupamento com proteção geral via APR Web."
+    />
+
+    <!-- Fontes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Open Sans: identidade visual CEMIG -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Estilos: tokens → compartilhado → página -->
+    <link rel="stylesheet" href="../css/variables.css" />
+    <link rel="stylesheet" href="../css/shared.css" />
+    <link rel="stylesheet" href="../css/formulario-bt.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+
+    <!-- Bibliotecas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <!-- Dados normativos e cálculo (JS puro) -->
+    <script src="js/data.js"></script>
+    <script src="js/calc.js"></script>
+    <script src="js/model.js"></script>
+    <script src="js/pdf.js"></script>
+    <script src="js/termo-grupo-b.js"></script>
+
+    <!-- Componentes React -->
+    <script src="js/components.js"></script>
+    <script src="../shared/js/geo.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/views/orient.js"></script>
+    <script src="js/views/tipo.js"></script>
+    <script src="js/views/proprietario.js"></script>
+    <script src="js/views/correspondencia.js"></script>
+    <script src="js/views/obra.js"></script>
+    <script src="js/views/blocos.js"></script>
+    <script src="js/views/ucs-coletivo.js"></script>
+    <script src="js/views/ucs-individual.js"></script>
+    <script src="js/views/cargas-coletivo.js"></script>
+    <script src="js/views/cargas-individual.js"></script>
+    <script src="js/views/gerador.js"></script>
+    <script src="js/views/obs.js"></script>
+    <script src="js/views/revisar.js"></script>
+    <script src="js/app.js"></script>
+
+    <!-- Aviso caso aberto via file:// (Babel não carrega scripts externos sem HTTP) -->
+    <script>
+      window.addEventListener("load", function () {
+        setTimeout(function () {
+          var root = document.getElementById("root");
+          if (
+            root &&
+            root.children.length === 0 &&
+            location.protocol === "file:"
+          ) {
+            root.innerHTML =
+              '<div style="max-width:640px;margin:60px auto;padding:24px;font-family:DM Sans,sans-serif;' +
+              'background:#fff8e6;border:1px solid #f0d48a;border-radius:12px;color:#8a6d1a;line-height:1.6">' +
+              "<strong>Para executar este formulário, sirva-o por um servidor HTTP.</strong><br>" +
+              "O navegador bloqueia o carregamento dos arquivos <code>js/*.js</code> quando a página é aberta " +
+              "diretamente do disco (<code>file://</code>).<br><br>" +
+              "Na pasta do projeto, rode:<br>" +
+              '<code style="display:block;background:#fff;padding:8px;border-radius:6px;margin-top:6px">python3 -m http.server 8000</code>' +
+              "e acesse <code>http://localhost:8000</code> — ou faça o deploy (ex.: Vercel/Netlify)." +
+              "</div>";
+          }
+        }, 1500);
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,154 @@
+/* ============================================================
+   CEMIG — Design Tokens (single source of truth)
+   ------------------------------------------------------------
+   Every page loads this FIRST, then shared.css, then its own
+   page stylesheet. Two token layers coexist here:
+
+     1. --cmg-*  the current CEMIG design system (consumed by the
+                 shared component layer in shared.css).
+     2. legacy   the original BT/GD palette (--verde, --borda, …)
+                 still referenced by the BT, Microgeração and
+                 Minigeração page stylesheets during the migration.
+
+   The MT/Loteamento/Desistência modules use a distinct legacy
+   palette (--cemig-green, --ink, --line, … and a different --bg);
+   because --bg collides, those tokens live in each MT page file's
+   own :root and intentionally override --bg there.
+   ============================================================ */
+:root {
+  /* ===========================================================
+     CEMIG design system (--cmg-*)
+     =========================================================== */
+
+  /* ---- Brand / institutional greens ---- */
+  --cmg-green-600: #0f6c58; /* header / primary institutional */
+  --cmg-green-500: #107761; /* interactive green (links, accents) */
+  --cmg-green-50: #e7f1ef; /* tint — selected/hover card surface */
+
+  /* ---- Neutrals (CEMIG scale) ---- */
+  --cmg-neutral-0: #ffffff;
+  --cmg-neutral-100: #e6e9e8; /* disabled field surface */
+  --cmg-neutral-200: #d1d4d3; /* subtle borders, info icon bg */
+  --cmg-neutral-300: #b1b9b7; /* accordion dividers */
+  --cmg-neutral-400: #8c9895; /* card borders */
+  --cmg-neutral-500: #576864; /* secondary text */
+  --cmg-neutral-600: #364b46; /* primary text */
+  --cmg-neutral-700: #041e18; /* headings, footer bg */
+
+  /* ---- Feedback / status ---- */
+  --cmg-warning-500: #ffc107; /* notice ("aviso") border / accent */
+  --cmg-danger-500: #c0392b; /* errors, required mark */
+
+  /* ---- Semantic aliases ---- */
+  --cmg-text: var(--cmg-neutral-600);
+  --cmg-text-strong: var(--cmg-neutral-700);
+  --cmg-text-muted: var(--cmg-neutral-500);
+  --cmg-border: var(--cmg-neutral-400);
+  --cmg-divider: var(--cmg-neutral-300);
+  --cmg-surface: var(--cmg-neutral-0);
+  --cmg-surface-accent: var(--cmg-green-50);
+  --cmg-surface-disabled: var(--cmg-neutral-100);
+  --cmg-step-active-bg: var(--cmg-green-50); /* active step rail row */
+  --cmg-focus-ring: rgba(15, 108, 88, 0.18); /* green focus halo */
+
+  /* ---- "Verde Digital" accent gradient (logo / highlights) ---- */
+  --cmg-gradient-digital: linear-gradient(
+    90deg,
+    #1fff8c 3.03%,
+    #43ff7b 26.03%,
+    #7aff61 49.03%,
+    #a2ff4f 68.03%,
+    #c4ff40 103.03%
+  );
+
+  /* ---- Typography ---- */
+  --cmg-font-family: "Open Sans", "Segoe UI", system-ui, -apple-system,
+    sans-serif;
+
+  /* font-size / line-height / weight / letter-spacing per CEMIG type scale */
+  --cmg-fs-display: 36px; /* título/grande   */
+  --cmg-lh-display: 46px;
+  --cmg-fs-title: 28px; /* título/pequeno  */
+  --cmg-lh-title: 38px;
+  --cmg-fs-subtitle: 18px; /* subtítulo       */
+  --cmg-lh-subtitle: 26px;
+  --cmg-fs-body-lg: 16px; /* corpo/grande    */
+  --cmg-lh-body-lg: 26px;
+  --cmg-fs-body: 14px; /* corpo/médio     */
+  --cmg-lh-body: 24px;
+  --cmg-fs-caption: 12px; /* corpo/pequeno   */
+  --cmg-lh-caption: 20px;
+
+  --cmg-fw-regular: 400;
+  --cmg-fw-bold: 700;
+
+  --cmg-ls-tight: 0.2px; /* corpo */
+  --cmg-ls-wide: 0.4px; /* títulos / subtítulos */
+
+  /* ---- Border radius ---- */
+  --cmg-radius-sm: 8px;
+  --cmg-radius: 8px;
+  --cmg-radius-pill: 999px;
+
+  /* ---- Shadows ---- */
+  --cmg-shadow-card-hover: 0 6px 18px rgba(4, 30, 24, 0.1);
+  --cmg-shadow-elevated: 0 12px 32px rgba(4, 30, 24, 0.16);
+
+  /* ---- Spacing scale (4px grid) ---- */
+  --cmg-space-1: 4px;
+  --cmg-space-2: 8px;
+  --cmg-space-3: 12px;
+  --cmg-space-4: 16px;
+  --cmg-space-6: 24px;
+  --cmg-space-8: 32px;
+  --cmg-space-12: 48px;
+  --cmg-space-15: 60px;
+
+  /* ---- Layout ----
+     --cmg-area-max     usable area = the 1366px reference frame; the global
+                        `.cmg-container` is capped here and centers on wider
+                        monitors (full-bleed bands still span the viewport).
+     --cmg-area-gutter  Figma side gutter (252px on a 1366 frame).
+     --cmg-content-max  inner content column (1366 − gutter×2). */
+  --cmg-area-max: 1366px;
+  --cmg-area-gutter: 252px;
+  --cmg-content-max: 862px;
+  --cmg-header-height: 80px;
+
+  /* ---- Breakpoints (reference only; hard-coded in @media, keep in sync) ---- */
+  --cmg-bp-mobile: 600px;
+  --cmg-bp-tablet: 900px;
+  --cmg-bp-desktop: 1024px;
+
+  /* ===========================================================
+     Legacy palette — BT / Microgeração / Minigeração
+     (Manual de Marca 2022). Referenced by formulario-bt.css,
+     formulario-microgd.css, formulario-minigd.css and homepage.css.
+     =========================================================== */
+  --verde-escuro: #0a2f27;   /* Verde Escuro */
+  --verde-cemig: #107761;    /* Novo Verde Institucional */
+  --verde: #107761;
+  --verde-acento: #107761;
+  --verde-claro: #e6f2ee;    /* tom claro do institucional */
+  --verde-digital: #1eff8c;  /* Verde Digital */
+  --verde-on: #c4ff3f;       /* Verde On */
+  --amarelo-inst: #f9af16;   /* Amarelo Institucional */
+  --amarelo-vivo: #fff540;   /* Amarelo Vivo */
+  --grad-marca: linear-gradient(90deg, #1eff8c 0%, #c4ff3f 100%);
+  --grad-amarelo: linear-gradient(90deg, #f9af16 0%, #fff540 100%);
+
+  --bg: #f4f6f7;
+  --card: #ffffff;
+  --borda: #dde4e2;
+  --input-bg: #f7faf9;
+  --texto: #16302a;
+  --texto-suave: #5f7068;
+  --vermelho: #c0392b;
+  --vermelho-bg: #fdecea;
+  --amarelo-bg: #fff6e0;
+  --amarelo-bd: #f3d488;
+  --sombra: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --sombra-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --raio: 12px;
+  --raio-sm: 8px;
+}

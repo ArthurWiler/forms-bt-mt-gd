@@ -29,7 +29,7 @@ const ORIENTACOES = {
     titulo:
       "Atendimento individual ou agrupamento com até 3 caixas sem proteção geral",
     itens: [
-      "Para Conexão Nova, o número predial, a atividade principal da unidade consumidora (Residencial, Comercial, Industrial ou Rural) e o Ramo de Atividade (caso não seja residencial). Quando aplicável, informar também o complemento da caixa (ex: Cond, Lj1, Casa 1, Apto 101 etc.).",
+      "Para Conexão Nova, o número predial, a atividade principal da unidade consumidora (Residencial, Comercial, Industrial ou Rural) e o Ramo de Atividade (caso não seja residencial). Quando aplicável, informar também o complemento da caixa (ex: Cond, Lj1, Residência 1, Apto 101 etc.).",
       "Para opção Alteração de Carga ou Caixa existente sem Alteração de Carga, informar o número da instalação, o número do medidor ou o número da caixa (complemento).",
       "Para Alteração de Carga ou Caixa existente sem Alteração de Carga, informar o novo ramo de atividade e a alteração de complemento, somente se houver alteração;",
       "O cálculo da carga instalada total em kW, a demanda em kVA e o preenchimento do disjuntor será feito automaticamente",
@@ -243,7 +243,7 @@ const SEC_BT_RESIDENCIAL = {
   cards: [
     {
       id: "casa50",
-      nome: "Casa até 50m²",
+      nome: "Residência até 50m²",
       sub: "Monofásico 63 A",
       img: "imgs/img_casa1.png",
       status: "ok",
@@ -271,7 +271,7 @@ const SEC_BT_RESIDENCIAL = {
     },
     {
       id: "casa100",
-      nome: "Casa até 100m²",
+      nome: "Residência até 100m²",
       sub: "Bifásico 63 A",
       img: "imgs/img_casa2.png",
       status: "ok",
@@ -300,7 +300,7 @@ const SEC_BT_RESIDENCIAL = {
     },
     {
       id: "casaluxo",
-      nome: "Casa > 100m²",
+      nome: "Residência > 100m²",
       sub: "Baixa Tensão",
       img: "imgs/img_casa3.png",
       status: "ok",

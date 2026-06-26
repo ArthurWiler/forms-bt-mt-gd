@@ -2,13 +2,35 @@
 
 Conjunto de aplicações web (React + JSX via Babel no navegador, sem build step) para preenchimento digital dos formulários de solicitação de conexão / acesso à rede da Cemig: **Baixa Tensão (BT)**, **Média Tensão (MT)**, **Loteamentos**, e **Geração Distribuída (Micro e Minigeração)**.
 
-A raiz do projeto (`index.html`) é o **app de Baixa Tensão**, cuja primeira etapa funciona também como **portal/seletor de modalidades**: a partir dela o usuário é direcionado para o fluxo de BT embutido ou redirecionado para os demais módulos (MT, Loteamento, GD), cada um publicado em sua própria subpasta.
+A raiz do projeto (`index.html`) é a **homepage / portal de seleção de modalidades**: a partir dela o usuário é direcionado para o app de Baixa Tensão (`bt/`, com pré-preenchimento via `?mod=`) ou para os demais módulos (MT, Loteamento, GD), cada um publicado em sua própria subpasta.
+
+### Estilos (`css/`)
+
+Todo o CSS vive em [`css/`](css), com **um único ponto de entrada por página** e a identidade visual Cemig centralizada:
+
+```
+css/
+├── variables.css              Tokens de design (cores, tipografia, espaçamento, …)
+├── shared.css                 Identidade Cemig compartilhada (header, footer, botões,
+│                              campos, cards, tabelas, stepper) — escopada por raiz
+│                              de superfície (.cemig-portal / .cemig-form / .cemig-mt)
+├── homepage.css               Estilos exclusivos da homepage (portal)
+├── formulario-bt.css          Estilos exclusivos do formulário BT
+├── formulario-mt.css          Estilos exclusivos do MT
+├── formulario-loteamento.css  Estilos exclusivos do Loteamento
+├── formulario-desistencia.css Estilos exclusivos do Termo de Desistência
+├── formulario-microgd.css     Estilos exclusivos da Microgeração
+└── formulario-minigd.css      Estilos exclusivos da Minigeração
+```
+
+Cada página carrega **somente** `variables.css`, `shared.css` e o seu próprio arquivo de página, nesta ordem.
 
 ## Módulos
 
 | Módulo | Pasta | Entrada | Descrição |
 |---|---|---|---|
-| Baixa Tensão | [`bt/`](bt) | `/index.html` (raiz) | Orçamento de conexão / alteração de carga em BT — atendimento individual, coletivo, híbrido, condomínio de torres, gerador de emergência. |
+| Homepage / Portal | raiz | `/index.html` | Seletor de modalidades; direciona para o módulo correspondente. |
+| Baixa Tensão | [`bt/`](bt) | `/bt/` | Orçamento de conexão / alteração de carga em BT — atendimento individual, coletivo, híbrido, condomínio de torres, gerador de emergência. |
 | Média Tensão | [`mt/`](mt) | `/mt/` | Orçamento de conexão em MT (indústria, irrigante, outros estabelecimentos). |
 | Loteamento | [`loteamento/`](loteamento) | `/loteamento/` | Solicitação inicial de fornecimento para loteamentos e chacreamentos. |
 | Microgeração Distribuída | [`microgeracao/`](microgeracao) | `/microgeracao/` | Solicitação de acesso para microgeração distribuída em BT (REN 1.000/2021). |
@@ -16,9 +38,9 @@ A raiz do projeto (`index.html`) é o **app de Baixa Tensão**, cuja primeira et
 
 Cada módulo é uma SPA independente (próprio `index.html`, CSS e JS), mas vários compartilham código comum a partir de [`shared/`](shared) (geolocalização/mapa, API de CEP, componentes de UI, cálculo, base de PDF e schema de GD).
 
-## Seletor de modalidades (BT)
+## Homepage — seletor de modalidades
 
-A primeira etapa do app BT (`bt/js/model.js` → `MODALIDADES_SECOES`, renderizada em `bt/js/app.js`) apresenta cards agrupados por seção, nesta ordem:
+A homepage (`index.html`) renderiza o portal reutilizando `MODALIDADES_SECOES` (`bt/js/model.js`) e os componentes de `bt/js/components.js`. Apresenta cards agrupados por seção, nesta ordem:
 
 - **Média Tensão**: indústria, outros estabelecimentos e irrigante — todos `status: "link"` para `mt/` (com `?atividade=` quando aplicável).
 - **Geração Distribuída — Minigeração**: minigeração (`minigeracao/`) — `status: "link"`.
@@ -26,7 +48,7 @@ A primeira etapa do app BT (`bt/js/model.js` → `MODALIDADES_SECOES`, renderiza
 - **Residencial · Comercial · Rural — Baixa Tensão**: casa até 50 m², casa até 100 m², casa > 100 m², comércio, indústria BT, rural — entram no fluxo BT interno, já pré-preenchido conforme o card escolhido (`prefill`).
 - **Empreendimentos — Baixa Tensão**: loteamento (`status: "link"` → `loteamento/`), condomínio de torres e atendimento coletivo (fluxo BT interno).
 
-Cards com `status: "ok"` permanecem no app BT (com pré-preenchimento); cards com `status: "link"` navegam para a subpasta do módulo correspondente.
+Cards com `status: "ok"` abrem o app BT em `bt/?mod=<id>`, que aplica o pré-preenchimento do card na inicialização (`bt/js/app.js`); cards com `status: "link"` navegam para a subpasta do módulo correspondente.
 
 ### Modalidades pré-definidas de Microgeração (`?modo=`)
 
@@ -57,9 +79,11 @@ Funcionalidades principais:
 
 Estrutura:
 
+Estilos em [`css/`](css) (`formulario-bt.css` + `shared.css` + `variables.css`).
+
 ```
 bt/
-├── css/styles.css        Estilos (padrão visual Cemig)
+├── index.html            App de Baixa Tensão (aceita `?mod=<id>` vindo da homepage)
 └── js/
     ├── data.js           Constantes normativas ND-5.1/5.2 (tabelas, cargas, disjuntores)
     ├── calc.js           Cálculo de demanda e seleção de disjuntores
@@ -81,7 +105,6 @@ Formulário de orçamento de conexão em MT, com identidade visual compartilhada
 ```
 mt/
 ├── assets/logo-cemig.svg
-├── css/estilos.css, ssbroad.otf
 └── js/
     ├── dados.js                 Constantes normativas de MT
     ├── calculo.js                Cálculo de demanda/dimensionamento
@@ -98,7 +121,6 @@ Solicitação inicial de fornecimento para loteamentos e chacreamentos, preserva
 ```
 loteamento/
 ├── assets/logo-cemig.svg
-├── css/estilos.css, ssbroad.otf
 └── js/app.js
 ```
 
@@ -113,7 +135,6 @@ Os dois módulos têm a mesma estrutura interna e reaproveitam a base comum de G
 
 ```
 microgeracao|minigeracao/
-├── css/styles.css
 └── js/
     ├── data.js          Constantes normativas e listas de documentos
     ├── calc.js          Cálculo de potência/dimensionamento
@@ -129,9 +150,7 @@ microgeracao|minigeracao/
 ```
 shared/
 ├── css/
-│   ├── styles.css            Base visual compartilhada (BT/GD)
-│   ├── mt-loteamento.css     Base visual compartilhada (MT/Loteamento)
-│   └── ssbroad.otf           Fonte institucional Cemig
+│   └── ssbroad.otf           Fonte institucional Cemig (usada por MT/Loteamento)
 └── js/
     ├── api.js              Chamadas a APIs externas (ex.: ViaCEP)
     ├── calc.js              Funções de cálculo reutilizáveis

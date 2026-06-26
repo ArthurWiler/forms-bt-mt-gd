@@ -6,10 +6,10 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=5"
     />
-    <title>Formulário Orçamento de Conexão BT — Cemig</title>
+    <title>Ligação Nova e Alteração de Carga — Cemig</title>
     <meta
       name="description"
-      content="Formulário digital para orçamento de conexão / alteração de carga em Baixa Tensão (BT) — atendimento individual ou em agrupamento até 3 caixas e agrupamento com proteção geral via APR Web."
+      content="Portal de seleção de modalidade para solicitação de ligação nova e alteração de carga — Baixa Tensão, Média Tensão e Geração Distribuída."
     />
 
     <!-- Fontes -->
@@ -24,53 +24,130 @@
       rel="stylesheet"
     />
 
-    <!-- Estilos -->
-    <link rel="stylesheet" href="bt/css/styles.css" />
-    <!-- Design system CEMIG (Desktop) — carregado APÓS o CSS legado para
-         sobrescrever a tela inicial sem afetar o formulário BT. -->
-    <link rel="stylesheet" href="css/themes/cemig-desktop.css" />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
+    <!-- Estilos: tokens → compartilhado → página -->
+    <link rel="stylesheet" href="css/variables.css" />
+    <link rel="stylesheet" href="css/shared.css" />
+    <link rel="stylesheet" href="css/homepage.css" />
 
     <!-- Bibliotecas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
   </head>
   <body>
     <div id="root"></div>
 
-    <!-- Dados normativos e cálculo (JS puro) -->
+    <!-- Dados e modelo (catálogo + definição das modalidades) -->
     <script src="bt/js/data.js"></script>
     <script src="bt/js/calc.js"></script>
     <script src="bt/js/model.js"></script>
-    <script src="bt/js/pdf.js"></script>
-    <script src="bt/js/termo-grupo-b.js"></script>
-
-    <!-- Componentes React (JSX via Babel) -->
+    <!-- Componentes React reutilizados do formulário BT (logo + seções/cards) -->
     <script src="bt/js/components.js"></script>
-    <script src="../shared/js/geo.js"></script>
-    <script src="bt/js/map.js"></script>
-    <script src="bt/js/views/orient.js"></script>
-    <script src="bt/js/views/tipo.js"></script>
-    <script src="bt/js/views/proprietario.js"></script>
-    <script src="bt/js/views/correspondencia.js"></script>
-    <script src="bt/js/views/obra.js"></script>
-    <script src="bt/js/views/blocos.js"></script>
-    <script src="bt/js/views/ucs-coletivo.js"></script>
-    <script src="bt/js/views/ucs-individual.js"></script>
-    <script src="bt/js/views/cargas-coletivo.js"></script>
-    <script src="bt/js/views/cargas-individual.js"></script>
-    <script src="bt/js/views/gerador.js"></script>
-    <script src="bt/js/views/obs.js"></script>
-    <script src="bt/js/views/revisar.js"></script>
-    <script src="bt/js/app.js"></script>
 
-    <!-- Aviso caso aberto via file:// (Babel não carrega scripts externos sem HTTP) -->
+    <!-- Homepage: portal de seleção de modalidade -->
+    <script>
+      function Home() {
+        // Navegação a partir do card selecionado:
+        //  - cards "link" abrem o módulo correspondente (MT/Loteamento/GD);
+        //  - cards de BaixaTensão abrem a SPA do formulário BT carregando o
+        //    pré-preenchimento via `?mod=<id>` (preservando o fluxo existente).
+        const selectModalidade = (card) => {
+          if (card.status === "link" && card.href) {
+            window.location.href = card.href;
+            return;
+          }
+          if (card.status === "soon") return;
+          window.location.href = "bt/?mod=" + encodeURIComponent(card.id);
+        };
+        return /* @__PURE__ */ React.createElement(
+          "div",
+          { className: "cemig-portal" },
+          /* @__PURE__ */ React.createElement(
+            "div",
+            { className: "topbar" },
+            /* @__PURE__ */ React.createElement(
+              "div",
+              { className: "topbar-inner cmg-container" },
+              /* @__PURE__ */ React.createElement(
+                "div",
+                { className: "topbar-left" },
+                /* @__PURE__ */ React.createElement("img", {
+                  src: "imgs/logos/logo-cemig-branca-com-verde.png",
+                  alt: "Cemig",
+                  className: "logo-img",
+                }),
+                /* @__PURE__ */ React.createElement(
+                  "span",
+                  { className: "app-title" },
+                  "Formulário de Ligação Nova e Alteração de Carga",
+                ),
+              ),
+            ),
+          ),
+          /* @__PURE__ */ React.createElement(
+            "div",
+            { className: "modalidade-screen cmg-container cmg-container--gutter" },
+            /* @__PURE__ */ React.createElement(
+              "div",
+              { className: "modalidade-head" },
+              /* @__PURE__ */ React.createElement(
+                "h1",
+                null,
+                "Selecione uma modalidade",
+              ),
+              /* @__PURE__ */ React.createElement(
+                "p",
+                null,
+                "Para iniciar o processo de preenchimento do formulário, identifique e selecione a modalidade correspondente ao seu perfil de consumo. Dependendo da modalidade escolhida, alguns campos do formulário poderão aparecer pré-preenchidos.",
+              ),
+              /* @__PURE__ */ React.createElement(
+                "div",
+                { className: "modalidade-aviso" },
+                /* @__PURE__ */ React.createElement("span", {
+                  className: "modalidade-aviso-icon",
+                  "aria-hidden": "true",
+                }),
+                /* @__PURE__ */ React.createElement(
+                  "p",
+                  null,
+                  "Antes de dar início ao preenchimento, certifique-se de ter em mãos a lista dos equipamentos e a documentação do imóvel.",
+                ),
+              ),
+            ),
+            MODALIDADES_SECOES.map((sec) =>
+              /* @__PURE__ */ React.createElement(SecaoModalidade, {
+                key: sec.titulo,
+                sec,
+                onSelect: selectModalidade,
+              }),
+            ),
+          ),
+          /* @__PURE__ */ React.createElement(
+            "footer",
+            { className: "portal-footer" },
+            /* @__PURE__ */ React.createElement(
+              "div",
+              {
+                className:
+                  "portal-footer-inner cmg-container cmg-container--gutter",
+              },
+              /* @__PURE__ */ React.createElement(LogoCemig),
+              /* @__PURE__ */ React.createElement(
+                "p",
+                { className: "portal-footer-copy" },
+                "CEMIG " +
+                  new Date().getFullYear() +
+                  "© - Todos os Direitos Reservados",
+              ),
+            ),
+          ),
+        );
+      }
+      ReactDOM.createRoot(document.getElementById("root")).render(
+        /* @__PURE__ */ React.createElement(Home, null),
+      );
+    </script>
+
+    <!-- Aviso caso aberto via file:// -->
     <script>
       window.addEventListener("load", function () {
         setTimeout(function () {
@@ -83,7 +160,7 @@
             root.innerHTML =
               '<div style="max-width:640px;margin:60px auto;padding:24px;font-family:DM Sans,sans-serif;' +
               'background:#fff8e6;border:1px solid #f0d48a;border-radius:12px;color:#8a6d1a;line-height:1.6">' +
-              "<strong>Para executar este formulário, sirva-o por um servidor HTTP.</strong><br>" +
+              "<strong>Para executar este portal, sirva-o por um servidor HTTP.</strong><br>" +
               "O navegador bloqueia o carregamento dos arquivos <code>js/*.js</code> quando a página é aberta " +
               "diretamente do disco (<code>file://</code>).<br><br>" +
               "Na pasta do projeto, rode:<br>" +

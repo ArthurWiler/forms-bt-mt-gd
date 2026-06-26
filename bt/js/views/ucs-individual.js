@@ -210,7 +210,7 @@ function TabUcsIndividual({ ctx }) {
               /* @__PURE__ */ React.createElement(Inp, {
                 value: u.complemento,
                 onChange: (e) => setUcDet(ui, { complemento: e.target.value }),
-                placeholder: "Casa 1",
+                placeholder: "Residência 1",
               }),
             ),
             /* @__PURE__ */ React.createElement(

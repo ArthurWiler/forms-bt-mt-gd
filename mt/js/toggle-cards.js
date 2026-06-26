@@ -9,7 +9,7 @@
 
 // ---- CONFIGURAÇÃO CENTRALIZADA (editar aqui, sem tocar no código abaixo) ----
 // classes: nomes das classes CSS usadas para montar os cards (definidas em
-//          shared/css/mt-loteamento.css). Trocar nome de classe = editar aqui.
+//          css/formulario-mt.css). Trocar nome de classe = editar aqui.
 // labelsSimNao: textos exibidos nos dois cards das perguntas Sim/Não.
 // labelsOpcaoAtendimento: textos exibidos nos dois cards de "Opção de Atendimento".
 // camposSimNao: data-k de cada <select> Sim/Não a converter em cards.
