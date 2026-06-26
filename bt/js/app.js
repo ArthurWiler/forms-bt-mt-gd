@@ -901,7 +901,7 @@ function App() {
       { className: "topbar" },
       /* @__PURE__ */ React.createElement(
         "div",
-        { className: "topbar-inner" },
+        { className: "topbar-inner cmg-container" },
         /* @__PURE__ */ React.createElement(
           "div",
           { className: "topbar-left" },
@@ -931,7 +931,7 @@ function App() {
           null,
           /* @__PURE__ */ React.createElement(
             "div",
-            { className: "modalidade-screen" },
+            { className: "modalidade-screen cmg-container cmg-container--gutter" },
             /* @__PURE__ */ React.createElement(
               "div",
               { className: "modalidade-head" },
@@ -970,13 +970,17 @@ function App() {
           /* @__PURE__ */ React.createElement(
             "footer",
             { className: "portal-footer" },
-            /* @__PURE__ */ React.createElement(LogoCemig),
             /* @__PURE__ */ React.createElement(
-              "p",
-              { className: "portal-footer-copy" },
-              "CEMIG " +
-                new Date().getFullYear() +
-                "© - Todos os Direitos Reservados",
+              "div",
+              { className: "portal-footer-inner cmg-container cmg-container--gutter" },
+              /* @__PURE__ */ React.createElement(LogoCemig),
+              /* @__PURE__ */ React.createElement(
+                "p",
+                { className: "portal-footer-copy" },
+                "CEMIG " +
+                  new Date().getFullYear() +
+                  "© - Todos os Direitos Reservados",
+              ),
             ),
           ),
         )

@@ -5,6 +5,44 @@
    to `.modalidade-screen` during migration to avoid leaking into
    legacy screens. Expand as later phases need shared helpers.
    ============================================================ */
+/* ---- Global content container ----------------------------------------
+   Constrains every major section (header, landing, accordion, cards,
+   footer) to the approved usable area and centers it. INTENTIONALLY
+   GLOBAL (not scoped to `.modalidade-screen`) because the header and
+   footer live outside that root. It only sets width/centering — no
+   colors, no typography — so it is side-effect free on legacy screens
+   that don't carry the class.
+
+   On viewports wider than --cmg-area-max the content stops expanding and
+   centers; full-bleed colored bands (header green / footer dark) span the
+   viewport via their own background and wrap this container inside. */
+.cmg-container {
+  width: 100%;
+  max-width: var(--cmg-area-max);
+  margin-inline: auto;
+}
+/* Container variant that reserves the Figma side gutters of the "Conteúdo da
+   página" so the inner content column is centered within the usable area and
+   the header title lines up with the page heading. Per the approved specs the
+   gutter changes at each breakpoint (the content block also carries 32px top /
+   60px bottom padding, applied on `.modalidade-screen`):
+     Desktop  > 1024px : 252px  → inner column 862px (1366 − 252×2)
+     Tablet   ≤ 1024px : 195px  → inner column 634px (1024 − 195×2)
+     Mobile   ≤ 600px  : 12px */
+.cmg-container--gutter {
+  padding-inline: var(--cmg-area-gutter); /* 252px */
+}
+@media (max-width: 1024px) {
+  .cmg-container--gutter {
+    padding-inline: 195px;
+  }
+}
+@media (max-width: 600px) {
+  .cmg-container--gutter {
+    padding-inline: var(--cmg-space-3); /* 12px */
+  }
+}
+
 .modalidade-screen .cmg-visually-hidden {
   position: absolute;
   width: 1px;

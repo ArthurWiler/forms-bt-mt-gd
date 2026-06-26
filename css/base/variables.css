@@ -89,8 +89,20 @@
   --cmg-space-12: 48px;
   --cmg-space-15: 60px;
 
-  /* ---- Layout ---- */
-  --cmg-content-max: 862px; /* central content column (Figma: 1366 − 252×2) */
+  /* ---- Layout ----
+     Two nested widths define the approved desktop composition:
+       --cmg-area-max     usable area = the 1366px reference frame. The global
+                          `.cmg-container` is capped here; on monitors wider
+                          than the reference the content stops growing and
+                          centers (full-bleed colored bands still span the
+                          viewport — only their inner content is contained).
+       --cmg-area-gutter  side gutter inside the usable area (Figma: 252px on a
+                          1366 frame). 1366 − 252×2 = 862, so the inner content
+                          column lines up with --cmg-content-max.
+       --cmg-content-max  inner content column (heading, accordion, cards). */
+  --cmg-area-max: 1366px;
+  --cmg-area-gutter: 252px;
+  --cmg-content-max: 862px; /* central content column (1366 − gutter×2) */
   --cmg-header-height: 80px;
 
   /* ---- Breakpoints (reference only) ----
