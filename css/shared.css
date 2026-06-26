@@ -339,19 +339,33 @@ html {
 /* Info notice ("aviso") */
 .modalidade-screen .modalidade-aviso {
   display: flex;
-  align-items: stretch;
+  flex-direction: row;
+  align-items: center;
   border: 1px solid var(--cmg-neutral-200);
-  border-radius: var(--cmg-radius);
+  border: 1px solid #D1D4D3;
+  border-radius: 8px;
+  flex: none;
+  order: 2;
+  align-self: stretch;
+  flex-grow: 0;
+  width: 862px;
+  height: 74px;
   overflow: hidden;
 }
 .modalidade-screen .modalidade-aviso-icon {
-  flex: none;
-  align-self: stretch;
   display: flex;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
+  padding: 20px;
+  gap: 10px;
   width: 72px;
-  background: var(--cmg-neutral-200);
+  height: 74px;
+  background: #D1D4D3;
+  border-radius: 8px 0px 0px 8px;
+  flex: none;
+  order: 0;
+  align-self: stretch;
+  flex-grow: 0;
 }
 .modalidade-screen .modalidade-aviso-icon::before {
   content: "i";

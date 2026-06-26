@@ -243,7 +243,7 @@ const SEC_BT_RESIDENCIAL = {
   cards: [
     {
       id: "casa50",
-      nome: "Residência até 50m²",
+      nome: "Residência até 50 m²",
       sub: "Monofásico 63 A",
       img: "imgs/img_casa1.png",
       status: "ok",
@@ -271,7 +271,7 @@ const SEC_BT_RESIDENCIAL = {
     },
     {
       id: "casa100",
-      nome: "Residência até 100m²",
+      nome: "Residência até 100 m²",
       sub: "Bifásico 63 A",
       img: "imgs/img_casa2.png",
       status: "ok",
@@ -300,7 +300,7 @@ const SEC_BT_RESIDENCIAL = {
     },
     {
       id: "casaluxo",
-      nome: "Residência > 100m²",
+      nome: "Residência acima de 100 m²",
       sub: "Baixa Tensão",
       img: "imgs/img_casa3.png",
       status: "ok",

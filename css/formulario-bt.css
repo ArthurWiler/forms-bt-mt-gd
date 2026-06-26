@@ -32,13 +32,16 @@ body {
   z-index: 100;
 }
 .topbar-inner {
-  max-width: 1360px;
-  margin: 0 auto;
-  padding: 12px 20px;
   display: flex;
+  flex-direction: row;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  padding: 0px 32px;
+  gap: 108px;
+  width: 1366px;
+  background: #0F6C58;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
 }
 .logo-cemig {
   display: flex;

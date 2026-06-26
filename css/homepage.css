@@ -51,28 +51,45 @@ body {
 .logo-cemig svg { height: 34px; width: auto; }
 .logo-cemig .logo-img { height: 34px; width: auto; display: block; }
 .app-title {
-  font-family: "DM Sans", system-ui, -apple-system, sans-serif;
-  font-size: 36px;
+  font-family: "Open Sans", system-ui, -apple-system, sans-serif;
+  font-style: normal;
   font-weight: 400;
+  font-size: clamp(24px, 2.8vw, 36px);
+  line-height: clamp(32px, 3.5vw, 46px);
   color: #fff;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.4px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
 }
 .topbar-left { display: flex; align-items: center; gap: 14px; }
 
 /* ===== Tela inicial — seleção de modalidade (structural base) ===== */
 .modalidade-head {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 32px;
+  width: 862px;
 }
 .modalidade-head h1 {
-  font-size: 26px;
-  font-weight: 800;
-  color: var(--verde-escuro);
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 38px;
+  letter-spacing: 0.4px;
+  color: #041E18;
 }
 .modalidade-head p {
-  color: var(--texto-suave);
-  margin: 0;
-  max-width: 620px;
-  margin: 0 auto;
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 26px;
+  letter-spacing: 0.2px;
+  color: #364B46;
 }
 .modalidade-secao {
   margin-bottom: 34px;
@@ -207,14 +224,24 @@ body {
   flex-grow: 0;
 }
 .modalidade-card-body strong {
-  font-size: 18px;
+  height: 13px;
+  font-family: 'Open Sans';
+  font-style: normal;
   font-weight: 400;
-  color: var(--verde-cemig);
+  font-size: 18px;
+  line-height: 26px;
+  letter-spacing: 0.4px;
+  color: #364B46;
 }
 .modalidade-sub {
-  font-size: 12px;
+  height: 10px;
+  font-family: 'Open Sans';
+  font-style: normal;
   font-weight: 400;
-  color: var(--texto-suave);
+  font-size: 14px;
+  line-height: 24px;
+  letter-spacing: 0.2px;
+  color: #576864;
 }
 .modalidade-tag {
   position: absolute;
