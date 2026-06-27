@@ -132,14 +132,11 @@ body {
 .vstep + .vstep { margin-top: 2px; }
 .vstep:hover { background: var(--verde-claro); }
 
+/* .vstep-num e variações (.vstep.active/.done .vstep-num): fonte única em
+   shared.css (`.cemig-form .vstep-num`). Cópias locais removidas. */
 .vstep-label { font-size: 13.5px; font-weight: 600; color: var(--texto-suave); }
 .vstep.active { background: var(--verde-claro); }
-.vstep.active .vstep-num {
-  background: var(--grad-marca);
-  color: var(--verde-escuro);
-}
 .vstep.active .vstep-label { color: var(--verde-escuro); font-weight: 700; }
-.vstep.done .vstep-num { background: var(--verde-acento); color: #fff; }
 .vstep.done .vstep-label { color: var(--texto); }
 /* linha conectora */
 .vstep:not(:last-child)::before {

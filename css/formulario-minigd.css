@@ -131,28 +131,11 @@ body {
 }
 .vstep + .vstep { margin-top: 2px; }
 .vstep:hover { background: var(--verde-claro); }
-.vstep-num {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  background: #dfe4e8;
-  color: var(--texto-suave);
-  flex-shrink: 0;
-  transition: all 0.15s;
-}
+/* .vstep-num e variações (.vstep.active/.done .vstep-num): fonte única em
+   shared.css (`.cemig-form .vstep-num`). Cópias locais removidas. */
 .vstep-label { font-size: 13.5px; font-weight: 600; color: var(--texto-suave); }
 .vstep.active { background: var(--verde-claro); }
-.vstep.active .vstep-num {
-  background: var(--grad-marca);
-  color: var(--verde-escuro);
-}
 .vstep.active .vstep-label { color: var(--verde-escuro); font-weight: 700; }
-.vstep.done .vstep-num { background: var(--verde-acento); color: #fff; }
 .vstep.done .vstep-label { color: var(--texto); }
 /* linha conectora */
 .vstep:not(:last-child)::before {
