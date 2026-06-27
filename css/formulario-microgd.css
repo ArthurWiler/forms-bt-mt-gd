@@ -131,20 +131,7 @@ body {
 }
 .vstep + .vstep { margin-top: 2px; }
 .vstep:hover { background: var(--verde-claro); }
-.vstep-num {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  background: #dfe4e8;
-  color: var(--texto-suave);
-  flex-shrink: 0;
-  transition: all 0.15s;
-}
+
 .vstep-label { font-size: 13.5px; font-weight: 600; color: var(--texto-suave); }
 .vstep.active { background: var(--verde-claro); }
 .vstep.active .vstep-num {
@@ -344,30 +331,9 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
 }
 .nav-step-info { font-size: 13px; color: var(--texto-suave); }
 
-/* ---------- ORIENTAÇÕES ---------- */
-.orient-list { list-style: none; margin-top: 8px; }
-.orient-item {
-  display: flex;
-  gap: 14px;
-  padding: 14px 0;
-  border-top: 1px solid var(--borda);
-}
-.orient-item:first-child { border-top: none; }
-.orient-num {
-  flex-shrink: 0;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: var(--verde);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.orient-item p { font-size: 13.5px; color: var(--texto); line-height: 1.6; }
-.orient-item a { color: var(--verde-cemig); font-weight: 600; }
+/* ---------- ORIENTAÇÕES ----------
+   Estilo centralizado em css/shared.css (`.cemig-form .orient-*`).
+   As definições locais foram removidas para evitar duplicação. */
 .callout {
   background: var(--verde-claro);
   border-radius: var(--raio-sm);

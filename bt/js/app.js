@@ -1031,7 +1031,7 @@ function App() {
                     className: "form-back",
                     onClick: irParaHome,
                   },
-                  "← VOLTAR",
+                  "VOLTAR",
                 ),
                 /* @__PURE__ */ React.createElement(
                   "div",

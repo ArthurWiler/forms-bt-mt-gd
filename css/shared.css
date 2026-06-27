@@ -188,6 +188,13 @@ html {
   gap: 108px;
   padding: 0 var(--cmg-space-8); /* 0 32px */
   min-height: var(--cmg-header-height);
+  /* Pin the topbar frame to the design token so it matches the content
+     frame below it exactly. Some page stylesheets (Micro/Mini) still cap
+     the legacy 1360px here — without this the topbar and the .layout below
+     centre on slightly different widths and the logo/title axes drift ~3px
+     off the side-panel/body. */
+  width: 100%;
+  max-width: var(--cmg-area-max);
 }
 .cemig-portal .topbar-left,
 .cemig-form .topbar-left {
@@ -876,6 +883,13 @@ html {
   color: var(--cmg-text);
 }
 .cemig-form .layout {
+  /* `width:100%` is required: as a flex-column child, `max-width + margin-
+     inline:auto` alone makes the layout SHRINK-TO-FIT its content and re-
+     centre at a content-dependent width — so the whole block (side-panel +
+     body) drifts right of the topbar by a variable amount. Filling to the
+     same frame as the topbar keeps the two vertical axes continuous:
+     side-panel left = logo left, body left = title left. */
+  width: 100%;
   max-width: var(--cmg-area-max);
   margin-inline: auto;
   padding: var(--cmg-space-8) var(--cmg-space-8) var(--cmg-space-15);
@@ -901,7 +915,9 @@ html {
   align-items: center;
   gap: var(--cmg-space-2);
   align-self: flex-start;
-  padding: var(--cmg-space-1) 0;
+  /* Left padding = the step inset (12px) so the VOLTAR icon circle shares the
+     same left axis as the numbered step circles. */
+  padding: var(--cmg-space-1) 0 var(--cmg-space-1) var(--cmg-space-3);
   border: none;
   background: transparent;
   cursor: pointer;
@@ -913,6 +929,26 @@ html {
 }
 .cemig-form .form-back:hover {
   text-decoration: underline;
+}
+/* ---- VOLTAR — circled, outlined back arrow (shared by both form shells) ----
+   The arrow glyph lives in this pseudo so the label text is just "VOLTAR".
+   Standardised across all forms: 24px circle, 1.5px border, arrow + border in
+   the link colour (green). The circle's left edge aligns with the step number
+   circles (see the 12px form-back left padding above / the .mt-layout rule). */
+.cemig-form .form-back::before,
+.cemig-mt .form-back::before {
+  content: "\2190"; /* ← */
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  font-size: 14px;
+  line-height: 1;
+  text-decoration: none;
 }
 .cemig-form .vstep {
   display: flex;
@@ -938,39 +974,60 @@ html {
   display: none;
 }
 .cemig-form .vstep-num {
-  flex: none;
-  display: inline-flex;
+  /* Layout */
+  display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
+
+  /* Size */
+  width: 18px;
+  min-width: 16px;
+  max-width: 34px;
   height: 18px;
-  padding: 0 var(--cmg-space-1);
-  border-radius: var(--cmg-radius-pill);
-  background: var(--cmg-neutral-500);
-  color: var(--cmg-neutral-0);
+  padding: 0 4px;
+  flex: none;
+  flex-shrink: 0;
+
+  /* Appearance */
+  background: var(--cmg-success-600, #0F6C58);
+  border: none;
+  border-radius: 100px;
+
+  /* Typography */
+  font-family: "Open Sans", system-ui, sans-serif;
   font-size: 11px;
-  line-height: 1;
-  font-weight: var(--cmg-fw-bold);
+  font-weight: 700;
+  line-height: 20px;
   letter-spacing: 0.2px;
+  color: #fff;
+  text-align: center;
 }
 .cemig-form .vstep-label {
-  font-size: var(--cmg-fs-caption);
-  line-height: var(--cmg-lh-caption);
-  font-weight: var(--cmg-fw-bold);
+  font-family: "Open Sans", system-ui, sans-serif;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 20px;
   letter-spacing: 0.5px;
-  color: var(--cmg-text-muted);
+  text-align: center;
+  color: var(--cmg-success-700, #0B5445);
+  flex: none;
 }
 .cemig-form .vstep.active {
   background: var(--cmg-step-active-bg);
 }
 .cemig-form .vstep.active .vstep-num {
   background: var(--cmg-green-600);
+  border-color: var(--cmg-green-600);
+  color: var(--cmg-neutral-0);
 }
 .cemig-form .vstep.active .vstep-label {
   color: var(--cmg-green-600);
 }
 .cemig-form .vstep.done .vstep-num {
   background: var(--cmg-green-600);
+  border-color: var(--cmg-green-600);
+  color: var(--cmg-neutral-0);
 }
 .cemig-form .vstep.done .vstep-label {
   color: var(--cmg-text);
@@ -1081,6 +1138,70 @@ html {
 .cemig-form .fade-in {
   animation: fadeIn 0.25s ease;
 }
+
+/* ---- Orientation numbered list (single source for ALL forms) ----
+   Centralises what used to be duplicated per page stylesheet, in two markups:
+     • form shells (BT/Micro/Mini): li.orient-item > span.orient-num + p
+     • MT family (MT/Loteamento/Desistência): li > span.bullet + div
+   The marker is a large dark-green number (no badge), top-aligned with the
+   item text, with a thin divider between items. The visible number is a CSS
+   counter (decimal-leading-zero → 01, 02…) so it is zero-padded without
+   touching the JS/HTML; the original digit in the span is hidden via
+   font-size:0 and restored on the ::before. Open Sans is loaded on every form
+   page and is the --cmg-font-family. */
+.cemig-form .orient-list,
+.cemig-mt .orient-list {
+  counter-reset: orient;
+  list-style: none;
+  margin-top: var(--cmg-space-2);
+}
+.cemig-form .orient-item,
+.cemig-mt .orient-list li {
+  counter-increment: orient;
+  display: flex;
+  align-items: flex-start; /* number top-aligned with the text (no badge) */
+  gap: var(--cmg-space-4);
+  padding: var(--cmg-space-4) 0;
+  border: none; /* drop the MT card border/background */
+  border-top: 1px solid var(--cmg-divider);
+  border-radius: 0;
+  background: transparent;
+}
+.cemig-form .orient-item:first-child,
+.cemig-mt .orient-list li:first-child {
+  border-top: none;
+}
+.cemig-form .orient-num,
+.cemig-mt .orient-list .bullet {
+  flex: none;
+  width: 42px;
+  height: auto; /* spec lists 26px, but line-height:46px would clip it */
+  border-radius: 0;
+  background: transparent;
+  font-family: var(--cmg-font-family); /* Open Sans */
+  font-weight: var(--cmg-fw-bold); /* 700 */
+  font-size: 0; /* hides the JS/HTML digit; the counter renders below */
+  line-height: 46px;
+  letter-spacing: var(--cmg-ls-wide); /* 0.4px */
+  color: var(--cmg-green-600); /* #0F6C58 */
+}
+.cemig-form .orient-num::before,
+.cemig-mt .orient-list .bullet::before {
+  content: counter(orient, decimal-leading-zero);
+  font-size: 36px;
+}
+.cemig-form .orient-item p,
+.cemig-mt .orient-list li > div {
+  font-size: var(--cmg-fs-body);
+  line-height: var(--cmg-lh-body);
+  color: var(--cmg-text);
+}
+.cemig-form .orient-item a,
+.cemig-mt .orient-list a {
+  color: var(--cmg-green-600);
+  font-weight: var(--cmg-fw-bold);
+}
+
 @media (max-width: 1024px) {
   .cemig-form .layout {
     gap: var(--cmg-space-6);
@@ -1161,7 +1282,11 @@ body.cemig-mt {
 }
 .cemig-mt .service-hero .wrap {
   max-width: var(--cmg-area-max);
-  padding: var(--cmg-space-8) var(--cmg-space-8) 0;
+  /* Left padding = the design gutter so the page title lines up with the
+     form-body column (mirrors the BT shell, where the title sits inside the
+     indented main column). Right/top keep the 32px gutter. Reset to 32px
+     below 900px (see responsive block). */
+  padding: var(--cmg-space-8) var(--cmg-space-8) 0 var(--cmg-area-gutter);
 }
 .cemig-mt .hero-title-main {
   font-family: var(--cmg-font-family);
@@ -1185,14 +1310,20 @@ body.cemig-mt {
   color: var(--cmg-text);
 }
 .cemig-mt .mt-layout {
+  width: 100%;
   max-width: var(--cmg-area-max);
   padding-inline: var(--cmg-space-8);
+  /* 16px rail↔body gap; with the 204px rail below this puts the body on the
+     title/gutter axis (32 + 204 + 16 = 252), matching the BT shell. */
+  gap: var(--cmg-space-4);
 }
 .cemig-mt main {
   max-width: var(--cmg-area-max);
 }
 .cemig-mt .mt-layout .stepper-bar {
-  width: 240px;
+  /* 204px (= BT side-panel) so the body lands on the 252px gutter under the
+     page title, with the rail sitting in the left gutter under the logo. */
+  width: 204px;
   top: calc(var(--cmg-header-height) + var(--cmg-space-4));
   padding: 0 var(--cmg-space-2);
 }
@@ -1216,6 +1347,12 @@ body.cemig-mt {
 .cemig-mt .form-back:hover {
   text-decoration: underline;
 }
+/* Align the VOLTAR icon circle with the step number circles (12px step inset).
+   Scoped to .mt-layout so the Loteamento back link — which lives in the hero,
+   not a step rail — keeps its natural left edge. */
+.cemig-mt .mt-layout .form-back {
+  padding-left: var(--cmg-space-3);
+}
 .cemig-mt .mt-layout .step {
   border-radius: var(--cmg-radius-pill);
   padding: 10px var(--cmg-space-4) 10px var(--cmg-space-3);
@@ -1236,8 +1373,10 @@ body.cemig-mt {
   height: 18px;
   padding: 0 var(--cmg-space-1);
   border-radius: var(--cmg-radius-pill);
-  background: var(--cmg-neutral-500);
-  color: var(--cmg-neutral-0);
+  /* Inactive: light/hollow circle (matches the .cemig-form vstep circles). */
+  background: var(--cmg-neutral-100);
+  color: var(--cmg-text);
+  border: 1px solid var(--cmg-border);
   font-size: 11px;
   font-weight: var(--cmg-fw-bold);
 }
@@ -1248,10 +1387,12 @@ body.cemig-mt {
 }
 .cemig-mt .step.active .num {
   background: var(--cmg-green-600);
+  border-color: var(--cmg-green-600);
   color: var(--cmg-neutral-0);
 }
 .cemig-mt .step.done .num {
   background: var(--cmg-green-600);
+  border-color: var(--cmg-green-600);
   color: var(--cmg-neutral-0);
 }
 .cemig-mt .card {
@@ -1508,6 +1649,10 @@ body.cemig-mt {
      horizontally scrollable step rail (matches the BT/GD form shell). */
   .cemig-mt .mt-layout {
     flex-direction: column;
+  }
+  /* Drop the desktop title indent once the rail no longer sits to the left. */
+  .cemig-mt .service-hero .wrap {
+    padding-left: var(--cmg-space-8);
   }
   .cemig-mt .mt-layout .stepper-bar {
     position: static;

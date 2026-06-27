@@ -197,7 +197,7 @@ function App() {
         /* @__PURE__ */ React.createElement(
           "a",
           { className: "form-back", href: "../index.html" },
-          "← VOLTAR",
+          "VOLTAR",
         ),
         /* @__PURE__ */ React.createElement(
           "div",

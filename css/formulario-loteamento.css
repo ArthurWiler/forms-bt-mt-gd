@@ -88,6 +88,13 @@ header.site .wrap{max-width:1180px;margin:0 auto;padding:8px 24px;display:flex;a
   .mt-layout main{width:100%;padding:8px 16px 40px}
 }
 main{max-width:1180px;margin:0 auto;padding:28px 24px 70px}
+/* Loteamento é coluna única (não tem trilha de etapas). Logo, o recuo de
+   título de 252px do shared.css (que pressupõe a trilha na goteira esquerda)
+   não se aplica aqui: título e corpo compartilham o mesmo eixo, no recuo da
+   esquerda sob a logo, em largura cheia. Estas regras casam a especificidade
+   do shared (.cemig-mt …) e, carregadas depois, vencem. */
+.cemig-mt .service-hero .wrap{padding-left:var(--cmg-space-8)}
+.cemig-mt main{width:100%;max-width:var(--cmg-area-max);margin-inline:auto;padding-inline:var(--cmg-space-8)}
 .page{display:none;animation:fade .32s ease}
 .page.show{display:block}
 .card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden}
@@ -101,10 +108,8 @@ main{max-width:1180px;margin:0 auto;padding:28px 24px 70px}
 .subhead{font-size:13.5px;font-weight:800;color:var(--cemig-green-700);text-transform:uppercase;letter-spacing:.5px;margin:22px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--cemig-green-soft);display:flex;align-items:center;gap:8px}
 .subhead:first-child{margin-top:0}
 .intro-lead{font-size:14.5px;color:var(--ink-soft);max-width:780px;margin-bottom:20px}
-.orient-list{list-style:none;display:flex;flex-direction:column;gap:12px}
-.orient-list li{display:flex;gap:12px;padding:14px 16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--white);font-size:13.5px}
-.orient-list li .bullet{flex-shrink:0;width:25px;height:25px;border-radius:7px;background:var(--cemig-green-soft);color:var(--cemig-green-dark);display:grid;place-items:center;font-weight:800;font-size:12.5px}
-.orient-list li a{color:var(--cemig-green-dark);font-weight:600}
+/* .orient-list / .bullet — estilo centralizado em css/shared.css
+   (`.cemig-mt .orient-list …`), unificado com as demais listas numeradas. */
 .callout{margin-top:16px;border-left:4px solid var(--amber);background:var(--amber-soft);padding:14px 17px;border-radius:0 var(--radius-sm) var(--radius-sm) 0;font-size:13px;color:#6b5114}
 .callout strong{color:#5a4410}
 .legend{margin-top:18px;font-size:12.5px;color:var(--ink-soft);display:flex;gap:22px;flex-wrap:wrap}
