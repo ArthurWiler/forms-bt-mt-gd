@@ -51,15 +51,27 @@ function Sel({ value, onChange, children, disabled }) {
   );
 }
 function Toggle({ value, onChange, options, disabled }) {
+  // Rótulo: Sim/Não usa o padrão regular 16px; demais (opções enumeradas)
+  // recebem a variante bold 14px via .toggle-group--opcoes.
+  const ehSimNao =
+    options.length === 2 && options.every((o) => o.v === "Sim" || o.v === "Não");
   return /* @__PURE__ */ React.createElement(
     "div",
-    { className: "toggle-group" + (disabled ? " is-locked" : "") },
+    {
+      className:
+        "toggle-group" +
+        (ehSimNao ? "" : " toggle-group--opcoes") +
+        (disabled ? " is-locked" : ""),
+      role: "radiogroup",
+    },
     options.map((o) =>
       /* @__PURE__ */ React.createElement(
         "button",
         {
           key: String(o.v),
           type: "button",
+          role: "radio",
+          "aria-checked": value === o.v,
           className: "toggle-btn" + (value === o.v ? " on" : ""),
           disabled,
           onClick: disabled ? void 0 : () => onChange(o.v),

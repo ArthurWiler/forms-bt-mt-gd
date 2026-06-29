@@ -58,6 +58,8 @@ function _campoCardBotao(texto, titulo, ativo, destaque, onSelecionar) {
   const cls = CAMPOS_CARDS_CONFIG.classes;
   const btn = document.createElement("button");
   btn.type = "button";
+  btn.setAttribute("role", "radio");
+  btn.setAttribute("aria-checked", ativo ? "true" : "false");
   btn.className = cls.card + (destaque ? " " + cls.destaque : "") + (ativo ? " " + cls.active : "");
   btn.textContent = texto;
   if (titulo) btn.title = titulo;
@@ -75,7 +77,14 @@ function _campoCardsMontar(campo) {
   const grid = document.getElementById(campo.gridId);
   if (!select || !grid || select.dataset.cardMontado) return;
   select.dataset.cardMontado = "1";
-  grid.className = CAMPOS_CARDS_CONFIG.classes.grid;
+  // Sim/Não (ex.: pagamento prévio) usa o rótulo padrão regular 16px;
+  // opções enumeradas (ex.: motivo da obra) recebem bold 14px via
+  // .toggle-group--opcoes.
+  const ehSimNao =
+    campo.opcoes.length === 2 &&
+    campo.opcoes.every((op) => (op.valor ?? op.labelFull) === "Sim" || (op.valor ?? op.labelFull) === "Não");
+  grid.className = CAMPOS_CARDS_CONFIG.classes.grid + (ehSimNao ? "" : " toggle-group--opcoes");
+  grid.setAttribute("role", "radiogroup");
   // Normaliza os dois formatos de opção aceitos: {valor,texto} (genérico)
   // ou {labelShort,labelFull} (ex.: Motivo da Obra — labelFull também
   // aparece no atributo title do botão para exibição em hover).

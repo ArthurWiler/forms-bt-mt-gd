@@ -244,7 +244,7 @@ body {
 .field { display: flex; flex-direction: column; }
 .field label {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 400;
   color: var(--texto-suave);
   margin-bottom: 5px;
 }
@@ -271,23 +271,7 @@ input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 input[type="number"] { -moz-appearance: textfield; }
 
-/* ---------- TOGGLE ---------- */
-.toggle-group { display: flex; gap: 8px; flex-wrap: wrap; }
-.toggle-btn {
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: var(--raio-sm);
-  padding: 8px 16px;
-  cursor: pointer;
-  border: 1px solid var(--borda);
-  background: var(--input-bg);
-  color: var(--texto-suave);
-  font-family: inherit;
-  transition: all 0.15s;
-}
-.toggle-btn.on { background: var(--verde); color: #fff; border-color: var(--verde); }
-.toggle-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.toggle-disabled { opacity: 0.45; }
+/* Toggle/radio: estilo canônico único em shared.css (.toggle-group/.toggle-btn). */
 select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* ---------- BOTÕES ----------

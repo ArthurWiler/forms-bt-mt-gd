@@ -46,6 +46,8 @@ const TOGGLE_CARDS_CONFIG = {
 function _toggleCardsBotao(label, ativo, classes, onSelecionar) {
   const btn = document.createElement("button");
   btn.type = "button";
+  btn.setAttribute("role", "radio");
+  btn.setAttribute("aria-checked", ativo ? "true" : "false");
   btn.className = classes.btn + (ativo ? " " + classes.active : "");
   btn.textContent = label;
   btn.addEventListener("click", onSelecionar);
@@ -56,8 +58,13 @@ function _toggleCardsMontar(select, opcoes) {
   if (!select || select.dataset.toggleCardMontado) return;
   select.dataset.toggleCardMontado = "1";
   const classes = TOGGLE_CARDS_CONFIG.classes;
+  // Sim/Não usa o rótulo padrão (regular 16px); demais opções (ex.:
+  // Cativo/Livre) recebem a variante bold 14px via .toggle-group--opcoes.
+  const ehSimNao =
+    opcoes.length === 2 && opcoes.every((op) => op.value === "Sim" || op.value === "Não");
   const grupo = document.createElement("div");
-  grupo.className = classes.group;
+  grupo.className = classes.group + (ehSimNao ? "" : " toggle-group--opcoes");
+  grupo.setAttribute("role", "radiogroup");
 
   const render = () => {
     grupo.innerHTML = "";

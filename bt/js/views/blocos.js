@@ -397,7 +397,7 @@ function TabBlocos({ ctx }) {
                     ),
                     /* @__PURE__ */ React.createElement(
                       Field,
-                      { label: "Solicitação", req: true },
+                      { label: "Solicitação", req: true, float: true },
                       /* @__PURE__ */ React.createElement(
                         Sel,
                         {

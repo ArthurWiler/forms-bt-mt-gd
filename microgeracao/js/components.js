@@ -50,12 +50,21 @@ function Sel({ value, onChange, children }) {
 
 // Toggle (Sim/Não etc.)
 function Toggle({ value, onChange, options }) {
+  // Sim/Não usa o rótulo padrão (regular 16px); opções enumeradas recebem
+  // a variante bold 14px via .toggle-group--opcoes.
+  const ehSimNao =
+    options.length === 2 && options.every((o) => o.v === "Sim" || o.v === "Não");
   return (
-    <div className="toggle-group">
+    <div
+      className={"toggle-group" + (ehSimNao ? "" : " toggle-group--opcoes")}
+      role="radiogroup"
+    >
       {options.map((o) => (
         <button
           key={String(o.v)}
           type="button"
+          role="radio"
+          aria-checked={value === o.v}
           className={"toggle-btn" + (value === o.v ? " on" : "")}
           onClick={() => onChange(o.v)}
         >

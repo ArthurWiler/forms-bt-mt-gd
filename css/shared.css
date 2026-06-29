@@ -657,8 +657,8 @@ html {
 }
 .cemig-form .field label {
   font-family: var(--cmg-font-family);
-  font-size: var(--cmg-fs-caption);
-  line-height: var(--cmg-lh-caption);
+  font-size: var(--cmg-fs-body-lg);
+  line-height: var(--cmg-lh-body);
   font-weight: var(--cmg-fw-regular);
   letter-spacing: var(--cmg-ls-tight);
   color: var(--cmg-text-muted);
@@ -731,40 +731,199 @@ html {
   color: var(--cmg-text-muted);
   margin-top: var(--cmg-space-1);
 }
-.cemig-form .toggle-group {
+/* ============================================================
+   Campo com rótulo flutuante (Padrão B) — modificador reutilizável.
+   O label fica DENTRO do campo, acima do valor; cantos arredondados
+   só no topo. Aplicado via classe .field--float no wrapper .field
+   (prop `float` do componente Field). Não duplicar nos formulario-*.
+   Convive com o Padrão A (campo simples), que permanece em 48px.
+   Obs.: a spec do Figma pede label 16px; com o valor também em 16px
+   o conjunto não cabe nos 56px sem encostar — line-height ajustado
+   p/ caber (ver sinalização ao usuário).
+   ============================================================ */
+.cemig-form .field--float {
+  box-sizing: border-box;
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--cmg-space-2);
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+  height: 56px;
+  padding: 4px var(--cmg-space-4);
+  background: var(--cmg-surface);
+  border: 1px solid var(--cmg-border);
+  border-radius: 4px 4px 4px 4px;
+  isolation: isolate;
+  position: relative;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
-.cemig-form .toggle-btn {
+.cemig-form .field--float label {
+  margin: 0;
   font-family: var(--cmg-font-family);
+  font-size: 12px;
+  line-height: var(--cmg-lh-body); /* spec 26px; reduzido p/ caber em 56px */
+  font-weight: 400;
+  letter-spacing: var(--cmg-ls-tight);
+  color: var(--cmg-neutral-600);
+}
+/* Valor do campo: vale para <select> (ex.: Solicitação, Escopo) e para
+   <input> (ex.: Nº de Unidades Consumidoras) — mesmo Padrão B. */
+.cemig-form .field--float select,
+.cemig-form .field--float input {
+  width: 100%;
+  min-height: 0;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: 0.2px;
+  color: var(--cmg-text-strong);
+}
+.cemig-form .field--float input::placeholder {
+  color: var(--cmg-text-muted);
+}
+.cemig-form .field--float select:focus,
+.cemig-form .field--float input:focus {
+  border: none;
+  box-shadow: none;
+}
+.cemig-form .field--float:focus-within {
+  border-color: var(--cmg-green-600);
+  box-shadow: 0 0 0 3px var(--cmg-focus-ring);
+}
+.cemig-form .field--float:has(select:disabled),
+.cemig-form .field--float:has(input:disabled) {
+  background: var(--cmg-surface-disabled);
+}
+.cemig-form .field--float select:disabled,
+.cemig-form .field--float input:disabled {
+  color: var(--cmg-text-muted);
+  cursor: not-allowed;
+}
+/* supporting-text (texto de apoio): opcional, abaixo do campo; só
+   aparece quando há mensagem (prop `hint`). */
+.cemig-form .field--float .field-hint {
+  position: absolute;
+  left: 0;
+  bottom: -20px;
+  margin: 0;
+}
+/* ============================================================
+   Radio de seleção (○ vazio / ● preenchido) — componente único
+   (spec Figma). Substitui a antiga "pílula" .toggle-btn. Vale
+   tanto para os componentes React (.cemig-form: BT, Micro, Mini)
+   quanto para os cards vanilla de MT/Loteamento/Desistência
+   (.cemig-mt). O círculo é desenhado via ::before; o texto do
+   <button> é o próprio rótulo — por isso a conversão não exige
+   mudança de markup além de role/aria-checked. Seleção única por
+   grupo continua governada pela classe .on (value === o.v).
+   ============================================================ */
+.cemig-form .toggle-group,
+.cemig-mt .toggle-group {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cmg-space-4);
+}
+.cemig-form .toggle-btn,
+.cemig-mt .toggle-btn {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--cmg-space-2);
+  /* opção = 32px de altura (círculo); sem padding extra, conforme Figma
+     (a área de 40px do Figma é só o "estado"/toque — aqui a linha inteira,
+     círculo + rótulo, já é clicável). */
+  padding: 0;
+  min-height: 32px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--cmg-font-family);
+  /* rótulo padrão (Sim/Não): corpo/grande regular */
+  font-size: var(--cmg-fs-body-lg);
+  line-height: var(--cmg-lh-body);
+  font-weight: var(--cmg-fw-regular);
+  letter-spacing: 0.2px;
+  color: var(--cmg-neutral-600);
+  text-align: left;
+  transition: color 0.15s ease;
+}
+/* rótulo de opção enumerada (ex.: "Monopolar 63A"): corpo/bold médio.
+   Aplicado pelo grupo .toggle-group--opcoes (binários Sim/Não ficam no
+   padrão acima). */
+.cemig-form .toggle-group--opcoes .toggle-btn,
+.cemig-mt .toggle-group--opcoes .toggle-btn {
   font-size: var(--cmg-fs-body);
   line-height: var(--cmg-lh-body);
   font-weight: var(--cmg-fw-bold);
   letter-spacing: var(--cmg-ls-tight);
-  border-radius: var(--cmg-radius-pill);
-  padding: var(--cmg-space-2) var(--cmg-space-4);
-  cursor: pointer;
-  border: 1px solid var(--cmg-border);
-  background: var(--cmg-surface);
-  color: var(--cmg-text-muted);
-  transition:
-    background 0.15s ease,
-    color 0.15s ease,
-    border-color 0.15s ease;
 }
-.cemig-form .toggle-btn:hover:not(:disabled):not(.on) {
-  border-color: var(--cmg-green-600);
+/* círculo (contorno neutro vazio) — 32×32 (área de toque maior fica por
+   conta do padding do botão; o círculo visível é 32px). */
+.cemig-form .toggle-btn::before,
+.cemig-mt .toggle-btn::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  border: 2px solid var(--cmg-neutral-500);
+  border-radius: var(--cmg-radius-pill);
+  background: var(--cmg-surface);
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.cemig-form .toggle-btn:hover:not(:disabled):not(.on),
+.cemig-mt .toggle-btn:hover:not(:disabled):not(.on) {
   color: var(--cmg-green-600);
 }
-.cemig-form .toggle-btn.on {
-  background: var(--cmg-green-600);
+.cemig-form .toggle-btn:hover:not(:disabled):not(.on)::before,
+.cemig-mt .toggle-btn:hover:not(:disabled):not(.on)::before {
   border-color: var(--cmg-green-600);
-  color: var(--cmg-neutral-0);
 }
-.cemig-form .toggle-btn:disabled {
+/* selecionado: círculo preenchido (anel verde + miolo 24px).
+   O peso/tamanho do rótulo NÃO muda ao selecionar — o estado é
+   comunicado apenas pelo preenchimento do círculo. */
+.cemig-form .toggle-btn.on::before,
+.cemig-mt .toggle-btn.on::before {
+  border-color: var(--cmg-green-600);
+  background: var(--cmg-green-600);
+  /* miolo ≈20px: círculo 32 − borda 2×2 − anel 4×2 (Figma: mancha com
+     inset de 8.33% sobre o ícone de 24px). */
+  box-shadow: inset 0 0 0 4px var(--cmg-surface);
+}
+.cemig-form .toggle-btn:focus-visible,
+.cemig-mt .toggle-btn:focus-visible {
+  outline: 2px solid var(--cmg-green-600);
+  outline-offset: 3px;
+  border-radius: var(--cmg-radius-sm);
+}
+/* desabilitado / bloqueado (mantém toggle-disabled e is-locked) */
+.cemig-form .toggle-btn:disabled,
+.cemig-mt .toggle-btn:disabled,
+.cemig-form .toggle-group.is-locked .toggle-btn:not(.on),
+.cemig-form .toggle-group.toggle-disabled .toggle-btn:not(.on) {
   opacity: 0.5;
   cursor: not-allowed;
+}
+/* variante "destaque" (opção de opt-out, ex.: "Não informar"):
+   contorno tracejado quando vazio, sólido ao marcar. */
+.cemig-mt .toggle-btn-destaque::before {
+  border-style: dashed;
+}
+.cemig-mt .toggle-btn-destaque.on::before {
+  border-style: solid;
 }
 .cemig-form .subbox-title,
 .cemig-form .uc-block-title,
@@ -1022,17 +1181,16 @@ html {
 }
 .cemig-form .vstep-num,
 .cemig-mt .vstep-num {
-  /* Layout */
+  /* Layout — centralização estável por flexbox (não depende de line-height) */
   display: flex;
   align-items: center;
   justify-content: center;
 
-  /* Size */
-  width: 18px;
-  min-width: 16px;
-  max-width: 34px;
-  height: 18px;
-  padding: 0 4px;
+  /* Size — quadrado fixo de inteiros (sem min/max/padding variável, que
+     mudava a caixa em números de 2 dígitos e caía em meio-pixel → borrão).
+     20px comporta "10"/"11" centralizado sem subpixel. */
+  width: 20px;
+  height: 20px;
   flex: none;
   flex-shrink: 0;
 
@@ -1041,14 +1199,13 @@ html {
   border: none;
   border-radius: 100px;
 
-  /* Typography */
+  /* Typography — line-height igual à altura da caixa evita render fracionário */
   font-family: "Open Sans", system-ui, sans-serif;
   font-size: 11px;
   font-weight: 700;
   line-height: 20px;
   letter-spacing: 0.2px;
   color: #fff;
-  text-align: center;
 }
 .cemig-form .vstep-label,
 .cemig-mt .vstep-label {
@@ -1074,6 +1231,9 @@ html {
 }
 .cemig-form .vstep.active .vstep-label,
 .cemig-mt .vstep.active .vstep-label {
+  /* peso constante (= inativo): diferencia só por cor, evitando a mudança
+     de largura do texto (vibração) entre estados. */
+  font-weight: 600;
   color: var(--cmg-green-600);
 }
 .cemig-form .vstep.done .vstep-num,
@@ -1084,6 +1244,7 @@ html {
 }
 .cemig-form .vstep.done .vstep-label,
 .cemig-mt .vstep.done .vstep-label {
+  font-weight: 600;
   color: var(--cmg-text);
 }
 /* MT/Loteamento/Desistência ONLY: their step numbers are static HTML and are
@@ -1507,23 +1668,6 @@ body.cemig-mt {
 }
 .cemig-mt .radio-pill:hover span {
   border-color: var(--cmg-green-600);
-}
-.cemig-mt .toggle-btn {
-  border: 1px solid var(--cmg-border);
-  border-radius: var(--cmg-radius-pill);
-  background: var(--cmg-surface);
-  color: var(--cmg-text-muted);
-  font-family: var(--cmg-font-family);
-}
-.cemig-mt .toggle-btn:hover:not(.on) {
-  border-color: var(--cmg-green-600);
-  background: var(--cmg-surface);
-  color: var(--cmg-green-600);
-}
-.cemig-mt .toggle-btn.on {
-  background: var(--cmg-green-600);
-  border-color: var(--cmg-green-600);
-  color: var(--cmg-neutral-0);
 }
 .cemig-mt .alert {
   border-radius: var(--cmg-radius);

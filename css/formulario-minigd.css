@@ -255,24 +255,7 @@ input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 input[type="number"] { -moz-appearance: textfield; }
 
-/* ---------- TOGGLE ---------- */
-.toggle-group { display: flex; gap: 8px; flex-wrap: wrap; }
-.toggle-btn {
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: var(--raio-sm);
-  padding: 8px 16px;
-  cursor: pointer;
-  border: 1px solid var(--borda);
-  background: var(--input-bg);
-  color: var(--texto-suave);
-  font-family: inherit;
-  transition: all 0.15s;
-}
-.toggle-btn.on { background: var(--verde); color: #fff; border-color: var(--verde); }
-.toggle-btn:disabled { cursor: not-allowed; }
-.toggle-group.is-locked { opacity: 0.85; }
-.toggle-group.is-locked .toggle-btn:not(.on) { opacity: 0.45; }
+/* Toggle/radio: estilo canônico único em shared.css (.toggle-group/.toggle-btn). */
 input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-claro); color: var(--texto-suave); }
 
 /* ===== GD — banner de modalidade pré-definida (Fast Track / Grid Zero) ===== */

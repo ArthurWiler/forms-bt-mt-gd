@@ -78,7 +78,7 @@ function TabTipo({ ctx }) {
       title: "Tipo de Atendimento",
       sub: "O tipo de formulário é definido pela presença ou não de disjuntor geral. Os campos seguintes se adaptam à sua escolha."
     },
-    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2 divider" }, /* @__PURE__ */ React.createElement(Field, { label: "Solicitação", req: true }, /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2 divider" }, /* @__PURE__ */ React.createElement(Field, { label: "Solicitação", req: true, float: true }, /* @__PURE__ */ React.createElement(
       Sel,
       {
         value: atend.solicitacao,
@@ -86,7 +86,7 @@ function TabTipo({ ctx }) {
         onChange: (e) => setAtend({ ...atend, solicitacao: e.target.value })
       },
       opcoesSolicitacao.map((s) => /* @__PURE__ */ React.createElement("option", { key: s }, s))
-    )), /* @__PURE__ */ React.createElement(Field, { label: "Escopo do Atendimento", req: true }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Escopo do Atendimento", req: true, float: true }, /* @__PURE__ */ React.createElement(
       Sel,
       {
         value: atend.escopo,
@@ -125,7 +125,7 @@ function TabTipo({ ctx }) {
           { v: "Sim", l: "Sim" }
         ]
       }
-    )), !multiTorres && /* @__PURE__ */ React.createElement(Field, { label: "Nº de Unidades Consumidoras", req: true, hint: rural ? "Pedido rural é limitado a 1 unidade consumidora." : void 0 }, /* @__PURE__ */ React.createElement(
+    )), !multiTorres && /* @__PURE__ */ React.createElement(Field, { label: "Nº de Unidades Consumidoras", req: true, float: true, hint: rural ? "Pedido rural é limitado a 1 unidade consumidora." : void 0 }, /* @__PURE__ */ React.createElement(
       Inp,
       {
         type: "number",

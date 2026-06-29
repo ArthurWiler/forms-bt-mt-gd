@@ -113,7 +113,7 @@ function TabUcsIndividual({ ctx }) {
             { className: "grid grid-3" },
             /* @__PURE__ */ React.createElement(
               Field,
-              { label: "Tipo de solicitação", req: true },
+              { label: "Tipo de solicitação", req: true, float: true },
               /* @__PURE__ */ React.createElement(
                 Sel,
                 {
@@ -140,7 +140,7 @@ function TabUcsIndividual({ ctx }) {
             ),
             /* @__PURE__ */ React.createElement(
               Field,
-              { label: "Atividade principal", req: true },
+              { label: "Atividade principal", req: true, float: true },
               /* @__PURE__ */ React.createElement(
                 Sel,
                 {

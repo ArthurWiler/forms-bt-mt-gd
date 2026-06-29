@@ -134,6 +134,8 @@ function _campoCardBotao(texto, titulo, ativo, destaque, onSelecionar){
   const cls=CAMPOS_CARDS_CONFIG.classes;
   const btn=document.createElement('button');
   btn.type='button';
+  btn.setAttribute('role','radio');
+  btn.setAttribute('aria-checked',ativo?'true':'false');
   btn.className=cls.card+(destaque?' '+cls.destaque:'')+(ativo?' '+cls.active:'');
   btn.textContent=texto;
   if(titulo) btn.title=titulo;
@@ -151,7 +153,8 @@ function _campoCardsMontar(campo){
   const grid=document.getElementById(campo.gridId);
   if(!select||!grid||select.dataset.cardMontado) return;
   select.dataset.cardMontado='1';
-  grid.className=CAMPOS_CARDS_CONFIG.classes.grid;
+  grid.className=CAMPOS_CARDS_CONFIG.classes.grid+' toggle-group--opcoes';
+  grid.setAttribute('role','radiogroup');
   // Normaliza os dois formatos de opção aceitos: {valor,texto} (genérico)
   // ou {labelShort,labelFull} — labelFull também vira o atributo title do
   // botão, exibindo a descrição completa ao passar o mouse (hover).
@@ -183,7 +186,8 @@ function _diaVencimentoMontar(){
   const grid=document.getElementById(cfg.gridId);
   if(!selDia||!selDecisao||!grid||selDia.dataset.cardMontado) return;
   selDia.dataset.cardMontado='1';
-  grid.className=CAMPOS_CARDS_CONFIG.classes.grid;
+  grid.className=CAMPOS_CARDS_CONFIG.classes.grid+' toggle-group--opcoes';
+  grid.setAttribute('role','radiogroup');
   const aplicar=(diaValor,decisaoValor)=>{
     _campoCardDispatch(selDia,diaValor);
     _campoCardDispatch(selDecisao,decisaoValor);
@@ -849,9 +853,9 @@ function ensureAnalisePartida(m){
 }
 function _dispositivoPartidaCardsHTML(i,atual){
   const cls=CAMPOS_CARDS_CONFIG.classes;
-  return `<div class="${cls.grid}">`+CAMPOS_CARDS_CONFIG.dispositivosPartida.map(op=>{
+  return `<div class="${cls.grid} toggle-group--opcoes" role="radiogroup">`+CAMPOS_CARDS_CONFIG.dispositivosPartida.map(op=>{
     const ativo=atual===op.labelShort;
-    return `<button type="button" class="${cls.card}${ativo?' '+cls.active:''}" title="${op.labelFull}" onclick='setDispositivoPartida(${i},${JSON.stringify(op.labelShort)})'>${op.labelShort}</button>`;
+    return `<button type="button" role="radio" aria-checked="${ativo?'true':'false'}" class="${cls.card}${ativo?' '+cls.active:''}" title="${op.labelFull}" onclick='setDispositivoPartida(${i},${JSON.stringify(op.labelShort)})'>${op.labelShort}</button>`;
   }).join('')+`</div>`;
 }
 function setDispositivoPartida(i,valor){

@@ -79,9 +79,11 @@ function LogoCemig() {
     className: "logo-img",
   });
 }
-function Field({ label, req, children, hint, span }) {
+function Field({ label, req, children, hint, span, float }) {
   const cls =
-    "field" + (span === 2 ? " col-span-2" : span === 3 ? " col-span-3" : "");
+    "field" +
+    (float ? " field--float" : "") +
+    (span === 2 ? " col-span-2" : span === 3 ? " col-span-3" : "");
   return /* @__PURE__ */ React.createElement(
     "div",
     { className: cls },
@@ -134,15 +136,27 @@ function Sel({ value, onChange, children, disabled }) {
   );
 }
 function Toggle({ value, onChange, options, disabled }) {
+  // Rótulo: Sim/Não usa o padrão regular 16px; demais (opções enumeradas)
+  // recebem a variante bold 14px via .toggle-group--opcoes.
+  const ehSimNao =
+    options.length === 2 && options.every((o) => o.v === "Sim" || o.v === "Não");
   return /* @__PURE__ */ React.createElement(
     "div",
-    { className: "toggle-group" + (disabled ? " toggle-disabled" : "") },
+    {
+      className:
+        "toggle-group" +
+        (ehSimNao ? "" : " toggle-group--opcoes") +
+        (disabled ? " toggle-disabled" : ""),
+      role: "radiogroup",
+    },
     options.map((o) =>
       /* @__PURE__ */ React.createElement(
         "button",
         {
           key: String(o.v),
           type: "button",
+          role: "radio",
+          "aria-checked": value === o.v,
           className: "toggle-btn" + (value === o.v ? " on" : ""),
           onClick: () => onChange(o.v),
           disabled,

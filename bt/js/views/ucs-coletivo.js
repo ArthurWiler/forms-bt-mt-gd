@@ -214,7 +214,7 @@ function TabUcsColetivo({ ctx }) {
             ),
             /* @__PURE__ */ React.createElement(
               Field,
-              { label: "Solicitação", req: true },
+              { label: "Solicitação", req: true, float: true },
               /* @__PURE__ */ React.createElement(
                 Sel,
                 {
@@ -255,7 +255,7 @@ function TabUcsColetivo({ ctx }) {
               ),
             /* @__PURE__ */ React.createElement(
               Field,
-              { label: "Atividade principal", req: true },
+              { label: "Atividade principal", req: true, float: true },
               /* @__PURE__ */ React.createElement(
                 Sel,
                 {
