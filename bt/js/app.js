@@ -958,14 +958,14 @@ function App() {
               ),
               /* @__PURE__ */ React.createElement(
                 "div",
-                { className: "modalidade-aviso" },
-                /* @__PURE__ */ React.createElement("span", {
-                  className: "modalidade-aviso-icon",
+                { className: "cmg-aviso" },
+                /* @__PURE__ */ React.createElement("div", {
+                  className: "cmg-aviso-icon",
                   "aria-hidden": "true",
                 }),
                 /* @__PURE__ */ React.createElement(
                   "p",
-                  null,
+                  { className: "cmg-aviso-texto" },
                   "Antes de dar início ao preenchimento, certifique-se de ter em mãos a lista dos equipamentos e a documentação do imóvel.",
                 ),
               ),
@@ -1077,19 +1077,6 @@ function App() {
                     null,
                     "Preenchimento digital unificado para solicitações em BT, conforme as normas CEMIG ND-5.1 / ND-5.2 e a REN ANEEL nº 1.000/2021.",
                   ),
-                  /* @__PURE__ */ React.createElement(
-                    "span",
-                    { className: "flow-badge" },
-                    multiTorres
-                      ? "Múltiplas Torres / Blocos"
-                      : coletivo
-                        ? "Coletivo — Proteção Geral"
-                        : "Individual / até 3 caixas",
-                    " ",
-                    "· Demanda ",
-                    fmt2(demandaTotalGeral),
-                    " kVA",
-                  ),
                 ),
                 mostrarAnaliseMotores
                   ? /* @__PURE__ */ React.createElement(
@@ -1182,15 +1169,12 @@ function App() {
                       /* @__PURE__ */ React.createElement(
                         "div",
                         { className: "nav-bottom" },
-                        /* @__PURE__ */ React.createElement(
-                          Btn,
-                          {
-                            variant: "ghost",
-                            onClick: irAnt,
-                            disabled: idx <= 0,
-                          },
-                          "← Voltar",
-                        ),
+                        idx > 0 &&
+                          /* @__PURE__ */ React.createElement(
+                            Btn,
+                            { variant: "ghost", onClick: irAnt },
+                            "← Voltar",
+                          ),
                         /* @__PURE__ */ React.createElement(
                           "span",
                           { className: "nav-step-info" },

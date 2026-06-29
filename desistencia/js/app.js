@@ -111,7 +111,7 @@ function inicializarCamposCards() {
 function goTo(n) {
   $$(".page").forEach((p) => p.classList.remove("show"));
   $("#page-" + n).classList.add("show");
-  const steps = $$(".step");
+  const steps = $$(".vstep");
   steps.forEach((s, i) => {
     s.classList.remove("active", "done");
     if (i < n) s.classList.add("done");
@@ -456,5 +456,5 @@ window.addEventListener("afterprint", () => document.body.classList.remove("prin
 document.addEventListener("DOMContentLoaded", () => {
   bindInputs();
   inicializarCamposCards();
-  $$(".step").forEach((s, i) => s.addEventListener("click", () => goTo(i)));
+  $$(".vstep").forEach((s, i) => s.addEventListener("click", () => goTo(i)));
 });

@@ -211,7 +211,7 @@ function inicializarCamposCards(){
 function goTo(n){
   $$('.page').forEach(p=>p.classList.remove('show'));
   $('#page-'+n).classList.add('show');
-  const steps=$$('.step');
+  const steps=$$('.vstep');
   steps.forEach((s,i)=>{s.classList.remove('active','done'); if(i<n)s.classList.add('done'); if(i===n)s.classList.add('active');});
   window.scrollTo({top:0,behavior:'smooth'});
   if(n===3){ initMapaObra(); renderRestricaoAmbiental(); if(mapaObra) setTimeout(()=>mapaObra.invalidateSize(),50); }
@@ -1568,5 +1568,5 @@ document.addEventListener('DOMContentLoaded',()=>{
   addTrafo(); // começa com 1 linha de trafo
   aplicarAtividadeDaURL();
   // stepper clicável
-  $$('.step').forEach((s,i)=>s.addEventListener('click',()=>goTo(i)));
+  $$('.vstep').forEach((s,i)=>s.addEventListener('click',()=>goTo(i)));
 });

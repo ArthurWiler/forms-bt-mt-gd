@@ -31,8 +31,7 @@
       }
       @media print {
         body.print-termo .mt-layout,
-        body.print-termo header.site,
-        body.print-termo .service-hero {
+        body.print-termo header.site {
           display: none !important;
         }
         body.print-termo #documentoImpressao {
@@ -120,47 +119,34 @@
       </div>
     </header>
 
-    <section class="service-hero">
-      <div class="wrap">
-        <h1 class="hero-title">
-          <span class="hero-title-main">Termo</span>
-          <span class="hero-title-sub">Termo de Desistência de Obra</span>
-        </h1>
-        <p class="sub">
-          Preenchimento digital do termo de desistência/resilição de obra junto
-          à Cemig.
-        </p>
-      </div>
-    </section>
-
     <div class="mt-layout">
       <aside class="stepper-bar">
         <a href="../index.html" class="form-back">VOLTAR</a>
         <div class="stepper-title">Progresso do preenchimento</div>
         <div class="stepper" id="stepper">
-          <div class="step active">
-            <span class="num"><span>i</span></span
-            >Orientações
+          <div class="vstep active">
+            <span class="vstep-num">1</span>
+            <span class="vstep-label">Orientações</span>
           </div>
-          <div class="step">
-            <span class="num"><span>1</span></span
-            >Obra
+          <div class="vstep">
+            <span class="vstep-num">2</span>
+            <span class="vstep-label">Obra</span>
           </div>
-          <div class="step">
-            <span class="num"><span>2</span></span
-            >Solicitante
+          <div class="vstep">
+            <span class="vstep-num">3</span>
+            <span class="vstep-label">Solicitante</span>
           </div>
-          <div class="step">
-            <span class="num"><span>3</span></span
-            >Endereço
+          <div class="vstep">
+            <span class="vstep-num">4</span>
+            <span class="vstep-label">Endereço</span>
           </div>
-          <div class="step">
-            <span class="num"><span>4</span></span
-            >Desistência
+          <div class="vstep">
+            <span class="vstep-num">5</span>
+            <span class="vstep-label">Desistência</span>
           </div>
-          <div class="step">
-            <span class="num"><span>5</span></span
-            >Prévia &amp; PDF
+          <div class="vstep">
+            <span class="vstep-num">6</span>
+            <span class="vstep-label">Prévia &amp; PDF</span>
           </div>
         </div>
       </aside>
@@ -243,7 +229,7 @@
               <div class="form-nav">
                 <span></span
                 ><button class="btn btn-primary" onclick="goTo(1)">
-                  Iniciar preenchimento<svg
+                  Avançar<svg
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"

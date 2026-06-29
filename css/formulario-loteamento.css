@@ -50,50 +50,29 @@ header.site .wrap{max-width:1180px;margin:0 auto;padding:8px 24px;display:flex;a
 /* .app-title styling (incl. responsive 36/32/26 sizing) lives in shared.css (`.cemig-mt .app-title`); the local rule was fully overridden. */
 .topbar-home{font-family:inherit;font-size:12px;font-weight:700;color:#fff;background:transparent;border:1px solid rgba(255,255,255,.4);padding:7px 14px;border-radius:999px;cursor:pointer;text-decoration:none;transition:all .15s;letter-spacing:.3px}
 .topbar-home:hover{background:#fff;color:var(--cemig-green-dark);border-color:#fff}
-.service-hero{background:transparent;color:var(--ink);position:relative}
-.service-hero::before,.service-hero::after{display:none}
-.service-hero .wrap{max-width:1180px;margin:0 auto;padding:28px 24px 6px;position:relative;z-index:1}
 .breadcrumb{font-size:12.5px;color:var(--ink-soft);margin-bottom:12px}
 .breadcrumb a{color:var(--cemig-green-dark);text-decoration:none;font-weight:600}
 .breadcrumb span{opacity:.7;margin:0 7px}
-.hero-title{display:flex;flex-direction:column;gap:4px;margin:0}
-.hero-title-main{font-size:30px;font-weight:800;line-height:1.05;letter-spacing:.5px;color:var(--cemig-green-dark)}
-.hero-title-sub{font-size:16px;font-weight:600;line-height:1.3;max-width:760px;color:var(--ink)}
-.service-hero .sub{margin-top:6px;font-size:14px;color:var(--ink-soft);max-width:680px}
 .stepper-bar{background:var(--white);border-bottom:1px solid var(--line);position:sticky;top:75px;z-index:30}
 .stepper{max-width:1180px;margin:0 auto;padding:0 24px;display:flex;gap:2px;overflow-x:auto}
-.step{display:flex;align-items:center;gap:8px;padding:14px 14px 12px;font-size:12.5px;color:var(--ink-soft);border-bottom:3px solid transparent;white-space:nowrap;cursor:pointer;transition:.15s}
-.step .num{width:22px;height:22px;border-radius:50%;background:var(--line);color:var(--ink-soft);display:grid;place-items:center;font-size:11.5px;font-weight:700;flex-shrink:0;transition:.15s}
-.step.active{color:var(--cemig-green-dark);font-weight:700;border-bottom-color:var(--cemig-green)}
-.step.active .num{background:var(--grad-marca);color:var(--cemig-green-dark)}
-.step.done .num{background:var(--cemig-green);color:#fff}
-.step.done .num span{display:none}
-.step.done .num::after{content:"✓"}
-.step.disabled{opacity:.55;cursor:not-allowed}
+/* .step/.num removidos — número do passo unificado em shared.css (.vstep/.vstep-num). */
 /* Stepper vertical (sidebar estilo BT) — escopo .mt-layout (mt) */
 .mt-layout{display:flex;max-width:1180px;margin:0 auto;align-items:flex-start}
 .mt-layout .stepper-bar{position:sticky;top:64px;width:264px;flex-shrink:0;background:transparent;border-bottom:none;padding:22px 8px 22px 20px}
 .stepper-title{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:12px;padding-left:6px}
 .mt-layout .stepper{flex-direction:column;gap:2px;overflow:visible;padding:0}
-.mt-layout .step{width:100%;padding:11px 12px;border-bottom:none;border-radius:var(--radius-sm);gap:12px;position:relative}
-.mt-layout .step:hover{background:var(--cemig-green-soft)}
-.mt-layout .step.active{background:var(--cemig-green-soft);border-bottom-color:transparent}
 .mt-layout main{flex:1;min-width:0;max-width:none;margin:0;padding:8px 22px 60px}
 @media(max-width:860px){
   .mt-layout{flex-direction:column}
   .mt-layout .stepper-bar{position:static;width:100%;padding:10px 16px;border-bottom:1px solid var(--line)}
   .mt-layout .stepper{flex-direction:row;overflow-x:auto;gap:4px}
   .stepper-title{display:none}
-  .mt-layout .step{width:auto;white-space:nowrap}
   .mt-layout main{width:100%;padding:8px 16px 40px}
 }
 main{max-width:1180px;margin:0 auto;padding:28px 24px 70px}
-/* Loteamento é coluna única (não tem trilha de etapas). Logo, o recuo de
-   título de 252px do shared.css (que pressupõe a trilha na goteira esquerda)
-   não se aplica aqui: título e corpo compartilham o mesmo eixo, no recuo da
-   esquerda sob a logo, em largura cheia. Estas regras casam a especificidade
-   do shared (.cemig-mt …) e, carregadas depois, vencem. */
-.cemig-mt .service-hero .wrap{padding-left:var(--cmg-space-8)}
+/* Loteamento é coluna única (não tem trilha de etapas): o corpo ocupa a
+   largura cheia, no recuo da esquerda sob a logo. Esta regra casa a
+   especificidade do shared (.cemig-mt …) e, carregada depois, vence. */
 .cemig-mt main{width:100%;max-width:var(--cmg-area-max);margin-inline:auto;padding-inline:var(--cmg-space-8)}
 .page{display:none;animation:fade .32s ease}
 .page.show{display:block}
@@ -215,13 +194,8 @@ input.invalid,select.invalid{border-color:var(--danger);box-shadow:0 0 0 4px rgb
 .motor-card-calc .item .lbl{font-size:9px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px}
 .motor-card-calc .item .val{font-size:12.5px;font-weight:700;color:var(--cemig-green-700);font-variant-numeric:tabular-nums}
 @media (max-width:560px){.motor-card-grid{grid-template-columns:repeat(2,1fr)}}
-.btn{font-family:var(--font);font-weight:700;font-size:14px;border-radius:999px;cursor:pointer;padding:12px 26px;border:1.5px solid transparent;transition:.18s;display:inline-flex;align-items:center;gap:8px}
-.btn:disabled{opacity:.5;cursor:not-allowed}
-.btn-primary{background:var(--cemig-green);color:#fff;box-shadow:0 5px 16px rgba(16,119,97,.3)}
-.btn-primary:hover:not(:disabled){background:var(--cemig-green-dark);transform:translateY(-1px)}
-.btn-ghost{background:#fff;color:var(--cemig-green-dark);border-color:var(--line-strong)}
-.btn-ghost:hover{border-color:var(--cemig-green);background:var(--cemig-green-soft-2)}
-.btn svg{width:17px;height:17px}
+/* .btn / .btn-primary / .btn-ghost / .btn svg: fonte única em shared.css
+   (`.cemig-form .btn …, .cemig-mt .btn …`). Dupes locais removidos. */
 .progress-mini{font-size:12.5px;color:var(--ink-soft);font-weight:600}
 .fab{position:fixed;right:22px;bottom:22px;z-index:50;background:var(--cemig-blue);color:#fff;border:none;border-radius:999px;padding:13px 20px;font-weight:700;font-size:13px;cursor:pointer;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:8px;transition:.18s}
 .fab:hover{transform:translateY(-2px)}
@@ -247,11 +221,11 @@ input.invalid,select.invalid{border-color:var(--danger);box-shadow:0 0 0 4px rgb
 @media(max-width:760px){
   .grid.cols-2,.grid.cols-3,.grid.cols-4{grid-template-columns:1fr}
   .field.span-2,.field.span-3{grid-column:auto}
-  .hero-title-main{font-size:32px}.hero-title-sub{font-size:15px}.logo .word{font-size:18px}
+  .logo .word{font-size:18px}
   .stepper-bar{position:static}.pv-row .k{min-width:140px}
 }
 @media print{
-  .util-bar,header.site,.service-hero,.stepper-bar,.form-nav,.fab,.proto-banner,.no-print{display:none!important}
+  .util-bar,header.site,.stepper-bar,.form-nav,.fab,.proto-banner,.no-print{display:none!important}
   body{background:#fff}
   main{padding:0;max-width:none}
   .card{box-shadow:none;border:none}
@@ -265,12 +239,10 @@ input.invalid,select.invalid{border-color:var(--danger);box-shadow:0 0 0 4px rgb
 #documentoMotoresImpressao,#documentoIrrigacaoImpressao{display:none}
 @media print{
   body.print-motores-only .mt-layout,
-  body.print-motores-only header.site,
-  body.print-motores-only .service-hero{display:none!important}
+  body.print-motores-only header.site{display:none!important}
   body.print-motores-only #documentoMotoresImpressao{display:block!important}
   body.print-irrigante-only .mt-layout,
-  body.print-irrigante-only header.site,
-  body.print-irrigante-only .service-hero{display:none!important}
+  body.print-irrigante-only header.site{display:none!important}
   body.print-irrigante-only #documentoIrrigacaoImpressao{display:block!important}
 }
 #documentoMotoresImpressao,#documentoIrrigacaoImpressao{font-family:var(--font);color:#1a1a1a}

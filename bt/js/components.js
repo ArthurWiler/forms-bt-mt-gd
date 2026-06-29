@@ -504,17 +504,6 @@ function CalcDemanda({
                 { className: "subbox-title" },
                 "Motores / Cargas Especiais",
               ),
-              /* @__PURE__ */ React.createElement(
-                "button",
-                {
-                  type: "button",
-                  className: "btn btn-primary",
-                  style: { padding: "5px 12px", fontSize: 12 },
-                  onClick: () =>
-                    upd({ mots: [...mots, { fase: "mono", cv: "1", q: 1 }] }),
-                },
-                "+ Motor",
-              ),
             ),
             mots.length === 0
               ? /* @__PURE__ */ React.createElement(

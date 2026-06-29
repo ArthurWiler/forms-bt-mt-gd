@@ -290,30 +290,9 @@ input[type="number"] { -moz-appearance: textfield; }
 .toggle-disabled { opacity: 0.45; }
 select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
 
-/* ---------- BOTÕES ---------- */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-weight: 700;
-  font-size: 14px;
-  border-radius: var(--raio-sm);
-  padding: 11px 20px;
-  cursor: pointer;
-  border: 1px solid transparent;
-  font-family: inherit;
-  transition: all 0.15s;
-  text-decoration: none;
-}
-.btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.btn-primary { background: var(--verde); color: #fff; }
-.btn-primary:hover:not(:disabled) { background: var(--verde-escuro); }
-.btn-dark { background: var(--verde-escuro); color: #fff; }
-.btn-dark:hover:not(:disabled) { background: #00421f; }
-.btn-ghost { background: var(--card); color: var(--texto); border-color: var(--borda); }
-.btn-ghost:hover:not(:disabled) { background: var(--bg); }
-.btn-danger-ghost { background: transparent; color: var(--vermelho); border-color: rgba(192,57,43,.3); }
+/* ---------- BOTÕES ----------
+   .btn / .btn-primary / .btn-dark / .btn-ghost / .btn-danger-ghost:
+   fonte única em shared.css (`.cemig-form .btn …`). Dupes locais removidos. */
 
 /* ---------- NAV INFERIOR ---------- */
 .nav-bottom {
@@ -327,16 +306,9 @@ select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* ---------- ORIENTAÇÕES ----------
    Estilo centralizado em css/shared.css (`.cemig-form .orient-*`).
-   As definições locais foram removidas para evitar duplicação. */
-.callout {
-  background: var(--verde-claro);
-  border-radius: var(--raio-sm);
-  padding: 14px 16px;
-  font-size: 13px;
-  color: var(--verde-escuro);
-  line-height: 1.55;
-  margin-top: 14px;
-}
+   As definições locais foram removidas para evitar duplicação.
+   O aviso de orientações migrou para o componente canônico `.cmg-aviso`
+   (shared.css); a regra local `.callout` foi removida por ficar sem uso. */
 .legend {
   display: flex;
   gap: 18px;

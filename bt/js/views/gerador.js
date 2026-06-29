@@ -109,6 +109,6 @@ function TabGerador({ ctx }) {
         onChange: (e) => setGerador({ ...gerador, descricao: e.target.value }),
         placeholder: "Modelo, finalidade, regime de operação..."
       }
-    )), /* @__PURE__ */ React.createElement("div", { className: "col-span-2 callout" }, "O gerador de emergência opera de forma isolada (sem paralelismo com a rede CEMIG)."))
+    )), /* @__PURE__ */ React.createElement("div", { className: "col-span-2 cmg-aviso" }, /* @__PURE__ */ React.createElement("div", { className: "cmg-aviso-icon", "aria-hidden": "true" }), /* @__PURE__ */ React.createElement("p", { className: "cmg-aviso-texto" }, "O gerador de emergência opera de forma isolada (sem paralelismo com a rede CEMIG).")))
   );
 }

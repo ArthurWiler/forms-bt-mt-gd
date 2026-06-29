@@ -25,6 +25,8 @@ css/
 
 Cada página carrega **somente** `variables.css`, `shared.css` e o seu próprio arquivo de página, nesta ordem.
 
+> **Convenção:** estilos compartilhados entre formulários têm **fonte única** no `shared.css`. Antes de criar/duplicar regra em um `formulario-*.css`, leia [`docs/css-architecture.md`](docs/css-architecture.md).
+
 ## Módulos
 
 | Módulo | Pasta | Entrada | Descrição |

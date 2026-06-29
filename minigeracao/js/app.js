@@ -166,11 +166,12 @@ function App() {
         /* @__PURE__ */ React.createElement(
           "div",
           { className: "nav-bottom" },
-          /* @__PURE__ */ React.createElement(
-            Btn,
-            { variant: "ghost", onClick: irAnt, disabled: idx === 0 },
-            "← Voltar",
-          ),
+          idx > 0 &&
+            /* @__PURE__ */ React.createElement(
+              Btn,
+              { variant: "ghost", onClick: irAnt },
+              "← Voltar",
+            ),
           /* @__PURE__ */ React.createElement(
             "span",
             { className: "nav-step-info" },

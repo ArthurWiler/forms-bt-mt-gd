@@ -343,63 +343,78 @@ html {
   color: var(--cmg-text);
 }
 
-/* Info notice ("aviso") */
-.modalidade-screen .modalidade-aviso {
+/* ============================================================
+   Aviso — canonical informational banner (icon column + text).
+   SINGLE SOURCE for every info banner: the portal home, the BT
+   modalidade screen and the BT orientações/gerador notes. Like
+   `.cmg-container`, it is INTENTIONALLY global (unscoped) so it works
+   under any surface root (`.cemig-portal`, `.modalidade-screen`,
+   `.cemig-form`). The box GROWS WITH ITS CONTENT — no fixed width or
+   height; paddings are fixed and the height follows the text (Figma's
+   74px/98px are just 2- vs 3-line content, not values to pin).
+   Figma: neutra/200 (#D1D4D3) border + grey icon column, info.svg
+   glyph (neutra/600 #364B46) on a 32px area, Open Sans 14/24 text on
+   white. Replaces the old `.modalidade-aviso*` and `.callout` styles.
+   Variant: `.cmg-aviso--warn` (alerta/500 #FFC107 + warn.svg). */
+.cmg-aviso {
+  box-sizing: border-box;
   display: flex;
   flex-direction: row;
-  align-items: center;
-  border: 1px solid var(--cmg-neutral-200);
-  border: 1px solid #D1D4D3;
-  border-radius: 8px;
-  flex: none;
-  order: 2;
-  align-self: stretch;
-  flex-grow: 0;
-  /* Fluid: was fixed 862px × 74px which overflowed below 862px and clipped
-     the message once it wrapped to a second line on narrow screens. */
+  align-items: stretch;
   width: 100%;
-  max-width: 862px;
-  min-height: 74px;
-  overflow: hidden;
+  border: 1px solid var(--cmg-neutral-200); /* #D1D4D3 */
+  border-radius: 8px;
+  overflow: hidden; /* let the rounded corners clip the column backgrounds */
 }
-.modalidade-screen .modalidade-aviso-icon {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  padding: 20px;
-  gap: 10px;
-  width: 72px;
-  /* height comes from `align-self: stretch` so the icon column matches the
-     notice height even when the text wraps (was a fixed 74px). */
+.cmg-aviso-icon {
   flex: none;
-  order: 0;
-  align-self: stretch;
-  flex-grow: 0;
-}
-.modalidade-screen .modalidade-aviso-icon::before {
-  content: "i";
+  align-self: stretch; /* icon column follows the banner height */
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 2px solid var(--cmg-neutral-600);
-  border-radius: 50%;
-  font-family: Georgia, "Times New Roman", serif;
-  font-style: italic;
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--cmg-neutral-600);
+  width: 72px;
+  padding: 20px;
+  background: var(--cmg-neutral-200); /* #D1D4D3 */
+  border-radius: 8px 0 0 8px;
 }
-.modalidade-screen .modalidade-aviso p {
-  margin: 0;
-  padding: var(--cmg-space-4) var(--cmg-space-6);
+.cmg-aviso-icon::before {
+  content: "";
+  display: block;
+  width: 32px;
+  height: 32px;
+  /* info glyph already in neutra/600 (#364B46). SVG (viewBox 0 0 32 32)
+     renders 1:1 at 32px — vector, no resolution loss at any DPI/zoom. */
+  background-image: url("../imgs/info.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 32px 32px;
+}
+.cmg-aviso-texto {
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
-  font-size: var(--cmg-fs-body);
-  line-height: var(--cmg-lh-body);
-  color: var(--cmg-text);
-  background: var(--cmg-surface);
+  margin: 0;
+  padding: 20px;
+  background: var(--cmg-surface); /* #FFFFFF */
+  border-radius: 0 8px 8px 0;
+  font-family: "Open Sans", var(--cmg-font-family);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 24px;
+  letter-spacing: 0.2px;
+  color: var(--cmg-neutral-600); /* #364B46 */
+}
+/* Warn variant — modifier over `.cmg-aviso`: only the border colour, the
+   icon-column background and the glyph change; layout/typography inherit
+   from the base. Markup: <div class="cmg-aviso cmg-aviso--warn">…</div>. */
+.cmg-aviso--warn {
+  border-color: var(--cmg-warning-500); /* #FFC107 — alerta/500 */
+}
+.cmg-aviso--warn .cmg-aviso-icon {
+  background: var(--cmg-warning-500); /* #FFC107 — alerta/500 */
+}
+.cmg-aviso--warn .cmg-aviso-icon::before {
+  background-image: url("../imgs/warn.svg");
 }
 
 /* ---- Accordion section ---- */
@@ -532,69 +547,104 @@ html {
 /* ============================================================
    6. Buttons (pill) — migrated form roots (`.cemig-form`)
    ============================================================ */
-.cemig-form .btn {
+/* ---- Canonical buttons — SINGLE SOURCE for all six forms. Grouped across
+   both surface roots (the MT family renders under `.cemig-mt`, not
+   `.cemig-form`), so one definition reaches every form. Figma spec: 48px tall,
+   100px radius, Open Sans 600 14/24. The fixed 250px width is applied only to
+   the navigation buttons (see the nav-row rule at the end of this block). ---- */
+.cemig-form .btn,
+.cemig-mt .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--cmg-space-2);
-  font-family: var(--cmg-font-family);
-  font-size: var(--cmg-fs-body);
-  line-height: var(--cmg-lh-body);
-  font-weight: var(--cmg-fw-bold);
+  gap: var(--cmg-space-2); /* 8px */
+  height: 48px;
+  padding: 10px var(--cmg-space-4); /* 10px 16px */
+  font-family: "Open Sans", system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 24px;
+  font-weight: 600;
   letter-spacing: 0.5px;
-  border-radius: var(--cmg-radius-pill);
-  padding: 10px var(--cmg-space-4);
-  cursor: pointer;
+  border-radius: 100px;
   border: 1px solid transparent;
+  cursor: pointer;
   text-decoration: none;
+  white-space: nowrap;
   transition:
     background 0.15s ease,
     color 0.15s ease,
     border-color 0.15s ease,
     box-shadow 0.15s ease;
 }
-.cemig-form .btn:disabled {
+.cemig-form .btn:disabled,
+.cemig-mt .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
-.cemig-form .btn:focus-visible {
+.cemig-form .btn:focus-visible,
+.cemig-mt .btn:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--cmg-focus-ring);
 }
-.cemig-form .btn-primary {
-  background: var(--cmg-green-600);
-  color: var(--cmg-neutral-0);
-  border-color: var(--cmg-green-600);
+/* Arrow icon inside a button — 18×18, colour inherited from the label
+   (currentColor): white on filled, #041E18 on outlined, matching the spec. */
+.cemig-form .btn svg,
+.cemig-mt .btn svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
 }
-.cemig-form .btn-primary:hover:not(:disabled) {
+.cemig-form .btn-primary,
+.cemig-mt .btn-primary {
+  background: var(--cmg-green-600); /* #0F6C58 */
+  color: var(--cmg-neutral-0); /* #fff */
+  border-color: var(--cmg-green-600);
+  box-shadow: none;
+}
+.cemig-form .btn-primary:hover:not(:disabled),
+.cemig-mt .btn-primary:hover:not(:disabled) {
   background: var(--cmg-green-500);
   border-color: var(--cmg-green-500);
 }
-.cemig-form .btn-dark {
+.cemig-form .btn-dark,
+.cemig-mt .btn-dark {
   background: var(--cmg-neutral-700);
   color: var(--cmg-neutral-0);
   border-color: var(--cmg-neutral-700);
 }
-.cemig-form .btn-dark:hover:not(:disabled) {
+.cemig-form .btn-dark:hover:not(:disabled),
+.cemig-mt .btn-dark:hover:not(:disabled) {
   background: #0a322a;
 }
-.cemig-form .btn-ghost {
+.cemig-form .btn-ghost,
+.cemig-mt .btn-ghost {
   background: transparent;
-  color: var(--cmg-text-strong);
-  border-color: var(--cmg-border);
+  color: var(--cmg-neutral-700); /* #041E18 */
+  border-color: var(--cmg-neutral-400); /* #8C9895 */
 }
-.cemig-form .btn-ghost:hover:not(:disabled) {
+.cemig-form .btn-ghost:hover:not(:disabled),
+.cemig-mt .btn-ghost:hover:not(:disabled) {
   background: var(--cmg-surface-accent);
   border-color: var(--cmg-green-600);
   color: var(--cmg-green-600);
 }
-.cemig-form .btn-danger-ghost {
+.cemig-form .btn-danger-ghost,
+.cemig-mt .btn-danger-ghost {
   background: transparent;
   color: var(--cmg-danger-500);
   border-color: var(--cmg-danger-500);
 }
-.cemig-form .btn-danger-ghost:hover:not(:disabled) {
+.cemig-form .btn-danger-ghost:hover:not(:disabled),
+.cemig-mt .btn-danger-ghost:hover:not(:disabled) {
   background: #fdecea;
+}
+/* Navigation buttons (Avançar / Voltar): fixed Figma 250px width, scoped to
+   the nav row only (direct children) so action buttons elsewhere keep their
+   content width. Collapses below 250px on narrow viewports. */
+.cemig-form .nav-bottom > .btn,
+.cemig-mt .form-nav > .btn {
+  width: 250px;
+  max-width: 100%;
 }
 
 /* ============================================================
@@ -774,8 +824,7 @@ html {
   color: var(--cmg-danger-500);
   border: 1px solid var(--cmg-danger-500);
 }
-.cemig-form .alert-info,
-.cemig-form .callout {
+.cemig-form .alert-info {
   background: var(--cmg-surface);
   color: var(--cmg-text);
   border: 1px solid var(--cmg-warning-500);
@@ -786,11 +835,9 @@ html {
   letter-spacing: var(--cmg-ls-tight);
   padding: var(--cmg-space-4) var(--cmg-space-6);
 }
-.cemig-form .callout {
-  background: var(--cmg-surface-accent);
-  border-color: transparent;
-  color: var(--cmg-text);
-}
+/* The BT orientações/gerador notes that used `.callout` now use the canonical
+   `.cmg-aviso` banner (defined above). The `.cemig-form .callout` rules were
+   removed — no `.cemig-form` markup uses that class anymore. */
 
 /* ============================================================
    8. Tables — data/entry (migrated form roots `.cemig-form`)
@@ -915,8 +962,6 @@ html {
   align-items: center;
   gap: var(--cmg-space-2);
   align-self: flex-start;
-  /* Left padding = the step inset (12px) so the VOLTAR icon circle shares the
-     same left axis as the numbered step circles. */
   padding: var(--cmg-space-1) 0 var(--cmg-space-1) var(--cmg-space-3);
   border: none;
   background: transparent;
@@ -930,27 +975,26 @@ html {
 .cemig-form .form-back:hover {
   text-decoration: underline;
 }
-/* ---- VOLTAR — circled, outlined back arrow (shared by both form shells) ----
-   The arrow glyph lives in this pseudo so the label text is just "VOLTAR".
-   Standardised across all forms: 24px circle, 1.5px border, arrow + border in
-   the link colour (green). The circle's left edge aligns with the step number
-   circles (see the 12px form-back left padding above / the .mt-layout rule). */
 .cemig-form .form-back::before,
 .cemig-mt .form-back::before {
-  content: "\2190"; /* ← */
+  content: "";
   flex: none;
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 1.5px solid currentColor;
-  font-size: 14px;
-  line-height: 1;
+  width: 28px;
+  height: 28px;
+  background-image: url("../imgs/arrow-left.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 28px;
   text-decoration: none;
 }
-.cemig-form .vstep {
+/* ---- Canonical step rail (single source for BT/Micro/Mini AND
+   MT/Loteamento/Desistência). The MT family renders under `.cemig-mt`
+   (not `.cemig-form`), so every selector is grouped across both roots — one
+   definition, no duplication. Markup is canonical everywhere:
+   `.vstep > .vstep-num + .vstep-label`. ---- */
+.cemig-form .vstep,
+.cemig-mt .vstep {
   display: flex;
   align-items: center;
   gap: var(--cmg-space-2);
@@ -964,16 +1008,20 @@ html {
   font-family: var(--cmg-font-family);
   transition: background 0.15s ease;
 }
-.cemig-form .vstep + .vstep {
+.cemig-form .vstep + .vstep,
+.cemig-mt .vstep + .vstep {
   margin-top: 0;
 }
-.cemig-form .vstep:hover {
+.cemig-form .vstep:hover,
+.cemig-mt .vstep:hover {
   background: var(--cmg-surface-accent);
 }
-.cemig-form .vstep:not(:last-child)::before {
+.cemig-form .vstep:not(:last-child)::before,
+.cemig-mt .vstep:not(:last-child)::before {
   display: none;
 }
-.cemig-form .vstep-num {
+.cemig-form .vstep-num,
+.cemig-mt .vstep-num {
   /* Layout */
   display: flex;
   align-items: center;
@@ -989,7 +1037,7 @@ html {
   flex-shrink: 0;
 
   /* Appearance */
-  background: var(--cmg-success-600, #0F6C58);
+  background: var(--cmg-success-600, #576864);
   border: none;
   border-radius: 100px;
 
@@ -1002,7 +1050,8 @@ html {
   color: #fff;
   text-align: center;
 }
-.cemig-form .vstep-label {
+.cemig-form .vstep-label,
+.cemig-mt .vstep-label {
   font-family: "Open Sans", system-ui, sans-serif;
   font-size: 12px;
   font-style: normal;
@@ -1013,24 +1062,40 @@ html {
   color: var(--cmg-success-700, #0B5445);
   flex: none;
 }
-.cemig-form .vstep.active {
+.cemig-form .vstep.active,
+.cemig-mt .vstep.active {
   background: var(--cmg-step-active-bg);
 }
-.cemig-form .vstep.active .vstep-num {
+.cemig-form .vstep.active .vstep-num,
+.cemig-mt .vstep.active .vstep-num {
   background: var(--cmg-green-600);
   border-color: var(--cmg-green-600);
   color: var(--cmg-neutral-0);
 }
-.cemig-form .vstep.active .vstep-label {
+.cemig-form .vstep.active .vstep-label,
+.cemig-mt .vstep.active .vstep-label {
   color: var(--cmg-green-600);
 }
-.cemig-form .vstep.done .vstep-num {
+.cemig-form .vstep.done .vstep-num,
+.cemig-mt .vstep.done .vstep-num {
   background: var(--cmg-green-600);
   border-color: var(--cmg-green-600);
   color: var(--cmg-neutral-0);
 }
-.cemig-form .vstep.done .vstep-label {
+.cemig-form .vstep.done .vstep-label,
+.cemig-mt .vstep.done .vstep-label {
   color: var(--cmg-text);
+}
+/* MT/Loteamento/Desistência ONLY: their step numbers are static HTML and are
+   never rewritten to a check by JS (the React forms swap the text directly).
+   So the "done" check is rendered via CSS here. Justified exception — it is a
+   delivery mechanism for the same visual, not a duplicated style. */
+.cemig-mt .vstep.done .vstep-num {
+  font-size: 0;
+}
+.cemig-mt .vstep.done .vstep-num::after {
+  content: "✓";
+  font-size: 11px;
 }
 .cemig-form .main-col {
   flex: 0 1 var(--cmg-content-max);
@@ -1280,35 +1345,6 @@ body.cemig-mt {
   letter-spacing: var(--cmg-ls-wide);
   color: var(--cmg-neutral-0);
 }
-.cemig-mt .service-hero .wrap {
-  max-width: var(--cmg-area-max);
-  /* Left padding = the design gutter so the page title lines up with the
-     form-body column (mirrors the BT shell, where the title sits inside the
-     indented main column). Right/top keep the 32px gutter. Reset to 32px
-     below 900px (see responsive block). */
-  padding: var(--cmg-space-8) var(--cmg-space-8) 0 var(--cmg-area-gutter);
-}
-.cemig-mt .hero-title-main {
-  font-family: var(--cmg-font-family);
-  font-size: var(--cmg-fs-title);
-  line-height: var(--cmg-lh-title);
-  font-weight: var(--cmg-fw-regular);
-  letter-spacing: var(--cmg-ls-wide);
-  color: var(--cmg-text-strong);
-}
-.cemig-mt .hero-title-sub {
-  font-family: var(--cmg-font-family);
-  font-size: var(--cmg-fs-body-lg);
-  line-height: var(--cmg-lh-body-lg);
-  font-weight: var(--cmg-fw-regular);
-  color: var(--cmg-text);
-}
-.cemig-mt .service-hero .sub {
-  font-family: var(--cmg-font-family);
-  font-size: var(--cmg-fs-body-lg);
-  line-height: var(--cmg-lh-body-lg);
-  color: var(--cmg-text);
-}
 .cemig-mt .mt-layout {
   width: 100%;
   max-width: var(--cmg-area-max);
@@ -1353,48 +1389,9 @@ body.cemig-mt {
 .cemig-mt .mt-layout .form-back {
   padding-left: var(--cmg-space-3);
 }
-.cemig-mt .mt-layout .step {
-  border-radius: var(--cmg-radius-pill);
-  padding: 10px var(--cmg-space-4) 10px var(--cmg-space-3);
-  gap: var(--cmg-space-2);
-  font-family: var(--cmg-font-family);
-  font-size: var(--cmg-fs-caption);
-  line-height: var(--cmg-lh-caption);
-  font-weight: var(--cmg-fw-bold);
-  letter-spacing: 0.5px;
-  color: var(--cmg-text-muted);
-}
-.cemig-mt .mt-layout .step:hover {
-  background: var(--cmg-surface-accent);
-}
-.cemig-mt .step .num {
-  width: auto;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 var(--cmg-space-1);
-  border-radius: var(--cmg-radius-pill);
-  /* Inactive: light/hollow circle (matches the .cemig-form vstep circles). */
-  background: var(--cmg-neutral-100);
-  color: var(--cmg-text);
-  border: 1px solid var(--cmg-border);
-  font-size: 11px;
-  font-weight: var(--cmg-fw-bold);
-}
-.cemig-mt .mt-layout .step.active {
-  background: var(--cmg-step-active-bg);
-  border-bottom-color: transparent;
-  color: var(--cmg-green-600);
-}
-.cemig-mt .step.active .num {
-  background: var(--cmg-green-600);
-  border-color: var(--cmg-green-600);
-  color: var(--cmg-neutral-0);
-}
-.cemig-mt .step.done .num {
-  background: var(--cmg-green-600);
-  border-color: var(--cmg-green-600);
-  color: var(--cmg-neutral-0);
-}
+/* The step rail (.vstep/.vstep-num/.vstep-label and active/done states) is now
+   defined once, above, grouped for `.cemig-form` AND `.cemig-mt`. The old
+   `.cemig-mt .step`/`.num` rules were removed to avoid duplication. */
 .cemig-mt .card {
   background: var(--cmg-surface);
   border: 1px solid var(--cmg-neutral-200);
@@ -1562,33 +1559,8 @@ body.cemig-mt {
   background: var(--cmg-surface-accent);
   color: var(--cmg-green-600);
 }
-.cemig-mt .btn {
-  font-family: var(--cmg-font-family);
-  font-weight: var(--cmg-fw-bold);
-  border-radius: var(--cmg-radius-pill);
-  border: 1px solid transparent;
-}
-.cemig-mt .btn-primary {
-  background: var(--cmg-green-600);
-  border-color: var(--cmg-green-600);
-  color: var(--cmg-neutral-0);
-  box-shadow: none;
-}
-.cemig-mt .btn-primary:hover:not(:disabled) {
-  background: var(--cmg-green-500);
-  border-color: var(--cmg-green-500);
-  transform: none;
-}
-.cemig-mt .btn-ghost {
-  background: transparent;
-  color: var(--cmg-text-strong);
-  border-color: var(--cmg-border);
-}
-.cemig-mt .btn-ghost:hover {
-  background: var(--cmg-surface-accent);
-  border-color: var(--cmg-green-600);
-  color: var(--cmg-green-600);
-}
+/* .btn / .btn-primary / .btn-ghost: canonical single source above
+   (grouped `.cemig-form, .cemig-mt`). Local overrides removed. */
 .cemig-mt .btn-add {
   border: 1px dashed var(--cmg-green-600);
   border-radius: var(--cmg-radius-pill);
@@ -1650,10 +1622,6 @@ body.cemig-mt {
   .cemig-mt .mt-layout {
     flex-direction: column;
   }
-  /* Drop the desktop title indent once the rail no longer sits to the left. */
-  .cemig-mt .service-hero .wrap {
-    padding-left: var(--cmg-space-8);
-  }
   .cemig-mt .mt-layout .stepper-bar {
     position: static;
     width: 100%;
@@ -1668,7 +1636,7 @@ body.cemig-mt {
     gap: var(--cmg-space-1);
     padding: 0;
   }
-  .cemig-mt .mt-layout .step {
+  .cemig-mt .mt-layout .vstep {
     width: auto;
     white-space: nowrap;
   }
@@ -1686,9 +1654,6 @@ body.cemig-mt {
     gap: var(--cmg-space-3);
   }
   .cemig-mt header.site .wrap {
-    padding-inline: var(--cmg-space-3);
-  }
-  .cemig-mt .service-hero .wrap {
     padding-inline: var(--cmg-space-3);
   }
   .cemig-mt .mt-layout {

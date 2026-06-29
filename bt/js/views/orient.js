@@ -66,14 +66,14 @@ function TabOrient({ ctx }) {
     totalUcsEmpreendimento,
     trocaDisjGeral,
     validacaoDisjuntores,
-    validacaoHibrido
+    validacaoHibrido,
   } = ctx;
   return /* @__PURE__ */ React.createElement(
     Card,
     {
       eyebrow: "Comece por aqui",
       title: "Orientações para preenchimento",
-      sub: ORIENTACOES.intro
+      sub: ORIENTACOES.intro,
     },
     /* @__PURE__ */ React.createElement(
       "div",
@@ -82,12 +82,27 @@ function TabOrient({ ctx }) {
           fontWeight: 700,
           color: "var(--verde-escuro)",
           fontSize: 14,
-          marginBottom: 4
-        }
+          marginBottom: 4,
+        },
       },
-      ORIENTACOES.geral.titulo
+      ORIENTACOES.geral.titulo,
     ),
-    /* @__PURE__ */ React.createElement("ul", { className: "orient-list" }, ORIENTACOES.geral.itens.map((it, i) => /* @__PURE__ */ React.createElement("li", { key: i, className: "orient-item" }, /* @__PURE__ */ React.createElement("span", { className: "orient-num" }, i + 1), /* @__PURE__ */ React.createElement("p", null, it)))),
+    /* @__PURE__ */ React.createElement(
+      "ul",
+      { className: "orient-list" },
+      ORIENTACOES.geral.itens.map((it, i) =>
+        /* @__PURE__ */ React.createElement(
+          "li",
+          { key: i, className: "orient-item" },
+          /* @__PURE__ */ React.createElement(
+            "span",
+            { className: "orient-num" },
+            i + 1,
+          ),
+          /* @__PURE__ */ React.createElement("p", null, it),
+        ),
+      ),
+    ),
     /* @__PURE__ */ React.createElement(
       "div",
       {
@@ -95,26 +110,88 @@ function TabOrient({ ctx }) {
           fontWeight: 700,
           color: "var(--verde-escuro)",
           fontSize: 14,
-          margin: "18px 0 4px"
-        }
+          margin: "18px 0 4px",
+        },
       },
-      ORIENTACOES.individual.titulo
+      ORIENTACOES.individual.titulo,
     ),
-    /* @__PURE__ */ React.createElement("ul", { className: "orient-list" }, ORIENTACOES.individual.itens.map((it, i) => /* @__PURE__ */ React.createElement("li", { key: i, className: "orient-item" }, /* @__PURE__ */ React.createElement("span", { className: "orient-num" }, i + 1), /* @__PURE__ */ React.createElement("p", null, it)))),
-    !restrito && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement(
+      "ul",
+      { className: "orient-list" },
+      ORIENTACOES.individual.itens.map((it, i) =>
+        /* @__PURE__ */ React.createElement(
+          "li",
+          { key: i, className: "orient-item" },
+          /* @__PURE__ */ React.createElement(
+            "span",
+            { className: "orient-num" },
+            i + 1,
+          ),
+          /* @__PURE__ */ React.createElement("p", null, it),
+        ),
+      ),
+    ),
+    !restrito &&
+      /* @__PURE__ */ React.createElement(
+        React.Fragment,
+        null,
+        /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            style: {
+              fontWeight: 700,
+              color: "var(--verde-escuro)",
+              fontSize: 14,
+              margin: "18px 0 4px",
+            },
+          },
+          ORIENTACOES.coletivo.titulo,
+        ),
+        /* @__PURE__ */ React.createElement(
+          "ul",
+          { className: "orient-list" },
+          ORIENTACOES.coletivo.itens.map((it, i) =>
+            /* @__PURE__ */ React.createElement(
+              "li",
+              { key: i, className: "orient-item" },
+              /* @__PURE__ */ React.createElement(
+                "span",
+                { className: "orient-num" },
+                i + 1,
+              ),
+              /* @__PURE__ */ React.createElement("p", null, it),
+            ),
+          ),
+        ),
+      ),
+    /* @__PURE__ */ React.createElement(
       "div",
-      {
-        style: {
-          fontWeight: 700,
-          color: "var(--verde-escuro)",
-          fontSize: 14,
-          margin: "18px 0 4px"
-        }
-      },
-      ORIENTACOES.coletivo.titulo
-    ), /* @__PURE__ */ React.createElement("ul", { className: "orient-list" }, ORIENTACOES.coletivo.itens.map((it, i) => /* @__PURE__ */ React.createElement("li", { key: i, className: "orient-item" }, /* @__PURE__ */ React.createElement("span", { className: "orient-num" }, i + 1), /* @__PURE__ */ React.createElement("p", null, it))))),
-    /* @__PURE__ */ React.createElement("div", { className: "callout" }, ORIENTACOES.callout),
-    /* @__PURE__ */ React.createElement("div", { className: "legend" }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("span", { className: "req" }, "*"), " Campo de preenchimento obrigatório"), /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("span", { className: "req" }, "**"), " Obrigatório para pessoa física")),
-    /* @__PURE__ */ React.createElement("div", { style: { marginTop: 16 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "primary", onClick: irProx }, "Iniciar preenchimento →"))
+      { className: "cmg-aviso" },
+      /* @__PURE__ */ React.createElement("div", {
+        className: "cmg-aviso-icon",
+        "aria-hidden": "true",
+      }),
+      /* @__PURE__ */ React.createElement(
+        "p",
+        { className: "cmg-aviso-texto" },
+        ORIENTACOES.callout,
+      ),
+    ),
+    /* @__PURE__ */ React.createElement(
+      "div",
+      { className: "legend" },
+      /* @__PURE__ */ React.createElement(
+        "span",
+        null,
+        /* @__PURE__ */ React.createElement("span", { className: "req" }, "*"),
+        " Campo de preenchimento obrigatório",
+      ),
+      /* @__PURE__ */ React.createElement(
+        "span",
+        null,
+        /* @__PURE__ */ React.createElement("span", { className: "req" }, "**"),
+        " Obrigatório para pessoa física",
+      ),
+    ),
   );
 }
