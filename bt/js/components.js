@@ -92,7 +92,11 @@ function renderFieldLabel(label) {
     null,
     m[1].trim(),
     " ",
-    /* @__PURE__ */ React.createElement("span", { className: "opt" }, "(opcional)"),
+    /* @__PURE__ */ React.createElement(
+      "span",
+      { className: "opt" },
+      "(opcional)",
+    ),
   );
 }
 function Field({ label, req, children, hint, span, float }) {
@@ -157,7 +161,8 @@ function Toggle({ value, onChange, options, disabled }) {
   // Rótulo: Sim/Não usa o padrão regular 16px; demais (opções enumeradas)
   // recebem a variante bold 14px via .toggle-group--opcoes.
   const ehSimNao =
-    options.length === 2 && options.every((o) => o.v === "Sim" || o.v === "Não");
+    options.length === 2 &&
+    options.every((o) => o.v === "Sim" || o.v === "Não");
   return /* @__PURE__ */ React.createElement(
     "div",
     {
@@ -243,7 +248,8 @@ function CalcDemanda({
   const catA = d.catA || 0;
   const mots = d.mots || [];
   const [busca, setBusca] = useState("");
-  const [minimizado, setMinimizado] = useState(!!minimizarPorPadrao);
+  // Estado de abertura dos acordeões: { [grupo]: bool, _mot: bool }.
+  const [abertos, setAbertos] = useState({});
   const upd = (patch) => onChange({ ...d, qtds, tipoA, catA, mots, ...patch });
   const tipoCargaBloqueado =
     atividade === "Residencial" ||
@@ -341,23 +347,46 @@ function CalcDemanda({
   const catFiltrado = CAT.map((c, i) => ({ ...c, i })).filter(
     (c) => !busca || c.n.toLowerCase().includes(busca.toLowerCase()),
   );
-  // Rótulos de exibição dos grupos (acordeões) — versão limpa, alinhada ao
-  // Figma. NÃO altera o modelo de cálculo (este usa as chaves c.g/GO; só o
-  // texto do cabeçalho muda). Grupos sem item no catálogo simplesmente não
-  // aparecem. Obs.: "Refrigeração" e a renomeação fina dependem do mapeamento
-  // de catálogo (ver sinalização ao usuário).
-  const GRUPO_LABEL = {
-    il: "Iluminação e tomada",
-    b1: "Chuveiro, torneira e cafeteira",
-    b2: "Aquecedor de água",
-    b3: "Forno, fogão e grill",
-    b4: "Lavadoras, secadores e ferro",
-    b5: "Demais aparelhos",
-    c: "Ar condicionado",
-    f: "Raios-X",
-  };
-  const grupoQtd = (sg) =>
-    CAT.reduce((s, c, i) => s + (c.g === sg ? qtds[i] || 0 : 0), 0);
+  // Categorias de EXIBIÇÃO dos acordeões (Figma). São independentes do grupo
+  // de cálculo c.g: as parcelas rA/rB/rC/rF continuam somando por c.g e NÃO
+  // mudam. Aqui só decidimos sob qual acordeão cada item aparece:
+  //  • "Refrigeração" reúne geladeiras/freezers/adega — que no cálculo seguem
+  //    em b5 (mesmo fator de demanda de antes);
+  //  • "Demais aparelhos" absorve o restante de b5 e os Raios-X (grupo f),
+  //    que deixam de ter acordeão próprio.
+  const REFRI = new Set([
+    "Geladeira comum",
+    "Geladeira duplex",
+    "Freezer vertical",
+    "Freezer horiz. médio",
+    "Freezer horiz. grande",
+    "Adega climatizada",
+  ]);
+  const ehRefri = (c) => c.g === "b5" && REFRI.has(c.n);
+  const CARGA_CATS = [
+    { id: "il", label: "Iluminação e tomada", match: (c) => c.g === "il" },
+    {
+      id: "b1",
+      label: "Chuveiro, torneira e cafeteira",
+      match: (c) => c.g === "b1",
+    },
+    { id: "b2", label: "Aquecedor de água", match: (c) => c.g === "b2" },
+    { id: "b3", label: "Forno, fogão e grill", match: (c) => c.g === "b3" },
+    {
+      id: "b4",
+      label: "Lavadoras, secadores e ferro",
+      match: (c) => c.g === "b4",
+    },
+    { id: "refri", label: "Refrigeração", match: ehRefri },
+    { id: "c", label: "Ar condicionado", match: (c) => c.g === "c" },
+    {
+      id: "demais",
+      label: "Demais aparelhos",
+      match: (c) => (c.g === "b5" && !ehRefri(c)) || c.g === "f",
+    },
+  ];
+  const grupoQtd = (cat) =>
+    CAT.reduce((s, c, i) => s + (cat.match(c) ? qtds[i] || 0 : 0), 0);
   const toggleAcc = (k) => setAbertos((p) => ({ ...p, [k]: !p[k] }));
   const chevron = /* @__PURE__ */ React.createElement("span", {
     className: "carga-acc-chevron",
@@ -489,14 +518,17 @@ function CalcDemanda({
           /* @__PURE__ */ React.createElement(
             "div",
             { className: "carga-acc-list" },
-            GO.map((sg) => {
-              const items = catFiltrado.filter((c) => c.g === sg);
+            CARGA_CATS.map((cat) => {
+              const items = catFiltrado.filter(cat.match);
               if (busca && !items.length) return null;
-              const open = busca ? items.length > 0 : !!abertos[sg];
+              const open = busca ? items.length > 0 : !!abertos[cat.id];
               return /* @__PURE__ */ React.createElement(
                 "div",
-                { key: sg, className: "carga-acc" + (open ? " is-open" : "") },
-                accHead(sg, GRUPO_LABEL[sg] || GL[sg], grupoQtd(sg)),
+                {
+                  key: cat.id,
+                  className: "carga-acc" + (open ? " is-open" : ""),
+                },
+                accHead(cat.id, cat.label, grupoQtd(cat)),
                 open &&
                   /* @__PURE__ */ React.createElement(
                     "div",
@@ -563,154 +595,214 @@ function CalcDemanda({
                 /* @__PURE__ */ React.createElement(
                   "div",
                   { className: "carga-acc-body" },
-                  mots.length === 0
-                    ? /* @__PURE__ */ React.createElement(
-                        "div",
-                        {
-                          className: "field-hint",
-                        },
-                        "Nenhum motor adicionado.",
-                      )
-                    : /* @__PURE__ */ React.createElement(
-                        "table",
-                        { className: "motores-table" },
-                  /* @__PURE__ */ React.createElement(
-                    "thead",
-                    null,
+                  mots.length > 0 &&
                     /* @__PURE__ */ React.createElement(
-                      "tr",
-                      null,
-                      /* @__PURE__ */ React.createElement("th", null, "Tipo"),
+                      "table",
+                      { className: "motores-table" },
                       /* @__PURE__ */ React.createElement(
-                        "th",
+                        "thead",
                         null,
-                        "Potência (CV)",
-                      ),
-                      /* @__PURE__ */ React.createElement("th", null, "Qtd"),
-                      /* @__PURE__ */ React.createElement(
-                        "th",
-                        null,
-                        "Dem. unit. (kVA)",
-                      ),
-                      /* @__PURE__ */ React.createElement(
-                        "th",
-                        null,
-                        "Dem. total (kVA)",
-                      ),
-                      /* @__PURE__ */ React.createElement("th", null),
-                    ),
-                  ),
-                  /* @__PURE__ */ React.createElement(
-                    "tbody",
-                    null,
-                    mots.map((m, mi) => {
-                      const linha = rD.det[mi] || {};
-                      return /* @__PURE__ */ React.createElement(
-                        "tr",
-                        { key: mi },
                         /* @__PURE__ */ React.createElement(
-                          "td",
+                          "tr",
                           null,
                           /* @__PURE__ */ React.createElement(
-                            "select",
-                            {
-                              value: m.fase,
-                              onChange: (e) => {
-                                const n = [...mots];
-                                n[mi] = { ...m, fase: e.target.value };
-                                upd({ mots: n });
-                              },
-                            },
-                            /* @__PURE__ */ React.createElement(
-                              "option",
-                              { value: "mono" },
-                              "Monofásico",
-                            ),
-                            /* @__PURE__ */ React.createElement(
-                              "option",
-                              { value: "tri" },
-                              "Trifásico",
-                            ),
+                            "th",
+                            null,
+                            "Tipo",
                           ),
-                        ),
-                        /* @__PURE__ */ React.createElement(
-                          "td",
-                          null,
                           /* @__PURE__ */ React.createElement(
-                            "select",
-                            {
-                              value: m.cv,
-                              onChange: (e) => {
-                                const n = [...mots];
-                                n[mi] = { ...m, cv: e.target.value };
-                                upd({ mots: n });
-                              },
-                            },
-                            (m.fase === "mono" ? MOTOR_MONO : MOTOR_TRI).map(
-                              (r) =>
+                            "th",
+                            null,
+                            "Potência (CV)",
+                          ),
+                          /* @__PURE__ */ React.createElement(
+                            "th",
+                            null,
+                            "Quantidade",
+                          ),
+                          /* @__PURE__ */ React.createElement(
+                            "th",
+                            null,
+                            "Dem. Unit (KVA)",
+                          ),
+                          /* @__PURE__ */ React.createElement(
+                            "th",
+                            null,
+                            "Dem. Total (KVA)",
+                          ),
+                          /* @__PURE__ */ React.createElement("th", null),
+                        ),
+                      ),
+                      /* @__PURE__ */ React.createElement(
+                        "tbody",
+                        null,
+                        mots.map((m, mi) => {
+                          const linha = rD.det[mi] || {};
+                          return /* @__PURE__ */ React.createElement(
+                            "tr",
+                            { key: mi },
+                            /* @__PURE__ */ React.createElement(
+                              "td",
+                              null,
+                              /* @__PURE__ */ React.createElement(
+                                "select",
+                                {
+                                  value: m.fase,
+                                  onChange: (e) => {
+                                    const n = [...mots];
+                                    n[mi] = { ...m, fase: e.target.value };
+                                    upd({ mots: n });
+                                  },
+                                },
                                 /* @__PURE__ */ React.createElement(
                                   "option",
-                                  { key: r.cv, value: r.cv },
-                                  r.l,
+                                  { value: "mono" },
+                                  "Monofásico",
                                 ),
+                                /* @__PURE__ */ React.createElement(
+                                  "option",
+                                  { value: "tri" },
+                                  "Trifásico",
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                        /* @__PURE__ */ React.createElement(
-                          "td",
-                          null,
-                          /* @__PURE__ */ React.createElement("input", {
-                            type: "number",
-                            min: "0",
-                            value: m.q,
-                            onChange: (e) => {
-                              const n = [...mots];
-                              n[mi] = {
-                                ...m,
-                                q: parseInt(e.target.value) || 0,
-                              };
-                              upd({ mots: n });
-                            },
-                            style: { width: 60 },
+                            /* @__PURE__ */ React.createElement(
+                              "td",
+                              null,
+                              /* @__PURE__ */ React.createElement(
+                                "select",
+                                {
+                                  value: m.cv,
+                                  onChange: (e) => {
+                                    const n = [...mots];
+                                    n[mi] = { ...m, cv: e.target.value };
+                                    upd({ mots: n });
+                                  },
+                                },
+                                (m.fase === "mono"
+                                  ? MOTOR_MONO
+                                  : MOTOR_TRI
+                                ).map((r) =>
+                                  /* @__PURE__ */ React.createElement(
+                                    "option",
+                                    { key: r.cv, value: r.cv },
+                                    r.l,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            /* @__PURE__ */ React.createElement(
+                              "td",
+                              null,
+                              /* @__PURE__ */ React.createElement("input", {
+                                type: "number",
+                                min: "0",
+                                value: m.q,
+                                onChange: (e) => {
+                                  const n = [...mots];
+                                  n[mi] = {
+                                    ...m,
+                                    q: parseInt(e.target.value) || 0,
+                                  };
+                                  upd({ mots: n });
+                                },
+                                style: { width: 60 },
+                              }),
+                            ),
+                            /* @__PURE__ */ React.createElement(
+                              "td",
+                              { className: "num" },
+                              fmt2(linha.kvaUnit || 0),
+                            ),
+                            /* @__PURE__ */ React.createElement(
+                              "td",
+                              { className: "num" },
+                              fmt2(linha.kva || 0),
+                            ),
+                            /* @__PURE__ */ React.createElement(
+                              "td",
+                              null,
+                              /* @__PURE__ */ React.createElement(
+                                "button",
+                                {
+                                  type: "button",
+                                  "aria-label": "Remover motor",
+                                  onClick: () =>
+                                    upd({
+                                      mots: mots.filter((_, x) => x !== mi),
+                                    }),
+                                  className: "motor-del",
+                                },
+                                /* @__PURE__ */ React.createElement(
+                                  "svg",
+                                  {
+                                    viewBox: "0 0 24 24",
+                                    width: "20",
+                                    height: "20",
+                                    fill: "none",
+                                    stroke: "currentColor",
+                                    "stroke-width": "2",
+                                    "stroke-linecap": "round",
+                                    "stroke-linejoin": "round",
+                                    "aria-hidden": "true",
+                                  },
+                                  /* @__PURE__ */ React.createElement("path", {
+                                    d: "M3 6h18",
+                                  }),
+                                  /* @__PURE__ */ React.createElement("path", {
+                                    d: "M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2",
+                                  }),
+                                  /* @__PURE__ */ React.createElement("path", {
+                                    d: "M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6",
+                                  }),
+                                  /* @__PURE__ */ React.createElement("line", {
+                                    x1: "10",
+                                    y1: "11",
+                                    x2: "10",
+                                    y2: "17",
+                                  }),
+                                  /* @__PURE__ */ React.createElement("line", {
+                                    x1: "14",
+                                    y1: "11",
+                                    x2: "14",
+                                    y2: "17",
+                                  }),
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                  rD.d > 0 &&
+                    /* @__PURE__ */ React.createElement(
+                      "div",
+                      { className: "motores-total" },
+                      "Demanda total dos motores: ",
+                      /* @__PURE__ */ React.createElement(
+                        "strong",
+                        null,
+                        fmt2(rD.d),
+                        " kVA",
+                      ),
+                    ),
+                  /* @__PURE__ */ React.createElement(
+                    "div",
+                    { className: "motores-add" },
+                    /* @__PURE__ */ React.createElement(
+                      "button",
+                      {
+                        type: "button",
+                        className: "btn btn-ghost motores-add-btn",
+                        onClick: () =>
+                          upd({
+                            mots: [...mots, { fase: "mono", cv: 1, q: 1 }],
                           }),
-                        ),
-                        /* @__PURE__ */ React.createElement(
-                          "td",
-                          { className: "num" },
-                          fmt2(linha.kvaUnit || 0),
-                        ),
-                        /* @__PURE__ */ React.createElement(
-                          "td",
-                          { className: "num" },
-                          fmt2(linha.kva || 0),
-                        ),
-                        /* @__PURE__ */ React.createElement(
-                          "td",
-                          null,
-                          /* @__PURE__ */ React.createElement(
-                            "button",
-                            {
-                              type: "button",
-                              onClick: () =>
-                                upd({ mots: mots.filter((_, x) => x !== mi) }),
-                              className: "motor-del",
-                            },
-                            "✕",
-                          ),
-                        ),
-                      );
-                    }),
+                      },
+                      "+ Adicionar motor",
+                    ),
                   ),
                 ),
-            rD.d > 0 &&
-              /* @__PURE__ */ React.createElement(
-                "div",
-                { className: "motores-total" },
-                "Demanda dos motores: ",
-                fmt2(rD.d),
-                " kVA",
-              ),
-            ),
             ),
           ),
         ),

@@ -248,7 +248,7 @@ body {
    .field*`, de maior especificidade) e violavam a regra de fonte única. */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-input[type="number"] { -moz-appearance: textfield; }
+input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 
 /* Toggle/radio: estilo canônico único em shared.css (.toggle-group/.toggle-btn). */
 select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -784,7 +784,6 @@ select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
 }
 .motor-del:hover { background: rgba(220, 38, 38, 0.08); }
 .motores-total {
-  margin-top: 10px;
   text-align: right;
   font-size: 13px;
   font-weight: 700;

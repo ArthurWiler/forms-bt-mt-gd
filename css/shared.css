@@ -498,8 +498,9 @@ html {
   object-fit: cover;
 }
 .modalidade-screen .modalidade-card-body {
-  padding: var(--cmg-space-6) var(--cmg-space-3);
-  gap: var(--cmg-space-2);
+  /* Figma: texto a 16px da borda; título e subtítulo próximos (~4px). */
+  padding: var(--cmg-space-6) var(--cmg-space-4);
+  gap: var(--cmg-space-1);
   background: var(--cmg-surface);
   transition: background 0.15s ease;
 }
@@ -1135,6 +1136,54 @@ html {
   color: var(--cmg-neutral-600);
 }
 /* ============================================================
+   Bloco colapsável "Unidade consumidora N" (BT Individual).
+   Envolve o seletor de equipamentos + o resultado de cada UC. O
+   cabeçalho traz o título e um chevron (reaproveita o desenho de
+   .carga-acc-chevron via máscara). Aberto por padrão; ao fechar,
+   o chevron aponta para cima e o corpo some.
+   ============================================================ */
+/* Todo o bloco da UC (cabeçalho + corpo) é a caixa cinza #F4F5F4 arredondada;
+   a busca e os acordeões ficam como cartões brancos por cima. O corpo é
+   renderizado só quando aberto (React), então fechado a caixa tem só os 56px
+   do cabeçalho. */
+.cemig-form .uc-colapsavel {
+  background: var(--cmg-neutral-50);
+  border-radius: var(--cmg-radius);
+  padding: 0 var(--cmg-space-4);
+}
+.cemig-form .uc-colapsavel + .uc-colapsavel {
+  margin-top: var(--cmg-space-6);
+}
+.cemig-form .uc-colapsavel-head {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cmg-space-3);
+  min-height: 56px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+.cemig-form .uc-colapsavel-titulo {
+  font-family: var(--cmg-font-family);
+  font-size: 20px;
+  letter-spacing: 0.2px;
+  color: var(--cmg-text-strong);
+}
+.cemig-form .uc-colapsavel-chevron {
+  color: var(--cmg-text);
+}
+.cemig-form .uc-colapsavel:not(.is-open) .uc-colapsavel-chevron {
+  transform: rotate(180deg);
+}
+.cemig-form .uc-colapsavel-corpo {
+  padding-bottom: var(--cmg-space-4);
+}
+/* ============================================================
    Radio de seleção (○ vazio / ● preenchido) — componente único
    (spec Figma). Substitui a antiga "pílula" .toggle-btn. Vale
    tanto para os componentes React (.cemig-form: BT, Micro, Mini)
@@ -1368,8 +1417,9 @@ html {
   letter-spacing: var(--cmg-ls-tight);
 }
 .cemig-form .motores-table thead th {
-  color: var(--cmg-text-muted);
-  border-bottom: 1px solid var(--cmg-divider);
+  background: var(--cmg-neutral-200);
+  color: var(--cmg-text);
+  font-weight: var(--cmg-fw-bold);
   letter-spacing: var(--cmg-ls-tight);
 }
 .cemig-form .prev-table td,
@@ -1415,10 +1465,58 @@ html {
   font-weight: var(--cmg-fw-bold);
   background: var(--cmg-surface-accent);
 }
-.cemig-form .prev-table tfoot .total-dem,
-.cemig-form .motores-total,
-.cemig-form .motores-table td.num {
+.cemig-form .prev-table tfoot .total-dem {
   color: var(--cmg-green-600);
+}
+/* Motores e cargas especiais — células brancas com borda #8C9895, valores
+   escuros à esquerda, total à direita (valor em negrito) e botão "Adicionar
+   motor" em pílula centralizada; remover é uma lixeira vermelha. */
+.cemig-form .motores-table select,
+.cemig-form .motores-table input {
+  min-height: 44px;
+  padding: 0 var(--cmg-space-3);
+  border-radius: var(--cmg-radius);
+}
+.cemig-form .motores-table td.num {
+  text-align: left;
+  color: var(--cmg-text-strong);
+}
+.cemig-form .motores-total {
+  text-align: right;
+  color: var(--cmg-text-muted);
+  padding: var(--cmg-space-3) 0;
+}
+.cemig-form .motores-total strong {
+  color: var(--cmg-text-strong);
+  font-weight: var(--cmg-fw-bold);
+}
+.cemig-form .motores-add {
+  display: flex;
+  justify-content: center;
+  /* Espaço igual acima e abaixo do botão. */
+  padding: var(--cmg-space-4) 0;
+}
+/* Separador full-width acima do botão só quando há conteúdo acima (tabela +
+   total). Sem motores, o botão fica sozinho e não recebe borda. */
+.cemig-form .motores-add:not(:first-child) {
+  border-top: 1px solid var(--cmg-neutral-200);
+}
+.cemig-form .motores-add-btn {
+  border-radius: var(--cmg-radius-pill);
+}
+.cemig-form .motor-del {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: var(--cmg-danger-500);
+  cursor: pointer;
+}
+.cemig-form .motor-del:hover {
+  background: rgba(192, 57, 43, 0.08);
 }
 .cemig-form .qtd-ctrl button {
   border: 1px solid var(--cmg-border);
@@ -1768,8 +1866,10 @@ html {
 }
 .cemig-form .orient-item p,
 .cemig-mt .orient-list li > div {
-  font-size: var(--cmg-fs-body);
-  line-height: var(--cmg-lh-body);
+  /* Figma: corpo/grande — 16px / 26px / 0.2px, neutra/600. */
+  font-size: var(--cmg-fs-body-lg);
+  line-height: var(--cmg-lh-body-lg);
+  letter-spacing: var(--cmg-ls-tight);
   color: var(--cmg-text);
 }
 .cemig-form .orient-item a,

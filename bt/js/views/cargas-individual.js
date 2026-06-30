@@ -21,12 +21,15 @@ function TabCargasIndividual({ ctx }) {
     validacaoDisjuntores,
   } = ctx;
   const multi = ucsDet.length > 1;
+  // Abertura por UC: cada bloco "Unidade consumidora N" é colapsável; aberto
+  // por padrão (fechado só quando ucAberta[ui] === false).
+  const [ucAberta, setUcAberta] = useState({});
   return /* @__PURE__ */ React.createElement(
     Card,
     {
       eyebrow: "Etapa " + ctx.etapaNum,
-      title: "Cargas das UCs",
-      sub: "Detalhe os equipamentos. A demanda e o disjuntor são calculados automaticamente (ND-5.1).",
+      title: "Cargas da unidade consumidora",
+      sub: "Para identificar o disjuntor correto para a sua unidade consumidora, selecione abaixo os equipamentos que farão parte do imóvel. Com base na sua escolha, calcularemos a demanda de energia que a sua rede elétrica precisará suportar com total segurança.",
     },
     multi &&
       /* @__PURE__ */ React.createElement(
@@ -40,25 +43,37 @@ function TabCargasIndividual({ ctx }) {
         validacaoDisjuntores.ok ? "✔ " : "⚠ ",
         validacaoDisjuntores.msg,
       ),
-    ucsDet.map((u, ui) =>
-      /* @__PURE__ */ React.createElement(
+    ucsDet.map((u, ui) => {
+      const aberta = ucAberta[ui] !== false;
+      return /* @__PURE__ */ React.createElement(
         "div",
-        { key: ui, className: ui === 0 && !multi ? void 0 : "divider" },
-        multi &&
+        {
+          key: ui,
+          className: "uc-colapsavel" + (aberta ? " is-open" : ""),
+        },
+        /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            className: "uc-colapsavel-head",
+            "aria-expanded": aberta,
+            onClick: () => setUcAberta((p) => ({ ...p, [ui]: !aberta })),
+          },
+          /* @__PURE__ */ React.createElement(
+            "span",
+            { className: "uc-colapsavel-titulo" },
+            `Unidade consumidora ${ui + 1}`,
+          ),
+          /* @__PURE__ */ React.createElement("span", {
+            className: "carga-acc-chevron uc-colapsavel-chevron",
+            "aria-hidden": "true",
+          }),
+        ),
+        aberta &&
           /* @__PURE__ */ React.createElement(
             "div",
-            { className: "uc-block-title", style: { marginBottom: 4 } },
+            { className: "uc-colapsavel-corpo" },
             ucSemAlteracao(u)
-              ? `Unidade Consumidora ${ui + 1}`
-              : `Cargas da Unidade Consumidora ${ui + 1}`,
-          ),
-        multi &&
-          /* @__PURE__ */ React.createElement(
-            "div",
-            { className: "field-hint", style: { marginBottom: 12 } },
-            `UC ${ui + 1} de ${ucsDet.length}`,
-          ),
-        ucSemAlteracao(u)
           ? /* @__PURE__ */ React.createElement(
               "div",
               { className: "alert alert-info" },
@@ -163,8 +178,9 @@ function TabCargasIndividual({ ctx }) {
                 ),
               ),
             ),
-      ),
-    ),
+          ),
+      );
+    }),
     /* ── Subseção: Gerador de Emergência (antes views/gerador.js) ── */
     /* @__PURE__ */ React.createElement(
       "div",

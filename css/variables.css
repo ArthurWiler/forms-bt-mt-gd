@@ -27,6 +27,7 @@
 
   /* ---- Neutrals (CEMIG scale) ---- */
   --cmg-neutral-0: #ffffff;
+  --cmg-neutral-50: #f4f5f4; /* subtle filled surface (UC header, etc.) */
   --cmg-neutral-100: #e6e9e8; /* disabled field surface */
   --cmg-neutral-200: #d1d4d3; /* subtle borders, info icon bg */
   --cmg-neutral-300: #b1b9b7; /* accordion dividers */
