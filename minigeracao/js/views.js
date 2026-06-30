@@ -2,7 +2,7 @@ function ViewIdentificacao({ ctx }) {
   const { d, set, cnpjStatus, buscarCnpj, cepStatus, buscarCep } = ctx;
   return /* @__PURE__ */ React.createElement(
     Card,
-    { eyebrow: "Seção 1", title: "Identificação da Unidade Consumidora" },
+    { eyebrow: "Etapa " + ctx.etapaNum, title: "Identificação da Unidade Consumidora" },
     /* @__PURE__ */ React.createElement(
       "div",
       { className: "grid" },
@@ -210,7 +210,7 @@ function ViewDadosUC({ ctx }) {
   }, [gridZero]);
   return /* @__PURE__ */ React.createElement(
     Card,
-    { eyebrow: "Seção 2", title: "Dados da Unidade Consumidora" },
+    { eyebrow: "Etapa " + ctx.etapaNum, title: "Dados da Unidade Consumidora" },
     /* @__PURE__ */ React.createElement(
       "div",
       { className: "grid" },
@@ -671,7 +671,7 @@ function ViewDocumentacao({ ctx }) {
   return /* @__PURE__ */ React.createElement(
     Card,
     {
-      eyebrow: "Seção 3",
+      eyebrow: "Etapa " + ctx.etapaNum,
       title: "Documentação da UC a anexar (Nova UC ou Alteração de Potência)",
     },
     /* @__PURE__ */ React.createElement(
@@ -755,7 +755,7 @@ function ViewGeracao({ ctx }) {
   };
   return /* @__PURE__ */ React.createElement(
     Card,
-    { eyebrow: "Seção 4", title: "Dados da Geração" },
+    { eyebrow: "Etapa " + ctx.etapaNum, title: "Dados da Geração" },
     /* @__PURE__ */ React.createElement(
       "div",
       { className: "grid" },
@@ -1121,7 +1121,7 @@ function ViewArmazenamento({ ctx }) {
   const sim = d.possuiArmazenamento === "Sim";
   return /* @__PURE__ */ React.createElement(
     Card,
-    { eyebrow: "Seção 5", title: "Sistema de Armazenamento de Energia" },
+    { eyebrow: "Etapa " + ctx.etapaNum, title: "Sistema de Armazenamento de Energia" },
     /* @__PURE__ */ React.createElement(
       "div",
       { className: "grid" },
@@ -1257,7 +1257,7 @@ function ViewDeclaracoes({ ctx }) {
   return /* @__PURE__ */ React.createElement(
     Card,
     {
-      eyebrow: "Seções 6 a 9",
+      eyebrow: "Etapa " + ctx.etapaNum,
       title: "Garantia, documentação técnica, declarações e solicitante",
     },
     /* @__PURE__ */ React.createElement(
@@ -1598,7 +1598,7 @@ function ViewFormularioCarga({ ctx }) {
   return /* @__PURE__ */ React.createElement(
     Card,
     {
-      eyebrow: "Item 11",
+      eyebrow: "Etapa " + ctx.etapaNum,
       title: "Formulário de Carga",
       sub: "Declare todas as cargas elétricas da unidade consumidora. A demanda e o disjuntor sugerido são calculados automaticamente (ND-5.1).",
     },
@@ -1712,7 +1712,7 @@ function ViewRevisao({ ctx }) {
     );
   return /* @__PURE__ */ React.createElement(
     Card,
-    { eyebrow: "Revisão", title: "Prévia & PDF" },
+    { eyebrow: "Etapa " + ctx.etapaNum, title: "Prévia & PDF" },
     !validacao.ok
       ? /* @__PURE__ */ React.createElement(
           "div",

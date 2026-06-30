@@ -70,7 +70,7 @@ function TabObs({ ctx }) {
   return /* @__PURE__ */ React.createElement(
     Card,
     {
-      eyebrow: "Informações adicionais",
+      eyebrow: "Etapa " + ctx.etapaNum,
       title: "Observações",
       sub: "Inclua informações relevantes: justificativa de disjuntor, atendimento híbrido, geração já conectada, etc."
     },

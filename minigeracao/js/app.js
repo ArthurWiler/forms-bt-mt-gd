@@ -86,6 +86,7 @@ function App() {
     req(d.solicitanteEmail, "E-mail do solicitante");
     return { ok: faltas.length === 0, faltas };
   }, [d]);
+  const idx = GD_ABAS.findIndex((a) => a.id === aba);
   const ctx = {
     d,
     set,
@@ -95,8 +96,10 @@ function App() {
     buscarCnpj,
     validacao,
     gerarPdf: () => gerarPdfMiniGD(d),
+    // Número da etapa (1-based) p/ o eyebrow das views; deriva da posição em
+    // GD_ABAS e bate com o stepper lateral.
+    etapaNum: idx + 1,
   };
-  const idx = GD_ABAS.findIndex((a) => a.id === aba);
   const Atual = GD_ABAS[idx].c;
   const irProx = () => idx < GD_ABAS.length - 1 && setAba(GD_ABAS[idx + 1].id);
   const irAnt = () => idx > 0 && setAba(GD_ABAS[idx - 1].id);

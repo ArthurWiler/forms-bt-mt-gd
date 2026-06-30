@@ -394,7 +394,7 @@ html {
   display: flex;
   align-items: center;
   margin: 0;
-  padding: 20px;
+  padding: 10px;
   background: var(--cmg-surface); /* #FFFFFF */
   border-radius: 0 8px 8px 0;
   font-family: "Open Sans", var(--cmg-font-family);
@@ -732,88 +732,407 @@ html {
   margin-top: var(--cmg-space-1);
 }
 /* ============================================================
-   Campo com rótulo flutuante (Padrão B) — modificador reutilizável.
-   O label fica DENTRO do campo, acima do valor; cantos arredondados
-   só no topo. Aplicado via classe .field--float no wrapper .field
-   (prop `float` do componente Field). Não duplicar nos formulario-*.
-   Convive com o Padrão A (campo simples), que permanece em 48px.
-   Obs.: a spec do Figma pede label 16px; com o valor também em 16px
-   o conjunto não cabe nos 56px sem encostar — line-height ajustado
-   p/ caber (ver sinalização ao usuário).
+   Campo com rótulo FLUTUANTE (Padrão B) — PADRÃO dos campos de texto.
+   Comportamento: com o campo VAZIO e sem foco, o rótulo OCUPA a célula
+   (parece placeholder, 16px, centralizado verticalmente); ao focar ou
+   preencher, o rótulo encolhe e sobe (12px no topo) e o valor aparece
+   abaixo. Aplicado automaticamente a qualquer .field que contenha um
+   <input>/<select> de texto — sem flag por campo. Mantém-se o Padrão A
+   (rótulo acima, fora) para:
+     • campos com <textarea> (multilinha cresce);
+     • campos com toggle/radio (.toggle-group) — não são campos de texto;
+     • opt-out manual via classe .field--plain.
+   `.field--float` continua válido como opt-in explícito. Definição ÚNICA
+   aqui; não duplicar nos formulario-*. Escopo .cemig-form (BT/Micro/Mini);
+   os shells .cemig-mt ficam fora deste padrão por ora.
+
+   "Vazio" = <input> com placeholder visível (:placeholder-shown — por isso
+   o componente Inp injeta um placeholder " " quando não há outro) OU
+   <select> com a opção placeholder (value="") selecionada. Spec Figma:
+   container 56px, borda neutra/400, label 12px/20px/0.2px neutra/600,
+   valor 16px/26px/0.2px neutra/600, chevron 24px à direita.
    ============================================================ */
-.cemig-form .field--float {
+.cemig-form .field--float,
+.cemig-form
+  .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
+    :has([type="checkbox"])
+  ):not(:has([type="radio"])):has(input, select) {
   box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 0;
-  height: 56px;
-  padding: 4px var(--cmg-space-4);
-  background: var(--cmg-surface);
-  border: 1px solid var(--cmg-border);
-  border-radius: 4px 4px 4px 4px;
-  isolation: isolate;
+  display: block;
   position: relative;
+  min-height: 56px; /* spec 56px; min- p/ campos compostos crescerem */
+  padding: 0;
+  background: var(--cmg-surface);
+  border: 1px solid var(--cmg-neutral-400);
+  border-radius: 4px;
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
 }
-.cemig-form .field--float label {
+/* Rótulo: estado "flutuado" (default) — pequeno, no topo. */
+.cemig-form .field--float > label,
+.cemig-form
+  .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
+    :has([type="checkbox"])
+  ):not(:has([type="radio"])):has(input, select)
+  > label {
+  position: absolute;
+  left: var(--cmg-space-4);
+  right: var(--cmg-space-4);
+  top: 7px;
   margin: 0;
+  pointer-events: none;
   font-family: var(--cmg-font-family);
   font-size: 12px;
-  line-height: var(--cmg-lh-body); /* spec 26px; reduzido p/ caber em 56px */
+  line-height: 20px; /* spec */
   font-weight: 400;
-  letter-spacing: var(--cmg-ls-tight);
+  letter-spacing: 0.2px; /* spec */
   color: var(--cmg-neutral-600);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition:
+    top 0.15s ease,
+    font-size 0.15s ease,
+    line-height 0.15s ease,
+    color 0.15s ease;
 }
-/* Valor do campo: vale para <select> (ex.: Solicitação, Escopo) e para
-   <input> (ex.: Nº de Unidades Consumidoras) — mesmo Padrão B. */
+/* Rótulo: estado "placeholder" — campo vazio e sem foco → ocupa a célula
+   (16px, centralizado). Vale p/ input vazio (placeholder visível) e p/
+   select na opção placeholder (value=""). */
+.cemig-form
+  .field--float:is(
+    :has(input:placeholder-shown),
+    :has(select:has(option[value=""]:checked))
+  ):not(:focus-within)
+  > label,
+.cemig-form
+  .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
+    :has([type="checkbox"])
+  ):not(:has([type="radio"])):has(input, select):is(
+    :has(input:placeholder-shown),
+    :has(select:has(option[value=""]:checked))
+  ):not(:focus-within)
+  > label {
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--cmg-text-muted);
+}
+/* Valor do campo: <input>/<select> preenchem a caixa, sem borda; padding
+   superior reserva espaço para o rótulo flutuado. */
+.cemig-form .field--float input,
 .cemig-form .field--float select,
-.cemig-form .field--float input {
+.cemig-form
+  .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
+    :has([type="checkbox"])
+  ):not(:has([type="radio"])):has(input, select)
+  input,
+.cemig-form
+  .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
+    :has([type="checkbox"])
+  ):not(:has([type="radio"])):has(input, select)
+  select {
+  box-sizing: border-box;
   width: 100%;
-  min-height: 0;
-  height: 24px;
-  padding: 0;
+  min-height: 54px;
+  padding: 22px var(--cmg-space-4) 4px;
   border: none;
   border-radius: 0;
   background: transparent;
   font-style: normal;
   font-weight: 400;
   font-size: 16px;
-  line-height: 24px;
+  line-height: 24px; /* spec 26px; reduzido p/ caber em 56px */
   letter-spacing: 0.2px;
-  color: var(--cmg-text-strong);
+  color: var(--cmg-neutral-600); /* spec neutra/600 #364B46 */
 }
+/* Chevron do select (trailing icon 24px, neutra/600) — seta nativa
+   substituída por ícone alinhado ao centro vertical, à direita; o select
+   respeita 100% da largura/altura do campo. */
+.cemig-form .field--float select,
+.cemig-form
+  .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
+    :has([type="checkbox"])
+  ):not(:has([type="radio"])):has(input, select)
+  select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 40px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23364B46' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--cmg-space-4) center;
+  background-size: 24px 24px;
+}
+/* Enquanto o rótulo ocupa a célula, esconde o placeholder nativo do input
+   e o texto da opção placeholder do select (evita duplicação). */
 .cemig-form .field--float input::placeholder {
   color: var(--cmg-text-muted);
 }
+.cemig-form
+  .field--float:has(input:placeholder-shown):not(:focus-within)
+  input::placeholder,
+.cemig-form
+  .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
+    :has([type="checkbox"])
+  ):not(:has([type="radio"])):has(input, select):has(
+    input:placeholder-shown
+  ):not(:focus-within)
+  input::placeholder {
+  color: transparent;
+}
+.cemig-form
+  .field--float:has(select:has(option[value=""]:checked)):not(:focus-within)
+  select,
+.cemig-form
+  .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
+    :has([type="checkbox"])
+  ):not(:has([type="radio"])):has(input, select):has(
+    select:has(option[value=""]:checked)
+  ):not(:focus-within)
+  select {
+  color: transparent;
+}
+.cemig-form .field--float input:focus,
 .cemig-form .field--float select:focus,
-.cemig-form .field--float input:focus {
+.cemig-form
+  .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
+    :has([type="checkbox"])
+  ):not(:has([type="radio"])):has(input, select)
+  input:focus,
+.cemig-form
+  .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
+    :has([type="checkbox"])
+  ):not(:has([type="radio"])):has(input, select)
+  select:focus {
   border: none;
   box-shadow: none;
 }
-.cemig-form .field--float:focus-within {
+.cemig-form .field--float:focus-within,
+.cemig-form
+  .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
+    :has([type="checkbox"])
+  ):not(:has([type="radio"])):has(input, select):focus-within {
   border-color: var(--cmg-green-600);
   box-shadow: 0 0 0 3px var(--cmg-focus-ring);
 }
+.cemig-form .field--float:has(input:disabled),
 .cemig-form .field--float:has(select:disabled),
-.cemig-form .field--float:has(input:disabled) {
+.cemig-form
+  .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
+    :has([type="checkbox"])
+  ):not(:has([type="radio"])):has(input:disabled),
+.cemig-form
+  .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
+    :has([type="checkbox"])
+  ):not(:has([type="radio"])):has(select:disabled) {
   background: var(--cmg-surface-disabled);
 }
-.cemig-form .field--float select:disabled,
-.cemig-form .field--float input:disabled {
-  color: var(--cmg-text-muted);
-  cursor: not-allowed;
-}
-/* supporting-text (texto de apoio): opcional, abaixo do campo; só
-   aparece quando há mensagem (prop `hint`). */
-.cemig-form .field--float .field-hint {
+/* supporting-text (texto de apoio): nos campos de rótulo flutuante o .field
+   É a própria caixa, então o hint precisa sair dela — posicionado logo
+   abaixo (absoluto), dentro do row-gap do grid. */
+.cemig-form .field--float .field-hint,
+.cemig-form
+  .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
+    :has([type="checkbox"])
+  ):not(:has([type="radio"])):has(input, select)
+  .field-hint {
   position: absolute;
   left: 0;
   bottom: -20px;
   margin: 0;
+}
+/* "(opcional)" no rótulo — peso menor e itálico (ver componente Field). */
+.cemig-form .field label .opt {
+  font-weight: 400;
+  font-style: italic;
+  color: var(--cmg-text-muted);
+}
+/* ============================================================
+   Resultado das cargas (BT Individual) — dois cards de valor
+   (carga instalada / demanda calculada) + card de seleção do
+   disjuntor por radio. Spec Figma: cards brancos, borda neutra/200
+   (#D1D4D3), radius 8px; coluna esquerda com 2 cards empilhados,
+   coluna direita com o card do disjuntor (radios verticais). A
+   lógica/opções do disjuntor não mudam — só a apresentação.
+   ============================================================ */
+.cemig-form .resultado-cargas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--cmg-space-4);
+  align-items: start;
+  margin-top: var(--cmg-space-3);
+}
+.cemig-form .resultado-kpis {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cmg-space-4);
+}
+.cemig-form .resultado-card {
+  background: var(--cmg-surface);
+  border: 1px solid var(--cmg-neutral-200);
+  border-radius: var(--cmg-radius);
+  padding: var(--cmg-space-4) var(--cmg-space-6);
+}
+.cemig-form .resultado-card-label {
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-body);
+  line-height: var(--cmg-lh-body);
+  letter-spacing: 0.2px;
+  color: var(--cmg-text-strong);
+}
+.cemig-form .resultado-card-valor {
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-subtitle);
+  line-height: 26px;
+  font-weight: var(--cmg-fw-bold);
+  letter-spacing: 0.2px;
+  color: var(--cmg-text-strong);
+  margin-top: var(--cmg-space-1);
+}
+/* Disjuntor: card mais alto, radios empilhados (vertical) e rótulos
+   em destaque (bold), como na referência do Figma. */
+.cemig-form .resultado-disjuntor .resultado-card-label {
+  margin-bottom: var(--cmg-space-3);
+}
+.cemig-form .resultado-disjuntor .toggle-group {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--cmg-space-3);
+}
+.cemig-form .resultado-disjuntor .toggle-btn {
+  font-weight: var(--cmg-fw-bold);
+}
+@media (max-width: 720px) {
+  .cemig-form .resultado-cargas {
+    grid-template-columns: 1fr;
+  }
+}
+/* ============================================================
+   Seletor de equipamentos (BT Individual) — busca + acordeões por
+   grupo. Spec Figma: campo de busca com lupa; cada grupo é um
+   acordeão de borda verde (fechado: rótulo verde + badge lime +
+   chevron; aberto: cabeçalho verde sólido + texto branco). A
+   contagem (badge) é a soma de quantidades do grupo. O corpo lista
+   as linhas .carga-row (mantidas). Calcular/somar não muda.
+   ============================================================ */
+.cemig-form .carga-busca {
+  position: relative;
+  margin-top: var(--cmg-space-3);
+}
+.cemig-form .carga-busca > svg {
+  position: absolute;
+  left: var(--cmg-space-4);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  color: var(--cmg-text-muted);
+  pointer-events: none;
+}
+.cemig-form .carga-busca input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 56px;
+  border: 1px solid var(--cmg-neutral-400);
+  border-radius: 8px;
+  padding: 0 var(--cmg-space-4) 0 52px;
+  font-family: var(--cmg-font-family);
+  font-size: 16px;
+  letter-spacing: 0.2px;
+  color: var(--cmg-neutral-600);
+  background: var(--cmg-surface);
+}
+.cemig-form .carga-busca input::placeholder {
+  color: var(--cmg-text-muted);
+}
+.cemig-form .carga-busca input:focus {
+  outline: none;
+  border-color: var(--cmg-green-600);
+  box-shadow: 0 0 0 3px var(--cmg-focus-ring);
+}
+.cemig-form .carga-acc-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cmg-space-3);
+  margin-top: var(--cmg-space-3);
+}
+.cemig-form .carga-acc {
+  border: 1px solid var(--cmg-green-600);
+  border-radius: 8px;
+  background: var(--cmg-surface);
+  overflow: hidden;
+}
+.cemig-form .carga-acc-head {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cmg-space-3);
+  min-height: 56px;
+  padding: 0 var(--cmg-space-4);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: var(--cmg-font-family);
+  font-size: 16px;
+  letter-spacing: 0.2px;
+  color: var(--cmg-green-600);
+  text-align: left;
+}
+.cemig-form .carga-acc.is-open .carga-acc-head {
+  background: var(--cmg-green-600);
+  color: #fff;
+}
+.cemig-form .carga-acc-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--cmg-space-3);
+  flex: 0 0 auto;
+}
+.cemig-form .carga-acc-badge {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #c3e956;
+  color: var(--cmg-neutral-700);
+  border-radius: var(--cmg-radius-pill);
+  font-size: 13px;
+  font-weight: var(--cmg-fw-bold);
+}
+.cemig-form .carga-acc-chevron {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  transition: transform 0.15s ease;
+}
+.cemig-form .carga-acc.is-open .carga-acc-chevron {
+  transform: rotate(180deg);
+}
+/* Corpo do acordeão: linhas .carga-row (ver formulario-bt.css). Ajustes
+   de altura/tamanho do nome p/ bater com o Figma, sem borda extra de topo
+   na primeira linha (o cabeçalho já separa). */
+.cemig-form .carga-acc-body .carga-row {
+  padding: var(--cmg-space-3) var(--cmg-space-4);
+  border-top: 1px solid var(--cmg-neutral-200);
+}
+.cemig-form .carga-acc-body .carga-row:first-child {
+  border-top: none;
+}
+.cemig-form .carga-acc-body .carga-row .nome {
+  font-size: 16px;
+  color: var(--cmg-neutral-600);
 }
 /* ============================================================
    Radio de seleção (○ vazio / ● preenchido) — componente único
@@ -864,7 +1183,7 @@ html {
 .cemig-mt .toggle-group--opcoes .toggle-btn {
   font-size: var(--cmg-fs-body);
   line-height: var(--cmg-lh-body);
-  font-weight: var(--cmg-fw-bold);
+  font-weight: var(--cmg-fw-regular);
   letter-spacing: var(--cmg-ls-tight);
 }
 /* círculo (contorno neutro vazio) — 32×32 (área de toque maior fica por
@@ -932,6 +1251,37 @@ html {
   font-weight: var(--cmg-fw-bold);
   letter-spacing: var(--cmg-ls-wide);
   color: var(--cmg-text);
+}
+/* Múltiplas UCs (Individual): cabeçalho colapsável + ações (remover/indicador)
+   e botão "+ Adicionar unidade". */
+.cemig-form .uc-block-head.is-toggle {
+  cursor: pointer;
+  user-select: none;
+}
+.cemig-form .uc-block-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--cmg-space-2);
+}
+.cemig-form .uc-remove {
+  border: none;
+  background: transparent;
+  color: var(--cmg-danger-500);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.cemig-form .uc-remove:hover {
+  background: #fdecea;
+}
+.cemig-form .uc-collapse-ind {
+  color: var(--cmg-text-muted);
+  font-size: 12px;
+}
+.cemig-form .uc-add {
+  margin-top: var(--cmg-space-1);
 }
 .cemig-form .divider {
   border-top: 1px solid var(--cmg-divider);

@@ -243,6 +243,7 @@ const SEC_BT_RESIDENCIAL = {
   cards: [
     {
       id: "casa50",
+      formType: "individual",
       nome: "Residência até 50 m²",
       sub: "Monofásico 63 A",
       img: "imgs/img_casa1.png",
@@ -271,6 +272,7 @@ const SEC_BT_RESIDENCIAL = {
     },
     {
       id: "casa100",
+      formType: "individual",
       nome: "Residência até 100 m²",
       sub: "Bifásico 63 A",
       img: "imgs/img_casa2.png",
@@ -300,6 +302,7 @@ const SEC_BT_RESIDENCIAL = {
     },
     {
       id: "casaluxo",
+      formType: "individual",
       nome: "Residência acima de 100 m²",
       sub: "Baixa Tensão",
       img: "imgs/img_casa3.png",
@@ -318,6 +321,7 @@ const SEC_BT_RESIDENCIAL = {
     },
     {
       id: "comercio",
+      formType: "individual",
       nome: "Comércio",
       sub: "Baixa Tensão (BT)",
       img: "imgs/img_comercio.png",
@@ -336,6 +340,7 @@ const SEC_BT_RESIDENCIAL = {
     },
     {
       id: "industriabt",
+      formType: "individual",
       nome: "Indústria",
       sub: "Baixa Tensão (BT)",
       img: "imgs/img_industria_bt.png",
@@ -354,6 +359,7 @@ const SEC_BT_RESIDENCIAL = {
     },
     {
       id: "rural",
+      formType: "individual",
       nome: "Rural",
       sub: "Baixa Tensão (BT)",
       img: "imgs/img_rural.png",
@@ -388,6 +394,7 @@ const SEC_BT_EMPREENDIMENTOS = {
     },
     {
       id: "condominiotorres",
+      formType: "condominio",
       nome: "Condomínio de torres",
       sub: "Baixa Tensão (BT)",
       img: "imgs/img_condominio.png",
@@ -406,6 +413,7 @@ const SEC_BT_EMPREENDIMENTOS = {
     },
     {
       id: "coletivo",
+      formType: "coletivo",
       nome: "Atendimento coletivo",
       sub: "Baixa Tensão (BT)",
       img: "imgs/img_coletivo.png",
@@ -420,6 +428,43 @@ const SEC_BT_EMPREENDIMENTOS = {
         },
         obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
       },
+    },
+  ],
+};
+const SEC_BT_ESPECIAIS = {
+  titulo: "Baixa Tensão - Atendimentos Especiais",
+  cards: [
+    {
+      id: "remocao-rede",
+      nome: "Afastamento ou remoção de rede",
+      sub: "Baixa Tensão (BT)",
+      img: "imgs/img_loteamento.png",
+      status: "link",
+      href: "loteamento/",
+    },
+    {
+      id: "remocao-poste",
+      nome: "Remoção de poste",
+      sub: "Baixa Tensão (BT)",
+      img: "imgs/img_loteamento.png",
+      status: "link",
+      href: "loteamento/",
+    },
+    {
+      id: "provisoria",
+      nome: "Conexão provisória",
+      sub: "Baixa Tensão (BT)",
+      img: "imgs/img_loteamento.png",
+      status: "link",
+      href: "loteamento/",
+    },
+    {
+      id: "ilmpublica",
+      nome: "Iluminação pública",
+      sub: "Baixa Tensão (BT)",
+      img: "imgs/img_loteamento.png",
+      status: "link",
+      href: "loteamento/",
     },
   ],
 };
@@ -479,7 +524,7 @@ const SEC_GD_MICRO = {
     {
       id: "gd-micro-fast",
       nome: "Fast Track",
-      sub: "Microgeração · art. 73-A (REN 1.000/2021)",
+      sub: "Art. 73-A (REN 1.000/2021)",
       img: "imgs/mod-gd-micro.png",
       status: "link",
       href: "microgeracao/?modo=fasttrack",
@@ -487,7 +532,7 @@ const SEC_GD_MICRO = {
     {
       id: "gd-micro-gridzero",
       nome: "Grid Zero",
-      sub: "Microgeração · sem injeção na rede",
+      sub: "Sem injeção na rede",
       img: "imgs/mod-gd-micro.png",
       status: "link",
       href: "microgeracao/?modo=gridzero",
@@ -497,6 +542,7 @@ const SEC_GD_MICRO = {
 const MODALIDADES_SECOES = [
   SEC_BT_RESIDENCIAL,
   SEC_BT_EMPREENDIMENTOS,
+  SEC_BT_ESPECIAIS,
   SEC_MT,
   SEC_GD_MICRO,
   SEC_GD_MINI,

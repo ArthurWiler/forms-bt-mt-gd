@@ -696,32 +696,25 @@ function App() {
     blocos,
     atend.atendA,
   ]);
-  const abas = [
-    { k: "orient", l: "Orientações" },
-    { k: "tipo", l: "Tipo de Atendimento" },
-    { k: "prop", l: "Proprietário" },
-    { k: "corr", l: "Correspondência" },
-    { k: "obra", l: "Dados da Obra" },
-  ];
-  if (multiTorres) {
-    abas.push({ k: "blocos", l: "Torres / Blocos" });
-  } else {
-    abas.push({ k: "ucs", l: "Unidades Consumidoras" });
-    abas.push({
-      k: "cargas",
-      l: coletivo ? "Previsão de Carga" : "Cargas das UCs",
-    });
-  }
-  if (!coletivo) abas.push({ k: "gerador", l: "Gerador de Emergência" });
-  abas.push(
-    { k: "obs", l: "Observações" },
-    { k: "revisar", l: "Prévia & PDF" },
-  );
+  // Etapas roteadas pelo tipo de formulário do card (ver bt/js/flow.js).
+  // Fase 2: individual e coletivo/condomínio ainda produzem a mesma lista.
+  const abas = abasBT(cardSelecionado?.formType, { coletivo, multiTorres });
   const idx = abas.findIndex((a) => a.k === aba);
+  // Número da etapa exibido no eyebrow das views, derivado da posição na lista
+  // `abas` (Orientações = Etapa 1). Fonte única: se a ordem mudar, o número
+  // acompanha. Bate com o stepper lateral, que usa o mesmo i+1.
+  const etapaNum = Math.max(idx, 0) + 1;
+  // Título do form-header montado a partir do card selecionado na página
+  // inicial (categoria "Baixa Tensão" + subtipo vindo de prefill.atividade ou
+  // do nome do card). Sem hardcode do par categoria-subtipo.
+  const headerSubtipo =
+    cardSelecionado?.prefill?.atividade || cardSelecionado?.nome || "";
+  const headerTitulo =
+    "Baixa Tensão" + (headerSubtipo ? " - " + headerSubtipo : "");
   const irProx = () => setAba(abas[Math.min(idx + 1, abas.length - 1)].k);
   const irAnt = () => setAba(abas[Math.max(idx - 1, 0)].k);
   useEffect(() => {
-    if (idx === -1) setAba("tipo");
+    if (idx === -1) setAba("orient");
   }, [idx]);
   const gerarPDF = () => {
     if (!validacaoObrigatorios.ok) {
@@ -881,6 +874,8 @@ function App() {
     irAnt,
     irProx,
     isAlteracaoColetivo,
+    etapaNum,
+    formType: cardSelecionado?.formType,
     maiorCorrenteUC,
     multiTorres,
     opcoesDisjGeral,
@@ -1067,11 +1062,7 @@ function App() {
                 /* @__PURE__ */ React.createElement(
                   "div",
                   { className: "form-header" },
-                  /* @__PURE__ */ React.createElement(
-                    "h1",
-                    null,
-                    "Formulário de Orçamento de Conexão / Alteração de Carga em Baixa Tensão",
-                  ),
+                  /* @__PURE__ */ React.createElement("h1", null, headerTitulo),
                   /* @__PURE__ */ React.createElement(
                     "p",
                     null,
@@ -1114,58 +1105,9 @@ function App() {
                   : /* @__PURE__ */ React.createElement(
                       React.Fragment,
                       null,
-                      aba === "orient" &&
-                        /* @__PURE__ */ React.createElement(TabOrient, { ctx }),
-                      aba === "tipo" &&
-                        /* @__PURE__ */ React.createElement(TabTipo, { ctx }),
-                      aba === "prop" &&
-                        /* @__PURE__ */ React.createElement(TabProprietario, {
-                          ctx,
-                        }),
-                      aba === "corr" &&
-                        /* @__PURE__ */ React.createElement(
-                          TabCorrespondencia,
-                          { ctx },
-                        ),
-                      aba === "obra" &&
-                        /* @__PURE__ */ React.createElement(TabObra, { ctx }),
-                      aba === "blocos" &&
-                        multiTorres &&
-                        /* @__PURE__ */ React.createElement(TabBlocos, { ctx }),
-                      aba === "ucs" &&
-                        coletivo &&
-                        !multiTorres &&
-                        /* @__PURE__ */ React.createElement(TabUcsColetivo, {
-                          ctx,
-                        }),
-                      aba === "ucs" &&
-                        !coletivo &&
-                        /* @__PURE__ */ React.createElement(TabUcsIndividual, {
-                          ctx,
-                        }),
-                      aba === "cargas" &&
-                        coletivo &&
-                        !multiTorres &&
-                        /* @__PURE__ */ React.createElement(TabCargasColetivo, {
-                          ctx,
-                        }),
-                      aba === "cargas" &&
-                        !coletivo &&
-                        /* @__PURE__ */ React.createElement(
-                          TabCargasIndividual,
-                          { ctx },
-                        ),
-                      aba === "gerador" &&
-                        !coletivo &&
-                        /* @__PURE__ */ React.createElement(TabGerador, {
-                          ctx,
-                        }),
-                      aba === "obs" &&
-                        /* @__PURE__ */ React.createElement(TabObs, { ctx }),
-                      aba === "revisar" &&
-                        /* @__PURE__ */ React.createElement(TabRevisar, {
-                          ctx,
-                        }),
+                      /* Dispatch de views roteado pelo tipo de formulário
+                         (ver bt/js/flow.js). */
+                      renderEtapaBT(ctx.formType, ctx),
                       /* @__PURE__ */ React.createElement(
                         "div",
                         { className: "nav-bottom" },

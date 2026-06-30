@@ -77,13 +77,28 @@ function TabUcsIndividual({ ctx }) {
   // Residencial/Comercial/Industrial (não para a atividade "Rural").
   const numPredialEditavel = (u) =>
     rural && ["Residencial", "Comercial", "Industrial"].includes(u.atividade);
+  // Múltiplas UCs (reusa a regra atual: cap 3, rural = 1). Adicionar/remover
+  // ajusta atend.nUCs — o effect de app.js sincroniza o array `ucsDet`. Estado
+  // de colapso é apenas visual (por índice).
+  const [colapsado, setColapsado] = useState({});
+  const toggleUC = (i) => setColapsado((c) => ({ ...c, [i]: !c[i] }));
+  const capUCs = rural ? 1 : 3;
+  const adicionarUC = () =>
+    setAtend((a) => ({
+      ...a,
+      nUCs: Math.min(capUCs, (Number(a.nUCs) || 1) + 1),
+    }));
+  const removerUC = (i) => {
+    setUcsDet((p) => p.filter((_, x) => x !== i));
+    setAtend((a) => ({ ...a, nUCs: Math.max(1, (Number(a.nUCs) || 1) - 1) }));
+  };
   return /* @__PURE__ */ React.createElement(
     "div",
     null,
     /* @__PURE__ */ React.createElement(
       Card,
       {
-        eyebrow: "Identificação",
+        eyebrow: "Etapa " + ctx.etapaNum,
         title: `Unidades Consumidoras (${ucsDet.length})`,
         sub: "Dados de identificação de cada unidade consumidora. O detalhamento das cargas é feito na próxima etapa. Em Conexão Nova não há disjuntor 'De' nem instalação.",
       },
@@ -93,24 +108,48 @@ function TabUcsIndividual({ ctx }) {
           { key: ui, className: "uc-block" },
           /* @__PURE__ */ React.createElement(
             "div",
-            { className: "uc-block-head" },
+            { className: "uc-block-head is-toggle", onClick: () => toggleUC(ui) },
             /* @__PURE__ */ React.createElement(
               "span",
               { className: "uc-block-title" },
-              "UC ",
+              "Unidade consumidora ",
               ui + 1,
             ),
             /* @__PURE__ */ React.createElement(
-              Badge,
-              null,
-              ui + 1,
-              " de ",
-              ucsDet.length,
+              "div",
+              { className: "uc-block-actions" },
+              /* @__PURE__ */ React.createElement(
+                Badge,
+                null,
+                ui + 1,
+                " de ",
+                ucsDet.length,
+              ),
+              ucsDet.length > 1 &&
+                /* @__PURE__ */ React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    className: "uc-remove",
+                    title: "Remover unidade",
+                    onClick: (e) => {
+                      e.stopPropagation();
+                      removerUC(ui);
+                    },
+                  },
+                  "✕",
+                ),
+              /* @__PURE__ */ React.createElement(
+                "span",
+                { className: "uc-collapse-ind", "aria-hidden": "true" },
+                colapsado[ui] ? "▸" : "▾",
+              ),
             ),
           ),
-          /* @__PURE__ */ React.createElement(
-            "div",
-            { className: "grid grid-3" },
+          !colapsado[ui] &&
+            /* @__PURE__ */ React.createElement(
+              "div",
+              { className: "grid grid-3" },
             /* @__PURE__ */ React.createElement(
               Field,
               { label: "Tipo de solicitação", req: true, float: true },
@@ -285,6 +324,16 @@ function TabUcsIndividual({ ctx }) {
           ),
         ),
       ),
+      ucsDet.length < capUCs &&
+        /* @__PURE__ */ React.createElement(
+          "div",
+          { className: "uc-add" },
+          /* @__PURE__ */ React.createElement(
+            Btn,
+            { variant: "ghost", onClick: adicionarUC },
+            "+ Adicionar unidade",
+          ),
+        ),
     ),
     ucsDet.length > 1 &&
       /* @__PURE__ */ React.createElement(

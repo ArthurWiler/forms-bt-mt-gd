@@ -79,6 +79,22 @@ function LogoCemig() {
     className: "logo-img",
   });
 }
+// Destaca um sufixo "(opcional)" / "— opcional" no rótulo: renderiza o
+// marcador em <span class="opt"> (peso menor + itálico, ver shared.css).
+// Só transforma quando o marcador está no fim; caso contrário devolve o
+// rótulo intacto. Vale para todos os forms via o componente Field.
+function renderFieldLabel(label) {
+  if (typeof label !== "string") return label;
+  const m = label.match(/^(.*?)\s*(?:[—-]\s*)?(\(?\s*opcional\s*\)?)\s*$/i);
+  if (!m || !m[1].trim()) return label;
+  return /* @__PURE__ */ React.createElement(
+    React.Fragment,
+    null,
+    m[1].trim(),
+    " ",
+    /* @__PURE__ */ React.createElement("span", { className: "opt" }, "(opcional)"),
+  );
+}
 function Field({ label, req, children, hint, span, float }) {
   const cls =
     "field" +
@@ -91,7 +107,7 @@ function Field({ label, req, children, hint, span, float }) {
       /* @__PURE__ */ React.createElement(
         "label",
         null,
-        label,
+        renderFieldLabel(label),
         " ",
         req &&
           /* @__PURE__ */ React.createElement(
@@ -122,7 +138,9 @@ function Inp({
     type,
     value: value || "",
     onChange,
-    placeholder,
+    // Placeholder " " garante :placeholder-shown quando vazio → o rótulo
+    // flutuante ocupa a célula (ver .field--float em shared.css).
+    placeholder: placeholder || " ",
     disabled,
     max,
     readOnly,
@@ -323,56 +341,105 @@ function CalcDemanda({
   const catFiltrado = CAT.map((c, i) => ({ ...c, i })).filter(
     (c) => !busca || c.n.toLowerCase().includes(busca.toLowerCase()),
   );
+  // Rótulos de exibição dos grupos (acordeões) — versão limpa, alinhada ao
+  // Figma. NÃO altera o modelo de cálculo (este usa as chaves c.g/GO; só o
+  // texto do cabeçalho muda). Grupos sem item no catálogo simplesmente não
+  // aparecem. Obs.: "Refrigeração" e a renomeação fina dependem do mapeamento
+  // de catálogo (ver sinalização ao usuário).
+  const GRUPO_LABEL = {
+    il: "Iluminação e tomada",
+    b1: "Chuveiro, torneira e cafeteira",
+    b2: "Aquecedor de água",
+    b3: "Forno, fogão e grill",
+    b4: "Lavadoras, secadores e ferro",
+    b5: "Demais aparelhos",
+    c: "Ar condicionado",
+    f: "Raios-X",
+  };
+  const grupoQtd = (sg) =>
+    CAT.reduce((s, c, i) => s + (c.g === sg ? qtds[i] || 0 : 0), 0);
+  const toggleAcc = (k) => setAbertos((p) => ({ ...p, [k]: !p[k] }));
+  const chevron = /* @__PURE__ */ React.createElement("span", {
+    className: "carga-acc-chevron",
+    "aria-hidden": "true",
+  });
+  const accHead = (k, label, count) =>
+    /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        className: "carga-acc-head",
+        "aria-expanded": !!abertos[k] || (k !== "_mot" && !!busca),
+        onClick: () => toggleAcc(k),
+      },
+      /* @__PURE__ */ React.createElement(
+        "span",
+        { className: "carga-acc-label" },
+        label,
+      ),
+      /* @__PURE__ */ React.createElement(
+        "span",
+        { className: "carga-acc-meta" },
+        count > 0 &&
+          /* @__PURE__ */ React.createElement(
+            "span",
+            { className: "carga-acc-badge" },
+            count,
+          ),
+        chevron,
+      ),
+    );
   return /* @__PURE__ */ React.createElement(
     "div",
     null,
-    /* @__PURE__ */ React.createElement(
-      Field,
-      { label: "Tipo de carga", req: true },
+    !tipoCargaBloqueado &&
       /* @__PURE__ */ React.createElement(
-        "div",
-        { className: "toggle-group", style: { alignItems: "center" } },
+        Field,
+        { label: "Tipo de carga", req: true },
         /* @__PURE__ */ React.createElement(
-          Sel,
-          {
-            value: tipoA,
-            disabled: tipoCargaBloqueado,
-            onChange: (e) => upd({ tipoA: e.target.value }),
-          },
+          "div",
+          { className: "toggle-group", style: { alignItems: "center" } },
           /* @__PURE__ */ React.createElement(
-            "option",
-            { value: "" },
-            "Selecionar",
-          ),
-          /* @__PURE__ */ React.createElement(
-            "option",
-            { value: "res" },
-            "Residencial",
-          ),
-          /* @__PURE__ */ React.createElement(
-            "option",
-            { value: "nr" },
-            "Não-Residencial",
-          ),
-        ),
-        tipoA === "nr" &&
-          /* @__PURE__ */ React.createElement(
-            "select",
+            Sel,
             {
-              value: catA,
-              onChange: (e) => upd({ catA: +e.target.value }),
-              style: { width: "auto" },
+              value: tipoA,
+              disabled: tipoCargaBloqueado,
+              onChange: (e) => upd({ tipoA: e.target.value }),
             },
-            TABELA_11.map((c, i) =>
-              /* @__PURE__ */ React.createElement(
-                "option",
-                { key: i, value: i },
-                c.d,
-              ),
+            /* @__PURE__ */ React.createElement(
+              "option",
+              { value: "" },
+              "Selecionar",
+            ),
+            /* @__PURE__ */ React.createElement(
+              "option",
+              { value: "res" },
+              "Residencial",
+            ),
+            /* @__PURE__ */ React.createElement(
+              "option",
+              { value: "nr" },
+              "Não-Residencial",
             ),
           ),
+          tipoA === "nr" &&
+            /* @__PURE__ */ React.createElement(
+              "select",
+              {
+                value: catA,
+                onChange: (e) => upd({ catA: +e.target.value }),
+                style: { width: "auto" },
+              },
+              TABELA_11.map((c, i) =>
+                /* @__PURE__ */ React.createElement(
+                  "option",
+                  { key: i, value: i },
+                  c.d,
+                ),
+              ),
+            ),
+        ),
       ),
-    ),
     !tipoA
       ? /* @__PURE__ */ React.createElement(
           "div",
@@ -382,152 +449,131 @@ function CalcDemanda({
       : /* @__PURE__ */ React.createElement(
           React.Fragment,
           null,
+          /* Busca de equipamento (ícone de lupa + placeholder). */
           /* @__PURE__ */ React.createElement(
             "div",
-            { className: "carga-min-head", style: { marginTop: 12 } },
+            { className: "carga-busca" },
             /* @__PURE__ */ React.createElement(
-              "span",
-              { className: "subbox-title" },
-              "Equipamentos selecionados",
-            ),
-            /* @__PURE__ */ React.createElement(
-              "button",
+              "svg",
               {
-                type: "button",
-                className: "btn btn-ghost",
-                style: { padding: "5px 12px", fontSize: 12 },
-                onClick: () => setMinimizado((m) => !m),
+                viewBox: "0 0 24 24",
+                width: "24",
+                height: "24",
+                fill: "none",
+                stroke: "currentColor",
+                "stroke-width": "2",
+                "stroke-linecap": "round",
+                "stroke-linejoin": "round",
+                "aria-hidden": "true",
               },
-              minimizado ? "Editar lista de equipamentos" : "Minimizar lista",
+              /* @__PURE__ */ React.createElement("circle", {
+                cx: "11",
+                cy: "11",
+                r: "7",
+              }),
+              /* @__PURE__ */ React.createElement("line", {
+                x1: "21",
+                y1: "21",
+                x2: "16.65",
+                y2: "16.65",
+              }),
             ),
+            /* @__PURE__ */ React.createElement("input", {
+              type: "text",
+              value: busca,
+              onChange: (e) => setBusca(e.target.value),
+              placeholder: "Buscar equipamento",
+            }),
           ),
-          minimizado
-            ? /* @__PURE__ */ React.createElement(
+          /* Acordeões por grupo de equipamento. */
+          /* @__PURE__ */ React.createElement(
+            "div",
+            { className: "carga-acc-list" },
+            GO.map((sg) => {
+              const items = catFiltrado.filter((c) => c.g === sg);
+              if (busca && !items.length) return null;
+              const open = busca ? items.length > 0 : !!abertos[sg];
+              return /* @__PURE__ */ React.createElement(
                 "div",
-                { className: "carga-resumo" },
-                CAT.map((c, i) => ({ ...c, i, q: qtds[i] || 0 })).filter(
-                  (c) => c.q > 0,
-                ).length === 0
-                  ? /* @__PURE__ */ React.createElement(
-                      "div",
-                      { className: "field-hint" },
-                      "Nenhum equipamento selecionado.",
-                    )
-                  : CAT.map((c, i) => ({ ...c, i, q: qtds[i] || 0 }))
-                      .filter((c) => c.q > 0)
-                      .map((c) =>
-                        /* @__PURE__ */ React.createElement(
-                          "span",
-                          { key: c.i, className: "carga-resumo-chip" },
-                          c.q,
-                          "x ",
-                          c.n,
-                        ),
-                      ),
-              )
-            : /* @__PURE__ */ React.createElement(
-                React.Fragment,
-                null,
-                /* @__PURE__ */ React.createElement(
-                  "div",
-                  { style: { marginTop: 12 } },
+                { key: sg, className: "carga-acc" + (open ? " is-open" : "") },
+                accHead(sg, GRUPO_LABEL[sg] || GL[sg], grupoQtd(sg)),
+                open &&
                   /* @__PURE__ */ React.createElement(
-                    Field,
-                    { label: "Buscar equipamento" },
-                    /* @__PURE__ */ React.createElement(Inp, {
-                      value: busca,
-                      onChange: (e) => setBusca(e.target.value),
-                      placeholder: "Ex: chuveiro, geladeira, ar...",
-                    }),
-                  ),
-                ),
-                /* @__PURE__ */ React.createElement(
-                  "div",
-                  { className: "carga-box", style: { marginTop: 8 } },
-                  GO.map((sg) => {
-                    const items = catFiltrado.filter((c) => c.g === sg);
-                    if (!items.length) return null;
-                    return /* @__PURE__ */ React.createElement(
-                      "div",
-                      { key: sg },
+                    "div",
+                    { className: "carga-acc-body" },
+                    items.map((c) =>
                       /* @__PURE__ */ React.createElement(
                         "div",
-                        { className: "carga-group-title" },
-                        GL[sg],
-                      ),
-                      items.map((c) =>
+                        { key: c.i, className: "carga-row" },
                         /* @__PURE__ */ React.createElement(
                           "div",
-                          { key: c.i, className: "carga-row" },
+                          null,
                           /* @__PURE__ */ React.createElement(
                             "div",
-                            null,
+                            { className: "nome" },
+                            c.n,
+                            " ",
                             /* @__PURE__ */ React.createElement(
-                              "div",
-                              { className: "nome" },
-                              c.n,
-                              " ",
-                              /* @__PURE__ */ React.createElement(
-                                "span",
-                                { className: "pot" },
-                                "(",
-                                fmtW(c.w),
-                                " W)",
-                              ),
-                            ),
-                          ),
-                          /* @__PURE__ */ React.createElement(
-                            "div",
-                            { className: "qtd-ctrl" },
-                            /* @__PURE__ */ React.createElement(
-                              "button",
-                              {
-                                onClick: () => setQ(c.i, (qtds[c.i] || 0) - 1),
-                              },
-                              "−",
-                            ),
-                            /* @__PURE__ */ React.createElement("input", {
-                              type: "number",
-                              value: qtds[c.i] || 0,
-                              onChange: (e) =>
-                                setQ(c.i, parseInt(e.target.value) || 0),
-                            }),
-                            /* @__PURE__ */ React.createElement(
-                              "button",
-                              {
-                                className: "plus",
-                                onClick: () => setQ(c.i, (qtds[c.i] || 0) + 1),
-                              },
-                              "+",
+                              "span",
+                              { className: "pot" },
+                              "(",
+                              fmtW(c.w),
+                              " W)",
                             ),
                           ),
                         ),
+                        /* @__PURE__ */ React.createElement(
+                          "div",
+                          { className: "qtd-ctrl" },
+                          /* @__PURE__ */ React.createElement(
+                            "button",
+                            {
+                              onClick: () => setQ(c.i, (qtds[c.i] || 0) - 1),
+                            },
+                            "−",
+                          ),
+                          /* @__PURE__ */ React.createElement("input", {
+                            type: "number",
+                            value: qtds[c.i] || 0,
+                            onChange: (e) =>
+                              setQ(c.i, parseInt(e.target.value) || 0),
+                          }),
+                          /* @__PURE__ */ React.createElement(
+                            "button",
+                            {
+                              className: "plus",
+                              onClick: () => setQ(c.i, (qtds[c.i] || 0) + 1),
+                            },
+                            "+",
+                          ),
+                        ),
                       ),
-                    );
-                  }),
-                ),
-              ),
-          /* @__PURE__ */ React.createElement(
-            "div",
-            { className: "subbox motores-box" },
+                    ),
+                  ),
+              );
+            }),
+            /* Acordeão: Motores e cargas especiais. */
             /* @__PURE__ */ React.createElement(
               "div",
-              { className: "motores-head" },
-              /* @__PURE__ */ React.createElement(
-                "span",
-                { className: "subbox-title" },
-                "Motores / Cargas Especiais",
-              ),
-            ),
-            mots.length === 0
-              ? /* @__PURE__ */ React.createElement(
+              {
+                className: "carga-acc" + (abertos._mot ? " is-open" : ""),
+              },
+              accHead("_mot", "Motores e cargas especiais", mots.length),
+              abertos._mot &&
+                /* @__PURE__ */ React.createElement(
                   "div",
-                  { style: { fontSize: 12, color: "var(--texto-suave)" } },
-                  "Nenhum motor adicionado.",
-                )
-              : /* @__PURE__ */ React.createElement(
-                  "table",
-                  { className: "motores-table" },
+                  { className: "carga-acc-body" },
+                  mots.length === 0
+                    ? /* @__PURE__ */ React.createElement(
+                        "div",
+                        {
+                          className: "field-hint",
+                        },
+                        "Nenhum motor adicionado.",
+                      )
+                    : /* @__PURE__ */ React.createElement(
+                        "table",
+                        { className: "motores-table" },
                   /* @__PURE__ */ React.createElement(
                     "thead",
                     null,
@@ -664,6 +710,8 @@ function CalcDemanda({
                 fmt2(rD.d),
                 " kVA",
               ),
+            ),
+            ),
           ),
         ),
   );

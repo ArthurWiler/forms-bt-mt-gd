@@ -1,75 +1,31 @@
-function TabObra({ ctx }) {
+/* ============================================================
+   CEMIG BT — Individual · Etapa "Dados da unidade" (Fase 4)
+   ------------------------------------------------------------
+   Funde TabDadosUnidade + TabObra num único Card, evitando
+   dois cabeçalhos separados. Os campos de solicitação/escopo/
+   nUCs aparecem na primeira linha; os de endereço e dados
+   técnicos continuam logo abaixo, na mesma superfície visual.
+   ============================================================ */
+function TabDadosUnidade({ ctx }) {
   const {
-    aba,
-    setAba,
-    modalidade,
-    setModalidade,
     atend,
     setAtend,
-    prop,
-    setProp,
-    corr,
-    setCorr,
+    restrito,
+    rural,
+    solicitacoesPermitidas,
     obra,
     setObra,
-    gerador,
-    setGerador,
-    obs,
-    setObs,
     cepStatus,
-    setCepStatus,
-    cnpjStatus,
-    setCnpjStatus,
-    logoPDF,
-    setLogoPDF,
-    ucsDet,
-    setUcsDet,
-    ucBlocos,
-    setUcBlocos,
-    blocos,
-    setBlocos,
-    abas,
     buscarCEP,
-    buscarCNPJ,
-    coletivo,
     coordObrigatoria,
     coordPreenchida,
-    demandaPrevTotal,
-    demandaTotalGeral,
-    disjGeralObrigatorio,
-    docInfo,
-    gerarPDF,
-    hibrido,
-    idx,
-    irAnt,
-    irProx,
-    isAlteracaoColetivo,
-    maiorCorrenteUC,
-    multiTorres,
-    opcoesDisjGeral,
-    pessoaFisica,
-    prevTotalKw,
-    redeMono,
-    replicarPrevTodas,
-    replicarPrevTorre,
-    replicarPrimeiro,
-    replicarUC1Coletivo,
-    replicarUC1Torre,
-    setBloco,
-    setBlocoPrev,
-    setTorre,
-    setUcDet,
-    setUcTorre,
-    setUcTorrePrev,
-    sincronizarUCsTorre,
-    totalUcsEmpreendimento,
-    trocaDisjGeral,
-    validacaoDisjuntores,
-    validacaoHibrido,
+    coletivo,
     zonaTravada,
   } = ctx;
-  // Troca de zona limpa os campos da zona oposta para evitar que dados antigos
-  // (urbano/rural) vazem para a saída do PDF. Mantém Município/Estado (comuns).
+
+  const opcoesSolicitacao = solicitacoesPermitidas || SOLICITACOES_INDIVIDUAIS;
+
+  // Troca de zona limpa os campos da zona oposta.
   const trocarZona = (v) => {
     if (v === obra.localizacao) return;
     if (v === "Rural")
@@ -92,16 +48,80 @@ function TabObra({ ctx }) {
         instProxima: "",
       });
   };
+
   return /* @__PURE__ */ React.createElement(
     Card,
     {
-      eyebrow: "Dados",
-      title: "Dados da Obra",
-      sub: "Endereço do padrão de entrada / ponto de entrega.",
+      eyebrow: "Etapa " + ctx.etapaNum,
+      title: "Dados da unidade consumidora",
+      sub: "Preencha os dados de identificação, endereço e informações técnicas da unidade.",
     },
+
+    /* ── Bloco 1: Solicitação / Escopo / Nº UCs ── */
     /* @__PURE__ */ React.createElement(
       "div",
       { className: "grid grid-2" },
+      /* @__PURE__ */ React.createElement(
+        Field,
+        { label: "Solicitação", req: true, float: true },
+        /* @__PURE__ */ React.createElement(
+          Sel,
+          {
+            value: atend.solicitacao,
+            disabled: restrito,
+            onChange: (e) =>
+              setAtend({ ...atend, solicitacao: e.target.value }),
+          },
+          opcoesSolicitacao.map((s) =>
+            /* @__PURE__ */ React.createElement("option", { key: s }, s),
+          ),
+        ),
+      ),
+      /* @__PURE__ */ React.createElement(
+        Field,
+        { label: "Escopo do Atendimento", req: true, float: true },
+        /* @__PURE__ */ React.createElement(
+          Sel,
+          {
+            value: atend.escopo,
+            onChange: (e) => setAtend({ ...atend, escopo: e.target.value }),
+          },
+          (ESCOPOS[atend.solicitacao] || []).map((s) =>
+            /* @__PURE__ */ React.createElement("option", { key: s }, s),
+          ),
+        ),
+      ),
+      /* @__PURE__ */ React.createElement(
+        Field,
+        {
+          label: "Nº de Unidades Consumidoras",
+          req: true,
+          float: true,
+          hint: rural
+            ? "Pedido rural é limitado a 1 unidade consumidora."
+            : void 0,
+        },
+        /* @__PURE__ */ React.createElement(Inp, {
+          type: "number",
+          max: rural ? 1 : 3,
+          disabled: rural,
+          value: atend.nUCs,
+          onChange: (e) => {
+            if (rural) {
+              setAtend({ ...atend, nUCs: 1 });
+              return;
+            }
+            const n = Math.min(3, Math.max(1, parseInt(e.target.value) || 1));
+            setAtend({ ...atend, nUCs: n });
+          },
+        }),
+      ),
+    ),
+
+    /* ── Bloco 2: Zona + ART ── */
+    /* @__PURE__ */ React.createElement(
+      "div",
+      { className: "grid grid-2 divider" },
       /* @__PURE__ */ React.createElement(
         Field,
         {
@@ -131,6 +151,8 @@ function TabObra({ ctx }) {
           }),
         ),
     ),
+
+    /* ── Bloco 3a: Endereço Urbano ── */
     obra.localizacao === "Urbana" &&
       /* @__PURE__ */ React.createElement(
         "div",
@@ -221,6 +243,8 @@ function TabObra({ ctx }) {
           }),
         ),
       ),
+
+    /* ── Bloco 3b: Endereço Rural ── */
     obra.localizacao === "Rural" &&
       /* @__PURE__ */ React.createElement(
         "div",
@@ -276,15 +300,14 @@ function TabObra({ ctx }) {
           }),
         ),
       ),
+
+    /* ── Bloco 4: Coordenadas ── */
     /* @__PURE__ */ React.createElement(
       "div",
       { className: "grid grid-3 divider" },
       /* @__PURE__ */ React.createElement(
         Field,
-        {
-          label: coordObrigatoria ? "Latitude" : "Latitude",
-          req: coordObrigatoria,
-        },
+        { label: "Latitude", req: coordObrigatoria },
         /* @__PURE__ */ React.createElement(Inp, {
           value: obra.lat,
           onChange: (e) =>
@@ -293,15 +316,11 @@ function TabObra({ ctx }) {
               lat: e.target.value,
               utm: utmString(e.target.value, obra.lng),
             }),
-          placeholder: "",
         }),
       ),
       /* @__PURE__ */ React.createElement(
         Field,
-        {
-          label: coordObrigatoria ? "Longitude" : "Longitude",
-          req: coordObrigatoria,
-        },
+        { label: "Longitude", req: coordObrigatoria },
         /* @__PURE__ */ React.createElement(Inp, {
           value: obra.lng,
           onChange: (e) =>
@@ -310,14 +329,12 @@ function TabObra({ ctx }) {
               lng: e.target.value,
               utm: utmString(obra.lat, e.target.value),
             }),
-          placeholder: "",
         }),
       ),
       /* @__PURE__ */ React.createElement(
         Field,
         {
           label: "Coordenada UTM",
-          hint: "Calculada automaticamente a partir da coordenada.",
         },
         /* @__PURE__ */ React.createElement(Inp, {
           value: utmString(obra.lat, obra.lng) || obra.utm || "",
@@ -325,12 +342,14 @@ function TabObra({ ctx }) {
         }),
       ),
     ),
+
+    /* ── Bloco 5: Dados técnicos ── */
     /* @__PURE__ */ React.createElement(
       "div",
       { className: "grid grid-2 divider" },
       /* @__PURE__ */ React.createElement(
         Field,
-        { label: "Distância do padrão até a rede CEMIG inferior a 30 m?" },
+        { label: "Distância do padrão até a rede Cemig inferior a 30m?" },
         /* @__PURE__ */ React.createElement(Toggle, {
           value: obra.distMenor30,
           onChange: (v) => setObra({ ...obra, distMenor30: v }),
@@ -375,6 +394,8 @@ function TabObra({ ctx }) {
         }),
       ),
     ),
+
+    /* ── Alerta coordenada obrigatória ── */
     coordObrigatoria &&
       !coordPreenchida &&
       /* @__PURE__ */ React.createElement(
@@ -382,7 +403,11 @@ function TabObra({ ctx }) {
         { className: "alert alert-warn", style: { marginTop: 8 } },
         "⚠ Em área rural com distância superior a 30 m da rede CEMIG, a coordenada é obrigatória para localização da propriedade.",
       ),
+
+    /* ── Mapa de localização ── */
     /* @__PURE__ */ React.createElement(LocalizacaoObra, { obra, setObra }),
+
+    /* ── Restrição ambiental ── */
     /* @__PURE__ */ React.createElement(
       "div",
       { className: "field", style: { marginTop: 14 } },

@@ -75,7 +75,7 @@ function TabCargasColetivo({ ctx }) {
   return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(
     Card,
     {
-      eyebrow: "Carga do agrupamento",
+      eyebrow: "Etapa " + ctx.etapaNum,
       title: "Previsão de Carga por Unidade Consumidora",
       sub: "Informe a previsão de carga instalada (kW) de cada UC. A demanda total do agrupamento é calculada separadamente: parte residencial pelo ND-5.2, parte não residencial pelo campo abaixo."
     },

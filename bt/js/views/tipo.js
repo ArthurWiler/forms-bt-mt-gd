@@ -74,7 +74,7 @@ function TabTipo({ ctx }) {
   return /* @__PURE__ */ React.createElement(
     Card,
     {
-      eyebrow: "Etapa 1",
+      eyebrow: "Etapa " + ctx.etapaNum,
       title: "Tipo de Atendimento",
       sub: "O tipo de formulário é definido pela presença ou não de disjuntor geral. Os campos seguintes se adaptam à sua escolha."
     },

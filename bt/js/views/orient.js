@@ -71,7 +71,7 @@ function TabOrient({ ctx }) {
   return /* @__PURE__ */ React.createElement(
     Card,
     {
-      eyebrow: "Comece por aqui",
+      eyebrow: "Etapa " + ctx.etapaNum,
       title: "Orientações para preenchimento",
       sub: ORIENTACOES.intro,
     },

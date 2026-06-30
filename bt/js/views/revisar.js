@@ -74,7 +74,7 @@ function TabRevisar({ ctx }) {
   return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(
     Card,
     {
-      eyebrow: "Etapa final",
+      eyebrow: "Etapa " + ctx.etapaNum,
       title: "Prévia do Formulário",
       sub: "Confira os dados. Se algo estiver incorreto, volte às etapas anteriores pela barra lateral."
     },

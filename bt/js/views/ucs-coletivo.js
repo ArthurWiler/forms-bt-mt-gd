@@ -98,7 +98,7 @@ function TabUcsColetivo({ ctx }) {
     /* @__PURE__ */ React.createElement(
       Card,
       {
-        eyebrow: "Identificação",
+        eyebrow: "Etapa " + ctx.etapaNum,
         title: `Unidades Consumidoras (${ucBlocos.length})`,
         sub: "Preencha os dados de identificação de cada UC. Campos com valor padrão já vêm preenchidos. Em Conexão Nova não há disjuntor 'De' (a instalação ainda não existe).",
       },

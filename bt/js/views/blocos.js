@@ -73,7 +73,7 @@ function TabBlocos({ ctx }) {
     /* @__PURE__ */ React.createElement(
       Card,
       {
-        eyebrow: "Empreendimento",
+        eyebrow: "Etapa " + ctx.etapaNum,
         title: "Atendimento a Empreendimento com Múltiplas Torres ou Blocos",
         sub: `Cada ${atend.atendA.toLowerCase()} pode ter seu disjuntor geral e seu disjuntor de combate a incêndio. Preencha o primeiro e use "Replicar" para preenchimento em massa.`,
       },

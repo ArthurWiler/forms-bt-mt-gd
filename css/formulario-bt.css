@@ -241,32 +241,11 @@ body {
 }
 
 /* ---------- CAMPOS ---------- */
-.field { display: flex; flex-direction: column; }
-.field label {
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--texto-suave);
-  margin-bottom: 5px;
-}
-.req { color: var(--vermelho); }
-.field input, .field select, .field textarea {
-  width: 100%;
-  background: var(--input-bg);
-  border: 1px solid var(--borda);
-  border-radius: var(--raio-sm);
-  padding: 9px 11px;
-  font-size: 14px;
-  font-family: inherit;
-  color: var(--texto);
-  outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-.field input:focus, .field select:focus, .field textarea:focus {
-  border-color: var(--verde);
-  box-shadow: 0 0 0 3px rgba(1, 136, 55, 0.1);
-}
-.field textarea { resize: vertical; min-height: 90px; }
-.field-hint { font-size: 11px; color: var(--texto-suave); margin-top: 4px; }
+/* Campos (.field / label / .req / input / select / textarea / .field-hint):
+   estilo canônico ÚNICO em css/shared.css (escopo .cemig-form), incluindo o
+   rótulo aninhado (Padrão B, default dos campos de texto). As duplicatas
+   locais foram removidas — estavam mortas (sobrepostas por `.cemig-form
+   .field*`, de maior especificidade) e violavam a regra de fonte única. */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 input[type="number"] { -moz-appearance: textfield; }
@@ -340,7 +319,7 @@ select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
   text-align: center;
 }
 .kpi.dark { background: var(--verde-escuro); }
-.kpi-label { font-size: 11px; font-weight: 600; color: var(--texto-suave); }
+.kpi-label { font-size: 12px; font-weight: 600; color: var(--texto-suave); }
 .kpi.dark .kpi-label { color: #a9e6bf; }
 .kpi-value { font-size: 18px; font-weight: 800; color: var(--verde-escuro); margin-top: 2px; }
 .kpi.dark .kpi-value { color: #fff; font-size: 14px; line-height: 1.2; }

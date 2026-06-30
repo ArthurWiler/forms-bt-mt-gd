@@ -6,6 +6,26 @@ function LogoCemig() {
     className: "logo-img",
   });
 }
+// Destaca um sufixo "(opcional)" / "— opcional" no rótulo: renderiza o
+// marcador em <span class="opt"> (peso menor + itálico, ver shared.css).
+// Só transforma quando o marcador está no fim; caso contrário devolve o
+// rótulo intacto. Vale para Micro/Mini via este Field compartilhado.
+function renderFieldLabel(label) {
+  if (typeof label !== "string") return label;
+  const m = label.match(/^(.*?)\s*(?:[—-]\s*)?(\(?\s*opcional\s*\)?)\s*$/i);
+  if (!m || !m[1].trim()) return label;
+  return /* @__PURE__ */ React.createElement(
+    React.Fragment,
+    null,
+    m[1].trim(),
+    " ",
+    /* @__PURE__ */ React.createElement(
+      "span",
+      { className: "opt" },
+      "(opcional)",
+    ),
+  );
+}
 function Field({ label, req, children, hint, span }) {
   const cls =
     "field" + (span === 2 ? " col-span-2" : span === 3 ? " col-span-3" : "");
@@ -16,7 +36,7 @@ function Field({ label, req, children, hint, span }) {
       /* @__PURE__ */ React.createElement(
         "label",
         null,
-        label,
+        renderFieldLabel(label),
         " ",
         req &&
           /* @__PURE__ */ React.createElement(
@@ -39,7 +59,9 @@ function Inp({ value, onChange, type = "text", placeholder, disabled }) {
     type,
     value: value || "",
     onChange,
-    placeholder,
+    // Placeholder " " garante :placeholder-shown quando vazio → o rótulo
+    // flutuante ocupa a célula (ver .field--float em shared.css).
+    placeholder: placeholder || " ",
     disabled,
   });
 }
