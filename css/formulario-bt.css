@@ -73,37 +73,11 @@ body {
 }
 .topbar-home:hover { background: #fff; color: var(--verde-escuro); border-color: #fff; }
 
-/* ---------- CABEÇALHO DO FORMULÁRIO ---------- */
-.form-header {
-  max-width: 1366px;
-  height: 80px;
-  margin: 0 auto;
-  padding: 28px 20px 8px;
-}
-.form-header h1 {
-  font-size: 24px;
-  font-weight: 800;
-  color: var(--verde-escuro);
-  line-height: 1.25;
-}
-.form-header p {
-  margin-top: 6px;
-  font-size: 14px;
-  color: var(--texto-suave);
-  max-width: 1360px;
-}
-.flow-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 10px;
-  background: var(--verde-claro);
-  color: var(--verde-escuro);
-  font-size: 12px;
-  font-weight: 700;
-  padding: 5px 12px;
-  border-radius: 999px;
-}
+/* ---------- CABEÇALHO DO FORMULÁRIO ----------
+   .form-header (+ h1/p) e .flow-badge: fonte única em css/shared.css
+   (`.cemig-form .form-header*` / `.flow-badge`). As cópias locais foram
+   removidas — eram dead code, sobrepostas pela maior especificidade do
+   shared (`.cemig-form X` 0,2,0 > `X` 0,1,0). */
 
 /* ---------- LAYOUT DUAS COLUNAS (sidebar vertical) ---------- */
 .layout {
@@ -130,41 +104,10 @@ body {
   margin-bottom: 12px;
   padding-left: 6px;
 }
-.vstep {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 11px 12px;
-  border-radius: var(--raio-sm);
-  cursor: pointer;
-  border: none;
-  background: transparent;
-  font-family: inherit;
-  width: 100%;
-  text-align: left;
-  position: relative;
-  transition: background 0.15s;
-}
-.vstep + .vstep { margin-top: 2px; }
-.vstep:hover { background: var(--verde-claro); }
-/* .vstep-num e variações (.vstep.active/.done .vstep-num): fonte única em
-   shared.css (`.cemig-form .vstep-num`). Cópias locais removidas. */
-.vstep-label { font-size: 13.5px; font-weight: 600; color: var(--texto-suave); }
-.vstep.active { background: var(--verde-claro); }
-.vstep.active .vstep-label { color: var(--verde-escuro); font-weight: 700; }
-.vstep.done .vstep-label { color: var(--texto); }
-/* linha conectora */
-.vstep:not(:last-child)::before {
-  content: "";
-  position: absolute;
-  left: 24.5px;
-  top: 37px;
-  width: 2px;
-  height: calc(100% - 24px);
-  background: var(--borda);
-  z-index: 0;
-}
-.vstep.done:not(:last-child)::before { background: var(--verde-acento); }
+/* Stepper vertical (.vstep / .vstep-num / .vstep-label + estados active/done e
+   a linha conectora): fonte única em css/shared.css, agrupada para
+   `.cemig-form` E `.cemig-mt`. Cópias locais removidas — eram dead code
+   (sobrepostas pelo shared) e o conector já é ocultado lá (display:none). */
 
 .main-col {
   flex: 1;
@@ -219,14 +162,8 @@ body {
   margin-bottom: 16px;
   line-height: 1.55;
 }
-.section-eyebrow {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  color: var(--verde-acento);
-  margin-bottom: 4px;
-}
+/* .section-eyebrow: fonte única em shared.css (`.cemig-form .section-eyebrow`).
+   Cópia local removida (dead code, sobreposta pelo shared). */
 
 /* ---------- GRID ---------- */
 .grid { display: grid; gap: 14px; }
@@ -257,15 +194,10 @@ select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
    .btn / .btn-primary / .btn-dark / .btn-ghost / .btn-danger-ghost:
    fonte única em shared.css (`.cemig-form .btn …`). Dupes locais removidos. */
 
-/* ---------- NAV INFERIOR ---------- */
-.nav-bottom {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 8px;
-}
-.nav-step-info { font-size: 13px; color: var(--texto-suave); }
+/* ---------- NAV INFERIOR ----------
+   .nav-bottom / .nav-step-info: fonte única em shared.css
+   (`.cemig-form .nav-bottom` / `.nav-step-info`). Cópias locais removidas
+   (dead code, sobrepostas pelo shared). */
 
 /* ---------- ORIENTAÇÕES ----------
    Estilo centralizado em css/shared.css (`.cemig-form .orient-*`).
