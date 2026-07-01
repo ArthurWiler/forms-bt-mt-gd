@@ -86,7 +86,10 @@ const GD_SCHEMA_IDENTIFICACAO = [
 function ViewIdentificacao({ ctx }) {
   return /* @__PURE__ */ React.createElement(
     Card,
-    { eyebrow: "Etapa " + ctx.etapaNum, title: "Identificação da Unidade Consumidora" },
+    {
+      eyebrow: "Etapa " + ctx.etapaNum,
+      title: "Identificação da Unidade Consumidora",
+    },
     /* @__PURE__ */ React.createElement(
       "div",
       { className: "grid" },
@@ -172,7 +175,6 @@ function ViewDadosUC({ ctx }) {
         {
           label: "Fuso",
           req: true,
-          hint: "Faixa de coordenadas conforme o fuso",
         },
         /* @__PURE__ */ React.createElement(
           Sel,
@@ -1095,7 +1097,10 @@ function ViewArmazenamento({ ctx }) {
   const sim = d.possuiArmazenamento === "Sim";
   return /* @__PURE__ */ React.createElement(
     Card,
-    { eyebrow: "Etapa " + ctx.etapaNum, title: "Sistema de Armazenamento de Energia" },
+    {
+      eyebrow: "Etapa " + ctx.etapaNum,
+      title: "Sistema de Armazenamento de Energia",
+    },
     /* @__PURE__ */ React.createElement(
       "div",
       { className: "grid" },

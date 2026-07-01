@@ -754,7 +754,7 @@ html {
    valor 16px/26px/0.2px neutra/600, chevron 24px à direita.
    ============================================================ */
 .cemig-form .field--float,
-.cemig-form
+:is(.cemig-form, .cemig-lote)
   .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
     :has([type="checkbox"])
   ):not(:has([type="radio"])):has(input, select) {
@@ -772,7 +772,7 @@ html {
 }
 /* Rótulo: estado "flutuado" (default) — pequeno, no topo. */
 .cemig-form .field--float > label,
-.cemig-form
+:is(.cemig-form, .cemig-lote)
   .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
     :has([type="checkbox"])
   ):not(:has([type="radio"])):has(input, select)
@@ -807,7 +807,7 @@ html {
     :has(select:has(option[value=""]:checked))
   ):not(:focus-within)
   > label,
-.cemig-form
+:is(.cemig-form, .cemig-lote)
   .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
     :has([type="checkbox"])
   ):not(:has([type="radio"])):has(input, select):is(
@@ -825,12 +825,12 @@ html {
    superior reserva espaço para o rótulo flutuado. */
 .cemig-form .field--float input,
 .cemig-form .field--float select,
-.cemig-form
+:is(.cemig-form, .cemig-lote)
   .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
     :has([type="checkbox"])
   ):not(:has([type="radio"])):has(input, select)
   input,
-.cemig-form
+:is(.cemig-form, .cemig-lote)
   .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
     :has([type="checkbox"])
   ):not(:has([type="radio"])):has(input, select)
@@ -853,7 +853,7 @@ html {
    substituída por ícone alinhado ao centro vertical, à direita; o select
    respeita 100% da largura/altura do campo. */
 .cemig-form .field--float select,
-.cemig-form
+:is(.cemig-form, .cemig-lote)
   .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
     :has([type="checkbox"])
   ):not(:has([type="radio"])):has(input, select)
@@ -874,7 +874,7 @@ html {
 .cemig-form
   .field--float:has(input:placeholder-shown):not(:focus-within)
   input::placeholder,
-.cemig-form
+:is(.cemig-form, .cemig-lote)
   .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
     :has([type="checkbox"])
   ):not(:has([type="radio"])):has(input, select):has(
@@ -886,7 +886,7 @@ html {
 .cemig-form
   .field--float:has(select:has(option[value=""]:checked)):not(:focus-within)
   select,
-.cemig-form
+:is(.cemig-form, .cemig-lote)
   .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
     :has([type="checkbox"])
   ):not(:has([type="radio"])):has(input, select):has(
@@ -897,12 +897,12 @@ html {
 }
 .cemig-form .field--float input:focus,
 .cemig-form .field--float select:focus,
-.cemig-form
+:is(.cemig-form, .cemig-lote)
   .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
     :has([type="checkbox"])
   ):not(:has([type="radio"])):has(input, select)
   input:focus,
-.cemig-form
+:is(.cemig-form, .cemig-lote)
   .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
     :has([type="checkbox"])
   ):not(:has([type="radio"])):has(input, select)
@@ -911,7 +911,7 @@ html {
   box-shadow: none;
 }
 .cemig-form .field--float:focus-within,
-.cemig-form
+:is(.cemig-form, .cemig-lote)
   .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
     :has([type="checkbox"])
   ):not(:has([type="radio"])):has(input, select):focus-within {
@@ -920,11 +920,11 @@ html {
 }
 .cemig-form .field--float:has(input:disabled),
 .cemig-form .field--float:has(select:disabled),
-.cemig-form
+:is(.cemig-form, .cemig-lote)
   .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
     :has([type="checkbox"])
   ):not(:has([type="radio"])):has(input:disabled),
-.cemig-form
+:is(.cemig-form, .cemig-lote)
   .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
     :has([type="checkbox"])
   ):not(:has([type="radio"])):has(select:disabled) {
@@ -934,7 +934,7 @@ html {
    É a própria caixa, então o hint precisa sair dela — posicionado logo
    abaixo (absoluto), dentro do row-gap do grid. */
 .cemig-form .field--float .field-hint,
-.cemig-form
+:is(.cemig-form, .cemig-lote)
   .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
     :has([type="checkbox"])
   ):not(:has([type="radio"])):has(input, select)
@@ -1517,6 +1517,116 @@ html {
 }
 .cemig-form .motor-del:hover {
   background: rgba(192, 57, 43, 0.08);
+}
+/* ---------- MOTORES / CARGAS ESPECIAIS — cards verticais (MT/Desistência)
+   Fonte única, compartilhada pelos shells .cemig-mt (usa os tokens legados
+   --line/--ink-soft/… declarados no :root de cada página MT). Antes duplicada
+   em formulario-mt.css e formulario-desistencia.css. ---------- */
+.cemig-mt .motores-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+  gap: 16px;
+  margin-top: 10px;
+}
+.cemig-mt .motor-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cemig-mt .motor-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.cemig-mt .motor-card-head .motor-titulo {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.cemig-mt .motor-card-head .motor-del {
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 7px;
+  border-radius: 6px;
+  transition: 0.15s;
+}
+.cemig-mt .motor-card-head .motor-del:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.cemig-mt .motor-card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px 8px;
+}
+.cemig-mt .motor-card-grid .field {
+  gap: 3px;
+}
+.cemig-mt .motor-card-grid .field label {
+  font-size: 10px;
+  color: var(--ink-soft);
+  font-weight: 600;
+  min-height: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.cemig-mt .motor-card-grid input,
+.cemig-mt .motor-card-grid select {
+  width: 100%;
+  box-sizing: border-box;
+  height: 32px;
+  padding: 5px 8px;
+  font-size: 12.5px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.cemig-mt .motor-card-grid input:focus,
+.cemig-mt .motor-card-grid select:focus {
+  outline: none;
+  border-color: var(--cemig-green);
+}
+.cemig-mt .motor-tap-field {
+  transition: opacity 0.15s;
+}
+.cemig-mt .motor-card-calc {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 9px 12px;
+}
+.cemig-mt .motor-card-calc .item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.cemig-mt .motor-card-calc .item .lbl {
+  font-size: 9px;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.cemig-mt .motor-card-calc .item .val {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--cemig-green-700);
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 560px) {
+  .cemig-mt .motor-card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 .cemig-form .qtd-ctrl button {
   border: 1px solid var(--cmg-border);

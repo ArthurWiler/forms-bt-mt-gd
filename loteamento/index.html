@@ -22,7 +22,7 @@
     <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/formulario-loteamento.css" />
   </head>
-  <body class="cemig-mt">
+  <body class="cemig-mt cemig-lote">
     <header class="site">
       <div class="wrap">
         <div class="topbar-left">
@@ -76,7 +76,7 @@
               </div>
               <div class="field">
                 <label>Município <span class="req">*</span></label>
-                <input type="text" data-k="municipio" />
+                <input type="text" data-k="municipio" placeholder=" " />
               </div>
               <div class="field">
                 <label>Estado <span class="req">*</span></label>
@@ -127,15 +127,15 @@
             <div class="grid cols-2">
               <div class="field">
                 <label>Latitude <span class="req">*</span></label>
-                <input data-k="latitude" oninput="onCoord()" />
+                <input data-k="latitude" oninput="onCoord()" placeholder=" " />
               </div>
               <div class="field">
                 <label>Longitude <span class="req">*</span></label>
-                <input data-k="longitude" oninput="onCoord()" />
+                <input data-k="longitude" oninput="onCoord()" placeholder=" " />
               </div>
               <div class="field span-2">
                 <label>Coordenada UTM (calculada)</label>
-                <input data-k="utm" readonly />
+                <input data-k="utm" readonly placeholder=" " />
               </div>
               <div class="field">
                 <label>Local <span class="req">*</span></label>
@@ -170,7 +170,7 @@
           </div>
           <div class="card-body">
             <div class="grid cols-2">
-              <div class="field">
+              <div class="field field--plain">
                 <label>E-mail para contato</label>
                 <input
                   data-k="email"
@@ -179,7 +179,7 @@
                 />
                 <span id="status-email" class="cep-status"></span>
               </div>
-              <div class="field">
+              <div class="field field--plain">
                 <label>Celular</label>
                 <input
                   data-k="celular"

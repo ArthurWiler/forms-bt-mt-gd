@@ -466,6 +466,14 @@ const SEC_BT_ESPECIAIS = {
       status: "link",
       href: "loteamento/",
     },
+    {
+      id: "desistencia",
+      nome: "Termo de desistência",
+      sub: "Baixa Tensão (BT)",
+      img: "imgs/img_loteamento.png",
+      status: "link",
+      href: "desistencia/",
+    },
   ],
 };
 const SEC_MT = {

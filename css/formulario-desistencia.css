@@ -173,24 +173,8 @@ input.invalid,select.invalid{border-color:var(--danger);box-shadow:0 0 0 4px rgb
 /* Radio de seleção: estilo canônico único em shared.css
    (.toggle-group / .toggle-btn / .toggle-btn-destaque, escopo .cemig-mt). */
 
-/* ---------- MOTORES / CARGAS ESPECIAIS — cards verticais (clean) ---------- */
-.motores-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:16px;margin-top:10px}
-.motor-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius-sm);padding:16px;display:flex;flex-direction:column;gap:12px}
-.motor-card-head{display:flex;align-items:center;justify-content:space-between}
-.motor-card-head .motor-titulo{font-size:12px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.5px}
-.motor-card-head .motor-del{background:none;border:none;color:var(--ink-soft);font-size:17px;line-height:1;cursor:pointer;padding:2px 7px;border-radius:6px;transition:.15s}
-.motor-card-head .motor-del:hover{background:var(--danger-soft);color:var(--danger)}
-.motor-card-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 8px}
-.motor-card-grid .field{gap:3px}
-.motor-card-grid .field label{font-size:10px;color:var(--ink-soft);font-weight:600;min-height:0;text-transform:uppercase;letter-spacing:.3px}
-.motor-card-grid input,.motor-card-grid select{width:100%;box-sizing:border-box;height:32px;padding:5px 8px;font-size:12.5px;border:1px solid var(--line);border-radius:6px}
-.motor-card-grid input:focus,.motor-card-grid select:focus{outline:none;border-color:var(--cemig-green)}
-.motor-tap-field{transition:opacity .15s}
-.motor-card-calc{display:flex;gap:16px;flex-wrap:wrap;background:var(--bg);border-radius:8px;padding:9px 12px}
-.motor-card-calc .item{display:flex;flex-direction:column;gap:1px}
-.motor-card-calc .item .lbl{font-size:9px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px}
-.motor-card-calc .item .val{font-size:12.5px;font-weight:700;color:var(--cemig-green-700);font-variant-numeric:tabular-nums}
-@media (max-width:560px){.motor-card-grid{grid-template-columns:repeat(2,1fr)}}
+/* MOTORES / CARGAS ESPECIAIS — cards verticais: fonte única em shared.css
+   (`.cemig-mt .motor-card …`). Dupes locais removidos. */
 /* .btn / .btn-primary / .btn-ghost / .btn svg: fonte única em shared.css
    (`.cemig-form .btn …, .cemig-mt .btn …`). Dupes locais removidos. */
 .progress-mini{font-size:12.5px;color:var(--ink-soft);font-weight:600}

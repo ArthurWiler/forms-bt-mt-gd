@@ -323,10 +323,15 @@ function CalcDemanda({
     () => CAT.reduce((s, c, i) => s + (qtds[i] || 0) * c.w, 0) / 1e3,
     [qtds],
   );
-  const disjuntores = useMemo(
-    () => selecionarDisjuntores(demandaTotal, redeMono),
-    [demandaTotal, redeMono],
-  );
+  // Regra: um motor trifásico exige alimentação trifásica — quando há ao menos
+  // um motor trifásico com quantidade > 0, oculta os disjuntores mono/bifásicos.
+  const disjuntores = useMemo(() => {
+    const lista = selecionarDisjuntores(demandaTotal, redeMono);
+    const temMotorTri = mots.some(
+      (m) => m.fase === "tri" && (parseInt(m.q) || 0) > 0,
+    );
+    return temMotorTri ? lista.filter((x) => x.tipo === "tri") : lista;
+  }, [demandaTotal, redeMono, mots]);
   const lastRef = useRef("");
   const resKey = `${demandaTotal.toFixed(3)}|${cargaInstalada.toFixed(3)}|${disjuntores.map((x) => x.fx).join(",")}`;
   useEffect(() => {
