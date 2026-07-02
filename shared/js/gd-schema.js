@@ -37,7 +37,7 @@ function CampoSchema({ c, ctx }) {
       }
     );
   } else if (tipo === "select") {
-    controle = /* @__PURE__ */ React.createElement(Sel, { value: d[c.k], disabled: travado, onChange: (e) => aoMudarValor(e.target.value) }, c.placeholder !== false && /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecionar"), gdNormOptions(c.options).map((o) => /* @__PURE__ */ React.createElement("option", { key: o.v, value: o.v }, o.l)));
+    controle = /* @__PURE__ */ React.createElement(Sel, { value: d[c.k], disabled: travado, onChange: (e) => aoMudarValor(e.target.value) }, c.placeholder !== false && /* @__PURE__ */ React.createElement("option", { value: "" }), gdNormOptions(c.options).map((o) => /* @__PURE__ */ React.createElement("option", { key: o.v, value: o.v }, o.l)));
   } else {
     controle = /* @__PURE__ */ React.createElement(
       Inp,

@@ -67,6 +67,9 @@ function renderEtapaBTColetivo(ctx) {
     React.Fragment,
     null,
     aba === "orient" && /* @__PURE__ */ React.createElement(TabOrient, { ctx }),
+    /* Etapa "Tipo de Atendimento" (só no fluxo coletivo/condomínio): estava
+       na lista de abas mas sem caso no dispatch — renderizava vazia. */
+    aba === "tipo" && /* @__PURE__ */ React.createElement(TabTipo, { ctx }),
     aba === "prop" &&
       /* @__PURE__ */ React.createElement(TabProprietario, { ctx }),
     aba === "corr" &&

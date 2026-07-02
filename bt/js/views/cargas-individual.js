@@ -2,18 +2,16 @@
    CEMIG BT — Individual · Etapa "Atendimento"
    ------------------------------------------------------------
    Um único card-container por página: as cargas de cada UC, o
-   resumo (carga/demanda/disjuntor) e o Gerador de Emergência
-   convivem dentro do MESMO Card, como subseções separadas por
-   `.divider` — sem card aninhado nem segundo card só para o
-   gerador (espelha a fusão Tipo+Obra de dados-unidade.js).
+   Gerador de Emergência e o resumo (carga/demanda/disjuntor)
+   convivem dentro do MESMO Card.
 
-   O gerador (antes em views/gerador.js, removido) é global: uma
-   única subseção ao final, lendo/gravando `gerador`/`setGerador`.
+   O Gerador de Emergência é VINCULADO à unidade consumidora
+   (u.gerador): aparece dentro de cada bloco de UC, abaixo da
+   declaração de cargas e acima do divider do resultado
+   carga/disjuntor.
    ============================================================ */
 function TabCargasIndividual({ ctx }) {
   const {
-    gerador,
-    setGerador,
     atend,
     setAtend,
     ucsDet,
@@ -43,85 +41,84 @@ function TabCargasIndividual({ ctx }) {
       eyebrow: "Etapa " + ctx.etapaNum,
       title: "Atendimento",
       sub: ehIndividual
-        ? "Defina o tipo do atendimento e a quantidade de unidades consumidoras. Para cada UC, informe a solicitação e detalhe as cargas para calcularmos a demanda e o disjuntor adequado."
+        ? "Defina o disjuntor solicitado e a quantidade de unidades consumidoras. Para cada UC, informe a solicitação e detalhe as cargas para calcularmos a demanda e o disjuntor adequado."
         : "Para cada UC, detalhe as cargas para calcularmos a demanda e o disjuntor adequado.",
     },
-    /* ── Topo: Tipo do Atendimento (único) + Nº de UCs (lista suspensa) ──
+    /* ── Topo: Disjuntor Solicitado (único) + Nº de UCs (lista suspensa) ──
        Os blocos por UC abaixo seguem a quantidade escolhida aqui. */
     ehIndividual &&
-    /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        className: "grid grid-2",
-        /* respiro entre o topo (Tipo/Nº de UCs) e os blocos de UC */
-        style: { margin: "16px 0 24px" },
-      },
       /* @__PURE__ */ React.createElement(
-        Field,
-        { label: "Tipo do Atendimento", req: true, float: true },
+        "div",
+        {
+          className: "grid grid-2",
+          /* respiro entre o topo (Tipo/Nº de UCs) e os blocos de UC */
+          style: { margin: "16px 0 24px" },
+        },
+        /* Vinculado à carga instalada preenchida no formulário (app.js):
+           até 75 kW → opção 1; acima → opção 2. Somente leitura. */
         /* @__PURE__ */ React.createElement(
-          Sel,
+          Field,
           {
-            value: atend.solicitacao,
-            disabled: restrito,
-            onChange: (e) =>
-              setAtend({ ...atend, solicitacao: e.target.value }),
+            label: "Disjuntor Solicitado",
+            req: true,
+            float: true,
           },
-          opcoesTipoAtend.map((s) =>
-            /* @__PURE__ */ React.createElement("option", { key: s }, s),
+          /* @__PURE__ */ React.createElement(
+            Sel,
+            {
+              value: atend.solicitacao,
+              disabled: true,
+            },
+            opcoesTipoAtend.map((s) =>
+              /* @__PURE__ */ React.createElement("option", { key: s }, s),
+            ),
           ),
         ),
-      ),
-      /* @__PURE__ */ React.createElement(
-        Field,
-        {
-          label: "Número de unidades consumidoras",
-          req: true,
-          float: true,
-          hint: rural
-            ? "Pedido rural é limitado a 1 unidade consumidora."
-            : void 0,
-        },
         /* @__PURE__ */ React.createElement(
-          Sel,
+          Field,
           {
-            value: String(rural ? 1 : atend.nUCs || 1),
-            disabled: rural,
-            onChange: (e) =>
-              setAtend({ ...atend, nUCs: parseInt(e.target.value, 10) || 1 }),
+            label: "Número de unidades consumidoras",
+            req: true,
+            float: true,
+            hint: rural
+              ? "Pedido rural é limitado a 1 unidade consumidora."
+              : void 0,
           },
-          (rural ? [1] : [1, 2, 3]).map((n) =>
-            /* @__PURE__ */ React.createElement(
-              "option",
-              { key: n, value: String(n) },
-              n,
+          /* @__PURE__ */ React.createElement(
+            Sel,
+            {
+              value: String(rural ? 1 : atend.nUCs || 1),
+              disabled: rural,
+              onChange: (e) =>
+                setAtend({ ...atend, nUCs: parseInt(e.target.value, 10) || 1 }),
+            },
+            (rural ? [1] : [1, 2, 3]).map((n) =>
+              /* @__PURE__ */ React.createElement(
+                "option",
+                { key: n, value: String(n) },
+                n,
+              ),
             ),
           ),
         ),
       ),
-    ),
-    multi &&
-      /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          className:
-            "alert " + (validacaoDisjuntores.ok ? "alert-ok" : "alert-warn"),
-        },
-        /* @__PURE__ */ React.createElement("b", null, "Regra de disjuntores:"),
-        " máx. 1 tripolar 63 A e/ou 2 mono/bifásicos 63 A. ",
-        validacaoDisjuntores.ok ? "✔ " : "⚠ ",
-        validacaoDisjuntores.msg,
-      ),
     ucsDet.map((u, ui) => {
       // Minimizada por padrão: só abre quando o usuário clicar.
       const aberta = ucAberta[ui] === true;
+      // Gerador de emergência vinculado à UC (u.gerador).
+      const ger = u.gerador || {
+        possui: "Não",
+        potencia: "",
+        fonte: "",
+        descricao: "",
+      };
+      const setGer = (patch) =>
+        setUcDet(ui, { gerador: { ...ger, ...patch } });
       // Endereço da UC no cabeçalho (mesmo endereço da obra, mudando só o
       // complemento — ver aviso em Dados da unidade).
       const endParts = [];
       if (obra.endereco) {
-        endParts.push(
-          obra.endereco + (obra.num ? ", " + obra.num : ""),
-        );
+        endParts.push(obra.endereco + (obra.num ? ", " + obra.num : ""));
       }
       if (u.complemento) endParts.push(u.complemento);
       if (obra.bairro) endParts.push(obra.bairro);
@@ -181,156 +178,159 @@ function TabCargasIndividual({ ctx }) {
                Instalação, Disjuntor atual, Mudança de local). Só no Individual —
                no coletivo isso vem de TabUcsIndividual. */
             ehIndividual &&
-            /* @__PURE__ */ React.createElement(
-              "div",
-              {
-                className: "grid grid-3",
-                /* separa a identificação da declaração de cargas abaixo */
-                style: { marginBottom: 24 },
-              },
               /* @__PURE__ */ React.createElement(
-                Field,
-                { label: "Solicitação", req: true, float: true },
-                /* @__PURE__ */ React.createElement(
-                  Sel,
-                  {
-                    value: u.solicitacao,
-                    onChange: (e) =>
-                      setUcDet(ui, { solicitacao: e.target.value }),
-                  },
-                  /* @__PURE__ */ React.createElement(
-                    "option",
-                    null,
-                    "Conexão Nova",
-                  ),
-                  /* @__PURE__ */ React.createElement(
-                    "option",
-                    null,
-                    "Alteração de Carga",
-                  ),
-                  /* @__PURE__ */ React.createElement(
-                    "option",
-                    null,
-                    "Caixa Existente sem Alteração",
-                  ),
-                ),
-              ),
-              /* @__PURE__ */ React.createElement(
-                Field,
-                { label: "Atividade principal", req: true, float: true },
-                /* @__PURE__ */ React.createElement(
-                  Sel,
-                  {
-                    value: u.atividade,
-                    disabled: atividadeBloqueada,
-                    onChange: (e) => setUcDet(ui, { atividade: e.target.value }),
-                  },
-                  /* @__PURE__ */ React.createElement(
-                    "option",
-                    { value: "" },
-                    "Selecionar",
-                  ),
-                  /* @__PURE__ */ React.createElement(
-                    "option",
-                    null,
-                    "Residencial",
-                  ),
-                  /* @__PURE__ */ React.createElement(
-                    "option",
-                    null,
-                    "Comercial",
-                  ),
-                  /* @__PURE__ */ React.createElement(
-                    "option",
-                    null,
-                    "Industrial",
-                  ),
-                  /* @__PURE__ */ React.createElement("option", null, "Rural"),
-                ),
-              ),
-              u.atividade !== "Residencial" &&
+                "div",
+                {
+                  className: "grid grid-3",
+                  /* separa a identificação da declaração de cargas abaixo */
+                  style: { marginBottom: 24 },
+                },
                 /* @__PURE__ */ React.createElement(
                   Field,
-                  { label: "Ramo de atividade", req: true },
-                  /* @__PURE__ */ React.createElement(Inp, {
-                    value: u.ramo,
-                    disabled: restrito,
-                    onChange: (e) => setUcDet(ui, { ramo: e.target.value }),
-                  }),
+                  { label: "Solicitação", req: true, float: true },
+                  /* @__PURE__ */ React.createElement(
+                    Sel,
+                    {
+                      value: u.solicitacao,
+                      onChange: (e) =>
+                        setUcDet(ui, { solicitacao: e.target.value }),
+                    },
+                    /* @__PURE__ */ React.createElement(
+                      "option",
+                      null,
+                      "Conexão Nova",
+                    ),
+                    /* @__PURE__ */ React.createElement(
+                      "option",
+                      null,
+                      "Alteração de Carga",
+                    ),
+                    /* @__PURE__ */ React.createElement(
+                      "option",
+                      null,
+                      "Caixa Existente sem Alteração",
+                    ),
+                  ),
                 ),
-              /* Nº Predial e Caixa/Identificação foram removidos desta aba;
-                 o Complemento diferencia as UCs (mesmo endereço da obra). */
-              /* @__PURE__ */ React.createElement(
-                Field,
-                { label: "Complemento", req: ucsDet.length > 1 },
-                /* @__PURE__ */ React.createElement(Inp, {
-                  value: u.complemento,
-                  onChange: (e) => setUcDet(ui, { complemento: e.target.value }),
-                  placeholder: "Residência 1",
-                }),
-              ),
-              u.solicitacao !== "Conexão Nova" &&
                 /* @__PURE__ */ React.createElement(
                   Field,
-                  { label: "Unidade Consumidora" },
-                  /* @__PURE__ */ React.createElement(Inp, {
-                    value: u.unidadeConsumidora,
-                    onChange: (e) =>
-                      setUcDet(ui, { unidadeConsumidora: e.target.value }),
-                  }),
+                  { label: "Atividade principal", req: true, float: true },
+                  /* @__PURE__ */ React.createElement(
+                    Sel,
+                    {
+                      value: u.atividade,
+                      disabled: atividadeBloqueada,
+                      onChange: (e) =>
+                        setUcDet(ui, { atividade: e.target.value }),
+                    },
+                    /* @__PURE__ */ React.createElement("option", { value: "" }),
+                    /* @__PURE__ */ React.createElement(
+                      "option",
+                      null,
+                      "Residencial",
+                    ),
+                    /* @__PURE__ */ React.createElement(
+                      "option",
+                      null,
+                      "Comercial",
+                    ),
+                    /* @__PURE__ */ React.createElement(
+                      "option",
+                      null,
+                      "Industrial",
+                    ),
+                    /* @__PURE__ */ React.createElement(
+                      "option",
+                      null,
+                      "Rural",
+                    ),
+                  ),
                 ),
-              u.solicitacao !== "Conexão Nova" &&
-                /* @__PURE__ */ React.createElement(
-                  React.Fragment,
-                  null,
+                u.atividade !== "Residencial" &&
                   /* @__PURE__ */ React.createElement(
                     Field,
-                    { label: "Nº Instalação / Medidor", req: true },
+                    { label: "Ramo de atividade", req: true },
                     /* @__PURE__ */ React.createElement(Inp, {
-                      value: u.instalacao,
-                      onChange: (e) =>
-                        setUcDet(ui, { instalacao: e.target.value }),
+                      value: u.ramo,
+                      disabled: restrito,
+                      onChange: (e) => setUcDet(ui, { ramo: e.target.value }),
                     }),
                   ),
+                /* Nº Predial e Caixa/Identificação foram removidos desta aba;
+                 o Complemento diferencia as UCs (mesmo endereço da obra). */
+                /* @__PURE__ */ React.createElement(
+                  Field,
+                  { label: "Complemento do endereço", req: ucsDet.length > 1 },
+                  /* @__PURE__ */ React.createElement(Inp, {
+                    value: u.complemento,
+                    onChange: (e) =>
+                      setUcDet(ui, { complemento: e.target.value }),
+                    placeholder: "Residência 1",
+                  }),
+                ),
+                u.solicitacao !== "Conexão Nova" &&
                   /* @__PURE__ */ React.createElement(
                     Field,
-                    { label: "Disjuntor atual" },
+                    { label: "Unidade Consumidora" },
+                    /* @__PURE__ */ React.createElement(Inp, {
+                      value: u.unidadeConsumidora,
+                      onChange: (e) =>
+                        setUcDet(ui, { unidadeConsumidora: e.target.value }),
+                    }),
+                  ),
+                u.solicitacao !== "Conexão Nova" &&
+                  /* @__PURE__ */ React.createElement(
+                    React.Fragment,
+                    null,
                     /* @__PURE__ */ React.createElement(
-                      Sel,
-                      {
-                        value: u.disjDe,
-                        onChange: (e) => setUcDet(ui, { disjDe: e.target.value }),
-                      },
+                      Field,
+                      { label: "Nº Instalação / Medidor", req: true },
+                      /* @__PURE__ */ React.createElement(Inp, {
+                        value: u.instalacao,
+                        onChange: (e) =>
+                          setUcDet(ui, { instalacao: e.target.value }),
+                      }),
+                    ),
+                    /* @__PURE__ */ React.createElement(
+                      Field,
+                      { label: "Disjuntor atual" },
                       /* @__PURE__ */ React.createElement(
-                        "option",
-                        { value: "" },
-                        "Selecione…",
-                      ),
-                      DISJ.map((d) =>
-                        /* @__PURE__ */ React.createElement(
-                          "option",
-                          { key: d.fx, value: d.fx },
-                          d.fx,
+                        Sel,
+                        {
+                          value: u.disjDe,
+                          onChange: (e) =>
+                            setUcDet(ui, { disjDe: e.target.value }),
+                        },
+                        /* opção placeholder sem texto: o rótulo flutuante do
+                           Padrão B ocupa a célula enquanto vazio */
+                        /* @__PURE__ */ React.createElement("option", {
+                          value: "",
+                        }),
+                        DISJ.map((d) =>
+                          /* @__PURE__ */ React.createElement(
+                            "option",
+                            { key: d.fx, value: d.fx },
+                            d.fx,
+                          ),
                         ),
                       ),
                     ),
+                    (u.solicitacao === "Alteração de Carga" ||
+                      u.solicitacao === "Caixa Existente sem Alteração") &&
+                      /* @__PURE__ */ React.createElement(
+                        Field,
+                        { label: "Mudança de local" },
+                        /* @__PURE__ */ React.createElement(Toggle, {
+                          value: u.mudancaLocal,
+                          onChange: (v) => setUcDet(ui, { mudancaLocal: v }),
+                          options: [
+                            { v: "Sim", l: "Sim" },
+                            { v: "Não", l: "Não" },
+                          ],
+                        }),
+                      ),
                   ),
-                  (u.solicitacao === "Alteração de Carga" ||
-                    u.solicitacao === "Caixa Existente sem Alteração") &&
-                    /* @__PURE__ */ React.createElement(
-                      Field,
-                      { label: "Mudança de local" },
-                      /* @__PURE__ */ React.createElement(Toggle, {
-                        value: u.mudancaLocal,
-                        onChange: (v) => setUcDet(ui, { mudancaLocal: v }),
-                        options: [
-                          { v: "Sim", l: "Sim" },
-                          { v: "Não", l: "Não" },
-                        ],
-                      }),
-                    ),
-                ),
-            ),
+              ),
             ucSemAlteracao(u)
               ? /* @__PURE__ */ React.createElement(
                   "div",
@@ -353,13 +353,104 @@ function TabCargasIndividual({ ctx }) {
                     atividade: u.atividade,
                     minimizarPorPadrao: restrito,
                   }),
+                  /* ── Gerador de Emergência da UC: abaixo das cargas e acima
+                     do divider do resultado carga/disjuntor. ── */
+                  /* @__PURE__ */ React.createElement(
+                    "div",
+                    { style: { marginTop: 24 } },
+                    /* @__PURE__ */ React.createElement(
+                      Field,
+                      { label: "Possui gerador de emergência?", req: true },
+                      /* @__PURE__ */ React.createElement(Toggle, {
+                        value: ger.possui,
+                        onChange: (v) => setGer({ possui: v }),
+                        options: [
+                          { v: "Sim", l: "Sim" },
+                          { v: "Não", l: "Não" },
+                        ],
+                      }),
+                    ),
+                    ger.possui === "Sim" &&
+                      /* @__PURE__ */ React.createElement(
+                        "div",
+                        { className: "grid grid-2", style: { marginTop: 14 } },
+                        /* @__PURE__ */ React.createElement(
+                          Field,
+                          { label: "Potência do gerador (kVA)" },
+                          /* @__PURE__ */ React.createElement(Inp, {
+                            value: ger.potencia,
+                            onChange: (e) =>
+                              setGer({ potencia: e.target.value }),
+                          }),
+                        ),
+                        /* @__PURE__ */ React.createElement(
+                          Field,
+                          { label: "Fonte / Combustível", float: true },
+                          /* @__PURE__ */ React.createElement(
+                            Sel,
+                            {
+                              value: ger.fonte,
+                              onChange: (e) =>
+                                setGer({ fonte: e.target.value }),
+                            },
+                            /* @__PURE__ */ React.createElement("option", {
+                              value: "",
+                            }),
+                            /* @__PURE__ */ React.createElement(
+                              "option",
+                              null,
+                              "Diesel",
+                            ),
+                            /* @__PURE__ */ React.createElement(
+                              "option",
+                              null,
+                              "Gasolina",
+                            ),
+                            /* @__PURE__ */ React.createElement(
+                              "option",
+                              null,
+                              "Gás (GLP/GNV)",
+                            ),
+                            /* @__PURE__ */ React.createElement(
+                              "option",
+                              null,
+                              "Outro",
+                            ),
+                          ),
+                        ),
+                        /* @__PURE__ */ React.createElement(
+                          Field,
+                          { label: "Observações do gerador", span: 2 },
+                          /* @__PURE__ */ React.createElement(Inp, {
+                            value: ger.descricao,
+                            onChange: (e) =>
+                              setGer({ descricao: e.target.value }),
+                            placeholder: "Modelo, finalidade, regime de operação...",
+                          }),
+                        ),
+                        /* @__PURE__ */ React.createElement(
+                          "div",
+                          { className: "col-span-2 cmg-aviso" },
+                          /* @__PURE__ */ React.createElement("div", {
+                            className: "cmg-aviso-icon",
+                            "aria-hidden": "true",
+                          }),
+                          /* @__PURE__ */ React.createElement(
+                            "p",
+                            { className: "cmg-aviso-texto" },
+                            "O gerador de emergência opera de forma isolada (sem paralelismo com a rede CEMIG).",
+                          ),
+                        ),
+                      ),
+                  ),
                   /* Resultado: dois cards de valor (carga/demanda) + card de
                  seleção do disjuntor por radio (.toggle = radio canônico).
                  A lógica do disjuntor é a mesma do antigo <select>: opções
-                 vêm de cargas._disjuntores; seleção em disjEscolhido. */
+                 vêm de cargas._disjuntores; seleção em disjEscolhido.
+                 O .divider separa o resultado do gerador acima. */
                   /* @__PURE__ */ React.createElement(
                     "div",
-                    { className: "resultado-cargas" },
+                    { className: "resultado-cargas divider" },
                     /* @__PURE__ */ React.createElement(
                       "div",
                       { className: "resultado-kpis" },
@@ -439,84 +530,7 @@ function TabCargasIndividual({ ctx }) {
           ),
       );
     }),
-    /* ── Subseção: Gerador de Emergência (antes views/gerador.js) ── */
-    /* @__PURE__ */ React.createElement(
-      "div",
-      { className: "divider" },
-      /* @__PURE__ */ React.createElement(
-        Field,
-        { label: "Possui gerador de emergência?", req: true },
-        /* @__PURE__ */ React.createElement(Toggle, {
-          value: gerador.possui,
-          onChange: (v) => setGerador({ ...gerador, possui: v }),
-          options: [
-            { v: "Sim", l: "Sim" },
-            { v: "Não", l: "Não" },
-          ],
-        }),
-      ),
-      gerador.possui === "Sim" &&
-        /* @__PURE__ */ React.createElement(
-          "div",
-          { className: "grid grid-2", style: { marginTop: 14 } },
-          /* @__PURE__ */ React.createElement(
-            Field,
-            { label: "Potência do gerador (kVA)" },
-            /* @__PURE__ */ React.createElement(Inp, {
-              value: gerador.potencia,
-              onChange: (e) =>
-                setGerador({ ...gerador, potencia: e.target.value }),
-            }),
-          ),
-          /* @__PURE__ */ React.createElement(
-            Field,
-            { label: "Fonte / Combustível" },
-            /* @__PURE__ */ React.createElement(
-              Sel,
-              {
-                value: gerador.fonte,
-                onChange: (e) =>
-                  setGerador({ ...gerador, fonte: e.target.value }),
-              },
-              /* @__PURE__ */ React.createElement(
-                "option",
-                { value: "" },
-                "Selecione",
-              ),
-              /* @__PURE__ */ React.createElement("option", null, "Diesel"),
-              /* @__PURE__ */ React.createElement("option", null, "Gasolina"),
-              /* @__PURE__ */ React.createElement(
-                "option",
-                null,
-                "Gás (GLP/GNV)",
-              ),
-              /* @__PURE__ */ React.createElement("option", null, "Outro"),
-            ),
-          ),
-          /* @__PURE__ */ React.createElement(
-            Field,
-            { label: "Observações do gerador", span: 2 },
-            /* @__PURE__ */ React.createElement(Inp, {
-              value: gerador.descricao,
-              onChange: (e) =>
-                setGerador({ ...gerador, descricao: e.target.value }),
-              placeholder: "Modelo, finalidade, regime de operação...",
-            }),
-          ),
-          /* @__PURE__ */ React.createElement(
-            "div",
-            { className: "col-span-2 cmg-aviso" },
-            /* @__PURE__ */ React.createElement("div", {
-              className: "cmg-aviso-icon",
-              "aria-hidden": "true",
-            }),
-            /* @__PURE__ */ React.createElement(
-              "p",
-              { className: "cmg-aviso-texto" },
-              "O gerador de emergência opera de forma isolada (sem paralelismo com a rede CEMIG).",
-            ),
-          ),
-        ),
-    ),
+    /* Subseção global do Gerador de Emergência removida: o gerador agora é
+       vinculado à unidade consumidora (bloco por UC, acima do resultado). */
   );
 }

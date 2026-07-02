@@ -39,7 +39,6 @@ function TabRevisar({ ctx }) {
     disjGeralObrigatorio,
     docInfo,
     gerarPDF,
-    gerarListaDocs,
     hibrido,
     idx,
     irAnt,
@@ -120,29 +119,18 @@ function TabRevisar({ ctx }) {
       /* @__PURE__ */ React.createElement("span", { className: "v" }, "UC ", ui + 1, " · ", u.atividade, " · ", u.solicitacao, " ", u.complemento ? `· ${u.complemento}` : ""),
       /* @__PURE__ */ React.createElement("span", { style: { color: "var(--verde)", fontWeight: 700 } }, fmt2(u.cargas?._demanda || 0), " kVA ·", " ", u.disjEscolhido || (u.cargas?._disjuntores || [])[0] || "—")
     )))
-  ), /* @__PURE__ */ React.createElement(Card, { sub: "Anexe à solicitação: planta de situação (A4), ART/TRT de projeto (quando aplicável) e documentos de regularidade do imóvel, conforme as orientações da CEMIG." }, hibrido && !validacaoHibrido.ok && /* @__PURE__ */ React.createElement("div", { className: "alert alert-warn", style: { marginBottom: 12 } }, "Corrija as pendências do atendimento híbrido (aba Unidades Consumidoras) para liberar a exportação do PDF."), !ctx.validacaoObrigatorios.ok && /* @__PURE__ */ React.createElement("div", { className: "alert alert-warn", style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement("strong", null, "Preencha os campos obrigatórios para liberar o PDF:"), /* @__PURE__ */ React.createElement("ul", { style: { margin: "6px 0 0 18px" } }, ctx.validacaoObrigatorios.faltando.map((f, i) => /* @__PURE__ */ React.createElement("li", { key: i }, f)))), motoresPesadosBT && motoresPesadosBT.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "alert alert-warn", style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement("span", null, "A solicitação possui motores que exigem mais informações, favor preencher o formulário: "), /* @__PURE__ */ React.createElement(
+  ), /* @__PURE__ */ React.createElement(Card, { sub: "Documentos a apresentar com a solicitação — a lista abaixo é gerada a partir do preenchimento do formulário e pode ser exportada em PDF." }, /* Lista de documentos derivada do preenchimento (ver listaDocumentosBT). */
+  /* @__PURE__ */ React.createElement("div", { className: "preview-block" }, /* @__PURE__ */ React.createElement("h4", null, "Documentos necessários"), (ctx.documentosNecessarios || []).map((d, i) => /* @__PURE__ */ React.createElement("div", { key: i, className: "preview-item" }, /* @__PURE__ */ React.createElement("span", { className: "v" }, d)))), hibrido && !validacaoHibrido.ok && /* @__PURE__ */ React.createElement("div", { className: "alert alert-warn", style: { marginBottom: 12 } }, "Corrija as pendências do atendimento híbrido (aba Unidades Consumidoras) para liberar a exportação do PDF."), !ctx.validacaoObrigatorios.ok && /* @__PURE__ */ React.createElement("div", { className: "alert alert-warn", style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement("strong", null, "Preencha os campos obrigatórios para liberar o PDF:"), /* @__PURE__ */ React.createElement("ul", { style: { margin: "6px 0 0 18px" } }, ctx.validacaoObrigatorios.faltando.map((f, i) => /* @__PURE__ */ React.createElement("li", { key: i }, f)))), motoresPesadosBT && motoresPesadosBT.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "alert alert-warn", style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement("span", null, "A solicitação possui motores que exigem mais informações, favor preencher o formulário: "), /* @__PURE__ */ React.createElement(
     Btn,
     {
       variant: "dark",
       onClick: () => setMostrarAnaliseMotores(true)
     },
     "Preencher Análise de Partida"
-  )), /* @__PURE__ */ React.createElement("div", { className: "btn-row", style: { display: "flex", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(
-    Btn,
-    {
-      variant: "dark",
-      onClick: gerarPDF,
-      disabled: !ctx.validacaoObrigatorios.ok || hibrido && !validacaoHibrido.ok
-    },
-    "📄 Exportar PDF"
-  ), /* @__PURE__ */ React.createElement(
-    Btn,
-    {
-      variant: "ghost",
-      onClick: gerarListaDocs
-    },
-    "📋 Gerar lista de documentos"
-  ), exibeTermoGrupoB && /* @__PURE__ */ React.createElement(
+  )), /* Botões "Exportar PDF" e "Gerar lista de documentos" removidos daqui —
+     o único botão de exportação é o inferior (nav-bottom, app.js); a lista de
+     documentos é exibida acima, derivada do preenchimento. */
+  exibeTermoGrupoB && /* @__PURE__ */ React.createElement("div", { className: "btn-row", style: { display: "flex", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(
     Btn,
     {
       variant: "ghost",
@@ -288,11 +276,7 @@ function TabAnaliseMotoresBT({ ctx }) {
                         : {}),
                     }),
                 },
-                /* @__PURE__ */ React.createElement(
-                  "option",
-                  { value: "" },
-                  "Selecionar",
-                ),
+                /* @__PURE__ */ React.createElement("option", { value: "" }),
                 DISPOSITIVOS_PARTIDA_BT.map((d) =>
                   /* @__PURE__ */ React.createElement(
                     "option",

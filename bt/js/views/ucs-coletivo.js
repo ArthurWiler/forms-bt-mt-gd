@@ -196,7 +196,7 @@ function TabUcsColetivo({ ctx }) {
                 ),
             /* @__PURE__ */ React.createElement(
               Field,
-              { label: "Complemento", req: ucBlocos.length > 1 },
+              { label: "Complemento do endereço", req: ucBlocos.length > 1 },
               /* @__PURE__ */ React.createElement(Inp, {
                 value: u.complemento,
                 onChange: (e) => setBloco(ui, { complemento: e.target.value }),
@@ -262,11 +262,7 @@ function TabUcsColetivo({ ctx }) {
                   value: u.atividade,
                   onChange: (e) => setBloco(ui, { atividade: e.target.value }),
                 },
-                /* @__PURE__ */ React.createElement(
-                  "option",
-                  { value: "" },
-                  "Selecionar",
-                ),
+                /* @__PURE__ */ React.createElement("option", { value: "" }),
                 /* @__PURE__ */ React.createElement(
                   "option",
                   null,

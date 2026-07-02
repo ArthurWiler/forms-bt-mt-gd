@@ -108,7 +108,10 @@ function TabUcsIndividual({ ctx }) {
           { key: ui, className: "uc-block" },
           /* @__PURE__ */ React.createElement(
             "div",
-            { className: "uc-block-head is-toggle", onClick: () => toggleUC(ui) },
+            {
+              className: "uc-block-head is-toggle",
+              onClick: () => toggleUC(ui),
+            },
             /* @__PURE__ */ React.createElement(
               "span",
               { className: "uc-block-title" },
@@ -150,178 +153,174 @@ function TabUcsIndividual({ ctx }) {
             /* @__PURE__ */ React.createElement(
               "div",
               { className: "grid grid-3" },
-            /* @__PURE__ */ React.createElement(
-              Field,
-              { label: "Tipo de solicitação", req: true, float: true },
-              /* @__PURE__ */ React.createElement(
-                Sel,
-                {
-                  value: u.solicitacao,
-                  onChange: (e) =>
-                    setUcDet(ui, { solicitacao: e.target.value }),
-                },
-                /* @__PURE__ */ React.createElement(
-                  "option",
-                  null,
-                  "Conexão Nova",
-                ),
-                /* @__PURE__ */ React.createElement(
-                  "option",
-                  null,
-                  "Alteração de Carga",
-                ),
-                /* @__PURE__ */ React.createElement(
-                  "option",
-                  null,
-                  "Caixa Existente sem Alteração",
-                ),
-              ),
-            ),
-            /* @__PURE__ */ React.createElement(
-              Field,
-              { label: "Atividade principal", req: true, float: true },
-              /* @__PURE__ */ React.createElement(
-                Sel,
-                {
-                  value: u.atividade,
-                  disabled: atividadeBloqueada,
-                  onChange: (e) => setUcDet(ui, { atividade: e.target.value }),
-                },
-                /* @__PURE__ */ React.createElement(
-                  "option",
-                  { value: "" },
-                  "Selecionar",
-                ),
-                /* @__PURE__ */ React.createElement(
-                  "option",
-                  null,
-                  "Residencial",
-                ),
-                /* @__PURE__ */ React.createElement(
-                  "option",
-                  null,
-                  "Comercial",
-                ),
-                /* @__PURE__ */ React.createElement(
-                  "option",
-                  null,
-                  "Industrial",
-                ),
-                /* @__PURE__ */ React.createElement("option", null, "Rural"),
-              ),
-            ),
-            u.atividade !== "Residencial" &&
               /* @__PURE__ */ React.createElement(
                 Field,
-                {
-                  label: "Ramo de atividade",
-                  req: true,
-                },
-                /* @__PURE__ */ React.createElement(Inp, {
-                  value: u.ramo,
-                  disabled: restrito,
-                  onChange: (e) => setUcDet(ui, { ramo: e.target.value }),
-                  placeholder: "Obrigatório",
-                }),
-              ),
-            numPredialEditavel(u)
-              ? /* @__PURE__ */ React.createElement(
-                  Field,
-                  { label: "Nº Predial" },
-                  /* @__PURE__ */ React.createElement(Inp, {
-                    value: u.nPredial,
-                    onChange: (e) => setUcDet(ui, { nPredial: e.target.value }),
-                    placeholder: "Opcional",
-                  }),
-                )
-              : /* @__PURE__ */ React.createElement(
-                  Field,
-                  { label: "Nº Predial" },
+                { label: "Tipo de solicitação", req: true, float: true },
+                /* @__PURE__ */ React.createElement(
+                  Sel,
+                  {
+                    value: u.solicitacao,
+                    onChange: (e) =>
+                      setUcDet(ui, { solicitacao: e.target.value }),
+                  },
                   /* @__PURE__ */ React.createElement(
-                    "div",
-                    { className: "readonly-val" },
-                    obra.num,
+                    "option",
+                    null,
+                    "Conexão Nova",
+                  ),
+                  /* @__PURE__ */ React.createElement(
+                    "option",
+                    null,
+                    "Alteração de Carga",
+                  ),
+                  /* @__PURE__ */ React.createElement(
+                    "option",
+                    null,
+                    "Caixa Existente sem Alteração",
                   ),
                 ),
-            /* @__PURE__ */ React.createElement(
-              Field,
-              { label: "Complemento", req: ucsDet.length > 1 },
-              /* @__PURE__ */ React.createElement(Inp, {
-                value: u.complemento,
-                onChange: (e) => setUcDet(ui, { complemento: e.target.value }),
-                placeholder: "Residência 1",
-              }),
-            ),
-            /* @__PURE__ */ React.createElement(
-              Field,
-              { label: "Caixa / Identificação" },
-              /* @__PURE__ */ React.createElement(Inp, {
-                value: u.caixa,
-                onChange: (e) => setUcDet(ui, { caixa: e.target.value }),
-              }),
-            ),
-            u.solicitacao !== "Conexão Nova" &&
+              ),
               /* @__PURE__ */ React.createElement(
                 Field,
-                { label: "Unidade Consumidora" },
-                /* @__PURE__ */ React.createElement(Inp, {
-                  value: u.unidadeConsumidora,
-                  onChange: (e) =>
-                    setUcDet(ui, { unidadeConsumidora: e.target.value }),
-                }),
+                { label: "Atividade principal", req: true, float: true },
+                /* @__PURE__ */ React.createElement(
+                  Sel,
+                  {
+                    value: u.atividade,
+                    disabled: atividadeBloqueada,
+                    onChange: (e) =>
+                      setUcDet(ui, { atividade: e.target.value }),
+                  },
+                  /* @__PURE__ */ React.createElement("option", { value: "" }),
+                  /* @__PURE__ */ React.createElement(
+                    "option",
+                    null,
+                    "Residencial",
+                  ),
+                  /* @__PURE__ */ React.createElement(
+                    "option",
+                    null,
+                    "Comercial",
+                  ),
+                  /* @__PURE__ */ React.createElement(
+                    "option",
+                    null,
+                    "Industrial",
+                  ),
+                  /* @__PURE__ */ React.createElement("option", null, "Rural"),
+                ),
               ),
-            u.solicitacao !== "Conexão Nova" &&
-              /* @__PURE__ */ React.createElement(
-                React.Fragment,
-                null,
+              u.atividade !== "Residencial" &&
                 /* @__PURE__ */ React.createElement(
                   Field,
-                  { label: "Nº Instalação / Medidor", req: true },
+                  {
+                    label: "Ramo de atividade",
+                    req: true,
+                  },
                   /* @__PURE__ */ React.createElement(Inp, {
-                    value: u.instalacao,
-                    onChange: (e) =>
-                      setUcDet(ui, { instalacao: e.target.value }),
+                    value: u.ramo,
+                    disabled: restrito,
+                    onChange: (e) => setUcDet(ui, { ramo: e.target.value }),
+                    placeholder: "Obrigatório",
                   }),
                 ),
+              numPredialEditavel(u)
+                ? /* @__PURE__ */ React.createElement(
+                    Field,
+                    { label: "Nº Predial" },
+                    /* @__PURE__ */ React.createElement(Inp, {
+                      value: u.nPredial,
+                      onChange: (e) =>
+                        setUcDet(ui, { nPredial: e.target.value }),
+                      placeholder: "Opcional",
+                    }),
+                  )
+                : /* @__PURE__ */ React.createElement(
+                    Field,
+                    { label: "Nº Predial" },
+                    /* @__PURE__ */ React.createElement(
+                      "div",
+                      { className: "readonly-val" },
+                      obra.num,
+                    ),
+                  ),
+              /* @__PURE__ */ React.createElement(
+                Field,
+                { label: "Complemento do endereço", req: ucsDet.length > 1 },
+                /* @__PURE__ */ React.createElement(Inp, {
+                  value: u.complemento,
+                  onChange: (e) =>
+                    setUcDet(ui, { complemento: e.target.value }),
+                  placeholder: "Residência 1",
+                }),
+              ),
+              /* @__PURE__ */ React.createElement(
+                Field,
+                { label: "Caixa / Identificação" },
+                /* @__PURE__ */ React.createElement(Inp, {
+                  value: u.caixa,
+                  onChange: (e) => setUcDet(ui, { caixa: e.target.value }),
+                }),
+              ),
+              u.solicitacao !== "Conexão Nova" &&
                 /* @__PURE__ */ React.createElement(
                   Field,
-                  { label: "Disjuntor atual" },
+                  { label: "Unidade Consumidora" },
+                  /* @__PURE__ */ React.createElement(Inp, {
+                    value: u.unidadeConsumidora,
+                    onChange: (e) =>
+                      setUcDet(ui, { unidadeConsumidora: e.target.value }),
+                  }),
+                ),
+              u.solicitacao !== "Conexão Nova" &&
+                /* @__PURE__ */ React.createElement(
+                  React.Fragment,
+                  null,
                   /* @__PURE__ */ React.createElement(
-                    Sel,
-                    {
-                      value: u.disjDe,
-                      onChange: (e) => setUcDet(ui, { disjDe: e.target.value }),
-                    },
+                    Field,
+                    { label: "Nº Instalação / Medidor", req: true },
+                    /* @__PURE__ */ React.createElement(Inp, {
+                      value: u.instalacao,
+                      onChange: (e) =>
+                        setUcDet(ui, { instalacao: e.target.value }),
+                    }),
+                  ),
+                  /* @__PURE__ */ React.createElement(
+                    Field,
+                    { label: "Disjuntor atual" },
                     /* @__PURE__ */ React.createElement(
-                      "option",
-                      { value: "" },
-                      "Selecione…",
-                    ),
-                    DISJ.map((d) =>
-                      /* @__PURE__ */ React.createElement(
-                        "option",
-                        { key: d.fx, value: d.fx },
-                        d.fx,
+                      Sel,
+                      {
+                        value: u.disjDe,
+                        onChange: (e) =>
+                          setUcDet(ui, { disjDe: e.target.value }),
+                      },
+                      /* @__PURE__ */ React.createElement("option", { value: "" }),
+                      DISJ.map((d) =>
+                        /* @__PURE__ */ React.createElement(
+                          "option",
+                          { key: d.fx, value: d.fx },
+                          d.fx,
+                        ),
                       ),
                     ),
                   ),
+                  (u.solicitacao === "Alteração de Carga" ||
+                    u.solicitacao === "Caixa Existente sem Alteração") &&
+                    /* @__PURE__ */ React.createElement(
+                      Field,
+                      { label: "Mudança de local" },
+                      /* @__PURE__ */ React.createElement(Toggle, {
+                        value: u.mudancaLocal,
+                        onChange: (v) => setUcDet(ui, { mudancaLocal: v }),
+                        options: [
+                          { v: "Sim", l: "Sim" },
+                          { v: "Não", l: "Não" },
+                        ],
+                      }),
+                    ),
                 ),
-                (u.solicitacao === "Alteração de Carga" ||
-                  u.solicitacao === "Caixa Existente sem Alteração") &&
-                  /* @__PURE__ */ React.createElement(
-                    Field,
-                    { label: "Mudança de local" },
-                    /* @__PURE__ */ React.createElement(Toggle, {
-                      value: u.mudancaLocal,
-                      onChange: (v) => setUcDet(ui, { mudancaLocal: v }),
-                      options: [
-                        { v: "Sim", l: "Sim" },
-                        { v: "Não", l: "Não" },
-                      ],
-                    }),
-                  ),
-              ),
-          ),
+            ),
         ),
       ),
       ucsDet.length < capUCs &&

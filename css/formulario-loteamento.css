@@ -98,8 +98,9 @@ main{max-width:1180px;margin:0 auto;padding:28px 24px 70px}
 .grid.cols-3{grid-template-columns:1fr 1fr 1fr}
 .grid.cols-4{grid-template-columns:1fr 1fr 1fr 1fr}
 .field{display:flex;flex-direction:column;gap:6px}
-.grid .field>label{min-height:34px;display:flex;align-items:flex-end;line-height:1.3}
-#gridAmbiental .field>label{min-height:51px}
+/* O alinhamento por min-height dos rótulos (34/51px) foi removido: com o
+   rótulo flutuante do Padrão B (shared.css, escopo .cemig-lote) o label é
+   absoluto dentro da caixa e o min-height empurrava o texto sobre o valor. */
 .field.span-2{grid-column:span 2}
 .field.span-3{grid-column:span 3}
 .field.span-full{grid-column:1/-1}
@@ -206,7 +207,9 @@ input.invalid,select.invalid{border-color:var(--danger);box-shadow:0 0 0 4px rgb
   body{background:#fff}
   main{padding:0;max-width:none}
   .card{box-shadow:none;border:none}
-  .card-head{display:none!important}
+  /* Cabeçalhos de card no padrão shared (eyebrow "Etapa N" + card-title) e o
+     form-header da página: ocultos na impressão, como o antigo .card-head. */
+  .card-head,.section-eyebrow,.card-title,.form-header{display:none!important}
   .page{display:none!important}
   .page.show{display:block!important}
   .alert.info.no-print{display:none!important}

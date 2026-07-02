@@ -124,12 +124,8 @@ function App() {
     distritoComunidade: "",
     instProxima: "",
   });
-  const [gerador, setGerador] = useState({
-    possui: "Não",
-    potencia: "",
-    fonte: "",
-    descricao: "",
-  });
+  /* Gerador de emergência: vinculado à UC (ucsDet[].gerador — ver model.js);
+     o estado global foi removido. */
   const [obs, setObs] = useState("");
   const [cepStatus, setCepStatus] = useState({ obra: "", corr: "" });
   const [cnpjStatus, setCnpjStatus] = useState("");
@@ -643,17 +639,12 @@ function App() {
     if (acima63)
       return {
         ok: false,
-        msg: "Há UC com disjuntor acima de 63 A — o atendimento exige proteção geral (coletivo). Ajuste o Tipo de Atendimento.",
+        msg: "Unidade consumidora com disjuntor bipolar acima de 63 A: é obrigatório utilizar proteção geral (coletiva). Utilize o formulário Atendimento coletivo.",
       };
     if (tri > 1)
       return {
         ok: false,
-        msg: `Permitido no máximo 1 disjuntor tripolar de 63 A (atual: ${tri}).`,
-      };
-    if (monoBi > 3)
-      return {
-        ok: false,
-        msg: `Permitidos no máximo 3 disjuntores mono/bifásicos de 63 A (atual: ${monoBi}).`,
+        msg: "Para atendimento com dois ou mais disjuntores trifásicos, é obrigatório utilizar proteção geral (coletiva). Utilize o formulário Atendimento coletivo.",
       };
     return {
       ok: true,
@@ -696,6 +687,20 @@ function App() {
   }, [coletivo, ucsDet]);
   const exibeTermoGrupoB =
     !coletivo && (demandaTotalGeral > 75 || potenciaPlacaTotal > 75);
+
+  /* "Disjuntor Solicitado" (formulários individuais: Residencial, Comercial,
+     Industrial e Rural) é VINCULADO à carga instalada preenchida no
+     formulário (equipamentos + potência de placa dos motores): até 75 kW →
+     "1- Disjuntor individual abaixo de 75 kW"; acima → "2- ... acima de
+     75 kW". O campo fica somente leitura na view (cargas-individual.js). */
+  const formIndividual = cardSelecionado?.formType === "individual";
+  useEffect(() => {
+    if (!formIndividual || coletivo) return;
+    const alvo = SOLICITACOES[potenciaPlacaTotal > 75 ? 1 : 0];
+    setAtend((a) =>
+      a.solicitacao === alvo ? a : { ...a, solicitacao: alvo },
+    );
+  }, [formIndividual, coletivo, potenciaPlacaTotal]);
 
   const coordObrigatoria =
     obra.localizacao === "Rural" && obra.distMenor30 === "Não";
@@ -782,10 +787,14 @@ function App() {
   // acompanha. Bate com o stepper lateral, que usa o mesmo i+1.
   const etapaNum = Math.max(idx, 0) + 1;
   // Título do form-header montado a partir do card selecionado na página
-  // inicial (categoria "Baixa Tensão" + subtipo vindo de prefill.atividade ou
-  // do nome do card). Sem hardcode do par categoria-subtipo.
+  // inicial (categoria "Baixa Tensão" + subtipo). Nos formulários individuais
+  // o subtipo é a atividade (Residencial/Comercial/...); nos demais (Condomínio
+  // de torres, Atendimento coletivo) segue a lógica padrão: o nome do card —
+  // a atividade do prefill é só um valor inicial das UCs, não o subtipo.
   const headerSubtipo =
-    cardSelecionado?.prefill?.atividade || cardSelecionado?.nome || "";
+    (formIndividual && cardSelecionado?.prefill?.atividade) ||
+    cardSelecionado?.nome ||
+    "";
   const headerTitulo =
     "Baixa Tensão" + (headerSubtipo ? " - " + headerSubtipo : "");
   const irProx = () => setAba(abas[Math.min(idx + 1, abas.length - 1)].k);
@@ -813,15 +822,47 @@ function App() {
       ucBlocos,
       blocos,
       totalUcsEmpreendimento,
-      gerador,
       obs,
       demandaTotalGeral,
       logoPDF,
       pessoaFisica,
     });
   };
-  const gerarListaDocs = () =>
-    gerarListaDocumentosDoc({ prop, obra, atend, coletivo, multiTorres });
+  // Lista de documentos derivada do preenchimento (exibida na etapa
+  // "Prévia & PDF").
+  const documentosNecessarios = useMemo(
+    () =>
+      listaDocumentosBT({
+        pessoaFisica,
+        pessoaJuridica,
+        coletivo,
+        multiTorres,
+        hibrido,
+        obra,
+        atend,
+        ucsDet,
+        ucBlocos,
+        blocos,
+        exibeTermoGrupoB,
+        demandaTotalGeral,
+        temMotoresPesados: motoresPesadosBT.length > 0,
+      }),
+    [
+      pessoaFisica,
+      pessoaJuridica,
+      coletivo,
+      multiTorres,
+      hibrido,
+      obra,
+      atend,
+      ucsDet,
+      ucBlocos,
+      blocos,
+      exibeTermoGrupoB,
+      demandaTotalGeral,
+      motoresPesadosBT,
+    ],
+  );
   const selectModalidade = (card) => {
     if (card.status === "link" && card.href) {
       window.location.href = card.href;
@@ -915,8 +956,6 @@ function App() {
     setCorr,
     obra,
     setObra,
-    gerador,
-    setGerador,
     obs,
     setObs,
     cepStatus,
@@ -944,8 +983,8 @@ function App() {
     demandaTotalGeral,
     disjGeralObrigatorio,
     docInfo,
+    documentosNecessarios,
     gerarPDF,
-    gerarListaDocs,
     hibrido,
     idx,
     irAnt,
@@ -1208,7 +1247,11 @@ function App() {
                               {
                                 variant: "primary",
                                 onClick: gerarPDF,
-                                disabled: hibrido && !validacaoHibrido.ok,
+                                /* Único botão de Exportar PDF (o da prévia foi
+                                   removido): trava com QUALQUER pendência
+                                   obrigatória — inclui híbrido e combinação
+                                   de disjuntores inválida. */
+                                disabled: !validacaoObrigatorios.ok,
                               },
                               "📄 Exportar PDF",
                             )
@@ -1217,13 +1260,19 @@ function App() {
                               {
                                 variant: "primary",
                                 onClick: irProx,
-                                disabled: !abaCompleta(aba, {
-                                  prop,
-                                  corr,
-                                  obra,
-                                  pessoaFisica,
-                                  coletivo,
-                                }),
+                                /* Combinação de disjuntores inválida também
+                                   impede o avanço a partir da etapa de
+                                   cargas/atendimento. */
+                                disabled:
+                                  !abaCompleta(aba, {
+                                    prop,
+                                    corr,
+                                    obra,
+                                    pessoaFisica,
+                                    coletivo,
+                                  }) ||
+                                  (aba === "cargas" &&
+                                    !validacaoDisjuntores.ok),
                               },
                               "Avançar →",
                             ),

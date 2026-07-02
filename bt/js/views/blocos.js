@@ -205,11 +205,7 @@ function TabBlocos({ ctx }) {
                   value: b.disjGeral,
                   onChange: (e) => setTorre(bi, { disjGeral: e.target.value }),
                 },
-                /* @__PURE__ */ React.createElement(
-                  "option",
-                  { value: "" },
-                  "Selecione…",
-                ),
+                /* @__PURE__ */ React.createElement("option", { value: "" }),
                 DISJ_GER.filter((d) => d.tipo === "tri").map((d) =>
                   /* @__PURE__ */ React.createElement(
                     "option",
@@ -250,11 +246,7 @@ function TabBlocos({ ctx }) {
                   onChange: (e) =>
                     setTorre(bi, { disjIncendio: e.target.value }),
                 },
-                /* @__PURE__ */ React.createElement(
-                  "option",
-                  { value: "" },
-                  "Selecione…",
-                ),
+                /* @__PURE__ */ React.createElement("option", { value: "" }),
                 DISJ_CN.map((d) =>
                   /* @__PURE__ */ React.createElement(
                     "option",
@@ -374,7 +366,7 @@ function TabBlocos({ ctx }) {
                     ),
                     /* @__PURE__ */ React.createElement(
                       Field,
-                      { label: "Complemento", req: b.ucs.length > 1 },
+                      { label: "Complemento do endereço", req: b.ucs.length > 1 },
                       /* @__PURE__ */ React.createElement(Inp, {
                         value: u.complemento,
                         onChange: (e) =>
@@ -436,11 +428,7 @@ function TabBlocos({ ctx }) {
                               atividade: e.target.value,
                             }),
                         },
-                        /* @__PURE__ */ React.createElement(
-                          "option",
-                          { value: "" },
-                          "Selecionar",
-                        ),
+                        /* @__PURE__ */ React.createElement("option", { value: "" }),
                         /* @__PURE__ */ React.createElement(
                           "option",
                           null,
@@ -530,11 +518,7 @@ function TabBlocos({ ctx }) {
                               disjPara: e.target.value,
                             }),
                         },
-                        /* @__PURE__ */ React.createElement(
-                          "option",
-                          { value: "" },
-                          "Selecione…",
-                        ),
+                        /* @__PURE__ */ React.createElement("option", { value: "" }),
                         DISJ.map((d) =>
                           /* @__PURE__ */ React.createElement(
                             "option",

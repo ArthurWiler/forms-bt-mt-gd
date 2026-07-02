@@ -45,11 +45,7 @@ function ViewIdentificacao({ ctx }) {
         /* @__PURE__ */ React.createElement(
           Sel,
           { value: d.classe, onChange: (e) => set({ classe: e.target.value }) },
-          /* @__PURE__ */ React.createElement(
-            "option",
-            { value: "" },
-            "Selecionar",
-          ),
+          /* @__PURE__ */ React.createElement("option", { value: "" }),
           GD_CLASSES.map((c) =>
             /* @__PURE__ */ React.createElement(
               "option",
@@ -90,7 +86,7 @@ function ViewIdentificacao({ ctx }) {
       ),
       /* @__PURE__ */ React.createElement(
         Field,
-        { label: "Complemento" },
+        { label: "Complemento do endereço" },
         /* @__PURE__ */ React.createElement(Inp, {
           value: d.complemento,
           onChange: (e) => set({ complemento: e.target.value }),
@@ -220,11 +216,7 @@ function ViewDadosUC({ ctx }) {
         /* @__PURE__ */ React.createElement(
           Sel,
           { value: d.fuso, onChange: (e) => set({ fuso: e.target.value }) },
-          /* @__PURE__ */ React.createElement(
-            "option",
-            { value: "" },
-            "Selecionar",
-          ),
+          /* @__PURE__ */ React.createElement("option", { value: "" }),
           GD_FUSOS.map((f) =>
             /* @__PURE__ */ React.createElement(
               "option",
@@ -312,11 +304,7 @@ function ViewDadosUC({ ctx }) {
             value: d.tipoLigTrafo,
             onChange: (e) => set({ tipoLigTrafo: e.target.value }),
           },
-          /* @__PURE__ */ React.createElement(
-            "option",
-            { value: "" },
-            "Selecionar",
-          ),
+          /* @__PURE__ */ React.createElement("option", { value: "" }),
           GD_TIPO_LIG_TRAFO.map((s) =>
             /* @__PURE__ */ React.createElement(
               "option",
@@ -446,11 +434,7 @@ function ViewDadosUC({ ctx }) {
             value: d.tensaoAtendimento,
             onChange: (e) => set({ tensaoAtendimento: e.target.value }),
           },
-          /* @__PURE__ */ React.createElement(
-            "option",
-            { value: "" },
-            "Selecionar",
-          ),
+          /* @__PURE__ */ React.createElement("option", { value: "" }),
           GD_TENSAO_A.map((t) =>
             /* @__PURE__ */ React.createElement(
               "option",
@@ -469,11 +453,7 @@ function ViewDadosUC({ ctx }) {
             value: d.entradaEnergia,
             onChange: (e) => set({ entradaEnergia: e.target.value }),
           },
-          /* @__PURE__ */ React.createElement(
-            "option",
-            { value: "" },
-            "Selecionar",
-          ),
+          /* @__PURE__ */ React.createElement("option", { value: "" }),
           GD_ENTRADA_ENERGIA.map((s) =>
             /* @__PURE__ */ React.createElement(
               "option",
@@ -511,11 +491,7 @@ function ViewDadosUC({ ctx }) {
             value: d.solicitacao,
             onChange: (e) => set({ solicitacao: e.target.value }),
           },
-          /* @__PURE__ */ React.createElement(
-            "option",
-            { value: "" },
-            "Selecionar",
-          ),
+          /* @__PURE__ */ React.createElement("option", { value: "" }),
           GD_SOLICITACOES.map((s) =>
             /* @__PURE__ */ React.createElement(
               "option",
@@ -648,11 +624,7 @@ function ViewDadosUC({ ctx }) {
               value: d.instExistenteBTMT,
               onChange: (e) => set({ instExistenteBTMT: e.target.value }),
             },
-            /* @__PURE__ */ React.createElement(
-              "option",
-              { value: "" },
-              "Selecionar",
-            ),
+            /* @__PURE__ */ React.createElement("option", { value: "" }),
             GD_BT_MT.map((s) =>
               /* @__PURE__ */ React.createElement(
                 "option",
@@ -818,11 +790,7 @@ function ViewGeracao({ ctx }) {
             onChange: (e) => set({ modalidade: e.target.value }),
             disabled: gridZero,
           },
-          /* @__PURE__ */ React.createElement(
-            "option",
-            { value: "" },
-            "Selecionar",
-          ),
+          /* @__PURE__ */ React.createElement("option", { value: "" }),
           GD_MODALIDADES.map((m) =>
             /* @__PURE__ */ React.createElement(
               "option",
@@ -1291,11 +1259,7 @@ function ViewDeclaracoes({ ctx }) {
               value: d.garantiaForma,
               onChange: (e) => set({ garantiaForma: e.target.value }),
             },
-            /* @__PURE__ */ React.createElement(
-              "option",
-              { value: "" },
-              "Selecionar",
-            ),
+            /* @__PURE__ */ React.createElement("option", { value: "" }),
             GD_GARANTIA_FORMAS.map((g) =>
               /* @__PURE__ */ React.createElement(
                 "option",
@@ -1780,14 +1744,6 @@ function ViewRevisao({ ctx }) {
       "Contato",
       `${d.solicitanteCelular || "—"} · ${d.solicitanteEmail || "—"}`,
     ),
-    /* @__PURE__ */ React.createElement(
-      "div",
-      { style: { marginTop: 16 } },
-      /* @__PURE__ */ React.createElement(
-        Btn,
-        { variant: "dark", onClick: gerarPdf, disabled: !validacao.ok },
-        "📄 Exportar PDF",
-      ),
-    ),
+    /* Botão "Exportar PDF" removido daqui — o único é o inferior (nav-bottom, app.js). */
   );
 }

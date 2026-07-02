@@ -19,7 +19,6 @@ function gerarPdfDoc(S) {
     ucBlocos,
     blocos,
     totalUcsEmpreendimento,
-    gerador,
     obs,
     demandaTotalGeral,
     logoPDF,
@@ -256,7 +255,9 @@ function gerarPdfDoc(S) {
       ["Tipo do Atendimento", atend.solicitacao],
       ["Solicitação", atend.escopo],
     );
-  else tipoPairs.push(["Tipo do Atendimento", atend.solicitacao]);
+  /* Individual: campo renomeado de "Tipo do Atendimento" p/ "Disjuntor
+     Solicitado" (ver cargas-individual.js). */
+  else tipoPairs.push(["Disjuntor Solicitado", atend.solicitacao]);
   kvPairs(tipoPairs);
   if (coletivo && !multiTorres && atend.disjuntorGeral)
     fullLine("Disjuntor geral", atend.disjuntorGeral);
@@ -580,7 +581,7 @@ function gerarPdfDoc(S) {
         ["Atividade principal", u.atividade],
         ["Ramo de atividade", u.ramo],
         ["Nº Predial", u.nPredial || obra.num],
-        ["Complemento", u.complemento],
+        ["Complemento do endereço", u.complemento],
         ["Caixa / Identificação", u.caixa],
       ];
       if (u.solicitacao !== "Conexão Nova")
@@ -674,16 +675,26 @@ function gerarPdfDoc(S) {
       ),
     );
     cy += 2;
+    // Gerador de emergência vinculado à UC (u.gerador) — uma linha por UC.
     sec("6.  GERADOR DE EMERGÊNCIA");
-    const gp = [["Há gerador de emergência?", gerador.possui]];
-    if (gerador.possui === "Sim")
-      gp.push(
-        ["Potência (kVA)", gerador.potencia],
-        ["Fonte/Combustível", gerador.fonte],
-      );
-    kvPairs(gp);
-    if (gerador.possui === "Sim" && gerador.descricao)
-      fullLine("Descrição", gerador.descricao);
+    tabela(
+      ["Unidade", "Possui", "Potência (kVA)", "Fonte", "Observações"],
+      [26, 22, 34, 40, 60],
+      ucsDet
+        .map((u, ui) => ({ u, ui }))
+        .filter(({ u }) => !ucSemAlteracao(u))
+        .map(({ u, ui }) => {
+          const g = u.gerador || {};
+          const sim = g.possui === "Sim";
+          return [
+            `UC ${ui + 1}`,
+            g.possui || "Não",
+            sim ? g.potencia || "—" : "—",
+            sim ? g.fonte || "—" : "—",
+            sim ? g.descricao || "—" : "—",
+          ];
+        }),
+    );
     cy += 2;
   }
 
@@ -715,75 +726,83 @@ function gerarPdfDoc(S) {
 
 /* ============================================================
    CEMIG — Lista de documentos para a solicitação.
-   Gera um checklist em PDF. Os itens são placeholders, a serem
-   ajustados conforme a regra de negócio definitiva.
+   Os itens são GERADOS a partir do preenchimento do formulário
+   (dados da Prévia & PDF): tipo de pessoa, tipo de conexão,
+   localização, carga/demanda e modalidade do atendimento. A mesma
+   lista é exibida na etapa "Prévia & PDF" e exportada em PDF.
    ============================================================ */
-// Itens placeholder da lista de documentos.
-const LISTA_DOCUMENTOS_PLACEHOLDER = [
-  "Documento de identificação com foto e CPF do titular",
-  "Comprovante de propriedade ou posse do imóvel",
-  "Comprovante de regularidade do imóvel (área urbana)",
-  "ART/TRT de projeto paga (quando aplicável)",
-  "Planta de situação conforme ND-5.2 (quando aplicável)",
-  "Procuração do responsável técnico (solicitações de terceiros)",
-  "Documento de regularização ambiental (quando aplicável)",
-  "[Documento adicional 1 — placeholder]",
-  "[Documento adicional 2 — placeholder]",
-];
-
-function gerarListaDocumentosDoc(S) {
-  const { prop } = S || {};
-  if (!window.jspdf) {
-    alert("Biblioteca jsPDF não carregada.");
-    return;
+function listaDocumentosBT(S) {
+  const {
+    pessoaJuridica,
+    coletivo,
+    multiTorres,
+    hibrido,
+    obra = {},
+    atend = {},
+    ucsDet = [],
+    ucBlocos = [],
+    blocos = [],
+    exibeTermoGrupoB,
+    demandaTotalGeral,
+    temMotoresPesados,
+  } = S || {};
+  const docs = [];
+  // Titular
+  docs.push(
+    pessoaJuridica
+      ? "Documentos de constituição e registro da pessoa jurídica e documento oficial com foto do(s) representante(s) legal(is)"
+      : "Documento oficial com foto e CPF do titular",
+  );
+  // Conexão nova → comprovação de propriedade/posse (+ regularidade urbana)
+  const ucs = multiTorres
+    ? blocos.flatMap((b) => b.ucs || [])
+    : coletivo
+      ? ucBlocos
+      : ucsDet;
+  const temConexaoNova =
+    atend.escopo === "Ligação Nova" ||
+    ucs.some((u) => (u.solicitacao || "") === "Conexão Nova");
+  if (temConexaoNova) {
+    docs.push("Comprovante de propriedade ou posse do local a ser atendido");
+    if (obra.localizacao !== "Rural")
+      docs.push(
+        "Documento que comprove a regularidade do imóvel (unidade em área urbana)",
+      );
   }
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const PW = 210,
-    PH = 297,
-    MG = 14,
-    CW = PW - 2 * MG;
-  let cy = MG;
-
-  // Barra superior (mesmo estilo do formulário, sem logo)
-  doc.setFillColor(10, 47, 39);
-  doc.rect(0, 0, PW, 18, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.setTextColor(255, 255, 255);
-  doc.text("Lista de Documentos — Orçamento de Conexão BT", MG, 8);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-  doc.setTextColor(169, 230, 191);
-  doc.text("Documentos a apresentar na solicitação", MG, 13.5);
-  cy = 28;
-
-  if (prop && prop.nome) {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(30, 32, 42);
-    doc.text(`Solicitante: ${prop.nome}`, MG, cy);
-    cy += 9;
+  // Individual com carga instalada/demanda acima de 75 kW
+  if (!coletivo && exibeTermoGrupoB) {
+    docs.push("ART de projeto paga (carga instalada acima de 75 kW)");
+    docs.push("Planta de situação");
+    docs.push("Formulário preenchido no APR Web");
+    docs.push("Termo de Opção pelo Atendimento em Baixa Tensão — Grupo B");
   }
-
-  doc.setFontSize(11);
-  LISTA_DOCUMENTOS_PLACEHOLDER.forEach((item) => {
-    if (cy > PH - 20) {
-      doc.addPage();
-      cy = MG + 6;
-    }
-    // checkbox
-    doc.setDrawColor(16, 119, 98);
-    doc.rect(MG, cy - 3.6, 4.2, 4.2);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(30, 32, 42);
-    const linhas = doc.splitTextToSize(item, CW - 10);
-    doc.text(linhas, MG + 7, cy);
-    cy += Math.max(6, linhas.length * 5 + 2.5);
-  });
-
-  const nomeArq = (prop?.nome || "documentos")
-    .replace(/[^a-zA-Z0-9]/g, "_")
-    .slice(0, 30);
-  doc.save(`CEMIG_lista_documentos_${nomeArq}.pdf`);
+  // Coletivo / múltiplas torres
+  if (coletivo) {
+    docs.push(
+      "Planta de situação da edificação com indicação do padrão de entrada e distância do ramal de entrada (ND-5.2) — enviar no portal Cemig Atende e no APR Web",
+    );
+    if ((demandaTotalGeral || 0) > 304)
+      docs.push(
+        "Projeto elétrico com ART/TRT de projeto (demanda total acima de 304 kVA)",
+      );
+  }
+  if (hibrido)
+    docs.push(
+      "Planta de situação com o número predial de cada unidade consumidora (atendimento híbrido)",
+    );
+  if (temMotoresPesados)
+    docs.push(
+      "Formulário de Análise de Partida de Motores (motores monofásicos acima de 15 CV e/ou trifásicos acima de 50 CV)",
+    );
+  if (obra.restricaoAmbiental === "Sim")
+    docs.push(
+      "Documento de regularização ambiental emitido por órgão competente (propriedade em área protegida)",
+    );
+  docs.push(
+    "Procuração do titular (apenas para solicitações feitas por terceiros/responsável técnico)",
+  );
+  return docs;
 }
+
+/* gerarListaDocumentosDoc removido: o botão "Gerar lista de documentos" foi
+   descontinuado — a lista (listaDocumentosBT acima) é exibida na Prévia & PDF. */

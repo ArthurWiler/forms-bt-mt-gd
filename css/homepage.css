@@ -143,11 +143,10 @@ body {
   outline: 2px solid var(--verde-escuro);
   outline-offset: 2px;
 }
-.modalidade-secao-chevron {
+.modalidade-secao-evron ch{
   flex: none;
   font-size: 20px;
   line-height: 1;
-  transition: transform 0.3s ease;
 }
 .modalidade-secao.is-collapsed .modalidade-secao-chevron {
   transform: rotate(-90deg);
@@ -156,7 +155,6 @@ body {
 .modalidade-secao-corpo {
   display: grid;
   grid-template-rows: 1fr;
-  transition: grid-template-rows 0.3s ease;
 }
 .modalidade-secao.is-collapsed .modalidade-secao-corpo {
   grid-template-rows: 0fr;

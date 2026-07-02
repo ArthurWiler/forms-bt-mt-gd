@@ -57,7 +57,7 @@ function TabDadosUnidade({ ctx }) {
         ctx.formType === "individual"
           ? "Dados da unidade consumidora"
           : "Dados da Obra",
-      sub: "Preencha os dados de identificação, endereço e informações técnicas da unidade.",
+      sub: "Preencha os dados de identificação das unidades consumidoras.",
     },
 
     /* Aviso (variante warn): todas as UCs do pedido devem estar no mesmo
@@ -174,7 +174,7 @@ function TabDadosUnidade({ ctx }) {
         ),
         /* @__PURE__ */ React.createElement(
           Field,
-          { label: "Complemento" },
+          { label: "Complemento do endereço" },
           /* @__PURE__ */ React.createElement(Inp, {
             value: obra.compl,
             onChange: (e) => setObra({ ...obra, compl: e.target.value }),

@@ -58,7 +58,7 @@ const GD_SCHEMA_IDENTIFICACAO = [
   },
   { k: "logradouro", label: "Logradouro", req: true, span: 2 },
   { k: "numero", label: "Número", req: true },
-  { k: "complemento", label: "Complemento" },
+  { k: "complemento", label: "Complemento do endereço" },
   { k: "bairro", label: "Bairro", req: true },
   { k: "municipio", label: "Município", req: true },
   {
@@ -179,11 +179,7 @@ function ViewDadosUC({ ctx }) {
         /* @__PURE__ */ React.createElement(
           Sel,
           { value: d.fuso, onChange: (e) => set({ fuso: e.target.value }) },
-          /* @__PURE__ */ React.createElement(
-            "option",
-            { value: "" },
-            "Selecionar",
-          ),
+          /* @__PURE__ */ React.createElement("option", { value: "" }),
           GD_FUSOS.map((f) =>
             /* @__PURE__ */ React.createElement(
               "option",
@@ -315,11 +311,7 @@ function ViewDadosUC({ ctx }) {
                       onChange: (e) =>
                         setTrafo(i, { potencia: e.target.value }),
                     },
-                    /* @__PURE__ */ React.createElement(
-                      "option",
-                      { value: "" },
-                      "Selecionar",
-                    ),
+                    /* @__PURE__ */ React.createElement("option", { value: "" }),
                     potTrafos.map((p) =>
                       /* @__PURE__ */ React.createElement(
                         "option",
@@ -360,11 +352,7 @@ function ViewDadosUC({ ctx }) {
             value: d.solicitacao,
             onChange: (e) => set({ solicitacao: e.target.value }),
           },
-          /* @__PURE__ */ React.createElement(
-            "option",
-            { value: "" },
-            "Selecionar",
-          ),
+          /* @__PURE__ */ React.createElement("option", { value: "" }),
           GD_SOLICITACOES.map((s) =>
             /* @__PURE__ */ React.createElement(
               "option",
@@ -383,11 +371,7 @@ function ViewDadosUC({ ctx }) {
             value: d.edificacao,
             onChange: (e) => set({ edificacao: e.target.value }),
           },
-          /* @__PURE__ */ React.createElement(
-            "option",
-            { value: "" },
-            "Selecionar",
-          ),
+          /* @__PURE__ */ React.createElement("option", { value: "" }),
           GD_EDIFICACOES.map((s) =>
             /* @__PURE__ */ React.createElement(
               "option",
@@ -406,11 +390,7 @@ function ViewDadosUC({ ctx }) {
             value: d.edifTipo,
             onChange: (e) => set({ edifTipo: e.target.value }),
           },
-          /* @__PURE__ */ React.createElement(
-            "option",
-            { value: "" },
-            "Selecionar",
-          ),
+          /* @__PURE__ */ React.createElement("option", { value: "" }),
           GD_EDIF_TIPO.map((s) =>
             /* @__PURE__ */ React.createElement(
               "option",
@@ -455,11 +435,7 @@ function ViewDadosUC({ ctx }) {
             onChange: (e) =>
               set({ disjGeralFase: e.target.value, disjGeralA: "" }),
           },
-          /* @__PURE__ */ React.createElement(
-            "option",
-            { value: "" },
-            "Selecionar",
-          ),
+          /* @__PURE__ */ React.createElement("option", { value: "" }),
           fasesDisj.map((s) =>
             /* @__PURE__ */ React.createElement(
               "option",
@@ -482,11 +458,7 @@ function ViewDadosUC({ ctx }) {
             value: d.disjGeralA,
             onChange: (e) => set({ disjGeralA: e.target.value }),
           },
-          /* @__PURE__ */ React.createElement(
-            "option",
-            { value: "" },
-            "Selecionar",
-          ),
+          /* @__PURE__ */ React.createElement("option", { value: "" }),
           correntesDisj.map((a) =>
             /* @__PURE__ */ React.createElement(
               "option",
@@ -514,11 +486,7 @@ function ViewDadosUC({ ctx }) {
             value: d.tensaoAtendimento,
             onChange: (e) => set({ tensaoAtendimento: e.target.value }),
           },
-          /* @__PURE__ */ React.createElement(
-            "option",
-            { value: "" },
-            "Selecionar",
-          ),
+          /* @__PURE__ */ React.createElement("option", { value: "" }),
           (d.grupo === "A" ? GD_TENSAO_A : GD_TENSAO_B).map((t) =>
             /* @__PURE__ */ React.createElement(
               "option",
@@ -598,11 +566,7 @@ function ViewDadosUC({ ctx }) {
               value: d.instExistenteBTMT,
               onChange: (e) => set({ instExistenteBTMT: e.target.value }),
             },
-            /* @__PURE__ */ React.createElement(
-              "option",
-              { value: "" },
-              "Selecionar",
-            ),
+            /* @__PURE__ */ React.createElement("option", { value: "" }),
             GD_BT_MT.map((s) =>
               /* @__PURE__ */ React.createElement(
                 "option",
@@ -857,11 +821,7 @@ function ViewGeracao({ ctx }) {
             disabled: ehFastTrack,
             onChange: (e) => set({ modalidade: e.target.value }),
           },
-          /* @__PURE__ */ React.createElement(
-            "option",
-            { value: "" },
-            "Selecionar",
-          ),
+          /* @__PURE__ */ React.createElement("option", { value: "" }),
           GD_MODALIDADES.map((m) =>
             /* @__PURE__ */ React.createElement(
               "option",
@@ -1691,14 +1651,6 @@ function ViewRevisao({ ctx }) {
       "Contato",
       `${d.solicitanteCelular || "—"} · ${d.solicitanteEmail || "—"}`,
     ),
-    /* @__PURE__ */ React.createElement(
-      "div",
-      { style: { marginTop: 16 } },
-      /* @__PURE__ */ React.createElement(
-        Btn,
-        { variant: "dark", onClick: gerarPdf, disabled: !validacao.ok },
-        "📄 Exportar PDF",
-      ),
-    ),
+    /* Botão "Exportar PDF" removido daqui — o único é o inferior (nav-bottom, app.js). */
   );
 }

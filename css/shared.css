@@ -463,7 +463,6 @@ html {
 /* ---- Expanded panel ---- */
 .modalidade-screen .modalidade-secao-corpo > .modalidade-grid {
   padding: var(--cmg-space-4) var(--cmg-space-4) var(--cmg-space-6);
-  transition: padding 0.3s ease;
 }
 .modalidade-screen .modalidade-secao.is-collapsed .modalidade-secao-corpo > .modalidade-grid {
   padding-top: 0;
@@ -823,7 +822,7 @@ html {
 .cemig-form
   .field--float:is(
     :has(input:placeholder-shown),
-    :has(select:has(option[value=""]:checked))
+    :has(select option[value=""]:checked)
   ):not(:focus-within)
   > label,
 :is(.cemig-form, .cemig-lote)
@@ -831,7 +830,7 @@ html {
     :has([type="checkbox"])
   ):not(:has([type="radio"])):has(input, select):is(
     :has(input:placeholder-shown),
-    :has(select:has(option[value=""]:checked))
+    :has(select option[value=""]:checked)
   ):not(:focus-within)
   > label {
   top: 50%;
@@ -903,13 +902,13 @@ html {
   color: transparent;
 }
 .cemig-form
-  .field--float:has(select:has(option[value=""]:checked)):not(:focus-within)
+  .field--float:has(select option[value=""]:checked):not(:focus-within)
   select,
 :is(.cemig-form, .cemig-lote)
   .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
     :has([type="checkbox"])
   ):not(:has([type="radio"])):has(input, select):has(
-    select:has(option[value=""]:checked)
+    select option[value=""]:checked
   ):not(:focus-within)
   select {
   color: transparent;
@@ -2353,6 +2352,76 @@ body.cemig-mt {
   font-family: var(--cmg-font-family);
   font-size: var(--cmg-fs-caption);
   text-align: center;
+}
+
+/* ============================================================
+   10b. Loteamento (`.cemig-lote`) — visual do formulário BT.
+   O Loteamento segue no shell vanilla `.cemig-mt`, mas a composição
+   da página espelha o `.cemig-form`: form-header (título "Baixa
+   Tensão - Loteamento" + lead) e cards com eyebrow "Etapa N" +
+   card-title — preparando a futura divisão em etapas. Os campos de
+   texto Padrão B já vêm do bloco `:is(.cemig-form, .cemig-lote)`
+   acima; botões/steps/avisos vêm do escopo `.cemig-mt`.
+   ============================================================ */
+.cemig-lote .form-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cmg-space-4);
+  margin: var(--cmg-space-4) 0 var(--cmg-space-8);
+}
+.cemig-lote .form-header h1 {
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-title);
+  line-height: var(--cmg-lh-title);
+  font-weight: var(--cmg-fw-regular);
+  letter-spacing: var(--cmg-ls-wide);
+  color: var(--cmg-text-strong);
+}
+.cemig-lote .form-header p {
+  margin: 0;
+  max-width: none;
+  font-size: var(--cmg-fs-body-lg);
+  line-height: var(--cmg-lh-body-lg);
+  letter-spacing: var(--cmg-ls-tight);
+  color: var(--cmg-text);
+}
+.cemig-lote .card {
+  /* mesma casca do `.cemig-form .card`; overflow visível para os hints
+     absolutos dos campos flutuantes não serem cortados */
+  border: 1px solid var(--cmg-neutral-200);
+  border-radius: var(--cmg-radius);
+  box-shadow: none;
+  overflow: visible;
+  padding: var(--cmg-space-4) var(--cmg-space-4) var(--cmg-space-8);
+}
+.cemig-lote .card + .card {
+  margin-top: var(--cmg-space-8);
+}
+.cemig-lote .card-body {
+  padding: 0; /* o padding agora fica no .card, como no BT */
+}
+.cemig-lote .section-eyebrow {
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-caption);
+  line-height: var(--cmg-lh-caption);
+  font-weight: var(--cmg-fw-regular);
+  letter-spacing: var(--cmg-ls-tight);
+  color: var(--cmg-green-600);
+}
+.cemig-lote .card-title {
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-subtitle-lg, 26px);
+  line-height: 38px;
+  font-weight: var(--cmg-fw-regular);
+  letter-spacing: var(--cmg-ls-wide);
+  color: var(--cmg-text-strong);
+  margin-bottom: var(--cmg-space-2);
+  text-transform: none;
+}
+.cemig-lote .grid {
+  /* row-gap maior (32px) comporta os hints absolutos dos campos Padrão B */
+  gap: var(--cmg-space-8) var(--cmg-space-4);
+  align-items: start;
 }
 
 /* ---- MT / Loteamento / Desistência — responsive ----

@@ -152,7 +152,7 @@ function TabCargasColetivo({ ctx }) {
         value: atend.disjGeralAtual,
         onChange: (e) => setAtend({ ...atend, disjGeralAtual: e.target.value })
       },
-      /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecione…"),
+      /* @__PURE__ */ React.createElement("option", { value: "" }),
       DISJ.map((d) => /* @__PURE__ */ React.createElement("option", { key: d.fx, value: d.fx }, d.fx))
     )), /* @__PURE__ */ React.createElement(Field, { label: "Disjuntor geral novo", req: true }, /* @__PURE__ */ React.createElement(
       Sel,
@@ -160,7 +160,7 @@ function TabCargasColetivo({ ctx }) {
         value: atend.disjuntorGeral,
         onChange: (e) => setAtend({ ...atend, disjuntorGeral: e.target.value })
       },
-      /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecione…"),
+      /* @__PURE__ */ React.createElement("option", { value: "" }),
       opcoesDisjGeral.map((o) => /* @__PURE__ */ React.createElement("option", { key: o, value: o }, o))
     )), /* @__PURE__ */ React.createElement(Field, { label: "Demanda atual (kVA)", req: true }, /* @__PURE__ */ React.createElement(
       Inp,
@@ -184,7 +184,7 @@ function TabCargasColetivo({ ctx }) {
         value: atend.disjuntorGeral,
         onChange: (e) => setAtend({ ...atend, disjuntorGeral: e.target.value })
       },
-      /* @__PURE__ */ React.createElement("option", { value: "" }, "Selecione…"),
+      /* @__PURE__ */ React.createElement("option", { value: "" }),
       opcoesDisjGeral.map((o) => /* @__PURE__ */ React.createElement("option", { key: o, value: o }, o))
     )), opcoesDisjGeral.length === 0 && /* @__PURE__ */ React.createElement("div", { className: "alert alert-info", style: { marginTop: 10 } }, "Preencha os disjuntores das UCs acima para liberar as opções."), atend.disjuntorGeral && !opcoesDisjGeral.includes(atend.disjuntorGeral) && /* @__PURE__ */ React.createElement("div", { className: "alert alert-warn", style: { marginTop: 10 } }, "⚠ Esse disjuntor não atende à seletividade (faixa superior ao maior disjuntor das UCs, ", maiorCorrenteUC, " A) e/ou à capacidade para a demanda total (", fmt2(demandaPrevTotal), " ", "kVA)."))
   ));

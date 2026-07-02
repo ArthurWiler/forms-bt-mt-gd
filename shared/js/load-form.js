@@ -293,11 +293,7 @@ function CalcDemanda({
             disabled: tipoCargaBloqueado,
             onChange: (e) => upd({ tipoA: e.target.value }),
           },
-          /* @__PURE__ */ React.createElement(
-            "option",
-            { value: "" },
-            "Selecionar",
-          ),
+          /* @__PURE__ */ React.createElement("option", { value: "" }),
           /* @__PURE__ */ React.createElement(
             "option",
             { value: "res" },

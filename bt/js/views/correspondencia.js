@@ -72,7 +72,7 @@ function TabCorrespondencia({ ctx }) {
     {
       eyebrow: "Etapa " + ctx.etapaNum,
       title: "Correspondência e Fatura",
-      sub: "Como o cliente deseja receber a conta de energia.",
+      sub: "Escolha como e quando você deseja receber a conta de energia.",
     },
     /* @__PURE__ */ React.createElement(
       "div",
@@ -204,7 +204,7 @@ function TabCorrespondencia({ ctx }) {
             ),
             /* @__PURE__ */ React.createElement(
               Field,
-              { label: "Complemento" },
+              { label: "Complemento do endereço" },
               /* @__PURE__ */ React.createElement(Inp, {
                 value: corr.compl,
                 onChange: (e) => setCorr({ ...corr, compl: e.target.value }),

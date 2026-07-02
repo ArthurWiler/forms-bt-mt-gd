@@ -181,6 +181,8 @@ const ucDetalhadaPadrao = () => ({
   disjPara: "",
   disjEscolhido: "",
   cargas: { qtds: CAT.map(() => 0), tipoA: "", catA: 0, mots: [] },
+  // Gerador de emergência é vinculado à UC (subseção abaixo das cargas)
+  gerador: { possui: "Não", potencia: "", fonte: "", descricao: "" },
 });
 
 // UC de torre/bloco (modo múltiplas torres) — identificação por unidade
@@ -291,7 +293,7 @@ const SEC_BT_RESIDENCIAL = {
           tipoA: "res",
           qtds: cargasQtdsPorNome([
             { n: "Chuveiro 4 estações", q: 2 },
-            { n: "AC 7500 BTU", q: 1 },
+            { n: "Ar condicionado 7500 BTU", q: 1 },
             { n: "Lâmpada LED 10W", q: 4 },
             { n: "Lâmpada LED 18W", q: 4 },
             { n: "Geladeira comum", q: 1 },

@@ -72,7 +72,7 @@ function TabProprietario({ ctx }) {
     {
       eyebrow: "Etapa " + ctx.etapaNum,
       title: "Dados do Proprietário",
-      sub: "Titular da conta de energia ou proprietário/possuidor do imóvel.",
+      sub: "Preencha os dados do titular da conta de energia ou do proprietário do imóvel.",
     },
     /* @__PURE__ */ React.createElement(
       "div",

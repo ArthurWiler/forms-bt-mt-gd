@@ -70,7 +70,6 @@ function TabTipo({ ctx }) {
     validacaoHibrido,
     solicitacoesPermitidas
   } = ctx;
-  const opcoesSolicitacao = solicitacoesPermitidas || SOLICITACOES;
   return /* @__PURE__ */ React.createElement(
     Card,
     {
@@ -78,17 +77,9 @@ function TabTipo({ ctx }) {
       title: "Tipo de Atendimento",
       sub: "O tipo de formulário é definido pela presença ou não de disjuntor geral. Os campos seguintes se adaptam à sua escolha."
     },
-    /* Renames replicados do Individual: "Solicitação" → "Tipo do Atendimento";
-       "Escopo do Atendimento" → "Solicitação". */
-    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2 divider" }, /* @__PURE__ */ React.createElement(Field, { label: "Tipo do Atendimento", req: true, float: true }, /* @__PURE__ */ React.createElement(
-      Sel,
-      {
-        value: atend.solicitacao,
-        disabled: restrito || multiTorres,
-        onChange: (e) => setAtend({ ...atend, solicitacao: e.target.value })
-      },
-      opcoesSolicitacao.map((s) => /* @__PURE__ */ React.createElement("option", { key: s }, s))
-    )), /* @__PURE__ */ React.createElement(Field, { label: "Solicitação", req: true, float: true }, /* @__PURE__ */ React.createElement(
+    /* O item "Tipo do Atendimento" foi removido (Condomínio de Torres /
+       Atendimento coletivo): a solicitação vem do prefill do card. */
+    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2 divider" }, /* @__PURE__ */ React.createElement(Field, { label: "Solicitação", req: true, float: true }, /* @__PURE__ */ React.createElement(
       Sel,
       {
         value: atend.escopo,

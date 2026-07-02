@@ -907,7 +907,7 @@ function renderAnaliseMotores(){
         <div class="field"><label>Carga sensível — % admissível</label><input type="number" step="any" value="${ap.cargaSensivelPercentual}" oninput="motores[${i}].analisePartida.cargaSensivelPercentual=this.value"></div>
         <div class="field"><label>Simultaneidade</label>
           <select onchange="motores[${i}].analisePartida.simultaneidade=this.value">
-            <option value="">Selecione…</option>
+            <option value=""></option>
             <option ${ap.simultaneidade==='Sim'?'selected':''}>Sim</option>
             <option ${ap.simultaneidade==='Não'?'selected':''}>Não</option>
           </select></div>
@@ -1147,7 +1147,7 @@ function preencherTiposSE(){
   const selNova=$('#cn_tipoSE');
   if(selNova){
     const atual=selNova.value;
-    selNova.innerHTML='<option value="">Selecione…</option>'+lista.map(s=>`<option ${atual===s?'selected':''}>${s}</option>`).join('');
+    selNova.innerHTML='<option value=""></option>'+lista.map(s=>`<option ${atual===s?'selected':''}>${s}</option>`).join('');
     if(lista.length===1){selNova.value=lista[0];state.cn_tipoSE=lista[0];}
   }
   // popula dropdown "Tipo de Subestação atual" da alteração
@@ -1158,7 +1158,7 @@ function preencherTiposSE(){
     const listaAtual=CalculoMT.filtrarTiposPorPotencia(baseAtual,potAtual);
     const atual=selAtual.value;
     const manter=listaAtual.includes(atual);
-    selAtual.innerHTML='<option value="">Selecione…</option>'+listaAtual.map(s=>`<option ${manter&&atual===s?'selected':''}>${s}</option>`).join('');
+    selAtual.innerHTML='<option value=""></option>'+listaAtual.map(s=>`<option ${manter&&atual===s?'selected':''}>${s}</option>`).join('');
     if(!manter){selAtual.value='';state.alt_tipoAtual='';}
   }
   // popula dropdown "Para" da alteração
@@ -1166,7 +1166,7 @@ function preencherTiposSE(){
   if(selPara){
     const atual=selPara.value;
     const listaPara=CalculoMT.filtrarTiposPorPotencia(lista,state.potTotalTrafos);
-    selPara.innerHTML='<option value="">Selecione…</option>'+listaPara.map(s=>`<option ${atual===s?'selected':''}>${s}</option>`).join('');
+    selPara.innerHTML='<option value=""></option>'+listaPara.map(s=>`<option ${atual===s?'selected':''}>${s}</option>`).join('');
   }
   renderGaleriaSE('seGallery_nova','cn_tipoSE');
   renderGaleriaSE('seGallery_atual','alt_tipoAtual');
