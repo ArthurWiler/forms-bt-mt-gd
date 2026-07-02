@@ -33,16 +33,20 @@ function abasBTColetivo(s) {
     abas.push({ k: "ucs", l: "Unidades Consumidoras" });
     abas.push({
       k: "cargas",
-      l: s.coletivo ? "Previsão de Carga" : "Cargas das UCs",
+      l: s.coletivo ? "Previsão de Carga" : "Atendimento",
     });
   }
-  if (!s.coletivo) abas.push({ k: "gerador", l: "Gerador de Emergência" });
-  abas.push({ k: "obs", l: "Observações" }, { k: "revisar", l: "Prévia & PDF" });
+  /* Aba "Gerador de Emergência" removida (replicando o Individual): o gerador
+     é subseção da etapa "Atendimento" (TabCargasIndividual). */
+  abas.push(
+    { k: "obs", l: "Observações" },
+    { k: "revisar", l: "Prévia & PDF" },
+  );
   return abas;
 }
 // Individual (Fase 5): 7 etapas finais. "Dados da unidade" reúne Tipo
 // (Solicitação/Escopo) + Obra + identificação das UCs (múltiplas, com
-// "+ Adicionar unidade"); "Cargas das UCs" inclui o Gerador (Fase 3). O fluxo
+// "+ Adicionar unidade"); "Atendimento" inclui o Gerador (Fase 3). O fluxo
 // Individual nunca é coletivo/multiTorres — lista fixa, sem ramificação.
 function abasBTIndividual() {
   return [
@@ -50,7 +54,7 @@ function abasBTIndividual() {
     { k: "prop", l: "Dados do proprietário" },
     { k: "corr", l: "Correspondência" },
     { k: "dados", l: "Dados da unidade" },
-    { k: "cargas", l: "Cargas das UCs" },
+    { k: "cargas", l: "Atendimento" },
     { k: "obs", l: "Observações" },
     { k: "revisar", l: "Prévia & PDF" },
   ];
@@ -67,7 +71,10 @@ function renderEtapaBTColetivo(ctx) {
       /* @__PURE__ */ React.createElement(TabProprietario, { ctx }),
     aba === "corr" &&
       /* @__PURE__ */ React.createElement(TabCorrespondencia, { ctx }),
-    aba === "obra" && /* @__PURE__ */ React.createElement(TabObra, { ctx }),
+    /* TabObra foi fundida em TabDadosUnidade (endereço + zona + ART + aviso);
+       a mesma view serve Individual e Coletivo/Múltiplas Torres. */
+    aba === "obra" &&
+      /* @__PURE__ */ React.createElement(TabDadosUnidade, { ctx }),
     aba === "blocos" &&
       multiTorres &&
       /* @__PURE__ */ React.createElement(TabBlocos, { ctx }),
@@ -85,9 +92,6 @@ function renderEtapaBTColetivo(ctx) {
     aba === "cargas" &&
       !coletivo &&
       /* @__PURE__ */ React.createElement(TabCargasIndividual, { ctx }),
-    aba === "gerador" &&
-      !coletivo &&
-      /* @__PURE__ */ React.createElement(TabGerador, { ctx }),
     aba === "obs" && /* @__PURE__ */ React.createElement(TabObs, { ctx }),
     aba === "revisar" &&
       /* @__PURE__ */ React.createElement(TabRevisar, { ctx }),

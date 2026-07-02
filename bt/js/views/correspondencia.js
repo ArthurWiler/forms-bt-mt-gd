@@ -91,7 +91,7 @@ function TabCorrespondencia({ ctx }) {
       ),
       /* @__PURE__ */ React.createElement(
         Field,
-        { label: "Data de Vencimento da Fatura" },
+        { label: "Data de Vencimento da Fatura", req: true },
         /* @__PURE__ */ React.createElement(Toggle, {
           value: corr.vencimento,
           onChange: (v) => setCorr({ ...corr, vencimento: v }),
@@ -236,22 +236,40 @@ function TabCorrespondencia({ ctx }) {
               }),
             ),
           ),
+        /* Conta globalizada (poder público): oferecida só quando o cliente NÃO
+           recebe a fatura por e-mail; o número só aparece ao marcar "Sim". */
+        /* @__PURE__ */ React.createElement(
+          "div",
+          { style: { marginTop: 12 } },
+          /* @__PURE__ */ React.createElement(
+            Field,
+            { label: "Possui conta globalizada (poder público)?", span: 2 },
+            /* @__PURE__ */ React.createElement(Toggle, {
+              value: corr.possuiContaGlobal,
+              onChange: (v) => setCorr({ ...corr, possuiContaGlobal: v }),
+              options: [
+                { v: "Sim", l: "Sim" },
+                { v: "Não", l: "Não" },
+              ],
+            }),
+          ),
+          corr.possuiContaGlobal === "Sim" &&
+            /* @__PURE__ */ React.createElement(
+              Field,
+              {
+                label:
+                  "Conta globalizada (código de débito automático globalizado)",
+                req: true,
+                span: 2,
+              },
+              /* @__PURE__ */ React.createElement(Inp, {
+                value: corr.contaGlobal,
+                onChange: (e) =>
+                  setCorr({ ...corr, contaGlobal: e.target.value }),
+                placeholder: "000000000",
+              }),
+            ),
+        ),
       ),
-    /* @__PURE__ */ React.createElement(
-      "div",
-      { style: { marginTop: 14 } },
-      /* @__PURE__ */ React.createElement(
-        Field,
-        {
-          label:
-            "Conta globalizada (poder público — código de débito automático globalizado)",
-        },
-        /* @__PURE__ */ React.createElement(Inp, {
-          value: corr.contaGlobal,
-          onChange: (e) => setCorr({ ...corr, contaGlobal: e.target.value }),
-          placeholder: "Opcional",
-        }),
-      ),
-    ),
   );
 }

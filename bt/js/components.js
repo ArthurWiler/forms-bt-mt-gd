@@ -79,27 +79,48 @@ function LogoCemig() {
     className: "logo-img",
   });
 }
-// Destaca um sufixo "(opcional)" / "— opcional" no rótulo: renderiza o
-// marcador em <span class="opt"> (peso menor + itálico, ver shared.css).
-// Só transforma quando o marcador está no fim; caso contrário devolve o
-// rótulo intacto. Vale para todos os forms via o componente Field.
-function renderFieldLabel(label) {
-  if (typeof label !== "string") return label;
-  const m = label.match(/^(.*?)\s*(?:[—-]\s*)?(\(?\s*opcional\s*\)?)\s*$/i);
-  if (!m || !m[1].trim()) return label;
+// Renderiza o rótulo aplicando a convenção de marcadores (fonte única):
+//   • obrigatório → sem sufixo;
+//   • opcional    → sufixo "(opcional)" em <span class="opt"> (ver shared.css).
+// A intenção ("é opcional?") vem do Field via opts.optional — NÃO se inspeciona
+// o texto do rótulo. Marcadores legados no fim ("*", "**", "— opcional",
+// "(opcional)") são removidos para não duplicar.
+function renderFieldLabel(label, opts) {
+  const optional = !!(opts && opts.optional);
+  const suffix = optional
+    ? [
+        " ",
+        /* @__PURE__ */ React.createElement(
+          "span",
+          { className: "opt" },
+          "(opcional)",
+        ),
+      ]
+    : [];
+  if (typeof label !== "string") {
+    return /* @__PURE__ */ React.createElement(
+      React.Fragment,
+      null,
+      label,
+      ...suffix,
+    );
+  }
+  let base = label
+    .replace(/\s*(?:[—-]\s*)?\(?\s*opcional\s*\)?\s*$/i, "")
+    .replace(/\s*\*+\s*$/, "")
+    .trim();
+  if (!base) base = label;
   return /* @__PURE__ */ React.createElement(
     React.Fragment,
     null,
-    m[1].trim(),
-    " ",
-    /* @__PURE__ */ React.createElement(
-      "span",
-      { className: "opt" },
-      "(opcional)",
-    ),
+    base,
+    ...suffix,
   );
 }
-function Field({ label, req, children, hint, span, float }) {
+// Convenção de obrigatoriedade (global): req=true → sem marcador; req=false →
+// "(opcional)"; req=false + hideOpt → sem marcador (rótulos calculados/somente-
+// leitura, sub-rótulos, etc.).
+function Field({ label, req, children, hint, span, float, hideOpt }) {
   const cls =
     "field" +
     (float ? " field--float" : "") +
@@ -111,14 +132,7 @@ function Field({ label, req, children, hint, span, float }) {
       /* @__PURE__ */ React.createElement(
         "label",
         null,
-        renderFieldLabel(label),
-        " ",
-        req &&
-          /* @__PURE__ */ React.createElement(
-            "span",
-            { className: "req" },
-            "*",
-          ),
+        renderFieldLabel(label, { optional: !req && !hideOpt }),
       ),
     children,
     hint &&

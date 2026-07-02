@@ -78,7 +78,9 @@ function TabTipo({ ctx }) {
       title: "Tipo de Atendimento",
       sub: "O tipo de formulário é definido pela presença ou não de disjuntor geral. Os campos seguintes se adaptam à sua escolha."
     },
-    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2 divider" }, /* @__PURE__ */ React.createElement(Field, { label: "Solicitação", req: true, float: true }, /* @__PURE__ */ React.createElement(
+    /* Renames replicados do Individual: "Solicitação" → "Tipo do Atendimento";
+       "Escopo do Atendimento" → "Solicitação". */
+    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2 divider" }, /* @__PURE__ */ React.createElement(Field, { label: "Tipo do Atendimento", req: true, float: true }, /* @__PURE__ */ React.createElement(
       Sel,
       {
         value: atend.solicitacao,
@@ -86,7 +88,7 @@ function TabTipo({ ctx }) {
         onChange: (e) => setAtend({ ...atend, solicitacao: e.target.value })
       },
       opcoesSolicitacao.map((s) => /* @__PURE__ */ React.createElement("option", { key: s }, s))
-    )), /* @__PURE__ */ React.createElement(Field, { label: "Escopo do Atendimento", req: true, float: true }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Solicitação", req: true, float: true }, /* @__PURE__ */ React.createElement(
       Sel,
       {
         value: atend.escopo,

@@ -23,8 +23,6 @@ function TabDadosUnidade({ ctx }) {
     zonaTravada,
   } = ctx;
 
-  const opcoesSolicitacao = solicitacoesPermitidas || SOLICITACOES_INDIVIDUAIS;
-
   // Troca de zona limpa os campos da zona oposta.
   const trocarZona = (v) => {
     if (v === obra.localizacao) return;
@@ -53,75 +51,39 @@ function TabDadosUnidade({ ctx }) {
     Card,
     {
       eyebrow: "Etapa " + ctx.etapaNum,
-      title: "Dados da unidade consumidora",
+      /* A view serve o Individual ("dados") e o Coletivo/Múltiplas Torres
+         ("obra" — antiga TabObra, fundida aqui). */
+      title:
+        ctx.formType === "individual"
+          ? "Dados da unidade consumidora"
+          : "Dados da Obra",
       sub: "Preencha os dados de identificação, endereço e informações técnicas da unidade.",
     },
 
-    /* ── Bloco 1: Solicitação / Escopo / Nº UCs ── */
+    /* Aviso (variante warn): todas as UCs do pedido devem estar no mesmo
+       endereço, mudando apenas o complemento. Reutiliza o banner .cmg-aviso. */
     /* @__PURE__ */ React.createElement(
       "div",
-      { className: "grid grid-2" },
+      { className: "cmg-aviso cmg-aviso--warn" },
+      /* @__PURE__ */ React.createElement("div", {
+        className: "cmg-aviso-icon",
+        "aria-hidden": "true",
+      }),
       /* @__PURE__ */ React.createElement(
-        Field,
-        { label: "Solicitação", req: true, float: true },
-        /* @__PURE__ */ React.createElement(
-          Sel,
-          {
-            value: atend.solicitacao,
-            disabled: restrito,
-            onChange: (e) =>
-              setAtend({ ...atend, solicitacao: e.target.value }),
-          },
-          opcoesSolicitacao.map((s) =>
-            /* @__PURE__ */ React.createElement("option", { key: s }, s),
-          ),
-        ),
-      ),
-      /* @__PURE__ */ React.createElement(
-        Field,
-        { label: "Escopo do Atendimento", req: true, float: true },
-        /* @__PURE__ */ React.createElement(
-          Sel,
-          {
-            value: atend.escopo,
-            onChange: (e) => setAtend({ ...atend, escopo: e.target.value }),
-          },
-          (ESCOPOS[atend.solicitacao] || []).map((s) =>
-            /* @__PURE__ */ React.createElement("option", { key: s }, s),
-          ),
-        ),
-      ),
-      /* @__PURE__ */ React.createElement(
-        Field,
-        {
-          label: "Nº de Unidades Consumidoras",
-          req: true,
-          float: true,
-          hint: rural
-            ? "Pedido rural é limitado a 1 unidade consumidora."
-            : void 0,
-        },
-        /* @__PURE__ */ React.createElement(Inp, {
-          type: "number",
-          max: rural ? 1 : 3,
-          disabled: rural,
-          value: atend.nUCs,
-          onChange: (e) => {
-            if (rural) {
-              setAtend({ ...atend, nUCs: 1 });
-              return;
-            }
-            const n = Math.min(3, Math.max(1, parseInt(e.target.value) || 1));
-            setAtend({ ...atend, nUCs: n });
-          },
-        }),
+        "p",
+        { className: "cmg-aviso-texto" },
+        "Todas as unidades deste pedido devem estar no mesmo endereço exato (rua, número, bairro, cidade e UF), mudando apenas o complemento (ex: apto, bloco). Se houver qualquer outra diferença, como o número da casa/apartamento é necessário abrir uma nova solicitação de atendimento no Cemig Atende.",
       ),
     ),
+
+    /* Solicitação / Escopo / Nº UCs migraram para a aba "Atendimento"
+       (ver views/cargas-individual.js): a Solicitação passou a ser por UC e o
+       "Tipo do Atendimento" + Nº de UCs ficam no topo daquela etapa. */
 
     /* ── Bloco 2: Zona + ART ── */
     /* @__PURE__ */ React.createElement(
       "div",
-      { className: "grid grid-2 divider" },
+      { className: "grid grid-2" },
       /* @__PURE__ */ React.createElement(
         Field,
         {

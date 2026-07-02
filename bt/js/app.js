@@ -1,3 +1,53 @@
+// ---- Trava de avanço (Parte B) ------------------------------------------
+// Um valor "preenchido" é não-nulo e não-vazio (após trim).
+function _preenchido(v) {
+  return v != null && String(v).trim() !== "";
+}
+// Endereço da obra: campos obrigatórios variam por localização (urbana × rural)
+// e o ART só é exigido no coletivo. Usado pelas abas "dados" (individual) e
+// "obra" (coletivo).
+function _reqEnderecoObra(s) {
+  const o = s.obra || {};
+  const req = [];
+  if (s.coletivo) req.push(o.art);
+  if (o.localizacao === "Rural") {
+    req.push(o.cidade, o.estado);
+  } else {
+    req.push(o.cep, o.endereco, o.num, o.bairro, o.cidade, o.estado);
+  }
+  return req;
+}
+// Tabela declarativa: por aba, a lista de valores obrigatórios VISÍVEIS. Abas
+// ausentes (orient/ucs/cargas/blocos/gerador/obs/revisar) não travam o avanço.
+// Ao mudar o formulário no futuro, basta ajustar esta tabela.
+const CAMPOS_OBRIGATORIOS = {
+  prop: (s) => {
+    const p = s.prop || {};
+    const req = [p.nome, p.cpfCnpj, p.email, p.celular];
+    if (s.pessoaFisica && p.nis === "Sim") req.push(p.numNis);
+    return req;
+  },
+  corr: (s) => {
+    const c = s.corr || {};
+    const req = [c.vencimento];
+    if (c.receberEmail === "Não") {
+      if (c.alternativa === "Outro e-mail") req.push(c.outroEmail);
+      else if (c.alternativa === "Endereço novo")
+        req.push(c.cep, c.rua, c.num, c.bairro, c.municipio);
+    }
+    if (c.receberEmail === "Não" && c.possuiContaGlobal === "Sim")
+      req.push(c.contaGlobal);
+    return req;
+  },
+  dados: _reqEnderecoObra,
+  obra: _reqEnderecoObra,
+};
+function abaCompleta(aba, s) {
+  const f = CAMPOS_OBRIGATORIOS[aba];
+  if (!f) return true;
+  return f(s).every(_preenchido);
+}
+
 function App() {
   const [aba, setAba] = useState("orient");
   const [modalidade, setModalidade] = useState(null);
@@ -26,7 +76,6 @@ function App() {
     fixo: "",
     cpfCnpj: "",
     laudoMedico: "Não",
-    telProp: "",
     nis: "Não",
     numNis: "",
   });
@@ -43,6 +92,8 @@ function App() {
     municipio: "",
     cep: "",
     estado: "MG",
+    // conta globalizada só é oferecida quando NÃO recebe fatura por e-mail
+    possuiContaGlobal: "Não",
     contaGlobal: "",
   });
   const [obra, setObra] = useState({
@@ -102,7 +153,29 @@ function App() {
     img.src = "../imgs/logos/logo-cemig-cor.png";
   }, []);
   const docInfo = useMemo(() => validarCpfCnpj(prop.cpfCnpj), [prop.cpfCnpj]);
-  const pessoaFisica = docInfo.tipo !== "CNPJ";
+  // Comparação POSITIVA: com o documento vazio (tipo ""), não é PF nem PJ — assim
+  // nenhum campo exclusivo de pessoa física aparece até o CPF/CNPJ ser preenchido.
+  const pessoaFisica = docInfo.tipo === "CPF";
+  const pessoaJuridica = docInfo.tipo === "CNPJ";
+  // Ao passar a CNPJ, os campos exclusivos de pessoa física somem — limpamos seus
+  // valores (e restauramos os toggles ao padrão "Não") para não enviar dados
+  // inconsistentes nem gerar linhas órfãs no PDF.
+  useEffect(() => {
+    if (docInfo.tipo !== "CNPJ") return;
+    setProp((p) => {
+      const limpo = {
+        ...p,
+        filiacao: "",
+        rg: "",
+        nasc: "",
+        laudoMedico: "Não",
+        nis: "Não",
+        numNis: "",
+      };
+      const mudou = Object.keys(limpo).some((k) => limpo[k] !== p[k]);
+      return mudou ? limpo : p;
+    });
+  }, [docInfo.tipo]);
   const [ucsDet, setUcsDet] = useState([ucDetalhadaPadrao()]);
   const [cargasPadrao, setCargasPadrao] = useState(null);
   const setUcDet = (i, patch) =>
@@ -384,6 +457,10 @@ function App() {
         while (arr.length < ni) {
           const nova = ucDetalhadaPadrao();
           if (cargasPadrao) nova.cargas = { ...cargasPadrao };
+          // Herda a atividade travada do card (Residencial/Comercial/…) para
+          // que UCs adicionadas não fiquem com o seletor bloqueado em vazio.
+          const _ativ = cardSelecionado?.prefill?.atividade;
+          if (_ativ) nova.atividade = _ativ;
           arr.push(nova);
         }
         while (arr.length > ni) arr.pop();
@@ -1137,7 +1214,17 @@ function App() {
                             )
                           : /* @__PURE__ */ React.createElement(
                               Btn,
-                              { variant: "primary", onClick: irProx },
+                              {
+                                variant: "primary",
+                                onClick: irProx,
+                                disabled: !abaCompleta(aba, {
+                                  prop,
+                                  corr,
+                                  obra,
+                                  pessoaFisica,
+                                  coletivo,
+                                }),
+                              },
                               "Avançar →",
                             ),
                       ),

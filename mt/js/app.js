@@ -213,6 +213,13 @@ function inicializarCamposCards(){
 
 /* ===== Navegação ===== */
 function goTo(n){
+  // Trava de avanço: só valida quando avança (ou pula adiante). Volta é livre.
+  const _atual=document.querySelector('.page.show');
+  const _atualN=_atual?parseInt(_atual.id.replace('page-',''),10):-1;
+  if(n>_atualN && _atual && window.CemigMarcadores){
+    const r=window.CemigMarcadores.validar(_atual);
+    if(!r.ok){ if(r.primeiro) r.primeiro.scrollIntoView({behavior:'smooth',block:'center'}); return; }
+  }
   $$('.page').forEach(p=>p.classList.remove('show'));
   $('#page-'+n).classList.add('show');
   const steps=$$('.vstep');
@@ -1573,4 +1580,6 @@ document.addEventListener('DOMContentLoaded',()=>{
   aplicarAtividadeDaURL();
   // stepper clicável
   $$('.vstep').forEach((s,i)=>s.addEventListener('click',()=>goTo(i)));
+  // reaplica a convenção de marcadores nos campos montados dinamicamente
+  if(window.CemigMarcadores) window.CemigMarcadores.aplicar();
 });

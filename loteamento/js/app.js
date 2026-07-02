@@ -129,7 +129,14 @@ function renderPreview(){
   h+=`</div>`;
   $('#previewContent').innerHTML=h;
 }
-function exportarPDF(){ renderPreview(); window.print(); }
+function exportarPDF(){
+  // Trava: só exporta quando os obrigatórios visíveis estão preenchidos.
+  if(window.CemigMarcadores){
+    const r=window.CemigMarcadores.validar(document);
+    if(!r.ok){ if(r.primeiro) r.primeiro.scrollIntoView({behavior:'smooth',block:'center'}); return; }
+  }
+  renderPreview(); window.print();
+}
 
 /* ===== Init ===== */
 document.addEventListener('DOMContentLoaded',()=>{

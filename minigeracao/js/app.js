@@ -103,6 +103,30 @@ function App() {
   const Atual = GD_ABAS[idx].c;
   const irProx = () => idx < GD_ABAS.length - 1 && setAba(GD_ABAS[idx + 1].id);
   const irAnt = () => idx > 0 && setAba(GD_ABAS[idx - 1].id);
+  // Trava de avanço: campos obrigatórios da aba de identificação (view escrita à
+  // mão — lista explícita). Abas não mapeadas não travam o avanço.
+  const abaCompleta = (() => {
+    const reqPorAba = {
+      ident: [
+        "instalacao",
+        "titular",
+        "grupo",
+        "classe",
+        "cpfCnpj",
+        "logradouro",
+        "numero",
+        "bairro",
+        "municipio",
+        "estado",
+        "cep",
+        "celular",
+        "email",
+      ],
+    };
+    const keys = reqPorAba[aba];
+    if (!keys) return true;
+    return keys.every((k) => d[k] != null && String(d[k]).trim() !== "");
+  })();
   return /* @__PURE__ */ React.createElement(
     "div",
     { className: "cemig-form" },
@@ -119,7 +143,7 @@ function App() {
           /* @__PURE__ */ React.createElement(
             "span",
             { className: "app-title" },
-            "Formulário de Minigeração Distribuída",
+            "Formulário de Ligação Nova e Alteração de Carga",
           ),
         ),
       ),
@@ -186,7 +210,11 @@ function App() {
           idx < GD_ABAS.length - 1
             ? /* @__PURE__ */ React.createElement(
                 Btn,
-                { variant: "primary", onClick: irProx },
+                {
+                  variant: "primary",
+                  onClick: irProx,
+                  disabled: !abaCompleta,
+                },
                 "Avançar →",
               )
             : /* @__PURE__ */ React.createElement(

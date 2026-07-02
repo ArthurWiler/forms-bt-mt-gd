@@ -362,6 +362,8 @@ html {
   flex-direction: row;
   align-items: stretch;
   width: 100%;
+  /* default breathing room so the banner never hugs neighbouring blocks */
+  margin: var(--cmg-space-4) 0;
   border: 1px solid var(--cmg-neutral-200); /* #D1D4D3 */
   border-radius: 8px;
   overflow: hidden; /* let the rounded corners clip the column backgrounds */
@@ -394,7 +396,8 @@ html {
   display: flex;
   align-items: center;
   margin: 0;
-  padding: 10px;
+  /* margem interna padrão do texto (vertical + respiro lateral) */
+  padding: var(--cmg-space-3) var(--cmg-space-4);
   background: var(--cmg-surface); /* #FFFFFF */
   border-radius: 0 8px 8px 0;
   font-family: "Open Sans", var(--cmg-font-family);
@@ -709,6 +712,22 @@ html {
   background: var(--cmg-surface-disabled);
   color: var(--cmg-text-muted);
   cursor: not-allowed;
+}
+/* Sinalização única de campo obrigatório não preenchido — reutilizada por
+   todos os formulários (React `.cemig-form` e vanilla `.cemig-mt`). Uma só
+   classe (.is-invalid), sem estilos de erro concorrentes. Declarada após o
+   :focus para prevalecer mesmo com o campo focado. */
+.cemig-form .field input.is-invalid,
+.cemig-form .field select.is-invalid,
+.cemig-form .field textarea.is-invalid,
+.cemig-mt .field input.is-invalid,
+.cemig-mt .field select.is-invalid,
+.cemig-mt .field textarea.is-invalid,
+.cemig-mt input.is-invalid,
+.cemig-mt select.is-invalid,
+.cemig-mt textarea.is-invalid {
+  border-color: var(--vermelho);
+  box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.18);
 }
 .cemig-form .readonly-val {
   min-height: 48px;
@@ -1173,6 +1192,32 @@ html {
   font-size: 20px;
   letter-spacing: 0.2px;
   color: var(--cmg-text-strong);
+}
+/* Cabeçalho da UC com endereço (spec Figma: caixa cinza #F4F5F4, título
+   neutra/700, rótulo "Endereço" neutra/600 pequeno, valor em negrito).
+   O bloco empilha título + endereço; o chevron continua à direita. */
+.cemig-form .uc-head-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--cmg-space-3) 0;
+  text-align: left;
+}
+.cemig-form .uc-head-endereco-label {
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-caption); /* 12px */
+  line-height: var(--cmg-lh-caption);
+  letter-spacing: var(--cmg-ls-tight);
+  color: var(--cmg-text); /* #364B46 */
+  margin-top: var(--cmg-space-2);
+}
+.cemig-form .uc-head-endereco {
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-body); /* 14px */
+  line-height: var(--cmg-lh-body);
+  font-weight: var(--cmg-fw-bold);
+  letter-spacing: var(--cmg-ls-tight);
+  color: var(--cmg-text-strong); /* #041E18 */
 }
 .cemig-form .uc-colapsavel-chevron {
   color: var(--cmg-text);
@@ -1884,7 +1929,6 @@ html {
   letter-spacing: var(--cmg-ls-tight);
   text-transform: none;
   color: var(--cmg-green-600);
-  margin-bottom: var(--cmg-space-4);
 }
 .cemig-form .card-title {
   font-family: var(--cmg-font-family);
@@ -1905,6 +1949,10 @@ html {
 }
 .cemig-form .grid {
   gap: var(--cmg-space-8) var(--cmg-space-4);
+  /* Cada campo mantém a própria altura (56px no padrão flutuante): sem isso,
+     um .field--float na mesma linha de um vizinho alto (toggle, campo com
+     hint) estica e fica visivelmente maior que os demais. */
+  align-items: start;
 }
 .cemig-form .nav-bottom {
   display: flex;

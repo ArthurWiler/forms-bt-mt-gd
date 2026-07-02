@@ -72,7 +72,7 @@ function TabProprietario({ ctx }) {
     {
       eyebrow: "Etapa " + ctx.etapaNum,
       title: "Dados do Proprietário",
-      sub: "Titular da conta de energia ou proprietário/possuidor do imóvel. (*) obrigatório · (**) obrigatório para pessoa física.",
+      sub: "Titular da conta de energia ou proprietário/possuidor do imóvel.",
     },
     /* @__PURE__ */ React.createElement(
       "div",
@@ -138,7 +138,7 @@ function TabProprietario({ ctx }) {
       pessoaFisica &&
         /* @__PURE__ */ React.createElement(
           Field,
-          { label: "Filiação (Mãe ou Pai) **" },
+          { label: "Filiação (Mãe ou Pai)" },
           /* @__PURE__ */ React.createElement(Inp, {
             value: prop.filiacao,
             onChange: (e) => setProp({ ...prop, filiacao: e.target.value }),
@@ -147,7 +147,7 @@ function TabProprietario({ ctx }) {
       pessoaFisica &&
         /* @__PURE__ */ React.createElement(
           Field,
-          { label: "RG / RNE / RANI **" },
+          { label: "RG / RNE / RANI" },
           /* @__PURE__ */ React.createElement(Inp, {
             value: prop.rg,
             onChange: (e) =>
@@ -157,7 +157,7 @@ function TabProprietario({ ctx }) {
       pessoaFisica &&
         /* @__PURE__ */ React.createElement(
           Field,
-          { label: "Data de Nascimento **" },
+          { label: "Data de Nascimento" },
           /* @__PURE__ */ React.createElement(Inp, {
             type: "date",
             value: prop.nasc,
@@ -185,23 +185,11 @@ function TabProprietario({ ctx }) {
             setProp({ ...prop, fixo: mascararFixo(e.target.value) }),
         }),
       ),
-      /* @__PURE__ */ React.createElement(
-        Field,
-        { label: "Telefone do Proprietário", req: true },
-        /* @__PURE__ */ React.createElement(Inp, {
-          value: prop.telProp,
-          onChange: (e) =>
-            setProp({
-              ...prop,
-              telProp: mascararTelefone(e.target.value),
-            }),
-        }),
-      ),
       pessoaFisica &&
         /* @__PURE__ */ React.createElement(
           Field,
           {
-            label: "Possui laudo médico (equipamentos essenciais)? **",
+            label: "Possui laudo médico (equipamentos essenciais)?",
             span: 2,
           },
           /* @__PURE__ */ React.createElement(Toggle, {
@@ -216,7 +204,7 @@ function TabProprietario({ ctx }) {
       pessoaFisica &&
         /* @__PURE__ */ React.createElement(
           Field,
-          { label: "Possui NIS para Tarifa Social? **" },
+          { label: "Possui NIS para Tarifa Social?" },
           /* @__PURE__ */ React.createElement(Toggle, {
             value: prop.nis,
             onChange: (v) => setProp({ ...prop, nis: v }),

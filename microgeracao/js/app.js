@@ -170,6 +170,18 @@ function App() {
   const Atual = GD_ABAS[idx].c;
   const irProx = () => idx < GD_ABAS.length - 1 && setAba(GD_ABAS[idx + 1].id);
   const irAnt = () => idx > 0 && setAba(GD_ABAS[idx - 1].id);
+  // Trava de avanço: por aba, valida os campos obrigatórios VISÍVEIS do schema
+  // declarativo (respeita f.show). Abas não mapeadas não travam o avanço.
+  const abaCompleta = (() => {
+    const schema = { ident: GD_SCHEMA_IDENTIFICACAO }[aba];
+    if (!schema) return true;
+    return schema.every((f) => {
+      if (!f.req) return true;
+      if (f.show && !f.show(d)) return true;
+      const v = d[f.k];
+      return v != null && String(v).trim() !== "";
+    });
+  })();
   return /* @__PURE__ */ React.createElement(
     "div",
     { className: "cemig-form" },
@@ -186,7 +198,7 @@ function App() {
           /* @__PURE__ */ React.createElement(
             "span",
             { className: "app-title" },
-            "Formulário de Microgeração Distribuída",
+            "Formulário de Ligação Nova e Alteração de Carga",
           ),
         ),
       ),
@@ -270,7 +282,11 @@ function App() {
           idx < GD_ABAS.length - 1
             ? /* @__PURE__ */ React.createElement(
                 Btn,
-                { variant: "primary", onClick: irProx },
+                {
+                  variant: "primary",
+                  onClick: irProx,
+                  disabled: !abaCompleta,
+                },
                 "Avançar →",
               )
             : /* @__PURE__ */ React.createElement(

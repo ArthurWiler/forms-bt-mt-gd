@@ -118,6 +118,18 @@ function inicializarCamposCards() {
 
 /* ===== Navegação ===== */
 function goTo(n) {
+  // Trava de avanço: valida os obrigatórios visíveis da etapa atual só ao
+  // avançar (ou pular adiante). Voltar é livre.
+  const _atual = document.querySelector(".page.show");
+  const _atualN = _atual ? parseInt(_atual.id.replace("page-", ""), 10) : -1;
+  if (n > _atualN && _atual && window.CemigMarcadores) {
+    const r = window.CemigMarcadores.validar(_atual);
+    if (!r.ok) {
+      if (r.primeiro)
+        r.primeiro.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+  }
   $$(".page").forEach((p) => p.classList.remove("show"));
   $("#page-" + n).classList.add("show");
   const steps = $$(".vstep");
@@ -332,7 +344,9 @@ function camposObrigatoriosFaltando() {
   syncState();
   const faltando = [];
   $$(".field").forEach((field) => {
-    if (!field.querySelector(".req")) return;
+    // A convenção de marcadores (shared/js/form-marcadores.js) converte os
+    // antigos <span class="req"> em `data-req` no próprio controle.
+    if (!field.querySelector("[data-req]")) return;
     if (!elementoRelevante(field)) return;
     const ctrl = field.querySelector("[data-k]");
     if (!ctrl) return;

@@ -253,9 +253,10 @@ function gerarPdfDoc(S) {
   ];
   if (coletivo)
     tipoPairs.push(
-      ["Solicitação", atend.solicitacao],
-      ["Escopo do atendimento", atend.escopo],
+      ["Tipo do Atendimento", atend.solicitacao],
+      ["Solicitação", atend.escopo],
     );
+  else tipoPairs.push(["Tipo do Atendimento", atend.solicitacao]);
   kvPairs(tipoPairs);
   if (coletivo && !multiTorres && atend.disjuntorGeral)
     fullLine("Disjuntor geral", atend.disjuntorGeral);
@@ -268,7 +269,6 @@ function gerarPdfDoc(S) {
     ["E-mail", prop.email],
     ["Celular", prop.celular],
     ["Telefone Fixo", prop.fixo],
-    ["Telefone do Proprietário", prop.telProp],
   ];
   if (pessoaFisica) {
     propPairs.push(
@@ -284,12 +284,19 @@ function gerarPdfDoc(S) {
   cy += 2;
 
   sec("2.  CORRESPONDÊNCIA E FATURA");
-  kvPairs([
-    ["Receber fatura por e-mail", corr.receberEmail],
-    ["Dia de vencimento", corr.vencimento ? "Dia " + corr.vencimento : ""],
-    ["Conta globalizada", corr.contaGlobal],
-    ["", ""],
-  ]);
+  {
+    const corrPairs = [
+      ["Receber fatura por e-mail", corr.receberEmail],
+      ["Dia de vencimento", corr.vencimento ? "Dia " + corr.vencimento : ""],
+    ];
+    // Conta globalizada só é oferecida quando NÃO recebe por e-mail e o cliente
+    // marca que a possui — só então entra no PDF.
+    if (corr.receberEmail === "Não" && corr.possuiContaGlobal === "Sim") {
+      corrPairs.push(["Conta globalizada", corr.contaGlobal]);
+    }
+    corrPairs.push(["", ""]);
+    kvPairs(corrPairs);
+  }
   if (corr.receberEmail === "Não") {
     if (corr.alternativa === "Outro e-mail") {
       fullLine("E-mail alternativo para a fatura", corr.outroEmail);
