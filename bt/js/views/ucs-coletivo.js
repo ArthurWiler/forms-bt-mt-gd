@@ -67,6 +67,9 @@ function TabUcsColetivo({ ctx }) {
     validacaoDisjuntores,
     validacaoHibrido,
   } = ctx;
+  // UCs colapsáveis (padrão da aba Atendimento do BT individual): minimizadas
+  // por padrão; abrem só quando o usuário clica.
+  const [ucAberta, setUcAberta] = useState({});
   return /* @__PURE__ */ React.createElement(
     "div",
     null,
@@ -118,26 +121,62 @@ function TabUcsColetivo({ ctx }) {
             "⧉ Replicar UC 1 para todas",
           ),
         ),
-      ucBlocos.map((u, ui) =>
-        /* @__PURE__ */ React.createElement(
+      ucBlocos.map((u, ui) => {
+        const abertaUC = ucAberta[ui] === true;
+        return /* @__PURE__ */ React.createElement(
           "div",
-          { key: ui, className: "uc-block" },
+          {
+            key: ui,
+            className: "uc-colapsavel" + (abertaUC ? " is-open" : ""),
+          },
           /* @__PURE__ */ React.createElement(
-            "div",
-            { className: "uc-block-head" },
+            "button",
+            {
+              type: "button",
+              className: "uc-colapsavel-head",
+              "aria-expanded": abertaUC,
+              onClick: () => setUcAberta((p) => ({ ...p, [ui]: !abertaUC })),
+            },
             /* @__PURE__ */ React.createElement(
               "span",
-              { className: "uc-block-title" },
-              u.identificacao || `UC ${ui + 1}`,
+              { className: "uc-head-info" },
+              /* @__PURE__ */ React.createElement(
+                "span",
+                { className: "uc-colapsavel-titulo" },
+                u.identificacao || `UC ${ui + 1}`,
+              ),
+              ui === 0 &&
+                ucBlocos.length > 1 &&
+                /* @__PURE__ */ React.createElement(
+                  "span",
+                  { className: "uc-mini-tag" },
+                  "modelo p/ replicar",
+                ),
+              u.complemento &&
+                /* @__PURE__ */ React.createElement(
+                  React.Fragment,
+                  null,
+                  /* @__PURE__ */ React.createElement(
+                    "span",
+                    { className: "uc-head-endereco-label" },
+                    "Complemento",
+                  ),
+                  /* @__PURE__ */ React.createElement(
+                    "span",
+                    { className: "uc-head-endereco" },
+                    u.complemento,
+                  ),
+                ),
             ),
-            /* @__PURE__ */ React.createElement(
-              Badge,
-              null,
-              ui + 1,
-              " de ",
-              ucBlocos.length,
-            ),
+            /* @__PURE__ */ React.createElement("span", {
+              className: "carga-acc-chevron uc-colapsavel-chevron",
+              "aria-hidden": "true",
+            }),
           ),
+          abertaUC &&
+            /* @__PURE__ */ React.createElement(
+              "div",
+              { className: "uc-colapsavel-corpo" },
           /* @__PURE__ */ React.createElement(
             "div",
             { className: "grid grid-3" },
@@ -329,68 +368,52 @@ function TabUcsColetivo({ ctx }) {
                     setBloco(ui, { unidadeConsumidora: e.target.value }),
                 }),
               ),
-            /* @__PURE__ */ React.createElement(
-              Field,
-              { label: "Disjuntor", span: 3 },
+            /* Disjuntores em Fields padrão (rótulo flutuante + opção vazia),
+               como na aba Atendimento do BT — substitui o antigo par "De/Para"
+               num único campo (.disj-pair). */
+            u.solicitacao !== "Conexão Nova" &&
               /* @__PURE__ */ React.createElement(
-                "div",
-                { className: "disj-pair" },
-                u.solicitacao !== "Conexão Nova" &&
-                  /* @__PURE__ */ React.createElement(
-                    "div",
-                    null,
-                    /* @__PURE__ */ React.createElement(
-                      Sel,
-                      {
-                        value: u.disjDe,
-                        onChange: (e) =>
-                          setBloco(ui, { disjDe: e.target.value }),
-                      },
-                      /* @__PURE__ */ React.createElement(
-                        "option",
-                        { value: "" },
-                        "De: (atual)…",
-                      ),
-                      DISJ.map((d) =>
-                        /* @__PURE__ */ React.createElement(
-                          "option",
-                          { key: d.fx, value: d.fx },
-                          d.fx,
-                        ),
-                      ),
-                    ),
-                  ),
+                Field,
+                { label: "Disjuntor atual", float: true },
                 /* @__PURE__ */ React.createElement(
-                  "div",
-                  null,
-                  /* @__PURE__ */ React.createElement(
-                    Sel,
-                    {
-                      value: u.disjPara,
-                      onChange: (e) =>
-                        setBloco(ui, { disjPara: e.target.value }),
-                    },
+                  Sel,
+                  {
+                    value: u.disjDe,
+                    onChange: (e) => setBloco(ui, { disjDe: e.target.value }),
+                  },
+                  /* @__PURE__ */ React.createElement("option", { value: "" }),
+                  DISJ.map((d) =>
                     /* @__PURE__ */ React.createElement(
                       "option",
-                      { value: "" },
-                      u.solicitacao === "Conexão Nova"
-                        ? "Disjuntor solicitado…"
-                        : "Para: (solicitado)…",
+                      { key: d.fx, value: d.fx },
+                      d.fx,
                     ),
-                    DISJ_CN.map((d) =>
-                      /* @__PURE__ */ React.createElement(
-                        "option",
-                        { key: d.fx, value: d.fx },
-                        d.fx,
-                      ),
-                    ),
+                  ),
+                ),
+              ),
+            /* @__PURE__ */ React.createElement(
+              Field,
+              { label: "Disjuntor solicitado", float: true },
+              /* @__PURE__ */ React.createElement(
+                Sel,
+                {
+                  value: u.disjPara,
+                  onChange: (e) => setBloco(ui, { disjPara: e.target.value }),
+                },
+                /* @__PURE__ */ React.createElement("option", { value: "" }),
+                DISJ_CN.map((d) =>
+                  /* @__PURE__ */ React.createElement(
+                    "option",
+                    { key: d.fx, value: d.fx },
+                    d.fx,
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      ),
+            ),
+        );
+      }),
     ),
   );
 }

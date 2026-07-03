@@ -215,11 +215,49 @@ const blocoPadrao = (i) => ({
   disjGeral: "",
   demandaBloco: "",
   qtdUCs: "",
+  aptosPorAndar: "", // qtd. de apartamentos por andar — usada na geração de complementos
+  complInicial: "", // primeiro complemento da torre (ex: "101", "Apto 01")
   disjIncendio: "",
   demandaIncendio: "",
   demandaNaoResidencial: "", // demanda geral das UCs não residenciais da torre (kVA)
   ucs: [ucTorrePadrao(0)],
 });
+
+// Gera a lista de complementos de uma torre a partir do primeiro complemento.
+// Padrão puramente numérico com 3+ dígitos (ex: "101") e aptosPorAndar
+// informado → os 2 últimos dígitos são o apto dentro do andar: incrementa o
+// apto (102, 103…) e, completado o andar, avança o andar (201, 202…).
+// Qualquer outro padrão com número (ex: "Apto 01") → mantém o texto fixo e
+// incrementa só o número, preservando zeros à esquerda (Apto 02, Apto 03…).
+// Retorna null quando o primeiro complemento não contém número.
+function gerarComplementos(primeiro, total, aptosPorAndar) {
+  const n = Math.max(1, parseInt(total) || 1);
+  const m = String(primeiro || "")
+    .trim()
+    .match(/^(.*?)(\d+)(\D*)$/);
+  if (!m) return null;
+  const [, pre, num, suf] = m;
+  const porAndar = Math.max(0, parseInt(aptosPorAndar) || 0);
+  const out = [];
+  if (!pre && !suf && num.length >= 3 && porAndar > 0) {
+    let andar = parseInt(num.slice(0, -2), 10);
+    const aptoIni = parseInt(num.slice(-2), 10);
+    let apto = aptoIni;
+    for (let i = 0; i < n; i++) {
+      out.push(`${andar}${String(apto).padStart(2, "0")}`);
+      apto++;
+      if (apto - aptoIni >= porAndar) {
+        andar++;
+        apto = aptoIni;
+      }
+    }
+  } else {
+    const ini = parseInt(num, 10);
+    for (let i = 0; i < n; i++)
+      out.push(pre + String(ini + i).padStart(num.length, "0") + suf);
+  }
+  return out;
+}
 
 // ============================================================
 // CATÁLOGO DE MODALIDADES (tela inicial)

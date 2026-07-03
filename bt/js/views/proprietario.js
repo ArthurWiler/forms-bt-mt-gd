@@ -138,7 +138,7 @@ function TabProprietario({ ctx }) {
       pessoaFisica &&
         /* @__PURE__ */ React.createElement(
           Field,
-          { label: "Filiação (Mãe ou Pai)" },
+          { label: "Filiação (Mãe ou Pai)", req: true },
           /* @__PURE__ */ React.createElement(Inp, {
             value: prop.filiacao,
             onChange: (e) => setProp({ ...prop, filiacao: e.target.value }),
@@ -157,7 +157,7 @@ function TabProprietario({ ctx }) {
       pessoaFisica &&
         /* @__PURE__ */ React.createElement(
           Field,
-          { label: "Data de Nascimento" },
+          { label: "Data de Nascimento", req: true },
           /* @__PURE__ */ React.createElement(Inp, {
             type: "date",
             value: prop.nasc,
@@ -190,6 +190,7 @@ function TabProprietario({ ctx }) {
           Field,
           {
             label: "Possui laudo médico (equipamentos essenciais)?",
+            req: true,
             span: 2,
           },
           /* @__PURE__ */ React.createElement(Toggle, {
@@ -204,7 +205,7 @@ function TabProprietario({ ctx }) {
       pessoaFisica &&
         /* @__PURE__ */ React.createElement(
           Field,
-          { label: "Possui NIS para Tarifa Social?" },
+          { label: "Possui NIS para Tarifa Social?", req: true },
           /* @__PURE__ */ React.createElement(Toggle, {
             value: prop.nis,
             onChange: (v) => setProp({ ...prop, nis: v }),

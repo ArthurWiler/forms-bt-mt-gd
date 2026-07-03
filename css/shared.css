@@ -1629,6 +1629,7 @@ html {
   background: var(--cmg-surface);
 }
 .cemig-form .prev-table input,
+.cemig-form .prev-table select,
 .cemig-form .motores-table input,
 .cemig-form .motores-table select,
 .cemig-form .qtd-ctrl input {
@@ -1639,6 +1640,7 @@ html {
   color: var(--cmg-text-strong);
 }
 .cemig-form .prev-table input:focus,
+.cemig-form .prev-table select:focus,
 .cemig-form .motores-table input:focus,
 .cemig-form .motores-table select:focus {
   outline: none;
@@ -1711,6 +1713,13 @@ html {
 }
 .cemig-form .motor-del:hover {
   background: rgba(192, 57, 43, 0.08);
+}
+/* Identificação das UCs (múltiplas torres) — rótulo dentro da célula no
+   skin Figma: mesma tipografia dos títulos de coluna das tabelas. */
+.cemig-form .uc-ident-table .cell-label {
+  font-family: var(--cmg-font-family);
+  color: var(--cmg-text-muted);
+  letter-spacing: var(--cmg-ls-tight);
 }
 /* ---------- MOTORES / CARGAS ESPECIAIS — cards verticais (MT/Desistência)
    Fonte única, compartilhada pelos shells .cemig-mt (usa os tokens legados

@@ -174,14 +174,6 @@ function TabDadosUnidade({ ctx }) {
         ),
         /* @__PURE__ */ React.createElement(
           Field,
-          { label: "Complemento do endereço" },
-          /* @__PURE__ */ React.createElement(Inp, {
-            value: obra.compl,
-            onChange: (e) => setObra({ ...obra, compl: e.target.value }),
-          }),
-        ),
-        /* @__PURE__ */ React.createElement(
-          Field,
           { label: "Bairro", req: true },
           /* @__PURE__ */ React.createElement(Inp, {
             value: obra.bairro,
@@ -301,6 +293,7 @@ function TabDadosUnidade({ ctx }) {
         /* @__PURE__ */ React.createElement(Inp, {
           value: utmString(obra.lat, obra.lng) || obra.utm || "",
           readOnly: true,
+          disabled: true,
         }),
       ),
     ),
@@ -311,7 +304,7 @@ function TabDadosUnidade({ ctx }) {
       { className: "grid grid-2 divider" },
       /* @__PURE__ */ React.createElement(
         Field,
-        { label: "Distância do padrão até a rede Cemig inferior a 30m?" },
+        { label: "Distância do padrão até a rede Cemig inferior a 30m?", req: true },
         /* @__PURE__ */ React.createElement(Toggle, {
           value: obra.distMenor30,
           onChange: (v) => setObra({ ...obra, distMenor30: v }),
@@ -363,7 +356,7 @@ function TabDadosUnidade({ ctx }) {
       /* @__PURE__ */ React.createElement(
         "div",
         { className: "alert alert-warn", style: { marginTop: 8 } },
-        "⚠ Em área rural com distância superior a 30 m da rede CEMIG, a coordenada é obrigatória para localização da propriedade.",
+        "⚠ Em área rural, a coordenada é obrigatória para localização da propriedade.",
       ),
 
     /* ── Mapa de localização ── */

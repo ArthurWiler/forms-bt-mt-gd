@@ -540,7 +540,8 @@ select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
   color: var(--texto);
   white-space: nowrap;
 }
-.prev-table input {
+.prev-table input,
+.prev-table select {
   width: 100%;
   min-width: 64px;
   padding: 6px 8px;
@@ -550,7 +551,13 @@ select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
   font-size: 13px;
   color: var(--texto);
 }
-.prev-table input:focus {
+/* Selects carregam rótulos longos (ex: "Caixa Existente sem Alteração") —
+   largura mínima maior evita campo menor que o texto. */
+.prev-table select {
+  min-width: 130px;
+}
+.prev-table input:focus,
+.prev-table select:focus {
   outline: none;
   border-color: var(--verde-acento);
   box-shadow: 0 0 0 2px rgba(0, 168, 79, 0.15);
@@ -725,6 +732,33 @@ select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
   font-size: 13px;
   font-weight: 700;
   color: var(--verde-cemig);
+}
+/* Identificação das UCs (múltiplas torres) — variante da tabela de motores
+   em duas linhas por UC, com rótulo dentro da célula: dispensa thead e a
+   barra de rolagem horizontal (4 colunas fixas que cabem no card). */
+.uc-ident-table {
+  table-layout: fixed;
+}
+.uc-ident-table td {
+  vertical-align: top;
+}
+.uc-ident-table .cell-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--texto-suave);
+  margin-bottom: 4px;
+}
+/* 1ª linha não fecha o grupo — o separador fica só na 2ª linha da UC. */
+.uc-ident-table tr.uc-linha-1 td {
+  border-bottom: none;
+  padding-bottom: 2px;
+}
+.uc-ident-table tr.uc-linha-2 td {
+  padding-top: 2px;
+  padding-bottom: 12px;
 }
 @media (max-width: 560px) {
   .motores-table thead { display: none; }

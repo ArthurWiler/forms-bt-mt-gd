@@ -24,7 +24,10 @@ const CAMPOS_OBRIGATORIOS = {
   prop: (s) => {
     const p = s.prop || {};
     const req = [p.nome, p.cpfCnpj, p.email, p.celular];
-    if (s.pessoaFisica && p.nis === "Sim") req.push(p.numNis);
+    if (s.pessoaFisica) {
+      req.push(p.filiacao, p.nasc);
+      if (p.nis === "Sim") req.push(p.numNis);
+    }
     return req;
   },
   corr: (s) => {
@@ -364,10 +367,13 @@ function App() {
       ),
     );
   const sincronizarUCsTorre = (i, qtd) => {
-    const n = Math.max(1, parseInt(qtd) || 1);
+    // Campo vazio durante a digitação: guarda o valor bruto sem mexer nas
+    // UCs já preenchidas — o resize só ocorre com um número válido.
+    const n = parseInt(qtd);
     setBlocos((p) =>
       p.map((b, idx2) => {
         if (idx2 !== i) return b;
+        if (!Number.isFinite(n) || n < 1) return { ...b, qtdUCs: qtd };
         const arr = [...(b.ucs || [])];
         while (arr.length < n) arr.push(ucTorrePadrao(arr.length));
         while (arr.length > n) arr.pop();
@@ -375,6 +381,25 @@ function App() {
       }),
     );
   };
+  // Gera os complementos de todas as UCs da torre a partir do primeiro
+  // complemento informado (ver gerarComplementos em model.js). Sobrescreve
+  // os complementos existentes da torre.
+  const gerarComplementosTorre = (bi) =>
+    setBlocos((p) =>
+      p.map((b, i) => {
+        if (i !== bi) return b;
+        const lista = gerarComplementos(
+          b.complInicial,
+          (b.ucs || []).length,
+          b.aptosPorAndar,
+        );
+        if (!lista) return b;
+        return {
+          ...b,
+          ucs: (b.ucs || []).map((u, k) => ({ ...u, complemento: lista[k] })),
+        };
+      }),
+    );
   const setUcTorre = (bi, ui, patch) =>
     setBlocos((p) =>
       p.map((b, idx2) =>
@@ -428,6 +453,9 @@ function App() {
               : {
                   ...base,
                   identificacao: `UC ${k + 1}`,
+                  // Campos que diferenciam a UC não são replicados — preserva
+                  // o complemento gerado/digitado de cada unidade.
+                  complemento: u.complemento,
                   instalacao: u.instalacao,
                   unidadeConsumidora: u.unidadeConsumidora,
                 },
@@ -485,6 +513,9 @@ function App() {
   }, [coletivo, ucBlocos]);
   useEffect(() => {
     if (!multiTorres) return;
+    // O campo aceita valor bruto (pode ficar vazio durante a digitação):
+    // só redimensiona a lista quando houver um número válido.
+    if (String(atend.nBlocos ?? "").trim() === "") return;
     const n = Math.max(1, Number(atend.nBlocos) || 1);
     setBlocos((prevB) => {
       if (prevB.length === n) return prevB;
@@ -506,17 +537,6 @@ function App() {
     if (!solicitacoesPermitidas.includes(atend.solicitacao))
       setAtend((a) => ({ ...a, solicitacao: solicitacoesPermitidas[0] }));
   }, [solicitacoesPermitidas, atend.solicitacao]);
-  const lastComplRef = useRef(null);
-  useEffect(() => {
-    const c = String(obra.compl || "").trim();
-    if (!c || lastComplRef.current === c) return;
-    lastComplRef.current = c;
-    const fill = (u) =>
-      String(u.complemento || "").trim() ? u : { ...u, complemento: c };
-    setUcsDet((p) => p.map(fill));
-    setUcBlocos((p) => p.map(fill));
-    setBlocos((p) => p.map((b) => ({ ...b, ucs: (b.ucs || []).map(fill) })));
-  }, [obra.compl]);
   const redeMono =
     obra.tipoRede === "Monofásica" || obra.tipoRede === "Bifásica";
   const rural = obra.localizacao === "Rural";
@@ -623,6 +643,30 @@ function App() {
       return;
     setAtend((a) => ({ ...a, disjuntorGeral: opcoesDisjGeral[0] }));
   }, [coletivo, multiTorres, opcoesDisjGeral]);
+  // Multi-torres: mantém o Disjuntor Geral (pela Demanda das UCs) e o
+  // Disjuntor do Condomínio/Incêndio (pela demanda informada) de cada torre
+  // dentro das opções adequadas (ver opcoesDisjGeralTorre e
+  // opcoesDisjIncendioTorre em calc.js), auto-selecionando a menor opção
+  // válida — mesmo comportamento do efeito do disjuntor geral do coletivo.
+  useEffect(() => {
+    if (!multiTorres) return;
+    setBlocos((p) => {
+      let mudou = false;
+      const nx = p.map((b) => {
+        const patch = {};
+        const ops = opcoesDisjGeralTorre(b);
+        if (ops.length && !(b.disjGeral && ops.includes(b.disjGeral)))
+          patch.disjGeral = ops[0];
+        const opsI = opcoesDisjIncendioTorre(b);
+        if (opsI.length && !(b.disjIncendio && opsI.includes(b.disjIncendio)))
+          patch.disjIncendio = opsI[0];
+        if (!Object.keys(patch).length) return b;
+        mudou = true;
+        return { ...b, ...patch };
+      });
+      return mudou ? nx : p;
+    });
+  }, [multiTorres, blocos]);
   const validacaoDisjuntores = useMemo(() => {
     if (coletivo || ucsDet.length <= 1) return { ok: true, msg: "" };
     let tri = 0,
@@ -697,13 +741,10 @@ function App() {
   useEffect(() => {
     if (!formIndividual || coletivo) return;
     const alvo = SOLICITACOES[potenciaPlacaTotal > 75 ? 1 : 0];
-    setAtend((a) =>
-      a.solicitacao === alvo ? a : { ...a, solicitacao: alvo },
-    );
+    setAtend((a) => (a.solicitacao === alvo ? a : { ...a, solicitacao: alvo }));
   }, [formIndividual, coletivo, potenciaPlacaTotal]);
 
-  const coordObrigatoria =
-    obra.localizacao === "Rural" && obra.distMenor30 === "Não";
+  const coordObrigatoria = obra.localizacao === "Rural";
   const coordPreenchida =
     !!String(obra.lat).trim() && !!String(obra.lng).trim();
   const validacaoObrigatorios = useMemo(() => {
@@ -984,6 +1025,7 @@ function App() {
     disjGeralObrigatorio,
     docInfo,
     documentosNecessarios,
+    gerarComplementosTorre,
     gerarPDF,
     hibrido,
     idx,
@@ -1182,7 +1224,7 @@ function App() {
                   /* @__PURE__ */ React.createElement(
                     "p",
                     null,
-                    "Preenchimento digital unificado para solicitações em BT, conforme as normas CEMIG ND-5.1 / ND-5.2 e a REN ANEEL nº 1.000/2021.",
+                    "Preenchimento digital unificado do formulário para solicitações de orçamento de Conexão / Alteração de Carga em baixa tensão, conforme as normas CEMIG ND-5.1 / ND-5.2 e a REN ANEEL nº 1.000/2021.",
                   ),
                 ),
                 mostrarAnaliseMotores
