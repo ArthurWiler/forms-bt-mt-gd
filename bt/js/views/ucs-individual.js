@@ -335,21 +335,46 @@ function TabUcsIndividual({ ctx }) {
         ),
     ),
     ucsDet.length > 1 &&
+      validacaoDisjuntores.ok &&
       /* @__PURE__ */ React.createElement(
         "div",
-        {
-          className:
-            "alert " + (validacaoDisjuntores.ok ? "alert-ok" : "alert-warn"),
-        },
+        { className: "alert alert-ok" },
         /* @__PURE__ */ React.createElement(
           "b",
           null,
           "Regra de disjuntores (múltiplas UCs sem proteção geral):",
         ),
         " no máximo 1 tripolar de 63 A e/ou até 2 mono/bifásicos de 63 A.",
-        " ",
-        validacaoDisjuntores.ok ? "✔ " : "⚠ ",
+        " ✔ ",
         validacaoDisjuntores.msg,
+      ),
+    /* Combinação inválida: banner de erro padrão (.cmg-aviso--error) —
+       coluna erro/500 com círculo-X branco. Conteúdo num único <span>
+       porque .cmg-aviso-texto é flex. */
+    ucsDet.length > 1 &&
+      !validacaoDisjuntores.ok &&
+      /* @__PURE__ */ React.createElement(
+        "div",
+        { className: "cmg-aviso cmg-aviso--error" },
+        /* @__PURE__ */ React.createElement("div", {
+          className: "cmg-aviso-icon",
+          "aria-hidden": "true",
+        }),
+        /* @__PURE__ */ React.createElement(
+          "p",
+          { className: "cmg-aviso-texto" },
+          /* @__PURE__ */ React.createElement(
+            "span",
+            null,
+            /* @__PURE__ */ React.createElement(
+              "b",
+              null,
+              "Regra de disjuntores (múltiplas UCs sem proteção geral):",
+            ),
+            " no máximo 1 tripolar de 63 A e/ou até 2 mono/bifásicos de 63 A. ",
+            validacaoDisjuntores.msg,
+          ),
+        ),
       ),
   );
 }

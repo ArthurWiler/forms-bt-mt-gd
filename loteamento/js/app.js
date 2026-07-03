@@ -19,6 +19,23 @@ function bindInputs(){
   });
 }
 
+/* ===== Navegação por etapas (mesmo padrão do formulário MT) ===== */
+function goTo(n){
+  // Trava de avanço: só valida quando avança (ou pula adiante). Volta é livre.
+  const _atual=document.querySelector('.page.show');
+  const _atualN=_atual?parseInt(_atual.id.replace('page-',''),10):-1;
+  if(n>_atualN && _atual && window.CemigMarcadores){
+    const r=window.CemigMarcadores.validar(_atual);
+    if(!r.ok){ if(r.primeiro) r.primeiro.scrollIntoView({behavior:'smooth',block:'center'}); return; }
+  }
+  $$('.page').forEach(p=>p.classList.remove('show'));
+  $('#page-'+n).classList.add('show');
+  const steps=$$('.vstep');
+  steps.forEach((s,i)=>{s.classList.remove('active','done'); if(i<n)s.classList.add('done'); if(i===n)s.classList.add('active');});
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(n===6) renderPreview();
+}
+
 /* ===== Coordenadas / UTM (mesma lógica do formulário MT) ===== */
 const LIM = { LAT_MIN:-22.9, LAT_MAX:-14.23, LON_MIN:-51.04, LON_MAX:-39.85 };
 function _utmBandLetter(lat){
@@ -126,6 +143,8 @@ function renderPreview(){
   h+=pvRow('Total de lotes',(parseInt(state.lote_400)||0)+(parseInt(state.lote_400_600)||0)+(parseInt(state.lote_600)||0));
   h+=`<h4>5. Declaração</h4>`;
   h+=pvRow('Declaração firmada',state.declaracao?'Sim':'Não');
+  h+=`<h4>6. Observações</h4>`;
+  h+=pvRow('Observações',state.observacoes);
   h+=`</div>`;
   $('#previewContent').innerHTML=h;
 }
@@ -141,4 +160,7 @@ function exportarPDF(){
 /* ===== Init ===== */
 document.addEventListener('DOMContentLoaded',()=>{
   bindInputs();
+  // Stepper lateral clicável (mesmo padrão do MT): voltar é livre; avançar
+  // passa pela trava de validação do goTo.
+  $$('.vstep').forEach((s,i)=>s.addEventListener('click',()=>goTo(i)));
 });

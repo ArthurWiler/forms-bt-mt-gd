@@ -823,3 +823,91 @@ function CalcDemanda({
         ),
   );
 }
+
+/* ============================================================
+   Prévia do formulário (Figma) — blocos canônicos da etapa
+   "Prévia & PDF": seção titulada em verde, campo rótulo+valor
+   com lápis de edição (volta à etapa), divisor, cartão-resumo e
+   aviso pós-exportação. Espelhado em shared/js/components.js
+   (Micro/Mini) — manter os dois em sincronia.
+   ============================================================ */
+function PreviaSecao({ titulo, children }) {
+  return /* @__PURE__ */ React.createElement(
+    "div",
+    { className: "previa-secao" },
+    titulo &&
+      /* @__PURE__ */ React.createElement(
+        "h4",
+        { className: "previa-secao-titulo" },
+        titulo,
+      ),
+    children,
+  );
+}
+function PreviaCampo({ label, valor, onEdit, full }) {
+  const vazio = valor == null || valor === "";
+  return /* @__PURE__ */ React.createElement(
+    "div",
+    { className: "previa-campo" + (full ? " previa-campo--full" : "") },
+    /* @__PURE__ */ React.createElement(
+      "div",
+      { className: "previa-campo-label" },
+      label,
+    ),
+    /* @__PURE__ */ React.createElement(
+      "div",
+      { className: "previa-campo-valor" },
+      vazio ? "—" : valor,
+      onEdit &&
+        /* @__PURE__ */ React.createElement("button", {
+          type: "button",
+          className: "previa-edit",
+          "aria-label": "Editar " + label,
+          title: "Editar",
+          onClick: onEdit,
+        }),
+    ),
+  );
+}
+function PreviaDivider() {
+  return /* @__PURE__ */ React.createElement("hr", {
+    className: "previa-divider",
+  });
+}
+function PreviaCard({ label, valor }) {
+  return /* @__PURE__ */ React.createElement(
+    "div",
+    { className: "previa-card" },
+    /* @__PURE__ */ React.createElement(
+      "div",
+      { className: "previa-card-label" },
+      label,
+    ),
+    /* @__PURE__ */ React.createElement(
+      "div",
+      { className: "previa-card-valor" },
+      valor || "—",
+    ),
+  );
+}
+function PreviaAvisoExportacao() {
+  return /* @__PURE__ */ React.createElement(
+    "div",
+    { className: "cmg-aviso cmg-aviso--warn" },
+    /* @__PURE__ */ React.createElement("div", {
+      className: "cmg-aviso-icon",
+      "aria-hidden": "true",
+    }),
+    /* @__PURE__ */ React.createElement(
+      "p",
+      { className: "cmg-aviso-texto" },
+      /* @__PURE__ */ React.createElement(
+        "span",
+        null,
+        "Após exportar o PDF da sua solicitação, anexe-o no seu pedido no ",
+        /* @__PURE__ */ React.createElement("b", null, "Cemig Atende"),
+        ".",
+      ),
+    ),
+  );
+}

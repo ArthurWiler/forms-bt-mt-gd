@@ -355,7 +355,8 @@ html {
    Figma: neutra/200 (#D1D4D3) border + grey icon column, info.svg
    glyph (neutra/600 #364B46) on a 32px area, Open Sans 14/24 text on
    white. Replaces the old `.modalidade-aviso*` and `.callout` styles.
-   Variant: `.cmg-aviso--warn` (alerta/500 #FFC107 + warn.svg). */
+   Variants: `.cmg-aviso--warn` (alerta/500 #FFC107 + warn.svg) and
+   `.cmg-aviso--error` (erro/500 #C8303F + error.svg, glyph em branco). */
 .cmg-aviso {
   box-sizing: border-box;
   display: flex;
@@ -418,6 +419,134 @@ html {
 }
 .cmg-aviso--warn .cmg-aviso-icon::before {
   background-image: url("../imgs/warn.svg");
+}
+/* Error variant — mesmo esquema do warn: só muda a cor da borda, o fundo da
+   coluna do ícone e o glifo (círculo-X branco sobre erro/500 #C8303F).
+   Markup: <div class="cmg-aviso cmg-aviso--error">…</div>. */
+.cmg-aviso--error {
+  border-color: var(--cmg-error-500); /* #C8303F — erro/500 */
+}
+.cmg-aviso--error .cmg-aviso-icon {
+  background: var(--cmg-error-500); /* #C8303F — erro/500 */
+}
+.cmg-aviso--error .cmg-aviso-icon::before {
+  background-image: url("../imgs/error.svg");
+}
+
+/* ============================================================
+   Prévia do formulário (Figma) — etapa "Prévia & PDF" de todos os
+   formulários. Seções tituladas em verde, campos rótulo+valor em
+   grade de 2 colunas, divisor entre seções, cartões-resumo e lápis
+   (editar) que leva de volta à etapa correspondente. Como o
+   `.cmg-aviso`, é INTENCIONALMENTE global (unscoped) para servir
+   qualquer superfície (.cemig-form, .cemig-mt). */
+.previa-secao-titulo {
+  margin: 0 0 var(--cmg-space-4);
+  font-family: var(--cmg-font-family);
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: var(--cmg-green-500);
+}
+.previa-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--cmg-space-4) var(--cmg-space-6);
+}
+@media (max-width: 720px) {
+  .previa-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.previa-campo--full {
+  grid-column: 1 / -1;
+}
+.previa-campo-label {
+  font-family: var(--cmg-font-family);
+  font-size: 14px;
+  line-height: 24px;
+  letter-spacing: 0.2px;
+  color: var(--cmg-text);
+}
+.previa-campo-valor {
+  display: flex;
+  align-items: center;
+  gap: var(--cmg-space-2);
+  font-family: var(--cmg-font-family);
+  font-size: 16px;
+  line-height: 26px;
+  font-weight: var(--cmg-fw-bold, 700);
+  letter-spacing: 0.2px;
+  color: var(--cmg-text-strong);
+  overflow-wrap: anywhere;
+}
+/* Lápis de edição — leva de volta à etapa onde o campo é preenchido. */
+.previa-edit {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  line-height: 0;
+}
+.previa-edit::before {
+  content: "";
+  display: block;
+  width: 18px;
+  height: 18px;
+  background: url("../imgs/edit.svg") center / 18px 18px no-repeat;
+}
+.previa-edit:hover::before {
+  opacity: 0.72;
+}
+.previa-edit:focus-visible {
+  outline: 2px solid var(--cmg-green-600);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+.previa-divider {
+  border: 0;
+  border-top: 1px solid var(--cmg-divider);
+  margin: var(--cmg-space-6) 0;
+}
+/* Cartões-resumo (Modalidade / Demanda total / Disjuntor adequado) —
+   reutilizam o visual do .resultado-card via classe própria para
+   funcionarem também fora do .cemig-form. */
+.previa-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--cmg-space-4);
+  margin: 0 0 var(--cmg-space-5);
+}
+@media (max-width: 900px) {
+  .previa-cards {
+    grid-template-columns: 1fr;
+  }
+}
+.previa-card {
+  background: var(--cmg-surface);
+  border: 1px solid var(--cmg-neutral-200);
+  border-radius: var(--cmg-radius);
+  padding: var(--cmg-space-4) var(--cmg-space-6);
+}
+.previa-card-label {
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-body);
+  line-height: var(--cmg-lh-body);
+  letter-spacing: 0.2px;
+  color: var(--cmg-text-strong);
+}
+.previa-card-valor {
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-subtitle);
+  line-height: 26px;
+  font-weight: var(--cmg-fw-bold, 700);
+  letter-spacing: 0.2px;
+  color: var(--cmg-text-strong);
+  margin-top: var(--cmg-space-1);
 }
 
 /* ---- Accordion section ---- */
@@ -694,9 +823,21 @@ html {
   min-height: 96px;
   resize: vertical;
 }
-.cemig-form .field input::placeholder,
-.cemig-form .field textarea::placeholder {
+.cemig-form .field input::placeholder {
   color: var(--cmg-text-muted);
+}
+/* Placeholder de <textarea> — estilo GLOBAL (Figma): Open Sans itálico,
+   corpo/grande 16/26, +0.2px, neutra/600. Vale para todas as superfícies
+   (.cemig-form e .cemig-mt) — p.ex. o box de Observações dos formulários. */
+.cemig-form textarea::placeholder,
+.cemig-mt textarea::placeholder {
+  font-family: "Open Sans", var(--cmg-font-family);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 26px;
+  letter-spacing: 0.2px;
+  color: var(--cmg-neutral-600); /* #364B46 */
 }
 .cemig-form .field input:focus,
 .cemig-form .field select:focus,
@@ -993,6 +1134,15 @@ html {
   border: 1px solid var(--cmg-neutral-200);
   border-radius: var(--cmg-radius);
   padding: var(--cmg-space-4) var(--cmg-space-6);
+}
+/* Estados de validação do card: a borda acompanha a cor do aviso exibido
+   dentro do card (erro/500 quando há .cmg-aviso--error; alerta/500 quando
+   há .cmg-aviso--warn), como na referência do Figma. */
+.cemig-form .resultado-card--error {
+  border-color: var(--cmg-error-500);
+}
+.cemig-form .resultado-card--warn {
+  border-color: var(--cmg-warning-500);
 }
 .cemig-form .resultado-card-label {
   font-family: var(--cmg-font-family);

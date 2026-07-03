@@ -1435,6 +1435,8 @@ function ViewDeclaracoes({ ctx }) {
           value: d.obs,
           onChange: (e) => set({ obs: e.target.value }),
           rows: 3,
+          placeholder:
+            "Inclua informações relevantes: justificativa de disjuntor, atendimento híbrido, geração já conectada, etc.",
         }),
       ),
     ),
@@ -1555,24 +1557,33 @@ function ViewFormularioCarga({ ctx }) {
 }
 function ViewRevisao({ ctx }) {
   const { d, validacao, gerarPdf } = ctx;
-  const row = (label, val) =>
+  /* Prévia no padrão Figma (ver .previa-* em shared.css): seções tituladas
+     em verde com campos rótulo+valor em grade de 2 colunas e o aviso
+     pós-exportação (PreviaAvisoExportacao) ao final. */
+  const campo = (label, val, full) =>
+    /* @__PURE__ */ React.createElement(PreviaCampo, {
+      key: label,
+      label,
+      valor: val,
+      full: !!full,
+    });
+  const secao = (titulo, campos) =>
     /* @__PURE__ */ React.createElement(
-      "div",
-      { className: "rev-row" },
+      PreviaSecao,
+      { titulo },
       /* @__PURE__ */ React.createElement(
-        "span",
-        { className: "rev-label" },
-        label,
-      ),
-      /* @__PURE__ */ React.createElement(
-        "span",
-        { className: "rev-val" },
-        val || "—",
+        "div",
+        { className: "previa-grid" },
+        campos,
       ),
     );
   return /* @__PURE__ */ React.createElement(
     Card,
-    { eyebrow: "Etapa " + ctx.etapaNum, title: "Prévia & PDF" },
+    {
+      eyebrow: "Etapa " + ctx.etapaNum,
+      title: "Prévia do formulário",
+      sub: "Confira se todos os dados estão corretos e gere o PDF para anexar à sua solicitação no Cemig Atende.",
+    },
     !validacao.ok
       ? /* @__PURE__ */ React.createElement(
           "div",
@@ -1595,62 +1606,54 @@ function ViewRevisao({ ctx }) {
           { className: "rev-ok" },
           "Todos os campos obrigatórios preenchidos. Pronto para exportar.",
         ),
-    /* @__PURE__ */ React.createElement(
-      "div",
-      { className: "gd-subhead" },
-      "1 — Identificação",
-    ),
-    row("Instalação", d.instalacao),
-    row("Titular", d.titular),
-    row("Grupo / Classe", `${d.grupo} / ${d.classe}`),
-    row("CPF/CNPJ", d.cpfCnpj),
-    row(
-      "Endereço",
-      `${d.logradouro}, ${d.numero} ${d.complemento} — ${d.bairro}, ${d.municipio}/${d.estado}`,
-    ),
-    row("Fast Track / Grid Zero", `${d.fastTrack} / ${d.gridZero}`),
-    /* @__PURE__ */ React.createElement(
-      "div",
-      { className: "gd-subhead" },
-      "2 — Dados da UC",
-    ),
-    row("UTM", `Fuso ${d.fuso} · E ${d.utmE} · N ${d.utmN}`),
-    row("Solicitação", d.solicitacao),
-    row("Edificação", d.edificacao),
-    row("Disjuntor Geral", `${d.disjGeralFase || "—"} ${d.disjGeralA || ""}`),
-    row(
-      "Demanda consumo / geração (kW)",
-      `${d.demandaConsumo || "—"} / ${d.demandaGeracao || "—"}`,
-    ),
-    /* @__PURE__ */ React.createElement(
-      "div",
-      { className: "gd-subhead" },
-      "4 — Geração",
-    ),
-    row("Fonte", d.fontePrimaria),
-    row("Pot. Ativa Instalada (kW)", d.potAtivaInstalada),
-    row("Modalidade", d.modalidade),
-    d.fontePrimaria === "Solar" &&
-      row(
-        "Módulos / Inversores (kW)",
-        `${d.potTotalModulos || "—"} / ${d.potTotalInversores || "—"}`,
+    secao("1 — Identificação", [
+      campo("Instalação", d.instalacao),
+      campo("Titular", d.titular),
+      campo("Grupo / Classe", `${d.grupo} / ${d.classe}`),
+      campo("CPF/CNPJ", d.cpfCnpj),
+      campo(
+        "Endereço",
+        `${d.logradouro}, ${d.numero} ${d.complemento} — ${d.bairro}, ${d.municipio}/${d.estado}`,
+        true,
       ),
-    /* @__PURE__ */ React.createElement(
-      "div",
-      { className: "gd-subhead" },
-      "5 — Armazenamento",
-    ),
-    row("Possui", d.possuiArmazenamento),
-    /* @__PURE__ */ React.createElement(
-      "div",
-      { className: "gd-subhead" },
-      "9 — Solicitante",
-    ),
-    row("Nome", d.solicitanteNome),
-    row(
-      "Contato",
-      `${d.solicitanteCelular || "—"} · ${d.solicitanteEmail || "—"}`,
-    ),
+      campo("Fast Track / Grid Zero", `${d.fastTrack} / ${d.gridZero}`),
+    ]),
+    /* @__PURE__ */ React.createElement(PreviaDivider, null),
+    secao("2 — Dados da UC", [
+      campo("UTM", `Fuso ${d.fuso} · E ${d.utmE} · N ${d.utmN}`),
+      campo("Solicitação", d.solicitacao),
+      campo("Edificação", d.edificacao),
+      campo(
+        "Disjuntor Geral",
+        `${d.disjGeralFase || "—"} ${d.disjGeralA || ""}`,
+      ),
+      campo(
+        "Demanda consumo / geração (kW)",
+        `${d.demandaConsumo || "—"} / ${d.demandaGeracao || "—"}`,
+      ),
+    ]),
+    /* @__PURE__ */ React.createElement(PreviaDivider, null),
+    secao("4 — Geração", [
+      campo("Fonte", d.fontePrimaria),
+      campo("Pot. Ativa Instalada (kW)", d.potAtivaInstalada),
+      campo("Modalidade", d.modalidade),
+      d.fontePrimaria === "Solar" &&
+        campo(
+          "Módulos / Inversores (kW)",
+          `${d.potTotalModulos || "—"} / ${d.potTotalInversores || "—"}`,
+        ),
+    ]),
+    /* @__PURE__ */ React.createElement(PreviaDivider, null),
+    secao("5 — Armazenamento", [campo("Possui", d.possuiArmazenamento)]),
+    /* @__PURE__ */ React.createElement(PreviaDivider, null),
+    secao("9 — Solicitante", [
+      campo("Nome", d.solicitanteNome),
+      campo(
+        "Contato",
+        `${d.solicitanteCelular || "—"} · ${d.solicitanteEmail || "—"}`,
+      ),
+    ]),
     /* Botão "Exportar PDF" removido daqui — o único é o inferior (nav-bottom, app.js). */
+    /* @__PURE__ */ React.createElement(PreviaAvisoExportacao, null),
   );
 }

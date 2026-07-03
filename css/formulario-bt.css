@@ -429,6 +429,11 @@ select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
   padding: 14px;
   margin-top: 14px;
 }
+/* borda em erro/500 quando o disjuntor escolhido não atende à
+   seletividade/capacidade (aviso .cmg-aviso--error visível no box) */
+.geral-box--error {
+  border-color: var(--cmg-error-500);
+}
 /* ---------- DEMANDA PREVISTA (kVA) — campo destacado ---------- */
 .kpi.kpi-demanda {
   background: var(--verde-claro);

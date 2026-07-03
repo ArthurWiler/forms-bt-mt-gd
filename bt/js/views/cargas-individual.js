@@ -454,9 +454,17 @@ function TabCargasIndividual({ ctx }) {
                     /* @__PURE__ */ React.createElement(
                       "div",
                       { className: "resultado-kpis" },
+                      /* Carga instalada acima de 75 kW: borda do card em
+                         alerta/500 + banner warn dentro do card (Figma). */
                       /* @__PURE__ */ React.createElement(
                         "div",
-                        { className: "resultado-card" },
+                        {
+                          className:
+                            "resultado-card" +
+                            ((u.cargas?._cargaKw || 0) > 75
+                              ? " resultado-card--warn"
+                              : ""),
+                        },
                         /* @__PURE__ */ React.createElement(
                           "div",
                           { className: "resultado-card-label" },
@@ -468,6 +476,23 @@ function TabCargasIndividual({ ctx }) {
                           fmt2(u.cargas?._cargaKw || 0),
                           " kW",
                         ),
+                        (u.cargas?._cargaKw || 0) > 75 &&
+                          /* @__PURE__ */ React.createElement(
+                            "div",
+                            {
+                              className: "cmg-aviso cmg-aviso--warn",
+                              style: { marginBottom: 0 },
+                            },
+                            /* @__PURE__ */ React.createElement("div", {
+                              className: "cmg-aviso-icon",
+                              "aria-hidden": "true",
+                            }),
+                            /* @__PURE__ */ React.createElement(
+                              "p",
+                              { className: "cmg-aviso-texto" },
+                              "Sua carga instalada ultrapassa 75 kW, é obrigatório anexar a ART/TRT de projeto paga, planta situação, e formulário preenchido no APR Web.",
+                            ),
+                          ),
                       ),
                       /* @__PURE__ */ React.createElement(
                         "div",
@@ -485,9 +510,19 @@ function TabCargasIndividual({ ctx }) {
                         ),
                       ),
                     ),
+                    /* Borda em erro/500 quando o aviso de combinação
+                       inválida está visível dentro do card. */
                     /* @__PURE__ */ React.createElement(
                       "div",
-                      { className: "resultado-card resultado-disjuntor" },
+                      {
+                        className:
+                          "resultado-card resultado-disjuntor" +
+                          (multi &&
+                          u.cargas?._disjuntores?.length > 0 &&
+                          !validacaoDisjuntores.ok
+                            ? " resultado-card--error"
+                            : ""),
+                      },
                       /* @__PURE__ */ React.createElement(
                         "div",
                         { className: "resultado-card-label" },
@@ -513,16 +548,31 @@ function TabCargasIndividual({ ctx }) {
                         /* @__PURE__ */ React.createElement(
                           "div",
                           {
-                            className: "alert alert-warn",
-                            style: { marginTop: 8 },
+                            className: "cmg-aviso cmg-aviso--error",
+                            style: { marginTop: 8, marginBottom: 0 },
                           },
+                          /* @__PURE__ */ React.createElement("div", {
+                            className: "cmg-aviso-icon",
+                            "aria-hidden": "true",
+                          }),
+                          /* Conteúdo misto (negrito + texto) num único <span>:
+                             .cmg-aviso-texto é flex e trataria cada nó como
+                             item separado, perdendo o espaçamento inline. */
                           /* @__PURE__ */ React.createElement(
-                            "b",
-                            null,
-                            "Combinação de disjuntores inválida:",
+                            "p",
+                            { className: "cmg-aviso-texto" },
+                            /* @__PURE__ */ React.createElement(
+                              "span",
+                              null,
+                              /* @__PURE__ */ React.createElement(
+                                "b",
+                                null,
+                                "Combinação de disjuntores inválida:",
+                              ),
+                              " ",
+                              validacaoDisjuntores.msg,
+                            ),
                           ),
-                          " ",
-                          validacaoDisjuntores.msg,
                         ),
                     ),
                   ),

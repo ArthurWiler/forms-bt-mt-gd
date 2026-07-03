@@ -70,74 +70,478 @@ function TabRevisar({ ctx }) {
     setMostrarAnaliseMotores,
     exibeTermoGrupoB
   } = ctx;
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(
-    Card,
-    {
-      eyebrow: "Etapa " + ctx.etapaNum,
-      title: "Prévia do Formulário",
-      sub: "Confira os dados. Se algo estiver incorreto, volte às etapas anteriores pela barra lateral."
-    },
-    /* @__PURE__ */ React.createElement("div", { className: "kpi-row" }, /* @__PURE__ */ React.createElement("div", { className: "kpi" }, /* @__PURE__ */ React.createElement("div", { className: "kpi-label" }, "Proprietário"), /* @__PURE__ */ React.createElement("div", { className: "kpi-value", style: { fontSize: 14 } }, prop.nome || "—")), /* @__PURE__ */ React.createElement("div", { className: "kpi" }, /* @__PURE__ */ React.createElement("div", { className: "kpi-label" }, "Unidades Consumidoras"), /* @__PURE__ */ React.createElement("div", { className: "kpi-value" }, multiTorres ? totalUcsEmpreendimento : coletivo ? ucBlocos.length : ucsDet.length)), /* @__PURE__ */ React.createElement("div", { className: "kpi dark" }, /* @__PURE__ */ React.createElement("div", { className: "kpi-label" }, "Demanda Total"), /* @__PURE__ */ React.createElement("div", { className: "kpi-value", style: { fontSize: 18 } }, fmt2(demandaTotalGeral), " kVA"))),
-    /* @__PURE__ */ React.createElement("div", { className: "preview-block" }, /* @__PURE__ */ React.createElement("h4", null, "Modalidade"), /* @__PURE__ */ React.createElement("div", { className: "preview-item" }, /* @__PURE__ */ React.createElement("span", { className: "v" }, multiTorres ? `Múltiplas Torres/Blocos · ${blocos.length} ${atend.atendA.toLowerCase()}(s)` : coletivo ? "Coletivo — Agrupamento com Proteção Geral (APR Web)" : "Individual / até 3 caixas sem proteção geral", coletivo ? ` · ${atend.solicitacao} · ${atend.escopo}` : "", !multiTorres && atend.disjuntorGeral ? ` · Disjuntor geral: ${atend.disjuntorGeral}` : ""))),
-    /* @__PURE__ */ React.createElement("div", { className: "preview-block" }, /* @__PURE__ */ React.createElement("h4", null, "Obra"), /* @__PURE__ */ React.createElement("div", { className: "preview-grid" }, /* @__PURE__ */ React.createElement("div", { className: "preview-item" }, /* @__PURE__ */ React.createElement("span", { className: "k" }, "Endereço"), /* @__PURE__ */ React.createElement("span", { className: "v" }, obra.localizacao === "Rural" ? `${obra.cidade || "—"}${obra.distritoComunidade ? " · " + obra.distritoComunidade : ""}` : `${obra.endereco || "—"}, ${obra.num || "s/n"}`)), /* @__PURE__ */ React.createElement("div", { className: "preview-item" }, /* @__PURE__ */ React.createElement("span", { className: "k" }, "Cidade / UF"), /* @__PURE__ */ React.createElement("span", { className: "v" }, obra.cidade || "—", " / ", obra.estado)), /* @__PURE__ */ React.createElement("div", { className: "preview-item" }, /* @__PURE__ */ React.createElement("span", { className: "k" }, "Localização"), /* @__PURE__ */ React.createElement("span", { className: "v" }, obra.localizacao)), /* @__PURE__ */ React.createElement("div", { className: "preview-item" }, /* @__PURE__ */ React.createElement("span", { className: "k" }, "Coordenada"), /* @__PURE__ */ React.createElement("span", { className: "v" }, [obra.lat, obra.lng].filter(Boolean).join(", ") || "—")))),
-    multiTorres ? /* @__PURE__ */ React.createElement("div", { className: "preview-block" }, /* @__PURE__ */ React.createElement("h4", null, "Torres / Blocos"), blocos.map((b, bi) => /* @__PURE__ */ React.createElement(
-      "div",
+  /* Prévia no padrão Figma: seções tituladas em verde com campos
+     rótulo+valor e lápis que volta à etapa correspondente (setAba).
+     O Individual ganha uma seção por UC com cartões-resumo (Modalidade /
+     Demanda total / Disjuntor adequado); Coletivo e Múltiplas Torres usam
+     os mesmos blocos com seus resumos de lista. Campos derivados do card
+     (Atividade, Ramo, Solicitação) não têm lápis. */
+  const formIndividual = ctx.formType === "individual";
+  const abaUnidade = formIndividual ? "dados" : "ucs";
+  const abaEndereco = formIndividual ? "dados" : "obra";
+  const rural = obra.localizacao === "Rural";
+  const irPara = (k) => () => setAba(k);
+  const modalidadeTexto = multiTorres
+    ? `Múltiplas Torres/Blocos · ${blocos.length} ${(atend.atendA || "").toLowerCase()}(s)`
+    : coletivo
+      ? "Coletivo — Agrupamento com Proteção Geral (APR Web)"
+      : "Individual - até 3 caixas sem proteção geral";
+  const emailFatura =
+    corr.receberEmail === "Não"
+      ? corr.alternativa === "Outro e-mail"
+        ? corr.outroEmail
+        : corr.alternativa
+      : prop.email;
+  return React.createElement(
+    "div",
+    null,
+    React.createElement(
+      Card,
       {
-        key: bi,
-        className: "preview-item",
-        style: {
-          display: "flex",
-          justifyContent: "space-between"
-        }
+        eyebrow: "Etapa " + ctx.etapaNum,
+        title: "Prévia do formulário",
+        sub: "Confira se todos os dados estão corretos e gere o PDF para anexar à sua solicitação no Cemig Atende.",
       },
-      /* @__PURE__ */ React.createElement("span", { className: "v" }, atend.atendA, " ", b.nome || bi + 1, " · ", b.qtdUCs || 0, " UCs · Geral: ", b.disjGeral || "—", " · Incêndio:", " ", b.disjIncendio || "—"),
-      /* @__PURE__ */ React.createElement("span", { style: { color: "var(--verde)", fontWeight: 700 } }, fmt2(
-        calcBlocoMultiTorres(b).demandaUcs + num(b.demandaIncendio)
-      ), " ", "kVA")
-    ))) : coletivo ? /* @__PURE__ */ React.createElement("div", { className: "preview-block" }, /* @__PURE__ */ React.createElement("h4", null, "Previsão de carga e UCs"), /* @__PURE__ */ React.createElement("div", { className: "preview-item" }, /* @__PURE__ */ React.createElement("span", { className: "v" }, "Total ", fmt2(prevTotalKw), " kW · Demanda ", fmt2(demandaTotalGeral), " ", "kVA")), ucBlocos.map((u, ui) => /* @__PURE__ */ React.createElement(
-      "div",
+      /* ---- Dados do proprietário ---- */
+      React.createElement(
+        PreviaSecao,
+        { titulo: "Dados do proprietário" },
+        React.createElement(
+          "div",
+          { className: "previa-grid" },
+          React.createElement(PreviaCampo, {
+            label: "Nome",
+            valor: prop.nome,
+            full: true,
+            onEdit: irPara("prop"),
+          }),
+          React.createElement(PreviaCampo, {
+            label: "E-mail",
+            valor: prop.email,
+            onEdit: irPara("prop"),
+          }),
+          React.createElement(PreviaCampo, {
+            label: "Celular",
+            valor: prop.celular,
+            onEdit: irPara("prop"),
+          }),
+          React.createElement(PreviaCampo, {
+            label: pessoaFisica ? "CPF" : "CNPJ",
+            valor: prop.cpfCnpj,
+            onEdit: irPara("prop"),
+          }),
+          pessoaFisica &&
+            React.createElement(PreviaCampo, {
+              label: "Filiação",
+              valor: prop.filiacao,
+              onEdit: irPara("prop"),
+            }),
+          pessoaFisica &&
+            React.createElement(PreviaCampo, {
+              label: "RG",
+              valor: prop.rg,
+              onEdit: irPara("prop"),
+            }),
+          pessoaFisica &&
+            React.createElement(PreviaCampo, {
+              label: "Data de nascimento",
+              valor: prop.nasc,
+              onEdit: irPara("prop"),
+            }),
+        ),
+      ),
+      React.createElement(PreviaDivider, null),
+      /* ---- Correspondência ---- */
+      React.createElement(
+        PreviaSecao,
+        { titulo: "Correspondência" },
+        React.createElement(
+          "div",
+          { className: "previa-grid" },
+          React.createElement(PreviaCampo, {
+            label: "E-mail para receber a fatura",
+            valor: emailFatura,
+            onEdit: irPara("corr"),
+          }),
+          React.createElement(PreviaCampo, {
+            label: "Data de vencimento da fatura",
+            valor: corr.vencimento ? "Todo dia " + corr.vencimento : "",
+            onEdit: irPara("corr"),
+          }),
+        ),
+      ),
+      /* ---- Individual: uma seção por unidade consumidora ---- */
+      !coletivo &&
+        !multiTorres &&
+        ucsDet.map((u, ui) =>
+          React.createElement(
+            React.Fragment,
+            { key: ui },
+            React.createElement(PreviaDivider, null),
+            React.createElement(
+              PreviaSecao,
+              { titulo: `Dados da unidade consumidora ${ui + 1}` },
+              React.createElement(
+                "div",
+                { className: "previa-cards" },
+                React.createElement(PreviaCard, {
+                  label: "Modalidade",
+                  valor: modalidadeTexto,
+                }),
+                React.createElement(PreviaCard, {
+                  label: "Demanda total",
+                  valor: fmt2(u.cargas?._demanda || 0) + " kVA",
+                }),
+                React.createElement(PreviaCard, {
+                  label: "Disjuntor adequado",
+                  valor:
+                    u.disjEscolhido || (u.cargas?._disjuntores || [])[0] || "—",
+                }),
+              ),
+              React.createElement(
+                "div",
+                { className: "previa-grid" },
+                React.createElement(PreviaCampo, {
+                  label: "Tipo de solicitação",
+                  valor: u.solicitacao,
+                  onEdit: irPara(abaUnidade),
+                }),
+                React.createElement(PreviaCampo, {
+                  label: "Atividade principal",
+                  valor: u.atividade,
+                }),
+                React.createElement(PreviaCampo, {
+                  label: "Ramo da atividade",
+                  valor: u.ramo,
+                }),
+                React.createElement(PreviaCampo, {
+                  label: "Solicitação",
+                  valor: atend.solicitacao,
+                }),
+                !rural &&
+                  React.createElement(PreviaCampo, {
+                    label: "CEP",
+                    valor: obra.cep,
+                    full: true,
+                    onEdit: irPara(abaEndereco),
+                  }),
+                !rural &&
+                  React.createElement(PreviaCampo, {
+                    label: "Endereço",
+                    valor: obra.endereco,
+                    onEdit: irPara(abaEndereco),
+                  }),
+                !rural &&
+                  React.createElement(PreviaCampo, {
+                    label: "Número",
+                    valor: obra.num,
+                    onEdit: irPara(abaEndereco),
+                  }),
+                !rural &&
+                  React.createElement(PreviaCampo, {
+                    label: "Complemento",
+                    valor: u.complemento,
+                    onEdit: irPara(abaUnidade),
+                  }),
+                !rural &&
+                  React.createElement(PreviaCampo, {
+                    label: "Bairro",
+                    valor: obra.bairro,
+                    onEdit: irPara(abaEndereco),
+                  }),
+                rural &&
+                  React.createElement(PreviaCampo, {
+                    label: "Distrito / Comunidade",
+                    valor: obra.distritoComunidade,
+                    onEdit: irPara(abaEndereco),
+                  }),
+                rural &&
+                  React.createElement(PreviaCampo, {
+                    label: "Nome da propriedade",
+                    valor: obra.nomePropriedade,
+                    onEdit: irPara(abaEndereco),
+                  }),
+                rural &&
+                  React.createElement(PreviaCampo, {
+                    label: "Ponto de referência",
+                    valor: obra.pontoRef,
+                    onEdit: irPara(abaEndereco),
+                  }),
+                React.createElement(PreviaCampo, {
+                  label: "Cidade",
+                  valor: obra.cidade,
+                  onEdit: irPara(abaEndereco),
+                }),
+                React.createElement(PreviaCampo, {
+                  label: "Estado",
+                  valor: obra.estado,
+                  onEdit: irPara(abaEndereco),
+                }),
+                React.createElement(PreviaCampo, {
+                  label: "Distância do padrão até a rede Cemig inferior a 30m?",
+                  valor: obra.distMenor30,
+                  onEdit: irPara(abaEndereco),
+                }),
+                React.createElement(PreviaCampo, {
+                  label: "O padrão está pronto para ser ligado?",
+                  valor: obra.prontoLigar,
+                  onEdit: irPara(abaEndereco),
+                }),
+                React.createElement(PreviaCampo, {
+                  label: "O padrão precisa ser mudado de local?",
+                  valor: u.mudancaLocal,
+                  onEdit: irPara(abaUnidade),
+                }),
+                React.createElement(PreviaCampo, {
+                  label: "Tipo de rede BT que atende o local",
+                  valor: obra.tipoRede,
+                  onEdit: irPara(abaEndereco),
+                }),
+              ),
+            ),
+          ),
+        ),
+      /* ---- Coletivo / Múltiplas Torres: resumo + obra + listas ---- */
+      (coletivo || multiTorres) &&
+        React.createElement(
+          React.Fragment,
+          null,
+          React.createElement(PreviaDivider, null),
+          React.createElement(
+            PreviaSecao,
+            { titulo: "Resumo do atendimento" },
+            React.createElement(
+              "div",
+              { className: "previa-cards" },
+              React.createElement(PreviaCard, {
+                label: "Modalidade",
+                valor:
+                  modalidadeTexto +
+                  (coletivo && !multiTorres
+                    ? ` · ${atend.solicitacao || "—"} · ${atend.escopo || "—"}`
+                    : "") +
+                  (!multiTorres && atend.disjuntorGeral
+                    ? ` · Disjuntor geral: ${atend.disjuntorGeral}`
+                    : ""),
+              }),
+              React.createElement(PreviaCard, {
+                label: "Unidades consumidoras",
+                valor: String(
+                  multiTorres ? totalUcsEmpreendimento : ucBlocos.length,
+                ),
+              }),
+              React.createElement(PreviaCard, {
+                label: "Demanda total",
+                valor: fmt2(demandaTotalGeral) + " kVA",
+              }),
+            ),
+            React.createElement(
+              "div",
+              { className: "previa-grid" },
+              React.createElement(PreviaCampo, {
+                label: "Endereço",
+                valor: rural
+                  ? `${obra.cidade || "—"}${obra.distritoComunidade ? " · " + obra.distritoComunidade : ""}`
+                  : `${obra.endereco || "—"}, ${obra.num || "s/n"}`,
+                onEdit: irPara("obra"),
+              }),
+              React.createElement(PreviaCampo, {
+                label: "Cidade / UF",
+                valor: `${obra.cidade || "—"} / ${obra.estado || "—"}`,
+                onEdit: irPara("obra"),
+              }),
+              React.createElement(PreviaCampo, {
+                label: "Localização",
+                valor: obra.localizacao,
+                onEdit: irPara("obra"),
+              }),
+              React.createElement(PreviaCampo, {
+                label: "Coordenada",
+                valor: [obra.lat, obra.lng].filter(Boolean).join(", "),
+                onEdit: irPara("obra"),
+              }),
+            ),
+          ),
+          multiTorres &&
+            React.createElement(
+              React.Fragment,
+              null,
+              React.createElement(PreviaDivider, null),
+              React.createElement(
+                PreviaSecao,
+                { titulo: "Torres / Blocos" },
+                blocos.map((b, bi) =>
+                  React.createElement(
+                    "div",
+                    {
+                      key: bi,
+                      className: "preview-item",
+                      style: {
+                        display: "flex",
+                        justifyContent: "space-between",
+                      },
+                    },
+                    React.createElement(
+                      "span",
+                      { className: "v" },
+                      atend.atendA,
+                      " ",
+                      b.nome || bi + 1,
+                      " · ",
+                      b.qtdUCs || 0,
+                      " UCs · Geral: ",
+                      b.disjGeral || "—",
+                      " · Incêndio: ",
+                      b.disjIncendio || "—",
+                    ),
+                    React.createElement(
+                      "span",
+                      { style: { color: "var(--verde)", fontWeight: 700 } },
+                      fmt2(
+                        calcBlocoMultiTorres(b).demandaUcs +
+                          num(b.demandaIncendio),
+                      ),
+                      " kVA",
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          coletivo &&
+            !multiTorres &&
+            React.createElement(
+              React.Fragment,
+              null,
+              React.createElement(PreviaDivider, null),
+              React.createElement(
+                PreviaSecao,
+                { titulo: "Previsão de carga e UCs" },
+                React.createElement(
+                  "div",
+                  { className: "preview-item" },
+                  React.createElement(
+                    "span",
+                    { className: "v" },
+                    "Total ",
+                    fmt2(prevTotalKw),
+                    " kW · Demanda ",
+                    fmt2(demandaTotalGeral),
+                    " kVA",
+                  ),
+                ),
+                ucBlocos.map((u, ui) =>
+                  React.createElement(
+                    "div",
+                    {
+                      key: ui,
+                      className: "preview-item",
+                      style: {
+                        display: "flex",
+                        justifyContent: "space-between",
+                      },
+                    },
+                    React.createElement(
+                      "span",
+                      { className: "v" },
+                      u.identificacao || `UC ${ui + 1}`,
+                      " · ",
+                      u.atividade,
+                      " · ",
+                      u.solicitacao,
+                      " ",
+                      u.complemento ? `· ${u.complemento}` : "",
+                    ),
+                    React.createElement(
+                      "span",
+                      { style: { color: "var(--verde)", fontWeight: 700 } },
+                      u.disjPara || "—",
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ),
+    ),
+    React.createElement(
+      Card,
       {
-        key: ui,
-        className: "preview-item",
-        style: {
-          display: "flex",
-          justifyContent: "space-between"
-        }
+        sub: "Documentos a apresentar com a solicitação — a lista abaixo é gerada a partir do preenchimento do formulário e pode ser exportada em PDF.",
       },
-      /* @__PURE__ */ React.createElement("span", { className: "v" }, u.identificacao || `UC ${ui + 1}`, " · ", u.atividade, " ·", " ", u.solicitacao, " ", u.complemento ? `· ${u.complemento}` : ""),
-      /* @__PURE__ */ React.createElement("span", { style: { color: "var(--verde)", fontWeight: 700 } }, u.disjPara || "—")
-    ))) : /* @__PURE__ */ React.createElement("div", { className: "preview-block" }, /* @__PURE__ */ React.createElement("h4", null, "Unidades Consumidoras"), ucsDet.map((u, ui) => /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        key: ui,
-        className: "preview-item",
-        style: {
-          display: "flex",
-          justifyContent: "space-between"
-        }
-      },
-      /* @__PURE__ */ React.createElement("span", { className: "v" }, "UC ", ui + 1, " · ", u.atividade, " · ", u.solicitacao, " ", u.complemento ? `· ${u.complemento}` : ""),
-      /* @__PURE__ */ React.createElement("span", { style: { color: "var(--verde)", fontWeight: 700 } }, fmt2(u.cargas?._demanda || 0), " kVA ·", " ", u.disjEscolhido || (u.cargas?._disjuntores || [])[0] || "—")
-    )))
-  ), /* @__PURE__ */ React.createElement(Card, { sub: "Documentos a apresentar com a solicitação — a lista abaixo é gerada a partir do preenchimento do formulário e pode ser exportada em PDF." }, /* Lista de documentos derivada do preenchimento (ver listaDocumentosBT). */
-  /* @__PURE__ */ React.createElement("div", { className: "preview-block" }, /* @__PURE__ */ React.createElement("h4", null, "Documentos necessários"), (ctx.documentosNecessarios || []).map((d, i) => /* @__PURE__ */ React.createElement("div", { key: i, className: "preview-item" }, /* @__PURE__ */ React.createElement("span", { className: "v" }, d)))), hibrido && !validacaoHibrido.ok && /* @__PURE__ */ React.createElement("div", { className: "alert alert-warn", style: { marginBottom: 12 } }, "Corrija as pendências do atendimento híbrido (aba Unidades Consumidoras) para liberar a exportação do PDF."), !ctx.validacaoObrigatorios.ok && /* @__PURE__ */ React.createElement("div", { className: "alert alert-warn", style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement("strong", null, "Preencha os campos obrigatórios para liberar o PDF:"), /* @__PURE__ */ React.createElement("ul", { style: { margin: "6px 0 0 18px" } }, ctx.validacaoObrigatorios.faltando.map((f, i) => /* @__PURE__ */ React.createElement("li", { key: i }, f)))), motoresPesadosBT && motoresPesadosBT.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "alert alert-warn", style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement("span", null, "A solicitação possui motores que exigem mais informações, favor preencher o formulário: "), /* @__PURE__ */ React.createElement(
-    Btn,
-    {
-      variant: "dark",
-      onClick: () => setMostrarAnaliseMotores(true)
-    },
-    "Preencher Análise de Partida"
-  )), /* Botões "Exportar PDF" e "Gerar lista de documentos" removidos daqui —
-     o único botão de exportação é o inferior (nav-bottom, app.js); a lista de
-     documentos é exibida acima, derivada do preenchimento. */
-  exibeTermoGrupoB && /* @__PURE__ */ React.createElement("div", { className: "btn-row", style: { display: "flex", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(
-    Btn,
-    {
-      variant: "ghost",
-      onClick: () => gerarTermoGrupoB(ctx)
-    },
-    "📄 Exportar Termo de Opção - Grupo B"
-  ))));
+      /* Lista de documentos derivada do preenchimento (ver listaDocumentosBT). */
+      React.createElement(
+        PreviaSecao,
+        { titulo: "Documentos necessários" },
+        (ctx.documentosNecessarios || []).map((d, i) =>
+          React.createElement(
+            "div",
+            { key: i, className: "preview-item" },
+            React.createElement("span", { className: "v" }, d),
+          ),
+        ),
+      ),
+      hibrido &&
+        !validacaoHibrido.ok &&
+        React.createElement(
+          "div",
+          { className: "alert alert-warn", style: { marginBottom: 12 } },
+          "Corrija as pendências do atendimento híbrido (aba Unidades Consumidoras) para liberar a exportação do PDF.",
+        ),
+      !ctx.validacaoObrigatorios.ok &&
+        React.createElement(
+          "div",
+          { className: "alert alert-warn", style: { marginBottom: 12 } },
+          React.createElement(
+            "strong",
+            null,
+            "Preencha os campos obrigatórios para liberar o PDF:",
+          ),
+          React.createElement(
+            "ul",
+            { style: { margin: "6px 0 0 18px" } },
+            ctx.validacaoObrigatorios.faltando.map((f, i) =>
+              React.createElement("li", { key: i }, f),
+            ),
+          ),
+        ),
+      motoresPesadosBT &&
+        motoresPesadosBT.length > 0 &&
+        React.createElement(
+          "div",
+          { className: "alert alert-warn", style: { marginBottom: 12 } },
+          React.createElement(
+            "span",
+            null,
+            "A solicitação possui motores que exigem mais informações, favor preencher o formulário: ",
+          ),
+          React.createElement(
+            Btn,
+            {
+              variant: "dark",
+              onClick: () => setMostrarAnaliseMotores(true),
+            },
+            "Preencher Análise de Partida",
+          ),
+        ),
+      /* Botões "Exportar PDF" e "Gerar lista de documentos" removidos daqui —
+         o único botão de exportação é o inferior (nav-bottom, app.js); a lista
+         de documentos é exibida acima, derivada do preenchimento. */
+      exibeTermoGrupoB &&
+        React.createElement(
+          "div",
+          {
+            className: "btn-row",
+            style: { display: "flex", gap: 10, flexWrap: "wrap" },
+          },
+          React.createElement(
+            Btn,
+            { variant: "ghost", onClick: () => gerarTermoGrupoB(ctx) },
+            "📄 Exportar Termo de Opção - Grupo B",
+          ),
+        ),
+      /* Aviso pós-exportação (Figma): anexar o PDF no pedido do Cemig Atende. */
+      React.createElement(PreviaAvisoExportacao, null),
+    ),
+  );
 }
 
 /* ============================================================

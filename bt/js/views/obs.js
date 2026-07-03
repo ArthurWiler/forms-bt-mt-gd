@@ -67,19 +67,21 @@ function TabObs({ ctx }) {
     validacaoDisjuntores,
     validacaoHibrido
   } = ctx;
+  /* A orientação sai do subtítulo do Card e passa a ser exibida DENTRO do
+     box (placeholder itálico — estilo global em shared.css). */
   return /* @__PURE__ */ React.createElement(
     Card,
     {
       eyebrow: "Etapa " + ctx.etapaNum,
-      title: "Observações",
-      sub: "Inclua informações relevantes: justificativa de disjuntor, atendimento híbrido, geração já conectada, etc."
+      title: "Observações"
     },
     /* @__PURE__ */ React.createElement(Field, null, /* @__PURE__ */ React.createElement(
       "textarea",
       {
         value: obs,
         onChange: (e) => setObs(e.target.value),
-        rows: 6
+        rows: 6,
+        placeholder: "Inclua informações relevantes: justificativa de disjuntor, atendimento híbrido, geração já conectada, etc."
       }
     ))
   );

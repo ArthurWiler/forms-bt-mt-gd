@@ -39,6 +39,7 @@
   /* ---- Feedback / status ---- */
   --cmg-warning-500: #ffc107; /* notice ("aviso") border / accent */
   --cmg-danger-500: #c0392b; /* errors, required mark */
+  --cmg-error-500: #c8303f; /* erro/500 — error banner column/border */
 
   /* ---- Semantic aliases ---- */
   --cmg-text: var(--cmg-neutral-600);

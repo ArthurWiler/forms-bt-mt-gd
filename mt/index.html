@@ -1447,7 +1447,7 @@
                 <label>Observações</label
                 ><textarea
                   data-k="observacoes"
-                  placeholder="Observações adicionais (opcional)"
+                  placeholder="Inclua informações relevantes: justificativa de disjuntor, atendimento híbrido, geração já conectada, etc."
                 ></textarea>
               </div>
 
@@ -1527,6 +1527,16 @@
               <div id="irrigacaoOpcionalCard" class="no-print"></div>
               <div id="alertaMotoresPesados" class="no-print"></div>
               <div id="exportAlert"></div>
+              <!-- Aviso pós-exportação (banner canônico .cmg-aviso, shared.css) -->
+              <div class="cmg-aviso cmg-aviso--warn no-print">
+                <div class="cmg-aviso-icon" aria-hidden="true"></div>
+                <p class="cmg-aviso-texto">
+                  <span
+                    >Após exportar o PDF da sua solicitação, anexe-o no seu
+                    pedido no <b>Cemig Atende</b>.</span
+                  >
+                </p>
+              </div>
               <div class="form-nav">
                 <button class="btn btn-ghost" onclick="goTo(4)">
                   <svg

@@ -178,7 +178,8 @@ function TabCargasColetivo({ ctx }) {
       title: "Disjuntor Geral do Agrupamento",
       sub: `Sugestão automática conforme seletividade (faixa superior ao maior disjuntor das UCs, acima de ${maiorCorrenteUC || "—"} A) e capacidade para a demanda total (${fmt2(demandaPrevTotal)} kVA).`
     },
-    /* @__PURE__ */ React.createElement("div", { className: "geral-box", style: { marginTop: 0 } }, /* @__PURE__ */ React.createElement(Field, { label: "Disjuntor geral", req: true }, /* @__PURE__ */ React.createElement(
+    /* Borda em erro/500 quando o aviso de seletividade está visível. */
+    /* @__PURE__ */ React.createElement("div", { className: "geral-box" + (atend.disjuntorGeral && !opcoesDisjGeral.includes(atend.disjuntorGeral) ? " geral-box--error" : ""), style: { marginTop: 0 } }, /* @__PURE__ */ React.createElement(Field, { label: "Disjuntor geral", req: true }, /* @__PURE__ */ React.createElement(
       Sel,
       {
         value: atend.disjuntorGeral,
@@ -186,6 +187,7 @@ function TabCargasColetivo({ ctx }) {
       },
       /* @__PURE__ */ React.createElement("option", { value: "" }),
       opcoesDisjGeral.map((o) => /* @__PURE__ */ React.createElement("option", { key: o, value: o }, o))
-    )), opcoesDisjGeral.length === 0 && /* @__PURE__ */ React.createElement("div", { className: "alert alert-info", style: { marginTop: 10 } }, "Preencha os disjuntores das UCs acima para liberar as opções."), atend.disjuntorGeral && !opcoesDisjGeral.includes(atend.disjuntorGeral) && /* @__PURE__ */ React.createElement("div", { className: "alert alert-warn", style: { marginTop: 10 } }, "⚠ Esse disjuntor não atende à seletividade (faixa superior ao maior disjuntor das UCs, ", maiorCorrenteUC, " A) e/ou à capacidade para a demanda total (", fmt2(demandaPrevTotal), " ", "kVA)."))
+    )), opcoesDisjGeral.length === 0 && /* @__PURE__ */ React.createElement("div", { className: "alert alert-info", style: { marginTop: 10 } }, "Preencha os disjuntores das UCs acima para liberar as opções."), atend.disjuntorGeral && !opcoesDisjGeral.includes(atend.disjuntorGeral) && /* Banner de erro padrão (.cmg-aviso--error); conteúdo num único <span> porque .cmg-aviso-texto é flex. */
+  /* @__PURE__ */ React.createElement("div", { className: "cmg-aviso cmg-aviso--error", style: { marginTop: 10, marginBottom: 0 } }, /* @__PURE__ */ React.createElement("div", { className: "cmg-aviso-icon", "aria-hidden": "true" }), /* @__PURE__ */ React.createElement("p", { className: "cmg-aviso-texto" }, /* @__PURE__ */ React.createElement("span", null, "Esse disjuntor não atende à seletividade (faixa superior ao maior disjuntor das UCs, ", maiorCorrenteUC, " A) e/ou à capacidade para a demanda total (", fmt2(demandaPrevTotal), " ", "kVA)."))))
   ));
 }
