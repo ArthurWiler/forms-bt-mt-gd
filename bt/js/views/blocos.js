@@ -75,6 +75,9 @@ function TabBlocos({ ctx }) {
   // Torres colapsáveis (padrão da aba Atendimento do BT individual):
   // minimizadas por padrão; abrem só quando o usuário clica.
   const [torreAberta, setTorreAberta] = useState({});
+  // Seções colapsáveis dentro da torre (Identificação / Previsão de carga),
+  // no padrão do acordeão de cargas (.carga-acc); chave `${bi}-ident|prev`.
+  const [secAberta, setSecAberta] = useState({});
   return /* @__PURE__ */ React.createElement(
     "div",
     null,
@@ -351,36 +354,53 @@ function TabBlocos({ ctx }) {
                  de rolagem e oculta os campos não utilizados. Botões ficam
                  fora do container da tabela. */
               (b.ucs || []).length > 0 &&
+                /* Seção colapsável no padrão do acordeão de cargas
+                   (.carga-acc, o mesmo dos Motores): cabeçalho com contador
+                   e chevron; o Replicar fica no rodapé do corpo
+                   (.motores-add), como o "Adicionar motor". */
                 /* @__PURE__ */ React.createElement(
-                  React.Fragment,
-                  null,
+                  "div",
+                  {
+                    className:
+                      "carga-acc" +
+                      (secAberta[`${bi}-ident`] ? " is-open" : ""),
+                    style: { marginTop: 14 },
+                  },
                   /* @__PURE__ */ React.createElement(
-                    "div",
+                    "button",
                     {
-                      style: {
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        margin: "14px 0 6px",
-                        flexWrap: "wrap",
-                        gap: 8,
-                      },
+                      type: "button",
+                      className: "carga-acc-head",
+                      "aria-expanded": !!secAberta[`${bi}-ident`],
+                      onClick: () =>
+                        setSecAberta((p) => ({
+                          ...p,
+                          [`${bi}-ident`]: !p[`${bi}-ident`],
+                        })),
                     },
                     /* @__PURE__ */ React.createElement(
                       "span",
-                      { className: "subbox-title" },
-                      `Identificação das UCs (${b.ucs.length})`,
+                      { className: "carga-acc-label" },
+                      "Identificação das UCs",
                     ),
-                    b.ucs.length > 1 &&
+                    /* @__PURE__ */ React.createElement(
+                      "span",
+                      { className: "carga-acc-meta" },
                       /* @__PURE__ */ React.createElement(
-                        Btn,
-                        {
-                          variant: "ghost",
-                          onClick: () => replicarUC1Torre(bi),
-                        },
-                        "⧉ Replicar UC 1 para todas",
+                        "span",
+                        { className: "carga-acc-badge" },
+                        b.ucs.length,
                       ),
+                      /* @__PURE__ */ React.createElement("span", {
+                        className: "carga-acc-chevron",
+                        "aria-hidden": "true",
+                      }),
+                    ),
                   ),
+                  secAberta[`${bi}-ident`] &&
+                    /* @__PURE__ */ React.createElement(
+                      "div",
+                      { className: "carga-acc-body" },
                   /* @__PURE__ */ React.createElement(
                     "table",
                     { className: "motores-table uc-ident-table" },
@@ -573,39 +593,67 @@ function TabBlocos({ ctx }) {
                       }),
                     ),
                   ),
-                ),
-              (b.ucs || []).length > 0 &&
-                /* @__PURE__ */ React.createElement(
-                  React.Fragment,
-                  null,
-                  /* Cabeçalho fora do container da tabela (título + ação). */
-                  /* @__PURE__ */ React.createElement(
-                    "div",
-                    {
-                      style: {
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        margin: "14px 0 6px",
-                        flexWrap: "wrap",
-                        gap: 8,
-                      },
-                    },
+                  b.ucs.length > 1 &&
                     /* @__PURE__ */ React.createElement(
-                      "span",
-                      { className: "subbox-title" },
-                      "Previsão de carga das UCs",
-                    ),
-                    b.ucs.length > 1 &&
+                      "div",
+                      { className: "motores-add" },
                       /* @__PURE__ */ React.createElement(
                         Btn,
                         {
                           variant: "ghost",
-                          onClick: () => replicarPrevTorre(bi),
+                          onClick: () => replicarUC1Torre(bi),
                         },
-                        "Replicar previsão da UC 1 para todas",
+                        "⧉ Replicar UC 1 para todas",
                       ),
+                    ),
+                    ),
+                ),
+              (b.ucs || []).length > 0 &&
+                /* Seção colapsável (.carga-acc), como a Identificação acima;
+                   o Replicar fica no rodapé do corpo (.motores-add). */
+                /* @__PURE__ */ React.createElement(
+                  "div",
+                  {
+                    className:
+                      "carga-acc" +
+                      (secAberta[`${bi}-prev`] ? " is-open" : ""),
+                    style: { marginTop: 14 },
+                  },
+                  /* @__PURE__ */ React.createElement(
+                    "button",
+                    {
+                      type: "button",
+                      className: "carga-acc-head",
+                      "aria-expanded": !!secAberta[`${bi}-prev`],
+                      onClick: () =>
+                        setSecAberta((p) => ({
+                          ...p,
+                          [`${bi}-prev`]: !p[`${bi}-prev`],
+                        })),
+                    },
+                    /* @__PURE__ */ React.createElement(
+                      "span",
+                      { className: "carga-acc-label" },
+                      "Previsão de carga das UCs",
+                    ),
+                    /* @__PURE__ */ React.createElement(
+                      "span",
+                      { className: "carga-acc-meta" },
+                      /* @__PURE__ */ React.createElement(
+                        "span",
+                        { className: "carga-acc-badge" },
+                        b.ucs.length,
+                      ),
+                      /* @__PURE__ */ React.createElement("span", {
+                        className: "carga-acc-chevron",
+                        "aria-hidden": "true",
+                      }),
+                    ),
                   ),
+                  secAberta[`${bi}-prev`] &&
+                    /* @__PURE__ */ React.createElement(
+                      "div",
+                      { className: "carga-acc-body" },
                   /* @__PURE__ */ React.createElement(
                     "div",
                     { className: "prev-table-wrap" },
@@ -758,6 +806,20 @@ function TabBlocos({ ctx }) {
                     ),
                   ),
                 ),
+                  b.ucs.length > 1 &&
+                    /* @__PURE__ */ React.createElement(
+                      "div",
+                      { className: "motores-add" },
+                      /* @__PURE__ */ React.createElement(
+                        Btn,
+                        {
+                          variant: "ghost",
+                          onClick: () => replicarPrevTorre(bi),
+                        },
+                        "Replicar previsão da UC 1 para todas",
+                      ),
+                    ),
+                    ),
                 ),
               /* ── Resultado da torre (padrão da aba Atendimento do BT):
              demanda calculada + Disjuntor Geral (pela Demanda das UCs, com

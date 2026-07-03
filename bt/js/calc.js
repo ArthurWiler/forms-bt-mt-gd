@@ -178,12 +178,13 @@ function disjuntoresGeraisAcima(maiorCorrenteUC, demandaTotal) {
     .map((d) => d.fx);
 }
 
-// Opções de Disjuntor Geral de uma torre/bloco (múltiplas torres): derivadas
-// da Demanda das UCs da torre, com a mesma regra de seletividade/capacidade
-// do agrupamento coletivo acima. Até 3 sugestões, da menor para a maior —
-// espelha a apresentação do disjuntor adequado do fluxo individual (aba
-// Atendimento). O condomínio/combate a incêndio tem disjuntor próprio
-// (ver opcoesDisjIncendioTorre abaixo) e não entra neste cálculo.
+// Disjuntor Geral de uma torre/bloco (múltiplas torres): derivado da Demanda
+// das UCs da torre, com a mesma regra de seletividade/capacidade do
+// agrupamento coletivo acima. Como a proteção geral é sempre tripolar,
+// existe UMA opção correta — a menor adequada (as maiores seriam
+// superdimensionadas); espelha o selecionarDisjuntores do fluxo individual,
+// que sugere apenas o mínimo por tipo. O condomínio/combate a incêndio tem
+// disjuntor próprio (ver opcoesDisjIncendioTorre abaixo) e não entra aqui.
 function opcoesDisjGeralTorre(b) {
   const demanda = calcBlocoMultiTorres(b).demandaUcs;
   if (demanda <= 0) return [];
@@ -191,7 +192,7 @@ function opcoesDisjGeralTorre(b) {
     0,
     ...((b && b.ucs) || []).map((u) => correnteDisj(u.disjPara)),
   );
-  return disjuntoresGeraisAcima(maiorCorrente, demanda).slice(0, 3);
+  return disjuntoresGeraisAcima(maiorCorrente, demanda).slice(0, 1);
 }
 
 // Opções de disjuntor do Condomínio / Combate a Incêndio da torre: menores
