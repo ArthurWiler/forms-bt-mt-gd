@@ -8,10 +8,6 @@
       Cemig
     </title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap"
-      rel="stylesheet"
-    />
     <!-- Open Sans: identidade visual CEMIG -->
     <link
       href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap"
@@ -22,9 +18,13 @@
     <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/formulario-loteamento.css" />
   </head>
-  <body class="cemig-mt cemig-lote">
-    <header class="site">
-      <div class="wrap">
+  <!-- Shell BT (.cemig-form): mesmo esqueleto do formulário BT individual —
+       topbar institucional, .layout com .sidebar de etapas e .main-col.
+       .cemig-lote guarda apenas os extras da página (etapas .page, tabela
+       de lotes e impressão), definidos em formulario-loteamento.css. -->
+  <body class="cemig-form cemig-lote">
+    <div class="topbar">
+      <div class="topbar-inner cmg-container">
         <div class="topbar-left">
           <img
             src="../imgs/logos/logo-cemig-branca-com-verde.png"
@@ -36,451 +36,451 @@
           >
         </div>
       </div>
-    </header>
+    </div>
 
-    <!-- Layout com stepper lateral — mesmo padrão do formulário MT
-         (.mt-layout / .stepper-bar / .vstep, estilos no shared.css). -->
-    <div class="mt-layout">
-      <aside class="stepper-bar">
+    <div class="layout">
+      <aside class="sidebar">
         <a href="../index.html" class="form-back">VOLTAR</a>
-        <div class="stepper-title">Progresso do preenchimento</div>
-        <div class="stepper" id="stepper">
-          <div class="vstep active">
-            <span class="vstep-num">1</span>
-            <span class="vstep-label">Orientações</span>
-          </div>
-          <div class="vstep">
-            <span class="vstep-num">2</span>
-            <span class="vstep-label">Dados para contato</span>
-          </div>
-          <div class="vstep">
-            <span class="vstep-num">3</span>
-            <span class="vstep-label">Empreendimento</span>
-          </div>
-          <div class="vstep">
-            <span class="vstep-num">4</span>
-            <span class="vstep-label">Quantidade de lotes</span>
-          </div>
-          <div class="vstep">
-            <span class="vstep-num">5</span>
-            <span class="vstep-label">Declaração</span>
-          </div>
-          <div class="vstep">
-            <span class="vstep-num">6</span>
-            <span class="vstep-label">Observações</span>
-          </div>
-          <div class="vstep">
-            <span class="vstep-num">7</span>
-            <span class="vstep-label">Prévia &amp; PDF</span>
-          </div>
-        </div>
+        <div class="sidebar-title">Progresso do preenchimento</div>
+        <button type="button" class="vstep active">
+          <span class="vstep-num">1</span>
+          <span class="vstep-label">Orientações</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">2</span>
+          <span class="vstep-label">Dados para contato</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">3</span>
+          <span class="vstep-label">Empreendimento</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">4</span>
+          <span class="vstep-label">Quantidade de lotes</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">5</span>
+          <span class="vstep-label">Declaração</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">6</span>
+          <span class="vstep-label">Observações</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">7</span>
+          <span class="vstep-label">Prévia &amp; PDF</span>
+        </button>
       </aside>
 
-      <main>
+      <main class="main-col">
+        <!-- Título do formulário no topo, padrão BT (.form-header, shared.css).
+             Fica fora das páginas para permanecer visível em todas as etapas. -->
+        <div class="form-header">
+          <h1>Baixa Tensão - Loteamento</h1>
+          <p>
+            Preenchimento digital unificado do formulário para solicitações de
+            orçamento de Conexão / Alteração de Carga em baixa tensão, conforme
+            as normas CEMIG ND-5.1 / ND-5.2 e a REN ANEEL nº 1.000/2021.
+          </p>
+        </div>
+
         <!-- ============ PÁGINA 0 — ORIENTAÇÕES ============ -->
         <section class="page show" id="page-0">
           <div class="card">
-            <div class="card-body">
-              <div class="section-eyebrow">Etapa 1</div>
-              <h2 class="card-title">Orientações</h2>
-              <p class="intro-lead">
-                Solicitação inicial de fornecimento de energia para loteamentos
-                e condomínios fechados horizontais, conforme a Resolução
-                Normativa ANEEL nº 1.000/2021. Os documentos abaixo deverão ser
-                anexados ao pedido junto à Cemig (o envio dos arquivos é feito
-                fora deste formulário).
-              </p>
-              <div class="subhead">Documentos obrigatórios</div>
-              <ul class="orient-list">
-                <li>
-                  <span class="bullet">1</span>
-                  <div>Planta georreferenciada (escala 1:1000) aprovada</div>
-                </li>
-                <li>
-                  <span class="bullet">2</span>
-                  <div>
-                    Licença Ambiental ou declaração de não passível de
-                    licenciamento
-                  </div>
-                </li>
-                <li>
-                  <span class="bullet">3</span>
-                  <div>
-                    Projeto da infraestrutura essencial (arruamento, meio fio,
-                    demarcação dos lotes)
-                  </div>
-                </li>
-                <li>
-                  <span class="bullet">4</span>
-                  <div>
-                    Ato administrativo municipal de aprovação (em caso de Poder
-                    Público)
-                  </div>
-                </li>
-              </ul>
-              <div class="subhead">Documentos opcionais</div>
-              <ul class="orient-list">
-                <li>
-                  <span class="bullet">1</span>
-                  <div>Cronograma de entrega com etapas</div>
-                </li>
-                <li>
-                  <span class="bullet">2</span>
-                  <div>
-                    Planilha com relação das unidades consumidoras (número
-                    predial, identificação das caixas, carga instalada,
-                    classificação, disjuntores, cargas especiais)
-                  </div>
-                </li>
-              </ul>
-              <div class="form-nav">
-                <span></span>
-                <button class="btn btn-primary no-print" onclick="goTo(1)">
-                  Iniciar preenchimento →
-                </button>
-              </div>
+            <div class="section-eyebrow">Etapa 1</div>
+            <h3 class="card-title">Orientações</h3>
+            <p class="card-sub">
+              Solicitação inicial de fornecimento de energia para loteamentos e
+              condomínios fechados horizontais, conforme a Resolução Normativa
+              ANEEL nº 1.000/2021. Os documentos abaixo deverão ser anexados ao
+              pedido junto à Cemig (o envio dos arquivos é feito fora deste
+              formulário).
+            </p>
+            <!-- Subtítulos de bloco: mesmo estilo inline do TabOrient do BT. -->
+            <div
+              style="
+                font-weight: 700;
+                color: var(--cmg-green-600);
+                font-size: 14px;
+                margin-bottom: 4px;
+              "
+            >
+              Documentos obrigatórios
             </div>
+            <ul class="orient-list">
+              <li class="orient-item">
+                <span class="orient-num">1</span>
+                <p>Planta georreferenciada (escala 1:1000) aprovada</p>
+              </li>
+              <li class="orient-item">
+                <span class="orient-num">2</span>
+                <p>
+                  Licença Ambiental ou declaração de não passível de
+                  licenciamento
+                </p>
+              </li>
+              <li class="orient-item">
+                <span class="orient-num">3</span>
+                <p>
+                  Projeto da infraestrutura essencial (arruamento, meio fio,
+                  demarcação dos lotes)
+                </p>
+              </li>
+              <li class="orient-item">
+                <span class="orient-num">4</span>
+                <p>
+                  Ato administrativo municipal de aprovação (em caso de Poder
+                  Público)
+                </p>
+              </li>
+            </ul>
+            <div
+              style="
+                font-weight: 700;
+                color: var(--cmg-green-600);
+                font-size: 14px;
+                margin: 18px 0 4px;
+              "
+            >
+              Documentos opcionais
+            </div>
+            <ul class="orient-list">
+              <li class="orient-item">
+                <span class="orient-num">1</span>
+                <p>Cronograma de entrega com etapas</p>
+              </li>
+              <li class="orient-item">
+                <span class="orient-num">2</span>
+                <p>
+                  Planilha com relação das unidades consumidoras (número
+                  predial, identificação das caixas, carga instalada,
+                  classificação, disjuntores, cargas especiais)
+                </p>
+              </li>
+            </ul>
+          </div>
+          <div class="nav-bottom no-print">
+            <span class="nav-step-info">Etapa 1 de 7</span>
+            <button class="btn btn-primary" onclick="goTo(1)">
+              Iniciar preenchimento →
+            </button>
           </div>
         </section>
 
         <!-- ============ PÁGINA 1 — DADOS PARA CONTATO ============ -->
         <section class="page" id="page-1">
           <div class="card">
-            <div class="card-body">
-              <div class="section-eyebrow">Etapa 2</div>
-              <h2 class="card-title">Dados para contato</h2>
-              <div class="grid cols-2">
-                <div class="field field--plain">
-                  <label>E-mail para contato</label>
-                  <input
-                    data-k="email"
-                    placeholder="nome@exemplo.com"
-                    oninput="onEmail('email')"
-                  />
-                  <span id="status-email" class="cep-status"></span>
-                </div>
-                <div class="field field--plain">
-                  <label>Celular</label>
-                  <input
-                    data-k="celular"
-                    placeholder="(31) 99999-9999"
-                    oninput="
-                      maskCelular(this);
-                      onTel('celular');
-                    "
-                  />
-                  <span id="status-celular" class="cep-status"></span>
-                </div>
+            <div class="section-eyebrow">Etapa 2</div>
+            <h3 class="card-title">Dados para contato</h3>
+            <div class="grid grid-2">
+              <div class="field col-span-2">
+                <label
+                  >Nome completo (sem abreviações)
+                  <span class="req">*</span></label
+                >
+                <input data-k="nome" placeholder=" " />
               </div>
-              <div class="form-nav">
-                <button class="btn btn-ghost no-print" onclick="goTo(0)">
-                  ← Voltar
-                </button>
-                <button class="btn btn-primary no-print" onclick="goTo(2)">
-                  Avançar →
-                </button>
+              <div class="field">
+                <label>E-mail para contato</label>
+                <input
+                  data-k="email"
+                  placeholder="nome@exemplo.com"
+                  oninput="onEmail('email')"
+                />
+                <span id="status-email" class="field-hint"></span>
+              </div>
+              <div class="field">
+                <label>Celular</label>
+                <input
+                  data-k="celular"
+                  placeholder="(31) 99999-9999"
+                  oninput="
+                    maskCelular(this);
+                    onTel('celular');
+                  "
+                />
+                <span id="status-celular" class="field-hint"></span>
               </div>
             </div>
+          </div>
+          <div class="nav-bottom no-print">
+            <button class="btn btn-ghost" onclick="goTo(0)">← Voltar</button>
+            <span class="nav-step-info">Etapa 2 de 7</span>
+            <button class="btn btn-primary" onclick="goTo(2)">
+              Avançar →
+            </button>
           </div>
         </section>
 
         <!-- ============ PÁGINA 2 — EMPREENDIMENTO ============ -->
         <section class="page" id="page-2">
           <div class="card">
-            <div class="card-body">
-              <div class="section-eyebrow">Etapa 3</div>
-              <h2 class="card-title">Dados do Empreendimento</h2>
-              <p class="intro-lead">
-                Preencha os dados gerais do empreendimento. Os campos marcados
-                com * são obrigatórios.
-              </p>
-              <div class="grid cols-2">
-                <div class="field span-2">
-                  <label
-                    >Cliente / Empreendimento <span class="req">*</span></label
-                  >
-                  <input
-                    data-k="cliente"
-                    placeholder="Nome do cliente ou razão social do empreendimento"
-                  />
-                </div>
-                <div class="field">
-                  <label>Município <span class="req">*</span></label>
-                  <input type="text" data-k="municipio" placeholder=" " />
-                </div>
-                <div class="field">
-                  <label>Estado <span class="req">*</span></label>
-                  <input type="text" data-k="estado" value="MG" />
-                </div>
-                <div class="field">
-                  <label>Tipo de solicitante <span class="req">*</span></label>
-                  <select data-k="tipoSolicitante">
-                    <option value=""></option>
-                    <option>Empreendedor</option>
-                    <option>Poder Público (Prefeitura)</option>
-                  </select>
-                </div>
-                <div class="field">
-                  <label>Tipo <span class="req">*</span></label>
-                  <select data-k="tipo">
-                    <option value=""></option>
-                    <option>Loteamento</option>
-                    <option>Condomínio fechado horizontal</option>
-                  </select>
-                </div>
-                <div class="field">
-                  <label>Mês/ano de entrada de carga ou inauguração</label>
-                  <input type="month" data-k="mesAno" />
-                </div>
+            <div class="section-eyebrow">Etapa 3</div>
+            <h3 class="card-title">Dados do Empreendimento</h3>
+            <p class="card-sub">
+              Preencha os dados gerais do empreendimento. Os campos marcados
+              como opcionais podem ser deixados em branco.
+            </p>
+            <div class="grid grid-2">
+              <div class="field col-span-2">
+                <label
+                  >Cliente / Razão Social do empreendimento
+                  <span class="req">*</span></label
+                >
+                <input data-k="cliente" placeholder=" " />
+              </div>
+              <div class="field">
+                <label>Município <span class="req">*</span></label>
+                <input type="text" data-k="municipio" placeholder=" " />
+              </div>
+              <div class="field">
+                <label>Área do empreendimento <span class="req">*</span></label>
+                <!-- Mesmo seletor Urbana/Rural do BT (toggle sobre select
+                     oculto, montado em js/app.js). -->
+                <select data-k="area">
+                  <option selected>Urbano</option>
+                  <option>Rural</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Estado <span class="req">*</span></label>
+                <input type="text" data-k="estado" value="MG" placeholder=" " />
+              </div>
+              <div class="field">
+                <label>Tipo de solicitante <span class="req">*</span></label>
+                <select data-k="tipoSolicitante">
+                  <option value=""></option>
+                  <option>Empreendedor</option>
+                  <option>Poder Público (Prefeitura)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Tipo de empreendimento <span class="req">*</span></label>
+                <select data-k="tipo">
+                  <option value=""></option>
+                  <option>Loteamento</option>
+                  <option>Condomínio fechado horizontal</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Data de entrada de carga ou inauguração</label>
+                <input type="date" data-k="dataEntrada" />
               </div>
             </div>
           </div>
 
           <div class="card">
-            <div class="card-body">
-              <h2 class="card-title">Localização do Empreendimento</h2>
-              <div class="grid cols-2">
-                <div class="field">
-                  <label>Latitude <span class="req">*</span></label>
-                  <input
-                    data-k="latitude"
-                    oninput="onCoord()"
-                    placeholder=" "
-                  />
-                </div>
-                <div class="field">
-                  <label>Longitude <span class="req">*</span></label>
-                  <input
-                    data-k="longitude"
-                    oninput="onCoord()"
-                    placeholder=" "
-                  />
-                </div>
-                <div class="field span-2">
-                  <label>Coordenada UTM (calculada)</label>
-                  <input data-k="utm" readonly placeholder=" " />
-                </div>
-                <div class="field">
-                  <label>Local <span class="req">*</span></label>
-                  <select data-k="local">
-                    <option value=""></option>
-                    <option>Urbano</option>
-                    <option>Rural</option>
-                  </select>
-                </div>
+            <h3 class="card-title">Localização do Empreendimento</h3>
+            <!-- Mesmo bloco de coordenadas do BT (dados-unidade): Latitude,
+                 Longitude e UTM lado a lado; UTM calculada, não editável. -->
+            <div class="grid grid-3">
+              <div class="field">
+                <label>Latitude <span class="req">*</span></label>
+                <input data-k="latitude" oninput="onCoord()" placeholder=" " />
               </div>
-              <div id="coordAlert"></div>
-              <div class="form-nav">
-                <button class="btn btn-ghost no-print" onclick="goTo(1)">
-                  ← Voltar
-                </button>
-                <button class="btn btn-primary no-print" onclick="goTo(3)">
-                  Avançar →
-                </button>
+              <div class="field">
+                <label>Longitude <span class="req">*</span></label>
+                <input data-k="longitude" oninput="onCoord()" placeholder=" " />
+              </div>
+              <div class="field">
+                <label>Coordenada UTM</label>
+                <input data-k="utm" readonly disabled placeholder=" " />
               </div>
             </div>
+            <div id="coordAlert"></div>
+          </div>
+          <div class="nav-bottom no-print">
+            <button class="btn btn-ghost" onclick="goTo(1)">← Voltar</button>
+            <span class="nav-step-info">Etapa 3 de 7</span>
+            <button class="btn btn-primary" onclick="goTo(3)">
+              Avançar →
+            </button>
           </div>
         </section>
 
         <!-- ============ PÁGINA 3 — QUANTIDADE DE LOTES ============ -->
         <section class="page" id="page-3">
           <div class="card">
-            <div class="card-body">
-              <div class="section-eyebrow">Etapa 4</div>
-              <h2 class="card-title">Quantidade de Lotes por Área</h2>
-              <div class="tbl-scroll">
-                <table class="tbl">
-                  <thead>
-                    <tr>
-                      <th>Faixa de área</th>
-                      <th>Quantidade de lotes</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>Até 400 m²</td>
-                      <td>
-                        <input
-                          type="number"
-                          min="0"
-                          data-k="lote_400"
-                          oninput="recalcLotes()"
-                        />
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>De 400 a 600 m²</td>
-                      <td>
-                        <input
-                          type="number"
-                          min="0"
-                          data-k="lote_400_600"
-                          oninput="recalcLotes()"
-                        />
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Acima de 600 m²</td>
-                      <td>
-                        <input
-                          type="number"
-                          min="0"
-                          data-k="lote_600"
-                          oninput="recalcLotes()"
-                        />
-                      </td>
-                    </tr>
-                  </tbody>
-                  <tfoot>
-                    <tr>
-                      <td>Total</td>
-                      <td id="loteTotal" class="calc">0</td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-              <div class="form-nav">
-                <button class="btn btn-ghost no-print" onclick="goTo(2)">
-                  ← Voltar
-                </button>
-                <button class="btn btn-primary no-print" onclick="goTo(4)">
-                  Avançar →
-                </button>
-              </div>
+            <div class="section-eyebrow">Etapa 4</div>
+            <h3 class="card-title">Quantidade de lotes por área</h3>
+            <p class="card-sub">
+              Informe a quantidade de lotes do empreendimento em cada faixa de
+              área.
+            </p>
+            <div class="tbl-scroll">
+              <table class="tbl">
+                <thead>
+                  <tr>
+                    <th>Faixa da área</th>
+                    <th>Quantidade de lotes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Até 400m²</td>
+                    <td>
+                      <input
+                        type="number"
+                        min="0"
+                        data-k="lote_400"
+                        oninput="recalcLotes()"
+                      />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>De 401 a 600m²</td>
+                    <td>
+                      <input
+                        type="number"
+                        min="0"
+                        data-k="lote_400_600"
+                        oninput="recalcLotes()"
+                      />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Acima de 600m²</td>
+                    <td>
+                      <input
+                        type="number"
+                        min="0"
+                        data-k="lote_600"
+                        oninput="recalcLotes()"
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td>Total</td>
+                    <td id="loteTotal" class="calc">0</td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
+          </div>
+          <div class="nav-bottom no-print">
+            <button class="btn btn-ghost" onclick="goTo(2)">← Voltar</button>
+            <span class="nav-step-info">Etapa 4 de 7</span>
+            <button class="btn btn-primary" onclick="goTo(4)">
+              Avançar →
+            </button>
           </div>
         </section>
 
         <!-- ============ PÁGINA 4 — DECLARAÇÃO ============ -->
         <section class="page" id="page-4">
           <div class="card">
-            <div class="card-body">
-              <div class="section-eyebrow">Etapa 5</div>
-              <h2 class="card-title">Declaração</h2>
-              <p class="intro-lead">
-                Por ser verdade, firmo o presente formulário e me
-                responsabilizo pelas informações nele prestadas, ciente de que
-                a Cemig poderá solicitar documentos complementares para análise
-                do pedido.
-              </p>
-              <label
+            <div class="section-eyebrow">Etapa 5</div>
+            <h3 class="card-title">Declaração</h3>
+            <p class="card-sub">
+              Por ser verdade, firmo o presente formulário e me responsabilizo
+              pelas informações nele prestadas, ciente de que a Cemig poderá
+              solicitar documentos complementares para análise do pedido.
+            </p>
+            <label
+              style="
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                cursor: pointer;
+              "
+              ><input
+                type="checkbox"
+                data-k="declaracao"
                 style="
-                  display: flex;
-                  align-items: center;
-                  gap: 8px;
-                  cursor: pointer;
+                  accent-color: var(--cmg-green-600);
+                  width: 18px;
+                  height: 18px;
+                  flex: none;
                 "
-                ><input type="checkbox" data-k="declaracao" /><span
-                  >Declaro que as informações acima são verdadeiras
-                  <span class="req">*</span></span
-                ></label
-              >
-              <div class="field-note" style="margin-top: 10px">
-                Este formulário deve ser assinado pelo responsável legal do
-                empreendimento ou pelo representante do Poder Público, conforme
-                o caso, antes do envio à Cemig.
-              </div>
-              <div class="form-nav">
-                <button class="btn btn-ghost no-print" onclick="goTo(3)">
-                  ← Voltar
-                </button>
-                <button class="btn btn-primary no-print" onclick="goTo(5)">
-                  Avançar →
-                </button>
-              </div>
-            </div>
+              /><span
+                >Declaro que as informações acima são verdadeiras
+                <span class="req">*</span></span
+              ></label
+            >
+            <p class="field-hint" style="margin-top: 10px">
+              Este formulário deve ser assinado pelo responsável legal do
+              empreendimento ou pelo representante do Poder Público, conforme o
+              caso, antes do envio à Cemig.
+            </p>
+          </div>
+          <div class="nav-bottom no-print">
+            <button class="btn btn-ghost" onclick="goTo(3)">← Voltar</button>
+            <span class="nav-step-info">Etapa 5 de 7</span>
+            <button class="btn btn-primary" onclick="goTo(5)">
+              Avançar →
+            </button>
           </div>
         </section>
 
         <!-- ============ PÁGINA 5 — OBSERVAÇÕES ============ -->
         <section class="page" id="page-5">
           <div class="card">
-            <div class="card-body">
-              <div class="section-eyebrow">Etapa 6</div>
-              <h2 class="card-title">Observações</h2>
-              <div class="field">
-                <textarea
-                  data-k="observacoes"
-                  rows="6"
-                  placeholder="Inclua informações relevantes: justificativa de disjuntor, atendimento híbrido, geração já conectada, etc."
-                ></textarea>
-              </div>
-              <div class="form-nav">
-                <button class="btn btn-ghost no-print" onclick="goTo(4)">
-                  ← Voltar
-                </button>
-                <button class="btn btn-primary no-print" onclick="goTo(6)">
-                  Avançar →
-                </button>
-              </div>
+            <div class="section-eyebrow">Etapa 6</div>
+            <h3 class="card-title">Observações</h3>
+            <div class="field">
+              <textarea
+                data-k="observacoes"
+                rows="6"
+                placeholder="Inclua informações relevantes: justificativa de disjuntor, atendimento híbrido, geração já conectada, etc."
+              ></textarea>
             </div>
+          </div>
+          <div class="nav-bottom no-print">
+            <button class="btn btn-ghost" onclick="goTo(4)">← Voltar</button>
+            <span class="nav-step-info">Etapa 6 de 7</span>
+            <button class="btn btn-primary" onclick="goTo(6)">
+              Avançar →
+            </button>
           </div>
         </section>
 
         <!-- ============ PÁGINA 6 — PRÉVIA & PDF ============ -->
         <section class="page" id="page-6">
           <div class="card">
-            <div class="card-body">
-              <div class="section-eyebrow">Etapa 7</div>
-              <h2 class="card-title">Prévia &amp; PDF</h2>
-              <div class="alert info no-print">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
+            <div class="section-eyebrow">Etapa 7</div>
+            <h3 class="card-title">Prévia do formulário</h3>
+            <p class="card-sub">
+              Confira se todos os dados estão corretos e gere o PDF para anexar
+              à sua solicitação no Cemig Atende.
+            </p>
+            <div id="previewContent"></div>
+            <!-- Aviso pós-exportação (banner canônico .cmg-aviso, shared.css) -->
+            <div class="cmg-aviso cmg-aviso--warn no-print">
+              <div class="cmg-aviso-icon" aria-hidden="true"></div>
+              <p class="cmg-aviso-texto">
+                <span
+                  >Após exportar o PDF da sua solicitação, anexe-o no seu pedido
+                  no <b>Cemig Atende</b>.</span
                 >
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="16" x2="12" y2="12" />
-                  <line x1="12" y1="8" x2="12.01" y2="8" />
-                </svg>
-                <div>
-                  Confira os dados abaixo. Se algo estiver incorreto, volte às
-                  etapas anteriores. Quando estiver tudo certo, exporte o PDF.
-                </div>
-              </div>
-              <div id="previewContent" class="preview-doc"></div>
-              <!-- Aviso pós-exportação (banner canônico .cmg-aviso, shared.css) -->
-              <div class="cmg-aviso cmg-aviso--warn no-print">
-                <div class="cmg-aviso-icon" aria-hidden="true"></div>
-                <p class="cmg-aviso-texto">
-                  <span
-                    >Após exportar o PDF da sua solicitação, anexe-o no seu
-                    pedido no <b>Cemig Atende</b>.</span
-                  >
-                </p>
-              </div>
-              <div class="form-nav">
-                <button class="btn btn-ghost no-print" onclick="goTo(5)">
-                  ← Voltar
-                </button>
-                <button
-                  class="btn btn-primary no-print"
-                  onclick="exportarPDF()"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" y1="15" x2="12" y2="3" /></svg
-                  >Exportar PDF
-                </button>
-              </div>
+              </p>
             </div>
+          </div>
+          <div class="nav-bottom no-print">
+            <button class="btn btn-ghost" onclick="goTo(5)">← Voltar</button>
+            <span class="nav-step-info">Etapa 7 de 7</span>
+            <button class="btn btn-primary" onclick="exportarPDF()">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" /></svg
+              >Exportar PDF
+            </button>
           </div>
         </section>
       </main>
     </div>
 
     <footer class="portal-footer">
-      <div class="portal-footer-inner">
+      <div class="portal-footer-inner cmg-container cmg-container--gutter">
         <img
           src="../imgs/logos/logo-cemig-branca-com-verde.png"
           alt="Cemig"

@@ -19,6 +19,39 @@ function bindInputs(){
   });
 }
 
+/* ===== Toggle sobre select oculto (mesmo seletor Urbana/Rural do BT;
+   padrão do mt/js/toggle-cards.js: o select segue como fonte da verdade) ===== */
+function montarToggle(k){
+  const select=$(`select[data-k="${k}"]`);
+  if(!select||select.dataset.toggleMontado) return;
+  select.dataset.toggleMontado='1';
+  const grupo=document.createElement('div');
+  grupo.className='toggle-group toggle-group--opcoes';
+  grupo.setAttribute('role','radiogroup');
+  const render=()=>{
+    grupo.innerHTML='';
+    [...select.options].filter(o=>o.value!=='').forEach(o=>{
+      const btn=document.createElement('button');
+      btn.type='button';
+      btn.setAttribute('role','radio');
+      btn.setAttribute('aria-checked',select.value===o.value?'true':'false');
+      btn.className='toggle-btn'+(select.value===o.value?' on':'');
+      btn.textContent=o.textContent;
+      btn.addEventListener('click',()=>{
+        select.value=o.value;
+        select.dispatchEvent(new Event('input',{bubbles:true}));
+        select.dispatchEvent(new Event('change',{bubbles:true}));
+        render();
+      });
+      grupo.appendChild(btn);
+    });
+  };
+  render();
+  select.style.display='none';
+  select.setAttribute('aria-hidden','true');
+  select.insertAdjacentElement('afterend',grupo);
+}
+
 /* ===== Navegação por etapas (mesmo padrão do formulário MT) ===== */
 function goTo(n){
   // Trava de avanço: só valida quando avança (ou pula adiante). Volta é livre.
@@ -75,6 +108,9 @@ function onCoord(){
     const u=latLonParaUTM(lat,lon);
     $('[data-k=utm]').value=`${u.zona}${_utmBandLetter(lat)} E:${u.easting} N:${u.northing}`;
   }
+  // Atribuição programática não dispara o bind genérico — sincroniza o estado
+  // aqui para a UTM aparecer na prévia.
+  state.utm=$('[data-k=utm]').value;
   const r=validarCoordenadas(state.latitude,state.longitude);
   $('#coordAlert').innerHTML = r.ok ? '' : alertHTML('err',r.msg);
 }
@@ -90,10 +126,13 @@ function _validarTelefone(v){
   return true;
 }
 function _feedbackCampo(el,spanId,valido,msgErr){
+  // Convenção compartilhada (form-marcadores): erro sinalizado com
+  // .is-invalid no controle + mensagem no .field-hint do campo.
   const sp=$('#'+spanId);
-  if(!el.value){el.classList.remove('invalid');if(sp){sp.textContent='';sp.className='cep-status';}return;}
-  if(valido){el.classList.remove('invalid');if(sp)sp.textContent='';}
-  else{el.classList.add('invalid');if(sp){sp.textContent=msgErr;sp.className='cep-status err';}}
+  const limpa=()=>{el.classList.remove('is-invalid');if(sp){sp.textContent='';sp.style.color='';}};
+  if(!el.value||valido){limpa();return;}
+  el.classList.add('is-invalid');
+  if(sp){sp.textContent=msgErr;sp.style.color='var(--cmg-danger-500)';}
 }
 function onEmail(k){const el=$(`[data-k="${k}"]`);_feedbackCampo(el,`status-${k}`,_validarEmail(el.value),'e-mail inválido');}
 function onTel(k){const el=$(`[data-k="${k}"]`);_feedbackCampo(el,`status-${k}`,_validarTelefone(el.value),'telefone inválido');}
@@ -117,36 +156,65 @@ function recalcLotes(){
   $('#loteTotal').textContent=fmt(a+b+c);
 }
 
-/* ===== Alerta ===== */
+/* ===== Alerta (banner canônico .cmg-aviso do shared.css) ===== */
 function alertHTML(tipo,msg){
-  const icon = tipo==='err'
-    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
-    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
-  return `<div class="alert ${tipo}">${icon}<div>${msg}</div></div>`;
+  const mod = tipo==='err' ? ' cmg-aviso--error' : tipo==='warn' ? ' cmg-aviso--warn' : '';
+  return `<div class="cmg-aviso${mod}"><div class="cmg-aviso-icon" aria-hidden="true"></div><p class="cmg-aviso-texto">${msg}</p></div>`;
 }
 
-/* ===== Prévia ===== */
-function pvRow(k,v){const empty=(v==null||v==='');return `<div class="pv-row"><div class="k">${k}</div><div class="v ${empty?'empty':''}">${empty?'—':v}</div></div>`;}
+/* ===== Prévia — padrão Figma do BT (previa-* do shared.css): seções
+   tituladas em verde, campos rótulo+valor em grade de 2 colunas e lápis
+   que volta à etapa correspondente (mesmo markup dos componentes
+   PreviaSecao/PreviaCampo do bt/js/components.js). ===== */
+function pvCampo(label,valor,opts){
+  opts=opts||{};
+  const vazio=(valor==null||valor==='');
+  const lapis=opts.step!=null
+    ? `<button type="button" class="previa-edit" title="Editar" aria-label="Editar ${label}" onclick="goTo(${opts.step})"></button>`
+    : '';
+  return `<div class="previa-campo${opts.full?' previa-campo--full':''}">`+
+    `<div class="previa-campo-label">${label}</div>`+
+    `<div class="previa-campo-valor">${vazio?'—':valor}${lapis}</div></div>`;
+}
+function pvSecao(titulo,campos){
+  return `<div class="previa-secao"><h4 class="previa-secao-titulo">${titulo}</h4>`+
+    `<div class="previa-grid">${campos}</div></div>`;
+}
+const PV_DIVISOR='<hr class="previa-divider"/>';
+function fmtData(iso){
+  if(!iso) return '';
+  const [a,m,d]=String(iso).split('-');
+  return (a&&m&&d)?`${d}/${m}/${a}`:iso;
+}
 function renderPreview(){
-  let h=`<div class="pv-title">SOLICITAÇÃO INICIAL DE FORNECIMENTO — LOTEAMENTOS E CHACREAMENTOS</div><div class="pv-section">`;
-  h+=`<h4>1. Dados do Empreendimento</h4>`;
-  h+=pvRow('Cliente / Empreendimento',state.cliente)+pvRow('Município',state.municipio)+pvRow('Estado',state.estado);
-  h+=pvRow('Tipo de solicitante',state.tipoSolicitante)+pvRow('Tipo',state.tipo);
-  h+=pvRow('Mês/ano de entrada de carga',state.mesAno);
-  h+=`<h4>2. Localização</h4>`;
-  h+=pvRow('Coordenadas',[state.latitude,state.longitude].filter(Boolean).join(' , '));
-  h+=pvRow('UTM',state.utm)+pvRow('Local',state.local);
-  h+=`<h4>3. Contato</h4>`;
-  h+=pvRow('E-mail',state.email)+pvRow('Celular',state.celular);
-  h+=`<h4>4. Quantidade de Lotes por Área</h4>`;
-  h+=pvRow('Até 400 m²',state.lote_400)+pvRow('De 400 a 600 m²',state.lote_400_600)+pvRow('Acima de 600 m²',state.lote_600);
-  h+=pvRow('Total de lotes',(parseInt(state.lote_400)||0)+(parseInt(state.lote_400_600)||0)+(parseInt(state.lote_600)||0));
-  h+=`<h4>5. Declaração</h4>`;
-  h+=pvRow('Declaração firmada',state.declaracao?'Sim':'Não');
-  h+=`<h4>6. Observações</h4>`;
-  h+=pvRow('Observações',state.observacoes);
-  h+=`</div>`;
-  $('#previewContent').innerHTML=h;
+  const totalLotes=(parseInt(state.lote_400)||0)+(parseInt(state.lote_400_600)||0)+(parseInt(state.lote_600)||0);
+  const secoes=[
+    pvSecao('Dados para contato',
+      pvCampo('Nome completo',state.nome,{full:true,step:1})+
+      pvCampo('E-mail',state.email,{step:1})+
+      pvCampo('Celular',state.celular,{step:1})),
+    pvSecao('Dados do Empreendimento',
+      pvCampo('Cliente / Razão Social do empreendimento',state.cliente,{full:true,step:2})+
+      pvCampo('Município',state.municipio,{step:2})+
+      pvCampo('Estado',state.estado,{step:2})+
+      pvCampo('Área do empreendimento',state.area,{step:2})+
+      pvCampo('Tipo de solicitante',state.tipoSolicitante,{step:2})+
+      pvCampo('Tipo de empreendimento',state.tipo,{step:2})+
+      pvCampo('Data de entrada de carga ou inauguração',fmtData(state.dataEntrada),{step:2})),
+    pvSecao('Localização',
+      pvCampo('Coordenadas',[state.latitude,state.longitude].filter(Boolean).join(' , '),{step:2})+
+      pvCampo('Coordenada UTM',state.utm,{step:2})),
+    pvSecao('Quantidade de lotes por área',
+      pvCampo('Até 400m²',state.lote_400,{step:3})+
+      pvCampo('De 401 a 600m²',state.lote_400_600,{step:3})+
+      pvCampo('Acima de 600m²',state.lote_600,{step:3})+
+      pvCampo('Total de lotes',totalLotes)),
+    pvSecao('Declaração',
+      pvCampo('Declaração firmada',state.declaracao?'Sim':'Não',{step:4})),
+    pvSecao('Observações',
+      pvCampo('Observações',state.observacoes,{full:true,step:5})),
+  ];
+  $('#previewContent').innerHTML=secoes.join(PV_DIVISOR);
 }
 function exportarPDF(){
   // Trava: só exporta quando os obrigatórios visíveis estão preenchidos.
@@ -160,6 +228,12 @@ function exportarPDF(){
 /* ===== Init ===== */
 document.addEventListener('DOMContentLoaded',()=>{
   bindInputs();
+  montarToggle('area');
+  // Semeia o estado com os valores pré-preenchidos no HTML (ex.: Estado=MG,
+  // Área=Urbana), para que apareçam na prévia mesmo sem edição do usuário.
+  $$('[data-k]').forEach(el=>{
+    if(el.type!=='checkbox' && el.value) state[el.dataset.k]=el.value;
+  });
   // Stepper lateral clicável (mesmo padrão do MT): voltar é livre; avançar
   // passa pela trava de validação do goTo.
   $$('.vstep').forEach((s,i)=>s.addEventListener('click',()=>goTo(i)));

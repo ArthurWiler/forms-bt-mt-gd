@@ -279,32 +279,32 @@ function mascararCNPJ(v){
 async function onCpfCnpj(){
   const el=$('#f_cpfcnpj'), msg=$('#cpfMsg');
   const d=CalculoMT.soDigitos(el.value);
-  if(!d){state.cpfCnpj='';el.classList.remove('invalid');msg.textContent='';msg.className='field-note';return;}
+  if(!d){state.cpfCnpj='';el.classList.remove('is-invalid');msg.textContent='';msg.className='field-hint';return;}
   const tipo = d.length<=11 ? 'CPF' : 'CNPJ';
   el.value = tipo==='CPF' ? mascararCPF(d) : mascararCNPJ(d);
   state.cpfCnpj=el.value;
   const valido = tipo==='CPF' ? CalculoMT.validarCPF(d) : CalculoMT.validarCNPJ(d);
-  if(!valido){el.classList.add('invalid');msg.textContent=tipo+' inválido';msg.className='field-err';return;}
-  el.classList.remove('invalid');
+  if(!valido){el.classList.add('is-invalid');msg.textContent=tipo+' inválido';msg.className='field-hint field-err';return;}
+  el.classList.remove('is-invalid');
   if(tipo==='CNPJ'){
-    msg.textContent='verificando empresa…';msg.className='field-note';
+    msg.textContent='verificando empresa…';msg.className='field-hint';
     try{
       const res=await fetch(`https://brasilapi.com.br/api/cnpj/v1/${d}`);
       if(res.ok){
         const dd=await res.json();
         const ativo=(dd.descricao_situacao_cadastral||'').toUpperCase()==='ATIVA';
         msg.textContent=`✓ ${dd.razao_social} — ${dd.descricao_situacao_cadastral}`;
-        msg.className=ativo?'field-ok':'field-err';
+        msg.className='field-hint '+(ativo?'field-ok':'field-err');
         const nomeEl=$('[data-k="nome"]');
         if(nomeEl&&!nomeEl.value){nomeEl.value=dd.razao_social;nomeEl.dispatchEvent(new Event('input'));}
-      } else {msg.textContent='CNPJ válido ✓';msg.className='field-ok';}
-    }catch(_){msg.textContent='CNPJ válido ✓';msg.className='field-ok';}
+      } else {msg.textContent='CNPJ válido ✓';msg.className='field-hint field-ok';}
+    }catch(_){msg.textContent='CNPJ válido ✓';msg.className='field-hint field-ok';}
   } else {
-    msg.textContent='CPF válido ✓';msg.className='field-ok';
+    msg.textContent='CPF válido ✓';msg.className='field-hint field-ok';
   }
 }
 function onCorresp(){const v=event.target.value;state.formaCorresp=v;
-  $('#correspEmailBox').style.display=(v==='E-mail')?'flex':'none';
+  $('#correspEmailBox').style.display=(v==='E-mail')?'':'none';
   $('#endCorrespBox').style.display=(v==='Endereço'||v==='Agência Correios(Caixa Postal)')?'block':'none';}
 
 /* ===== Etapa 3: atividade, localização, coordenadas, ambiental ===== */
@@ -348,7 +348,7 @@ function onIrrigacaoHorarioBlur(input){
   }
   input.value=v;
   state.irrigacaoHorarioInicio=v;
-  input.classList.toggle('invalid', !!v && !valido);
+  input.classList.toggle('is-invalid', !!v && !valido);
 }
 // Card opcional da Aba 5 (Prévia): só aparece para atividades de
 // irrigação/aquicultura, fundo suave + borda tracejada, totalmente
@@ -360,15 +360,15 @@ function renderIrrigacaoOpcionalCard(){
   const valor=state.irrigacaoHorarioInicio||'';
   const invalido=!!valor && !/^([01]\d|2[0-3]):[0-5]\d$/.test(valor);
   box.innerHTML=`
-    <div class="card no-print" style="background:var(--cemig-green-soft-2,#f3f8f6);border:1px dashed #ccc;margin-top:16px;padding:16px;border-radius:10px;box-shadow:none">
-      <div class="subhead" style="margin-top:0">Solicitação de Desconto para Irrigante/Aquicultor <span class="opt">(opcional)</span></div>
+    <div class="conditional no-print" style="margin-top:16px">
+      <div class="conditional-tag">Solicitação de Desconto para Irrigante/Aquicultor (opcional)</div>
       <div class="field" style="max-width:280px">
         <label>Horário para Início do Desconto</label>
-        <input type="text" id="f_irrigacaoHorarioInicio" value="${valor}" placeholder="HH:MM (ex.: 21:30)" class="${invalido?'invalid':''}" oninput="state.irrigacaoHorarioInicio=this.value" onblur="onIrrigacaoHorarioBlur(this)">
-        <span class="field-note">A distribuidora garante janela contínua de 8h30 entre 21h30 e 06h00. Este bloco é totalmente opcional e não bloqueia a exportação do formulário principal.</span>
+        <input type="text" id="f_irrigacaoHorarioInicio" value="${valor}" placeholder="HH:MM (ex.: 21:30)" class="${invalido?'is-invalid':''}" oninput="state.irrigacaoHorarioInicio=this.value" onblur="onIrrigacaoHorarioBlur(this)">
       </div>
-      <div class="form-nav no-print" style="margin-top:14px;justify-content:flex-start">
-        <button type="button" class="btn btn-ghost" id="btnExportarIrrigante" onclick="exportarPDFIrrigante()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar Solicitação de Desconto</button>
+      <p class="field-hint" style="margin-top:8px">A distribuidora garante janela contínua de 8h30 entre 21h30 e 06h00. Este bloco é totalmente opcional e não bloqueia a exportação do formulário principal.</p>
+      <div class="nav-bottom no-print" style="margin-top:14px;justify-content:flex-start">
+        <button type="button" class="btn btn-ghost" id="btnExportarIrrigante" onclick="exportarPDFIrrigante()">Exportar Solicitação de Desconto</button>
       </div>
     </div>`;
 }
@@ -380,7 +380,7 @@ function onLocalizacao(){
 }
 function updateCoordHint(){
   const ehNova=(state.finalidade==='Conexão Nova');
-  $('#mudancaLocalBox').style.display=(state.finalidade && !ehNova)?'block':'none';
+  $('#mudancaLocalBox').style.display=(state.finalidade && !ehNova)?'':'none';
   if(ehNova){
     $('#coordHint').textContent='Informe as coordenadas do local de atendimento.';
     $('#latLabel').innerHTML='Latitude <span class="req">*</span>';
@@ -621,9 +621,9 @@ function _validarTelefone(v){
 }
 function _feedbackCampo(el,spanId,valido,msgErr){
   const sp=$('#'+spanId);
-  if(!el||!el.value){if(el)el.classList.remove('invalid');if(sp){sp.textContent='';sp.className='cep-status';}return;}
-  if(valido){el.classList.remove('invalid');if(sp){sp.textContent='';}}
-  else{el.classList.add('invalid');if(sp){sp.textContent=msgErr;sp.className='cep-status err';}}
+  if(!el||!el.value){if(el)el.classList.remove('is-invalid');if(sp){sp.textContent='';sp.className='field-hint';}return;}
+  if(valido){el.classList.remove('is-invalid');if(sp){sp.textContent='';}}
+  else{el.classList.add('is-invalid');if(sp){sp.textContent=msgErr;sp.className='field-hint field-err';}}
 }
 function onEmail(k){const el=$(`[data-k="${k}"]`);_feedbackCampo(el,`status-${k}`,_validarEmail(el.value),'e-mail inválido');}
 function onTel(k){const el=$(`[data-k="${k}"]`);_feedbackCampo(el,`status-${k}`,_validarTelefone(el.value),'telefone inválido');}
@@ -632,7 +632,7 @@ function onTel(k){const el=$(`[data-k="${k}"]`);_feedbackCampo(el,`status-${k}`,
 function onCompartilhada(){
   state.compartilhada=$('#f_compartilhada').value;
   const compart=(state.compartilhada==='Sim');
-  $('#qtdCubiculosBox').style.display=compart?'flex':'none';
+  $('#qtdCubiculosBox').style.display=compart?'':'none';
   $('#cubiculosBox').style.display=compart?'block':'none';
   $('#blocoTrafosIndividual').style.display=compart?'none':'block';
   $('#blocoMotoresIndividual').style.display=compart?'none':'block';
@@ -729,12 +729,12 @@ function renderCubiculos(){
     </tr>`).join('');
     const azul=(c.modalidade==='Azul');
     const demandaFields = azul
-      ? `<div class="field"><label>Demanda Ponta (kW)</label><input type="number" step="any" value="${c.demandaPonta}" oninput="cubiculos[${i}].demandaPonta=this.value;recalcTecnico();validarDemandaCubiculo(${i})"></div>
-         <div class="field"><label>Demanda Fora de Ponta (kW)</label><input type="number" step="any" value="${c.demandaForaPonta}" oninput="cubiculos[${i}].demandaForaPonta=this.value;recalcTecnico();validarDemandaCubiculo(${i})"></div>`
-      : `<div class="field"><label>Demanda (kW)</label><input type="number" step="any" value="${c.demanda}" oninput="cubiculos[${i}].demanda=this.value;recalcTecnico();validarDemandaCubiculo(${i})"></div>`;
+      ? `<div class="field"><label>Demanda Ponta (kW)</label><input type="number" step="any" value="${c.demandaPonta}" placeholder=" " oninput="cubiculos[${i}].demandaPonta=this.value;recalcTecnico();validarDemandaCubiculo(${i})"></div>
+         <div class="field"><label>Demanda Fora de Ponta (kW)</label><input type="number" step="any" value="${c.demandaForaPonta}" placeholder=" " oninput="cubiculos[${i}].demandaForaPonta=this.value;recalcTecnico();validarDemandaCubiculo(${i})"></div>`
+      : `<div class="field"><label>Demanda (kW)</label><input type="number" step="any" value="${c.demanda}" placeholder=" " oninput="cubiculos[${i}].demanda=this.value;recalcTecnico();validarDemandaCubiculo(${i})"></div>`;
     return `<div class="conditional" style="margin-top:14px">
       <div class="conditional-tag">Cubículo ${i+1}</div>
-      ${state.finalidade!=='Conexão Nova' ? `<div class="field"><label>N° Instalação</label><input type="text" value="${c.instalacao}" placeholder="Nº da instalação" oninput="cubiculos[${i}].instalacao=this.value"></div>` : ''}
+      ${state.finalidade!=='Conexão Nova' ? `<div class="field" style="margin-bottom:14px"><label>N° Instalação</label><input type="text" value="${c.instalacao}" placeholder="Nº da instalação" oninput="cubiculos[${i}].instalacao=this.value"></div>` : ''}
       <div class="tbl-scroll">
         <table class="tbl">
           <thead><tr><th style="width:70px">Trafo</th><th>Potência (kVA)</th><th>Qtde</th><th>Relação I mag / I nominal</th><th style="width:46px"></th></tr></thead>
@@ -742,9 +742,9 @@ function renderCubiculos(){
           <tfoot><tr><td>Σ</td><td class="calc" id="cubTrafoPot${i}">${fmt(rt.potenciaTotal)}</td><td class="calc" id="cubTrafoQtd${i}">${rt.quantidadeTotal}</td><td colspan="2"></td></tr></tfoot>
         </table>
       </div>
-      <button class="btn-add" onclick="addTrafoCub(${i})"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Adicionar transformador</button>
-      <div class="grid cols-2" style="margin-top:14px">
-        <div class="field"><label>Modalidade tarifária horária</label>${_cubiculoModalidadeCardsHTML(i,c.modalidade)}</div>
+      <button class="btn-add" onclick="addTrafoCub(${i})">+ Adicionar transformador</button>
+      <div class="grid grid-2" style="margin-top:14px">
+        <div class="field field--plain"><label>Modalidade tarifária horária</label>${_cubiculoModalidadeCardsHTML(i,c.modalidade)}</div>
         ${demandaFields}
       </div>
       <div id="cubDemandaAlert${i}"></div>
@@ -785,16 +785,16 @@ function renderMotores(){
         <button type="button" class="motor-del" onclick="delMotor(${i})" title="Remover motor">×</button>
       </div>
       <div class="motor-card-grid">
-        <div class="field"><label>Tipo</label><input type="text" value="${m.tipo}" placeholder="Ex.: Motor" oninput="motores[${i}].tipo=this.value"></div>
-        <div class="field"><label>Fases</label><select onchange="motores[${i}].fases=this.value"><option ${m.fases==='Monofásico'?'selected':''}>Monofásico</option><option ${m.fases!=='Monofásico'?'selected':''}>Trifásico</option></select></div>
-        <div class="field"><label>CV</label><input type="number" step="any" value="${m.cv}" placeholder="150" oninput="motores[${i}].cv=this.value" onchange="atualizarCalculosMotor(this)"></div>
-        <div class="field"><label>FP</label><input type="number" step="any" value="${m.fp}" placeholder="0,88" oninput="motores[${i}].fp=this.value" onchange="atualizarCalculosMotor(this)"></div>
-        <div class="field"><label>Rendimento</label><input type="number" step="any" value="${m.rend}" placeholder="0,92" oninput="motores[${i}].rend=this.value" onchange="atualizarCalculosMotor(this)"></div>
-        <div class="field"><label>Tensao(V)</label><input type="number" step="any" value="${m.volts}" placeholder="380" oninput="motores[${i}].volts=this.value" onchange="atualizarCalculosMotor(this)"></div>
-        <div class="field"><label>Ip/In</label><input type="number" step="any" value="${m.ipIn}" placeholder="6" oninput="motores[${i}].ipIn=this.value" onchange="atualizarCalculosMotor(this)"></div>
-        <div class="field"><label>Tempo Ip (s)</label><input type="number" step="any" value="${m.tempo}" placeholder="10" oninput="motores[${i}].tempo=this.value"></div>
-        <div class="field"><label>Disp. partida</label><select onchange="onDispositivoMotorChange(this,${i})"><option value="">—</option>${dispOpts}</select></div>
-        <div class="field motor-tap-field" style="display:${compensadora?'':'none'}"><label>Tap (%)</label><input type="number" step="any" value="${m.tap||''}" placeholder="65" oninput="motores[${i}].tap=this.value"></div>
+        <div class="field field--plain"><label>Tipo</label><input type="text" value="${m.tipo}" placeholder="Ex.: Motor" oninput="motores[${i}].tipo=this.value"></div>
+        <div class="field field--plain"><label>Fases</label><select onchange="motores[${i}].fases=this.value"><option ${m.fases==='Monofásico'?'selected':''}>Monofásico</option><option ${m.fases!=='Monofásico'?'selected':''}>Trifásico</option></select></div>
+        <div class="field field--plain"><label>CV</label><input type="number" step="any" value="${m.cv}" placeholder="150" oninput="motores[${i}].cv=this.value" onchange="atualizarCalculosMotor(this)"></div>
+        <div class="field field--plain"><label>FP</label><input type="number" step="any" value="${m.fp}" placeholder="0,88" oninput="motores[${i}].fp=this.value" onchange="atualizarCalculosMotor(this)"></div>
+        <div class="field field--plain"><label>Rendimento</label><input type="number" step="any" value="${m.rend}" placeholder="0,92" oninput="motores[${i}].rend=this.value" onchange="atualizarCalculosMotor(this)"></div>
+        <div class="field field--plain"><label>Tensao(V)</label><input type="number" step="any" value="${m.volts}" placeholder="380" oninput="motores[${i}].volts=this.value" onchange="atualizarCalculosMotor(this)"></div>
+        <div class="field field--plain"><label>Ip/In</label><input type="number" step="any" value="${m.ipIn}" placeholder="6" oninput="motores[${i}].ipIn=this.value" onchange="atualizarCalculosMotor(this)"></div>
+        <div class="field field--plain"><label>Tempo Ip (s)</label><input type="number" step="any" value="${m.tempo}" placeholder="10" oninput="motores[${i}].tempo=this.value"></div>
+        <div class="field field--plain"><label>Disp. partida</label><select onchange="onDispositivoMotorChange(this,${i})"><option value="">—</option>${dispOpts}</select></div>
+        <div class="field field--plain motor-tap-field" style="display:${compensadora?'':'none'}"><label>Tap (%)</label><input type="number" step="any" value="${m.tap||''}" placeholder="65" oninput="motores[${i}].tap=this.value"></div>
       </div>
       ${ehAtividadeIrrigacao()?`<label class="motor-irrigacao-check"><input type="checkbox" ${m.destinadoIrrigacao?'checked':''} onchange="motores[${i}].destinadoIrrigacao=this.checked"> Destinado à Irrigação</label>`:''}
       ${_motorCardCalcHTML(c)}`;
@@ -877,7 +877,7 @@ function renderAnaliseMotores(){
   const idxs=motoresPesadosIdx();
   const tMT=parseFloat(state.tensaoMT);
   if(!idxs.length){
-    box.innerHTML='<div class="field-note">Nenhum motor pesado identificado (trifásico acima de 50 CV ou monofásico acima de 15 CV).</div>';
+    box.innerHTML='<div class="field-hint">Nenhum motor pesado identificado (trifásico acima de 50 CV ou monofásico acima de 15 CV).</div>';
     return;
   }
   box.innerHTML=idxs.map(i=>{
@@ -886,32 +886,32 @@ function renderAnaliseMotores(){
     const c=CalculoMT.calcularMotor({potenciaCV:m.cv,fp:m.fp,rendimento:m.rend,tensaoV:m.volts,relacaoIpIn:m.ipIn},tMT);
     return `<div class="conditional motor-pesado-card" style="margin-top:14px">
       <div class="conditional-tag">Motor ${i+1} — ${m.tipo||'Motor'} (${m.fases||'Trifásico'}, ${m.cv||'—'} CV)</div>
-      <div class="grid cols-3">
-        <div class="field"><label>Potência do transformador (kVA)</label><input type="text" value="${fmt(state.potTotalTrafos)}" readonly></div>
-        <div class="field"><label>Corrente de partida (A)</label><input type="text" value="${c.iPartida==null?'—':fmt(c.iPartida)}" readonly></div>
+      <div class="grid grid-3">
+        <div class="field"><label>Potência do transformador (kVA)</label><input type="text" value="${fmt(state.potTotalTrafos)}" placeholder=" " readonly></div>
+        <div class="field"><label>Corrente de partida (A)</label><input type="text" value="${c.iPartida==null?'—':fmt(c.iPartida)}" placeholder=" " readonly></div>
         <div class="field"><label>Fator de potência na partida</label><input type="number" step="any" value="${ap.fpPartida}" placeholder="Ex.: 0,35" oninput="motores[${i}].analisePartida.fpPartida=this.value"></div>
       </div>
-      <div class="subhead">Dispositivo auxiliar de partida</div>
+      <div class="subbox-title" style="margin-top:16px">Dispositivo auxiliar de partida</div>
       ${_dispositivoPartidaCardsHTML(i,ap.dispositivo)}
-      ${ap.dispositivo==='Chave Compensadora'?`<div class="grid cols-3" style="margin-top:12px">
+      ${ap.dispositivo==='Chave Compensadora'?`<div class="grid grid-3" style="margin-top:12px">
         <div class="field"><label>Tap (%)</label><input type="number" step="any" value="${ap.tap}" placeholder="Ex.: 65" oninput="motores[${i}].analisePartida.tap=this.value"></div>
       </div>`:''}
-      <div class="grid cols-4" style="margin-top:16px">
-        <div class="field"><label>Número de partidas</label><input type="number" value="${ap.numPartidas}" oninput="motores[${i}].analisePartida.numPartidas=this.value"></div>
-        <div class="field"><label>Ordem de partida</label><input type="number" value="${ap.ordemPartida}" oninput="motores[${i}].analisePartida.ordemPartida=this.value"></div>
-        <div class="field"><label>Carga operando (kVA)</label><input type="number" step="any" value="${ap.cargaOperanteKVA}" oninput="motores[${i}].analisePartida.cargaOperanteKVA=this.value"></div>
-        <div class="field"><label>Carga operando (FP)</label><input type="number" step="any" value="${ap.cargaOperanteFP}" oninput="motores[${i}].analisePartida.cargaOperanteFP=this.value"></div>
+      <div class="grid grid-2" style="margin-top:16px">
+        <div class="field"><label>Número de partidas</label><input type="number" value="${ap.numPartidas}" placeholder=" " oninput="motores[${i}].analisePartida.numPartidas=this.value"></div>
+        <div class="field"><label>Ordem de partida</label><input type="number" value="${ap.ordemPartida}" placeholder=" " oninput="motores[${i}].analisePartida.ordemPartida=this.value"></div>
+        <div class="field"><label>Carga operando (kVA)</label><input type="number" step="any" value="${ap.cargaOperanteKVA}" placeholder=" " oninput="motores[${i}].analisePartida.cargaOperanteKVA=this.value"></div>
+        <div class="field"><label>Carga operando (FP)</label><input type="number" step="any" value="${ap.cargaOperanteFP}" placeholder=" " oninput="motores[${i}].analisePartida.cargaOperanteFP=this.value"></div>
       </div>
-      <div class="grid cols-4" style="margin-top:16px">
+      <div class="grid grid-2" style="margin-top:16px">
         <div class="field"><label>Carga sensível — Tipo</label><input type="text" value="${ap.cargaSensivelTipo}" placeholder="Ex.: CLP, iluminação" oninput="motores[${i}].analisePartida.cargaSensivelTipo=this.value"></div>
-        <div class="field"><label>Carga sensível — % admissível</label><input type="number" step="any" value="${ap.cargaSensivelPercentual}" oninput="motores[${i}].analisePartida.cargaSensivelPercentual=this.value"></div>
+        <div class="field"><label>Carga sensível — % admissível</label><input type="number" step="any" value="${ap.cargaSensivelPercentual}" placeholder=" " oninput="motores[${i}].analisePartida.cargaSensivelPercentual=this.value"></div>
         <div class="field"><label>Simultaneidade</label>
           <select onchange="motores[${i}].analisePartida.simultaneidade=this.value">
             <option value=""></option>
             <option ${ap.simultaneidade==='Sim'?'selected':''}>Sim</option>
             <option ${ap.simultaneidade==='Não'?'selected':''}>Não</option>
           </select></div>
-        <div class="field"><label>Impedância do transformador — %Z</label><input type="number" step="any" value="${ap.impedanciaZ}" oninput="motores[${i}].analisePartida.impedanciaZ=this.value"></div>
+        <div class="field"><label>Impedância do transformador — %Z</label><input type="number" step="any" value="${ap.impedanciaZ}" placeholder=" " oninput="motores[${i}].analisePartida.impedanciaZ=this.value"></div>
       </div>
     </div>`;
   }).join('');
@@ -1303,7 +1303,7 @@ function renderEscalonada(){
 /* ===== Alteração: troca de SE ===== */
 function onTrocaSE(){
   state.alt_troca=$('#alt_troca').value;
-  $('#alt_tipoParaBox').style.display=(state.alt_troca==='Sim')?'flex':'none';
+  $('#alt_tipoParaBox').style.display=(state.alt_troca==='Sim')?'':'none';
   $('#seGalleryBox_para').style.display=(state.alt_troca==='Sim')?'block':'none';
   $('#alt_tipoAtualLbl').innerHTML=(state.alt_troca==='Sim')?'Tipo de Subestação (De) <span class="req">*</span>':'Tipo de Subestação atual <span class="req">*</span>';
   recalcRamal();
@@ -1311,8 +1311,8 @@ function onTrocaSE(){
 
 /* ===== Geração ===== */
 function onGeracao(t){
-  if(t==='mom'){state.gerMomentaneo=event.target.value;$('#gerMomPotBox').style.display=(state.gerMomentaneo==='Sim')?'flex':'none';}
-  if(t==='grid'){state.gridZero=event.target.value;$('#gridZeroPotBox').style.display=(state.gridZero==='Sim')?'flex':'none';}
+  if(t==='mom'){state.gerMomentaneo=event.target.value;$('#gerMomPotBox').style.display=(state.gerMomentaneo==='Sim')?'':'none';}
+  if(t==='grid'){state.gridZero=event.target.value;$('#gridZeroPotBox').style.display=(state.gridZero==='Sim')?'':'none';}
 }
 
 /* ===== RAMAL — galeria visual ===== */
@@ -1337,14 +1337,10 @@ function recalcRamal(){
 }
 function selectRamal(idx){ramalSelecionado=idx;state.ramalIndice=idx;recalcRamal();}
 
-/* ===== Helpers de alerta ===== */
+/* ===== Helpers de alerta (banner canônico .cmg-aviso do shared.css) ===== */
 function alertHTML(tipo,msg){
-  const icon = tipo==='err'
-    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
-    : tipo==='warn'
-    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
-    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
-  return `<div class="alert ${tipo}">${icon}<div>${msg}</div></div>`;
+  const mod = tipo==='err' ? ' cmg-aviso--error' : tipo==='warn' ? ' cmg-aviso--warn' : '';
+  return `<div class="cmg-aviso${mod}"><div class="cmg-aviso-icon" aria-hidden="true"></div><div class="cmg-aviso-texto">${msg}</div></div>`;
 }
 
 /* ===== Validação de campos obrigatórios (gate de exportação) ===== */
@@ -1408,99 +1404,156 @@ function atualizarGateExportacao(){
   return [...faltando, ...errosValidacao.map(e=>e.msg)];
 }
 
-/* ===== Prévia ===== */
-function pvRow(k,v){const empty=(v==null||v==='');return `<div class="pv-row"><div class="k">${k}</div><div class="v ${empty?'empty':''}">${empty?'—':v}</div></div>`;}
+/* ===== Prévia — padrão Figma do BT (previa-* do shared.css): seções
+   tituladas em verde, campos rótulo+valor em grade de 2 colunas e lápis
+   que volta à etapa correspondente (mesmo markup dos componentes
+   PreviaSecao/PreviaCampo do bt/js/components.js). ===== */
+function pvCampo(label,valor,opts){
+  opts=opts||{};
+  const vazio=(valor==null||valor==='');
+  const lapis=opts.step!=null
+    ? `<button type="button" class="previa-edit" title="Editar" aria-label="Editar ${label}" onclick="goTo(${opts.step})"></button>`
+    : '';
+  return `<div class="previa-campo${opts.full?' previa-campo--full':''}">`+
+    `<div class="previa-campo-label">${label}</div>`+
+    `<div class="previa-campo-valor">${vazio?'—':valor}${lapis}</div></div>`;
+}
+function pvSecao(titulo,campos){
+  return `<div class="previa-secao"><h4 class="previa-secao-titulo">${titulo}</h4>`+
+    `<div class="previa-grid">${campos}</div></div>`;
+}
+const PV_DIVISOR='<hr class="previa-divider"/>';
 function renderPreview(){
   syncState();
   const tipoSE=tipoSEefetivo();
-  let h=`<div class="pv-title">FORMULÁRIO — ORÇAMENTO DE CONEXÃO / ALTERAÇÃO DE CARGA EM MÉDIA TENSÃO</div><div class="pv-section">`;
-  h+=`<h4>1. Classificação do Atendimento</h4>`;
-  h+=pvRow('Opção de Atendimento',state.opcaoAtend)+pvRow('Finalidade',state.finalidade);
-  if(state.finalidade && state.finalidade!=='Conexão Nova')h+=pvRow('Nº da Instalação',state.numInstalacao);
-  h+=pvRow('Nº ART/TRT',state.artTrt)+pvRow('Tel. RT (cel/fixo)',[state.rtCelular,state.rtFixo].filter(Boolean).join(' / '));
-  h+=`<h4>2. Dados do Proprietário</h4>`;
-  h+=pvRow('Nome / Razão Social',state.nome)+pvRow('CPF/CNPJ',state.cpfCnpj);
-  h+=pvRow('Telefone do cliente',state.telCliente)+pvRow('E-mail do cliente',state.emailCliente);
-  h+=pvRow('Telefone do solicitante',state.telSolicitante)+pvRow('E-mail do solicitante',state.emailSolicitante);
-  h+=`<h4>3. Correspondência</h4>`;
-  h+=pvRow('Vencimento escolhido',state.desejaVenc==='Sim'?('Sim — dia '+(state.diaVenc||'—')):state.desejaVenc);
-  h+=pvRow('Modalidade da obra',state.modalidadeObra)+pvRow('Forma de correspondência',state.formaCorresp);
-  if(state.formaCorresp==='E-mail')h+=pvRow('E-mail correspondência',state.emailCorresp);
+  const secoes=[];
+
+  // 1. Classificação (etapa 1)
+  let cls=pvCampo('Opção de Atendimento',state.opcaoAtend,{step:1})+
+    pvCampo('Finalidade',state.finalidade,{step:1});
+  if(state.finalidade && state.finalidade!=='Conexão Nova')
+    cls+=pvCampo('Nº da Instalação',state.numInstalacao,{step:1});
+  cls+=pvCampo('Tel. RT (cel/fixo)',[state.rtCelular,state.rtFixo].filter(Boolean).join(' / '),{step:1});
+  secoes.push(pvSecao('Classificação do Atendimento',cls));
+
+  // 2. Proprietário (etapa 2)
+  secoes.push(pvSecao('Dados do Proprietário',
+    pvCampo('Nome / Razão Social',state.nome,{full:true,step:2})+
+    pvCampo('CPF/CNPJ',state.cpfCnpj,{step:2})+
+    pvCampo('Telefone do cliente',state.telCliente,{step:2})+
+    pvCampo('E-mail do cliente',state.emailCliente,{step:2})+
+    pvCampo('Telefone do solicitante',state.telSolicitante,{step:2})+
+    pvCampo('E-mail do solicitante',state.emailSolicitante,{step:2})));
+
+  // 3. Correspondência (etapa 2)
+  let cor=pvCampo('Vencimento escolhido',state.desejaVenc==='Sim'?('Sim — dia '+(state.diaVenc||'—')):state.desejaVenc,{step:2})+
+    pvCampo('Modalidade da obra',state.modalidadeObra,{step:2})+
+    pvCampo('Forma de correspondência',state.formaCorresp,{step:2});
+  if(state.formaCorresp==='E-mail')cor+=pvCampo('E-mail correspondência',state.emailCorresp,{step:2});
   if(state.formaCorresp==='Endereço'||state.formaCorresp==='Agência Correios(Caixa Postal)')
-    h+=pvRow('Endereço correspondência',[state.ec_rua,state.ec_num,state.ec_bairro,state.ec_municipio,state.ec_estado,state.ec_cep].filter(Boolean).join(', '));
-  h+=`<h4>4. Unidade Consumidora</h4>`;
-  h+=pvRow('Atividade',state.atividade)+pvRow('Ramo',state.ramoAtividade);
-  h+=pvRow('CEP',state.uc_cep)+pvRow('Localização',state.localizacao)+pvRow('Município / Estado',[state.uc_municipio,state.uc_estado].filter(Boolean).join(' / '));
-  h+=pvRow('Coordenadas',[state.latitude,state.longitude].filter(Boolean).join(' , '));
-  if(state.finalidade && state.finalidade!=='Conexão Nova')h+=pvRow('Coordenadas novas',[state.latitudeNova,state.longitudeNova].filter(Boolean).join(' , '));
-  if(state.localizacao==='Urbana')h+=pvRow('Endereço',[state.urb_endereco,state.urb_num,state.urb_bairro,state.urb_compl].filter(Boolean).join(', '));
-  if(state.localizacao==='Rural')h+=pvRow('Distrito / Propriedade',[state.rur_distrito,state.rur_propriedade].filter(Boolean).join(' / '));
-  h+=pvRow('Área de restrição ambiental?',state.restricaoAmbiental||'Não consultada');
-  if(state.restricaoAmbiental==='Sim'&&state.restricoesTexto)h+=pvRow('Restrições identificadas',state.restricoesTexto);
-  h+=pvRow('Subestação pronta?',state.subPronta);
-  h+=`<h4>5. Dados Técnicos</h4>`;
-  h+=pvRow('Nível de tensão MT',state.tensaoMT?state.tensaoMT.replace('.',',')+' kV':'')+pvRow('Compartilhada?',state.compartilhada);
+    cor+=pvCampo('Endereço correspondência',[state.ec_rua,state.ec_num,state.ec_bairro,state.ec_municipio,state.ec_estado,state.ec_cep].filter(Boolean).join(', '),{full:true,step:2});
+  if(state.contaGlobalizada)cor+=pvCampo('Conta globalizada',state.contaGlobalizada,{step:2});
+  secoes.push(pvSecao('Correspondência',cor));
+
+  // 4. Unidade Consumidora (etapa 3)
+  let uc=pvCampo('Atividade',state.atividade,{step:3})+
+    pvCampo('Ramo',state.ramoAtividade,{step:3})+
+    pvCampo('Localização',state.localizacao,{step:3})+
+    pvCampo('CEP',state.uc_cep,{step:3})+
+    pvCampo('Município / Estado',[state.uc_municipio,state.uc_estado].filter(Boolean).join(' / '),{step:3})+
+    pvCampo('Coordenadas',[state.latitude,state.longitude].filter(Boolean).join(' , '),{step:3});
+  if(state.utm)uc+=pvCampo('Coordenada UTM',state.utm,{step:3});
+  if(state.finalidade && state.finalidade!=='Conexão Nova')
+    uc+=pvCampo('Coordenadas novas',[state.latitudeNova,state.longitudeNova].filter(Boolean).join(' , '),{step:3});
+  if(state.localizacao==='Urbana')uc+=pvCampo('Endereço',[state.urb_endereco,state.urb_num,state.urb_bairro,state.urb_compl].filter(Boolean).join(', '),{full:true,step:3});
+  if(state.localizacao==='Rural')uc+=pvCampo('Distrito / Propriedade',[state.rur_distrito,state.rur_propriedade].filter(Boolean).join(' / '),{full:true,step:3});
+  uc+=pvCampo('Área de restrição ambiental?',state.restricaoAmbiental||'Não consultada',{step:3});
+  if(state.restricaoAmbiental==='Sim'&&state.restricoesTexto)uc+=pvCampo('Restrições identificadas',state.restricoesTexto,{full:true,step:3});
+  uc+=pvCampo('Subestação pronta?',state.subPronta,{step:3});
+  secoes.push(pvSecao('Unidade Consumidora',uc));
+
+  // 5. Dados Técnicos (etapa 4)
+  let tec=pvCampo('Nível de tensão MT',state.tensaoMT?state.tensaoMT.replace('.',',')+' kV':'',{step:4})+
+    pvCampo('Compartilhada?',state.compartilhada,{step:4});
   if(state.compartilhada==='Sim'){
-    h+=pvRow('Soma dos transformadores (kVA)',fmt(state.potTotalTrafos));
-    h+=pvRow('Soma das demandas (kW)',fmt(state.demandaTotalCubiculos));
-    h+=pvRow('Tipo de Subestação',tipoSE);
+    tec+=pvCampo('Soma dos transformadores (kVA)',fmt(state.potTotalTrafos),{step:4});
+    tec+=pvCampo('Soma das demandas (kW)',fmt(state.demandaTotalCubiculos),{step:4});
+    tec+=pvCampo('Tipo de Subestação',tipoSE,{step:4});
   } else {
     // tabela trafos
-    if(trafos.length){let tt='<table class="tbl"><thead><tr><th>Trafo</th><th>Pot (kVA)</th><th>Qtde</th><th>Rel. Imag/In</th></tr></thead><tbody>';
+    if(trafos.length){let tt='<div class="tbl-scroll"><table class="tbl"><thead><tr><th>Trafo</th><th>Pot (kVA)</th><th>Qtde</th><th>Rel. Imag/In</th></tr></thead><tbody>';
       trafos.forEach((t,i)=>{tt+=`<tr><td>TRF${String(i+1).padStart(2,'0')}</td><td>${t.potencia||'—'}</td><td>${t.quantidade||'—'}</td><td>${t.relacao||'—'}</td></tr>`;});
-      tt+=`</tbody><tfoot><tr><td>Σ</td><td>${fmt(state.potTotalTrafos)}</td><td>${state.qtdTotalTrafos||0}</td><td></td></tr></tfoot></table>`;
-      h+=`<div class="pv-row"><div class="k">Transformadores</div><div class="v">${tt}</div></div>`;}
-    if(motores.length){let mt='<table class="tbl"><thead><tr><th>Tipo</th><th>CV</th><th>FP</th><th>η</th><th>V</th><th>Ip/In</th><th>I nom</th><th>I part</th></tr></thead><tbody>';
+      tt+=`</tbody><tfoot><tr><td>Σ</td><td>${fmt(state.potTotalTrafos)}</td><td>${state.qtdTotalTrafos||0}</td><td></td></tr></tfoot></table></div>`;
+      tec+=pvCampo('Transformadores',tt,{full:true,step:4});}
+    if(motores.length){let mtt='<div class="tbl-scroll"><table class="tbl"><thead><tr><th>Tipo</th><th>CV</th><th>FP</th><th>η</th><th>V</th><th>Ip/In</th><th>I nom</th><th>I part</th></tr></thead><tbody>';
       motores.forEach(m=>{const c=CalculoMT.calcularMotor({potenciaCV:m.cv,fp:m.fp,rendimento:m.rend,tensaoV:m.volts,relacaoIpIn:m.ipIn},parseFloat(state.tensaoMT));
-        mt+=`<tr><td>${m.tipo||'—'}</td><td>${m.cv||'—'}</td><td>${m.fp||'—'}</td><td>${m.rend||'—'}</td><td>${m.volts||'—'}</td><td>${m.ipIn||'—'}</td><td>${fmt(c.iNominal)}</td><td>${fmt(c.iPartida)}</td></tr>`;});
-      mt+='</tbody></table>';
-      h+=`<div class="pv-row"><div class="k">Motores</div><div class="v">${mt}</div></div>`;}
-    h+=pvRow('Tipo de Subestação',tipoSE);
-    if(state.finalidade!=='Conexão Nova')h+=pvRow('Troca de Subestação?',state.alt_troca);
-    h+=pvRow('Tarifa monômia?',state.monomia)+pvRow('Modalidade tarifária',state.modalidade)+pvRow('Demanda escalonada?',state.escalonada);
+        mtt+=`<tr><td>${m.tipo||'—'}</td><td>${m.cv||'—'}</td><td>${m.fp||'—'}</td><td>${m.rend||'—'}</td><td>${m.volts||'—'}</td><td>${m.ipIn||'—'}</td><td>${fmt(c.iNominal)}</td><td>${fmt(c.iPartida)}</td></tr>`;});
+      mtt+='</tbody></table></div>';
+      tec+=pvCampo('Motores',mtt,{full:true,step:4});}
+    tec+=pvCampo('Tipo de Subestação',tipoSE,{step:4});
+    if(state.finalidade!=='Conexão Nova')tec+=pvCampo('Troca de Subestação?',state.alt_troca,{step:4});
+    tec+=pvCampo('Tarifa monômia?',state.monomia,{step:4})+
+      pvCampo('Modalidade tarifária',state.modalidade,{step:4})+
+      pvCampo('Demanda escalonada?',state.escalonada,{step:4});
     const azulPv=(state.modalidade==='Azul');
     const ehAltPv=(state.finalidade==='Aumento de Demanda'||state.finalidade==='Redução de Demanda');
     if(azulPv){
-      h+=pvRow('Demanda Ponta Atual (kW)',state.dem_ponta_atual);
-      if(ehAltPv)h+=pvRow('Ponta Futura (kW)',state.dem_ponta_futura);
-      h+=pvRow('Fora de Ponta Atual (kW)',state.dem_foraponta_atual);
-      if(ehAltPv)h+=pvRow('Fora de Ponta Futura (kW)',state.dem_foraponta_futura);
+      tec+=pvCampo('Demanda Ponta Atual (kW)',state.dem_ponta_atual,{step:4});
+      if(ehAltPv)tec+=pvCampo('Ponta Futura (kW)',state.dem_ponta_futura,{step:4});
+      tec+=pvCampo('Fora de Ponta Atual (kW)',state.dem_foraponta_atual,{step:4});
+      if(ehAltPv)tec+=pvCampo('Fora de Ponta Futura (kW)',state.dem_foraponta_futura,{step:4});
     } else {
-      h+=pvRow(ehAltPv?'Demanda Atual (kW)':'Demanda (kW)',state.dem_atual);
-      if(ehAltPv)h+=pvRow('Demanda Futura (kW)',state.dem_futura);
+      tec+=pvCampo(ehAltPv?'Demanda Atual (kW)':'Demanda (kW)',state.dem_atual,{step:4});
+      if(ehAltPv)tec+=pvCampo('Demanda Futura (kW)',state.dem_futura,{step:4});
     }
     if(escalonada.length){
-      let et=azulPv?'<table class="tbl"><thead><tr><th>Ponta (kW)</th><th>Fora-ponta (kW)</th><th>Início de Uso</th></tr></thead><tbody>'
-                   :'<table class="tbl"><thead><tr><th>Demanda Futura (kW)</th><th>Início de Uso</th></tr></thead><tbody>';
+      let et=azulPv?'<div class="tbl-scroll"><table class="tbl"><thead><tr><th>Ponta (kW)</th><th>Fora-ponta (kW)</th><th>Início de Uso</th></tr></thead><tbody>'
+                   :'<div class="tbl-scroll"><table class="tbl"><thead><tr><th>Demanda Futura (kW)</th><th>Início de Uso</th></tr></thead><tbody>';
       escalonada.forEach(e=>{et+=azulPv?`<tr><td>${e.ponta||'—'}</td><td>${e.foraponta||'—'}</td><td>${e.inicio||'—'}</td></tr>`
                                        :`<tr><td>${e.demanda||'—'}</td><td>${e.inicio||'—'}</td></tr>`;});
-      et+='</tbody></table>';
-      h+=`<div class="pv-row"><div class="k">Demanda Escalonada</div><div class="v">${et}</div></div>`;
+      et+='</tbody></table></div>';
+      tec+=pvCampo('Demanda Escalonada',et,{full:true,step:4});
     }
   }
+  secoes.push(pvSecao('Dados Técnicos',tec));
+
+  // Cubículos (etapa 4)
   if(cubiculos.length){
-    h+=`<h4>Cubículos da Subestação Compartilhada</h4>`;
+    let cub='';
     cubiculos.forEach((c,i)=>{
       const rt=CalculoMT.calcularTrafos(c.trafos);
-      h+=pvRow(`Cubículo ${i+1} — Nº Instalação`,c.instalacao);
-      h+=pvRow(`Cubículo ${i+1} — Transformadores`,`${fmt(rt.potenciaTotal)} kVA / ${rt.quantidadeTotal} un.`);
-      h+=pvRow(`Cubículo ${i+1} — Modalidade tarifária`,c.modalidade);
+      cub+=pvCampo(`Cubículo ${i+1} — Nº Instalação`,c.instalacao,{step:4});
+      cub+=pvCampo(`Cubículo ${i+1} — Transformadores`,`${fmt(rt.potenciaTotal)} kVA / ${rt.quantidadeTotal} un.`,{step:4});
+      cub+=pvCampo(`Cubículo ${i+1} — Modalidade tarifária`,c.modalidade,{step:4});
       if(c.modalidade==='Azul'){
-        h+=pvRow(`Cubículo ${i+1} — Demanda Ponta (kW)`,c.demandaPonta);
-        h+=pvRow(`Cubículo ${i+1} — Demanda Fora de Ponta (kW)`,c.demandaForaPonta);
+        cub+=pvCampo(`Cubículo ${i+1} — Demanda Ponta (kW)`,c.demandaPonta,{step:4});
+        cub+=pvCampo(`Cubículo ${i+1} — Demanda Fora de Ponta (kW)`,c.demandaForaPonta,{step:4});
       } else {
-        h+=pvRow(`Cubículo ${i+1} — Demanda (kW)`,c.demanda);
+        cub+=pvCampo(`Cubículo ${i+1} — Demanda (kW)`,c.demanda,{step:4});
       }
     });
+    secoes.push(pvSecao('Cubículos da Subestação Compartilhada',cub));
   }
-  h+=pvRow('Geração paralelismo momentâneo',state.gerMomentaneo)+pvRow('GRID ZERO',state.gridZero)+pvRow('BT na mesma propriedade',state.btMesmaProp);
-  // ramal selecionado
-  if(state.ramalIndice!=null){
-    h+=`<div class="pv-row"><div class="k">Ramal de Entrada selecionado</div><div class="v"><img src="${RAMAL_IMGS[state.ramalIndice]}" style="max-width:100%;border:1px solid #ddd;border-radius:6px;margin-bottom:6px"><br>${CalculoMT.textoRamal(state.ramalIndice)}</div></div>`;
-  } else h+=pvRow('Ramal de Entrada','(não selecionado)');
-  if(state.observacoes)h+=pvRow('Observações',state.observacoes);
-  h+='</div>';
-  $('#previewContent').innerHTML=h;
+
+  // Geração + Ramal + Observações (etapa 4)
+  let ger=pvCampo('Geração paralelismo momentâneo',state.gerMomentaneo,{step:4})+
+    pvCampo('GRID ZERO',state.gridZero,{step:4})+
+    pvCampo('BT na mesma propriedade',state.btMesmaProp,{step:4});
+  if(state.gerMomentaneo==='Sim')ger+=pvCampo('Potência ger. momentânea (kVA)',state.gerMomentaneoPot,{step:4});
+  if(state.gridZero==='Sim')ger+=pvCampo('Potência GRID ZERO (kVA)',state.gridZeroPot,{step:4});
+  secoes.push(pvSecao('Geração e Baixa Tensão',ger));
+
+  const ramal = state.ramalIndice!=null
+    ? pvCampo('Ramal de Entrada selecionado',
+        `<img src="${RAMAL_IMGS[state.ramalIndice]}" style="max-width:100%;border:1px solid var(--cmg-neutral-200);border-radius:6px;margin-bottom:6px"><br>${CalculoMT.textoRamal(state.ramalIndice)}`,
+        {full:true,step:4})
+    : pvCampo('Ramal de Entrada','(não selecionado)',{full:true,step:4});
+  secoes.push(pvSecao('Ramal de Entrada',ramal));
+
+  if(state.observacoes)
+    secoes.push(pvSecao('Observações',pvCampo('Observações',state.observacoes,{full:true,step:4})));
+
+  $('#previewContent').innerHTML=secoes.join(PV_DIVISOR);
   const btnMonomia=$('#btnCartaMonomia');
   if(btnMonomia)btnMonomia.style.display=(state.monomia==='Sim')?'':'none';
   renderIrrigacaoOpcionalCard();
@@ -1539,10 +1592,10 @@ async function buscarCEP(cep){
 function _setField(k,v){const el=$(`[data-k="${k}"]`);if(!el||v==null)return;el.value=v;el.dispatchEvent(new Event('input'));}
 async function onCEP(prefixo){
   const st=$(`#cep-status-${prefixo}`);
-  if(st){st.textContent='buscando…';st.className='cep-status';}
+  if(st){st.textContent='buscando…';st.className='field-hint';}
   const cepEl=$(`[data-k="${prefixo==='uc'?'uc_cep':'ec_cep'}"]`);
   const d=await buscarCEP(cepEl?.value||'');
-  if(!d){if(st){st.textContent='CEP não encontrado';st.className='cep-status err';}return;}
+  if(!d){if(st){st.textContent='CEP não encontrado';st.className='field-hint field-err';}return;}
   if(st) st.textContent='';
   if(prefixo==='uc'){
     _setField('uc_municipio',d.cidade);_setField('uc_estado',d.uf);

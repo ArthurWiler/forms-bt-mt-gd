@@ -165,15 +165,10 @@ body {
 /* .section-eyebrow: fonte única em shared.css (`.cemig-form .section-eyebrow`).
    Cópia local removida (dead code, sobreposta pelo shared). */
 
-/* ---------- GRID ---------- */
-.grid { display: grid; gap: 14px; }
-.grid-2 { grid-template-columns: repeat(2, 1fr); }
-.grid-3 { grid-template-columns: repeat(3, 1fr); }
-.col-span-2 { grid-column: span 2; }
-.col-span-3 { grid-column: span 3; }
+/* ---------- GRID ----------
+   .grid / .grid-2 / .grid-3 / .col-span-*: fonte única em css/shared.css
+   (utilitário global, vocabulário BT compartilhado por todos os forms). */
 @media (max-width: 720px) {
-  .grid-2, .grid-3 { grid-template-columns: 1fr; }
-  .col-span-2, .col-span-3 { grid-column: span 1; }
   .form-header h1 { font-size: 20px; }
 }
 

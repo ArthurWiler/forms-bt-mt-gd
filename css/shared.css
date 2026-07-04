@@ -344,6 +344,40 @@ html {
 }
 
 /* ============================================================
+   Grid utilities — canonical field grid for ALL forms (BT vocabulary:
+   `.grid.grid-2` / `.grid.grid-3` + `.col-span-*`). Like `.cmg-aviso`,
+   INTENTIONALLY global (unscoped): the same markup works under
+   `.cemig-form` and the vanilla shells. Moved here from
+   formulario-bt.css so every form consumes a single source.
+   ============================================================ */
+.grid {
+  display: grid;
+  gap: 14px;
+}
+.grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+.grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+.col-span-2 {
+  grid-column: span 2;
+}
+.col-span-3 {
+  grid-column: span 3;
+}
+@media (max-width: 720px) {
+  .grid-2,
+  .grid-3 {
+    grid-template-columns: 1fr;
+  }
+  .col-span-2,
+  .col-span-3 {
+    grid-column: span 1;
+  }
+}
+
+/* ============================================================
    Aviso — canonical informational banner (icon column + text).
    SINGLE SOURCE for every info banner: the portal home, the BT
    modalidade screen and the BT orientações/gerador notes. Like
@@ -1481,9 +1515,11 @@ html {
 }
 /* variante "destaque" (opção de opt-out, ex.: "Não informar"):
    contorno tracejado quando vazio, sólido ao marcar. */
+.cemig-form .toggle-btn-destaque::before,
 .cemig-mt .toggle-btn-destaque::before {
   border-style: dashed;
 }
+.cemig-form .toggle-btn-destaque.on::before,
 .cemig-mt .toggle-btn-destaque.on::before {
   border-style: solid;
 }
@@ -1721,116 +1757,10 @@ html {
   color: var(--cmg-text-muted);
   letter-spacing: var(--cmg-ls-tight);
 }
-/* ---------- MOTORES / CARGAS ESPECIAIS — cards verticais (MT/Desistência)
-   Fonte única, compartilhada pelos shells .cemig-mt (usa os tokens legados
-   --line/--ink-soft/… declarados no :root de cada página MT). Antes duplicada
-   em formulario-mt.css e formulario-desistencia.css. ---------- */
-.cemig-mt .motores-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
-  gap: 16px;
-  margin-top: 10px;
-}
-.cemig-mt .motor-card {
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.cemig-mt .motor-card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.cemig-mt .motor-card-head .motor-titulo {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ink-soft);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-.cemig-mt .motor-card-head .motor-del {
-  background: none;
-  border: none;
-  color: var(--ink-soft);
-  font-size: 17px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 2px 7px;
-  border-radius: 6px;
-  transition: 0.15s;
-}
-.cemig-mt .motor-card-head .motor-del:hover {
-  background: var(--danger-soft);
-  color: var(--danger);
-}
-.cemig-mt .motor-card-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px 8px;
-}
-.cemig-mt .motor-card-grid .field {
-  gap: 3px;
-}
-.cemig-mt .motor-card-grid .field label {
-  font-size: 10px;
-  color: var(--ink-soft);
-  font-weight: 600;
-  min-height: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-.cemig-mt .motor-card-grid input,
-.cemig-mt .motor-card-grid select {
-  width: 100%;
-  box-sizing: border-box;
-  height: 32px;
-  padding: 5px 8px;
-  font-size: 12.5px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-}
-.cemig-mt .motor-card-grid input:focus,
-.cemig-mt .motor-card-grid select:focus {
-  outline: none;
-  border-color: var(--cemig-green);
-}
-.cemig-mt .motor-tap-field {
-  transition: opacity 0.15s;
-}
-.cemig-mt .motor-card-calc {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  background: var(--bg);
-  border-radius: 8px;
-  padding: 9px 12px;
-}
-.cemig-mt .motor-card-calc .item {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-.cemig-mt .motor-card-calc .item .lbl {
-  font-size: 9px;
-  color: var(--ink-soft);
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-.cemig-mt .motor-card-calc .item .val {
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--cemig-green-700);
-  font-variant-numeric: tabular-nums;
-}
-@media (max-width: 560px) {
-  .cemig-mt .motor-card-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
+/* MOTORES / CARGAS ESPECIAIS — os cards verticais são exclusivos do MT e
+   vivem em css/formulario-mt.css (escopo .cemig-mtform, tokens --cmg-*).
+   O antigo bloco .cemig-mt daqui foi removido na migração do MT para o
+   shell canônico .cemig-form. */
 .cemig-form .qtd-ctrl button {
   border: 1px solid var(--cmg-border);
   border-radius: 6px;
@@ -2514,74 +2444,15 @@ body.cemig-mt {
 }
 
 /* ============================================================
-   10b. Loteamento (`.cemig-lote`) — visual do formulário BT.
-   O Loteamento segue no shell vanilla `.cemig-mt`, mas a composição
-   da página espelha o `.cemig-form`: form-header (título "Baixa
-   Tensão - Loteamento" + lead) e cards com eyebrow "Etapa N" +
-   card-title — preparando a futura divisão em etapas. Os campos de
-   texto Padrão B já vêm do bloco `:is(.cemig-form, .cemig-lote)`
-   acima; botões/steps/avisos vêm do escopo `.cemig-mt`.
+   10b. Loteamento (`.cemig-lote`) — MIGRADO para o shell canônico
+   `.cemig-form` (o body usa `class="cemig-form cemig-lote"`). Toda a
+   casca (topbar, layout/sidebar, form-header, cards, campos Padrão B,
+   nav-bottom, prévia) vem do escopo `.cemig-form` acima; `.cemig-lote`
+   permanece apenas como escopo dos extras da página em
+   css/formulario-loteamento.css (etapas .page, tabela de lotes,
+   impressão) e como alias no bloco `:is(.cemig-form, .cemig-lote)`
+   dos campos flutuantes.
    ============================================================ */
-.cemig-lote .form-header {
-  display: flex;
-  flex-direction: column;
-  gap: var(--cmg-space-4);
-  margin: var(--cmg-space-4) 0 var(--cmg-space-8);
-}
-.cemig-lote .form-header h1 {
-  font-family: var(--cmg-font-family);
-  font-size: var(--cmg-fs-title);
-  line-height: var(--cmg-lh-title);
-  font-weight: var(--cmg-fw-regular);
-  letter-spacing: var(--cmg-ls-wide);
-  color: var(--cmg-text-strong);
-}
-.cemig-lote .form-header p {
-  margin: 0;
-  max-width: none;
-  font-size: var(--cmg-fs-body-lg);
-  line-height: var(--cmg-lh-body-lg);
-  letter-spacing: var(--cmg-ls-tight);
-  color: var(--cmg-text);
-}
-.cemig-lote .card {
-  /* mesma casca do `.cemig-form .card`; overflow visível para os hints
-     absolutos dos campos flutuantes não serem cortados */
-  border: 1px solid var(--cmg-neutral-200);
-  border-radius: var(--cmg-radius);
-  box-shadow: none;
-  overflow: visible;
-  padding: var(--cmg-space-4) var(--cmg-space-4) var(--cmg-space-8);
-}
-.cemig-lote .card + .card {
-  margin-top: var(--cmg-space-8);
-}
-.cemig-lote .card-body {
-  padding: 0; /* o padding agora fica no .card, como no BT */
-}
-.cemig-lote .section-eyebrow {
-  font-family: var(--cmg-font-family);
-  font-size: var(--cmg-fs-caption);
-  line-height: var(--cmg-lh-caption);
-  font-weight: var(--cmg-fw-regular);
-  letter-spacing: var(--cmg-ls-tight);
-  color: var(--cmg-green-600);
-}
-.cemig-lote .card-title {
-  font-family: var(--cmg-font-family);
-  font-size: var(--cmg-fs-subtitle-lg, 26px);
-  line-height: 38px;
-  font-weight: var(--cmg-fw-regular);
-  letter-spacing: var(--cmg-ls-wide);
-  color: var(--cmg-text-strong);
-  margin-bottom: var(--cmg-space-2);
-  text-transform: none;
-}
-.cemig-lote .grid {
-  /* row-gap maior (32px) comporta os hints absolutos dos campos Padrão B */
-  gap: var(--cmg-space-8) var(--cmg-space-4);
-  align-items: start;
-}
 
 /* ---- MT / Loteamento / Desistência — responsive ----
    The `.cemig-mt` restyle above sets desktop sizing (240px sticky step
