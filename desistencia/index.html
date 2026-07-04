@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Termo de Desistência de Obra — Cemig</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap"
-      rel="stylesheet"
-    />
     <!-- Open Sans: identidade visual CEMIG -->
     <link
       href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap"
@@ -18,96 +14,15 @@
     <link rel="stylesheet" href="../css/variables.css" />
     <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/formulario-desistencia.css" />
-    <style>
-      /* ===== Documento de impressão (Termo) — folha única A4 =====
-   Oculto na tela; só aparece quando body.print-termo é ativado
-   (gerarTermoPDF) e a impressão (window.print) é disparada. */
-      #documentoImpressao {
-        display: none;
-      }
-      @page {
-        size: A4;
-        margin: 14mm;
-      }
-      @media print {
-        body.print-termo .mt-layout,
-        body.print-termo header.site {
-          display: none !important;
-        }
-        body.print-termo #documentoImpressao {
-          display: block !important;
-        }
-      }
-      #documentoImpressao {
-        font-family: var(--font);
-        color: #1a1a1a;
-      }
-      #documentoImpressao .doc-titulo {
-        text-align: center;
-        font-size: 14px;
-        font-weight: 800;
-        border-bottom: 2px solid #0a2f27;
-        padding-bottom: 8px;
-        margin-bottom: 10px;
-      }
-      #documentoImpressao .doc-notas p {
-        font-size: 9.5px;
-        line-height: 1.35;
-        margin-bottom: 5px;
-        text-align: justify;
-      }
-      #documentoImpressao .doc-notas p.forte {
-        font-weight: 700;
-      }
-      #documentoImpressao .doc-sec {
-        background: #0a2f27;
-        color: #fff;
-        font-size: 10px;
-        font-weight: 800;
-        padding: 3px 8px;
-        margin: 8px 0 4px;
-        page-break-after: avoid;
-      }
-      #documentoImpressao .doc-kv {
-        display: flex;
-        gap: 6px;
-        font-size: 9.5px;
-        line-height: 1.5;
-        page-break-inside: avoid;
-      }
-      #documentoImpressao .doc-kv b {
-        flex: 0 0 150px;
-      }
-      #documentoImpressao .doc-motivo {
-        font-size: 9.5px;
-        line-height: 1.4;
-        text-align: justify;
-        margin: 4px 0;
-        page-break-inside: avoid;
-      }
-      #documentoImpressao .doc-fecho {
-        font-size: 9.5px;
-        margin-top: 10px;
-      }
-      #documentoImpressao .doc-assinatura {
-        margin-top: 26px;
-        font-size: 9.5px;
-        page-break-inside: avoid;
-      }
-      #documentoImpressao .doc-assinatura .linha {
-        border-top: 1px solid #333;
-        width: 75%;
-        margin-bottom: 4px;
-      }
-      #documentoImpressao .doc-assinatura .obs {
-        font-size: 8.5px;
-        color: #555;
-      }
-    </style>
   </head>
-  <body class="cemig-mt">
-    <header class="site">
-      <div class="wrap">
+  <!-- Shell BT (.cemig-form): mesmo esqueleto do formulário BT individual —
+       topbar institucional, .layout com .sidebar de etapas e .main-col.
+       .cemig-desist guarda apenas os extras da página (etapas .page,
+       marcadores A/B/C das orientações e o documento de impressão do
+       Termo), definidos em formulario-desistencia.css. -->
+  <body class="cemig-form cemig-desist">
+    <div class="topbar">
+      <div class="topbar-inner cmg-container">
         <div class="topbar-left">
           <img
             src="../imgs/logos/logo-cemig-branca-com-verde.png"
@@ -117,175 +32,136 @@
           <span class="app-title">Termo de Desistência de Obra</span>
         </div>
       </div>
-    </header>
+    </div>
 
-    <div class="mt-layout">
-      <aside class="stepper-bar">
+    <div class="layout">
+      <aside class="sidebar">
         <a href="../index.html" class="form-back">VOLTAR</a>
-        <div class="stepper-title">Progresso do preenchimento</div>
-        <div class="stepper" id="stepper">
-          <div class="vstep active">
-            <span class="vstep-num">1</span>
-            <span class="vstep-label">Orientações</span>
-          </div>
-          <div class="vstep">
-            <span class="vstep-num">2</span>
-            <span class="vstep-label">Obra</span>
-          </div>
-          <div class="vstep">
-            <span class="vstep-num">3</span>
-            <span class="vstep-label">Solicitante</span>
-          </div>
-          <div class="vstep">
-            <span class="vstep-num">4</span>
-            <span class="vstep-label">Endereço</span>
-          </div>
-          <div class="vstep">
-            <span class="vstep-num">5</span>
-            <span class="vstep-label">Desistência</span>
-          </div>
-          <div class="vstep">
-            <span class="vstep-num">6</span>
-            <span class="vstep-label">Prévia &amp; PDF</span>
-          </div>
-        </div>
+        <div class="sidebar-title">Progresso do preenchimento</div>
+        <button type="button" class="vstep active">
+          <span class="vstep-num">1</span>
+          <span class="vstep-label">Orientações</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">2</span>
+          <span class="vstep-label">Obra</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">3</span>
+          <span class="vstep-label">Solicitante</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">4</span>
+          <span class="vstep-label">Endereço</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">5</span>
+          <span class="vstep-label">Desistência</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">6</span>
+          <span class="vstep-label">Prévia &amp; PDF</span>
+        </button>
       </aside>
 
-      <main>
+      <main class="main-col">
+        <!-- Título do formulário no topo, padrão BT (.form-header, shared.css). -->
+        <div class="form-header">
+          <h1>Termo de Desistência de Obra</h1>
+          <p>
+            Preenchimento digital do termo para solicitar o cancelamento
+            (resilição) do contrato referente a uma obra junto à Cemig. Ao
+            final, gere o PDF do termo, assine-o e anexe-o à nota de serviço
+            correspondente.
+          </p>
+        </div>
+
         <!-- ============ PÁGINA 0 — ORIENTAÇÕES ============ -->
         <section class="page show" id="page-0">
           <div class="card">
-            <div class="card-head">
-              <span class="icon"
-                ><svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="16" x2="12" y2="12" />
-                  <line x1="12" y1="8" x2="12.01" y2="8" /></svg
-              ></span>
-              <h2>Orientações para preenchimento</h2>
-              <span class="step-tag">Comece por aqui</span>
-            </div>
-            <div class="card-body">
-              <p class="intro-lead">
-                Leia as orientações antes de iniciar o preenchimento do Termo de
-                Desistência de Obra.
-              </p>
-              <ul class="orient-list">
-                <li>
-                  <span class="bullet">A</span>
-                  <div>
-                    Este termo precisa ser
-                    <strong
-                      >preenchido e assinado pelo próprio solicitante</strong
-                    >
-                    ou por um <strong>representante legal</strong>. Depois de
-                    gerado, o PDF deve ser anexado à nota de serviço
-                    correspondente.
-                  </div>
-                </li>
-                <li>
-                  <span class="bullet">B</span>
-                  <div>
-                    Se quem for assinar for um
-                    <strong>representante legal</strong> (e não o próprio
-                    solicitante), é necessário apresentar também os documentos
-                    que comprovem essa representação — como uma
-                    <strong>procuração</strong> com poderes para este fim — e
-                    anexá-los junto à nota.
-                  </div>
-                </li>
-                <li>
-                  <span class="bullet">C</span>
-                  <div>
-                    Ao preencher este termo, você está solicitando o
-                    <strong>cancelamento (resilição) do contrato</strong>
-                    referente à obra identificada abaixo. Isso significa que
-                    você
-                    <strong
-                      >assume a responsabilidade pelos custos que a Cemig já
-                      teve</strong
-                    >
-                    para executar a obra até este momento. Caso você já tenha
-                    pago algum valor à Cemig no aceite do orçamento maior que
-                    esses custos, a diferença será devolvida a você.
-                  </div>
-                </li>
-              </ul>
-              <div class="callout">
-                <strong>Atenção:</strong> o PDF gerado ao final contém o texto
-                jurídico oficial e completo (Notas A, B e C), que deve ser lido
-                com atenção antes da assinatura.
-              </div>
-              <div class="legend">
-                <span
-                  >Campos marcados com <b>(opcional)</b> não são
-                  obrigatórios.</span
-                >
-              </div>
-              <div class="form-nav">
-                <span></span
-                ><button class="btn btn-primary" onclick="goTo(1)">
-                  Avançar<svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
+            <div class="section-eyebrow">Etapa 1</div>
+            <h3 class="card-title">Orientações</h3>
+            <p class="card-sub">
+              Leia as orientações antes de iniciar o preenchimento do Termo de
+              Desistência de Obra.
+            </p>
+            <ul class="orient-list">
+              <li class="orient-item">
+                <span class="orient-num">A</span>
+                <p>
+                  Este termo precisa ser
+                  <strong>preenchido e assinado pelo próprio solicitante</strong>
+                  ou por um <strong>representante legal</strong>. Depois de
+                  gerado, o PDF deve ser anexado à nota de serviço
+                  correspondente.
+                </p>
+              </li>
+              <li class="orient-item">
+                <span class="orient-num">B</span>
+                <p>
+                  Se quem for assinar for um
+                  <strong>representante legal</strong> (e não o próprio
+                  solicitante), é necessário apresentar também os documentos que
+                  comprovem essa representação — como uma
+                  <strong>procuração</strong> com poderes para este fim — e
+                  anexá-los junto à nota.
+                </p>
+              </li>
+              <li class="orient-item">
+                <span class="orient-num">C</span>
+                <p>
+                  Ao preencher este termo, você está solicitando o
+                  <strong>cancelamento (resilição) do contrato</strong>
+                  referente à obra identificada abaixo. Isso significa que você
+                  <strong
+                    >assume a responsabilidade pelos custos que a Cemig já
+                    teve</strong
                   >
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                    <polyline points="12 5 19 12 12 19" />
-                  </svg>
-                </button>
-              </div>
+                  para executar a obra até este momento. Caso você já tenha pago
+                  algum valor à Cemig no aceite do orçamento maior que esses
+                  custos, a diferença será devolvida a você.
+                </p>
+              </li>
+            </ul>
+            <div class="cmg-aviso cmg-aviso--warn">
+              <div class="cmg-aviso-icon" aria-hidden="true"></div>
+              <p class="cmg-aviso-texto">
+                <b>Atenção:</b> o PDF gerado ao final contém o texto jurídico
+                oficial e completo (Notas A, B e C), que deve ser lido com
+                atenção antes da assinatura.
+              </p>
             </div>
+            <p class="field-hint" style="margin-top: 16px">
+              Campos marcados com <b>(opcional)</b> não são obrigatórios.
+            </p>
+          </div>
+          <div class="nav-bottom no-print">
+            <span class="nav-step-info">Etapa 1 de 6</span>
+            <button class="btn btn-primary" onclick="goTo(1)">
+              Iniciar preenchimento →
+            </button>
           </div>
         </section>
 
         <!-- ============ PÁGINA 1 — OBRA ============ -->
         <section class="page" id="page-1">
           <div class="card">
-            <div class="card-head">
-              <span class="icon"
-                ><svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
+            <div class="section-eyebrow">Etapa 2</div>
+            <h3 class="card-title">Dados da Obra</h3>
+            <div class="grid grid-2">
+              <div class="field">
+                <label
+                  >Número da Nota de Serviço <span class="req">*</span></label
                 >
-                  <path
-                    d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-                  />
-                  <polyline points="14 2 14 8 20 8" /></svg
-              ></span>
-              <h2>1. Dados da Obra</h2>
-              <span class="step-tag">Etapa 1 de 5</span>
+                <input
+                  type="text"
+                  data-k="numNotaServico"
+                  placeholder="Nº da nota de serviço"
+                />
+              </div>
             </div>
-            <div class="card-body">
-              <div class="grid cols-2">
-                <div class="field">
-                  <label
-                    >Número da Nota de Serviço <span class="req">*</span></label
-                  >
-                  <input
-                    type="text"
-                    data-k="numNotaServico"
-                    placeholder="Nº da nota de serviço"
-                  />
-                </div>
-              </div>
-              <div class="subhead">
-                Motivo da obra <span class="req">*</span>
-              </div>
+            <div class="field field--plain" style="margin-top: 24px">
+              <label>Motivo da obra <span class="req">*</span></label>
               <div id="cardsMotivoObra"></div>
               <select
                 data-k="motivoObra"
@@ -303,300 +179,179 @@
                   Deslocamento/Remoção de Poste
                 </option>
               </select>
-              <div class="form-nav">
-                <button class="btn btn-ghost" onclick="goTo(0)">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <line x1="19" y1="12" x2="5" y2="12" />
-                    <polyline points="12 19 5 12 12 5" /></svg
-                  >Voltar
-                </button>
-                <span class="progress-mini">Etapa 1 de 5</span>
-                <button class="btn btn-primary" onclick="goTo(2)">
-                  Avançar<svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                    <polyline points="12 5 19 12 12 19" />
-                  </svg>
-                </button>
-              </div>
             </div>
+          </div>
+          <div class="nav-bottom no-print">
+            <button class="btn btn-ghost" onclick="goTo(0)">← Voltar</button>
+            <span class="nav-step-info">Etapa 2 de 6</span>
+            <button class="btn btn-primary" onclick="goTo(2)">
+              Avançar →
+            </button>
           </div>
         </section>
 
         <!-- ============ PÁGINA 2 — SOLICITANTE ============ -->
         <section class="page" id="page-2">
           <div class="card">
-            <div class="card-head">
-              <span class="icon"
-                ><svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" /></svg
-              ></span>
-              <h2>2. Dados do Solicitante</h2>
-              <span class="step-tag">Etapa 2 de 5</span>
-            </div>
-            <div class="card-body">
-              <div class="grid cols-2">
-                <div class="field span-2">
-                  <label>Nome Completo <span class="req">*</span></label>
-                  <input
-                    type="text"
-                    data-k="nome"
-                    placeholder="Nome completo do solicitante ou representante legal"
-                  />
-                </div>
+            <div class="section-eyebrow">Etapa 3</div>
+            <h3 class="card-title">Dados do Solicitante</h3>
+            <div class="grid grid-2">
+              <div class="field col-span-2">
+                <label>Nome Completo <span class="req">*</span></label>
+                <input
+                  type="text"
+                  data-k="nome"
+                  placeholder="Nome completo do solicitante ou representante legal"
+                />
               </div>
-              <div class="grid cols-2" style="margin-top: 16px">
-                <div class="field">
-                  <label>CPF / CNPJ <span class="req">*</span></label>
-                  <input
-                    type="text"
-                    data-k="cpfCnpj"
-                    placeholder="000.000.000-00 ou 00.000.000/0000-00"
-                    onblur="onCpfCnpj()"
-                  />
-                </div>
-              </div>
-              <div class="grid cols-4" style="margin-top: 16px">
-                <div class="field">
-                  <label>RG/RNE/RANI</label
-                  ><input
-                    type="text"
-                    data-k="rg"
-                    placeholder="Documento de identidade"
-                  />
-                </div>
-                <div class="field">
-                  <label>Órgão Emissor</label
-                  ><input
-                    type="text"
-                    data-k="orgaoEmissor"
-                    placeholder="Ex.: SSP"
-                  />
-                </div>
-                <div class="field">
-                  <label>Estado</label
-                  ><input
-                    type="text"
-                    data-k="ufEmissor"
-                    placeholder="UF"
-                    maxlength="2"
-                    style="text-transform: uppercase"
-                  />
-                </div>
-                <div class="field">
-                  <label>Data Expedição</label
-                  ><input type="date" data-k="dataExpedicao" />
-                </div>
-              </div>
-              <div class="grid cols-2" style="margin-top: 16px">
-                <div class="field">
-                  <label>Telefone Fixo</label
-                  ><input
-                    type="tel"
-                    data-k="telFixo"
-                    placeholder="(31) 0000-0000"
-                    onblur="onTel('telFixo')"
-                  /><span id="status-telFixo" class="cep-status"></span>
-                </div>
-                <div class="field">
-                  <label>Telefone Celular <span class="req">*</span></label
-                  ><input
-                    type="tel"
-                    data-k="telCelular"
-                    placeholder="(31) 90000-0000"
-                    onblur="onTel('telCelular')"
-                  /><span id="status-telCelular" class="cep-status"></span>
-                </div>
-              </div>
-              <div class="grid cols-2" style="margin-top: 16px">
-                <div class="field span-2">
-                  <label>E-mail <span class="req">*</span></label
-                  ><input
-                    type="email"
-                    data-k="email"
-                    placeholder="email@exemplo.com"
-                    onblur="onEmail('email')"
-                  /><span id="status-email" class="cep-status"></span>
-                </div>
-              </div>
-              <div class="form-nav">
-                <button class="btn btn-ghost" onclick="goTo(1)">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <line x1="19" y1="12" x2="5" y2="12" />
-                    <polyline points="12 19 5 12 12 5" /></svg
-                  >Voltar
-                </button>
-                <span class="progress-mini">Etapa 2 de 5</span>
-                <button class="btn btn-primary" onclick="goTo(3)">
-                  Avançar<svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                    <polyline points="12 5 19 12 12 19" />
-                  </svg>
-                </button>
+              <div class="field">
+                <label>CPF / CNPJ <span class="req">*</span></label>
+                <input
+                  type="text"
+                  data-k="cpfCnpj"
+                  placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                  onblur="onCpfCnpj()"
+                />
               </div>
             </div>
+            <div class="grid grid-2" style="margin-top: 16px">
+              <div class="field">
+                <label>RG/RNE/RANI</label>
+                <input
+                  type="text"
+                  data-k="rg"
+                  placeholder="Documento de identidade"
+                />
+              </div>
+              <div class="field">
+                <label>Órgão Emissor</label>
+                <input type="text" data-k="orgaoEmissor" placeholder="Ex.: SSP" />
+              </div>
+              <div class="field">
+                <label>Estado</label>
+                <input
+                  type="text"
+                  data-k="ufEmissor"
+                  placeholder="UF"
+                  maxlength="2"
+                  style="text-transform: uppercase"
+                />
+              </div>
+              <div class="field">
+                <label>Data Expedição</label>
+                <input type="date" data-k="dataExpedicao" />
+              </div>
+            </div>
+            <div class="grid grid-2" style="margin-top: 16px">
+              <div class="field">
+                <label>Telefone Fixo</label>
+                <input
+                  type="tel"
+                  data-k="telFixo"
+                  placeholder="(31) 0000-0000"
+                  onblur="onTel('telFixo')"
+                />
+                <span id="status-telFixo" class="field-hint"></span>
+              </div>
+              <div class="field">
+                <label>Telefone Celular <span class="req">*</span></label>
+                <input
+                  type="tel"
+                  data-k="telCelular"
+                  placeholder="(31) 90000-0000"
+                  onblur="onTel('telCelular')"
+                />
+                <span id="status-telCelular" class="field-hint"></span>
+              </div>
+              <div class="field col-span-2">
+                <label>E-mail <span class="req">*</span></label>
+                <input
+                  type="email"
+                  data-k="email"
+                  placeholder="email@exemplo.com"
+                  onblur="onEmail('email')"
+                />
+                <span id="status-email" class="field-hint"></span>
+              </div>
+            </div>
+          </div>
+          <div class="nav-bottom no-print">
+            <button class="btn btn-ghost" onclick="goTo(1)">← Voltar</button>
+            <span class="nav-step-info">Etapa 3 de 6</span>
+            <button class="btn btn-primary" onclick="goTo(3)">
+              Avançar →
+            </button>
           </div>
         </section>
 
         <!-- ============ PÁGINA 3 — ENDEREÇO ============ -->
         <section class="page" id="page-3">
           <div class="card">
-            <div class="card-head">
-              <span class="icon"
-                ><svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z" />
-                  <circle cx="12" cy="10" r="3" /></svg
-              ></span>
-              <h2>3. Endereço do Imóvel/Obra</h2>
-              <span class="step-tag">Etapa 3 de 5</span>
-            </div>
-            <div class="card-body">
-              <div class="grid cols-4">
-                <div class="field">
-                  <label>CEP <span class="req">*</span></label
-                  ><input
-                    type="text"
-                    data-k="cep"
-                    placeholder="00000-000"
-                    onblur="onCEP()"
-                  /><span id="status-cep" class="cep-status"></span>
-                </div>
-                <div class="field span-3">
-                  <label>Rua/Av. <span class="req">*</span></label
-                  ><input type="text" data-k="rua" />
-                </div>
+            <div class="section-eyebrow">Etapa 4</div>
+            <h3 class="card-title">Endereço do Imóvel/Obra</h3>
+            <div class="grid grid-3">
+              <div class="field">
+                <label>CEP <span class="req">*</span></label>
+                <input
+                  type="text"
+                  data-k="cep"
+                  placeholder="00000-000"
+                  onblur="onCEP()"
+                />
+                <span id="status-cep" class="field-hint"></span>
               </div>
-              <div class="grid cols-4" style="margin-top: 16px">
-                <div class="field">
-                  <label>Número <span class="req">*</span></label
-                  ><input type="text" data-k="numero" />
-                </div>
-                <div class="field span-3">
-                  <label>Complemento do endereço</label
-                  ><input type="text" data-k="complemento" />
-                </div>
+              <div class="field col-span-2">
+                <label>Rua/Av. <span class="req">*</span></label>
+                <input type="text" data-k="rua" placeholder=" " />
               </div>
-              <div class="grid cols-4" style="margin-top: 16px">
-                <div class="field span-2">
-                  <label>Bairro <span class="req">*</span></label
-                  ><input type="text" data-k="bairro" />
-                </div>
-                <div class="field">
-                  <label>Cidade <span class="req">*</span></label
-                  ><input type="text" data-k="cidade" />
-                </div>
-                <div class="field">
-                  <label>Estado <span class="req">*</span></label
-                  ><input
-                    type="text"
-                    data-k="estado"
-                    value="MG"
-                    maxlength="2"
-                    style="text-transform: uppercase"
-                  />
-                </div>
+              <div class="field">
+                <label>Número <span class="req">*</span></label>
+                <input type="text" data-k="numero" placeholder=" " />
               </div>
-              <div class="form-nav">
-                <button class="btn btn-ghost" onclick="goTo(2)">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <line x1="19" y1="12" x2="5" y2="12" />
-                    <polyline points="12 19 5 12 12 5" /></svg
-                  >Voltar
-                </button>
-                <span class="progress-mini">Etapa 3 de 5</span>
-                <button class="btn btn-primary" onclick="goTo(4)">
-                  Avançar<svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                    <polyline points="12 5 19 12 12 19" />
-                  </svg>
-                </button>
+              <div class="field col-span-2">
+                <label>Complemento do endereço</label>
+                <input type="text" data-k="complemento" placeholder=" " />
+              </div>
+              <div class="field">
+                <label>Bairro <span class="req">*</span></label>
+                <input type="text" data-k="bairro" placeholder=" " />
+              </div>
+              <div class="field">
+                <label>Cidade <span class="req">*</span></label>
+                <input type="text" data-k="cidade" placeholder=" " />
+              </div>
+              <div class="field">
+                <label>Estado <span class="req">*</span></label>
+                <input
+                  type="text"
+                  data-k="estado"
+                  value="MG"
+                  maxlength="2"
+                  placeholder=" "
+                  style="text-transform: uppercase"
+                />
               </div>
             </div>
+          </div>
+          <div class="nav-bottom no-print">
+            <button class="btn btn-ghost" onclick="goTo(2)">← Voltar</button>
+            <span class="nav-step-info">Etapa 4 de 6</span>
+            <button class="btn btn-primary" onclick="goTo(4)">
+              Avançar →
+            </button>
           </div>
         </section>
 
         <!-- ============ PÁGINA 4 — DADOS BANCÁRIOS & DESISTÊNCIA ============ -->
         <section class="page" id="page-4">
           <div class="card">
-            <div class="card-head">
-              <span class="icon"
-                ><svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <rect x="2" y="5" width="20" height="14" rx="2" />
-                  <line x1="2" y1="10" x2="22" y2="10" /></svg
-              ></span>
-              <h2>4. Dados Bancários &amp; Desistência</h2>
-              <span class="step-tag">Etapa 4 de 5</span>
-            </div>
-            <div class="card-body">
-              <div class="field">
-                <label
-                  >Efetuou pagamento de algum valor à CEMIG quando do aceite do
-                  orçamento? <span class="req">*</span></label
-                >
-              </div>
+            <div class="section-eyebrow">Etapa 5</div>
+            <h3 class="card-title">Dados Bancários &amp; Desistência</h3>
+            <div class="field field--plain">
+              <label
+                >Efetuou pagamento de algum valor à CEMIG quando do aceite do
+                orçamento? <span class="req">*</span></label
+              >
               <div id="cardsPagamentoPrevio"></div>
               <select
                 data-k="pagamentoPrevio"
@@ -607,190 +362,96 @@
                 <option value="Sim">Sim</option>
                 <option value="Não">Não</option>
               </select>
+            </div>
 
-              <div
-                class="conditional"
-                id="dadosBancariosBox"
-                style="display: none"
-              >
-                <div class="conditional-tag">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="13"
-                    height="13"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    stroke-linecap="round"
-                  >
-                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg
-                  >Para devolução do valor pago
+            <div
+              class="conditional"
+              id="dadosBancariosBox"
+              style="display: none"
+            >
+              <div class="conditional-tag">Para devolução do valor pago</div>
+              <div class="grid grid-3">
+                <div class="field">
+                  <label>Banco <span class="req">*</span></label>
+                  <input type="text" data-k="banco" placeholder="Nome do banco" />
                 </div>
-                <div class="grid cols-3">
-                  <div class="field">
-                    <label>Banco <span class="req">*</span></label
-                    ><input
-                      type="text"
-                      data-k="banco"
-                      placeholder="Nome do banco"
-                    />
-                  </div>
-                  <div class="field">
-                    <label>Agência <span class="req">*</span></label
-                    ><input type="text" data-k="agencia" placeholder="0000" />
-                  </div>
-                  <div class="field">
-                    <label
-                      >Conta Corrente com Dígito
-                      <span class="req">*</span></label
-                    ><input
-                      type="text"
-                      data-k="contaCorrente"
-                      placeholder="00000-0"
-                    />
-                  </div>
+                <div class="field">
+                  <label>Agência <span class="req">*</span></label>
+                  <input type="text" data-k="agencia" placeholder="0000" />
                 </div>
-              </div>
-
-              <div class="subhead" style="margin-top: 24px">
-                Motivo da Desistência <span class="req">*</span>
-              </div>
-              <div class="field">
-                <textarea
-                  data-k="motivoDesistencia"
-                  maxlength="500"
-                  placeholder="Descreva o motivo da desistência da obra (máx. 500 caracteres)"
-                  oninput="onMotivoDesistencia()"
-                ></textarea>
-                <span class="field-note" id="contadorMotivo"
-                  >0/500 caracteres</span
-                >
-              </div>
-
-              <div class="form-nav">
-                <button class="btn btn-ghost" onclick="goTo(3)">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
+                <div class="field">
+                  <label
+                    >Conta Corrente com Dígito <span class="req">*</span></label
                   >
-                    <line x1="19" y1="12" x2="5" y2="12" />
-                    <polyline points="12 19 5 12 12 5" /></svg
-                  >Voltar
-                </button>
-                <span class="progress-mini">Etapa 4 de 5</span>
-                <button class="btn btn-primary" onclick="goTo(5)">
-                  Ver prévia<svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                    <polyline points="12 5 19 12 12 19" />
-                  </svg>
-                </button>
+                  <input
+                    type="text"
+                    data-k="contaCorrente"
+                    placeholder="00000-0"
+                  />
+                </div>
               </div>
             </div>
+
+            <div class="field" style="margin-top: 24px">
+              <label>Motivo da Desistência <span class="req">*</span></label>
+              <textarea
+                data-k="motivoDesistencia"
+                maxlength="500"
+                placeholder="Descreva o motivo da desistência da obra (máx. 500 caracteres)"
+                oninput="onMotivoDesistencia()"
+              ></textarea>
+              <span class="field-hint" id="contadorMotivo"
+                >0/500 caracteres</span
+              >
+            </div>
+          </div>
+          <div class="nav-bottom no-print">
+            <button class="btn btn-ghost" onclick="goTo(3)">← Voltar</button>
+            <span class="nav-step-info">Etapa 5 de 6</span>
+            <button class="btn btn-primary" onclick="goTo(5)">
+              Ver prévia →
+            </button>
           </div>
         </section>
 
         <!-- ============ PÁGINA 5 — PRÉVIA & PDF ============ -->
         <section class="page" id="page-5">
           <div class="card">
-            <div class="card-head">
-              <span class="icon"
-                ><svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path
-                    d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-                  />
-                  <polyline points="14 2 14 8 20 8" /></svg
-              ></span>
-              <h2>5. Prévia do Termo</h2>
-              <span class="step-tag">Etapa 5 de 5</span>
-            </div>
-            <div class="card-body">
-              <div class="alert info no-print">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="16" x2="12" y2="12" />
-                  <line x1="12" y1="8" x2="12.01" y2="8" />
-                </svg>
-                <div>
-                  Confira os dados abaixo. Se algo estiver incorreto, volte às
-                  etapas anteriores. Quando estiver tudo certo, gere o PDF do
-                  termo.
-                </div>
-              </div>
-              <div id="previewContent" class="preview-doc"></div>
-              <div id="exportAlert"></div>
-              <div class="form-nav">
-                <button class="btn btn-ghost" onclick="goTo(4)">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <line x1="19" y1="12" x2="5" y2="12" />
-                    <polyline points="12 19 5 12 12 5" /></svg
-                  >Voltar e editar
-                </button>
-                <span class="progress-mini" id="exportProgressMini"
-                  >Pronto para exportar</span
-                >
-                <button
-                  class="btn btn-primary"
-                  id="btnGerarPDF"
-                  onclick="gerarTermoPDF()"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" y1="15" x2="12" y2="3" /></svg
-                  >Gerar Termo em PDF
-                </button>
-              </div>
-            </div>
+            <div class="section-eyebrow">Etapa 6</div>
+            <h3 class="card-title">Prévia do Termo</h3>
+            <p class="card-sub no-print">
+              Confira os dados abaixo. Se algo estiver incorreto, volte às
+              etapas anteriores. Quando estiver tudo certo, gere o PDF do termo.
+            </p>
+            <div id="previewContent"></div>
+            <div id="exportAlert"></div>
+          </div>
+          <div class="nav-bottom no-print">
+            <button class="btn btn-ghost" onclick="goTo(4)">
+              ← Voltar e editar
+            </button>
+            <span class="nav-step-info" id="exportProgressMini"
+              >Pronto para exportar</span
+            >
+            <button
+              class="btn btn-primary"
+              id="btnGerarPDF"
+              onclick="gerarTermoPDF()"
+            >
+              Gerar Termo em PDF
+            </button>
           </div>
         </section>
       </main>
     </div>
-    <!-- /mt-layout -->
+    <!-- /layout -->
 
     <!-- Documento de impressão (folha única A4) — populado por renderDocumentoImpressao()
      e exibido somente durante a impressão/geração de PDF via window.print() -->
     <div id="documentoImpressao"></div>
 
     <footer class="portal-footer">
-      <div class="portal-footer-inner">
+      <div class="portal-footer-inner cmg-container cmg-container--gutter">
         <img
           src="../imgs/logos/logo-cemig-branca-com-verde.png"
           alt="Cemig"

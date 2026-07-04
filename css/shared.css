@@ -6,9 +6,9 @@
    whole CEMIG design-system component layer (header/footer,
    buttons, fields, cards, tables, the portal cards and the form
    shells). Every component rule is SCOPED to a surface root
-   (`.cemig-portal`, `.cemig-form`, `.cemig-mt`, `.modalidade-screen`)
-   so it only styles the matching page and wins over the page
-   stylesheet's legacy single-class rules on specificity.
+   (`.cemig-portal`, `.cemig-form`, `.modalidade-screen`) so it only
+   styles the matching page. ALL forms (BT, Micro, Mini, Loteamento,
+   MT, Desistência) render under `.cemig-form`.
 
    Token namespaces: this layer consumes the `--cmg-*` tokens from
    variables.css exclusively.
@@ -473,7 +473,7 @@ html {
    grade de 2 colunas, divisor entre seções, cartões-resumo e lápis
    (editar) que leva de volta à etapa correspondente. Como o
    `.cmg-aviso`, é INTENCIONALMENTE global (unscoped) para servir
-   qualquer superfície (.cemig-form, .cemig-mt). */
+   qualquer superfície. */
 .previa-secao-titulo {
   margin: 0 0 var(--cmg-space-4);
   font-family: var(--cmg-font-family);
@@ -713,13 +713,11 @@ html {
 /* ============================================================
    6. Buttons (pill) — migrated form roots (`.cemig-form`)
    ============================================================ */
-/* ---- Canonical buttons — SINGLE SOURCE for all six forms. Grouped across
-   both surface roots (the MT family renders under `.cemig-mt`, not
-   `.cemig-form`), so one definition reaches every form. Figma spec: 48px tall,
-   100px radius, Open Sans 600 14/24. The fixed 250px width is applied only to
-   the navigation buttons (see the nav-row rule at the end of this block). ---- */
-.cemig-form .btn,
-.cemig-mt .btn {
+/* ---- Canonical buttons — SINGLE SOURCE for all six forms (every form
+   renders under `.cemig-form`). Figma spec: 48px tall, 100px radius,
+   Open Sans 600 14/24. The fixed 250px width is applied only to the
+   navigation buttons (see the nav-row rule at the end of this block). ---- */
+.cemig-form .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -742,73 +740,61 @@ html {
     border-color 0.15s ease,
     box-shadow 0.15s ease;
 }
-.cemig-form .btn:disabled,
-.cemig-mt .btn:disabled {
+.cemig-form .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
-.cemig-form .btn:focus-visible,
-.cemig-mt .btn:focus-visible {
+.cemig-form .btn:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--cmg-focus-ring);
 }
 /* Arrow icon inside a button — 18×18, colour inherited from the label
    (currentColor): white on filled, #041E18 on outlined, matching the spec. */
-.cemig-form .btn svg,
-.cemig-mt .btn svg {
+.cemig-form .btn svg {
   width: 18px;
   height: 18px;
   flex: none;
 }
-.cemig-form .btn-primary,
-.cemig-mt .btn-primary {
+.cemig-form .btn-primary {
   background: var(--cmg-green-600); /* #0F6C58 */
   color: var(--cmg-neutral-0); /* #fff */
   border-color: var(--cmg-green-600);
   box-shadow: none;
 }
-.cemig-form .btn-primary:hover:not(:disabled),
-.cemig-mt .btn-primary:hover:not(:disabled) {
+.cemig-form .btn-primary:hover:not(:disabled) {
   background: var(--cmg-green-500);
   border-color: var(--cmg-green-500);
 }
-.cemig-form .btn-dark,
-.cemig-mt .btn-dark {
+.cemig-form .btn-dark {
   background: var(--cmg-neutral-700);
   color: var(--cmg-neutral-0);
   border-color: var(--cmg-neutral-700);
 }
-.cemig-form .btn-dark:hover:not(:disabled),
-.cemig-mt .btn-dark:hover:not(:disabled) {
+.cemig-form .btn-dark:hover:not(:disabled) {
   background: #0a322a;
 }
-.cemig-form .btn-ghost,
-.cemig-mt .btn-ghost {
+.cemig-form .btn-ghost {
   background: transparent;
   color: var(--cmg-neutral-700); /* #041E18 */
   border-color: var(--cmg-neutral-400); /* #8C9895 */
 }
-.cemig-form .btn-ghost:hover:not(:disabled),
-.cemig-mt .btn-ghost:hover:not(:disabled) {
+.cemig-form .btn-ghost:hover:not(:disabled) {
   background: var(--cmg-surface-accent);
   border-color: var(--cmg-green-600);
   color: var(--cmg-green-600);
 }
-.cemig-form .btn-danger-ghost,
-.cemig-mt .btn-danger-ghost {
+.cemig-form .btn-danger-ghost {
   background: transparent;
   color: var(--cmg-danger-500);
   border-color: var(--cmg-danger-500);
 }
-.cemig-form .btn-danger-ghost:hover:not(:disabled),
-.cemig-mt .btn-danger-ghost:hover:not(:disabled) {
+.cemig-form .btn-danger-ghost:hover:not(:disabled) {
   background: #fdecea;
 }
 /* Navigation buttons (Avançar / Voltar): fixed Figma 250px width, scoped to
    the nav row only (direct children) so action buttons elsewhere keep their
    content width. Collapses below 250px on narrow viewports. */
-.cemig-form .nav-bottom > .btn,
-.cemig-mt .form-nav > .btn {
+.cemig-form .nav-bottom > .btn {
   width: 250px;
   max-width: 100%;
 }
@@ -861,10 +847,9 @@ html {
   color: var(--cmg-text-muted);
 }
 /* Placeholder de <textarea> — estilo GLOBAL (Figma): Open Sans itálico,
-   corpo/grande 16/26, +0.2px, neutra/600. Vale para todas as superfícies
-   (.cemig-form e .cemig-mt) — p.ex. o box de Observações dos formulários. */
-.cemig-form textarea::placeholder,
-.cemig-mt textarea::placeholder {
+   corpo/grande 16/26, +0.2px, neutra/600 — p.ex. o box de Observações
+   dos formulários. */
+.cemig-form textarea::placeholder {
   font-family: "Open Sans", var(--cmg-font-family);
   font-style: italic;
   font-weight: 400;
@@ -888,18 +873,12 @@ html {
   cursor: not-allowed;
 }
 /* Sinalização única de campo obrigatório não preenchido — reutilizada por
-   todos os formulários (React `.cemig-form` e vanilla `.cemig-mt`). Uma só
+   todos os formulários (React e vanilla, todos sob `.cemig-form`). Uma só
    classe (.is-invalid), sem estilos de erro concorrentes. Declarada após o
    :focus para prevalecer mesmo com o campo focado. */
 .cemig-form .field input.is-invalid,
 .cemig-form .field select.is-invalid,
-.cemig-form .field textarea.is-invalid,
-.cemig-mt .field input.is-invalid,
-.cemig-mt .field select.is-invalid,
-.cemig-mt .field textarea.is-invalid,
-.cemig-mt input.is-invalid,
-.cemig-mt select.is-invalid,
-.cemig-mt textarea.is-invalid {
+.cemig-form .field textarea.is-invalid {
   border-color: var(--vermelho);
   box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.18);
 }
@@ -937,8 +916,8 @@ html {
      • campos com toggle/radio (.toggle-group) — não são campos de texto;
      • opt-out manual via classe .field--plain.
    `.field--float` continua válido como opt-in explícito. Definição ÚNICA
-   aqui; não duplicar nos formulario-*. Escopo .cemig-form (BT/Micro/Mini);
-   os shells .cemig-mt ficam fora deste padrão por ora.
+   aqui; não duplicar nos formulario-*. Escopo .cemig-form (todos os
+   formulários); campos compactos/cards optam por sair via .field--plain.
 
    "Vazio" = <input> com placeholder visível (:placeholder-shown — por isso
    o componente Inp injeta um placeholder " " quando não há outro) OU
@@ -1414,23 +1393,21 @@ html {
 /* ============================================================
    Radio de seleção (○ vazio / ● preenchido) — componente único
    (spec Figma). Substitui a antiga "pílula" .toggle-btn. Vale
-   tanto para os componentes React (.cemig-form: BT, Micro, Mini)
-   quanto para os cards vanilla de MT/Loteamento/Desistência
-   (.cemig-mt). O círculo é desenhado via ::before; o texto do
+   tanto para os componentes React (BT, Micro, Mini) quanto para os
+   cards vanilla de MT/Loteamento/Desistência — todos sob
+   `.cemig-form`. O círculo é desenhado via ::before; o texto do
    <button> é o próprio rótulo — por isso a conversão não exige
    mudança de markup além de role/aria-checked. Seleção única por
    grupo continua governada pela classe .on (value === o.v).
    ============================================================ */
-.cemig-form .toggle-group,
-.cemig-mt .toggle-group {
+.cemig-form .toggle-group {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--cmg-space-4);
 }
-.cemig-form .toggle-btn,
-.cemig-mt .toggle-btn {
+.cemig-form .toggle-btn {
   display: inline-flex;
   flex-direction: row;
   align-items: center;
@@ -1456,8 +1433,7 @@ html {
 /* rótulo de opção enumerada (ex.: "Monopolar 63A"): corpo/bold médio.
    Aplicado pelo grupo .toggle-group--opcoes (binários Sim/Não ficam no
    padrão acima). */
-.cemig-form .toggle-group--opcoes .toggle-btn,
-.cemig-mt .toggle-group--opcoes .toggle-btn {
+.cemig-form .toggle-group--opcoes .toggle-btn {
   font-size: var(--cmg-fs-body);
   line-height: var(--cmg-lh-body);
   font-weight: var(--cmg-fw-regular);
@@ -1465,8 +1441,7 @@ html {
 }
 /* círculo (contorno neutro vazio) — 32×32 (área de toque maior fica por
    conta do padding do botão; o círculo visível é 32px). */
-.cemig-form .toggle-btn::before,
-.cemig-mt .toggle-btn::before {
+.cemig-form .toggle-btn::before {
   content: "";
   flex: 0 0 auto;
   width: 24px;
@@ -1480,34 +1455,29 @@ html {
     background 0.15s ease,
     box-shadow 0.15s ease;
 }
-.cemig-form .toggle-btn:hover:not(:disabled):not(.on),
-.cemig-mt .toggle-btn:hover:not(:disabled):not(.on) {
+.cemig-form .toggle-btn:hover:not(:disabled):not(.on) {
   color: var(--cmg-green-600);
 }
-.cemig-form .toggle-btn:hover:not(:disabled):not(.on)::before,
-.cemig-mt .toggle-btn:hover:not(:disabled):not(.on)::before {
+.cemig-form .toggle-btn:hover:not(:disabled):not(.on)::before {
   border-color: var(--cmg-green-600);
 }
 /* selecionado: círculo preenchido (anel verde + miolo 24px).
    O peso/tamanho do rótulo NÃO muda ao selecionar — o estado é
    comunicado apenas pelo preenchimento do círculo. */
-.cemig-form .toggle-btn.on::before,
-.cemig-mt .toggle-btn.on::before {
+.cemig-form .toggle-btn.on::before {
   border-color: var(--cmg-green-600);
   background: var(--cmg-green-600);
   /* miolo ≈20px: círculo 32 − borda 2×2 − anel 4×2 (Figma: mancha com
      inset de 8.33% sobre o ícone de 24px). */
   box-shadow: inset 0 0 0 4px var(--cmg-surface);
 }
-.cemig-form .toggle-btn:focus-visible,
-.cemig-mt .toggle-btn:focus-visible {
+.cemig-form .toggle-btn:focus-visible {
   outline: 2px solid var(--cmg-green-600);
   outline-offset: 3px;
   border-radius: var(--cmg-radius-sm);
 }
 /* desabilitado / bloqueado (mantém toggle-disabled e is-locked) */
 .cemig-form .toggle-btn:disabled,
-.cemig-mt .toggle-btn:disabled,
 .cemig-form .toggle-group.is-locked .toggle-btn:not(.on),
 .cemig-form .toggle-group.toggle-disabled .toggle-btn:not(.on) {
   opacity: 0.5;
@@ -1515,12 +1485,10 @@ html {
 }
 /* variante "destaque" (opção de opt-out, ex.: "Não informar"):
    contorno tracejado quando vazio, sólido ao marcar. */
-.cemig-form .toggle-btn-destaque::before,
-.cemig-mt .toggle-btn-destaque::before {
+.cemig-form .toggle-btn-destaque::before {
   border-style: dashed;
 }
-.cemig-form .toggle-btn-destaque.on::before,
-.cemig-mt .toggle-btn-destaque.on::before {
+.cemig-form .toggle-btn-destaque.on::before {
   border-style: solid;
 }
 .cemig-form .subbox-title,
@@ -1825,8 +1793,7 @@ html {
 .cemig-form .form-back:hover {
   text-decoration: underline;
 }
-.cemig-form .form-back::before,
-.cemig-mt .form-back::before {
+.cemig-form .form-back::before {
   content: "";
   flex: none;
   display: inline-flex;
@@ -1839,12 +1806,9 @@ html {
   text-decoration: none;
 }
 /* ---- Canonical step rail (single source for BT/Micro/Mini AND
-   MT/Loteamento/Desistência). The MT family renders under `.cemig-mt`
-   (not `.cemig-form`), so every selector is grouped across both roots — one
-   definition, no duplication. Markup is canonical everywhere:
-   `.vstep > .vstep-num + .vstep-label`. ---- */
-.cemig-form .vstep,
-.cemig-mt .vstep {
+   MT/Loteamento/Desistência — all render under `.cemig-form`). Markup is
+   canonical everywhere: `.vstep > .vstep-num + .vstep-label`. ---- */
+.cemig-form .vstep {
   display: flex;
   align-items: center;
   gap: var(--cmg-space-2);
@@ -1858,20 +1822,16 @@ html {
   font-family: var(--cmg-font-family);
   transition: background 0.15s ease;
 }
-.cemig-form .vstep + .vstep,
-.cemig-mt .vstep + .vstep {
+.cemig-form .vstep + .vstep {
   margin-top: 0;
 }
-.cemig-form .vstep:hover,
-.cemig-mt .vstep:hover {
+.cemig-form .vstep:hover {
   background: var(--cmg-surface-accent);
 }
-.cemig-form .vstep:not(:last-child)::before,
-.cemig-mt .vstep:not(:last-child)::before {
+.cemig-form .vstep:not(:last-child)::before {
   display: none;
 }
-.cemig-form .vstep-num,
-.cemig-mt .vstep-num {
+.cemig-form .vstep-num {
   /* Layout — centralização estável por flexbox (não depende de line-height) */
   display: flex;
   align-items: center;
@@ -1898,8 +1858,7 @@ html {
   letter-spacing: 0.2px;
   color: #fff;
 }
-.cemig-form .vstep-label,
-.cemig-mt .vstep-label {
+.cemig-form .vstep-label {
   font-family: "Open Sans", system-ui, sans-serif;
   font-size: 12px;
   font-style: normal;
@@ -1910,42 +1869,38 @@ html {
   color: var(--cmg-success-700, #0B5445);
   flex: none;
 }
-.cemig-form .vstep.active,
-.cemig-mt .vstep.active {
+.cemig-form .vstep.active {
   background: var(--cmg-step-active-bg);
 }
-.cemig-form .vstep.active .vstep-num,
-.cemig-mt .vstep.active .vstep-num {
+.cemig-form .vstep.active .vstep-num {
   background: var(--cmg-green-600);
   border-color: var(--cmg-green-600);
   color: var(--cmg-neutral-0);
 }
-.cemig-form .vstep.active .vstep-label,
-.cemig-mt .vstep.active .vstep-label {
+.cemig-form .vstep.active .vstep-label {
   /* peso constante (= inativo): diferencia só por cor, evitando a mudança
      de largura do texto (vibração) entre estados. */
   font-weight: 600;
   color: var(--cmg-green-600);
 }
-.cemig-form .vstep.done .vstep-num,
-.cemig-mt .vstep.done .vstep-num {
+.cemig-form .vstep.done .vstep-num {
   background: var(--cmg-green-600);
   border-color: var(--cmg-green-600);
   color: var(--cmg-neutral-0);
 }
-.cemig-form .vstep.done .vstep-label,
-.cemig-mt .vstep.done .vstep-label {
+.cemig-form .vstep.done .vstep-label {
   font-weight: 600;
   color: var(--cmg-text);
 }
-/* MT/Loteamento/Desistência ONLY: their step numbers are static HTML and are
-   never rewritten to a check by JS (the React forms swap the text directly).
-   So the "done" check is rendered via CSS here. Justified exception — it is a
-   delivery mechanism for the same visual, not a duplicated style. */
-.cemig-mt .vstep.done .vstep-num {
+/* Loteamento/MT/Desistência ONLY (páginas vanilla): their step numbers are
+   static HTML and are never rewritten to a check by JS (the React forms swap
+   the text directly). So the "done" check is rendered via CSS here. Justified
+   exception — it is a delivery mechanism for the same visual, not a
+   duplicated style. */
+:is(.cemig-lote, .cemig-mtform, .cemig-desist) .vstep.done .vstep-num {
   font-size: 0;
 }
-.cemig-mt .vstep.done .vstep-num::after {
+:is(.cemig-lote, .cemig-mtform, .cemig-desist) .vstep.done .vstep-num::after {
   content: "✓";
   font-size: 11px;
 }
@@ -2069,14 +2024,12 @@ html {
    touching the JS/HTML; the original digit in the span is hidden via
    font-size:0 and restored on the ::before. Open Sans is loaded on every form
    page and is the --cmg-font-family. */
-.cemig-form .orient-list,
-.cemig-mt .orient-list {
+.cemig-form .orient-list {
   counter-reset: orient;
   list-style: none;
   margin-top: var(--cmg-space-2);
 }
-.cemig-form .orient-item,
-.cemig-mt .orient-list li {
+.cemig-form .orient-item {
   counter-increment: orient;
   display: flex;
   align-items: flex-start; /* number top-aligned with the text (no badge) */
@@ -2087,12 +2040,10 @@ html {
   border-radius: 0;
   background: transparent;
 }
-.cemig-form .orient-item:first-child,
-.cemig-mt .orient-list li:first-child {
+.cemig-form .orient-item:first-child {
   border-top: none;
 }
-.cemig-form .orient-num,
-.cemig-mt .orient-list .bullet {
+.cemig-form .orient-num {
   flex: none;
   width: 42px;
   height: auto; /* spec lists 26px, but line-height:46px would clip it */
@@ -2105,21 +2056,18 @@ html {
   letter-spacing: var(--cmg-ls-wide); /* 0.4px */
   color: var(--cmg-green-600); /* #0F6C58 */
 }
-.cemig-form .orient-num::before,
-.cemig-mt .orient-list .bullet::before {
+.cemig-form .orient-num::before {
   content: counter(orient, decimal-leading-zero);
   font-size: 36px;
 }
-.cemig-form .orient-item p,
-.cemig-mt .orient-list li > div {
+.cemig-form .orient-item p {
   /* Figma: corpo/grande — 16px / 26px / 0.2px, neutra/600. */
   font-size: var(--cmg-fs-body-lg);
   line-height: var(--cmg-lh-body-lg);
   letter-spacing: var(--cmg-ls-tight);
   color: var(--cmg-text);
 }
-.cemig-form .orient-item a,
-.cemig-mt .orient-list a {
+.cemig-form .orient-item a {
   color: var(--cmg-green-600);
   font-weight: var(--cmg-fw-bold);
 }
@@ -2162,362 +2110,12 @@ html {
 }
 
 /* ============================================================
-   10. MT / Loteamento / Desistência restyle (scoped to `.cemig-mt`)
-   ============================================================ */
-body.cemig-mt {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  background: var(--cmg-surface);
-  font-family: var(--cmg-font-family);
-  color: var(--cmg-text);
-}
-.cemig-mt .portal-footer {
-  margin-top: auto;
-}
-.cemig-mt header.site {
-  background: var(--cmg-green-600);
-  border: none;
-}
-.cemig-mt header.site .wrap {
-  max-width: var(--cmg-area-max);
-  padding: 0 var(--cmg-space-8);
-  min-height: var(--cmg-header-height);
-  gap: 108px;
-}
-.cemig-mt .topbar-left {
-  display: flex;
-  align-items: center;
-  gap: var(--cmg-space-6);
-}
-.cemig-mt header.site .logo-img {
-  height: 28px;
-  width: auto;
-}
-.cemig-mt .app-title {
-  font-family: var(--cmg-font-family);
-  font-size: var(--cmg-fs-display);
-  line-height: var(--cmg-lh-display);
-  font-weight: var(--cmg-fw-regular);
-  letter-spacing: var(--cmg-ls-wide);
-  color: var(--cmg-neutral-0);
-}
-.cemig-mt .mt-layout {
-  width: 100%;
-  max-width: var(--cmg-area-max);
-  padding-inline: var(--cmg-space-8);
-  /* 16px rail↔body gap; with the 204px rail below this puts the body on the
-     title/gutter axis (32 + 204 + 16 = 252), matching the BT shell. */
-  gap: var(--cmg-space-4);
-}
-.cemig-mt main {
-  max-width: var(--cmg-area-max);
-}
-.cemig-mt .mt-layout .stepper-bar {
-  /* 204px (= BT side-panel) so the body lands on the 252px gutter under the
-     page title, with the rail sitting in the left gutter under the logo. */
-  width: 204px;
-  top: calc(var(--cmg-header-height) + var(--cmg-space-4));
-  padding: 0 var(--cmg-space-2);
-}
-.cemig-mt .stepper-title {
-  display: none;
-}
-.cemig-mt .form-back {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--cmg-space-2);
-  padding: var(--cmg-space-1) 0 var(--cmg-space-3);
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  text-decoration: none;
-  font-family: var(--cmg-font-family);
-  font-size: var(--cmg-fs-body-lg);
-  font-weight: var(--cmg-fw-bold);
-  color: var(--cmg-green-600);
-}
-.cemig-mt .form-back:hover {
-  text-decoration: underline;
-}
-/* Align the VOLTAR icon circle with the step number circles (12px step inset).
-   Scoped to .mt-layout so the Loteamento back link — which lives in the hero,
-   not a step rail — keeps its natural left edge. */
-.cemig-mt .mt-layout .form-back {
-  padding-left: var(--cmg-space-3);
-}
-/* The step rail (.vstep/.vstep-num/.vstep-label and active/done states) is now
-   defined once, above, grouped for `.cemig-form` AND `.cemig-mt`. The old
-   `.cemig-mt .step`/`.num` rules were removed to avoid duplication. */
-.cemig-mt .card {
-  background: var(--cmg-surface);
-  border: 1px solid var(--cmg-neutral-200);
-  border-radius: var(--cmg-radius);
-  box-shadow: none;
-}
-.cemig-mt .card-head {
-  border-bottom: 1px solid var(--cmg-neutral-200);
-  background: var(--cmg-surface);
-}
-.cemig-mt .card-head .icon {
-  background: var(--cmg-surface-accent);
-  color: var(--cmg-green-600);
-}
-.cemig-mt .card-head h2 {
-  font-family: var(--cmg-font-family);
-  font-size: var(--cmg-fs-subtitle);
-  line-height: var(--cmg-lh-subtitle);
-  font-weight: var(--cmg-fw-bold);
-  letter-spacing: var(--cmg-ls-wide);
-  color: var(--cmg-text-strong);
-}
-.cemig-mt .card-head .step-tag {
-  background: var(--cmg-surface);
-  border: 1px solid var(--cmg-neutral-200);
-  color: var(--cmg-green-600);
-  border-radius: var(--cmg-radius-pill);
-  font-family: var(--cmg-font-family);
-  font-weight: var(--cmg-fw-bold);
-}
-.cemig-mt .subhead {
-  font-family: var(--cmg-font-family);
-  font-size: var(--cmg-fs-body);
-  font-weight: var(--cmg-fw-bold);
-  letter-spacing: var(--cmg-ls-tight);
-  text-transform: none;
-  color: var(--cmg-green-600);
-  border-bottom: 1px solid var(--cmg-divider);
-}
-.cemig-mt .intro-lead {
-  font-family: var(--cmg-font-family);
-  font-size: var(--cmg-fs-body-lg);
-  line-height: var(--cmg-lh-body-lg);
-  color: var(--cmg-text);
-}
-.cemig-mt label {
-  font-family: var(--cmg-font-family);
-  font-size: var(--cmg-fs-caption);
-  line-height: var(--cmg-lh-caption);
-  font-weight: var(--cmg-fw-regular);
-  color: var(--cmg-text-muted);
-}
-.cemig-mt label .req {
-  color: var(--cmg-danger-500);
-}
-.cemig-mt input,
-.cemig-mt select,
-.cemig-mt textarea {
-  font-family: var(--cmg-font-family);
-  font-size: var(--cmg-fs-body-lg);
-  color: var(--cmg-text-strong);
-  background: var(--cmg-surface);
-  border: 1px solid var(--cmg-border);
-  border-radius: 4px;
-  min-height: 48px;
-  padding: 12px var(--cmg-space-4);
-}
-.cemig-mt textarea {
-  min-height: 96px;
-}
-.cemig-mt input[type="checkbox"],
-.cemig-mt input[type="radio"] {
-  min-height: 0;
-  accent-color: var(--cmg-green-600);
-}
-.cemig-mt input:focus,
-.cemig-mt select:focus,
-.cemig-mt textarea:focus {
-  border-color: var(--cmg-green-600);
-  box-shadow: 0 0 0 3px var(--cmg-focus-ring);
-}
-.cemig-mt input:disabled,
-.cemig-mt select:disabled,
-.cemig-mt input[readonly] {
-  background: var(--cmg-surface-disabled);
-  color: var(--cmg-text-muted);
-}
-.cemig-mt .field-note {
-  font-family: var(--cmg-font-family);
-  font-size: var(--cmg-fs-caption);
-  color: var(--cmg-text-muted);
-}
-.cemig-mt .conditional {
-  border: 1px dashed var(--cmg-border);
-  background: var(--cmg-surface-accent);
-  border-radius: var(--cmg-radius);
-}
-.cemig-mt .conditional-tag {
-  color: var(--cmg-green-600);
-}
-.cemig-mt .radio-pill span {
-  border: 1px solid var(--cmg-border);
-  border-radius: var(--cmg-radius-pill);
-  color: var(--cmg-text-muted);
-  background: var(--cmg-surface);
-  font-family: var(--cmg-font-family);
-}
-.cemig-mt .radio-pill input:checked + span {
-  background: var(--cmg-green-600);
-  border-color: var(--cmg-green-600);
-  color: var(--cmg-neutral-0);
-  box-shadow: none;
-}
-.cemig-mt .radio-pill:hover span {
-  border-color: var(--cmg-green-600);
-}
-.cemig-mt .alert {
-  border-radius: var(--cmg-radius);
-  font-family: var(--cmg-font-family);
-}
-.cemig-mt .alert.info {
-  background: var(--cmg-surface-accent);
-  color: var(--cmg-green-600);
-  border-left: 4px solid var(--cmg-green-600);
-}
-.cemig-mt .alert.warn {
-  background: var(--cmg-surface);
-  color: var(--cmg-text);
-  border: 1px solid var(--cmg-warning-500);
-  border-left: 4px solid var(--cmg-warning-500);
-}
-.cemig-mt .alert.err {
-  background: #fdecea;
-  color: var(--cmg-danger-500);
-  border-left: 4px solid var(--cmg-danger-500);
-}
-.cemig-mt .tbl th {
-  background: var(--cmg-surface-accent);
-  color: var(--cmg-green-600);
-  border: 1px solid var(--cmg-divider);
-  font-family: var(--cmg-font-family);
-}
-.cemig-mt .tbl td {
-  border: 1px solid var(--cmg-divider);
-}
-.cemig-mt .tbl .calc,
-.cemig-mt .tbl tfoot td {
-  background: var(--cmg-surface-accent);
-  color: var(--cmg-green-600);
-}
-/* .btn / .btn-primary / .btn-ghost: canonical single source above
-   (grouped `.cemig-form, .cemig-mt`). Local overrides removed. */
-.cemig-mt .btn-add {
-  border: 1px dashed var(--cmg-green-600);
-  border-radius: var(--cmg-radius-pill);
-  color: var(--cmg-green-600);
-  background: var(--cmg-surface);
-  font-family: var(--cmg-font-family);
-}
-.cemig-mt .btn-add:hover {
-  background: var(--cmg-surface-accent);
-}
-.cemig-mt .progress-mini {
-  font-family: var(--cmg-font-family);
-  color: var(--cmg-text-muted);
-}
-.cemig-mt .fab {
-  background: var(--cmg-green-600);
-  border-radius: var(--cmg-radius-pill);
-}
-.cemig-mt .portal-footer {
-  background: var(--cmg-neutral-700);
-  padding-block: var(--cmg-space-12);
-}
-.cemig-mt .portal-footer-inner {
-  max-width: var(--cmg-area-max);
-  margin-inline: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--cmg-space-6);
-}
-.cemig-mt .portal-footer .logo-img {
-  width: 144px;
-  height: auto;
-}
-.cemig-mt .portal-footer-copy {
-  margin: 0;
-  color: var(--cmg-neutral-0);
-  font-family: var(--cmg-font-family);
-  font-size: var(--cmg-fs-caption);
-  text-align: center;
-}
-
-/* ============================================================
-   10b. Loteamento (`.cemig-lote`) — MIGRADO para o shell canônico
-   `.cemig-form` (o body usa `class="cemig-form cemig-lote"`). Toda a
+   10. Shells vanilla (Loteamento/MT/Desistência) — MIGRADOS para o
+   shell canônico `.cemig-form` (body `class="cemig-form cemig-lote"`,
+   `"cemig-form cemig-mtform"` e `"cemig-form cemig-desist"`). Toda a
    casca (topbar, layout/sidebar, form-header, cards, campos Padrão B,
-   nav-bottom, prévia) vem do escopo `.cemig-form` acima; `.cemig-lote`
-   permanece apenas como escopo dos extras da página em
-   css/formulario-loteamento.css (etapas .page, tabela de lotes,
-   impressão) e como alias no bloco `:is(.cemig-form, .cemig-lote)`
-   dos campos flutuantes.
+   nav-bottom, prévia, avisos) vem do escopo `.cemig-form` acima; os
+   escopos de página guardam apenas os extras em css/formulario-*.css.
+   O antigo restyle `.cemig-mt` foi removido — nenhum formulário usa
+   mais esse escopo.
    ============================================================ */
-
-/* ---- MT / Loteamento / Desistência — responsive ----
-   The `.cemig-mt` restyle above sets desktop sizing (240px sticky step
-   rail, 36px header title, 32px layout gutters). Those rules are more
-   specific than the page stylesheets' own breakpoints, so without the
-   mirrors below they leaked into mobile/tablet (e.g. the step rail stayed
-   240px wide and the title stayed at 36px). These follow the same
-   600/900/1024 system as `.cemig-portal` / `.cemig-form`. */
-@media (max-width: 1024px) {
-  .cemig-mt .app-title {
-    font-size: 32px;
-    line-height: 42px;
-  }
-}
-@media (max-width: 900px) {
-  /* Collapse the two-column step-rail layout to a single column with a
-     horizontally scrollable step rail (matches the BT/GD form shell). */
-  .cemig-mt .mt-layout {
-    flex-direction: column;
-  }
-  .cemig-mt .mt-layout .stepper-bar {
-    position: static;
-    width: 100%;
-    top: auto;
-    padding: var(--cmg-space-2) var(--cmg-space-3);
-    border-bottom: 1px solid var(--cmg-divider);
-  }
-  .cemig-mt .mt-layout .stepper {
-    flex-direction: row;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    gap: var(--cmg-space-1);
-    padding: 0;
-  }
-  .cemig-mt .mt-layout .vstep {
-    width: auto;
-    white-space: nowrap;
-  }
-  .cemig-mt .stepper-title {
-    display: none;
-  }
-}
-@media (max-width: 600px) {
-  .cemig-mt .app-title {
-    font-size: 26px;
-    line-height: 38px;
-  }
-  .cemig-mt .topbar-left {
-    flex-wrap: wrap;
-    gap: var(--cmg-space-3);
-  }
-  .cemig-mt header.site .wrap {
-    padding-inline: var(--cmg-space-3);
-  }
-  .cemig-mt .mt-layout {
-    padding-inline: var(--cmg-space-3);
-  }
-  .cemig-mt main,
-  .cemig-mt .mt-layout main {
-    padding-inline: var(--cmg-space-3);
-  }
-}
-
-@media print {
-  .cemig-mt .portal-footer {
-    display: none !important;
-  }
-}

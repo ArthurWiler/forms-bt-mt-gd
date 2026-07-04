@@ -105,8 +105,8 @@ body {
   padding-left: 6px;
 }
 /* Stepper vertical (.vstep / .vstep-num / .vstep-label + estados active/done e
-   a linha conectora): fonte única em css/shared.css, agrupada para
-   `.cemig-form` E `.cemig-mt`. Cópias locais removidas — eram dead code
+   a linha conectora): fonte única em css/shared.css, no escopo
+   `.cemig-form`. Cópias locais removidas — eram dead code
    (sobrepostas pelo shared) e o conector já é ocultado lá (display:none). */
 
 .main-col {

@@ -224,17 +224,17 @@ function _validarEmail(v) {
 function _feedbackCampo(el, spanId, valido, msgErr) {
   const span = $("#" + spanId);
   if (!el.value) {
-    el.classList.remove("invalid");
+    el.classList.remove("is-invalid");
     if (span) {
       span.textContent = "";
-      span.className = "cep-status";
+      span.className = "field-hint";
     }
     return;
   }
-  el.classList.toggle("invalid", !valido);
+  el.classList.toggle("is-invalid", !valido);
   if (span) {
     span.textContent = valido ? "✓" : msgErr;
-    span.className = "cep-status" + (valido ? "" : " err");
+    span.className = "field-hint" + (valido ? "" : " field-err");
   }
 }
 function onTel(k) {
@@ -262,13 +262,13 @@ async function onCEP() {
   if (limpo.length !== 8) {
     if (status) {
       status.textContent = "";
-      status.className = "cep-status";
+      status.className = "field-hint";
     }
     return;
   }
   if (status) {
     status.textContent = "buscando…";
-    status.className = "cep-status";
+    status.className = "field-hint";
   }
   try {
     const r = await fetch(`https://viacep.com.br/ws/${limpo}/json/`);
@@ -276,7 +276,7 @@ async function onCEP() {
     if (d.erro) {
       if (status) {
         status.textContent = "CEP não encontrado";
-        status.className = "cep-status err";
+        status.className = "field-hint field-err";
       }
       return;
     }
@@ -286,12 +286,12 @@ async function onCEP() {
     _setField("estado", d.uf);
     if (status) {
       status.textContent = "✓";
-      status.className = "cep-status";
+      status.className = "field-hint";
     }
   } catch (e) {
     if (status) {
       status.textContent = "erro ao buscar CEP";
-      status.className = "cep-status err";
+      status.className = "field-hint field-err";
     }
   }
 }
@@ -318,15 +318,10 @@ function onMotivoDesistencia() {
   if (contador) contador.textContent = `${el.value.length}/500 caracteres`;
 }
 
-/* ===== Helpers de alerta ===== */
+/* ===== Helpers de alerta (banner canônico .cmg-aviso do shared.css) ===== */
 function alertHTML(tipo, msg) {
-  const icon =
-    tipo === "err"
-      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
-      : tipo === "warn"
-        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
-        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
-  return `<div class="alert ${tipo}">${icon}<div>${msg}</div></div>`;
+  const mod = tipo === "err" ? " cmg-aviso--error" : tipo === "warn" ? " cmg-aviso--warn" : "";
+  return `<div class="cmg-aviso${mod}"><div class="cmg-aviso-icon" aria-hidden="true"></div><div class="cmg-aviso-texto">${msg}</div></div>`;
 }
 
 /* ===== Validação de campos obrigatórios (gate de exportação) ===== */
@@ -375,31 +370,77 @@ function atualizarGateExportacao() {
   return faltando;
 }
 
-/* ===== Prévia ===== */
-function pvRow(k, v) {
-  const empty = v == null || v === "";
-  return `<div class="pv-row"><div class="k">${k}</div><div class="v ${empty ? "empty" : ""}">${empty ? "—" : v}</div></div>`;
+/* ===== Prévia — padrão Figma do BT (previa-* do shared.css): seções
+   tituladas em verde, campos rótulo+valor em grade de 2 colunas e lápis
+   que volta à etapa correspondente (mesmo markup dos componentes
+   PreviaSecao/PreviaCampo do bt/js/components.js). ===== */
+function pvCampo(label, valor, opts) {
+  opts = opts || {};
+  const vazio = valor == null || valor === "";
+  const lapis =
+    opts.step != null
+      ? `<button type="button" class="previa-edit" title="Editar" aria-label="Editar ${label}" onclick="goTo(${opts.step})"></button>`
+      : "";
+  return (
+    `<div class="previa-campo${opts.full ? " previa-campo--full" : ""}">` +
+    `<div class="previa-campo-label">${label}</div>` +
+    `<div class="previa-campo-valor">${vazio ? "—" : valor}${lapis}</div></div>`
+  );
+}
+function pvSecao(titulo, campos) {
+  return (
+    `<div class="previa-secao"><h4 class="previa-secao-titulo">${titulo}</h4>` +
+    `<div class="previa-grid">${campos}</div></div>`
+  );
+}
+const PV_DIVISOR = '<hr class="previa-divider"/>';
+function fmtData(iso) {
+  if (!iso) return "";
+  const [a, m, d] = String(iso).split("-");
+  return d && m && a ? `${d}/${m}/${a}` : iso;
 }
 function renderPreview() {
   syncState();
-  let h = `<div class="pv-title">TERMO DE DESISTÊNCIA DE OBRA</div><div class="pv-section">`;
-  h += `<h4>1. Obra</h4>`;
-  h += pvRow("Número da Nota de Serviço", state.numNotaServico) + pvRow("Motivo da obra", state.motivoObra);
-  h += `<h4>2. Solicitante</h4>`;
-  h += pvRow("Nome completo", state.nome) + pvRow("Tipo de pessoa", state.tipoPessoa) + pvRow("CPF/CNPJ", state.cpfCnpj);
-  h += pvRow("RG/RNE/RANI", state.rg) + pvRow("Órgão emissor", state.orgaoEmissor) + pvRow("Estado emissor", state.ufEmissor) + pvRow("Data de expedição", state.dataExpedicao);
-  h += pvRow("Telefone fixo", state.telFixo) + pvRow("Telefone celular", state.telCelular) + pvRow("E-mail", state.email);
-  h += `<h4>3. Endereço do imóvel/obra</h4>`;
-  h += pvRow("CEP", state.cep) + pvRow("Rua/Av.", state.rua) + pvRow("Número", state.numero) + pvRow("Complemento", state.complemento);
-  h += pvRow("Bairro", state.bairro) + pvRow("Cidade", state.cidade) + pvRow("Estado", state.estado);
-  h += `<h4>4. Dados bancários &amp; desistência</h4>`;
-  h += pvRow("Efetuou pagamento prévio à CEMIG?", state.pagamentoPrevio);
+  const secoes = [
+    pvSecao(
+      "Obra",
+      pvCampo("Número da Nota de Serviço", state.numNotaServico, { step: 1 }) +
+        pvCampo("Motivo da obra", state.motivoObra, { step: 1 }),
+    ),
+    pvSecao(
+      "Solicitante",
+      pvCampo("Nome completo", state.nome, { full: true, step: 2 }) +
+        pvCampo("Tipo de pessoa", state.tipoPessoa, { step: 2 }) +
+        pvCampo("CPF/CNPJ", state.cpfCnpj, { step: 2 }) +
+        pvCampo("RG/RNE/RANI", state.rg, { step: 2 }) +
+        pvCampo("Órgão emissor", state.orgaoEmissor, { step: 2 }) +
+        pvCampo("Estado emissor", state.ufEmissor, { step: 2 }) +
+        pvCampo("Data de expedição", fmtData(state.dataExpedicao), { step: 2 }) +
+        pvCampo("Telefone fixo", state.telFixo, { step: 2 }) +
+        pvCampo("Telefone celular", state.telCelular, { step: 2 }) +
+        pvCampo("E-mail", state.email, { step: 2 }),
+    ),
+    pvSecao(
+      "Endereço do imóvel/obra",
+      pvCampo("CEP", state.cep, { step: 3 }) +
+        pvCampo("Rua/Av.", state.rua, { step: 3 }) +
+        pvCampo("Número", state.numero, { step: 3 }) +
+        pvCampo("Complemento", state.complemento, { step: 3 }) +
+        pvCampo("Bairro", state.bairro, { step: 3 }) +
+        pvCampo("Cidade", state.cidade, { step: 3 }) +
+        pvCampo("Estado", state.estado, { step: 3 }),
+    ),
+  ];
+  let banc = pvCampo("Efetuou pagamento prévio à CEMIG?", state.pagamentoPrevio, { step: 4 });
   if (state.pagamentoPrevio === "Sim") {
-    h += pvRow("Banco", state.banco) + pvRow("Agência", state.agencia) + pvRow("Conta corrente com dígito", state.contaCorrente);
+    banc +=
+      pvCampo("Banco", state.banco, { step: 4 }) +
+      pvCampo("Agência", state.agencia, { step: 4 }) +
+      pvCampo("Conta corrente com dígito", state.contaCorrente, { step: 4 });
   }
-  h += pvRow("Motivo da desistência", state.motivoDesistencia);
-  h += "</div>";
-  $("#previewContent").innerHTML = h;
+  banc += pvCampo("Motivo da desistência", state.motivoDesistencia, { full: true, step: 4 });
+  secoes.push(pvSecao("Dados bancários &amp; desistência", banc));
+  $("#previewContent").innerHTML = secoes.join(PV_DIVISOR);
   atualizarGateExportacao();
 }
 
