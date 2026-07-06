@@ -350,13 +350,69 @@ function TabDadosUnidade({ ctx }) {
       ),
     ),
 
+    /* ── Aviso contextual: pedido de vistoria/ligação (migrado da orientação
+       geral "padrão pronto para ligar"). Reage ao toggle obra.prontoLigar. ── */
+    obra.prontoLigar === "Sim" &&
+      /* @__PURE__ */ React.createElement(
+        "div",
+        { className: "cmg-aviso no-print", style: { marginTop: 14 } },
+        /* @__PURE__ */ React.createElement("div", {
+          className: "cmg-aviso-icon",
+          "aria-hidden": "true",
+        }),
+        /* @__PURE__ */ React.createElement(
+          "p",
+          { className: "cmg-aviso-texto" },
+          "Como o padrão já está pronto para ligar, o pedido de vistoria e ligação será disparado automaticamente após a conclusão das etapas do orçamento de conexão.",
+        ),
+      ),
+    obra.prontoLigar === "Não" &&
+      /* @__PURE__ */ React.createElement(
+        "div",
+        { className: "cmg-aviso cmg-aviso--warn no-print", style: { marginTop: 14 } },
+        /* @__PURE__ */ React.createElement("div", {
+          className: "cmg-aviso-icon",
+          "aria-hidden": "true",
+        }),
+        /* @__PURE__ */ React.createElement(
+          "p",
+          { className: "cmg-aviso-texto" },
+          "Solicite o pedido de vistoria e ligação em até 120 dias após a conclusão das etapas do orçamento de conexão. O orçamento pode ser cancelado após duas reprovações pelo mesmo motivo, e há cobrança de taxa a partir do segundo serviço realizado.",
+        ),
+      ),
+
+    /* ── Aviso contextual: comprovação de propriedade/posse e regularidade do
+       imóvel em zona urbana (migrado da orientação geral de Conexão Nova). ── */
+    obra.localizacao === "Urbana" &&
+      /* @__PURE__ */ React.createElement(
+        "div",
+        { className: "cmg-aviso no-print", style: { marginTop: 14 } },
+        /* @__PURE__ */ React.createElement("div", {
+          className: "cmg-aviso-icon",
+          "aria-hidden": "true",
+        }),
+        /* @__PURE__ */ React.createElement(
+          "p",
+          { className: "cmg-aviso-texto" },
+          "Para pedidos de Conexão Nova, anexe documento que comprove a propriedade ou posse do local a ser atendido. Por se tratar de unidade em área urbana, anexe também documento que comprove a regularidade do imóvel.",
+        ),
+      ),
+
     /* ── Alerta coordenada obrigatória ── */
     coordObrigatoria &&
       !coordPreenchida &&
       /* @__PURE__ */ React.createElement(
         "div",
-        { className: "alert alert-warn", style: { marginTop: 8 } },
-        "⚠ Em área rural, a coordenada é obrigatória para localização da propriedade.",
+        { className: "cmg-aviso cmg-aviso--warn no-print", style: { marginTop: 8 } },
+        /* @__PURE__ */ React.createElement("div", {
+          className: "cmg-aviso-icon",
+          "aria-hidden": "true",
+        }),
+        /* @__PURE__ */ React.createElement(
+          "p",
+          { className: "cmg-aviso-texto" },
+          "Em área rural, a coordenada é obrigatória para localização da propriedade.",
+        ),
       ),
 
     /* ── Mapa de localização ── */
@@ -374,33 +430,57 @@ function TabDadosUnidade({ ctx }) {
       !obra.restricaoAmbiental &&
         /* @__PURE__ */ React.createElement(
           "div",
-          { className: "alert alert-info" },
-          "Consulte a coordenada no mapa acima para verificar a restrição ambiental.",
+          { className: "cmg-aviso", style: { marginTop: 8 } },
+          /* @__PURE__ */ React.createElement("div", {
+            className: "cmg-aviso-icon",
+            "aria-hidden": "true",
+          }),
+          /* @__PURE__ */ React.createElement(
+            "p",
+            { className: "cmg-aviso-texto" },
+            "Consulte a coordenada no mapa acima para verificar a restrição ambiental.",
+          ),
         ),
       obra.restricaoAmbiental === "Sim" &&
         /* @__PURE__ */ React.createElement(
           "div",
-          { className: "alert alert-warn restricao-destaque" },
+          { className: "cmg-aviso cmg-aviso--warn restricao-destaque", style: { marginTop: 8 } },
+          /* @__PURE__ */ React.createElement("div", {
+            className: "cmg-aviso-icon",
+            "aria-hidden": "true",
+          }),
           /* @__PURE__ */ React.createElement(
-            "strong",
-            null,
-            "⚠ SIM — em área de restrição ambiental.",
-          ),
-          obra.restricoesTexto &&
+            "p",
+            { className: "cmg-aviso-texto" },
             /* @__PURE__ */ React.createElement(
-              "div",
-              { style: { marginTop: 6 } },
-              obra.restricoesTexto,
+              "strong",
+              null,
+              "SIM — em área de restrição ambiental.",
             ),
+            obra.restricoesTexto &&
+              /* @__PURE__ */ React.createElement(
+                "span",
+                { style: { display: "block", marginTop: 6 } },
+                obra.restricoesTexto,
+              ),
+          ),
         ),
       obra.restricaoAmbiental === "Não" &&
         /* @__PURE__ */ React.createElement(
           "div",
-          { className: "alert alert-ok restricao-destaque" },
+          { className: "cmg-aviso restricao-destaque", style: { marginTop: 8 } },
+          /* @__PURE__ */ React.createElement("div", {
+            className: "cmg-aviso-icon",
+            "aria-hidden": "true",
+          }),
           /* @__PURE__ */ React.createElement(
-            "strong",
-            null,
-            "Não há restrição ambiental.",
+            "p",
+            { className: "cmg-aviso-texto" },
+            /* @__PURE__ */ React.createElement(
+              "strong",
+              null,
+              "Não há restrição ambiental.",
+            ),
           ),
         ),
     ),

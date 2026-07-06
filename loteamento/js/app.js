@@ -162,6 +162,18 @@ function alertHTML(tipo,msg){
   return `<div class="cmg-aviso${mod}"><div class="cmg-aviso-icon" aria-hidden="true"></div><p class="cmg-aviso-texto">${msg}</p></div>`;
 }
 
+/* ===== Aviso contextual: solicitação pelo Poder Público =====
+   Migrado da orientação "Ato administrativo municipal": quando o solicitante é
+   o Poder Público (Prefeitura), é obrigatório anexar o ato administrativo. */
+function onSolicitante(){
+  const el=$('[data-k="tipoSolicitante"]');
+  const box=$('#solicitanteAviso');
+  if(!el||!box)return;
+  const poderPublico=/Poder P[úu]blico/i.test(el.value||'');
+  box.innerHTML=poderPublico?alertHTML('warn','Solicitação pelo Poder Público: anexe o ato administrativo municipal (lei, decreto ou instrumento equivalente) que autoriza o empreendimento.'):'';
+  box.style.display=poderPublico?'':'none';
+}
+
 /* ===== Prévia — padrão Figma do BT (previa-* do shared.css): seções
    tituladas em verde, campos rótulo+valor em grade de 2 colunas e lápis
    que volta à etapa correspondente (mesmo markup dos componentes

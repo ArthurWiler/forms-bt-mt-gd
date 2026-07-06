@@ -297,6 +297,32 @@ function PreviaCard({ label, valor }) {
     ),
   );
 }
+// Aviso contextual genérico dos formulários GD (banner canônico `.cmg-aviso`
+// do shared.css). `mod` = "" (info) | "warn" | "error"; `children` é o conteúdo
+// do texto (aceita <strong>, texto solto, etc.). Substitui os antigos
+// `.alert`/`.gd-info-box` para uma identidade única de aviso.
+function GdAviso({ mod, children, style }) {
+  const cls =
+    "cmg-aviso no-print" +
+    (mod === "warn"
+      ? " cmg-aviso--warn"
+      : mod === "error"
+        ? " cmg-aviso--error"
+        : "");
+  return /* @__PURE__ */ React.createElement(
+    "div",
+    { className: cls, style },
+    /* @__PURE__ */ React.createElement("div", {
+      className: "cmg-aviso-icon",
+      "aria-hidden": "true",
+    }),
+    /* @__PURE__ */ React.createElement(
+      "p",
+      { className: "cmg-aviso-texto" },
+      children,
+    ),
+  );
+}
 function PreviaAvisoExportacao() {
   return /* @__PURE__ */ React.createElement(
     "div",

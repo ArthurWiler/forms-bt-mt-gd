@@ -83,6 +83,74 @@ const GD_SCHEMA_IDENTIFICACAO = [
   { k: "celular", label: "Celular", req: true, mask: "mascararCelular" },
   { k: "email", label: "E-mail", req: true },
 ];
+// Etapa 1 — Orientações para preenchimento (conteúdo em GD_ORIENTACOES,
+// data.js). Mesmo padrão visual do BT individual: blocos titulados
+// (.subbox-title) + lista numerada (.orient-list) + aviso (.cmg-aviso)
+// + legenda de obrigatoriedade.
+function ViewOrientacoes({ ctx }) {
+  return /* @__PURE__ */ React.createElement(
+    Card,
+    {
+      eyebrow: "Etapa " + ctx.etapaNum,
+      title: "Orientações para preenchimento",
+      sub: GD_ORIENTACOES.intro,
+    },
+    GD_ORIENTACOES.blocos.map((bloco, bi) =>
+      /* @__PURE__ */ React.createElement(
+        React.Fragment,
+        { key: bi },
+        /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            className: "subbox-title",
+            style: bi > 0 ? { marginTop: 18 } : void 0,
+          },
+          bloco.titulo,
+        ),
+        /* @__PURE__ */ React.createElement(
+          "ul",
+          { className: "orient-list" },
+          bloco.itens.map((it, i) =>
+            /* @__PURE__ */ React.createElement(
+              "li",
+              { key: i, className: "orient-item" },
+              /* @__PURE__ */ React.createElement(
+                "span",
+                { className: "orient-num" },
+                i + 1,
+              ),
+              /* @__PURE__ */ React.createElement("p", null, it),
+            ),
+          ),
+        ),
+      ),
+    ),
+    /* @__PURE__ */ React.createElement(
+      "div",
+      { className: "cmg-aviso" },
+      /* @__PURE__ */ React.createElement("div", {
+        className: "cmg-aviso-icon",
+        "aria-hidden": "true",
+      }),
+      /* @__PURE__ */ React.createElement(
+        "p",
+        { className: "cmg-aviso-texto" },
+        GD_ORIENTACOES.callout,
+      ),
+    ),
+    /* @__PURE__ */ React.createElement(
+      "div",
+      { className: "legend" },
+      /* @__PURE__ */ React.createElement(
+        "span",
+        null,
+        "Campos sem marcação são obrigatórios; os demais indicam ",
+        /* @__PURE__ */ React.createElement("b", null, "(opcional)"),
+        " no rótulo.",
+      ),
+    ),
+  );
+}
 function ViewIdentificacao({ ctx }) {
   return /* @__PURE__ */ React.createElement(
     Card,
@@ -362,6 +430,26 @@ function ViewDadosUC({ ctx }) {
           ),
         ),
       ),
+      /* Aviso contextual (migrado da orientação): a solicitação escolhida exige
+         o preenchimento do Formulário de Carga (etapa própria). */
+      GD_SOLICITACOES_FORM_CARGA.includes(d.solicitacao) &&
+        /* @__PURE__ */ React.createElement(
+          "div",
+          { className: "field col-span-3" },
+          /* @__PURE__ */ React.createElement(
+            "div",
+            { className: "cmg-aviso no-print" },
+            /* @__PURE__ */ React.createElement("div", {
+              className: "cmg-aviso-icon",
+              "aria-hidden": "true",
+            }),
+            /* @__PURE__ */ React.createElement(
+              "p",
+              { className: "cmg-aviso-texto" },
+              "Para este tipo de solicitação é obrigatório declarar todas as cargas elétricas da unidade na etapa Formulário de Carga.",
+            ),
+          ),
+        ),
       /* @__PURE__ */ React.createElement(
         Field,
         { label: "Tipo de edificação", req: true, span: 3 },
@@ -764,13 +852,21 @@ function ViewGeracao({ ctx }) {
           { className: "field col-span-3" },
           /* @__PURE__ */ React.createElement(
             "div",
-            { className: "alert alert-warn" },
+            { className: "cmg-aviso cmg-aviso--warn no-print" },
+            /* @__PURE__ */ React.createElement("div", {
+              className: "cmg-aviso-icon",
+              "aria-hidden": "true",
+            }),
             /* @__PURE__ */ React.createElement(
-              "strong",
-              null,
-              "Limite do Fast Track excedido. ",
+              "p",
+              { className: "cmg-aviso-texto" },
+              /* @__PURE__ */ React.createElement(
+                "strong",
+                null,
+                "Limite do Fast Track excedido. ",
+              ),
+              `No enquadramento Fast Track, a potência da usina não pode ser superior a ${GD_FAST_LIMITE_kW} kW (${GD_FAST_LIMITE_USINA_KW} kW).`,
             ),
-            `No enquadramento Fast Track, a potência da usina não pode ser superior a ${GD_FAST_LIMITE_kW} kW (${GD_FAST_LIMITE_USINA_KW} kW).`,
           ),
         ),
       /* @__PURE__ */ React.createElement(
@@ -1224,11 +1320,11 @@ function ViewDeclaracoes({ ctx }) {
       "7 — Contato na Distribuidora",
     ),
     /* @__PURE__ */ React.createElement(
-      "div",
-      { className: "gd-info-box" },
+      GdAviso,
+      { mod: "" },
       /* @__PURE__ */ React.createElement(
-        "div",
-        null,
+        "span",
+        { style: { display: "block" } },
         /* @__PURE__ */ React.createElement(
           "strong",
           null,
@@ -1236,13 +1332,13 @@ function ViewDeclaracoes({ ctx }) {
         ),
       ),
       /* @__PURE__ */ React.createElement(
-        "div",
-        null,
+        "span",
+        { style: { display: "block" } },
         GD_CONTATO_CEMIG.endereco,
       ),
       /* @__PURE__ */ React.createElement(
-        "div",
-        null,
+        "span",
+        { style: { display: "block" } },
         "Telefone: ",
         GD_CONTATO_CEMIG.telefone,
         " · E-mail: ",
@@ -1466,8 +1562,8 @@ function ViewFormularioCarga({ ctx }) {
     },
     exigeFormCarga &&
       /* @__PURE__ */ React.createElement(
-        "div",
-        { className: "alert alert-info", style: { marginBottom: 12 } },
+        GdAviso,
+        { mod: "", style: { marginBottom: 12 } },
         /* @__PURE__ */ React.createElement(
           "strong",
           null,

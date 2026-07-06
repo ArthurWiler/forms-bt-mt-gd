@@ -11,7 +11,7 @@
    ============================================================ */
 
 body {
-  font-family: "DM Sans", system-ui, -apple-system, sans-serif;
+  font-family: var(--cmg-font-family);
   background: var(--bg);
   color: var(--texto);
   line-height: 1.5;
@@ -222,17 +222,8 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
   border-top: 1px solid var(--borda);
 }
 
-/* ---------- BANNERS / ALERTAS ---------- */
-.alert {
-  border-radius: var(--raio-sm);
-  padding: 11px 14px;
-  font-size: 12.5px;
-  line-height: 1.5;
-  margin-bottom: 14px;
-}
-.alert-ok { background: var(--verde-claro); color: var(--verde-escuro); border: 1px solid rgba(1,136,55,.25); }
-.alert-warn { background: var(--vermelho-bg); color: var(--vermelho); border: 1px solid rgba(192,57,43,.3); }
-.alert-info { background: var(--amarelo-bg); color: #8a6d1a; border: 1px solid var(--amarelo-bd); }
+/* Os antigos .alert/.alert-* foram substituídos pelo banner canônico
+   `.cmg-aviso` (shared.css) via o componente GdAviso (shared/js/components.js). */
 
 /* ---------- BADGE / CHIP ---------- */
 .badge {
@@ -787,16 +778,8 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
   border-bottom: 1px solid var(--borda);
 }
 
-/* ===== GD — caixa informativa e textarea ===== */
-.gd-info-box {
-  background: var(--verde-claro);
-  border: 1px solid var(--borda);
-  border-radius: 10px;
-  padding: 12px 14px;
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--texto);
-}
+/* ===== GD — textarea ===== */
+/* A antiga .gd-info-box foi substituída pelo banner `.cmg-aviso` (GdAviso). */
 textarea.ta {
   width: 100%;
   padding: 10px 12px;

@@ -1,4 +1,5 @@
 const GD_ABAS = [
+  { id: "orient", n: "Orientações", c: ViewOrientacoes },
   { id: "ident", n: "Identificação", c: ViewIdentificacao },
   { id: "uc", n: "Dados da UC", c: ViewDadosUC },
   { id: "doc", n: "Documentação", c: ViewDocumentacao },
@@ -48,7 +49,7 @@ function App() {
     ...gdEstadoInicial(),
     ...GD_MODO.overrides,
   }));
-  const [aba, setAba] = useState("ident");
+  const [aba, setAba] = useState("orient");
   const [cepStatus, setCepStatus] = useState("");
   const [cnpjStatus, setCnpjStatus] = useState("");
   const set = (patch) => setD((s) => ({ ...s, ...patch }));
@@ -244,6 +245,20 @@ function App() {
       /* @__PURE__ */ React.createElement(
         "main",
         { className: "main-col fade-in", key: aba },
+        /* @__PURE__ */ React.createElement(
+          "div",
+          { className: "form-header" },
+          /* @__PURE__ */ React.createElement(
+            "h1",
+            null,
+            "Microgeração Distribuída - Solicitação de Acesso",
+          ),
+          /* @__PURE__ */ React.createElement(
+            "p",
+            null,
+            "Preenchimento digital do formulário de solicitação de acesso para conexão de microgeração distribuída (potência instalada de até 75 kW), conforme a REN ANEEL nº 1.000/2021 e as normas de distribuição da CEMIG.",
+          ),
+        ),
         GD_MODO.modo &&
           /* @__PURE__ */ React.createElement(
             "div",

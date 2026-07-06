@@ -370,6 +370,19 @@
               style="display: none"
             >
               <div class="conditional-tag">Para devolução do valor pago</div>
+              <!-- Aviso contextual (migrado da nota C): a desistência é uma
+                   resilição; o cliente assume os custos já incorridos e recebe de
+                   volta a diferença eventualmente paga a mais. Aparece junto com o
+                   box, que só é exibido quando "Efetuou pagamento?" = Sim. -->
+              <div class="cmg-aviso no-print">
+                <div class="cmg-aviso-icon" aria-hidden="true"></div>
+                <p class="cmg-aviso-texto">
+                  Ao desistir, você assume os custos já incorridos pela CEMIG até
+                  o cancelamento. Se o valor pago no aceite do orçamento for maior
+                  que esses custos, a diferença será restituída na conta informada
+                  abaixo.
+                </p>
+              </div>
               <div class="grid grid-3">
                 <div class="field">
                   <label>Banco <span class="req">*</span></label>

@@ -102,7 +102,7 @@ bt/
 
 ## Média Tensão (`mt/`)
 
-Formulário de orçamento de conexão em MT, com identidade visual compartilhada com o BT (fonte SS Broad, paleta Cemig).
+Formulário de orçamento de conexão em MT, com identidade visual compartilhada com o BT (shell `.cemig-form`, fonte Open Sans, tokens `--cmg-*` da paleta Cemig).
 
 ```
 mt/
@@ -151,8 +151,6 @@ microgeracao|minigeracao/
 
 ```
 shared/
-├── css/
-│   └── ssbroad.otf           Fonte institucional Cemig (usada por MT/Loteamento)
 └── js/
     ├── api.js              Chamadas a APIs externas (ex.: ViaCEP)
     ├── calc.js              Funções de cálculo reutilizáveis

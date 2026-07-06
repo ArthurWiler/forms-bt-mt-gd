@@ -11,7 +11,7 @@
    ============================================================ */
 
 body {
-  font-family: "DM Sans", system-ui, -apple-system, sans-serif;
+  font-family: var(--cmg-font-family);
   background: var(--bg);
   color: var(--texto);
   line-height: 1.5;

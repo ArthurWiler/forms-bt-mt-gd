@@ -1311,8 +1311,24 @@ function onTrocaSE(){
 
 /* ===== Geração ===== */
 function onGeracao(t){
-  if(t==='mom'){state.gerMomentaneo=event.target.value;$('#gerMomPotBox').style.display=(state.gerMomentaneo==='Sim')?'':'none';}
-  if(t==='grid'){state.gridZero=event.target.value;$('#gridZeroPotBox').style.display=(state.gridZero==='Sim')?'':'none';}
+  if(t==='mom'){
+    state.gerMomentaneo=event.target.value;
+    const sim=state.gerMomentaneo==='Sim';
+    $('#gerMomPotBox').style.display=sim?'':'none';
+    // Aviso contextual (migrado da orientação nº 6): geração em paralelismo
+    // momentâneo (gerador a diesel) deve ser informada no pedido.
+    const av=$('#gerMomAviso');
+    if(av){av.innerHTML=sim?alertHTML('warn','A geração em paralelismo momentâneo (gerador a diesel) deve ser informada à CEMIG. Informe a potência da geração para prosseguir.'):'';av.style.display=sim?'':'none';}
+  }
+  if(t==='grid'){
+    state.gridZero=event.target.value;
+    const sim=state.gridZero==='Sim';
+    $('#gridZeroPotBox').style.display=sim?'':'none';
+    // Aviso contextual (migrado da orientação nº 6): GRID ZERO (paralelismo
+    // permanente sem injeção) deve ser informado, com a potência da geração.
+    const av=$('#gridZeroAviso');
+    if(av){av.innerHTML=sim?alertHTML('warn','Geração em paralelismo permanente sem injeção na rede (GRID ZERO) deve ser informada à CEMIG. Informe a potência da geração para prosseguir.'):'';av.style.display=sim?'':'none';}
+  }
 }
 
 /* ===== RAMAL — galeria visual ===== */

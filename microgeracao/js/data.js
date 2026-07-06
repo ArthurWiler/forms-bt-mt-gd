@@ -339,3 +339,62 @@ const GD_DECL_85 = [
   "8.5.2 - enquadramento nos critérios de gratuidade da REN 1.000/2021",
   "8.5.3 - autoconsumo local, geração ≤ 7,5 kW",
 ];
+
+// Orientações de preenchimento (Etapa 1) — resumo montado a partir das
+// seções oficiais do Formulário MicroGD Rev. N4: Documentação a anexar
+// (Seção 3 — GD_DOCUMENTOS), Documentação Técnica (Seção 6 — GD_DOCS_TEC),
+// Contato na Distribuidora (Seção 7) e Solicitações/Declarações (Seção 8).
+const GD_ORIENTACOES = {
+  intro:
+    "Leia as orientações antes de iniciar. Este formulário destina-se à solicitação de acesso de MICROGERAÇÃO distribuída (potência instalada de geração de até 75 kW) na área de concessão da CEMIG, conforme a Resolução Normativa ANEEL nº 1.000/2021.",
+  blocos: [
+    {
+      // O Formulário de Carga obrigatório e o limite de 7,5 kW do Fast Track
+      // migraram para avisos contextuais (.cmg-aviso) exibidos ao escolher a
+      // solicitação e ao exceder a potência (ver microgeracao/js/views.js).
+      titulo: "Antes de começar, tenha em mãos",
+      itens: [
+        "Dados da conta de energia da unidade consumidora: número da instalação, titular, classe e endereço completo (informando o CEP, o endereço é preenchido automaticamente).",
+        "Coordenadas UTM do ponto de conexão — fuso 22, 23 ou 24; os valores são validados automaticamente contra a faixa do fuso em Minas Gerais.",
+        "Dados da usina: quantidade e potência nominal de módulos e inversores. As potências totais e, em sistemas fotovoltaicos, a Potência Ativa Instalada (menor valor entre módulos e inversores) são calculadas automaticamente.",
+        "Dados do sistema de armazenamento (baterias), caso o empreendimento possua.",
+        "O enquadramento Fast Track (inciso III do art. 73-A) e o Grid Zero são definidos pelo card escolhido na página inicial e ficam bloqueados no formulário.",
+      ],
+    },
+    {
+      titulo: "Documentação a anexar (Seção 3)",
+      itens: [
+        "Documentos de identificação do consumidor, conforme incisos I e II do art. 67 da REN nº 1.000/2021.",
+        "Documento com data que comprove a propriedade ou posse do imóvel onde será implantada a UC; para imóveis rurais, também o Cadastro Ambiental Rural – CAR (Lei nº 12.651/2012).",
+        "Licença ou declaração do órgão competente, caso as instalações ocupem áreas protegidas (unidades de conservação, reservas legais, APP, territórios indígenas e quilombolas).",
+        "Quando aplicável: documento que comprove o direito de posse em áreas, telhados ou estruturas alugados, cedidos ou arrendados, e autorização do condomínio para uso de área comum da edificação coletiva.",
+      ],
+    },
+    {
+      titulo: "Documentação técnica (Seção 6)",
+      itens: [
+        "Documento de responsabilidade técnica de projeto e execução, emitido pelo conselho profissional competente.",
+        "Memorial descritivo da instalação com planta de situação, indicando o padrão de entrada (ND-5.1/5.2) ou a subestação de entrada (ND-5.3).",
+        "Diagrama unifilar e de blocos do sistema de geração, carga e proteção.",
+        "Relatório de ensaio, em português, atestando a conformidade de todos os conversores de potência para a tensão nominal de conexão.",
+        "Dados necessários ao registro da central geradora conforme o site da ANEEL e, quando aplicável, os documentos do sistema de compensação: lista de UCs participantes, instrumento jurídico dos integrantes, cogeração qualificada e segurança de barragens.",
+      ],
+    },
+    {
+      titulo: "Declarações (Seção 8)",
+      itens: [
+        "As declarações 8.4 (instalações internas em conformidade com as normas da distribuidora, ABNT e art. 8º da Lei nº 9.074/1995) e 8.6 (veracidade das informações) são obrigatórias — o PDF só é liberado após marcá-las.",
+        "Se o padrão de entrada NÃO estiver pronto para ser ligado (item 8.1), o pedido de vistoria/ligação deve ser feito em até 120 dias após a conclusão do orçamento de conexão.",
+        "A dispensa da análise de inversão de fluxo (item 8.5, art. 73-A) é opcional e se aplica a: não injeção na rede (Grid Zero), enquadramento nos critérios de gratuidade da REN 1.000/2021 ou autoconsumo local com geração de até 7,5 kW.",
+      ],
+    },
+  ],
+  callout:
+    "Ao final, revise os dados na etapa Prévia & PDF, exporte o formulário preenchido e anexe-o ao seu pedido no Cemig Atende. Dúvidas: " +
+    GD_CONTATO_CEMIG.responsavel +
+    " — " +
+    GD_CONTATO_CEMIG.telefone +
+    " · " +
+    GD_CONTATO_CEMIG.email +
+    ".",
+};

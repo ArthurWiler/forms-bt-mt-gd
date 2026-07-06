@@ -10,18 +10,18 @@ const ORIENTACOES = {
   intro:
     "Leia as orientações antes de iniciar. Este formulário destina-se a pedidos de Ligação Nova ou Alteração de Carga em Baixa Tensão (BT), conforme a Resolução Normativa ANEEL nº 1.000/2021.",
   geral: {
+    // Itens vinculáveis a um campo migraram para avisos contextuais (`.cmg-aviso`)
+    // exibidos ao preencher o campo correspondente: carga > 75 kW (ART/APR Web) →
+    // cargas-individual.js; propriedade/regularidade em Conexão Nova e vistoria
+    // "padrão pronto para ligar" (Sim/Não → 120 dias) → dados-unidade.js; área de
+    // restrição ambiental → dados-unidade.js. Aqui ficam só os itens gerais/documentais.
     titulo: "Orientações gerais",
     itens: [
-      "Para solicitações com carga instalada acima de 75 kW, é obrigatório anexar a ART de projeto paga, planta situação, e formulário preenchdido no APR Web.",
       "Conforme artigo 9° da Resolução Normativa ANEEL Nº 1.000/2021 que trata da representação, o responsável técnico deverá apresentar procuração (pessoa física ou pessoa jurídica) para solicitações em nome de terceiros.",
-      "Para os pedidos de Conexão Nova é obrigatório anexar ao formulário um documento que comprove a propriedade ou posse do local a ser atendido. Para unidade consumidora localizada em área urbana, também deverá ser anexado documento que comprove a regularidade do imóvel.",
       "Deverão ser apresentados, no ato da solicitação, documentos originais do titular pessoa física (documento oficial com foto e CPF) e, em caso de pessoa jurídica, os documentos relativos à sua constituição, ao seu registro e do(s) seus(s) representante(s) legal(is)",
-      "Caso a propriedade esteja localizada em área protegida pela legislação, é obrigatório apresentar documento que comprove a regularização ambiental emitido por órgão competente.",
       "Caso a propriedade esteja em entorno de reservatório deve ser apresentada autorização da concessionária ou do responsável pelo reservatório.",
       "O padrão deverá ser instalado dentro da propriedade.",
-      "Conforme regulação vigente, o responsável técnico deverá apresentar procuração (pessoa física ou pessoa jurídica) para solicitações em nome de terceiros.",
       "Para os casos de conexão com GRID ZERO é necessário protocolar solicitação como um pedido de Geração distribuída.Verificar no site da CEMIG >> Cemig Atende >> Geração Distribuída >> Manual de Solicitação de Grid Zero (GD sem injeção)",
-      "Conforme regulação da ANEEL, caso seja marcado 'Sim' para a pergunta 'O padrão está pronto para ser ligado?*', o pedido de vistoria e ligação será disparado automaticamente após conclusão das etapas do orçamento de conexão.Caso seja marcado 'Não', você deve solicitar seu pedido de vistoria e ligação em até 120 dias após a conclusão das etapas do orçamento de conexão. Lembrando que o orçamento de conexão poderá ser cancelado em caso de duas reprovações pelo mesmo motivo e que há cobrança de taxa a partir do segundo serviço realizado. Diante disso, a primeira caixa relacionada no campo Unidade Consumidora 1 será a caixa a ser energizada no final do processo de conexão. A mesma regra poderá ser aplicada para alteração de carga com mudança de local.",
       "O pedido poderá ser reprovado no momento da visita técnica caso não sejam identificadas as cargas declaradas neste formulário.",
     ],
   },
@@ -37,21 +37,23 @@ const ORIENTACOES = {
     ],
   },
   coletivo: {
+    // A demanda total > 304 kVA (projeto elétrico + ART/TRT) já é sinalizada por
+    // aviso contextual ao ultrapassar o limite (cargas-coletivo.js / blocos.js), e
+    // os motores pesados viram documento no PDF conforme declarados. Aqui ficam a
+    // planta de situação (documental) e a descrição dos campos de previsão/torres/
+    // híbrido, que orientam o preenchimento.
     titulo:
       "Agrupamento com proteção geral, atendimento híbrido ou múltiplas torres/blocos",
     itens: [
-      "O atendimento pela Cemig ao pedido de Conexão/aumento de carga ficará condicionado à apresentação do projeto elétrico juntamente com a Anotação de Responsabilidade Técnica (ou equivalente) de projeto, para todas as edificações de uso coletivo com demanda total superior a 304kVA.",
       "É obrigatório anexar no momento do pedido a planta de situação da edificação, com a indicação do padrão de entrada e a distância do ramal de entrada, conforme ND-5.2, com exceção para solicitação de alteração de carga sem mudança de local do ramal de Conexão. O Documento deve ser encaminhado no portal Cemig Atende e no APR Web.",
       "Preenche-se uma previsão de carga geral e os dados de identificação de cada unidade consumidora.",
       "Para empreendimentos com múltiplas torres ou blocos, cada bloco pode ter seu disjuntor geral e seu disjuntor de combate a incêndio.",
-      "Para demanda total superior a 304 kVA, o atendimento fica condicionado à apresentação do projeto elétrico com ART/TRT.",
-      "Motores monofásicos acima de 15 CV e/ou trifásicos acima de 50 CV exigem o formulário de análise de partida de motores.",
       "Para atendimentos híbridos, deve ser informada na planta de situação: quantidade de ramais de Conexão com a respectiva numeração predial de cada ponto de entrega, demanda de cada ramal de Conexão com a respectiva proteção geral (quando couber) e especificações dos cabos subterrâneos. Na ART/TRT deverão ser informados todos os números prediais que serão atendidos. Em casos de desmembramento, o ramal que não sofrerá alteração poderá apenas ser indicado na planta.",
       "Se a solicitação for para atendimento híbrido, é obrigatório indicar na planta de situação o número predial de cada unidade consumidora",
     ],
   },
   callout:
-    "Pedido de vistoria e ligação: se o padrão estiver pronto para ligar, a vistoria é disparada após o orçamento; caso contrário, há prazo para solicitá-la. O orçamento pode ser cancelado após reprovações pelo mesmo motivo.",
+    "Ao longo do preenchimento, avisos aparecem automaticamente conforme os campos informados (carga acima de 75 kW, área de restrição ambiental, vistoria/ligação, entre outros). Ao final, revise os dados na etapa Prévia & PDF, exporte o formulário e anexe-o ao seu pedido no Cemig Atende.",
 };
 
 // ===== Solicitação -> Escopos dependentes =====

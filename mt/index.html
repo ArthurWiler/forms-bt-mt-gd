@@ -127,60 +127,13 @@
                   verificadas pela Cemig.
                 </p>
               </li>
-              <li class="orient-item">
-                <span class="orient-num">4</span>
-                <p>
-                  Se houver motores monofásicos acima de 15 CV e/ou trifásicos
-                  acima de 50 CV, é obrigatório anexar o
-                  <a
-                    href="https://www.cemig.com.br/wp-content/uploads/2025/10/Formulario_Partida_Motores.xls"
-                    target="_blank"
-                    rel="noopener"
-                    >formulário para análise de partida de motores</a
-                  >.
-                </p>
-              </li>
-              <li class="orient-item">
-                <span class="orient-num">5</span>
-                <p>
-                  Atividades de <strong>Irrigação</strong> ou
-                  <strong>Aquicultura</strong> exigem o preenchimento da
-                  <a
-                    href="https://www.cemig.com.br/wp-content/uploads/2025/10/formaliza_solic_desconto_irrigante_aquicultor_versao_D_portal_Cemig.docx"
-                    target="_blank"
-                    rel="noopener"
-                    >carta de formalização do pedido</a
-                  >
-                  e comprovação de licença ambiental e outorga de uso de
-                  recursos hídricos.
-                </p>
-              </li>
-              <li class="orient-item">
-                <span class="orient-num">6</span>
-                <p>
-                  Geração em paralelismo permanente sem injeção (GRID ZERO) ou
-                  momentâneo (gerador a diesel) deve ser informada no
-                  formulário.
-                  <a
-                    href="https://www.cemig.com.br/geracao-distribuida/manual-de-geracao-distribuida/"
-                    target="_blank"
-                    rel="noopener"
-                    >Consultar manual do GRID-ZERO</a
-                  >.
-                </p>
-              </li>
             </ul>
-            <div class="cmg-aviso cmg-aviso--warn">
-              <div class="cmg-aviso-icon" aria-hidden="true"></div>
-              <p class="cmg-aviso-texto">
-                <b>Pedido de vistoria e ligação:</b> se a subestação estiver
-                pronta para ligar, a vistoria é disparada automaticamente após o
-                orçamento. Caso contrário, você terá até 120 dias para
-                solicitar. O orçamento pode ser cancelado após duas reprovações
-                pelo mesmo motivo, com cobrança de taxa a partir do segundo
-                serviço.
-              </p>
-            </div>
+            <!-- Orientações vinculadas a um campo foram migradas para avisos
+                 contextuais (.cmg-aviso) exibidos ao preencher o campo: motores
+                 pesados (>15 CV mono / >50 CV tri) e irrigação/aquicultura na
+                 etapa de Dados Técnicos; GRID ZERO / gerador momentâneo nos
+                 campos de geração; vistoria/ligação (120 dias) no campo
+                 "subestação pronta para ligar". Aqui ficam só as gerais. -->
             <p class="field-hint" style="margin-top: 16px">
               Campos marcados com <b>(opcional)</b> não são obrigatórios.
             </p>
@@ -1286,6 +1239,11 @@
                     placeholder=" "
                   />
                 </div>
+                <div
+                  class="col-span-2 no-print"
+                  id="gerMomAviso"
+                  style="display: none"
+                ></div>
                 <div class="field field--plain">
                   <label
                     >Possui geração em paralelismo permanente sem injeção (GRID
@@ -1306,6 +1264,11 @@
                     placeholder=" "
                   />
                 </div>
+                <div
+                  class="col-span-2 no-print"
+                  id="gridZeroAviso"
+                  style="display: none"
+                ></div>
                 <div class="field field--plain">
                   <label
                     >Possui unidades consumidoras de Baixa Tensão (BT) na mesma
