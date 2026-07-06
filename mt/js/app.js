@@ -522,15 +522,18 @@ function renderRestricaoAmbiental(){
   const box=$('#restricaoAmbientalConteudo');
   if(!box) return;
   const ra=state.restricaoAmbiental;
+  // O bloco inteiro (pergunta + box) só aparece QUANDO há restrição. Sem
+  // restrição (ou ainda não consultado) o campo some.
+  const wrap=$('#restricaoAmbientalBox');
   if(ra==='Sim'){
+    if(wrap) wrap.style.display='';
     const dropdowns=(typeof restricoesDropdownsHTML==='function')
       ? restricoesDropdownsHTML(state.restricoesDetalhe)
       : '';
     box.innerHTML=alertHTML('err',`<div class="restricao-destaque"><strong>Em área de restrição ambiental.</strong>${dropdowns}</div>`);
-  } else if(ra==='Não'){
-    box.innerHTML=alertHTML('info','<div class="restricao-destaque"><strong>Não há restrição ambiental.</strong></div>');
   } else {
-    box.innerHTML=alertHTML('info','Consulte a coordenada no mapa acima para verificar a restrição ambiental.');
+    if(wrap) wrap.style.display='none';
+    box.innerHTML='';
   }
 }
 // Validação ambiental automática (IDE-Sisema), idêntica ao BT: usa a consulta
@@ -1506,8 +1509,8 @@ function renderPreview(){
     uc+=pvCampo('Coordenadas novas',[state.latitudeNova,state.longitudeNova].filter(Boolean).join(' , '),{step:3});
   if(state.localizacao==='Urbana')uc+=pvCampo('Endereço',[state.urb_endereco,state.urb_num,state.urb_bairro,state.urb_compl].filter(Boolean).join(', '),{full:true,step:3});
   if(state.localizacao==='Rural')uc+=pvCampo('Distrito / Propriedade',[state.rur_distrito,state.rur_propriedade].filter(Boolean).join(' / '),{full:true,step:3});
-  uc+=pvCampo('Área de restrição ambiental?',state.restricaoAmbiental||'Não consultada',{step:3});
-  if(state.restricaoAmbiental==='Sim'&&state.restricoesTexto)uc+=pvCampo('Restrições identificadas',`<span class="restricao-destaque">${state.restricoesTexto}</span>`,{full:true,step:3});
+  // Restrição ambiental só aparece na prévia quando HÁ restrição (igual ao form).
+  if(state.restricaoAmbiental==='Sim'&&state.restricoesTexto)uc+=pvCampo('Área de restrição ambiental',`<span class="restricao-destaque">${state.restricoesTexto}</span>`,{full:true,step:3});
   uc+=pvCampo('Subestação pronta?',state.subPronta,{step:3});
   secoes.push(pvSecao('Unidade Consumidora',uc));
 

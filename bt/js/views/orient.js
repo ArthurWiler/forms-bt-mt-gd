@@ -103,34 +103,6 @@ function TabOrient({ ctx }) {
         ),
       ),
     ),
-    /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        style: {
-          fontWeight: 700,
-          color: "var(--verde-escuro)",
-          fontSize: 14,
-          margin: "18px 0 4px",
-        },
-      },
-      ORIENTACOES.individual.titulo,
-    ),
-    /* @__PURE__ */ React.createElement(
-      "ul",
-      { className: "orient-list" },
-      ORIENTACOES.individual.itens.map((it, i) =>
-        /* @__PURE__ */ React.createElement(
-          "li",
-          { key: i, className: "orient-item" },
-          /* @__PURE__ */ React.createElement(
-            "span",
-            { className: "orient-num" },
-            i + 1,
-          ),
-          /* @__PURE__ */ React.createElement("p", null, it),
-        ),
-      ),
-    ),
     !restrito &&
       /* @__PURE__ */ React.createElement(
         React.Fragment,

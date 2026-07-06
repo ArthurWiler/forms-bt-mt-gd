@@ -427,30 +427,17 @@ function TabDadosUnidade({ ctx }) {
     /* ── Mapa de localização ── */
     /* @__PURE__ */ React.createElement(LocalizacaoObra, { obra, setObra }),
 
-    /* ── Restrição ambiental ── */
-    /* @__PURE__ */ React.createElement(
-      "div",
-      { className: "field", style: { marginTop: 14 } },
+    /* ── Restrição ambiental ── só aparece quando o ponto ESTÁ em área de
+       restrição; sem restrição (ou ainda não consultado) o bloco some. ── */
+    obra.restricaoAmbiental === "Sim" &&
       /* @__PURE__ */ React.createElement(
-        "label",
-        null,
-        "Unidade consumidora em área de restrição ambiental?",
-      ),
-      !obra.restricaoAmbiental &&
+        "div",
+        { className: "field", style: { marginTop: 14 } },
         /* @__PURE__ */ React.createElement(
-          "div",
-          { className: "cmg-aviso", style: { marginTop: 8 } },
-          /* @__PURE__ */ React.createElement("div", {
-            className: "cmg-aviso-icon",
-            "aria-hidden": "true",
-          }),
-          /* @__PURE__ */ React.createElement(
-            "p",
-            { className: "cmg-aviso-texto" },
-            "Consulte a coordenada no mapa acima para verificar a restrição ambiental.",
-          ),
+          "label",
+          null,
+          "Unidade consumidora em área de restrição ambiental?",
         ),
-      obra.restricaoAmbiental === "Sim" &&
         /* @__PURE__ */ React.createElement(
           "div",
           {
@@ -513,27 +500,6 @@ function TabDadosUnidade({ ctx }) {
             ),
           ),
         ),
-      obra.restricaoAmbiental === "Não" &&
-        /* @__PURE__ */ React.createElement(
-          "div",
-          {
-            className: "cmg-aviso restricao-destaque",
-            style: { marginTop: 8 },
-          },
-          /* @__PURE__ */ React.createElement("div", {
-            className: "cmg-aviso-icon",
-            "aria-hidden": "true",
-          }),
-          /* @__PURE__ */ React.createElement(
-            "p",
-            { className: "cmg-aviso-texto" },
-            /* @__PURE__ */ React.createElement(
-              "strong",
-              null,
-              "Não há restrição ambiental.",
-            ),
-          ),
-        ),
-    ),
+      ),
   );
 }

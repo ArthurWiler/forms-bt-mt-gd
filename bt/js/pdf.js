@@ -353,10 +353,6 @@ function gerarPdfDoc(S) {
         (typeof utmString === "function" ? utmString(obra.lat, obra.lng) : ""),
     ],
     ["Padrão pronto p/ ligar?", obra.prontoLigar],
-    [
-      "Em área de restrição ambiental?",
-      obra.restricaoAmbiental || "Não consultada",
-    ],
     ["Tipo de rede BT", obra.tipoRede],
     ["Distância < 30 m da rede?", obra.distMenor30],
     ["Transformador próximo", obra.transformador],

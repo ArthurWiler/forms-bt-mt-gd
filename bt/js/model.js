@@ -18,22 +18,9 @@ const ORIENTACOES = {
     titulo: "Orientações gerais",
     itens: [
       "Conforme artigo 9° da Resolução Normativa ANEEL Nº 1.000/2021 que trata da representação, o responsável técnico deverá apresentar procuração (pessoa física ou pessoa jurídica) para solicitações em nome de terceiros.",
-      "Deverão ser apresentados, no ato da solicitação, documentos originais do titular pessoa física (documento oficial com foto e CPF) e, em caso de pessoa jurídica, os documentos relativos à sua constituição, ao seu registro e do(s) seus(s) representante(s) legal(is)",
       "Caso a propriedade esteja em entorno de reservatório deve ser apresentada autorização da concessionária ou do responsável pelo reservatório.",
       "O padrão deverá ser instalado dentro da propriedade.",
-      "Para os casos de conexão com GRID ZERO é necessário protocolar solicitação como um pedido de Geração distribuída.Verificar no site da CEMIG >> Cemig Atende >> Geração Distribuída >> Manual de Solicitação de Grid Zero (GD sem injeção)",
       "O pedido poderá ser reprovado no momento da visita técnica caso não sejam identificadas as cargas declaradas neste formulário.",
-    ],
-  },
-  individual: {
-    titulo:
-      "Atendimento individual ou agrupamento com até 3 caixas sem proteção geral",
-    itens: [
-      "Para Conexão Nova, o número predial, a atividade principal da unidade consumidora (Residencial, Comercial, Industrial ou Rural) e o Ramo de Atividade (caso não seja residencial). Quando aplicável, informar também o complemento da caixa (ex: Cond, Lj1, Residência 1, Apto 101 etc.).",
-      "Para opção Alteração de Carga ou Caixa existente sem Alteração de Carga, informar o número da instalação, o número do medidor ou o número da caixa (complemento).",
-      "Para Alteração de Carga ou Caixa existente sem Alteração de Carga, informar o novo ramo de atividade e a alteração de complemento, somente se houver alteração;",
-      "O cálculo da carga instalada total em kW, a demanda em kVA e o preenchimento do disjuntor será feito automaticamente",
-      "Para Alteração de Carga,o cálculo da carga instalada total em kW, a demanda em kVA e o preenchimento do disjuntor futuro será feito automaticamente",
     ],
   },
   coletivo: {
@@ -46,8 +33,6 @@ const ORIENTACOES = {
       "Agrupamento com proteção geral, atendimento híbrido ou múltiplas torres/blocos",
     itens: [
       "É obrigatório anexar no momento do pedido a planta de situação da edificação, com a indicação do padrão de entrada e a distância do ramal de entrada, conforme ND-5.2, com exceção para solicitação de alteração de carga sem mudança de local do ramal de Conexão. O Documento deve ser encaminhado no portal Cemig Atende e no APR Web.",
-      "Preenche-se uma previsão de carga geral e os dados de identificação de cada unidade consumidora.",
-      "Para empreendimentos com múltiplas torres ou blocos, cada bloco pode ter seu disjuntor geral e seu disjuntor de combate a incêndio.",
       "Para atendimentos híbridos, deve ser informada na planta de situação: quantidade de ramais de Conexão com a respectiva numeração predial de cada ponto de entrega, demanda de cada ramal de Conexão com a respectiva proteção geral (quando couber) e especificações dos cabos subterrâneos. Na ART/TRT deverão ser informados todos os números prediais que serão atendidos. Em casos de desmembramento, o ramal que não sofrerá alteração poderá apenas ser indicado na planta.",
       "Se a solicitação for para atendimento híbrido, é obrigatório indicar na planta de situação o número predial de cada unidade consumidora",
     ],

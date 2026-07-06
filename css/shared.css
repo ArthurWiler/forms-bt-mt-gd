@@ -472,8 +472,11 @@ html {
    e o padding vêm de `.cmg-aviso-texto`; aqui só destacamos o título em
    bloco. Global (unscoped) como o próprio `.cmg-aviso`. Antes duplicado,
    idêntico, em formulario-bt/minigd/microgd.css. */
-.restricao-destaque strong,
-.cmg-aviso-texto .restricao-destaque strong {
+/* Só o TÍTULO do banner (strong filho direto) vira bloco — NÃO o <strong>
+   do nome dentro da frase da área (senão o "." final cai numa linha só). */
+.restricao-destaque > strong,
+.cmg-aviso.restricao-destaque > .cmg-aviso-texto > strong,
+.cmg-aviso-texto > .restricao-destaque > strong {
   display: block;
   font-size: 14.5px;
 }
@@ -490,12 +493,13 @@ html {
    localização (nome em negrito) e o texto de documentos exigidos.
    NÃO exibe a fonte de dados (typeName) — só rótulo/nome/exigências.
    Estrutura idêntica gerada por React (BT) e innerHTML (MT). ============ */
-/* O texto do banner de restrição empilha em coluna (título em cima, um
-   dropdown por linha). Sem isto, o .cmg-aviso-texto (flex row) alinharia
-   título e áreas lado a lado. Cobre BT (.restricao-destaque no wrapper) e
-   MT (.restricao-destaque dentro do .cmg-aviso-texto). */
-.cmg-aviso.restricao-destaque > .cmg-aviso-texto,
-.cmg-aviso-texto > .restricao-destaque {
+/* Quando HÁ dropdowns, o texto do banner empilha em coluna (título em cima,
+   um dropdown por linha). Sem isto, o .cmg-aviso-texto (flex row) alinharia
+   título e áreas lado a lado. Só se aplica ao caso "Sim" (:has dropdowns) —
+   o caso "Não" (só o título) mantém o layout padrão do .cmg-aviso-texto.
+   Cobre BT (.restricao-destaque no wrapper) e MT (dentro do texto). */
+.cmg-aviso.restricao-destaque > .cmg-aviso-texto:has(.restricao-area),
+.cmg-aviso-texto > .restricao-destaque:has(.restricao-area) {
   display: flex;
   flex-direction: column;
   align-items: stretch;
