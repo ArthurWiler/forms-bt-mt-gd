@@ -523,8 +523,10 @@ function renderRestricaoAmbiental(){
   if(!box) return;
   const ra=state.restricaoAmbiental;
   if(ra==='Sim'){
-    const det=state.restricoesTexto?`<div style="margin-top:6px">${state.restricoesTexto}</div>`:'';
-    box.innerHTML=alertHTML('err',`<div class="restricao-destaque"><strong>⚠ SIM — em área de restrição ambiental.</strong>${det}</div>`);
+    const dropdowns=(typeof restricoesDropdownsHTML==='function')
+      ? restricoesDropdownsHTML(state.restricoesDetalhe)
+      : '';
+    box.innerHTML=alertHTML('err',`<div class="restricao-destaque"><strong>Em área de restrição ambiental.</strong>${dropdowns}</div>`);
   } else if(ra==='Não'){
     box.innerHTML=alertHTML('info','<div class="restricao-destaque"><strong>Não há restrição ambiental.</strong></div>');
   } else {
@@ -550,7 +552,7 @@ async function consultarRestricaoAmbientalMT(lat,lon){
     const res=await consultarRestricoesObra(lat,lon);
     const resumo=resumirRestricoes(res);
     if(resumo.errosTodos){
-      state.restricaoAmbiental=''; state.restricoesTexto='';
+      state.restricaoAmbiental=''; state.restricoesTexto=''; state.restricoesDetalhe=[];
       _mtLastRestrKey='';
       _limparRestricaoLayer();
       if(box) box.innerHTML=alertHTML('warn','Não foi possível consultar a restrição ambiental (verifique conexão/camadas).');
@@ -558,6 +560,7 @@ async function consultarRestricaoAmbientalMT(lat,lon){
     }
     state.restricaoAmbiental=resumo.restricaoAmbiental;
     state.restricoesTexto=resumo.restricoesTexto;
+    state.restricoesDetalhe=detalhesRestricoes(res);
     renderRestricaoAmbiental();
     // Desenha o contorno das reservas no mapa (limpa o anterior primeiro).
     if(mapaObra && typeof desenharRestricoesNoMapa==='function'){

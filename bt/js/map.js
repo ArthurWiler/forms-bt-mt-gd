@@ -142,7 +142,12 @@ function LocalizacaoObra({ obra, setObra }) {
       const dentros = res.filter((r) => r.dentro);
       const errosTodos = res.length > 0 && res.every((r) => r.erro);
       if (errosTodos) {
-        setObra((p) => ({ ...p, restricaoAmbiental: "", restricoesTexto: "" }));
+        setObra((p) => ({
+          ...p,
+          restricaoAmbiental: "",
+          restricoesTexto: "",
+          restricoesDetalhe: []
+        }));
         if (map && restricaoLayerRef.current) {
           map.removeLayer(restricaoLayerRef.current);
           restricaoLayerRef.current = null;
@@ -159,7 +164,8 @@ function LocalizacaoObra({ obra, setObra }) {
       setObra((p) => ({
         ...p,
         restricaoAmbiental: dentros.length ? "Sim" : "Não",
-        restricoesTexto: texto
+        restricoesTexto: texto,
+        restricoesDetalhe: detalhesRestricoes(res)
       }));
       // Desenha o contorno das reservas no mapa (limpa o anterior primeiro).
       if (map) {

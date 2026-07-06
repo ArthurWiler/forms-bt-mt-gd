@@ -462,19 +462,55 @@ function TabDadosUnidade({ ctx }) {
             "aria-hidden": "true",
           }),
           /* @__PURE__ */ React.createElement(
-            "p",
+            "div",
             { className: "cmg-aviso-texto" },
             /* @__PURE__ */ React.createElement(
               "strong",
               null,
-              "SIM - em área de restrição ambiental.",
+              "Em área de restrição ambiental.",
             ),
-            obra.restricoesTexto &&
+            /* Um dropdown por área de preservação (frase + documentos). */
+            (obra.restricoesDetalhe || []).map((a, i) =>
               /* @__PURE__ */ React.createElement(
-                "span",
-                { style: { display: "block", whiteSpace: "pre-line" } },
-                obra.restricoesTexto,
+                "details",
+                { key: a.id + "-" + i, className: "restricao-area" },
+                /* @__PURE__ */ React.createElement(
+                  "summary",
+                  { className: "restricao-area-head" },
+                  a.cor &&
+                    /* @__PURE__ */ React.createElement("span", {
+                      className: "restricao-area-cor",
+                      style: { background: a.cor },
+                      "aria-hidden": "true",
+                    }),
+                  /* @__PURE__ */ React.createElement(
+                    "span",
+                    { className: "restricao-area-titulo" },
+                    a.rotulo,
+                  ),
+                ),
+                /* @__PURE__ */ React.createElement(
+                  "div",
+                  { className: "restricao-area-body" },
+                  /* @__PURE__ */ React.createElement(
+                    "p",
+                    { className: "restricao-area-frase" },
+                    a.fraseAntes,
+                    /* @__PURE__ */ React.createElement("strong", null, a.nome),
+                    ".",
+                  ),
+                  a.documentos &&
+                    /* @__PURE__ */ React.createElement(
+                      "p",
+                      {
+                        className: "restricao-area-docs",
+                        style: { whiteSpace: "pre-line" },
+                      },
+                      a.documentos,
+                    ),
+                ),
               ),
+            ),
           ),
         ),
       obra.restricaoAmbiental === "Não" &&

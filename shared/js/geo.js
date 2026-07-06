@@ -1,32 +1,56 @@
 const SISEMA_WFS = "https://geoserver.meioambiente.mg.gov.br/ows";
 const SISEMA_VERSION = "1.1.0";
 const SISEMA_FLIP_BBOX = false;
+// Texto de documentos/exigências exibido em cada área. VARIA POR TIPO.
+// TODO(textos): substituir os placeholders (APE, Quilombola, Indígena) pelos
+// textos oficiais quando fornecidos — o de Unidade de Conservação veio da
+// referência do cliente. `null` faz a UI mostrar só a frase de localização.
+const DOC_UNIDADE_CONSERVACAO =
+  "Para que o cliente obtenha a ligação de energia elétrica, é necessário apresentar:\n" +
+  "• Documentos que comprovem posse e regularidade do imóvel simultâneamente (IPTU, Registro de Imóvel, Escritura Pública, etc) ou;\n" +
+  "• Documentos que comprovem posse (Contrato de Compra e Venda, Contrato de Locação, Termo de Doação, Termo de Permissão de Uso, etc) e regularidade (Certidão de número/Habite-se/Declaração da Prefeitura, Planta de Arquitetura Aprovada) separadamente\n" +
+  "A critério do órgão ambiental responsável pela administração da Unidade de Conservação, outros documentos e informações complementares poderão ser solicitadas posteriormente.";
+
 const SISEMA_CAMADAS = [
-  // { id, rotulo, typeName }  — typeName DEVE ser confirmado no GetCapabilities
+  // { id, rotulo, typeName, tipoNome, documentos }
+  //   rotulo    — título do dropdown (categoria da camada)
+  //   tipoNome  — como o TIPO aparece na frase de localização
+  //   documentos— texto de exigências (varia por tipo; null = só a frase)
+  //   typeName DEVE ser confirmado no GetCapabilities
   {
     id: "ape",
-    rotulo: "Áreas de Proteção Especial",
-    typeName: "IDE:ide_2010_mg_areas_protecao_especial_pol"
+    rotulo: "Área de Proteção Especial",
+    typeName: "IDE:ide_2010_mg_areas_protecao_especial_pol",
+    tipoNome: "Área de Proteção Especial",
+    documentos: null // TODO(textos): texto oficial de APE
   },
   {
     id: "uce",
-    rotulo: "Unidades de Conservação Estaduais",
-    typeName: "IDE:ide_2010_mg_unidades_conservacao_estaduais_pol"
+    rotulo: "Unidade de Conservação Estadual",
+    typeName: "IDE:ide_2010_mg_unidades_conservacao_estaduais_pol",
+    tipoNome: "Unidade de Conservação",
+    documentos: DOC_UNIDADE_CONSERVACAO
   },
   {
     id: "ucf",
-    rotulo: "Unidades de Conservação Federais",
-    typeName: "IDE:ide_2010_mg_unidades_conservacao_federais_pol"
+    rotulo: "Unidade de Conservação Federal",
+    typeName: "IDE:ide_2010_mg_unidades_conservacao_federais_pol",
+    tipoNome: "Unidade de Conservação",
+    documentos: DOC_UNIDADE_CONSERVACAO
   },
   {
     id: "tq",
-    rotulo: "Terras quilombolas",
-    typeName: "IDE:ide_2005_mg_terras_quilombolas_pol"
+    rotulo: "Terra Quilombola",
+    typeName: "IDE:ide_2005_mg_terras_quilombolas_pol",
+    tipoNome: "Terra Quilombola",
+    documentos: null // TODO(textos): texto oficial de Terra Quilombola
   },
   {
     id: "ti",
-    rotulo: "Terras Indígenas",
-    typeName: "IDE:ide_2003_mg_terras_indigenas_pol"
+    rotulo: "Terra Indígena",
+    typeName: "IDE:ide_2003_mg_terras_indigenas_pol",
+    tipoNome: "Terra Indígena",
+    documentos: null // TODO(textos): texto oficial de Terra Indígena
   }
 ];
 async function geocodObra(obra) {
@@ -215,29 +239,55 @@ async function consultarRestricoesObra(lat, lng) {
 // em BT (bt/js/map.js) e MT (mt/js/app.js) p/ manter o mesmo estilo/UX. O
 // chamador é responsável por remover a camada anterior antes de chamar.
 // `res` é o retorno de consultarRestricoesObra; `L` é window.L.
+// Paleta para diferenciar VÁRIAS restrições no mapa. A 1ª é o vermelho de
+// erro (coerente com o banner de restrição); as demais alternam em cores
+// distintas e de bom contraste. Cicla se houver mais áreas que cores.
+const CORES_RESTRICAO = [
+  "#C8303F", // erro/500 (vermelho)
+  "#1F6FEB", // azul
+  "#E8830C", // laranja
+  "#2E7D32", // verde
+  "#7B1FA2", // roxo
+  "#00838F" // teal
+];
 function desenharRestricoesNoMapa(L, map, res) {
   if (!L || !map || !res) return null;
+  // Cor por CAMADA intersectada (índice em `dentros`) — mesma ordem/critério
+  // de detalhesRestricoes, para o mapa e os dropdowns baterem de cor.
+  const dentros = (res || []).filter((r) => r && r.dentro);
   const feicoes = [];
-  for (const r of res) {
-    if (r && r.dentro && Array.isArray(r.geometrias)) {
-      for (const f of r.geometrias) {
-        if (f && f.geometry) {
-          const nome = (r.nomes && r.nomes[0]) || r.rotulo;
-          feicoes.push({ ...f, properties: { ...(f.properties || {}), _rotulo: r.rotulo, _nome: nome } });
-        }
+  dentros.forEach((r, li) => {
+    if (!Array.isArray(r.geometrias)) return;
+    const cor = CORES_RESTRICAO[li % CORES_RESTRICAO.length];
+    for (const f of r.geometrias) {
+      if (f && f.geometry) {
+        const nome = (r.nomes && r.nomes[0]) || r.rotulo;
+        feicoes.push({
+          ...f,
+          properties: {
+            ...(f.properties || {}),
+            _rotulo: r.rotulo,
+            _nome: nome,
+            _cor: cor
+          }
+        });
       }
     }
-  }
+  });
   if (!feicoes.length) return null;
   const layer = L.geoJSON(
     { type: "FeatureCollection", features: feicoes },
     {
-      style: {
-        color: "#C8303F", // erro/500 — borda do contorno de restrição
-        weight: 2,
-        opacity: 0.9,
-        fillColor: "#C8303F",
-        fillOpacity: 0.1
+      // Cor por feição (alterna quando há mais de uma restrição).
+      style: (feat) => {
+        const cor = (feat && feat.properties && feat.properties._cor) || "#C8303F";
+        return {
+          color: cor,
+          weight: 2,
+          opacity: 0.9,
+          fillColor: cor,
+          fillOpacity: 0.12
+        };
       },
       onEachFeature: (feat, lyr) => {
         const p = (feat && feat.properties) || {};
@@ -272,6 +322,73 @@ function resumirRestricoes(res) {
     restricaoAmbiental: errosTodos ? "" : dentros.length ? "Sim" : "Não",
     restricoesTexto
   };
+}
+// Detalha as áreas intersectadas para a UI de dropdowns (BT e MT). Uma entrada
+// por ÁREA (cada nome vira um dropdown):
+//   { id, rotulo, nome, fraseAntes, frase, documentos }
+//   fraseAntes— prefixo da frase até o nome ("...de abrangência de <tipo>: ")
+//               p/ a UI destacar o <nome> em negrito e fechar com ".".
+//   frase     — a frase completa em texto plano (usada em PDF/preview).
+//   documentos— texto de exigências do tipo (ou null → só a frase).
+// Quando a camada não traz um nome legível, cai para o próprio rótulo.
+function detalhesRestricoes(res) {
+  const dentros = (res || []).filter((r) => r.dentro);
+  const out = [];
+  dentros.forEach((r, li) => {
+    const tipoNome = r.tipoNome || r.rotulo;
+    // Cor por CAMADA (mesma da desenharRestricoesNoMapa) — todas as áreas de
+    // uma mesma camada compartilham a cor do seu contorno no mapa.
+    const cor = CORES_RESTRICAO[li % CORES_RESTRICAO.length];
+    const nomes = r.nomes && r.nomes.length ? r.nomes : [null];
+    for (const nome of nomes) {
+      const alvo = nome || r.rotulo;
+      const fraseAntes =
+        "O ponto de ligação está localizado na área de abrangência de " +
+        tipoNome +
+        ": ";
+      out.push({
+        id: r.id,
+        rotulo: r.rotulo,
+        nome: alvo,
+        cor,
+        fraseAntes,
+        frase: fraseAntes + alvo + ".",
+        documentos: r.documentos || null
+      });
+    }
+  });
+  return out;
+}
+// Escapa texto p/ inserção segura em HTML (usado no builder do MT/innerHTML).
+function _escHtml(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+// Monta o HTML dos dropdowns por área (um <details> por área). Fonte única
+// consumida pelo MT (innerHTML); o BT replica a mesma estrutura em React.
+// `detalhe` é o retorno de detalhesRestricoes(res).
+function restricoesDropdownsHTML(detalhe) {
+  return (detalhe || [])
+    .map((a) => {
+      const docs = a.documentos
+        ? `<p class="restricao-area-docs">${_escHtml(a.documentos)}</p>`
+        : "";
+      const swatch = a.cor
+        ? `<span class="restricao-area-cor" style="background:${_escHtml(a.cor)}" aria-hidden="true"></span>`
+        : "";
+      return (
+        `<details class="restricao-area">` +
+        `<summary class="restricao-area-head">${swatch}<span class="restricao-area-titulo">${_escHtml(a.rotulo)}</span></summary>` +
+        `<div class="restricao-area-body">` +
+        `<p class="restricao-area-frase">${_escHtml(a.fraseAntes)}<strong>${_escHtml(a.nome)}</strong>.</p>` +
+        docs +
+        `</div></details>`
+      );
+    })
+    .join("");
 }
 function RestricaoAmbiental({ obra }) {
   const [status, setStatus] = useState("");

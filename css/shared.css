@@ -477,12 +477,95 @@ html {
   display: block;
   font-size: 14.5px;
 }
-/* A lista de reservas vem com "\n" entre uma e outra (geo.js). pre-line
-   preserva as quebras sem exigir <br> no markup — vale p/ o texto injetado
-   via innerHTML no MT e p/ o nó de texto do BT. */
-.restricao-destaque,
-.cmg-aviso-texto .restricao-destaque {
+/* A prévia/PDF do MT ainda usa o texto plano de reservas com "\n" entre uma e
+   outra (geo.js/resumirRestricoes). pre-line preserva as quebras sem <br>. */
+.previa-campo-valor .restricao-destaque {
   white-space: pre-line;
+}
+
+/* ============================================================
+   Restrição ambiental — dropdowns por ÁREA (BT e MT). Cada área de
+   preservação é um <details> dentro do banner .cmg-aviso--warn/--error,
+   com o rótulo no <summary> (+ chevron) e, no corpo, a frase de
+   localização (nome em negrito) e o texto de documentos exigidos.
+   NÃO exibe a fonte de dados (typeName) — só rótulo/nome/exigências.
+   Estrutura idêntica gerada por React (BT) e innerHTML (MT). ============ */
+/* O texto do banner de restrição empilha em coluna (título em cima, um
+   dropdown por linha). Sem isto, o .cmg-aviso-texto (flex row) alinharia
+   título e áreas lado a lado. Cobre BT (.restricao-destaque no wrapper) e
+   MT (.restricao-destaque dentro do .cmg-aviso-texto). */
+.cmg-aviso.restricao-destaque > .cmg-aviso-texto,
+.cmg-aviso-texto > .restricao-destaque {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+}
+.restricao-area {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  border: 1px solid var(--cmg-neutral-200, #d1d4d3);
+  border-radius: 6px;
+  background: var(--cmg-surface, #fff);
+  overflow: hidden;
+}
+.restricao-area-head {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  font-family: "Open Sans", var(--cmg-font-family);
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--cmg-neutral-600, #364b46);
+}
+.restricao-area-head::-webkit-details-marker {
+  display: none;
+}
+/* Amostra de cor — casa com o contorno da mesma área no mapa. */
+.restricao-area-cor {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15) inset;
+}
+.restricao-area-titulo {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+/* Chevron à direita — gira ao abrir. */
+.restricao-area-head::after {
+  content: "";
+  flex: none;
+  width: 18px;
+  height: 18px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23364B46' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  transition: transform 0.15s ease;
+}
+.restricao-area[open] > .restricao-area-head::after {
+  transform: rotate(180deg);
+}
+.restricao-area-body {
+  padding: 0 12px 12px;
+  border-top: 1px solid var(--cmg-neutral-200, #d1d4d3);
+}
+.restricao-area-frase {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.restricao-area-docs {
+  margin: 10px 0 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  white-space: pre-line; /* respeita "\n" e os "•" do texto de documentos */
 }
 
 /* ============================================================
@@ -1128,6 +1211,65 @@ html {
   .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
     :has([type="checkbox"])
   ):not(:has([type="radio"])):has(input, select)
+  .field-hint {
+  position: absolute;
+  left: 0;
+  bottom: -20px;
+  margin: 0;
+}
+/* Campo somente-leitura (.readonly-val) no MESMO visual do Padrão B: como
+   não há <input>/<select>, a heurística :has(input,select) não o alcança —
+   aqui replicamos a caixa flutuante para um valor fixo (ex.: "Nº Predial"
+   herdado, "Demanda futura"). O rótulo fica sempre no topo (valor sempre
+   "preenchido"); o .readonly-val vira o corpo transparente da caixa, com o
+   mesmo padding-topo que os inputs para não colidir com o rótulo. Bloco
+   auto-contido — não depende dos seletores :has(input,select) acima. */
+:is(.cemig-form, .cemig-lote) .field:not(.field--plain):has(> .readonly-val) {
+  box-sizing: border-box;
+  display: block;
+  position: relative;
+  min-height: 56px;
+  padding: 0;
+  background: var(--cmg-surface-disabled);
+  border: 1px solid var(--cmg-neutral-400);
+  border-radius: 4px;
+}
+:is(.cemig-form, .cemig-lote)
+  .field:not(.field--plain):has(> .readonly-val)
+  > label {
+  position: absolute;
+  left: var(--cmg-space-4);
+  right: var(--cmg-space-4);
+  top: 7px;
+  margin: 0;
+  pointer-events: none;
+  font-family: var(--cmg-font-family);
+  font-size: 12px;
+  line-height: 20px;
+  font-weight: 400;
+  letter-spacing: 0.2px;
+  color: var(--cmg-neutral-600);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:is(.cemig-form, .cemig-lote)
+  .field:not(.field--plain):has(> .readonly-val)
+  > .readonly-val {
+  min-height: 54px;
+  padding: 22px var(--cmg-space-4) 4px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: 0.2px;
+  color: var(--cmg-neutral-600);
+  align-items: flex-start;
+}
+/* hint do somente-leitura sai da caixa, como nos campos flutuantes. */
+:is(.cemig-form, .cemig-lote)
+  .field:not(.field--plain):has(> .readonly-val)
   .field-hint {
   position: absolute;
   left: 0;
