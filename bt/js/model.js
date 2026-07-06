@@ -38,7 +38,7 @@ const ORIENTACOES = {
     ],
   },
   callout:
-    "Ao longo do preenchimento, avisos aparecem automaticamente conforme os campos informados (carga acima de 75 kW, área de restrição ambiental, vistoria/ligação, entre outros). Ao final, revise os dados na etapa Prévia & PDF, exporte o formulário e anexe-o ao seu pedido no Cemig Atende.",
+    "Ao final, revise os dados na etapa Prévia & PDF, exporte o formulário e anexe-o ao seu pedido no Cemig Atende.",
 };
 
 // ===== Solicitação -> Escopos dependentes =====

@@ -379,7 +379,9 @@ function ViewDadosUC({ ctx }) {
                       onChange: (e) =>
                         setTrafo(i, { potencia: e.target.value }),
                     },
-                    /* @__PURE__ */ React.createElement("option", { value: "" }),
+                    /* @__PURE__ */ React.createElement("option", {
+                      value: "",
+                    }),
                     potTrafos.map((p) =>
                       /* @__PURE__ */ React.createElement(
                         "option",
@@ -683,7 +685,6 @@ function ViewDadosUC({ ctx }) {
             Field,
             {
               label: "Demanda contratada de consumo (kW)",
-              hint: "Em Baixa Tensão não há contratação de demanda — campo opcional.",
             },
             /* @__PURE__ */ React.createElement(Inp, {
               value: d.demandaConsumo,
