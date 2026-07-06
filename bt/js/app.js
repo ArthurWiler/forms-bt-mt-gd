@@ -593,6 +593,8 @@ function App() {
         return;
       }
       const dd = await r.json();
+      // Preenche apenas identidade do titular. O endereço da obra NÃO é
+      // auto-preenchido pelo CNPJ — o CEP (buscarCEP) cuida disso.
       setProp((p) => ({
         ...p,
         nome: dd.razao_social || dd.nome_fantasia || p.nome,
@@ -601,16 +603,6 @@ function App() {
           dd.ddd_telefone_1 && !p.fixo
             ? mascararTelefone(dd.ddd_telefone_1)
             : p.fixo,
-      }));
-      setObra((o) => ({
-        ...o,
-        cep: dd.cep ? mascararCEP(dd.cep) : o.cep,
-        endereco: dd.logradouro || o.endereco,
-        num: dd.numero || o.num,
-        compl: dd.complemento || o.compl,
-        bairro: dd.bairro || o.bairro,
-        cidade: dd.municipio || o.cidade,
-        estado: dd.uf || o.estado,
       }));
       setCnpjStatus("ok");
     } catch (e) {

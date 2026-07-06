@@ -124,8 +124,37 @@ function nomeFeicaoRestricao(props) {
   );
   return k ? String(props[k]).trim() : null;
 }
+// Busca a GEOMETRIA COMPLETA de uma feição pelo seu ID (WFS featureID).
+// A consulta principal usa uma bbox minúscula (~80 m) só para o teste
+// ponto-em-polígono, o que RECORTA polígonos grandes. Para desenhar o
+// contorno inteiro da reserva no mapa, refazemos o GetFeature filtrando
+// pelo id da feição (sem bbox). Retorna a Feature GeoJSON completa ou null.
+async function geometriaCompletaFeicao(typeName, featureId) {
+  if (!featureId) return null;
+  try {
+    const q = new URLSearchParams({
+      service: "WFS",
+      version: SISEMA_VERSION,
+      request: "GetFeature",
+      typeName,
+      outputFormat: "application/json",
+      srsName: "EPSG:4326",
+      maxFeatures: "1",
+      featureID: featureId
+    });
+    const resp = await fetch(`${SISEMA_WFS}?${q.toString()}`);
+    if (!resp.ok) return null;
+    const gj = await resp.json();
+    const f = gj && gj.features && gj.features[0];
+    return f && f.geometry ? f : null;
+  } catch (e) {
+    return null;
+  }
+}
 // Consulta todas as camadas do Sisema e retorna, por camada,
-// { ...cam, dentro:Boolean, nomes:[...] } ou { ...cam, erro:"..." }.
+// { ...cam, dentro:Boolean, nomes:[...], geometrias:[Feature,...] } ou
+// { ...cam, erro:"..." }. `geometrias` traz o contorno COMPLETO de cada
+// reserva intersectada (busca ampla por id, com fallback p/ a recortada).
 async function consultarRestricoesObra(lat, lng) {
   if (!window.turf) throw new Error("Turf.js não carregado.");
   if (typeof SISEMA_CAMADAS === "undefined")
@@ -162,16 +191,68 @@ async function consultarRestricoesObra(lat, lng) {
           (f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon") &&
           window.turf.booleanPointInPolygon(ponto, f)
       );
+      // Para cada reserva intersectada, tenta o contorno COMPLETO (por id);
+      // se a busca ampla falhar, usa a própria feição (recortada pela bbox).
+      const geometrias = [];
+      for (const f of dentro) {
+        const completa = await geometriaCompletaFeicao(cam.typeName, f.id);
+        geometrias.push(completa || f);
+      }
       out.push({
         ...cam,
         dentro: dentro.length > 0,
-        nomes: dentro.map((f) => nomeFeicaoRestricao(f.properties)).filter(Boolean)
+        nomes: dentro.map((f) => nomeFeicaoRestricao(f.properties)).filter(Boolean),
+        geometrias
       });
     } catch (e) {
       out.push({ ...cam, erro: "Falha de rede/CORS" });
     }
   }
   return out;
+}
+// Desenha, num mapa Leaflet, o contorno das reservas intersectadas e devolve
+// a camada criada (L.geoJSON) — ou null se não houver geometria. Uso idêntico
+// em BT (bt/js/map.js) e MT (mt/js/app.js) p/ manter o mesmo estilo/UX. O
+// chamador é responsável por remover a camada anterior antes de chamar.
+// `res` é o retorno de consultarRestricoesObra; `L` é window.L.
+function desenharRestricoesNoMapa(L, map, res) {
+  if (!L || !map || !res) return null;
+  const feicoes = [];
+  for (const r of res) {
+    if (r && r.dentro && Array.isArray(r.geometrias)) {
+      for (const f of r.geometrias) {
+        if (f && f.geometry) {
+          const nome = (r.nomes && r.nomes[0]) || r.rotulo;
+          feicoes.push({ ...f, properties: { ...(f.properties || {}), _rotulo: r.rotulo, _nome: nome } });
+        }
+      }
+    }
+  }
+  if (!feicoes.length) return null;
+  const layer = L.geoJSON(
+    { type: "FeatureCollection", features: feicoes },
+    {
+      style: {
+        color: "#C8303F", // erro/500 — borda do contorno de restrição
+        weight: 2,
+        opacity: 0.9,
+        fillColor: "#C8303F",
+        fillOpacity: 0.1
+      },
+      onEachFeature: (feat, lyr) => {
+        const p = (feat && feat.properties) || {};
+        const txt = p._nome || p._rotulo;
+        if (txt) lyr.bindPopup(String(txt));
+      }
+    }
+  ).addTo(map);
+  try {
+    const b = layer.getBounds();
+    if (b && b.isValid()) map.fitBounds(b, { padding: [24, 24], maxZoom: 16 });
+  } catch (e) {
+    /* getBounds pode falhar em geometrias degeneradas — ignora */
+  }
+  return layer;
 }
 // Resume a lista de camadas no formato consumido pela UI (idêntico ao BT):
 // restricaoAmbiental "Sim"/"Não" (ou "" se todas as camadas falharam) e
@@ -180,9 +261,11 @@ function resumirRestricoes(res) {
   const lista = res || [];
   const dentros = lista.filter((r) => r.dentro);
   const errosTodos = lista.length > 0 && lista.every((r) => r.erro);
+  // Uma reserva/camada por linha ("\n") para leitura mais clara. Os displays
+  // (BT/MT) usam white-space: pre-line e o PDF respeita "\n" via splitTextToSize.
   const restricoesTexto = dentros
     .map((r) => r.rotulo + (r.nomes && r.nomes.length ? " (" + r.nomes.join(", ") + ")" : ""))
-    .join("; ");
+    .join("\n");
   return {
     errosTodos,
     algumaDentro: dentros.length > 0,

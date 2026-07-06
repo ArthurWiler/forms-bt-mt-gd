@@ -648,16 +648,8 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
   color: #8a6d1a;
 }
 
-/* Destaque do resultado de restrição ambiental (usa o padrão de alerts) */
-.restricao-destaque {
-  font-size: 14px;
-  padding: 12px 14px;
-  line-height: 1.45;
-}
-.restricao-destaque strong {
-  display: block;
-  font-size: 14.5px;
-}
+/* .restricao-destaque foi movida para shared.css (padrão único do banner
+   .cmg-aviso, sem duplicação entre os formulários). */
 /* ===== Motores — tabela de preenchimento ===== */
 .motores-box { margin-top: 14px; }
 .motores-head {

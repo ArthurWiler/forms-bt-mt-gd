@@ -304,7 +304,10 @@ function TabDadosUnidade({ ctx }) {
       { className: "grid grid-2 divider" },
       /* @__PURE__ */ React.createElement(
         Field,
-        { label: "Distância do padrão até a rede Cemig inferior a 30m?", req: true },
+        {
+          label: "Distância do padrão até a rede Cemig inferior a 30m?",
+          req: true,
+        },
         /* @__PURE__ */ React.createElement(Toggle, {
           value: obra.distMenor30,
           onChange: (v) => setObra({ ...obra, distMenor30: v }),
@@ -369,7 +372,10 @@ function TabDadosUnidade({ ctx }) {
     obra.prontoLigar === "Não" &&
       /* @__PURE__ */ React.createElement(
         "div",
-        { className: "cmg-aviso cmg-aviso--warn no-print", style: { marginTop: 14 } },
+        {
+          className: "cmg-aviso cmg-aviso--warn no-print",
+          style: { marginTop: 14 },
+        },
         /* @__PURE__ */ React.createElement("div", {
           className: "cmg-aviso-icon",
           "aria-hidden": "true",
@@ -403,7 +409,10 @@ function TabDadosUnidade({ ctx }) {
       !coordPreenchida &&
       /* @__PURE__ */ React.createElement(
         "div",
-        { className: "cmg-aviso cmg-aviso--warn no-print", style: { marginTop: 8 } },
+        {
+          className: "cmg-aviso cmg-aviso--warn no-print",
+          style: { marginTop: 8 },
+        },
         /* @__PURE__ */ React.createElement("div", {
           className: "cmg-aviso-icon",
           "aria-hidden": "true",
@@ -444,7 +453,10 @@ function TabDadosUnidade({ ctx }) {
       obra.restricaoAmbiental === "Sim" &&
         /* @__PURE__ */ React.createElement(
           "div",
-          { className: "cmg-aviso cmg-aviso--warn restricao-destaque", style: { marginTop: 8 } },
+          {
+            className: "cmg-aviso cmg-aviso--warn restricao-destaque",
+            style: { marginTop: 8 },
+          },
           /* @__PURE__ */ React.createElement("div", {
             className: "cmg-aviso-icon",
             "aria-hidden": "true",
@@ -455,12 +467,12 @@ function TabDadosUnidade({ ctx }) {
             /* @__PURE__ */ React.createElement(
               "strong",
               null,
-              "SIM — em área de restrição ambiental.",
+              "SIM - em área de restrição ambiental.",
             ),
             obra.restricoesTexto &&
               /* @__PURE__ */ React.createElement(
                 "span",
-                { style: { display: "block", marginTop: 6 } },
+                { style: { display: "block", whiteSpace: "pre-line" } },
                 obra.restricoesTexto,
               ),
           ),
@@ -468,7 +480,10 @@ function TabDadosUnidade({ ctx }) {
       obra.restricaoAmbiental === "Não" &&
         /* @__PURE__ */ React.createElement(
           "div",
-          { className: "cmg-aviso restricao-destaque", style: { marginTop: 8 } },
+          {
+            className: "cmg-aviso restricao-destaque",
+            style: { marginTop: 8 },
+          },
           /* @__PURE__ */ React.createElement("div", {
             className: "cmg-aviso-icon",
             "aria-hidden": "true",

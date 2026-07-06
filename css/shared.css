@@ -467,6 +467,24 @@ html {
   background-image: url("../imgs/error.svg");
 }
 
+/* Destaque do resultado de "restrição ambiental" — refina APENAS o texto
+   dentro do banner `.cmg-aviso` (BT/MT/GD usam o mesmo padrão). A tipografia
+   e o padding vêm de `.cmg-aviso-texto`; aqui só destacamos o título em
+   bloco. Global (unscoped) como o próprio `.cmg-aviso`. Antes duplicado,
+   idêntico, em formulario-bt/minigd/microgd.css. */
+.restricao-destaque strong,
+.cmg-aviso-texto .restricao-destaque strong {
+  display: block;
+  font-size: 14.5px;
+}
+/* A lista de reservas vem com "\n" entre uma e outra (geo.js). pre-line
+   preserva as quebras sem exigir <br> no markup — vale p/ o texto injetado
+   via innerHTML no MT e p/ o nó de texto do BT. */
+.restricao-destaque,
+.cmg-aviso-texto .restricao-destaque {
+  white-space: pre-line;
+}
+
 /* ============================================================
    Prévia do formulário (Figma) — etapa "Prévia & PDF" de todos os
    formulários. Seções tituladas em verde, campos rótulo+valor em

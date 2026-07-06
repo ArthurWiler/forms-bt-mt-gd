@@ -52,15 +52,12 @@ function criarConsultasExternas({
       }
       const j = await r.json();
       setCnpjStatus("");
+      // Preenche apenas identidade (razão social/e-mail/telefone). O endereço
+      // NÃO é auto-preenchido pelo CNPJ — use o CEP (buscarCep) para isso.
       set({
         titular: j.razao_social || d.titular,
         email: j.email || d.email,
         telefone: j.ddd_telefone_1 ? mascararFixo(j.ddd_telefone_1) : d.telefone,
-        logradouro: j.logradouro || d.logradouro,
-        numero: j.numero || d.numero,
-        bairro: j.bairro || d.bairro,
-        municipio: j.municipio || d.municipio,
-        cep: j.cep ? mascararCEP(String(j.cep)) : d.cep,
       });
     } catch (e) {
       setCnpjStatus("Falha ao buscar CNPJ.");

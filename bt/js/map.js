@@ -73,6 +73,7 @@ function LocalizacaoObra({ obra, setObra }) {
   const divRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
+  const restricaoLayerRef = useRef(null);
   const lastRef = useRef("");
   const [status, setStatus] = useState("");
   const [coords, setCoords] = useState(null);
@@ -95,10 +96,23 @@ function LocalizacaoObra({ obra, setObra }) {
   useEffect(() => {
     if (!window.L || !divRef.current || mapRef.current) return;
     const map = window.L.map(divRef.current).setView([-19.9167, -43.9345], 12);
-    window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: "© OpenStreetMap"
-    }).addTo(map);
+    // Camadas base alternáveis: Ruas (OSM, padrão) e Satélite (Esri World
+    // Imagery — mesma fonte usada pelo Sisema). Esri não usa subdomínio {s}
+    // e a ordem dos eixos é {z}/{y}/{x}.
+    const ruas = window.L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      { maxZoom: 19, attribution: "© OpenStreetMap" }
+    );
+    const satelite = window.L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      {
+        maxZoom: 19,
+        attribution:
+          "Tiles © Esri — Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community"
+      }
+    );
+    satelite.addTo(map);
+    window.L.control.layers({ Satélite: satelite, Ruas: ruas }).addTo(map);
     map.on("click", (e) => {
       aplicarCoord(e.latlng.lat, e.latlng.lng);
     });
@@ -129,19 +143,32 @@ function LocalizacaoObra({ obra, setObra }) {
       const errosTodos = res.length > 0 && res.every((r) => r.erro);
       if (errosTodos) {
         setObra((p) => ({ ...p, restricaoAmbiental: "", restricoesTexto: "" }));
+        if (map && restricaoLayerRef.current) {
+          map.removeLayer(restricaoLayerRef.current);
+          restricaoLayerRef.current = null;
+        }
         setStatus(
           "Não foi possível consultar a restrição ambiental (verifique conexão/camadas)."
         );
         return;
       }
+      // Uma reserva por linha ("\n"); o display usa white-space: pre-line.
       const texto = dentros.map(
         (r) => r.rotulo + (r.nomes.length ? " (" + r.nomes.join(", ") + ")" : "")
-      ).join("; ");
+      ).join("\n");
       setObra((p) => ({
         ...p,
         restricaoAmbiental: dentros.length ? "Sim" : "Não",
         restricoesTexto: texto
       }));
+      // Desenha o contorno das reservas no mapa (limpa o anterior primeiro).
+      if (map) {
+        if (restricaoLayerRef.current) {
+          map.removeLayer(restricaoLayerRef.current);
+          restricaoLayerRef.current = null;
+        }
+        restricaoLayerRef.current = desenharRestricoesNoMapa(window.L, map, res);
+      }
       setStatus("");
     } catch (e) {
       setStatus(e && e.message || "Falha na consulta de restrições.");

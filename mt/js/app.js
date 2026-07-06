@@ -112,6 +112,7 @@ let cubiculos = []; // Anexo I — cubículos adicionais da subestação compart
 let ramalSelecionado = null;
 let mapaObra = null;     // instância Leaflet (lazy, criada ao entrar na Etapa 3)
 let marcadorObra = null; // pino arrastável sincronizado com state.latitude/longitude
+let restricaoLayer = null; // contorno das reservas ambientais desenhado no mapa
 let _mapaObraDebounce = null;
 
 /* ATIVIDADES e DISPOSITIVOS agora em dados.js */
@@ -533,6 +534,10 @@ function renderRestricaoAmbiental(){
 // Validação ambiental automática (IDE-Sisema), idêntica ao BT: usa a consulta
 // compartilhada de shared/js/geo.js. Requer turf.js + geo.js; sem eles, o
 // bloco mantém a orientação inicial e nada é preenchido automaticamente.
+function _limparRestricaoLayer(){
+  if(mapaObra && restricaoLayer){ mapaObra.removeLayer(restricaoLayer); }
+  restricaoLayer=null;
+}
 async function consultarRestricaoAmbientalMT(lat,lon){
   if(!window.turf || typeof consultarRestricoesObra!=='function') return;
   if(isNaN(lat)||isNaN(lon)) return;
@@ -547,12 +552,18 @@ async function consultarRestricaoAmbientalMT(lat,lon){
     if(resumo.errosTodos){
       state.restricaoAmbiental=''; state.restricoesTexto='';
       _mtLastRestrKey='';
+      _limparRestricaoLayer();
       if(box) box.innerHTML=alertHTML('warn','Não foi possível consultar a restrição ambiental (verifique conexão/camadas).');
       return;
     }
     state.restricaoAmbiental=resumo.restricaoAmbiental;
     state.restricoesTexto=resumo.restricoesTexto;
     renderRestricaoAmbiental();
+    // Desenha o contorno das reservas no mapa (limpa o anterior primeiro).
+    if(mapaObra && typeof desenharRestricoesNoMapa==='function'){
+      _limparRestricaoLayer();
+      restricaoLayer=desenharRestricoesNoMapa(window.L,mapaObra,res);
+    }
   }catch(_){
     _mtLastRestrKey='';
     if(box) box.innerHTML=alertHTML('warn','Falha na consulta de restrição ambiental.');
@@ -572,9 +583,18 @@ function initMapaObra(){
   const div=$('#map');
   if(!div || !window.L || mapaObra) return;
   mapaObra=window.L.map(div).setView([-19.9167,-43.9345],12);
-  window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  // Camadas base alternáveis: Ruas (OSM, padrão) e Satélite (Esri World
+  // Imagery — mesma fonte usada pelo Sisema). Esri não usa subdomínio {s}
+  // e a ordem dos eixos é {z}/{y}/{x}.
+  const ruas=window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
     maxZoom:19,attribution:'© OpenStreetMap'
-  }).addTo(mapaObra);
+  });
+  const satelite=window.L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
+    maxZoom:19,
+    attribution:'Tiles © Esri — Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+  });
+  satelite.addTo(mapaObra);
+  window.L.control.layers({Satélite:satelite,Ruas:ruas}).addTo(mapaObra);
   mapaObra.on('click',(e)=>{ _aplicarCoordDoMapa(e.latlng.lat,e.latlng.lng); });
   setTimeout(()=>mapaObra.invalidateSize(),200);
   // Caso já existam coordenadas preenchidas (ex.: voltando de outra etapa)
@@ -1484,7 +1504,7 @@ function renderPreview(){
   if(state.localizacao==='Urbana')uc+=pvCampo('Endereço',[state.urb_endereco,state.urb_num,state.urb_bairro,state.urb_compl].filter(Boolean).join(', '),{full:true,step:3});
   if(state.localizacao==='Rural')uc+=pvCampo('Distrito / Propriedade',[state.rur_distrito,state.rur_propriedade].filter(Boolean).join(' / '),{full:true,step:3});
   uc+=pvCampo('Área de restrição ambiental?',state.restricaoAmbiental||'Não consultada',{step:3});
-  if(state.restricaoAmbiental==='Sim'&&state.restricoesTexto)uc+=pvCampo('Restrições identificadas',state.restricoesTexto,{full:true,step:3});
+  if(state.restricaoAmbiental==='Sim'&&state.restricoesTexto)uc+=pvCampo('Restrições identificadas',`<span class="restricao-destaque">${state.restricoesTexto}</span>`,{full:true,step:3});
   uc+=pvCampo('Subestação pronta?',state.subPronta,{step:3});
   secoes.push(pvSecao('Unidade Consumidora',uc));
 
