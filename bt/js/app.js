@@ -104,6 +104,8 @@ function App() {
     prontoLigar: "Não",
     restricaoAmbiental: "",
     // autopreenchido após a consulta (Sim/Não)
+    restricaoAceite: false,
+    // aceite obrigatório do aviso de restrição (bloqueia o PDF)
     restricoesTexto: "",
     // descrição das restrições encontradas
     endereco: "",
@@ -791,6 +793,8 @@ function App() {
       faltando.push("Pendências do atendimento híbrido");
     if (validacaoDisjuntores && validacaoDisjuntores.ok === false)
       faltando.push("Combinação de disjuntores inválida");
+    if (obra.restricaoAmbiental === "Sim" && !obra.restricaoAceite)
+      faltando.push("Declaração de ciência da restrição ambiental");
     return { ok: faltando.length === 0, faltando };
   }, [
     prop,

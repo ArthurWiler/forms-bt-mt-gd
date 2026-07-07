@@ -467,19 +467,6 @@ html {
   background-image: url("../imgs/error.svg");
 }
 
-/* Destaque do resultado de "restrição ambiental" — refina APENAS o texto
-   dentro do banner `.cmg-aviso` (BT/MT/GD usam o mesmo padrão). A tipografia
-   e o padding vêm de `.cmg-aviso-texto`; aqui só destacamos o título em
-   bloco. Global (unscoped) como o próprio `.cmg-aviso`. Antes duplicado,
-   idêntico, em formulario-bt/minigd/microgd.css. */
-/* Só o TÍTULO do banner (strong filho direto) vira bloco — NÃO o <strong>
-   do nome dentro da frase da área (senão o "." final cai numa linha só). */
-.restricao-destaque > strong,
-.cmg-aviso.restricao-destaque > .cmg-aviso-texto > strong,
-.cmg-aviso-texto > .restricao-destaque > strong {
-  display: block;
-  font-size: 14.5px;
-}
 /* A prévia/PDF do MT ainda usa o texto plano de reservas com "\n" entre uma e
    outra (geo.js/resumirRestricoes). pre-line preserva as quebras sem <br>. */
 .previa-campo-valor .restricao-destaque {
@@ -487,89 +474,65 @@ html {
 }
 
 /* ============================================================
-   Restrição ambiental — dropdowns por ÁREA (BT e MT). Cada área de
-   preservação é um <details> dentro do banner .cmg-aviso--warn/--error,
-   com o rótulo no <summary> (+ chevron) e, no corpo, a frase de
-   localização (nome em negrito) e o texto de documentos exigidos.
-   NÃO exibe a fonte de dados (typeName) — só rótulo/nome/exigências.
-   Estrutura idêntica gerada por React (BT) e innerHTML (MT). ============ */
-/* Quando HÁ dropdowns, o texto do banner empilha em coluna (título em cima,
-   um dropdown por linha). Sem isto, o .cmg-aviso-texto (flex row) alinharia
-   título e áreas lado a lado. Só se aplica ao caso "Sim" (:has dropdowns) —
-   o caso "Não" (só o título) mantém o layout padrão do .cmg-aviso-texto.
-   Cobre BT (.restricao-destaque no wrapper) e MT (dentro do texto). */
-.cmg-aviso.restricao-destaque > .cmg-aviso-texto:has(.restricao-area),
-.cmg-aviso-texto > .restricao-destaque:has(.restricao-area) {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  width: 100%;
-}
-.restricao-area {
-  display: block;
-  width: 100%;
-  margin-top: 8px;
-  border: 1px solid var(--cmg-neutral-200, #d1d4d3);
-  border-radius: 6px;
-  background: var(--cmg-surface, #fff);
-  overflow: hidden;
-}
-.restricao-area-head {
-  list-style: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
+   Restrição ambiental — layout inline (BT e MT). O banner .cmg-aviso--warn
+   traz o título (negrito) + a frase de localização (nomes das áreas em
+   negrito) num único <span> dentro de .cmg-aviso-texto. LOGO ABAIXO do banner,
+   .restricao-docs lista os documentos exigidos MESCLADOS (introdução única +
+   bullets unidos + notas ao final) e .restricao-aceite traz o checkbox
+   obrigatório de ciência. Estrutura idêntica gerada por React (BT) e
+   innerHTML (MT). Global (unscoped) como o próprio `.cmg-aviso`. ============ */
+.restricao-docs {
+  margin-top: 12px;
   font-family: "Open Sans", var(--cmg-font-family);
-  font-weight: 600;
   font-size: 14px;
-  line-height: 20px;
+  line-height: 1.5;
   color: var(--cmg-neutral-600, #364b46);
 }
-.restricao-area-head::-webkit-details-marker {
-  display: none;
+.restricao-docs-intro {
+  margin: 0;
 }
-/* Amostra de cor — casa com o contorno da mesma área no mapa. */
-.restricao-area-cor {
-  flex: none;
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15) inset;
+.restricao-docs-lista {
+  margin: 8px 0 0;
+  padding-left: 22px;
 }
-.restricao-area-titulo {
-  flex: 1 1 auto;
-  min-width: 0;
+.restricao-docs-lista li {
+  margin-top: 8px;
 }
-/* Chevron à direita — gira ao abrir. */
-.restricao-area-head::after {
-  content: "";
+/* Marcador verde institucional (casa com o padrão visual do form BT). */
+.restricao-docs-lista li::marker {
+  color: var(--cmg-green-600, #0f6c58);
+}
+.restricao-docs-nota {
+  margin: 12px 0 0;
+}
+/* label.restricao-aceite … tem especificidade (0,2,x) para VENCER o controle
+   genérico `.cemig-form .field input { width:100%; min-height:48px; border; … }`
+   (0,2,1), que senão transforma o checkbox num campo de formulário de linha
+   inteira. Reseta explicitamente tamanho/borda/padding herdados. */
+label.restricao-aceite {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 14px;
+  font-family: "Open Sans", var(--cmg-font-family);
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: var(--cmg-fw-regular, 400);
+  color: var(--cmg-neutral-600, #364b46);
+  cursor: pointer;
+}
+label.restricao-aceite input[type="checkbox"] {
   flex: none;
   width: 18px;
   height: 18px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23364B46' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: center;
-  transition: transform 0.15s ease;
-}
-.restricao-area[open] > .restricao-area-head::after {
-  transform: rotate(180deg);
-}
-.restricao-area-body {
-  padding: 0 12px 12px;
-  border-top: 1px solid var(--cmg-neutral-200, #d1d4d3);
-}
-.restricao-area-frase {
-  margin: 10px 0 0;
-  font-size: 14px;
-  line-height: 1.45;
-}
-.restricao-area-docs {
-  margin: 10px 0 0;
-  font-size: 13.5px;
-  line-height: 1.5;
-  white-space: pre-line; /* respeita "\n" e os "•" do texto de documentos */
+  min-height: 0;
+  margin: 2px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  cursor: pointer;
+  accent-color: var(--cmg-green-600, #0f6c58);
 }
 
 /* ============================================================

@@ -145,6 +145,7 @@ function LocalizacaoObra({ obra, setObra }) {
         setObra((p) => ({
           ...p,
           restricaoAmbiental: "",
+          restricaoAceite: false,
           restricoesTexto: "",
           restricoesDetalhe: []
         }));
@@ -164,6 +165,7 @@ function LocalizacaoObra({ obra, setObra }) {
       setObra((p) => ({
         ...p,
         restricaoAmbiental: dentros.length ? "Sim" : "Não",
+        restricaoAceite: false,
         restricoesTexto: texto,
         restricoesDetalhe: detalhesRestricoes(res)
       }));

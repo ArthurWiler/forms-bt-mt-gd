@@ -2,29 +2,48 @@ const SISEMA_WFS = "https://geoserver.meioambiente.mg.gov.br/ows";
 const SISEMA_VERSION = "1.1.0";
 const SISEMA_FLIP_BBOX = false;
 // Texto de documentos/exigências exibido em cada área. VARIA POR TIPO.
+// Cada tipo expõe { bullets:[...], notas:[...] }; a introdução (DOC_INTRO) é
+// ÚNICA e compartilhada. Quando o ponto intersecta várias áreas, os textos são
+// MESCLADOS (intro 1×, bullets unidos e deduplicados, notas ao final) por
+// restricaoDocsMesclado(). Áreas do mesmo tipo (ex.: UC Estadual + Federal)
+// compartilham o mesmo objeto e, portanto, não duplicam.
 // TODO(textos): APE ainda sem texto oficial — `null` mostra só a frase de
 // localização. Os demais vieram da referência do cliente.
-const DOC_UNIDADE_CONSERVACAO =
-  "Para que o cliente obtenha a ligação de energia elétrica, é necessário apresentar:\n" +
-  "• Documentos que comprovem posse e regularidade do imóvel simultâneamente (IPTU, Registro de Imóvel, Escritura Pública, etc) ou;\n" +
-  "• Documentos que comprovem posse (Contrato de Compra e Venda, Contrato de Locação, Termo de Doação, Termo de Permissão de Uso, etc) e regularidade (Certidão de número/Habite-se/Declaração da Prefeitura, Planta de Arquitetura Aprovada) separadamente\n" +
-  "A critério do órgão ambiental responsável pela administração da Unidade de Conservação, outros documentos e informações complementares poderão ser solicitadas posteriormente.";
-const DOC_TERRA_QUILOMBOLA =
-  "Para que o cliente obtenha a ligação de energia elétrica, é necessário apresentar:\n" +
-  "• Certidão/Registro de Autodefinição emitido pela Fundação Cultural Palmares, comprovando o vínculo do(s) interessado(s) com a comunidade quilombola;\n" +
-  "• Documento do INCRA que comprove o domínio da terra em nome da comunidade, juntamente com a demarcação da área;\n" +
-  "• Mapa georreferenciado contendo a delimitação do imóvel e a identificação das áreas de preservação ambiental;\n" +
-  "• Lista de beneficiários emitida pela liderança comunitária;\n" +
-  "• Formulário de Solicitação de Atendimento Rural devidamente preenchido (um para cada beneficiário);\n" +
-  "• Documento oficial de identificação com CPF de cada beneficiário.\n" +
-  "Observação: Caso o processo de demarcação das terras ainda não tenha sido concluído, a solicitação poderá ser protocolada pelo procedimento padrão, como atendimento rural comum, sem enquadramento como comunidade quilombola.";
-const DOC_TERRA_INDIGENA =
-  "Para que o cliente obtenha a ligação de energia elétrica, é necessário apresentar:\n" +
-  "• Autorização formal da FUNAI para execução do serviço;\n" +
-  "• Documento emitido pela comunidade indígena ou liderança reconhecida, indicando os beneficiários;\n" +
-  "• Mapa ou croqui da área, com delimitação do imóvel e identificação da aldeia;\n" +
-  "• Documento oficial de identificação com CPF dos beneficiários ou representantes legais.\n" +
-  "Observação: Caso o processo de demarcação das terras ainda não tenha sido concluído, a solicitação poderá ser protocolada pelo procedimento padrão, como atendimento rural comum, sem enquadramento como comunidade indígena.";
+const DOC_INTRO =
+  "Para que o cliente obtenha ligação de energia elétrica, é necessário anexar os seguintes documentos no Cemig Atende:";
+const DOC_UNIDADE_CONSERVACAO = {
+  bullets: [
+    "Comprovação da posse e regularidade do imóvel simultaneamente (IPTU, Registro do Imóvel, Escritura Pública, etc.); ou",
+    "Comprovação de posse (Contrato de Compra e Venda, Contrato de Locação, Termo de Doação, Termo de Permissão de Uso, etc.) e regularidade (Certidão de número/Habite-se/Declaração da Prefeitura, Planta de Arquitetura Aprovada) separadamente.",
+  ],
+  notas: [
+    "Outros documentos e informações complementares poderão ser solicitadas posteriormente a critério do órgão ambiental responsável pela administração da Unidade de Conservação.",
+  ],
+};
+const DOC_TERRA_QUILOMBOLA = {
+  bullets: [
+    "Certidão/Registro de Autodefinição emitido pela Fundação Cultural Palmares, comprovando o vínculo do(s) interessado(s) com a comunidade quilombola;",
+    "Documento do INCRA que comprove o domínio da terra em nome da comunidade, juntamente com a demarcação da área;",
+    "Mapa georreferenciado contendo a delimitação do imóvel e a identificação das áreas de preservação ambiental;",
+    "Lista de beneficiários emitida pela liderança comunitária;",
+    "Formulário de Solicitação de Atendimento Rural devidamente preenchido (um para cada beneficiário);",
+    "Documento oficial de identificação com CPF de cada beneficiário.",
+  ],
+  notas: [
+    "Observação: Caso o processo de demarcação das terras ainda não tenha sido concluído, a solicitação poderá ser protocolada pelo procedimento padrão, como atendimento rural comum, sem enquadramento como comunidade quilombola.",
+  ],
+};
+const DOC_TERRA_INDIGENA = {
+  bullets: [
+    "Autorização formal da FUNAI para execução do serviço;",
+    "Documento emitido pela comunidade indígena ou liderança reconhecida, indicando os beneficiários;",
+    "Mapa ou croqui da área, com delimitação do imóvel e identificação da aldeia;",
+    "Documento oficial de identificação com CPF dos beneficiários ou representantes legais.",
+  ],
+  notas: [
+    "Observação: Caso o processo de demarcação das terras ainda não tenha sido concluído, a solicitação poderá ser protocolada pelo procedimento padrão, como atendimento rural comum, sem enquadramento como comunidade indígena.",
+  ],
+};
 
 const SISEMA_CAMADAS = [
   // { id, rotulo, typeName, tipoNome, documentos }
@@ -356,14 +375,13 @@ function resumirRestricoes(res) {
     restricoesTexto,
   };
 }
-// Detalha as áreas intersectadas para a UI de dropdowns (BT e MT). Uma entrada
-// por ÁREA (cada nome vira um dropdown):
-//   { id, rotulo, nome, fraseAntes, frase, documentos }
-//   fraseAntes— prefixo da frase até o nome ("...de abrangência de <tipo>: ")
-//               p/ a UI destacar o <nome> em negrito e fechar com ".".
-//   frase     — a frase completa em texto plano (usada em PDF/preview).
-//   documentos— texto de exigências do tipo (ou null → só a frase).
-// Quando a camada não traz um nome legível, cai para o próprio rótulo.
+// Detalha as áreas intersectadas para a UI (BT e MT). Uma entrada por ÁREA:
+//   { id, rotulo, tipoNome, nome, cor, documentos }
+//   tipoNome  — como o TIPO aparece na frase ("Unidade de Conservação").
+//   nome      — nome legível da feição, ou null quando a camada não o traz.
+//   documentos— objeto { bullets, notas } do tipo (ou null).
+// A frase de localização e o bloco de documentos são montados a partir desta
+// lista por restricaoSentencaSegmentos() e restricaoDocsMesclado().
 function detalhesRestricoes(res) {
   const dentros = (res || []).filter((r) => r.dentro);
   const out = [];
@@ -374,18 +392,12 @@ function detalhesRestricoes(res) {
     const cor = CORES_RESTRICAO[li % CORES_RESTRICAO.length];
     const nomes = r.nomes && r.nomes.length ? r.nomes : [null];
     for (const nome of nomes) {
-      const alvo = nome || r.rotulo;
-      const fraseAntes =
-        "O ponto de ligação está localizado na área de abrangência de " +
-        tipoNome +
-        ": ";
       out.push({
         id: r.id,
         rotulo: r.rotulo,
-        nome: alvo,
+        tipoNome,
+        nome: nome || null,
         cor,
-        fraseAntes,
-        frase: fraseAntes + alvo,
         documentos: r.documentos || null,
       });
     }
@@ -400,28 +412,83 @@ function _escHtml(s) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 }
-// Monta o HTML dos dropdowns por área (um <details> por área). Fonte única
-// consumida pelo MT (innerHTML); o BT replica a mesma estrutura em React.
-// `detalhe` é o retorno de detalhesRestricoes(res).
-function restricoesDropdownsHTML(detalhe) {
-  return (detalhe || [])
-    .map((a) => {
-      const docs = a.documentos
-        ? `<p class="restricao-area-docs">${_escHtml(a.documentos)}</p>`
-        : "";
-      const swatch = a.cor
-        ? `<span class="restricao-area-cor" style="background:${_escHtml(a.cor)}" aria-hidden="true"></span>`
-        : "";
-      return (
-        `<details class="restricao-area">` +
-        `<summary class="restricao-area-head">${swatch}<span class="restricao-area-titulo">${_escHtml(a.rotulo)}</span></summary>` +
-        `<div class="restricao-area-body">` +
-        `<p class="restricao-area-frase">${_escHtml(a.fraseAntes)}<strong>${_escHtml(a.nome)}</strong>.</p>` +
-        docs +
-        `</div></details>`
-      );
-    })
+// Título fixo do banner e rótulo do aceite — fonte única p/ BT e MT.
+const RESTRICAO_AVISO_TITULO = "Unidade em área de restrição ambiental";
+const RESTRICAO_ACEITE_LABEL =
+  "Declaro que li e estou de acordo com as informações acima.";
+// Segmentos da frase de localização (após o título). Cada segmento é
+// { t:texto, b:true? } p/ o consumidor destacar em negrito. Trata singular/
+// plural (1 vs N áreas) e destaca o NOME de cada área (ou o tipo, quando a
+// camada não traz nome). Consumido em React (BT) e em HTML (MT).
+function restricaoSentencaSegmentos(detalhe) {
+  const areas = detalhe || [];
+  if (!areas.length) return [];
+  const plural = areas.length > 1;
+  const segs = [
+    {
+      t:
+        "O ponto de ligação está localizado " +
+        (plural ? "nas áreas" : "na área") +
+        " de abrangência de ",
+    },
+  ];
+  areas.forEach((a, i) => {
+    if (i > 0) segs.push({ t: i === areas.length - 1 ? " e " : ", " });
+    if (a.nome) {
+      segs.push({ t: a.tipoNome + ": " });
+      segs.push({ t: a.nome, b: true });
+    } else {
+      segs.push({ t: a.tipoNome, b: true });
+    }
+  });
+  segs.push({ t: "." });
+  return segs;
+}
+// Versão em HTML da frase (título em negrito + segmentos) — usada pelo MT.
+function restricaoSentencaHTML(detalhe) {
+  const corpo = restricaoSentencaSegmentos(detalhe)
+    .map((s) => (s.b ? `<strong>${_escHtml(s.t)}</strong>` : _escHtml(s.t)))
     .join("");
+  return `<strong>${_escHtml(RESTRICAO_AVISO_TITULO)}</strong>. ${corpo}`;
+}
+// Mescla os documentos de todas as áreas: introdução ÚNICA + bullets unidos +
+// notas ao final, deduplicando por tipo (mesmo objeto `documentos`) e por texto
+// idêntico. Retorna { intro, bullets:[...], notas:[...] }.
+function restricaoDocsMesclado(detalhe) {
+  const areas = detalhe || [];
+  const bullets = [];
+  const notas = [];
+  const vistos = new Set();
+  for (const a of areas) {
+    const doc = a.documentos;
+    if (!doc || vistos.has(doc)) continue; // dedup por tipo (referência do objeto)
+    vistos.add(doc);
+    (doc.bullets || []).forEach((b) => {
+      if (!bullets.includes(b)) bullets.push(b);
+    });
+    (doc.notas || []).forEach((n) => {
+      if (!notas.includes(n)) notas.push(n);
+    });
+  }
+  return { intro: bullets.length ? DOC_INTRO : "", bullets, notas };
+}
+// Versão em HTML do bloco de documentos (intro + <ul> + notas) — usada pelo MT.
+function restricaoDocsHTML(detalhe) {
+  const d = restricaoDocsMesclado(detalhe);
+  if (!d.bullets.length && !d.notas.length) return "";
+  let html = '<div class="restricao-docs">';
+  if (d.intro)
+    html += `<p class="restricao-docs-intro">${_escHtml(d.intro)}</p>`;
+  if (d.bullets.length)
+    html +=
+      '<ul class="restricao-docs-lista">' +
+      d.bullets.map((b) => `<li>${_escHtml(b)}</li>`).join("") +
+      "</ul>";
+  html += d.notas
+    .map((n) => `<p class="restricao-docs-nota">${_escHtml(n)}</p>`)
+    .join("");
+  html += "</div>";
+  return html;
 }
 function RestricaoAmbiental({ obra }) {
   const [status, setStatus] = useState("");

@@ -527,10 +527,21 @@ function renderRestricaoAmbiental(){
   const wrap=$('#restricaoAmbientalBox');
   if(ra==='Sim'){
     if(wrap) wrap.style.display='';
-    const dropdowns=(typeof restricoesDropdownsHTML==='function')
-      ? restricoesDropdownsHTML(state.restricoesDetalhe)
-      : '';
-    box.innerHTML=alertHTML('err',`<div class="restricao-destaque"><strong>Em área de restrição ambiental.</strong>${dropdowns}</div>`);
+    const det=state.restricoesDetalhe;
+    // Banner (warn): título + frase de localização, num único <span> (o
+    // .cmg-aviso-texto é flex — sem o span os nós inline não fluem como texto).
+    const sentenca=(typeof restricaoSentencaHTML==='function')?restricaoSentencaHTML(det):'';
+    // Documentos mesclados (intro única + bullets + notas), sempre visíveis.
+    const docs=(typeof restricaoDocsHTML==='function')?restricaoDocsHTML(det):'';
+    // Aceite obrigatório — bloqueia a exportação (camposObrigatoriosFaltando).
+    const label=(typeof RESTRICAO_ACEITE_LABEL!=='undefined')?RESTRICAO_ACEITE_LABEL:'Declaro que li e estou de acordo com as informações acima.';
+    const aceite=`<label class="restricao-aceite"><input type="checkbox" id="restricaoAceite"${state.restricaoAceite?' checked':''}> <span>${label}</span></label>`;
+    box.innerHTML=alertHTML('warn',`<span>${sentenca}</span>`)+docs+aceite;
+    const chk=$('#restricaoAceite');
+    if(chk) chk.onchange=(e)=>{
+      state.restricaoAceite=e.target.checked;
+      if(typeof atualizarGateExportacao==='function') atualizarGateExportacao();
+    };
   } else {
     if(wrap) wrap.style.display='none';
     box.innerHTML='';
@@ -555,13 +566,14 @@ async function consultarRestricaoAmbientalMT(lat,lon){
     const res=await consultarRestricoesObra(lat,lon);
     const resumo=resumirRestricoes(res);
     if(resumo.errosTodos){
-      state.restricaoAmbiental=''; state.restricoesTexto=''; state.restricoesDetalhe=[];
+      state.restricaoAmbiental=''; state.restricaoAceite=false; state.restricoesTexto=''; state.restricoesDetalhe=[];
       _mtLastRestrKey='';
       _limparRestricaoLayer();
       if(box) box.innerHTML=alertHTML('warn','Não foi possível consultar a restrição ambiental (verifique conexão/camadas).');
       return;
     }
     state.restricaoAmbiental=resumo.restricaoAmbiental;
+    state.restricaoAceite=false;
     state.restricoesTexto=resumo.restricoesTexto;
     state.restricoesDetalhe=detalhesRestricoes(res);
     renderRestricaoAmbiental();
@@ -1421,6 +1433,8 @@ function camposObrigatoriosFaltando(){
     if(!ok) faltando.push('Transformadores dos cubículos da subestação compartilhada');
   }
   if(state.ramalIndice==null) faltando.push('Ramal de Entrada');
+  if(state.restricaoAmbiental==='Sim' && !state.restricaoAceite)
+    faltando.push('Declaração de ciência da restrição ambiental');
   return [...new Set(faltando)];
 }
 function atualizarGateExportacao(){

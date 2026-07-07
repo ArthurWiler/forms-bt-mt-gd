@@ -438,10 +438,13 @@ function TabDadosUnidade({ ctx }) {
           null,
           "Unidade consumidora em área de restrição ambiental?",
         ),
+        /* Banner (warn): título em negrito + frase de localização, tudo num
+           único <span> (o .cmg-aviso-texto é flex — sem o span os nós inline
+           viram itens de flex e não fluem/quebram como texto corrido). */
         /* @__PURE__ */ React.createElement(
           "div",
           {
-            className: "cmg-aviso cmg-aviso--warn restricao-destaque",
+            className: "cmg-aviso cmg-aviso--warn",
             style: { marginTop: 8 },
           },
           /* @__PURE__ */ React.createElement("div", {
@@ -449,56 +452,71 @@ function TabDadosUnidade({ ctx }) {
             "aria-hidden": "true",
           }),
           /* @__PURE__ */ React.createElement(
-            "div",
+            "p",
             { className: "cmg-aviso-texto" },
             /* @__PURE__ */ React.createElement(
-              "strong",
+              "span",
               null,
-              "Em área de restrição ambiental.",
-            ),
-            /* Um dropdown por área de preservação (frase + documentos). */
-            (obra.restricoesDetalhe || []).map((a, i) =>
               /* @__PURE__ */ React.createElement(
-                "details",
-                { key: a.id + "-" + i, className: "restricao-area" },
-                /* @__PURE__ */ React.createElement(
-                  "summary",
-                  { className: "restricao-area-head" },
-                  a.cor &&
-                    /* @__PURE__ */ React.createElement("span", {
-                      className: "restricao-area-cor",
-                      style: { background: a.cor },
-                      "aria-hidden": "true",
-                    }),
-                  /* @__PURE__ */ React.createElement(
-                    "span",
-                    { className: "restricao-area-titulo" },
-                    a.rotulo,
-                  ),
-                ),
-                /* @__PURE__ */ React.createElement(
-                  "div",
-                  { className: "restricao-area-body" },
-                  /* @__PURE__ */ React.createElement(
-                    "p",
-                    { className: "restricao-area-frase" },
-                    a.fraseAntes,
-                    /* @__PURE__ */ React.createElement("strong", null, a.nome),
-                    ".",
-                  ),
-                  a.documentos &&
-                    /* @__PURE__ */ React.createElement(
-                      "p",
-                      {
-                        className: "restricao-area-docs",
-                        style: { whiteSpace: "pre-line" },
-                      },
-                      a.documentos,
+                "strong",
+                null,
+                RESTRICAO_AVISO_TITULO,
+              ),
+              ". ",
+              restricaoSentencaSegmentos(obra.restricoesDetalhe).map((s, i) =>
+                s.b
+                  ? /* @__PURE__ */ React.createElement("strong", { key: i }, s.t)
+                  : /* @__PURE__ */ React.createElement(
+                      React.Fragment,
+                      { key: i },
+                      s.t,
                     ),
-                ),
               ),
             ),
           ),
+        ),
+        /* Documentos exigidos, mesclados de todas as áreas (intro única +
+           bullets unidos + notas), sempre visíveis abaixo do banner. */
+        (() => {
+          const d = restricaoDocsMesclado(obra.restricoesDetalhe);
+          if (!d.bullets.length && !d.notas.length) return null;
+          return /* @__PURE__ */ React.createElement(
+            "div",
+            { className: "restricao-docs" },
+            d.intro &&
+              /* @__PURE__ */ React.createElement(
+                "p",
+                { className: "restricao-docs-intro" },
+                d.intro,
+              ),
+            d.bullets.length > 0 &&
+              /* @__PURE__ */ React.createElement(
+                "ul",
+                { className: "restricao-docs-lista" },
+                d.bullets.map((b, i) =>
+                  /* @__PURE__ */ React.createElement("li", { key: i }, b),
+                ),
+              ),
+            d.notas.map((n, i) =>
+              /* @__PURE__ */ React.createElement(
+                "p",
+                { key: "n" + i, className: "restricao-docs-nota" },
+                n,
+              ),
+            ),
+          );
+        })(),
+        /* Aceite obrigatório — bloqueia a exportação do PDF (validacaoObrigatorios). */
+        /* @__PURE__ */ React.createElement(
+          "label",
+          { className: "restricao-aceite" },
+          /* @__PURE__ */ React.createElement("input", {
+            type: "checkbox",
+            checked: !!obra.restricaoAceite,
+            onChange: (e) =>
+              setObra({ ...obra, restricaoAceite: e.target.checked }),
+          }),
+          /* @__PURE__ */ React.createElement("span", null, RESTRICAO_ACEITE_LABEL),
         ),
       ),
   );
