@@ -154,10 +154,17 @@
                 </p>
               </li>
             </ul>
+            <label class="aceite-orient">
+              <input type="checkbox" id="aceiteOrient" />
+              Declaro que li e estou de acordo com as informações acima.
+            </label>
           </div>
           <div class="nav-bottom no-print">
-            <span class="nav-step-info">Etapa 1 de 7</span>
-            <button class="btn btn-primary" onclick="goTo(1)">
+            <button
+              class="btn btn-primary"
+              data-gate="aceiteOrientacoesOk"
+              onclick="goTo(1)"
+            >
               Iniciar preenchimento →
             </button>
           </div>
@@ -201,7 +208,6 @@
           </div>
           <div class="nav-bottom no-print">
             <button class="btn btn-ghost" onclick="goTo(0)">← Voltar</button>
-            <span class="nav-step-info">Etapa 2 de 7</span>
             <button class="btn btn-primary" onclick="goTo(2)">
               Avançar →
             </button>
@@ -292,7 +298,6 @@
           </div>
           <div class="nav-bottom no-print">
             <button class="btn btn-ghost" onclick="goTo(1)">← Voltar</button>
-            <span class="nav-step-info">Etapa 3 de 7</span>
             <button class="btn btn-primary" onclick="goTo(3)">
               Avançar →
             </button>
@@ -362,7 +367,6 @@
           </div>
           <div class="nav-bottom no-print">
             <button class="btn btn-ghost" onclick="goTo(2)">← Voltar</button>
-            <span class="nav-step-info">Etapa 4 de 7</span>
             <button class="btn btn-primary" onclick="goTo(4)">
               Avançar →
             </button>
@@ -408,7 +412,6 @@
           </div>
           <div class="nav-bottom no-print">
             <button class="btn btn-ghost" onclick="goTo(3)">← Voltar</button>
-            <span class="nav-step-info">Etapa 5 de 7</span>
             <button class="btn btn-primary" onclick="goTo(5)">
               Avançar →
             </button>
@@ -430,7 +433,6 @@
           </div>
           <div class="nav-bottom no-print">
             <button class="btn btn-ghost" onclick="goTo(4)">← Voltar</button>
-            <span class="nav-step-info">Etapa 6 de 7</span>
             <button class="btn btn-primary" onclick="goTo(6)">
               Avançar →
             </button>
@@ -460,7 +462,6 @@
           </div>
           <div class="nav-bottom no-print">
             <button class="btn btn-ghost" onclick="goTo(5)">← Voltar</button>
-            <span class="nav-step-info">Etapa 7 de 7</span>
             <button class="btn btn-primary" onclick="exportarPDF()">
               <svg
                 viewBox="0 0 24 24"

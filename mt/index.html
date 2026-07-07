@@ -50,11 +50,11 @@
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">2</span>
-          <span class="vstep-label">Classificação</span>
+          <span class="vstep-label">Proprietário</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">3</span>
-          <span class="vstep-label">Proprietário</span>
+          <span class="vstep-label">Correspondência</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">4</span>
@@ -77,8 +77,8 @@
           <p>
             Preenchimento digital do formulário para solicitações de Conexão
             Nova e Alteração de Demanda de unidades consumidoras atendidas em
-            Média Tensão (MT), conforme as normas CEMIG ND-5.3 e a REN ANEEL
-            nº 1.000/2021.
+            Média Tensão (MT), conforme as normas CEMIG ND-5.3 e a REN ANEEL nº
+            1.000/2021.
           </p>
         </div>
 
@@ -134,69 +134,147 @@
                  etapa de Dados Técnicos; GRID ZERO / gerador momentâneo nos
                  campos de geração; vistoria/ligação (120 dias) no campo
                  "subestação pronta para ligar". Aqui ficam só as gerais. -->
-            <p class="field-hint" style="margin-top: 16px">
-              Campos marcados com <b>(opcional)</b> não são obrigatórios.
-            </p>
+            <label class="aceite-orient">
+              <input type="checkbox" id="aceiteOrient" />
+              Declaro que li e estou de acordo com as informações acima.
+            </label>
           </div>
           <div class="nav-bottom no-print">
-            <span class="nav-step-info">Etapa 1 de 6</span>
-            <button class="btn btn-primary" onclick="goTo(1)">
+            <button
+              class="btn btn-primary"
+              data-gate="aceiteOrientacoesOk"
+              onclick="goTo(1)"
+            >
               Iniciar preenchimento →
             </button>
           </div>
         </section>
 
-        <!-- ============ PÁGINA 1 — CLASSIFICAÇÃO ============ -->
+        <!-- ============ PÁGINA 1 — PROPRIETÁRIO ============ -->
         <section class="page" id="page-1">
           <div class="card">
             <div class="section-eyebrow">Etapa 2</div>
-            <h3 class="card-title">Classificação do Atendimento</h3>
+            <h3 class="card-title">Dados do Proprietário</h3>
+            <!-- Ordem (2 colunas): Nome→E-mail, Tel. cliente→Tel. solicitante,
+                 CPF/CNPJ→Filiação, RG→Nascimento, Laudo→NIS. Os campos de
+                 Pessoa Física (#pfBoxMT) só aparecem após CPF válido. Os
+                 telefones do RT (Responsável Técnico) ficam aqui, junto aos
+                 demais telefones (regra global: telefones em Dados do
+                 Proprietário). -->
             <div class="grid grid-2">
-              <div class="field field--plain">
-                <label>Opção de Atendimento <span class="req">*</span></label>
-                <select id="f_opcaoAtend" data-k="opcaoAtend">
-                  <option value=""></option>
-                  <option>Cativo</option>
-                  <option>Livre</option>
-                </select>
-              </div>
               <div class="field">
-                <label>Finalidade <span class="req">*</span></label>
-                <select
-                  id="f_finalidade"
-                  data-k="finalidade"
-                  onchange="onFinalidade()"
-                >
-                  <option value=""></option>
-                  <option>Conexão Nova</option>
-                  <option>Aumento de Demanda</option>
-                  <option>Redução de Demanda</option>
-                  <option>Adequação de Subestação</option>
-                  <option>Aderir a Tarifa Monômia</option>
-                  <option>Religação de Subestação</option>
-                  <option>Desconexão para encerramento contratual</option>
-                  <option>Alteração da tensão de fornecimento BT→MT</option>
-                  <option>Migração Mercado livre sem Aumento de Carga</option>
-                  <option>Migração Mercado livre com Aumento de Carga</option>
-                  <option>Migração Mercado livre com Redução de Carga</option>
-                </select>
-              </div>
-            </div>
-            <div class="conditional" id="instalBox" style="display: none">
-              <div class="conditional-tag">Campo dependente da finalidade</div>
-              <div class="field">
-                <label id="instalLabel"
-                  >Informe o número da instalação
+                <label
+                  >Nome Completo ou Razão Social
                   <span class="req">*</span></label
                 >
                 <input
                   type="text"
-                  data-k="numInstalacao"
-                  placeholder="Nº da instalação"
+                  data-k="nome"
+                  placeholder="Nome completo ou razão social"
                 />
               </div>
-            </div>
-            <div class="grid grid-2" style="margin-top: 16px">
+              <div class="field">
+                <label>E-mail do cliente</label>
+                <input
+                  type="email"
+                  data-k="emailCliente"
+                  placeholder="email@exemplo.com"
+                  onblur="onEmail('emailCliente')"
+                />
+                <span id="status-emailCliente" class="field-hint"></span>
+              </div>
+              <div class="field">
+                <label>Telefone do cliente <span class="req">*</span></label>
+                <input
+                  type="tel"
+                  data-k="telCliente"
+                  placeholder="(31) 90000-0000"
+                  onblur="onTel('telCliente')"
+                />
+                <span id="status-telCliente" class="field-hint"></span>
+              </div>
+              <div class="field">
+                <label>Telefone do solicitante</label>
+                <input
+                  type="tel"
+                  data-k="telSolicitante"
+                  placeholder="(31) 90000-0000"
+                  onblur="onTel('telSolicitante')"
+                />
+                <span id="status-telSolicitante" class="field-hint"></span>
+              </div>
+              <div class="field">
+                <label>CPF / CNPJ <span class="req">*</span></label>
+                <input
+                  type="text"
+                  id="f_cpfcnpj"
+                  data-k="cpfCnpj"
+                  placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                  onblur="onCpfCnpj()"
+                />
+                <span class="field-hint" id="cpfMsg"></span>
+              </div>
+              <!-- Campos de Pessoa Física — só aparecem com CPF válido (via
+                   onCpfCnpj → mostrarCamposPF). Filiação fecha o par do CPF. -->
+              <div class="field pf-campo" style="display: none">
+                <label>Filiação (Mãe ou Pai) <span class="req">*</span></label>
+                <input
+                  type="text"
+                  data-k="filiacao"
+                  placeholder="Nome da mãe ou do pai"
+                />
+              </div>
+              <div class="field pf-campo" style="display: none">
+                <label>RG / RNE / RANI</label>
+                <input type="text" data-k="rg" placeholder="00.000.000" />
+              </div>
+              <div class="field pf-campo" style="display: none">
+                <label>Data de Nascimento <span class="req">*</span></label>
+                <input type="date" data-k="nasc" />
+              </div>
+              <div class="field field--plain pf-campo" style="display: none">
+                <label
+                  >Possui laudo médico (equipamentos essenciais)?
+                  <span class="req">*</span></label
+                >
+                <select data-k="laudoMedico">
+                  <option value="">—</option>
+                  <option>Sim</option>
+                  <option>Não</option>
+                </select>
+              </div>
+              <div class="field field--plain pf-campo" style="display: none">
+                <label
+                  >Possui NIS para Tarifa Social?
+                  <span class="req">*</span></label
+                >
+                <select data-k="nis" onchange="onNisMT()">
+                  <option value="">—</option>
+                  <option>Sim</option>
+                  <option>Não</option>
+                </select>
+              </div>
+              <div
+                class="field pf-campo col-span-2"
+                id="numNisBoxMT"
+                style="display: none"
+              >
+                <label>Número do NIS <span class="req">*</span></label>
+                <input type="text" data-k="numNis" placeholder="Número do NIS" />
+              </div>
+              <div class="field col-span-2">
+                <label>E-mail do solicitante</label>
+                <input
+                  type="email"
+                  data-k="emailSolicitante"
+                  placeholder="email@exemplo.com"
+                  onblur="onEmail('emailSolicitante')"
+                />
+                <span id="status-emailSolicitante" class="field-hint"></span>
+              </div>
+              <!-- Telefones do Responsável Técnico (migrados da antiga etapa
+                   Classificação; regra global: telefones em Dados do
+                   Proprietário). Opcionais. -->
               <div class="field">
                 <label>Telefone do RT — Celular</label>
                 <input
@@ -221,89 +299,40 @@
           </div>
           <div class="nav-bottom no-print">
             <button class="btn btn-ghost" onclick="goTo(0)">← Voltar</button>
-            <span class="nav-step-info">Etapa 2 de 6</span>
-            <button class="btn btn-primary" onclick="goTo(2)">
-              Avançar →
-            </button>
+            <button class="btn btn-primary" onclick="goTo(2)">Avançar →</button>
           </div>
         </section>
 
-        <!-- ============ PÁGINA 2 — PROPRIETÁRIO + CORRESPONDÊNCIA ============ -->
+        <!-- ============ PÁGINA 2 — CORRESPONDÊNCIA ============ -->
         <section class="page" id="page-2">
           <div class="card">
             <div class="section-eyebrow">Etapa 3</div>
-            <h3 class="card-title">Dados do Proprietário</h3>
-            <div class="grid grid-2">
-              <div class="field">
-                <label>CPF / CNPJ <span class="req">*</span></label>
-                <input
-                  type="text"
-                  id="f_cpfcnpj"
-                  data-k="cpfCnpj"
-                  placeholder="000.000.000-00 ou 00.000.000/0000-00"
-                  onblur="onCpfCnpj()"
-                />
-                <span class="field-hint" id="cpfMsg"></span>
-              </div>
-              <div class="field col-span-2">
+            <h3 class="card-title">Correspondência e Fatura</h3>
+            <p class="card-sub">
+              Escolha como e quando você deseja receber a conta de energia.
+            </p>
+            <!-- Recebimento da fatura + vencimento: mesmo container do BT
+                 (um único .grid, campos empilhados em largura total). -->
+            <div class="grid" style="margin-top: 16px">
+              <div class="field field--plain">
                 <label
-                  >Nome Completo ou Razão Social
+                  >Deseja receber a fatura no e-mail informado?
                   <span class="req">*</span></label
                 >
-                <input
-                  type="text"
-                  data-k="nome"
-                  placeholder="Nome completo ou razão social"
-                />
+                <div id="cardsReceberEmail"></div>
+                <select
+                  data-k="receberEmail"
+                  onchange="onReceberEmail()"
+                  style="display: none"
+                  aria-hidden="true"
+                >
+                  <option value=""></option>
+                  <option>Sim</option>
+                  <option>Não</option>
+                </select>
               </div>
-              <div class="field">
-                <label>Telefone do cliente <span class="req">*</span></label>
-                <input
-                  type="tel"
-                  data-k="telCliente"
-                  placeholder="(31) 90000-0000"
-                  onblur="onTel('telCliente')"
-                />
-                <span id="status-telCliente" class="field-hint"></span>
-              </div>
-              <div class="field">
-                <label>E-mail do cliente</label>
-                <input
-                  type="email"
-                  data-k="emailCliente"
-                  placeholder="email@exemplo.com"
-                  onblur="onEmail('emailCliente')"
-                />
-                <span id="status-emailCliente" class="field-hint"></span>
-              </div>
-              <div class="field">
-                <label>Telefone do solicitante</label>
-                <input
-                  type="tel"
-                  data-k="telSolicitante"
-                  placeholder="(31) 90000-0000"
-                  onblur="onTel('telSolicitante')"
-                />
-                <span id="status-telSolicitante" class="field-hint"></span>
-              </div>
-              <div class="field">
-                <label>E-mail do solicitante</label>
-                <input
-                  type="email"
-                  data-k="emailSolicitante"
-                  placeholder="email@exemplo.com"
-                  onblur="onEmail('emailSolicitante')"
-                />
-                <span id="status-emailSolicitante" class="field-hint"></span>
-              </div>
-            </div>
-
-            <div class="subbox-title" style="margin-top: 24px">
-              E-mail ou Endereço para Correspondência / Entrega da Conta
-            </div>
-            <div class="grid grid-3" style="margin-top: 16px">
-              <div class="field field--plain col-span-2">
-                <label>Dia do vencimento <span class="req">*</span></label>
+              <div class="field field--plain">
+                <label>Data de Vencimento da Fatura <span class="req">*</span></label>
                 <div id="cardsDiaVenc"></div>
                 <select
                   data-k="desejaVenc"
@@ -330,7 +359,8 @@
               </div>
               <div class="field field--plain">
                 <label
-                  >Modalidade da obra <span class="opt">(se houver)</span></label
+                  >Modalidade da obra
+                  <span class="opt">(se houver)</span></label
                 >
                 <div id="cardsModalidadeObra"></div>
                 <select
@@ -344,104 +374,149 @@
                 </select>
               </div>
             </div>
-            <div class="grid grid-2" style="margin-top: 16px">
-              <div class="field field--plain">
-                <label>Como deseja receber a correspondência?</label>
-                <div id="cardsFormaCorresp"></div>
+            <!-- Bloco exibido só quando NÃO recebe a fatura no e-mail informado
+                 (mesma lógica do BT): escolhe COMO receber a fatura + endereço/
+                 e-mail alternativo e a conta globalizada. -->
+            <div id="correspNaoEmailBox" style="display: none">
+              <div class="grid" style="margin-top: 16px">
+                <div class="field field--plain">
+                  <label
+                    >Como deseja receber a fatura?
+                    <span class="req">*</span></label
+                  >
+                  <div id="cardsFormaCorresp"></div>
+                  <select
+                    data-k="formaCorresp"
+                    onchange="onCorresp()"
+                    style="display: none"
+                    aria-hidden="true"
+                  >
+                    <option value=""></option>
+                    <option>Novo endereço</option>
+                    <option>Endereço da obra</option>
+                    <option>Outro e-mail</option>
+                    <option>Agência Correios(Caixa Postal)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div
+                id="correspEmailBox"
+                class="grid grid-2"
+                style="margin-top: 16px; display: none"
+              >
+                <div class="field col-span-2">
+                  <label
+                    >E-mail para envio da fatura
+                    <span class="req">*</span></label
+                  >
+                  <input
+                    type="email"
+                    data-k="emailCorresp"
+                    placeholder="email@exemplo.com"
+                    onblur="onEmail('emailCorresp')"
+                  />
+                  <span id="status-emailCorresp" class="field-hint"></span>
+                </div>
+              </div>
+
+              <div
+                id="correspObraBox"
+                class="alert alert-info"
+                style="margin-top: 16px; display: none"
+              >
+                A fatura será enviada para o endereço informado nos
+                <strong>Dados da Unidade Consumidora</strong>.
+              </div>
+
+              <div
+                id="endCorrespBox"
+                class="grid grid-2"
+                style="margin-top: 16px; display: none"
+              >
+                <div class="field col-span-2">
+                  <label>CEP <span class="req">*</span></label>
+                  <input
+                    type="text"
+                    data-k="ec_cep"
+                    placeholder="00000-000"
+                    onblur="onCEP('ec')"
+                  />
+                  <span id="cep-status-ec" class="field-hint"></span>
+                </div>
+                <div class="field col-span-2">
+                  <label>Rua / Av. <span class="req">*</span></label>
+                  <input type="text" data-k="ec_rua" placeholder=" " />
+                </div>
+                <div class="field">
+                  <label>Nº <span class="req">*</span></label>
+                  <input type="text" data-k="ec_num" placeholder=" " />
+                </div>
+                <div class="field">
+                  <label>Complemento do endereço</label>
+                  <input type="text" data-k="ec_compl" placeholder=" " />
+                </div>
+                <div class="field">
+                  <label>Bairro / Distrito <span class="req">*</span></label>
+                  <input type="text" data-k="ec_bairro" placeholder=" " />
+                </div>
+                <div class="field">
+                  <label>Município <span class="req">*</span></label>
+                  <input type="text" data-k="ec_municipio" placeholder=" " />
+                </div>
+                <div class="field">
+                  <label>Estado</label>
+                  <input
+                    type="text"
+                    data-k="ec_estado"
+                    value="MG"
+                    placeholder=" "
+                  />
+                </div>
+              </div>
+
+            <!-- Conta globalizada (poder público) — replica a lógica do BT:
+                 pergunta Sim/Não e só então pede o número. -->
+            <div class="grid grid-2" style="margin-top: 24px">
+              <div class="field field--plain col-span-2">
+                <label
+                  >Possui conta globalizada (poder público)?
+                  <span class="opt">(opcional)</span></label
+                >
+                <div id="cardsPossuiContaGlobal"></div>
                 <select
-                  data-k="formaCorresp"
-                  onchange="onCorresp()"
+                  data-k="possuiContaGlobal"
+                  onchange="onContaGlobal()"
                   style="display: none"
                   aria-hidden="true"
                 >
                   <option value=""></option>
-                  <option>E-mail</option>
-                  <option>Endereço</option>
-                  <option>Agência Correios(Caixa Postal)</option>
+                  <option>Sim</option>
+                  <option>Não</option>
                 </select>
               </div>
-              <div class="field" id="correspEmailBox" style="display: none">
-                <label>Informar e-mail</label>
-                <input
-                  type="email"
-                  data-k="emailCorresp"
-                  placeholder="email@exemplo.com"
-                  onblur="onEmail('emailCorresp')"
-                />
-                <span id="status-emailCorresp" class="field-hint"></span>
-              </div>
-            </div>
-
-            <div id="endCorrespBox" style="display: none">
-              <div class="conditional" style="margin-top: 16px">
-                <div class="conditional-tag">
-                  Endereço para recebimento do orçamento de conexão
-                </div>
-                <div class="grid grid-3">
-                  <div class="field col-span-2">
-                    <label>Rua / Av.</label>
-                    <input type="text" data-k="ec_rua" placeholder=" " />
-                  </div>
-                  <div class="field">
-                    <label>Nº</label>
-                    <input type="text" data-k="ec_num" placeholder=" " />
-                  </div>
-                  <div class="field col-span-2">
-                    <label>Complemento do endereço</label>
-                    <input type="text" data-k="ec_compl" placeholder=" " />
-                  </div>
-                  <div class="field">
-                    <label>Bairro / Distrito</label>
-                    <input type="text" data-k="ec_bairro" placeholder=" " />
-                  </div>
-                  <div class="field">
-                    <label>CEP</label>
-                    <input
-                      type="text"
-                      data-k="ec_cep"
-                      placeholder="00000-000"
-                      onblur="onCEP('ec')"
-                    />
-                    <span id="cep-status-ec" class="field-hint"></span>
-                  </div>
-                  <div class="field">
-                    <label>Município</label>
-                    <input type="text" data-k="ec_municipio" placeholder=" " />
-                  </div>
-                  <div class="field">
-                    <label>Estado</label>
-                    <input
-                      type="text"
-                      data-k="ec_estado"
-                      value="MG"
-                      placeholder=" "
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="field" style="margin-top: 24px">
-              <label
-                >Conta globalizada
-                <span class="opt"
-                  >(poder público — código de débito automático globalizado da
-                  fatura)</span
-                ></label
+              <div
+                class="field col-span-2"
+                id="contaGlobalBox"
+                style="display: none"
               >
-              <input
-                type="text"
-                data-k="contaGlobalizada"
-                placeholder="Nº da conta globalizada (se aplicável)"
-              />
+                <label
+                  >Conta globalizada (código de débito automático globalizado
+                  da fatura) <span class="req">*</span></label
+                >
+                <input
+                  type="text"
+                  data-k="contaGlobalizada"
+                  placeholder="000000000"
+                />
+              </div>
             </div>
+            </div>
+            <!-- /#correspNaoEmailBox -->
           </div>
           <div class="nav-bottom no-print">
             <button class="btn btn-ghost" onclick="goTo(1)">← Voltar</button>
-            <span class="nav-step-info">Etapa 3 de 6</span>
-            <button class="btn btn-primary" onclick="goTo(3)">
-              Avançar →
-            </button>
+            <button class="btn btn-primary" onclick="goTo(3)">Avançar →</button>
           </div>
         </section>
 
@@ -616,17 +691,9 @@
                 <option>Não</option>
               </select>
             </div>
+            <!-- Fuso removido: a coordenada é informada por Latitude/Longitude
+                 e convertida p/ UTM automaticamente, com o fuso calculado. -->
             <div class="grid grid-3">
-              <div class="field field--plain">
-                <label>Fuso</label>
-                <div id="cardsFuso"></div>
-                <select data-k="fuso" style="display: none" aria-hidden="true">
-                  <option value="">—</option>
-                  <option>22°</option>
-                  <option>23°</option>
-                  <option>24°</option>
-                </select>
-              </div>
               <div class="field">
                 <label id="latLabel">Latitude <span class="req">*</span></label>
                 <input
@@ -707,9 +774,7 @@
               id="restricaoAmbientalBox"
               style="margin-top: 16px; display: none"
             >
-              <label
-                >Unidade consumidora em área de restrição ambiental?</label
-              >
+              <label>Unidade consumidora em área de restrição ambiental?</label>
               <div id="restricaoAmbientalConteudo"></div>
             </div>
 
@@ -728,10 +793,7 @@
           </div>
           <div class="nav-bottom no-print">
             <button class="btn btn-ghost" onclick="goTo(2)">← Voltar</button>
-            <span class="nav-step-info">Etapa 4 de 6</span>
-            <button class="btn btn-primary" onclick="goTo(4)">
-              Avançar →
-            </button>
+            <button class="btn btn-primary" onclick="goTo(4)">Avançar →</button>
           </div>
         </section>
 
@@ -740,7 +802,56 @@
           <div class="card">
             <div class="section-eyebrow">Etapa 5</div>
             <h3 class="card-title">Dados Técnicos</h3>
-            <div class="grid grid-3">
+            <!-- Classificação do Atendimento (migrada da antiga etapa própria):
+                 Opção de Atendimento + Finalidade + Nº da instalação
+                 condicional. A Finalidade controla os blocos Conexão Nova /
+                 Alteração mais abaixo nesta mesma etapa. -->
+            <div class="grid grid-2">
+              <div class="field field--plain">
+                <label>Opção de Atendimento <span class="req">*</span></label>
+                <select id="f_opcaoAtend" data-k="opcaoAtend">
+                  <option value=""></option>
+                  <option>Cativo</option>
+                  <option>Livre</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Finalidade <span class="req">*</span></label>
+                <select
+                  id="f_finalidade"
+                  data-k="finalidade"
+                  onchange="onFinalidade()"
+                >
+                  <option value=""></option>
+                  <option>Conexão Nova</option>
+                  <option>Aumento de Demanda</option>
+                  <option>Redução de Demanda</option>
+                  <option>Adequação de Subestação</option>
+                  <option>Aderir a Tarifa Monômia</option>
+                  <option>Religação de Subestação</option>
+                  <option>Desconexão para encerramento contratual</option>
+                  <option>Alteração da tensão de fornecimento BT→MT</option>
+                  <option>Migração Mercado livre sem Aumento de Carga</option>
+                  <option>Migração Mercado livre com Aumento de Carga</option>
+                  <option>Migração Mercado livre com Redução de Carga</option>
+                </select>
+              </div>
+            </div>
+            <div class="conditional" id="instalBox" style="display: none">
+              <div class="conditional-tag">Campo dependente da finalidade</div>
+              <div class="field">
+                <label id="instalLabel"
+                  >Informe o número da instalação
+                  <span class="req">*</span></label
+                >
+                <input
+                  type="text"
+                  data-k="numInstalacao"
+                  placeholder="Nº da instalação"
+                />
+              </div>
+            </div>
+            <div class="grid grid-3" style="margin-top: 16px">
               <div class="field field--plain">
                 <label
                   >Nível de tensão da rede MT <span class="req">*</span></label
@@ -1030,11 +1141,7 @@
                   <div class="field field--plain col-span-3">
                     <div class="se-gallery" id="seGallery_atual"></div>
                   </div>
-                  <div
-                    class="field"
-                    id="alt_tipoParaBox"
-                    style="display: none"
-                  >
+                  <div class="field" id="alt_tipoParaBox" style="display: none">
                     <label
                       >Tipo de Subestação (Para)
                       <span class="req">*</span></label
@@ -1308,7 +1415,6 @@
           </div>
           <div class="nav-bottom no-print">
             <button class="btn btn-ghost" onclick="goTo(3)">← Voltar</button>
-            <span class="nav-step-info">Etapa 5 de 6</span>
             <button class="btn btn-primary" onclick="goTo(5)">
               Ver prévia →
             </button>
@@ -1429,60 +1535,412 @@
           <div class="tbl-scroll">
             <table class="tbl">
               <tbody>
-                <tr><td colspan="6" class="tbl-secao">A) MOTORES MONOFÁSICOS</td></tr>
-                <tr><td colspan="6" class="tbl-secao">TABELA 15-Demanda Individual - Motores Monofásicos(ND-5.2)</td></tr>
-                <tr><td>Potência</td><td></td><td>1 Motor</td><td>2 - Motores</td><td>3 a 5 Motores</td><td>Mais de 5 Motores</td></tr>
-                <tr><td>Eixo CV</td><td>Absorvida Rede (KW)</td><td></td><td></td><td></td><td></td></tr>
-                <tr><td>1/4'</td><td>0,39</td><td>0,62</td><td>0,5</td><td>0,43</td><td>0,37</td></tr>
-                <tr><td>1/3'</td><td>0,52</td><td>0,73</td><td>0,58</td><td>0,51</td><td>0,44</td></tr>
-                <tr><td>1/2'</td><td>0,66</td><td>0,92</td><td>0,74</td><td>0,64</td><td>0,55</td></tr>
-                <tr><td>3/4'</td><td>0,89</td><td>1,24</td><td>0,99</td><td>0,87</td><td>0,74</td></tr>
-                <tr><td>1'</td><td>1,1</td><td>1,49</td><td>1,19</td><td>1,04</td><td>0,89</td></tr>
-                <tr><td>1,5'</td><td>1,58</td><td>1,93</td><td>1,54</td><td>1,35</td><td>1,16</td></tr>
-                <tr><td>2'</td><td>2,07</td><td>2,44</td><td>1,95</td><td>1,71</td><td>1,46</td></tr>
-                <tr><td>3'</td><td>3,07</td><td>3,2</td><td>2,56</td><td>2,24</td><td>1,92</td></tr>
-                <tr><td>4'</td><td>3,98</td><td>4,15</td><td>3,32</td><td>2,91</td><td>2,49</td></tr>
-                <tr><td>5'</td><td>4,91</td><td>5,22</td><td>4,18</td><td>3,65</td><td>3,13</td></tr>
-                <tr><td>7,5'</td><td>7,46</td><td>7,94</td><td>6,35</td><td>5,56</td><td>4,76</td></tr>
-                <tr><td>10'</td><td>9,44</td><td>10,04</td><td>8,03</td><td>7,03</td><td>6,02</td></tr>
-                <tr><td>12,5'</td><td>12,1</td><td>13,01</td><td>10,41</td><td>9,11</td><td>7,81</td></tr>
-                <tr><td colspan="6" class="tbl-secao">B) MOTORES TRIFÁSICOS</td></tr>
-                <tr><td colspan="6" class="tbl-secao">TABELA 16-Motores Trifásicos (ND-5.2)</td></tr>
-                <tr><td>Potência</td><td></td><td>Demanda Individual Absorvida da Rede KVA</td><td></td><td></td><td></td></tr>
-                <tr><td>Eixo CV</td><td>Absorvida rede KW</td><td>1 Motor</td><td>2 Motores</td><td>3 a 5 Motores</td><td>Mais de 5 Motores</td></tr>
-                <tr><td>1/6'</td><td>0,25</td><td>0,37</td><td>0,3</td><td>0,26</td><td>0,22</td></tr>
-                <tr><td>1/4'</td><td>0,33</td><td>0,48</td><td>0,38</td><td>0,34</td><td>0,29</td></tr>
-                <tr><td>1/3'</td><td>0,41</td><td>0,56</td><td>0,45</td><td>0,39</td><td>0,34</td></tr>
-                <tr><td>1/2'</td><td>0,57</td><td>0,72</td><td>0,58</td><td>0,5</td><td>0,43</td></tr>
-                <tr><td>3/4'</td><td>0,82</td><td>1,08</td><td>0,86</td><td>0,76</td><td>0,65</td></tr>
-                <tr><td>1'</td><td>1,13</td><td>1,38</td><td>1,1</td><td>0,97</td><td>0,83</td></tr>
-                <tr><td>1,5'</td><td>1,58</td><td>2,03</td><td>1,62</td><td>1,42</td><td>1,22</td></tr>
-                <tr><td>2'</td><td>1,94</td><td>2,4</td><td>1,92</td><td>1,68</td><td>1,44</td></tr>
-                <tr><td>3'</td><td>2,91</td><td>3,64</td><td>2,91</td><td>2,55</td><td>2,18</td></tr>
-                <tr><td>4'</td><td>3,82</td><td>4,96</td><td>3,97</td><td>3,47</td><td>2,98</td></tr>
-                <tr><td>5'</td><td>4,78</td><td>5,62</td><td>4,5</td><td>3,93</td><td>3,37</td></tr>
-                <tr><td>6'</td><td>5,45</td><td>6,49</td><td>5,19</td><td>4,54</td><td>3,89</td></tr>
-                <tr><td>7,5'</td><td>6,9</td><td>8,12</td><td>6,5</td><td>5,68</td><td>4,87</td></tr>
-                <tr><td>10'</td><td>9,68</td><td>10,76</td><td>8,61</td><td>7,53</td><td>6,46</td></tr>
-                <tr><td>12,5'</td><td>11,79</td><td>13,25</td><td>10,6</td><td>9,28</td><td>7,95</td></tr>
-                <tr><td>15'</td><td>13,63</td><td>14,98</td><td>11,98</td><td>10,49</td><td>8,99</td></tr>
-                <tr><td>20'</td><td>18,4</td><td>20,67</td><td>16,54</td><td>14,47</td><td>12,4</td></tr>
-                <tr><td>25'</td><td>22,44</td><td>24,66</td><td>19,73</td><td>17,26</td><td>14,8</td></tr>
-                <tr><td>30'</td><td>26,93</td><td>29,59</td><td>23,67</td><td>20,71</td><td>17,76</td></tr>
-                <tr><td>50'</td><td>44,34</td><td>49,27</td><td>23,67</td><td>20,71</td><td>17,76</td></tr>
-                <tr><td>60'</td><td>51,35</td><td>57,7</td><td>23,67</td><td>20,71</td><td>17,76</td></tr>
-                <tr><td>75'</td><td>62,73</td><td>70,48</td><td>23,67</td><td>20,71</td><td>17,76</td></tr>
-                <tr><td colspan="6" class="tbl-secao">C) AR CONDICIONADO</td></tr>
-                <tr><td colspan="6" class="tbl-secao">Tabela 27 - Potências Nominais De Condicionadores De Ar Tipo Janela (ND-5.2)</td></tr>
-                <tr><td colspan="6" class="tbl-secao">CAPACIDADE POTÊNCIA NOMINAL</td></tr>
-                <tr><td>BTU/h</td><td>Kcal/h</td><td>kW</td><td>kVA</td><td></td><td></td></tr>
-                <tr><td>8500</td><td>2125</td><td>1,3</td><td>1,55</td><td></td><td></td></tr>
-                <tr><td>10000</td><td>2500</td><td>1,4</td><td>1,65</td><td></td><td></td></tr>
-                <tr><td>12000</td><td>3000</td><td>1,6</td><td>1,9</td><td></td><td></td></tr>
-                <tr><td>14000</td><td>3500</td><td>1,9</td><td>2,1</td><td></td><td></td></tr>
-                <tr><td>18000</td><td>4500</td><td>2,6</td><td>2,86</td><td></td><td></td></tr>
-                <tr><td>21000</td><td>5250</td><td>2,8</td><td>3,08</td><td></td><td></td></tr>
-                <tr><td>30000</td><td>7500</td><td>3,6</td><td>4</td><td></td><td></td></tr>
+                <tr>
+                  <td colspan="6" class="tbl-secao">A) MOTORES MONOFÁSICOS</td>
+                </tr>
+                <tr>
+                  <td colspan="6" class="tbl-secao">
+                    TABELA 15-Demanda Individual - Motores Monofásicos(ND-5.2)
+                  </td>
+                </tr>
+                <tr>
+                  <td>Potência</td>
+                  <td></td>
+                  <td>1 Motor</td>
+                  <td>2 - Motores</td>
+                  <td>3 a 5 Motores</td>
+                  <td>Mais de 5 Motores</td>
+                </tr>
+                <tr>
+                  <td>Eixo CV</td>
+                  <td>Absorvida Rede (KW)</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>1/4'</td>
+                  <td>0,39</td>
+                  <td>0,62</td>
+                  <td>0,5</td>
+                  <td>0,43</td>
+                  <td>0,37</td>
+                </tr>
+                <tr>
+                  <td>1/3'</td>
+                  <td>0,52</td>
+                  <td>0,73</td>
+                  <td>0,58</td>
+                  <td>0,51</td>
+                  <td>0,44</td>
+                </tr>
+                <tr>
+                  <td>1/2'</td>
+                  <td>0,66</td>
+                  <td>0,92</td>
+                  <td>0,74</td>
+                  <td>0,64</td>
+                  <td>0,55</td>
+                </tr>
+                <tr>
+                  <td>3/4'</td>
+                  <td>0,89</td>
+                  <td>1,24</td>
+                  <td>0,99</td>
+                  <td>0,87</td>
+                  <td>0,74</td>
+                </tr>
+                <tr>
+                  <td>1'</td>
+                  <td>1,1</td>
+                  <td>1,49</td>
+                  <td>1,19</td>
+                  <td>1,04</td>
+                  <td>0,89</td>
+                </tr>
+                <tr>
+                  <td>1,5'</td>
+                  <td>1,58</td>
+                  <td>1,93</td>
+                  <td>1,54</td>
+                  <td>1,35</td>
+                  <td>1,16</td>
+                </tr>
+                <tr>
+                  <td>2'</td>
+                  <td>2,07</td>
+                  <td>2,44</td>
+                  <td>1,95</td>
+                  <td>1,71</td>
+                  <td>1,46</td>
+                </tr>
+                <tr>
+                  <td>3'</td>
+                  <td>3,07</td>
+                  <td>3,2</td>
+                  <td>2,56</td>
+                  <td>2,24</td>
+                  <td>1,92</td>
+                </tr>
+                <tr>
+                  <td>4'</td>
+                  <td>3,98</td>
+                  <td>4,15</td>
+                  <td>3,32</td>
+                  <td>2,91</td>
+                  <td>2,49</td>
+                </tr>
+                <tr>
+                  <td>5'</td>
+                  <td>4,91</td>
+                  <td>5,22</td>
+                  <td>4,18</td>
+                  <td>3,65</td>
+                  <td>3,13</td>
+                </tr>
+                <tr>
+                  <td>7,5'</td>
+                  <td>7,46</td>
+                  <td>7,94</td>
+                  <td>6,35</td>
+                  <td>5,56</td>
+                  <td>4,76</td>
+                </tr>
+                <tr>
+                  <td>10'</td>
+                  <td>9,44</td>
+                  <td>10,04</td>
+                  <td>8,03</td>
+                  <td>7,03</td>
+                  <td>6,02</td>
+                </tr>
+                <tr>
+                  <td>12,5'</td>
+                  <td>12,1</td>
+                  <td>13,01</td>
+                  <td>10,41</td>
+                  <td>9,11</td>
+                  <td>7,81</td>
+                </tr>
+                <tr>
+                  <td colspan="6" class="tbl-secao">B) MOTORES TRIFÁSICOS</td>
+                </tr>
+                <tr>
+                  <td colspan="6" class="tbl-secao">
+                    TABELA 16-Motores Trifásicos (ND-5.2)
+                  </td>
+                </tr>
+                <tr>
+                  <td>Potência</td>
+                  <td></td>
+                  <td>Demanda Individual Absorvida da Rede KVA</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>Eixo CV</td>
+                  <td>Absorvida rede KW</td>
+                  <td>1 Motor</td>
+                  <td>2 Motores</td>
+                  <td>3 a 5 Motores</td>
+                  <td>Mais de 5 Motores</td>
+                </tr>
+                <tr>
+                  <td>1/6'</td>
+                  <td>0,25</td>
+                  <td>0,37</td>
+                  <td>0,3</td>
+                  <td>0,26</td>
+                  <td>0,22</td>
+                </tr>
+                <tr>
+                  <td>1/4'</td>
+                  <td>0,33</td>
+                  <td>0,48</td>
+                  <td>0,38</td>
+                  <td>0,34</td>
+                  <td>0,29</td>
+                </tr>
+                <tr>
+                  <td>1/3'</td>
+                  <td>0,41</td>
+                  <td>0,56</td>
+                  <td>0,45</td>
+                  <td>0,39</td>
+                  <td>0,34</td>
+                </tr>
+                <tr>
+                  <td>1/2'</td>
+                  <td>0,57</td>
+                  <td>0,72</td>
+                  <td>0,58</td>
+                  <td>0,5</td>
+                  <td>0,43</td>
+                </tr>
+                <tr>
+                  <td>3/4'</td>
+                  <td>0,82</td>
+                  <td>1,08</td>
+                  <td>0,86</td>
+                  <td>0,76</td>
+                  <td>0,65</td>
+                </tr>
+                <tr>
+                  <td>1'</td>
+                  <td>1,13</td>
+                  <td>1,38</td>
+                  <td>1,1</td>
+                  <td>0,97</td>
+                  <td>0,83</td>
+                </tr>
+                <tr>
+                  <td>1,5'</td>
+                  <td>1,58</td>
+                  <td>2,03</td>
+                  <td>1,62</td>
+                  <td>1,42</td>
+                  <td>1,22</td>
+                </tr>
+                <tr>
+                  <td>2'</td>
+                  <td>1,94</td>
+                  <td>2,4</td>
+                  <td>1,92</td>
+                  <td>1,68</td>
+                  <td>1,44</td>
+                </tr>
+                <tr>
+                  <td>3'</td>
+                  <td>2,91</td>
+                  <td>3,64</td>
+                  <td>2,91</td>
+                  <td>2,55</td>
+                  <td>2,18</td>
+                </tr>
+                <tr>
+                  <td>4'</td>
+                  <td>3,82</td>
+                  <td>4,96</td>
+                  <td>3,97</td>
+                  <td>3,47</td>
+                  <td>2,98</td>
+                </tr>
+                <tr>
+                  <td>5'</td>
+                  <td>4,78</td>
+                  <td>5,62</td>
+                  <td>4,5</td>
+                  <td>3,93</td>
+                  <td>3,37</td>
+                </tr>
+                <tr>
+                  <td>6'</td>
+                  <td>5,45</td>
+                  <td>6,49</td>
+                  <td>5,19</td>
+                  <td>4,54</td>
+                  <td>3,89</td>
+                </tr>
+                <tr>
+                  <td>7,5'</td>
+                  <td>6,9</td>
+                  <td>8,12</td>
+                  <td>6,5</td>
+                  <td>5,68</td>
+                  <td>4,87</td>
+                </tr>
+                <tr>
+                  <td>10'</td>
+                  <td>9,68</td>
+                  <td>10,76</td>
+                  <td>8,61</td>
+                  <td>7,53</td>
+                  <td>6,46</td>
+                </tr>
+                <tr>
+                  <td>12,5'</td>
+                  <td>11,79</td>
+                  <td>13,25</td>
+                  <td>10,6</td>
+                  <td>9,28</td>
+                  <td>7,95</td>
+                </tr>
+                <tr>
+                  <td>15'</td>
+                  <td>13,63</td>
+                  <td>14,98</td>
+                  <td>11,98</td>
+                  <td>10,49</td>
+                  <td>8,99</td>
+                </tr>
+                <tr>
+                  <td>20'</td>
+                  <td>18,4</td>
+                  <td>20,67</td>
+                  <td>16,54</td>
+                  <td>14,47</td>
+                  <td>12,4</td>
+                </tr>
+                <tr>
+                  <td>25'</td>
+                  <td>22,44</td>
+                  <td>24,66</td>
+                  <td>19,73</td>
+                  <td>17,26</td>
+                  <td>14,8</td>
+                </tr>
+                <tr>
+                  <td>30'</td>
+                  <td>26,93</td>
+                  <td>29,59</td>
+                  <td>23,67</td>
+                  <td>20,71</td>
+                  <td>17,76</td>
+                </tr>
+                <tr>
+                  <td>50'</td>
+                  <td>44,34</td>
+                  <td>49,27</td>
+                  <td>23,67</td>
+                  <td>20,71</td>
+                  <td>17,76</td>
+                </tr>
+                <tr>
+                  <td>60'</td>
+                  <td>51,35</td>
+                  <td>57,7</td>
+                  <td>23,67</td>
+                  <td>20,71</td>
+                  <td>17,76</td>
+                </tr>
+                <tr>
+                  <td>75'</td>
+                  <td>62,73</td>
+                  <td>70,48</td>
+                  <td>23,67</td>
+                  <td>20,71</td>
+                  <td>17,76</td>
+                </tr>
+                <tr>
+                  <td colspan="6" class="tbl-secao">C) AR CONDICIONADO</td>
+                </tr>
+                <tr>
+                  <td colspan="6" class="tbl-secao">
+                    Tabela 27 - Potências Nominais De Condicionadores De Ar Tipo
+                    Janela (ND-5.2)
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="6" class="tbl-secao">
+                    CAPACIDADE POTÊNCIA NOMINAL
+                  </td>
+                </tr>
+                <tr>
+                  <td>BTU/h</td>
+                  <td>Kcal/h</td>
+                  <td>kW</td>
+                  <td>kVA</td>
+                  <td></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>8500</td>
+                  <td>2125</td>
+                  <td>1,3</td>
+                  <td>1,55</td>
+                  <td></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>10000</td>
+                  <td>2500</td>
+                  <td>1,4</td>
+                  <td>1,65</td>
+                  <td></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>12000</td>
+                  <td>3000</td>
+                  <td>1,6</td>
+                  <td>1,9</td>
+                  <td></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>14000</td>
+                  <td>3500</td>
+                  <td>1,9</td>
+                  <td>2,1</td>
+                  <td></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>18000</td>
+                  <td>4500</td>
+                  <td>2,6</td>
+                  <td>2,86</td>
+                  <td></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>21000</td>
+                  <td>5250</td>
+                  <td>2,8</td>
+                  <td>3,08</td>
+                  <td></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>30000</td>
+                  <td>7500</td>
+                  <td>3,6</td>
+                  <td>4</td>
+                  <td></td>
+                  <td></td>
+                </tr>
               </tbody>
             </table>
           </div>

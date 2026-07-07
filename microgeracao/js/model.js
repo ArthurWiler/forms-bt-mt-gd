@@ -15,6 +15,13 @@ function gdEstadoInicial() {
     grupo: "B",
     classe: "",
     cpfCnpj: "",
+    // Campos de Pessoa Física (só aparecem com CPF válido — ver views.js)
+    filiacao: "",
+    rg: "",
+    nasc: "",
+    laudoMedico: "Não",
+    nis: "Não",
+    numNis: "",
     logradouro: "",
     numero: "",
     complemento: "",
@@ -26,6 +33,10 @@ function gdEstadoInicial() {
     celular: "",
     email: "",
     // 2 - Dados da UC
+    // Coordenadas: o usuário informa Latitude/Longitude; fuso/utmE/utmN são
+    // derivados automaticamente (latLonParaUTM) — mantidos p/ validação e PDF.
+    latitude: "",
+    longitude: "",
     fuso: "",
     utmE: "",
     utmN: "",
@@ -106,13 +117,22 @@ function gdEstadoInicial() {
     decl84: true,
     decl85Regra: "",
     decl86: true,
-    // 9 - Solicitante
-    solicitanteNome: "",
-    solicitanteEndereco: "",
-    solicitanteTelefone: "",
-    solicitanteCelular: "",
-    solicitanteEmail: "",
-    // Observações
-    obs: "",
+    // Correspondência (etapa própria — replica o bloco do BT) + Solicitante.
+    receberEmail: "Sim",
+    vencimento: "",
+    // Quando NÃO recebe a fatura no e-mail informado (mesma lógica do BT):
+    // escolhe entre novo endereço, endereço da obra ou outro e-mail.
+    corrAlternativa: "Endereço novo",
+    corrOutroEmail: "",
+    corrCep: "",
+    corrRua: "",
+    corrNum: "",
+    corrCompl: "",
+    corrBairro: "",
+    corrMunicipio: "",
+    corrEstado: "MG",
+    // Conta globalizada só é oferecida quando NÃO recebe fatura por e-mail.
+    possuiContaGlobal: "Não",
+    contaGlobal: "",
   };
 }

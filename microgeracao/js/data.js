@@ -203,6 +203,71 @@ const GD_FAST_REGRAS = [
   "8.5.3 - modalidade autoconsumo local, com potência instalada de geração igual ou inferior a 7,5 kW",
 ];
 const GD_SN = ["Não", "Sim"];
+// Conversão Latitude/Longitude → UTM (WGS-84), espelhando BT/MT. O usuário
+// informa lat/lon e o fuso/E/N são calculados automaticamente.
+function _gdUtmBandLetter(lat) {
+  const B = "CDEFGHJKLMNPQRSTUVWXX";
+  return lat < -80 ? "C" : lat > 84 ? "X" : B[Math.floor((lat + 80) / 8)];
+}
+function gdLatLonParaUTM(lat, lon) {
+  const a = 6378137,
+    f = 1 / 298.257223563,
+    k0 = 0.9996;
+  const b = a * (1 - f),
+    e2 = 1 - (b * b) / (a * a);
+  const latR = (lat * Math.PI) / 180,
+    lonR = (lon * Math.PI) / 180;
+  const zona = Math.floor((lon + 180) / 6) + 1;
+  const lonC = (((zona - 1) * 6 - 180 + 3) * Math.PI) / 180;
+  const sinL = Math.sin(latR),
+    cosL = Math.cos(latR),
+    tanL = Math.tan(latR);
+  const N = a / Math.sqrt(1 - e2 * sinL ** 2);
+  const T = tanL ** 2,
+    C = (e2 / (1 - e2)) * cosL ** 2,
+    A = cosL * (lonR - lonC);
+  const e4 = e2 * e2,
+    e6 = e4 * e2,
+    ep2 = e2 / (1 - e2);
+  const M =
+    a *
+    ((1 - e2 / 4 - (3 * e4) / 64 - (5 * e6) / 256) * latR -
+      ((3 * e2) / 8 + (3 * e4) / 32 + (45 * e6) / 1024) * Math.sin(2 * latR) +
+      ((15 * e4) / 256 + (45 * e6) / 1024) * Math.sin(4 * latR) -
+      ((35 * e6) / 3072) * Math.sin(6 * latR));
+  const E =
+    k0 *
+      N *
+      (A +
+        ((1 - T + C) * A ** 3) / 6 +
+        ((5 - 18 * T + T * T + 72 * C - 58 * ep2) * A ** 5) / 120) +
+    500000;
+  let Nort =
+    k0 *
+    (M +
+      N *
+        tanL *
+        ((A * A) / 2 +
+          ((5 - T + 9 * C + 4 * C * C) * A ** 4) / 24 +
+          ((61 - 58 * T + T * T + 600 * C - 330 * ep2) * A ** 6) / 720));
+  if (lat < 0) Nort += 10000000;
+  return {
+    zona,
+    hemisferio: lat < 0 ? "S" : "N",
+    easting: Math.round(E),
+    northing: Math.round(Nort),
+    banda: _gdUtmBandLetter(lat),
+  };
+}
+// Deriva fuso/utmE/utmN a partir de latitude/longitude (strings do estado).
+// Retorna null quando as coordenadas ainda não são numéricas.
+function gdUtmDeCoordenadas(latitude, longitude) {
+  const lat = parseFloat(latitude),
+    lon = parseFloat(longitude);
+  if (isNaN(lat) || isNaN(lon)) return null;
+  const u = gdLatLonParaUTM(lat, lon);
+  return { fuso: String(u.zona), utmE: String(u.easting), utmN: String(u.northing), banda: u.banda };
+}
 function gdValidarUTM(fuso, e, n) {
   const lim = GD_UTM_LIMITES[parseInt(fuso)];
   if (!lim) return { ok: false, msg: "Selecione o fuso." };
@@ -355,7 +420,7 @@ const GD_ORIENTACOES = {
       titulo: "Antes de começar, tenha em mãos",
       itens: [
         "Dados da conta de energia da unidade consumidora: número da instalação, titular, classe e endereço completo (informando o CEP, o endereço é preenchido automaticamente).",
-        "Coordenadas UTM do ponto de conexão — fuso 22, 23 ou 24; os valores são validados automaticamente contra a faixa do fuso em Minas Gerais.",
+        "Coordenadas do ponto de conexão em Latitude/Longitude — o fuso e as coordenadas UTM são calculados automaticamente e validados contra a faixa do fuso em Minas Gerais.",
         "Dados da usina: quantidade e potência nominal de módulos e inversores. As potências totais e, em sistemas fotovoltaicos, a Potência Ativa Instalada (menor valor entre módulos e inversores) são calculadas automaticamente.",
         "Dados do sistema de armazenamento (baterias), caso o empreendimento possua.",
         "O enquadramento Fast Track (inciso III do art. 73-A) e o Grid Zero são definidos pelo card escolhido na página inicial e ficam bloqueados no formulário.",

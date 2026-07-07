@@ -117,12 +117,13 @@ function inicializarCamposCards() {
 }
 
 /* ===== Navegação ===== */
-function goTo(n) {
-  // Trava de avanço: valida os obrigatórios visíveis da etapa atual só ao
-  // avançar (ou pular adiante). Voltar é livre.
+function goTo(n, livre) {
+  // Navegação pela sidebar é LIVRE (livre=true). O avanço pelo botão só ocorre
+  // quando ele está habilitado; a validação aqui é rede de segurança. Voltar
+  // é sempre livre.
   const _atual = document.querySelector(".page.show");
   const _atualN = _atual ? parseInt(_atual.id.replace("page-", ""), 10) : -1;
-  if (n > _atualN && _atual && window.CemigMarcadores) {
+  if (!livre && n > _atualN && _atual && window.CemigMarcadores) {
     const r = window.CemigMarcadores.validar(_atual);
     if (!r.ok) {
       if (r.primeiro)
@@ -140,6 +141,7 @@ function goTo(n) {
   });
   window.scrollTo({ top: 0, behavior: "smooth" });
   if (n === 5) renderPreview();
+  if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
 
 /* ===== Bind genérico de campos (data-k) ===== */
@@ -520,5 +522,8 @@ window.addEventListener("afterprint", () => document.body.classList.remove("prin
 document.addEventListener("DOMContentLoaded", () => {
   bindInputs();
   inicializarCamposCards();
-  $$(".vstep").forEach((s, i) => s.addEventListener("click", () => goTo(i)));
+  $$(".vstep").forEach((s, i) =>
+    s.addEventListener("click", () => goTo(i, true)),
+  );
+  if (window.CemigMarcadores) window.CemigMarcadores.montarNavReativa();
 });

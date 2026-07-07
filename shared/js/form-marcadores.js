@@ -86,9 +86,82 @@
     }
   });
 
+  // Botão "Avançar/Iniciar" de uma etapa: o primary do .nav-bottom que chama
+  // goTo(...) para FRENTE (não é o "Voltar", que é ghost). Retorna null se não
+  // houver (ex.: última etapa, que exporta em vez de avançar).
+  function _botaoAvancar(page) {
+    const nb = page.querySelector(".nav-bottom");
+    if (!nb) return null;
+    const btns = nb.querySelectorAll("button.btn-primary");
+    for (let i = 0; i < btns.length; i++) {
+      const oc = btns[i].getAttribute("onclick") || "";
+      if (/goTo\s*\(/.test(oc)) return btns[i];
+    }
+    return null;
+  }
+
+  // Reavalia TODOS os botões "Avançar" visíveis: habilita quando os
+  // obrigatórios da etapa estão preenchidos, desabilita caso contrário.
+  // Sem marcar .is-invalid (isso só acontece ao tentar avançar/validar).
+  function _reqOk(scope) {
+    let ok = true;
+    scope.querySelectorAll("[data-req]").forEach(function (el) {
+      if (el.offsetParent !== null && String(el.value || "").trim() === "")
+        ok = false;
+    });
+    return ok;
+  }
+  function atualizarAvancar(root) {
+    root = root || document;
+    root.querySelectorAll(".page").forEach(function (page) {
+      const btn = _botaoAvancar(page);
+      if (!btn) return;
+      // Um gate extra pode ser declarado no botão via data-gate="funcName":
+      // a função (global) deve retornar true quando LIBERADO. Usado, p.ex.,
+      // pelo aceite "Declaro que li…" das Orientações.
+      const gateNome = btn.getAttribute("data-gate");
+      let gateOk = true;
+      if (gateNome && typeof window[gateNome] === "function") {
+        try {
+          gateOk = !!window[gateNome]();
+        } catch (e) {
+          gateOk = true;
+        }
+      }
+      btn.disabled = !(_reqOk(page) && gateOk);
+    });
+  }
+
+  // Liga a reatividade: recalcula os botões a cada digitação/alteração e uma
+  // vez ao montar. Idempotente.
+  function montarNavReativa() {
+    atualizarAvancar(document);
+    if (montarNavReativa._ligado) return;
+    montarNavReativa._ligado = true;
+    ["input", "change"].forEach(function (ev) {
+      document.addEventListener(ev, function () {
+        atualizarAvancar(document);
+      });
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     aplicar(document);
+    montarNavReativa();
   });
 
-  window.CemigMarcadores = { aplicar: aplicar, validar: validar };
+  // Gate do aceite das Orientações: o botão "Iniciar preenchimento" só libera
+  // com o checkbox "#aceiteOrient" marcado. Referenciado via
+  // data-gate="aceiteOrientacoesOk" no botão.
+  window.aceiteOrientacoesOk = function () {
+    const c = document.getElementById("aceiteOrient");
+    return !c || c.checked;
+  };
+
+  window.CemigMarcadores = {
+    aplicar: aplicar,
+    validar: validar,
+    atualizarAvancar: atualizarAvancar,
+    montarNavReativa: montarNavReativa,
+  };
 })();

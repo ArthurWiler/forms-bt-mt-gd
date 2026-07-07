@@ -21,13 +21,20 @@ function gerarPdfMiniGD(d) {
   kvPairs([
     ["Número da instalação", d.instalacao],
     ["Titular", d.titular],
+    ["E-mail", d.email],
+    ["Celular", d.celular],
+    ["Telefone", d.telefone],
+    ["CPF/CNPJ", d.cpfCnpj],
+    // Campos de Pessoa Física (só saem se preenchidos — CPF válido).
+    ...(d.filiacao ? [["Filiação", d.filiacao]] : []),
+    ...(d.rg ? [["RG / RNE / RANI", d.rg]] : []),
+    ...(d.nasc ? [["Data de Nascimento", d.nasc]] : []),
+    ...(d.filiacao ? [["Laudo médico?", d.laudoMedico]] : []),
+    ...(d.filiacao ? [["NIS (Tarifa Social)?", d.nis]] : []),
+    ...(d.nis === "Sim" && d.numNis ? [["Número do NIS", d.numNis]] : []),
     ["Grupo", d.grupo],
     ["Classe", d.classe],
-    ["CPF/CNPJ", d.cpfCnpj],
     ["CEP", d.cep],
-    ["Telefone", d.telefone],
-    ["Celular", d.celular],
-    ["E-mail", d.email],
   ]);
   fullLine(
     "Endereço",
@@ -46,8 +53,9 @@ function gerarPdfMiniGD(d) {
   // ---- 2. Dados da UC ----
   sec("2.  DADOS DA UNIDADE CONSUMIDORA");
   const ucPairs = [
+    ["Coordenadas", `Lat ${d.latitude || "—"} · Lon ${d.longitude || "—"}`],
     [
-      "Coordenadas UTM",
+      "Coordenadas UTM (calculada)",
       `Fuso ${d.fuso || "—"} · E ${d.utmE || "—"} · N ${d.utmN || "—"}`,
     ],
     ["Tipo de Subestação (ND 5.3)", d.tipoSE],
@@ -270,16 +278,52 @@ function gerarPdfMiniGD(d) {
   fullLine("9.6 Informações verdadeiras (obrigatória)", sn(d.decl86));
   P.gap(2);
 
-  // ---- 10. Solicitante ----
-  sec("10.  SOLICITANTE");
-  kvPairs([
-    ["Nome do Consumidor/Procurador", d.solicitanteNome],
-    ["Telefone", d.solicitanteTelefone],
-    ["Celular", d.solicitanteCelular],
-    ["E-mail", d.solicitanteEmail],
-  ]);
-  fullLine("Endereço de Correspondência", d.solicitanteEndereco);
-  if (d.obs) fullLine("Observações", d.obs);
+  // ---- 10. Correspondência ----
+  sec("10.  CORRESPONDÊNCIA E FATURA");
+  {
+    const corrPairs = [
+      ["Receber fatura por e-mail", d.receberEmail],
+      ["Data de vencimento", d.vencimento],
+    ];
+    // Conta globalizada só é oferecida quando NÃO recebe por e-mail e o cliente
+    // marca que a possui — só então entra no PDF (mesma lógica do BT).
+    if (d.receberEmail === "Não" && d.possuiContaGlobal === "Sim") {
+      corrPairs.push(["Conta globalizada", d.contaGlobal]);
+    }
+    kvPairs(corrPairs);
+  }
+  // Endereço/e-mail alternativo da fatura (apenas quando não recebe por e-mail).
+  if (d.receberEmail === "Não") {
+    if (d.corrAlternativa === "Outro e-mail") {
+      fullLine("E-mail alternativo para a fatura", d.corrOutroEmail);
+    } else if (d.corrAlternativa === "Mesmo da obra") {
+      const endU = [
+        [d.logradouro, d.numero].filter(Boolean).join(", "),
+        d.complemento,
+        d.bairro,
+        [d.municipio, d.estado].filter(Boolean).join("/"),
+        d.cep ? "CEP " + d.cep : "",
+      ]
+        .filter(Boolean)
+        .join(" - ");
+      fullLine(
+        "Endereço de correspondência",
+        "Mesmo da unidade consumidora — " + endU,
+      );
+    } else {
+      const endC = [
+        [d.corrRua, d.corrNum].filter(Boolean).join(", "),
+        d.corrCompl,
+        d.corrBairro,
+        d.corrMunicipio,
+        d.corrEstado,
+        d.corrCep ? "CEP " + d.corrCep : "",
+      ]
+        .filter(Boolean)
+        .join(" - ");
+      fullLine("Endereço de correspondência", endC);
+    }
+  }
   P.gap(4);
 
   P.assinatura();

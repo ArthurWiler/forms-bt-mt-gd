@@ -1,3 +1,9 @@
+// Campos de Pessoa Física (Filiação, RG, Nascimento, Laudo, NIS) só aparecem
+// quando o documento é um CPF COMPLETO e VÁLIDO — igual ao BT/MT.
+function gdEhCpfValido(d) {
+  const r = validarCpfCnpj(d && d.cpfCnpj);
+  return r.tipo === "CPF" && r.valido === true;
+}
 const GD_SCHEMA_IDENTIFICACAO = [
   {
     k: "instalacao",
@@ -29,7 +35,56 @@ const GD_SCHEMA_IDENTIFICACAO = [
     options: GD_SN,
     pdf: false,
   },
-  { k: "titular", label: "Titular da Unidade Consumidora", req: true, span: 3 },
+  // ── Dados do Proprietário/Titular (ordem: Nome→E-mail, Celular→Telefone,
+  //    CPF/CNPJ→Filiação, RG→Nascimento, Laudo→NIS). Campos de PF só após
+  //    CPF válido (gdEhCpfValido). ──
+  { k: "titular", label: "Titular da Unidade Consumidora", req: true },
+  { k: "email", label: "E-mail", req: true },
+  { k: "celular", label: "Celular", req: true, mask: "mascararCelular" },
+  { k: "telefone", label: "Telefone", mask: "mascararFixo" },
+  {
+    k: "cpfCnpj",
+    label: "CPF/CNPJ",
+    req: true,
+    hintKey: "cnpjStatus",
+    placeholder: "Somente números",
+    mask: "mascararCpfCnpj",
+    onInput: (v, ctx) => {
+      if (ehCNPJ(v) && soDigitos(v).length === 14) ctx.buscarCnpj(v);
+    },
+  },
+  {
+    k: "filiacao",
+    label: "Filiação (Mãe ou Pai)",
+    req: true,
+    show: gdEhCpfValido,
+  },
+  { k: "rg", label: "RG / RNE / RANI", mask: "mascararRG", show: gdEhCpfValido },
+  { k: "nasc", label: "Data de Nascimento", type: "date", req: true, show: gdEhCpfValido },
+  {
+    k: "laudoMedico",
+    label: "Possui laudo médico (equipamentos essenciais)?",
+    req: true,
+    type: "toggle",
+    options: GD_SN,
+    show: gdEhCpfValido,
+  },
+  {
+    k: "nis",
+    label: "Possui NIS para Tarifa Social?",
+    req: true,
+    type: "toggle",
+    options: GD_SN,
+    show: gdEhCpfValido,
+  },
+  {
+    k: "numNis",
+    label: "Número do NIS",
+    req: true,
+    span: 2,
+    show: (d) => gdEhCpfValido(d) && d.nis === "Sim",
+  },
+  // ── Classificação da UC ──
   {
     k: "grupo",
     label: "Grupo",
@@ -45,15 +100,16 @@ const GD_SCHEMA_IDENTIFICACAO = [
     type: "select",
     options: GD_CLASSES,
   },
+  // Endereço na ordem do BT: CEP primeiro (auto-preenche o restante), depois
+  // Logradouro → Número → Complemento → Bairro → Município → Estado.
   {
-    k: "cpfCnpj",
-    label: "CPF/CNPJ",
+    k: "cep",
+    label: "CEP",
     req: true,
-    hintKey: "cnpjStatus",
-    placeholder: "Somente números",
-    mask: "mascararCpfCnpj",
+    hintKey: "cepStatus",
+    mask: "mascararCEP",
     onInput: (v, ctx) => {
-      if (ehCNPJ(v) && soDigitos(v).length === 14) ctx.buscarCnpj(v);
+      if (soDigitos(v).length === 8) ctx.buscarCep(v);
     },
   },
   { k: "logradouro", label: "Logradouro", req: true, span: 2 },
@@ -69,19 +125,6 @@ const GD_SCHEMA_IDENTIFICACAO = [
     placeholder: false,
     options: ["MG"],
   },
-  {
-    k: "cep",
-    label: "CEP",
-    req: true,
-    hintKey: "cepStatus",
-    mask: "mascararCEP",
-    onInput: (v, ctx) => {
-      if (soDigitos(v).length === 8) ctx.buscarCep(v);
-    },
-  },
-  { k: "telefone", label: "Telefone", mask: "mascararFixo" },
-  { k: "celular", label: "Celular", req: true, mask: "mascararCelular" },
-  { k: "email", label: "E-mail", req: true },
 ];
 // Etapa 1 — Orientações para preenchimento (conteúdo em GD_ORIENTACOES,
 // data.js). Mesmo padrão visual do BT individual: blocos titulados
@@ -149,6 +192,17 @@ function ViewOrientacoes({ ctx }) {
         " no rótulo.",
       ),
     ),
+    /* Aceite obrigatório: trava o "Avançar" enquanto não for marcado. */
+    /* @__PURE__ */ React.createElement(
+      "label",
+      { className: "aceite-orient" },
+      /* @__PURE__ */ React.createElement("input", {
+        type: "checkbox",
+        checked: !!ctx.aceiteOrient,
+        onChange: (e) => ctx.setAceiteOrient(e.target.checked),
+      }),
+      "Declaro que li e estou de acordo com as informações acima.",
+    ),
   );
 }
 function ViewIdentificacao({ ctx }) {
@@ -171,6 +225,22 @@ function ViewIdentificacao({ ctx }) {
 function ViewDadosUC({ ctx }) {
   const { d, set } = ctx;
   const utm = gdValidarUTM(d.fuso, d.utmE, d.utmN);
+  // Coordenadas por Latitude/Longitude → deriva fuso/E/N automaticamente
+  // (mesma lógica de BT/MT). Guarda também a string de exibição do UTM.
+  const setCoord = (patch) => {
+    const lat = patch.latitude != null ? patch.latitude : d.latitude;
+    const lon = patch.longitude != null ? patch.longitude : d.longitude;
+    const u = gdUtmDeCoordenadas(lat, lon);
+    set(
+      u
+        ? { ...patch, fuso: u.fuso, utmE: u.utmE, utmN: u.utmN }
+        : { ...patch, fuso: "", utmE: "", utmN: "" },
+    );
+  };
+  const utmDisplay =
+    d.fuso && d.utmE && d.utmN
+      ? `${d.fuso}${_gdUtmBandLetter(parseFloat(d.latitude) || 0)} E:${d.utmE} N:${d.utmN}`
+      : "";
   const potTrafos = d.tipoSE ? GD_TRAFO_POR_SE[d.tipoSE] || [] : [];
   const setTrafo = (i, patch) =>
     set({ trafos: d.trafos.map((t, k) => (k === i ? { ...t, ...patch } : t)) });
@@ -240,43 +310,34 @@ function ViewDadosUC({ ctx }) {
       { className: "grid" },
       /* @__PURE__ */ React.createElement(
         Field,
-        {
-          label: "Fuso",
-          req: true,
-        },
-        /* @__PURE__ */ React.createElement(
-          Sel,
-          { value: d.fuso, onChange: (e) => set({ fuso: e.target.value }) },
-          /* @__PURE__ */ React.createElement("option", { value: "" }),
-          GD_FUSOS.map((f) =>
-            /* @__PURE__ */ React.createElement(
-              "option",
-              { key: f, value: f },
-              f,
-            ),
-          ),
-        ),
+        { label: "Latitude", req: true },
+        /* @__PURE__ */ React.createElement(Inp, {
+          value: d.latitude,
+          onChange: (e) =>
+            setCoord({ latitude: e.target.value.replace(/[^\d.\-]/g, "") }),
+          placeholder: "-19.916681",
+        }),
       ),
       /* @__PURE__ */ React.createElement(
         Field,
-        { label: "E (Abscissa)", req: true, hint: !utm.ok ? utm.msg : "" },
+        { label: "Longitude", req: true },
         /* @__PURE__ */ React.createElement(Inp, {
-          value: d.utmE,
-          onChange: (e) => set({ utmE: e.target.value.replace(/[^\d.]/g, "") }),
-          placeholder: "Coordenada Leste",
+          value: d.longitude,
+          onChange: (e) =>
+            setCoord({ longitude: e.target.value.replace(/[^\d.\-]/g, "") }),
+          placeholder: "-43.934493",
         }),
       ),
       /* @__PURE__ */ React.createElement(
         Field,
         {
-          label: "N (Ordenada)",
-          req: true,
-          hint: !utm.ok && d.utmN ? utm.msg : "",
+          label: "Coordenada UTM (calculada)",
+          hint: d.fuso && !utm.ok ? utm.msg : "",
         },
         /* @__PURE__ */ React.createElement(Inp, {
-          value: d.utmN,
-          onChange: (e) => set({ utmN: e.target.value.replace(/[^\d.]/g, "") }),
-          placeholder: "Coordenada Norte",
+          value: utmDisplay,
+          readOnly: true,
+          placeholder: "Fuso E N (automático)",
         }),
       ),
       /* @__PURE__ */ React.createElement(
@@ -1474,69 +1535,196 @@ function ViewDeclaracoes({ ctx }) {
         ),
       ),
     ),
-    /* @__PURE__ */ React.createElement(
-      "div",
-      { className: "gd-subhead" },
-      "9 — Solicitante",
-    ),
+  );
+}
+// Correspondência e Fatura (etapa própria) — replica o bloco do BT: receber
+// fatura por e-mail, dia de vencimento e "Possui conta globalizada (poder
+// público)?" com número condicional. Inclui os dados do Solicitante (nome +
+// endereço de correspondência + telefones/e-mail) e as Observações gerais.
+function ViewCorrespondencia({ ctx }) {
+  const { d, set } = ctx;
+  return /* @__PURE__ */ React.createElement(
+    Card,
+    {
+      eyebrow: "Etapa " + ctx.etapaNum,
+      title: "Correspondência e Fatura",
+      sub: "Escolha como e quando você deseja receber a conta de energia.",
+    },
     /* @__PURE__ */ React.createElement(
       "div",
       { className: "grid" },
       /* @__PURE__ */ React.createElement(
         Field,
-        { label: "Nome do Consumidor ou Procurador Legal", req: true, span: 3 },
-        /* @__PURE__ */ React.createElement(Inp, {
-          value: d.solicitanteNome,
-          onChange: (e) => set({ solicitanteNome: e.target.value }),
+        { label: "Deseja receber a fatura no e-mail informado?", req: true },
+        /* @__PURE__ */ React.createElement(Toggle, {
+          value: d.receberEmail,
+          onChange: (v) => set({ receberEmail: v }),
+          options: [
+            { v: "Sim", l: "Sim" },
+            { v: "Não", l: "Não" },
+          ],
         }),
       ),
       /* @__PURE__ */ React.createElement(
         Field,
-        { label: "Endereço de Correspondência", req: true, span: 3 },
-        /* @__PURE__ */ React.createElement(Inp, {
-          value: d.solicitanteEndereco,
-          onChange: (e) => set({ solicitanteEndereco: e.target.value }),
-        }),
-      ),
-      /* @__PURE__ */ React.createElement(
-        Field,
-        { label: "Telefone" },
-        /* @__PURE__ */ React.createElement(Inp, {
-          value: d.solicitanteTelefone,
-          onChange: (e) =>
-            set({ solicitanteTelefone: mascararFixo(e.target.value) }),
-        }),
-      ),
-      /* @__PURE__ */ React.createElement(
-        Field,
-        { label: "Celular", req: true },
-        /* @__PURE__ */ React.createElement(Inp, {
-          value: d.solicitanteCelular,
-          onChange: (e) =>
-            set({ solicitanteCelular: mascararCelular(e.target.value) }),
-        }),
-      ),
-      /* @__PURE__ */ React.createElement(
-        Field,
-        { label: "E-mail", req: true },
-        /* @__PURE__ */ React.createElement(Inp, {
-          value: d.solicitanteEmail,
-          onChange: (e) => set({ solicitanteEmail: e.target.value }),
-        }),
-      ),
-      /* @__PURE__ */ React.createElement(
-        Field,
-        { label: "Observações", span: 3 },
-        /* @__PURE__ */ React.createElement("textarea", {
-          className: "ta",
-          value: d.obs,
-          onChange: (e) => set({ obs: e.target.value }),
-          rows: 3,
-          placeholder:
-            "Inclua informações relevantes: justificativa de disjuntor, atendimento híbrido, geração já conectada, etc.",
+        { label: "Data de Vencimento da Fatura", req: true },
+        /* @__PURE__ */ React.createElement(Toggle, {
+          value: d.vencimento,
+          onChange: (v) => set({ vencimento: v }),
+          options: DIAS_VENCIMENTO.map((dia) => ({ v: dia, l: dia })),
         }),
       ),
     ),
+    d.receberEmail === "Não" &&
+      /* @__PURE__ */ React.createElement(
+        "div",
+        { className: "divider" },
+        /* @__PURE__ */ React.createElement(
+          Field,
+          { label: "Como deseja receber a fatura?", req: true },
+          /* @__PURE__ */ React.createElement(Toggle, {
+            value: d.corrAlternativa,
+            onChange: (v) => set({ corrAlternativa: v }),
+            options: [
+              { v: "Endereço novo", l: "Novo endereço" },
+              { v: "Mesmo da obra", l: "Endereço da obra" },
+              { v: "Outro e-mail", l: "Outro e-mail" },
+            ],
+          }),
+        ),
+        d.corrAlternativa === "Mesmo da obra" &&
+          /* @__PURE__ */ React.createElement(
+            "div",
+            { className: "alert alert-info", style: { marginTop: 12 } },
+            "A fatura será enviada para o endereço informado nos",
+            " ",
+            /* @__PURE__ */ React.createElement(
+              "strong",
+              null,
+              "Dados da Unidade Consumidora",
+            ),
+            ".",
+          ),
+        d.corrAlternativa === "Outro e-mail" &&
+          /* @__PURE__ */ React.createElement(
+            "div",
+            { className: "grid grid-2", style: { marginTop: 12 } },
+            /* @__PURE__ */ React.createElement(
+              Field,
+              { label: "E-mail para envio da fatura", span: 2, req: true },
+              /* @__PURE__ */ React.createElement(Inp, {
+                type: "email",
+                value: d.corrOutroEmail,
+                onChange: (e) => set({ corrOutroEmail: e.target.value }),
+                placeholder: "email@exemplo.com",
+              }),
+            ),
+          ),
+        d.corrAlternativa === "Endereço novo" &&
+          /* @__PURE__ */ React.createElement(
+            "div",
+            { className: "grid grid-2", style: { marginTop: 12 } },
+            /* @__PURE__ */ React.createElement(
+              Field,
+              { label: "CEP", span: 2 },
+              /* @__PURE__ */ React.createElement(
+                "div",
+                { style: { maxWidth: 180 } },
+                /* @__PURE__ */ React.createElement(Inp, {
+                  value: d.corrCep,
+                  onChange: (e) =>
+                    set({ corrCep: mascararCEP(e.target.value) }),
+                  placeholder: "00000-000",
+                }),
+              ),
+            ),
+            /* @__PURE__ */ React.createElement(
+              Field,
+              { label: "Rua / Av.", span: 2 },
+              /* @__PURE__ */ React.createElement(Inp, {
+                value: d.corrRua,
+                onChange: (e) => set({ corrRua: e.target.value }),
+              }),
+            ),
+            /* @__PURE__ */ React.createElement(
+              Field,
+              { label: "Nº" },
+              /* @__PURE__ */ React.createElement(Inp, {
+                value: d.corrNum,
+                onChange: (e) => set({ corrNum: e.target.value }),
+              }),
+            ),
+            /* @__PURE__ */ React.createElement(
+              Field,
+              { label: "Complemento do endereço" },
+              /* @__PURE__ */ React.createElement(Inp, {
+                value: d.corrCompl,
+                onChange: (e) => set({ corrCompl: e.target.value }),
+              }),
+            ),
+            /* @__PURE__ */ React.createElement(
+              Field,
+              { label: "Bairro / Distrito" },
+              /* @__PURE__ */ React.createElement(Inp, {
+                value: d.corrBairro,
+                onChange: (e) => set({ corrBairro: e.target.value }),
+              }),
+            ),
+            /* @__PURE__ */ React.createElement(
+              Field,
+              { label: "Município" },
+              /* @__PURE__ */ React.createElement(Inp, {
+                value: d.corrMunicipio,
+                onChange: (e) => set({ corrMunicipio: e.target.value }),
+              }),
+            ),
+            /* @__PURE__ */ React.createElement(
+              Field,
+              { label: "Estado" },
+              /* @__PURE__ */ React.createElement(Inp, {
+                value: d.corrEstado,
+                onChange: (e) => set({ corrEstado: e.target.value }),
+              }),
+            ),
+          ),
+        /* Conta globalizada (poder público): oferecida só quando o cliente NÃO
+           recebe a fatura por e-mail; o número só aparece ao marcar "Sim". */
+        /* @__PURE__ */ React.createElement(
+          "div",
+          { style: { marginTop: 12 } },
+          /* @__PURE__ */ React.createElement(
+            Field,
+            { label: "Possui conta globalizada (poder público)?", span: 2 },
+            /* @__PURE__ */ React.createElement(Toggle, {
+              value: d.possuiContaGlobal,
+              onChange: (v) =>
+                set({
+                  possuiContaGlobal: v,
+                  contaGlobal: v === "Sim" ? d.contaGlobal : "",
+                }),
+              options: [
+                { v: "Sim", l: "Sim" },
+                { v: "Não", l: "Não" },
+              ],
+            }),
+          ),
+          d.possuiContaGlobal === "Sim" &&
+            /* @__PURE__ */ React.createElement(
+              Field,
+              {
+                label:
+                  "Conta globalizada (código de débito automático globalizado)",
+                req: true,
+                span: 2,
+              },
+              /* @__PURE__ */ React.createElement(Inp, {
+                value: d.contaGlobal,
+                onChange: (e) => set({ contaGlobal: e.target.value }),
+                placeholder: "000000000",
+              }),
+            ),
+        ),
+      ),
   );
 }
 function ViewFormularioCarga({ ctx }) {
@@ -1717,7 +1905,8 @@ function ViewRevisao({ ctx }) {
     ]),
     /* @__PURE__ */ React.createElement(PreviaDivider, null),
     secao("2 — Dados da UC", [
-      campo("UTM", `Fuso ${d.fuso} · E ${d.utmE} · N ${d.utmN}`),
+      campo("Coordenadas", `Lat ${d.latitude} · Lon ${d.longitude}`),
+      campo("UTM (calculada)", `Fuso ${d.fuso} · E ${d.utmE} · N ${d.utmN}`),
       campo("Solicitação", d.solicitacao),
       campo("Edificação", d.edificacao),
       campo(
@@ -1743,12 +1932,36 @@ function ViewRevisao({ ctx }) {
     /* @__PURE__ */ React.createElement(PreviaDivider, null),
     secao("5 — Armazenamento", [campo("Possui", d.possuiArmazenamento)]),
     /* @__PURE__ */ React.createElement(PreviaDivider, null),
-    secao("9 — Solicitante", [
-      campo("Nome", d.solicitanteNome),
-      campo(
-        "Contato",
-        `${d.solicitanteCelular || "—"} · ${d.solicitanteEmail || "—"}`,
-      ),
+    secao("Correspondência e Fatura", [
+      campo("Receber fatura por e-mail", d.receberEmail),
+      campo("Vencimento", d.vencimento),
+      d.receberEmail === "Não" &&
+        campo("Como deseja receber a fatura", d.corrAlternativa),
+      d.receberEmail === "Não" &&
+        d.corrAlternativa === "Outro e-mail" &&
+        campo("E-mail para envio da fatura", d.corrOutroEmail, true),
+      d.receberEmail === "Não" &&
+        d.corrAlternativa === "Endereço novo" &&
+        campo(
+          "Endereço da fatura",
+          [
+            [d.corrRua, d.corrNum].filter(Boolean).join(", "),
+            d.corrBairro,
+            d.corrMunicipio,
+            d.corrEstado,
+            d.corrCep,
+          ]
+            .filter(Boolean)
+            .join(" · "),
+          true,
+        ),
+      d.receberEmail === "Não" &&
+        campo(
+          "Conta globalizada",
+          d.possuiContaGlobal === "Sim"
+            ? d.contaGlobal || "Sim"
+            : d.possuiContaGlobal,
+        ),
     ]),
     /* Botão "Exportar PDF" removido daqui — o único é o inferior (nav-bottom, app.js). */
     /* @__PURE__ */ React.createElement(PreviaAvisoExportacao, null),

@@ -67,6 +67,10 @@ function TabProprietario({ ctx }) {
     validacaoDisjuntores,
     validacaoHibrido,
   } = ctx;
+  // Campos específicos de Pessoa Física só aparecem quando o CPF está
+  // COMPLETO e VÁLIDO (docInfo.valido === true) — antes disso não se sabe
+  // se o proprietário é CPF ou CNPJ.
+  const pfValidado = pessoaFisica && docInfo && docInfo.valido === true;
   return /* @__PURE__ */ React.createElement(
     Card,
     {
@@ -74,17 +78,52 @@ function TabProprietario({ ctx }) {
       title: "Dados do Proprietário",
       sub: "Preencha os dados do titular da conta de energia ou do proprietário do imóvel.",
     },
+    /* Ordem (2 colunas): Nome→Email, Celular→Fixo, CPF/CNPJ→Filiação,
+       RG→Nascimento, Laudo→NIS. Campos de PF só após CPF válido (pfValidado). */
     /* @__PURE__ */ React.createElement(
       "div",
       { className: "grid grid-2" },
+      /* Nome → E-mail */
       /* @__PURE__ */ React.createElement(
         Field,
-        { label: "Nome Completo (sem abreviações)", req: true, span: 2 },
+        { label: "Nome Completo (sem abreviações)", req: true },
         /* @__PURE__ */ React.createElement(Inp, {
           value: prop.nome,
           onChange: (e) => setProp({ ...prop, nome: e.target.value }),
         }),
       ),
+      /* @__PURE__ */ React.createElement(
+        Field,
+        { label: "E-mail", req: true },
+        /* @__PURE__ */ React.createElement(Inp, {
+          type: "email",
+          value: prop.email,
+          onChange: (e) => setProp({ ...prop, email: e.target.value }),
+        }),
+      ),
+      /* Celular → Telefone Fixo */
+      /* @__PURE__ */ React.createElement(
+        Field,
+        { label: "Celular", req: true },
+        /* @__PURE__ */ React.createElement(Inp, {
+          value: prop.celular,
+          onChange: (e) =>
+            setProp({
+              ...prop,
+              celular: mascararCelular(e.target.value),
+            }),
+        }),
+      ),
+      /* @__PURE__ */ React.createElement(
+        Field,
+        { label: "Telefone Fixo" },
+        /* @__PURE__ */ React.createElement(Inp, {
+          value: prop.fixo,
+          onChange: (e) =>
+            setProp({ ...prop, fixo: mascararFixo(e.target.value) }),
+        }),
+      ),
+      /* CPF/CNPJ → Filiação */
       /* @__PURE__ */ React.createElement(
         Field,
         {
@@ -126,16 +165,7 @@ function TabProprietario({ ctx }) {
             ),
         ),
       ),
-      /* @__PURE__ */ React.createElement(
-        Field,
-        { label: "E-mail", req: true },
-        /* @__PURE__ */ React.createElement(Inp, {
-          type: "email",
-          value: prop.email,
-          onChange: (e) => setProp({ ...prop, email: e.target.value }),
-        }),
-      ),
-      pessoaFisica &&
+      pfValidado &&
         /* @__PURE__ */ React.createElement(
           Field,
           { label: "Filiação (Mãe ou Pai)", req: true },
@@ -144,7 +174,8 @@ function TabProprietario({ ctx }) {
             onChange: (e) => setProp({ ...prop, filiacao: e.target.value }),
           }),
         ),
-      pessoaFisica &&
+      /* RG → Data de Nascimento */
+      pfValidado &&
         /* @__PURE__ */ React.createElement(
           Field,
           { label: "RG / RNE / RANI" },
@@ -154,7 +185,7 @@ function TabProprietario({ ctx }) {
               setProp({ ...prop, rg: mascararRG(e.target.value) }),
           }),
         ),
-      pessoaFisica &&
+      pfValidado &&
         /* @__PURE__ */ React.createElement(
           Field,
           { label: "Data de Nascimento", req: true },
@@ -164,34 +195,13 @@ function TabProprietario({ ctx }) {
             onChange: (e) => setProp({ ...prop, nasc: e.target.value }),
           }),
         ),
-      /* @__PURE__ */ React.createElement(
-        Field,
-        { label: "Celular", req: true },
-        /* @__PURE__ */ React.createElement(Inp, {
-          value: prop.celular,
-          onChange: (e) =>
-            setProp({
-              ...prop,
-              celular: mascararCelular(e.target.value),
-            }),
-        }),
-      ),
-      /* @__PURE__ */ React.createElement(
-        Field,
-        { label: "Telefone Fixo" },
-        /* @__PURE__ */ React.createElement(Inp, {
-          value: prop.fixo,
-          onChange: (e) =>
-            setProp({ ...prop, fixo: mascararFixo(e.target.value) }),
-        }),
-      ),
-      pessoaFisica &&
+      /* Laudo médico → NIS */
+      pfValidado &&
         /* @__PURE__ */ React.createElement(
           Field,
           {
             label: "Possui laudo médico (equipamentos essenciais)?",
             req: true,
-            span: 2,
           },
           /* @__PURE__ */ React.createElement(Toggle, {
             value: prop.laudoMedico,
@@ -202,7 +212,7 @@ function TabProprietario({ ctx }) {
             ],
           }),
         ),
-      pessoaFisica &&
+      pfValidado &&
         /* @__PURE__ */ React.createElement(
           Field,
           { label: "Possui NIS para Tarifa Social?", req: true },
@@ -215,11 +225,11 @@ function TabProprietario({ ctx }) {
             ],
           }),
         ),
-      pessoaFisica &&
+      pfValidado &&
         prop.nis === "Sim" &&
         /* @__PURE__ */ React.createElement(
           Field,
-          { label: "Número do NIS", req: true },
+          { label: "Número do NIS", req: true, span: 2 },
           /* @__PURE__ */ React.createElement(Inp, {
             value: prop.numNis,
             onChange: (e) => setProp({ ...prop, numNis: e.target.value }),

@@ -2,6 +2,8 @@ function TabOrient({ ctx }) {
   const {
     aba,
     setAba,
+    aceiteOrient,
+    setAceiteOrient,
     modalidade,
     setModalidade,
     atend,
@@ -149,21 +151,16 @@ function TabOrient({ ctx }) {
         ORIENTACOES.callout,
       ),
     ),
+    /* Aceite obrigatório: trava o "Avançar" enquanto não for marcado. */
     /* @__PURE__ */ React.createElement(
-      "div",
-      { className: "legend" },
-      /* @__PURE__ */ React.createElement(
-        "span",
-        null,
-        /* @__PURE__ */ React.createElement("span", { className: "req" }, "*"),
-        " Campo de preenchimento obrigatório",
-      ),
-      /* @__PURE__ */ React.createElement(
-        "span",
-        null,
-        /* @__PURE__ */ React.createElement("span", { className: "req" }, "**"),
-        " Obrigatório para pessoa física",
-      ),
+      "label",
+      { className: "aceite-orient" },
+      /* @__PURE__ */ React.createElement("input", {
+        type: "checkbox",
+        checked: !!aceiteOrient,
+        onChange: (e) => setAceiteOrient(e.target.checked),
+      }),
+      "Declaro que li e estou de acordo com as informações acima.",
     ),
   );
 }

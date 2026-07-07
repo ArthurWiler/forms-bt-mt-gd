@@ -52,7 +52,11 @@ function gerarPdfMicroGD(d) {
   sec("2.  DADOS DA UNIDADE CONSUMIDORA");
   const ucPairs = [
     [
-      "Coordenadas UTM",
+      "Coordenadas",
+      `Lat ${d.latitude || "—"} · Lon ${d.longitude || "—"}`,
+    ],
+    [
+      "Coordenadas UTM (calculada)",
       `Fuso ${d.fuso || "—"} · E ${d.utmE || "—"} · N ${d.utmN || "—"}`,
     ],
     [
@@ -273,16 +277,52 @@ function gerarPdfMicroGD(d) {
   fullLine("8.6 Informações verdadeiras (obrigatória)", sn(d.decl86));
   P.gap(2);
 
-  // ---- 9. Solicitante ----
-  sec("9.  SOLICITANTE");
-  kvPairs([
-    ["Nome do Consumidor/Procurador", d.solicitanteNome],
-    ["Telefone", d.solicitanteTelefone],
-    ["Celular", d.solicitanteCelular],
-    ["E-mail", d.solicitanteEmail],
-  ]);
-  fullLine("Endereço de Correspondência", d.solicitanteEndereco);
-  if (d.obs) fullLine("Observações", d.obs);
+  // ---- 9. Correspondência ----
+  sec("9.  CORRESPONDÊNCIA E FATURA");
+  {
+    const corrPairs = [
+      ["Receber fatura por e-mail", d.receberEmail],
+      ["Data de vencimento", d.vencimento],
+    ];
+    // Conta globalizada só é oferecida quando NÃO recebe por e-mail e o cliente
+    // marca que a possui — só então entra no PDF (mesma lógica do BT).
+    if (d.receberEmail === "Não" && d.possuiContaGlobal === "Sim") {
+      corrPairs.push(["Conta globalizada", d.contaGlobal]);
+    }
+    kvPairs(corrPairs);
+  }
+  // Endereço/e-mail alternativo da fatura (apenas quando não recebe por e-mail).
+  if (d.receberEmail === "Não") {
+    if (d.corrAlternativa === "Outro e-mail") {
+      fullLine("E-mail alternativo para a fatura", d.corrOutroEmail);
+    } else if (d.corrAlternativa === "Mesmo da obra") {
+      const endU = [
+        [d.logradouro, d.numero].filter(Boolean).join(", "),
+        d.complemento,
+        d.bairro,
+        [d.municipio, d.estado].filter(Boolean).join("/"),
+        d.cep ? "CEP " + d.cep : "",
+      ]
+        .filter(Boolean)
+        .join(" - ");
+      fullLine(
+        "Endereço de correspondência",
+        "Mesmo da unidade consumidora — " + endU,
+      );
+    } else {
+      const endC = [
+        [d.corrRua, d.corrNum].filter(Boolean).join(", "),
+        d.corrCompl,
+        d.corrBairro,
+        d.corrMunicipio,
+        d.corrEstado,
+        d.corrCep ? "CEP " + d.corrCep : "",
+      ]
+        .filter(Boolean)
+        .join(" - ");
+      fullLine("Endereço de correspondência", endC);
+    }
+  }
   P.gap(4);
 
   P.assinatura();

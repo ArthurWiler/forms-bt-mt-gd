@@ -90,7 +90,9 @@
                 <span class="orient-num">A</span>
                 <p>
                   Este termo precisa ser
-                  <strong>preenchido e assinado pelo próprio solicitante</strong>
+                  <strong
+                    >preenchido e assinado pelo próprio solicitante</strong
+                  >
                   ou por um <strong>representante legal</strong>. Depois de
                   gerado, o PDF deve ser anexado à nota de serviço
                   correspondente.
@@ -131,13 +133,17 @@
                 atenção antes da assinatura.
               </p>
             </div>
-            <p class="field-hint" style="margin-top: 16px">
-              Campos marcados com <b>(opcional)</b> não são obrigatórios.
-            </p>
+            <label class="aceite-orient">
+              <input type="checkbox" id="aceiteOrient" />
+              Declaro que li e estou de acordo com as informações acima.
+            </label>
           </div>
           <div class="nav-bottom no-print">
-            <span class="nav-step-info">Etapa 1 de 6</span>
-            <button class="btn btn-primary" onclick="goTo(1)">
+            <button
+              class="btn btn-primary"
+              data-gate="aceiteOrientacoesOk"
+              onclick="goTo(1)"
+            >
               Iniciar preenchimento →
             </button>
           </div>
@@ -183,10 +189,7 @@
           </div>
           <div class="nav-bottom no-print">
             <button class="btn btn-ghost" onclick="goTo(0)">← Voltar</button>
-            <span class="nav-step-info">Etapa 2 de 6</span>
-            <button class="btn btn-primary" onclick="goTo(2)">
-              Avançar →
-            </button>
+            <button class="btn btn-primary" onclick="goTo(2)">Avançar →</button>
           </div>
         </section>
 
@@ -225,7 +228,11 @@
               </div>
               <div class="field">
                 <label>Órgão Emissor</label>
-                <input type="text" data-k="orgaoEmissor" placeholder="Ex.: SSP" />
+                <input
+                  type="text"
+                  data-k="orgaoEmissor"
+                  placeholder="Ex.: SSP"
+                />
               </div>
               <div class="field">
                 <label>Estado</label>
@@ -277,10 +284,7 @@
           </div>
           <div class="nav-bottom no-print">
             <button class="btn btn-ghost" onclick="goTo(1)">← Voltar</button>
-            <span class="nav-step-info">Etapa 3 de 6</span>
-            <button class="btn btn-primary" onclick="goTo(3)">
-              Avançar →
-            </button>
+            <button class="btn btn-primary" onclick="goTo(3)">Avançar →</button>
           </div>
         </section>
 
@@ -335,10 +339,7 @@
           </div>
           <div class="nav-bottom no-print">
             <button class="btn btn-ghost" onclick="goTo(2)">← Voltar</button>
-            <span class="nav-step-info">Etapa 4 de 6</span>
-            <button class="btn btn-primary" onclick="goTo(4)">
-              Avançar →
-            </button>
+            <button class="btn btn-primary" onclick="goTo(4)">Avançar →</button>
           </div>
         </section>
 
@@ -377,16 +378,20 @@
               <div class="cmg-aviso no-print">
                 <div class="cmg-aviso-icon" aria-hidden="true"></div>
                 <p class="cmg-aviso-texto">
-                  Ao desistir, você assume os custos já incorridos pela CEMIG até
-                  o cancelamento. Se o valor pago no aceite do orçamento for maior
-                  que esses custos, a diferença será restituída na conta informada
-                  abaixo.
+                  Ao desistir, você assume os custos já incorridos pela CEMIG
+                  até o cancelamento. Se o valor pago no aceite do orçamento for
+                  maior que esses custos, a diferença será restituída na conta
+                  informada abaixo.
                 </p>
               </div>
               <div class="grid grid-3">
                 <div class="field">
                   <label>Banco <span class="req">*</span></label>
-                  <input type="text" data-k="banco" placeholder="Nome do banco" />
+                  <input
+                    type="text"
+                    data-k="banco"
+                    placeholder="Nome do banco"
+                  />
                 </div>
                 <div class="field">
                   <label>Agência <span class="req">*</span></label>
@@ -420,7 +425,6 @@
           </div>
           <div class="nav-bottom no-print">
             <button class="btn btn-ghost" onclick="goTo(3)">← Voltar</button>
-            <span class="nav-step-info">Etapa 5 de 6</span>
             <button class="btn btn-primary" onclick="goTo(5)">
               Ver prévia →
             </button>

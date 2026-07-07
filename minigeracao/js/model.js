@@ -34,10 +34,15 @@ function gdEstadoInicial() {
     grupo: "A",
     classe: "",
     cpfCnpj: "",
+    // Campos de Pessoa Física (só aparecem com CPF válido — ver views.js)
+    filiacao: "", rg: "", nasc: "", laudoMedico: "Não", nis: "Não", numNis: "",
     logradouro: "", numero: "", complemento: "",
     bairro: "", municipio: "", estado: "MG", cep: "",
     telefone: "", celular: "", email: "",
     // 2 - Dados da UC
+    // Coordenadas: usuário informa Latitude/Longitude; fuso/E/N derivados
+    // automaticamente (latLonParaUTM), mantidos p/ validação e PDF.
+    latitude: "", longitude: "",
     fuso: "", utmE: "", utmN: "",
     tipoSE: "",
     // Regra 12: haverá mudança de local da subestação?
@@ -92,9 +97,14 @@ function gdEstadoInicial() {
     decl82: false, decl83: false, decl84: true, decl85Regra: "", decl86: true,
     // Regra 22: item 9.5 — dispensa de análise de inversão de fluxo (obrigatório quando Grid Zero = Sim).
     decl95: false,
-    // 9 - Solicitante
-    solicitanteNome: "", solicitanteEndereco: "",
-    solicitanteTelefone: "", solicitanteCelular: "", solicitanteEmail: "",
-    obs: "",
+    // Correspondência (etapa própria — replica o bloco do BT) + Solicitante.
+    receberEmail: "Sim", vencimento: "",
+    // Quando NÃO recebe a fatura no e-mail informado (mesma lógica do BT):
+    // escolhe entre novo endereço, endereço da obra ou outro e-mail.
+    corrAlternativa: "Endereço novo", corrOutroEmail: "",
+    corrCep: "", corrRua: "", corrNum: "", corrCompl: "",
+    corrBairro: "", corrMunicipio: "", corrEstado: "MG",
+    // Conta globalizada só é oferecida quando NÃO recebe fatura por e-mail.
+    possuiContaGlobal: "Não", contaGlobal: "",
   };
 }

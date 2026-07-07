@@ -28,11 +28,24 @@ const CAMPOS_CARDS_CONFIG = {
       ],
     },
     {
+      // Recebe a fatura no e-mail informado? (mesma lógica do BT). Só quando
+      // "Não" é que aparece "Como deseja receber a fatura?" e a conta
+      // globalizada. O onchange="onReceberEmail()" (HTML) mostra/esconde o bloco.
+      chave: "receberEmail",
+      gridId: "cardsReceberEmail",
+      valorPadrao: "Sim",
+      opcoes: [
+        { valor: "Sim", texto: "Sim" },
+        { valor: "Não", texto: "Não" },
+      ],
+    },
+    {
       chave: "formaCorresp",
       gridId: "cardsFormaCorresp",
       opcoes: [
-        { valor: "E-mail", texto: "E-mail" },
-        { valor: "Endereço", texto: "Endereço" },
+        { valor: "Novo endereço", texto: "Novo endereço" },
+        { valor: "Endereço da obra", texto: "Endereço da obra" },
+        { valor: "Outro e-mail", texto: "Outro e-mail" },
         { valor: "Agência Correios(Caixa Postal)", texto: "Agência dos Correios (Caixa Postal)" },
       ],
     },
@@ -42,16 +55,6 @@ const CAMPOS_CARDS_CONFIG = {
       opcoes: [
         { valor: "Urbana", texto: "Urbana" },
         { valor: "Rural", texto: "Rural" },
-      ],
-    },
-    {
-      chave: "fuso",
-      gridId: "cardsFuso",
-      valorPadrao: "23°",
-      opcoes: [
-        { valor: "22°", texto: "22°" },
-        { valor: "23°", texto: "23°" },
-        { valor: "24°", texto: "24°" },
       ],
     },
     {
@@ -71,6 +74,17 @@ const CAMPOS_CARDS_CONFIG = {
       opcoes: [
         { valor: "Verde", texto: "Verde" },
         { valor: "Azul", texto: "Azul" },
+      ],
+    },
+    {
+      // Conta globalizada (poder público) — replica a lógica do BT: só pede o
+      // número quando "Sim". O clique no card dispara 'change' no <select>,
+      // cujo onchange="onContaGlobal()" (no HTML) mostra/esconde o número.
+      chave: "possuiContaGlobal",
+      gridId: "cardsPossuiContaGlobal",
+      opcoes: [
+        { valor: "Sim", texto: "Sim" },
+        { valor: "Não", texto: "Não" },
       ],
     },
   ],
@@ -213,11 +227,13 @@ function inicializarCamposCards(){
 }
 
 /* ===== Navegação ===== */
-function goTo(n){
-  // Trava de avanço: só valida quando avança (ou pula adiante). Volta é livre.
+function goTo(n,livre){
+  // Navegação pela sidebar é LIVRE (livre=true). O avanço pelo botão só ocorre
+  // quando ele está habilitado (obrigatórios ok), então a validação aqui é
+  // só uma rede de segurança para o clique do botão. Voltar é sempre livre.
   const _atual=document.querySelector('.page.show');
   const _atualN=_atual?parseInt(_atual.id.replace('page-',''),10):-1;
-  if(n>_atualN && _atual && window.CemigMarcadores){
+  if(!livre && n>_atualN && _atual && window.CemigMarcadores){
     const r=window.CemigMarcadores.validar(_atual);
     if(!r.ok){ if(r.primeiro) r.primeiro.scrollIntoView({behavior:'smooth',block:'center'}); return; }
   }
@@ -228,6 +244,16 @@ function goTo(n){
   window.scrollTo({top:0,behavior:'smooth'});
   if(n===3){ initMapaObra(); renderRestricaoAmbiental(); if(mapaObra) setTimeout(()=>mapaObra.invalidateSize(),50); }
   if(n===5) renderPreview();
+  // Recalcula o estado (habilitado/desabilitado) do botão Avançar da nova etapa.
+  if(window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
+}
+
+// Alguns rótulos são injetados dinamicamente com "<span class=req>*</span>"
+// (finalidade, coordenadas, demandas, subestação). Depois de mexer neles,
+// reaplicamos a convenção de marcadores para que o "*" vire data-req / rótulo
+// "(opcional)" — do contrário o asterisco cru fica visível para o usuário.
+function reaplicarMarcadores(){
+  if(window.CemigMarcadores) window.CemigMarcadores.aplicar();
 }
 
 /* ===== Bind genérico de campos (data-k) ===== */
@@ -277,16 +303,38 @@ function mascararCNPJ(v){
 // Validação híbrida: disparada no blur do campo único de CPF/CNPJ.
 // Limpa os caracteres não numéricos e decide o tipo automaticamente
 // pela quantidade de dígitos (<=11 → CPF; >11 → CNPJ).
+// Mostra/oculta os campos de Pessoa Física (Filiação, RG, Nascimento, Laudo,
+// NIS) — visíveis SÓ quando o documento é um CPF COMPLETO e VÁLIDO (igual ao
+// BT). Ao ocultar, limpa os valores p/ não travar a validação de obrigatórios.
+function mostrarCamposPF(pf){
+  $$('.pf-campo').forEach(el=>{ el.style.display = pf ? '' : 'none'; });
+  if(!pf){
+    ['filiacao','rg','nasc','laudoMedico','nis','numNis'].forEach(k=>{
+      const c=$(`[data-k="${k}"]`); if(c){ c.value=''; state[k]=''; }
+    });
+    const nb=$('#numNisBoxMT'); if(nb) nb.style.display='none';
+  } else { onNisMT(); }
+  if(window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
+}
+// Número do NIS só quando "Possui NIS" = Sim.
+function onNisMT(){
+  const nis=$('[data-k="nis"]'); const box=$('#numNisBoxMT');
+  const pfVisivel = $('.pf-campo') && $('.pf-campo').style.display!=='none';
+  if(box) box.style.display=(pfVisivel && nis && nis.value==='Sim') ? '' : 'none';
+  if(window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
+}
 async function onCpfCnpj(){
   const el=$('#f_cpfcnpj'), msg=$('#cpfMsg');
   const d=CalculoMT.soDigitos(el.value);
-  if(!d){state.cpfCnpj='';el.classList.remove('is-invalid');msg.textContent='';msg.className='field-hint';return;}
+  if(!d){state.cpfCnpj='';el.classList.remove('is-invalid');msg.textContent='';msg.className='field-hint';mostrarCamposPF(false);return;}
   const tipo = d.length<=11 ? 'CPF' : 'CNPJ';
   el.value = tipo==='CPF' ? mascararCPF(d) : mascararCNPJ(d);
   state.cpfCnpj=el.value;
   const valido = tipo==='CPF' ? CalculoMT.validarCPF(d) : CalculoMT.validarCNPJ(d);
-  if(!valido){el.classList.add('is-invalid');msg.textContent=tipo+' inválido';msg.className='field-hint field-err';return;}
+  if(!valido){el.classList.add('is-invalid');msg.textContent=tipo+' inválido';msg.className='field-hint field-err';mostrarCamposPF(false);return;}
   el.classList.remove('is-invalid');
+  // Campos de PF só p/ CPF válido; CNPJ não exibe (pessoa jurídica).
+  mostrarCamposPF(tipo==='CPF');
   if(tipo==='CNPJ'){
     msg.textContent='verificando empresa…';msg.className='field-hint';
     try{
@@ -304,9 +352,49 @@ async function onCpfCnpj(){
     msg.textContent='CPF válido ✓';msg.className='field-hint field-ok';
   }
 }
-function onCorresp(){const v=event.target.value;state.formaCorresp=v;
-  $('#correspEmailBox').style.display=(v==='E-mail')?'':'none';
-  $('#endCorrespBox').style.display=(v==='Endereço'||v==='Agência Correios(Caixa Postal)')?'block':'none';}
+// "Deseja receber a fatura no e-mail informado?" (mesma lógica do BT): só quando
+// "Não" é que se pergunta COMO receber a fatura + conta globalizada. Ao voltar
+// para "Sim", limpa a escolha alternativa para não vazar dados obsoletos.
+function onReceberEmail(){
+  const sel=$('select[data-k="receberEmail"]');
+  const v=sel?sel.value:'';
+  state.receberEmail=v;
+  const box=$('#correspNaoEmailBox');
+  const mostrar=(v==='Não');
+  if(box) box.style.display=mostrar?'':'none';
+  if(!mostrar){
+    state.formaCorresp='';
+    const fc=$('select[data-k="formaCorresp"]');
+    if(fc){ fc.value=''; fc.dispatchEvent(new Event('change')); }
+  }
+  if(window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
+}
+// Como deseja receber a fatura? (visível só quando NÃO recebe no e-mail):
+//  - Novo endereço / Agência Correios → endereço de correspondência (ec_*)
+//  - Endereço da obra → usa o endereço da UC (aviso, sem campos próprios)
+//  - Outro e-mail → e-mail alternativo
+function onCorresp(){
+  const sel=$('select[data-k="formaCorresp"]');
+  const v=sel?sel.value:'';state.formaCorresp=v;
+  const ehEndereco=(v==='Novo endereço'||v==='Agência Correios(Caixa Postal)');
+  $('#correspEmailBox').style.display=(v==='Outro e-mail')?'':'none';
+  $('#endCorrespBox').style.display=ehEndereco?'block':'none';
+  const obra=$('#correspObraBox'); if(obra) obra.style.display=(v==='Endereço da obra')?'':'none';}
+// Conta globalizada (poder público): só pede o número quando "Sim" (lógica do
+// BT). Ao esconder, limpa o número para não vazar valor obsoleto no PDF.
+function onContaGlobal(){
+  const sel=$('select[data-k="possuiContaGlobal"]');
+  const v=sel?sel.value:'';
+  state.possuiContaGlobal=v;
+  const box=$('#contaGlobalBox');
+  const mostrar=(v==='Sim');
+  if(box) box.style.display=mostrar?'':'none';
+  if(!mostrar){
+    state.contaGlobalizada='';
+    const inp=$('input[data-k="contaGlobalizada"]');
+    if(inp) inp.value='';
+  }
+}
 
 /* ===== Etapa 3: atividade, localização, coordenadas, ambiental ===== */
 function fillAtividades(){const s=$('#f_atividade');ATIVIDADES.forEach(a=>{const o=document.createElement('option');o.textContent=a;s.appendChild(o);});}
@@ -396,6 +484,7 @@ function updateCoordHint(){
     $('#lonLabel').innerHTML='Longitude <span class="req">*</span>';
     $('#coordNovaBox').style.display='none';
   }
+  reaplicarMarcadores();
 }
 function onMudancaLocal(){
   state.mudancaLocal=$('#f_mudancaLocal')?.value||'';
@@ -403,6 +492,7 @@ function onMudancaLocal(){
   $('#coordNovaBox').style.display=sim?'grid':'none';
   $('#latLabel').innerHTML=sim?'Latitude atual <span class="req">*</span>':'Latitude';
   $('#lonLabel').innerHTML=sim?'Longitude atual <span class="req">*</span>':'Longitude';
+  reaplicarMarcadores();
   onCoord();
 }
 function _utmBandLetter(lat){
@@ -439,7 +529,6 @@ function onCoord(imediato){
     const u=latLonParaUTM(lat,lon);
     const utmEl=$('[data-k=utm]');
     if(utmEl) utmEl.value=`${u.zona}${_utmBandLetter(lat)} E:${u.easting} N:${u.northing}`;
-    setFusoAuto(u.zona); // determina o fuso (zona UTM) automaticamente pela longitude
     // Validação ambiental automática a cada mudança de coordenada (como no BT):
     // clique/arraste no mapa aplicam de imediato; digitação usa debounce.
     clearTimeout(_mtRestrDebounce);
@@ -459,25 +548,6 @@ function onCoord(imediato){
     }
   }
   $('#coordAlert').innerHTML = erros.length ? alertHTML('err',erros.join(' ')) : '';
-}
-
-// Define automaticamente o "Fuso" (zona UTM) com base na zona calculada a
-// partir da longitude. Só atua nas zonas suportadas pelos cards (22-24);
-// fora dessa faixa a seleção manual é preservada. Atualiza o select oculto
-// (fonte da verdade) e o destaque visual dos cards (#cardsFuso).
-function setFusoAuto(zona){
-  const valor=`${zona}°`;
-  const sel=$('select[data-k="fuso"]');
-  if(!sel) return;
-  if(!['22°','23°','24°'].includes(valor)) return;
-  if(sel.value===valor) return;
-  sel.value=valor; state.fuso=valor;
-  const grid=document.getElementById('cardsFuso');
-  if(grid){
-    [...grid.children].forEach(btn=>{
-      btn.classList.toggle(CAMPOS_CARDS_CONFIG.classes.active, btn.textContent.trim()===valor);
-    });
-  }
 }
 
 /* ===== Geolocalização automática a partir do endereço (Etapa 3) =====
@@ -1276,6 +1346,7 @@ function updateDemandaLabels(){
     show('dem_ponta_atual','Demanda Ponta (kW) <span class="req">*</span>');
     show('dem_foraponta_atual','Demanda Fora de Ponta (kW) <span class="req">*</span>');
   }
+  reaplicarMarcadores();
 }
 function validarDemandas(){
   if(state.monomia==='Sim'){ $('#demandaAlert').innerHTML=''; return []; }
@@ -1344,6 +1415,7 @@ function onTrocaSE(){
   $('#alt_tipoParaBox').style.display=(state.alt_troca==='Sim')?'':'none';
   $('#seGalleryBox_para').style.display=(state.alt_troca==='Sim')?'block':'none';
   $('#alt_tipoAtualLbl').innerHTML=(state.alt_troca==='Sim')?'Tipo de Subestação (De) <span class="req">*</span>':'Tipo de Subestação atual <span class="req">*</span>';
+  reaplicarMarcadores();
   recalcRamal();
 }
 
@@ -1484,31 +1556,43 @@ function renderPreview(){
   const tipoSE=tipoSEefetivo();
   const secoes=[];
 
-  // 1. Classificação (etapa 1)
-  let cls=pvCampo('Opção de Atendimento',state.opcaoAtend,{step:1})+
-    pvCampo('Finalidade',state.finalidade,{step:1});
-  if(state.finalidade && state.finalidade!=='Conexão Nova')
-    cls+=pvCampo('Nº da Instalação',state.numInstalacao,{step:1});
-  cls+=pvCampo('Tel. RT (cel/fixo)',[state.rtCelular,state.rtFixo].filter(Boolean).join(' / '),{step:1});
-  secoes.push(pvSecao('Classificação do Atendimento',cls));
+  // 1. Proprietário (etapa 2/page-1). Campos de PF só entram se preenchidos
+  //    (CPF). Os telefones do RT ficam aqui (migrados da antiga Classificação).
+  let propMT=
+    pvCampo('Nome / Razão Social',state.nome,{full:true,step:1})+
+    pvCampo('E-mail do cliente',state.emailCliente,{step:1})+
+    pvCampo('Telefone do cliente',state.telCliente,{step:1})+
+    pvCampo('Telefone do solicitante',state.telSolicitante,{step:1})+
+    pvCampo('CPF/CNPJ',state.cpfCnpj,{step:1});
+  if(state.filiacao) propMT+=pvCampo('Filiação',state.filiacao,{step:1});
+  if(state.rg) propMT+=pvCampo('RG / RNE / RANI',state.rg,{step:1});
+  if(state.nasc) propMT+=pvCampo('Data de Nascimento',state.nasc,{step:1});
+  if(state.laudoMedico) propMT+=pvCampo('Laudo médico?',state.laudoMedico,{step:1});
+  if(state.nis) propMT+=pvCampo('NIS (Tarifa Social)?',state.nis,{step:1});
+  if(state.nis==='Sim'&&state.numNis) propMT+=pvCampo('Número do NIS',state.numNis,{step:1});
+  propMT+=pvCampo('E-mail do solicitante',state.emailSolicitante,{full:true,step:1});
+  propMT+=pvCampo('Tel. RT (cel/fixo)',[state.rtCelular,state.rtFixo].filter(Boolean).join(' / '),{step:1});
+  secoes.push(pvSecao('Dados do Proprietário',propMT));
 
-  // 2. Proprietário (etapa 2)
-  secoes.push(pvSecao('Dados do Proprietário',
-    pvCampo('Nome / Razão Social',state.nome,{full:true,step:2})+
-    pvCampo('CPF/CNPJ',state.cpfCnpj,{step:2})+
-    pvCampo('Telefone do cliente',state.telCliente,{step:2})+
-    pvCampo('E-mail do cliente',state.emailCliente,{step:2})+
-    pvCampo('Telefone do solicitante',state.telSolicitante,{step:2})+
-    pvCampo('E-mail do solicitante',state.emailSolicitante,{step:2})));
-
-  // 3. Correspondência (etapa 2)
-  let cor=pvCampo('Vencimento escolhido',state.desejaVenc==='Sim'?('Sim — dia '+(state.diaVenc||'—')):state.desejaVenc,{step:2})+
-    pvCampo('Modalidade da obra',state.modalidadeObra,{step:2})+
-    pvCampo('Forma de correspondência',state.formaCorresp,{step:2});
-  if(state.formaCorresp==='E-mail')cor+=pvCampo('E-mail correspondência',state.emailCorresp,{step:2});
-  if(state.formaCorresp==='Endereço'||state.formaCorresp==='Agência Correios(Caixa Postal)')
-    cor+=pvCampo('Endereço correspondência',[state.ec_rua,state.ec_num,state.ec_bairro,state.ec_municipio,state.ec_estado,state.ec_cep].filter(Boolean).join(', '),{full:true,step:2});
-  if(state.contaGlobalizada)cor+=pvCampo('Conta globalizada',state.contaGlobalizada,{step:2});
+  // 2. Correspondência (etapa 3/page-2) — mesma ordem/lógica do BT: recebe no
+  // e-mail informado? + vencimento; só quando "Não" é que aparece COMO receber
+  // a fatura, o endereço/e-mail alternativo e a conta globalizada.
+  let cor=pvCampo('Receber fatura no e-mail informado?',state.receberEmail,{step:2})+
+    pvCampo('Vencimento escolhido',state.desejaVenc==='Sim'?('Sim — dia '+(state.diaVenc||'—')):state.desejaVenc,{step:2})+
+    pvCampo('Modalidade da obra',state.modalidadeObra,{step:2});
+  if(state.receberEmail==='Não'){
+    cor+=pvCampo('Como deseja receber a fatura?',state.formaCorresp,{step:2});
+    if(state.formaCorresp==='Outro e-mail')
+      cor+=pvCampo('E-mail para envio da fatura',state.emailCorresp,{full:true,step:2});
+    else if(state.formaCorresp==='Endereço da obra'){
+      const endObra=[[state.urb_endereco,state.urb_num].filter(Boolean).join(', '),state.urb_compl,state.urb_bairro,state.uc_municipio,state.uc_estado,state.uc_cep].filter(Boolean).join(', ');
+      cor+=pvCampo('Endereço da fatura','Mesmo da unidade consumidora — '+endObra,{full:true,step:2});
+    }
+    else if(state.formaCorresp==='Novo endereço'||state.formaCorresp==='Agência Correios(Caixa Postal)')
+      cor+=pvCampo('Endereço da fatura',[state.ec_rua,state.ec_num,state.ec_bairro,state.ec_municipio,state.ec_estado,state.ec_cep].filter(Boolean).join(', '),{full:true,step:2});
+    if(state.possuiContaGlobal)cor+=pvCampo('Possui conta globalizada?',state.possuiContaGlobal,{step:2});
+    if(state.possuiContaGlobal==='Sim'&&state.contaGlobalizada)cor+=pvCampo('Conta globalizada',state.contaGlobalizada,{step:2});
+  }
   secoes.push(pvSecao('Correspondência',cor));
 
   // 4. Unidade Consumidora (etapa 3)
@@ -1528,8 +1612,13 @@ function renderPreview(){
   uc+=pvCampo('Subestação pronta?',state.subPronta,{step:3});
   secoes.push(pvSecao('Unidade Consumidora',uc));
 
-  // 5. Dados Técnicos (etapa 4)
-  let tec=pvCampo('Nível de tensão MT',state.tensaoMT?state.tensaoMT.replace('.',',')+' kV':'',{step:4})+
+  // 4. Dados Técnicos (etapa 5). Começa pela Classificação do Atendimento
+  //    (Opção/Finalidade/Nº instalação), migrada da antiga etapa própria.
+  let tec=pvCampo('Opção de Atendimento',state.opcaoAtend,{step:4})+
+    pvCampo('Finalidade',state.finalidade,{step:4});
+  if(state.finalidade && state.finalidade!=='Conexão Nova')
+    tec+=pvCampo('Nº da Instalação',state.numInstalacao,{step:4});
+  tec+=pvCampo('Nível de tensão MT',state.tensaoMT?state.tensaoMT.replace('.',',')+' kV':'',{step:4})+
     pvCampo('Compartilhada?',state.compartilhada,{step:4});
   if(state.compartilhada==='Sim'){
     tec+=pvCampo('Soma dos transformadores (kVA)',fmt(state.potTotalTrafos),{step:4});
@@ -1687,8 +1776,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   inicializarCamposCards();
   addTrafo(); // começa com 1 linha de trafo
   aplicarAtividadeDaURL();
-  // stepper clicável
-  $$('.vstep').forEach((s,i)=>s.addEventListener('click',()=>goTo(i)));
+  // stepper clicável — navegação LIVRE (não bloqueia por obrigatórios).
+  $$('.vstep').forEach((s,i)=>s.addEventListener('click',()=>goTo(i,true)));
   // reaplica a convenção de marcadores nos campos montados dinamicamente
-  if(window.CemigMarcadores) window.CemigMarcadores.aplicar();
+  if(window.CemigMarcadores){ window.CemigMarcadores.aplicar(); window.CemigMarcadores.montarNavReativa(); }
 });

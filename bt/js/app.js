@@ -24,7 +24,11 @@ const CAMPOS_OBRIGATORIOS = {
   prop: (s) => {
     const p = s.prop || {};
     const req = [p.nome, p.cpfCnpj, p.email, p.celular];
-    if (s.pessoaFisica) {
+    // Exige documento COMPLETO e VÁLIDO (um valor vazio reprova o avanço).
+    if (!s.docValido) req.push("");
+    // Campos específicos de Pessoa Física só são exigidos quando o CPF é
+    // válido (é quando eles ficam VISÍVEIS no formulário — ver proprietario.js).
+    if (s.pessoaFisica && s.docValido) {
       req.push(p.filiacao, p.nasc);
       if (p.nis === "Sim") req.push(p.numNis);
     }
@@ -53,6 +57,8 @@ function abaCompleta(aba, s) {
 
 function App() {
   const [aba, setAba] = useState("orient");
+  // Aceite das Orientações ("Declaro que li…") — trava o avanço da 1ª etapa.
+  const [aceiteOrient, setAceiteOrient] = useState(false);
   const [modalidade, setModalidade] = useState(null);
   const [cardSelecionado, setCardSelecionado] = useState(null);
   const restrito = !!cardSelecionado?.restrito;
@@ -978,6 +984,8 @@ function App() {
   const ctx = {
     aba,
     setAba,
+    aceiteOrient,
+    setAceiteOrient,
     modalidade,
     setModalidade,
     mostrarAnaliseMotores,
@@ -1271,14 +1279,6 @@ function App() {
                             { variant: "ghost", onClick: irAnt },
                             "← Voltar",
                           ),
-                        /* @__PURE__ */ React.createElement(
-                          "span",
-                          { className: "nav-step-info" },
-                          "Etapa ",
-                          Math.max(idx, 0) + 1,
-                          " de ",
-                          abas.length,
-                        ),
                         aba === "revisar"
                           ? /* @__PURE__ */ React.createElement(
                               Btn,
@@ -1308,9 +1308,12 @@ function App() {
                                     obra,
                                     pessoaFisica,
                                     coletivo,
+                                    docValido: docInfo.valido === true,
                                   }) ||
                                   (aba === "cargas" &&
-                                    !validacaoDisjuntores.ok),
+                                    !validacaoDisjuntores.ok) ||
+                                  /* Orientações: só avança com o aceite marcado. */
+                                  (aba === "orient" && !aceiteOrient),
                               },
                               "Avançar →",
                             ),

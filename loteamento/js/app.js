@@ -53,11 +53,13 @@ function montarToggle(k){
 }
 
 /* ===== Navegação por etapas (mesmo padrão do formulário MT) ===== */
-function goTo(n){
-  // Trava de avanço: só valida quando avança (ou pula adiante). Volta é livre.
+function goTo(n,livre){
+  // Navegação pela sidebar é LIVRE (livre=true). O avanço pelo botão só ocorre
+  // quando ele está habilitado; a validação aqui é rede de segurança. Voltar
+  // é sempre livre.
   const _atual=document.querySelector('.page.show');
   const _atualN=_atual?parseInt(_atual.id.replace('page-',''),10):-1;
-  if(n>_atualN && _atual && window.CemigMarcadores){
+  if(!livre && n>_atualN && _atual && window.CemigMarcadores){
     const r=window.CemigMarcadores.validar(_atual);
     if(!r.ok){ if(r.primeiro) r.primeiro.scrollIntoView({behavior:'smooth',block:'center'}); return; }
   }
@@ -67,6 +69,7 @@ function goTo(n){
   steps.forEach((s,i)=>{s.classList.remove('active','done'); if(i<n)s.classList.add('done'); if(i===n)s.classList.add('active');});
   window.scrollTo({top:0,behavior:'smooth'});
   if(n===6) renderPreview();
+  if(window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
 
 /* ===== Coordenadas / UTM (mesma lógica do formulário MT) ===== */
@@ -246,7 +249,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   $$('[data-k]').forEach(el=>{
     if(el.type!=='checkbox' && el.value) state[el.dataset.k]=el.value;
   });
-  // Stepper lateral clicável (mesmo padrão do MT): voltar é livre; avançar
-  // passa pela trava de validação do goTo.
-  $$('.vstep').forEach((s,i)=>s.addEventListener('click',()=>goTo(i)));
+  // Stepper lateral clicável: navegação LIVRE (não bloqueia por obrigatórios).
+  $$('.vstep').forEach((s,i)=>s.addEventListener('click',()=>goTo(i,true)));
+  if(window.CemigMarcadores) window.CemigMarcadores.montarNavReativa();
 });

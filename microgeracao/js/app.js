@@ -7,6 +7,7 @@ const GD_ABAS = [
   { id: "ger", n: "Dados da Geração", c: ViewGeracao },
   { id: "arm", n: "Armazenamento", c: ViewArmazenamento },
   { id: "decl", n: "Declarações", c: ViewDeclaracoes },
+  { id: "corresp", n: "Correspondência", c: ViewCorrespondencia },
   { id: "rev", n: "Prévia & PDF", c: ViewRevisao },
 ];
 function gdModoDaURL() {
@@ -50,6 +51,8 @@ function App() {
     ...GD_MODO.overrides,
   }));
   const [aba, setAba] = useState("orient");
+  // Aceite das Orientações ("Declaro que li…") — trava o avanço da 1ª etapa.
+  const [aceiteOrient, setAceiteOrient] = useState(false);
   const [cepStatus, setCepStatus] = useState("");
   const [cnpjStatus, setCnpjStatus] = useState("");
   const set = (patch) => setD((s) => ({ ...s, ...patch }));
@@ -106,9 +109,10 @@ function App() {
     req(d.cep, "CEP");
     req(d.celular, "Celular");
     req(d.email, "E-mail");
-    req(d.fuso, "Fuso (UTM)");
-    req(d.utmE, "E (Abscissa)");
-    req(d.utmN, "N (Ordenada)");
+    // Coordenadas: o usuário informa Latitude/Longitude; fuso/E/N são
+    // derivados (gdUtmDeCoordenadas). Validamos lat/lon e a faixa do UTM.
+    req(d.latitude, "Latitude");
+    req(d.longitude, "Longitude");
     const utm = gdValidarUTM(d.fuso, d.utmE, d.utmN);
     if (d.fuso && d.utmE && d.utmN && !utm.ok)
       faltas.push("Coordenada UTM fora da faixa do fuso");
@@ -145,10 +149,22 @@ function App() {
       );
     if (!d.decl84) faltas.push("Declaração 8.4 (obrigatória)");
     if (!d.decl86) faltas.push("Declaração 8.6 (obrigatória)");
-    req(d.solicitanteNome, "Nome do solicitante");
-    req(d.solicitanteEndereco, "Endereço de correspondência");
-    req(d.solicitanteCelular, "Celular do solicitante");
-    req(d.solicitanteEmail, "E-mail do solicitante");
+    // Correspondência (etapa própria — replica o BT)
+    req(d.receberEmail, "Deseja receber a fatura no e-mail?");
+    req(d.vencimento, "Data de vencimento da fatura");
+    if (d.receberEmail === "Não") {
+      if (d.corrAlternativa === "Outro e-mail")
+        req(d.corrOutroEmail, "E-mail alternativo da fatura");
+      else if (d.corrAlternativa === "Endereço novo") {
+        req(d.corrCep, "CEP de correspondência");
+        req(d.corrRua, "Rua/Av. de correspondência");
+        req(d.corrNum, "Número de correspondência");
+        req(d.corrBairro, "Bairro de correspondência");
+        req(d.corrMunicipio, "Município de correspondência");
+      }
+      if (d.possuiContaGlobal === "Sim")
+        req(d.contaGlobal, "Conta globalizada");
+    }
     if (d.fastTrack === "Sim")
       req(d.fastRegra, "Regra de enquadramento (Fast Track)");
     return { ok: faltas.length === 0, faltas };
@@ -157,6 +173,8 @@ function App() {
   const ctx = {
     d,
     set,
+    aceiteOrient,
+    setAceiteOrient,
     cepStatus,
     cnpjStatus,
     buscarCep,
@@ -286,21 +304,15 @@ function App() {
               { variant: "ghost", onClick: irAnt },
               "← Voltar",
             ),
-          /* @__PURE__ */ React.createElement(
-            "span",
-            { className: "nav-step-info" },
-            "Etapa ",
-            idx + 1,
-            " de ",
-            GD_ABAS.length,
-          ),
           idx < GD_ABAS.length - 1
             ? /* @__PURE__ */ React.createElement(
                 Btn,
                 {
                   variant: "primary",
                   onClick: irProx,
-                  disabled: !abaCompleta,
+                  /* Orientações: só avança com o aceite marcado. */
+                  disabled:
+                    !abaCompleta || (aba === "orient" && !aceiteOrient),
                 },
                 "Avançar →",
               )

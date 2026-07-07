@@ -7,11 +7,14 @@ const GD_ABAS = [
   { id: "ger", n: "Dados da Geração", c: ViewGeracao },
   { id: "arm", n: "Armazenamento", c: ViewArmazenamento },
   { id: "decl", n: "Declarações", c: ViewDeclaracoes },
+  { id: "corresp", n: "Correspondência", c: ViewCorrespondencia },
   { id: "rev", n: "Prévia & PDF", c: ViewRevisao },
 ];
 function App() {
   const [d, setD] = useState(gdEstadoInicial());
   const [aba, setAba] = useState("orient");
+  // Aceite das Orientações ("Declaro que li…") — trava o avanço da 1ª etapa.
+  const [aceiteOrient, setAceiteOrient] = useState(false);
   const [cepStatus, setCepStatus] = useState("");
   const [cnpjStatus, setCnpjStatus] = useState("");
   const set = (patch) => setD((s) => ({ ...s, ...patch }));
@@ -33,6 +36,17 @@ function App() {
     req(d.titular, "Titular da UC");
     req(d.classe, "Classe");
     req(d.cpfCnpj, "CPF/CNPJ");
+    // Documento deve estar COMPLETO e VÁLIDO; campos de PF só quando for CPF
+    // válido (é quando ficam visíveis — ver views.js).
+    const _doc = validarCpfCnpj(d.cpfCnpj);
+    if (_doc.valido !== true) faltas.push("CPF/CNPJ válido");
+    if (_doc.tipo === "CPF" && _doc.valido === true) {
+      req(d.filiacao, "Filiação");
+      req(d.nasc, "Data de Nascimento");
+      req(d.laudoMedico, "Possui laudo médico?");
+      req(d.nis, "Possui NIS?");
+      if (d.nis === "Sim") req(d.numNis, "Número do NIS");
+    }
     req(d.logradouro, "Logradouro");
     req(d.numero, "Número");
     req(d.bairro, "Bairro");
@@ -40,9 +54,10 @@ function App() {
     req(d.cep, "CEP");
     req(d.celular, "Celular");
     req(d.email, "E-mail");
-    req(d.fuso, "Fuso (UTM)");
-    req(d.utmE, "E (Abscissa)");
-    req(d.utmN, "N (Ordenada)");
+    // Coordenadas: usuário informa Latitude/Longitude; fuso/E/N derivados
+    // (gdUtmDeCoordenadas). Validamos lat/lon e a faixa do UTM.
+    req(d.latitude, "Latitude");
+    req(d.longitude, "Longitude");
     const utm = gdValidarUTM(d.fuso, d.utmE, d.utmN);
     if (d.fuso && d.utmE && d.utmN && !utm.ok)
       faltas.push("Coordenada UTM fora da faixa do fuso");
@@ -81,16 +96,30 @@ function App() {
     if (d.gridZero === "Sim" && !d.decl95)
       faltas.push("Declaração 9.5 (obrigatória para Grid Zero)");
     if (!d.decl86) faltas.push("Declaração 9.6 (obrigatória)");
-    req(d.solicitanteNome, "Nome do solicitante");
-    req(d.solicitanteEndereco, "Endereço de correspondência");
-    req(d.solicitanteCelular, "Celular do solicitante");
-    req(d.solicitanteEmail, "E-mail do solicitante");
+    // Correspondência (etapa própria — replica o BT)
+    req(d.receberEmail, "Deseja receber a fatura no e-mail?");
+    req(d.vencimento, "Data de vencimento da fatura");
+    if (d.receberEmail === "Não") {
+      if (d.corrAlternativa === "Outro e-mail")
+        req(d.corrOutroEmail, "E-mail alternativo da fatura");
+      else if (d.corrAlternativa === "Endereço novo") {
+        req(d.corrCep, "CEP de correspondência");
+        req(d.corrRua, "Rua/Av. de correspondência");
+        req(d.corrNum, "Número de correspondência");
+        req(d.corrBairro, "Bairro de correspondência");
+        req(d.corrMunicipio, "Município de correspondência");
+      }
+      if (d.possuiContaGlobal === "Sim")
+        req(d.contaGlobal, "Conta globalizada");
+    }
     return { ok: faltas.length === 0, faltas };
   }, [d]);
   const idx = GD_ABAS.findIndex((a) => a.id === aba);
   const ctx = {
     d,
     set,
+    aceiteOrient,
+    setAceiteOrient,
     cepStatus,
     cnpjStatus,
     buscarCep,
@@ -214,21 +243,15 @@ function App() {
               { variant: "ghost", onClick: irAnt },
               "← Voltar",
             ),
-          /* @__PURE__ */ React.createElement(
-            "span",
-            { className: "nav-step-info" },
-            "Etapa ",
-            idx + 1,
-            " de ",
-            GD_ABAS.length,
-          ),
           idx < GD_ABAS.length - 1
             ? /* @__PURE__ */ React.createElement(
                 Btn,
                 {
                   variant: "primary",
                   onClick: irProx,
-                  disabled: !abaCompleta,
+                  /* Orientações: só avança com o aceite marcado. */
+                  disabled:
+                    !abaCompleta || (aba === "orient" && !aceiteOrient),
                 },
                 "Avançar →",
               )

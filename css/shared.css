@@ -943,12 +943,56 @@ label.restricao-aceite input[type="checkbox"] {
 /* Sinalização única de campo obrigatório não preenchido — reutilizada por
    todos os formulários (React e vanilla, todos sob `.cemig-form`). Uma só
    classe (.is-invalid), sem estilos de erro concorrentes. Declarada após o
-   :focus para prevalecer mesmo com o campo focado. */
+   :focus para prevalecer mesmo com o campo focado.
+   Spec Figma (erro): borda erro/600 (#C8303F), rótulo em #C8303F e
+   supporting-text de erro (12px) abaixo do campo. */
+/* Padrão A (borda no próprio controle, ex.: campos .field--plain). */
 .cemig-form .field input.is-invalid,
 .cemig-form .field select.is-invalid,
 .cemig-form .field textarea.is-invalid {
-  border-color: var(--vermelho);
-  box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.18);
+  border-color: var(--cmg-error-500); /* #C8303F — erro/600 */
+  box-shadow: 0 0 0 3px rgba(200, 48, 63, 0.18);
+}
+/* Padrão B (rótulo flutuante): a borda é do .field (o input não tem borda),
+   então o estado de erro (borda + rótulo) precisa ir no CONTÊINER. Restrito
+   a campos NÃO-plain com input/select (mesma heurística do Padrão B) p/ não
+   duplicar a borda dos campos Padrão A. !important vence a borda neutra do
+   Padrão B (declarada depois e com especificidade maior) — o erro deve
+   sempre prevalecer. */
+.cemig-form .field:not(.field--plain):has(input.is-invalid),
+.cemig-form .field:not(.field--plain):has(select.is-invalid) {
+  border-color: var(--cmg-error-500) !important; /* #C8303F */
+  box-shadow: 0 0 0 3px rgba(200, 48, 63, 0.18) !important;
+}
+/* (o rótulo em erro/600 é reforçado após o bloco do rótulo flutuante,
+   para vencer a cor do estado "placeholder" — ver adiante.) */
+/* position: relative em QUALQUER campo inválido, p/ ancorar o supporting-text
+   (::after) — inclusive nos Padrão A. */
+.cemig-form .field:has(input.is-invalid),
+.cemig-form .field:has(select.is-invalid),
+.cemig-form .field:has(textarea.is-invalid) {
+  position: relative;
+}
+/* supporting-text de erro (12px, erro/600) abaixo do campo. Gerado via
+   ::after p/ não exigir mudança de markup; posicionado como o .field-hint
+   flutuante (absoluto, bottom: -20px). Só quando o campo NÃO tem um hint
+   próprio (evita sobreposição). */
+.cemig-form .field:has(input.is-invalid):not(:has(.field-hint))::after,
+.cemig-form .field:has(select.is-invalid):not(:has(.field-hint))::after,
+.cemig-form .field:has(textarea.is-invalid):not(:has(.field-hint))::after {
+  content: "Campo obrigatório";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -20px;
+  padding: 0 var(--cmg-space-4); /* alinha ao texto do campo (16px) */
+  font-family: "Open Sans", var(--cmg-font-family);
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 20px;
+  letter-spacing: 0.2px;
+  color: var(--cmg-error-500); /* #C8303F */
+  pointer-events: none;
 }
 .cemig-form .readonly-val {
   min-height: 48px;
@@ -1060,6 +1104,13 @@ label.restricao-aceite input[type="checkbox"] {
   font-size: 16px;
   line-height: 24px;
   color: var(--cmg-text-muted);
+}
+/* Rótulo em ERRO (erro/600). O estado "placeholder" acima tem especificidade
+   alta (muitos :has/:not) e coloriria o rótulo de muted mesmo inválido; como
+   o erro deve SEMPRE prevalecer, usamos !important (exceção pontual e clara). */
+.cemig-form .field:not(.field--plain):has(input.is-invalid) > label,
+.cemig-form .field:not(.field--plain):has(select.is-invalid) > label {
+  color: var(--cmg-error-500) !important; /* #C8303F */
 }
 /* Valor do campo: <input>/<select> preenchem a caixa, sem borda; padding
    superior reserva espaço para o rótulo flutuado. */
@@ -2131,6 +2182,13 @@ label.restricao-aceite input[type="checkbox"] {
   gap: var(--cmg-space-4);
   margin-top: 0;
 }
+/* Quando há só o botão de avançar (etapas sem "Voltar", ex.: Orientações),
+   ele mantém a MESMA posição das demais etapas: alinhado à direita (como o
+   "Avançar" quando há um "Voltar" à esquerda via space-between). margin-left
+   auto empurra p/ a direita, idêntico habilitado/desabilitado — sem salto. */
+.cemig-form .nav-bottom > .btn:only-child {
+  margin-left: auto;
+}
 .cemig-form .nav-step-info {
   font-family: var(--cmg-font-family);
   font-size: var(--cmg-fs-body);
@@ -2139,6 +2197,62 @@ label.restricao-aceite input[type="checkbox"] {
 }
 .cemig-form .fade-in {
   animation: fadeIn 0.25s ease;
+}
+/* Aceite das Orientações ("Declaro que li…") — checkbox que libera o avanço.
+   Comum a todos os formulários (React e HTML). Spec Figma:
+     • caixa de seleção (hit area): 32×32, ícone centralizado;
+     • estado (anel hover/foco): círculo 32×32 (radius 100px);
+     • forma: 18×18, borda 2px neutra/500 (#576864), radius 2px.
+   Marcado → preenche em verde (green/600) com o "check" branco. */
+.cemig-form .aceite-orient {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  cursor: pointer;
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-body-lg, 16px);
+  line-height: var(--cmg-lh-body-lg, 24px);
+  color: var(--cmg-neutral-600, #364b46);
+}
+.cemig-form .aceite-orient input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  flex: none;
+  /* forma: 18×18, borda 2px neutra/500 (#576864), radius 2px */
+  width: 18px;
+  height: 18px;
+  /* margem lateral compõe a área de toque 32×32 sem desalinhar o texto; o
+     clique também funciona pelo <label> que envolve o checkbox. */
+  margin: 0 7px 0 0;
+  border: 2px solid #576864;
+  border-radius: 2px;
+  background: transparent no-repeat center;
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+/* estado (anel hover/foco): círculo 32×32 ao redor da forma, via box-shadow
+   (radius 100px) — não altera o layout, então não há salto. */
+.cemig-form .aceite-orient input[type="checkbox"]:hover,
+.cemig-form .aceite-orient input[type="checkbox"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 7px rgba(87, 104, 100, 0.12);
+  border-radius: 2px;
+}
+/* marcado: forma preenchida em verde + "check" branco (SVG inline). */
+.cemig-form .aceite-orient input[type="checkbox"]:checked {
+  border-color: var(--cmg-green-600, #0f6c58);
+  background-color: var(--cmg-green-600, #0f6c58);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+  background-size: 12px 12px;
+}
+.cemig-form .aceite-orient input[type="checkbox"]:checked:hover,
+.cemig-form .aceite-orient input[type="checkbox"]:checked:focus-visible {
+  box-shadow: 0 0 0 7px rgba(15, 108, 88, 0.14);
 }
 
 /* ---- Orientation numbered list (single source for ALL forms) ----

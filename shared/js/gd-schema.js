@@ -39,9 +39,11 @@ function CampoSchema({ c, ctx }) {
   } else if (tipo === "select") {
     controle = /* @__PURE__ */ React.createElement(Sel, { value: d[c.k], disabled: travado, onChange: (e) => aoMudarValor(e.target.value) }, c.placeholder !== false && /* @__PURE__ */ React.createElement("option", { value: "" }), gdNormOptions(c.options).map((o) => /* @__PURE__ */ React.createElement("option", { key: o.v, value: o.v }, o.l)));
   } else {
+    // "date" (e outros tipos de <input>) passam direto p/ o Inp; o padrão é texto.
     controle = /* @__PURE__ */ React.createElement(
       Inp,
       {
+        type: tipo === "text" ? void 0 : tipo,
         value: d[c.k],
         disabled: travado,
         onChange: (e) => aoMudarValor(e.target.value),
