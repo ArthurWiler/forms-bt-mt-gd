@@ -123,14 +123,20 @@ function LocalizacaoObra({ obra, setObra }) {
     const map = mapRef.current;
     if (map) {
       const ll = window.L.latLng(lat, lng);
-      if (!map.getBounds().contains(ll)) map.setView(ll, Math.max(map.getZoom(), 17));
-      if (markerRef.current) markerRef.current.setLatLng([lat, lng]);
-      else {
+      if (markerRef.current) {
+        markerRef.current.setLatLng([lat, lng]);
+        if (!map.getBounds().contains(ll)) map.setView(ll, Math.max(map.getZoom(), 17));
+      } else {
         markerRef.current = window.L.marker([lat, lng], { draggable: true }).addTo(map);
         markerRef.current.on("dragend", (e) => {
           const p = e.target.getLatLng();
           aplicarCoord(p.lat, p.lng);
         });
+        // Primeira aparição do pino (geocodificação, clique, coordenada
+        // digitada): centraliza no ZOOM MÁXIMO dos tiles. Depois disso o
+        // enquadramento só muda se o pino sair da vista (bloco acima).
+        const zMax = Number.isFinite(map.getMaxZoom()) ? map.getMaxZoom() : 19;
+        map.setView(ll, zMax);
       }
       if (label) markerRef.current.bindPopup(label);
       setTimeout(() => map.invalidateSize(), 100);
@@ -183,32 +189,32 @@ function LocalizacaoObra({ obra, setObra }) {
     }
   };
   const buscarPorEndereco = async () => {
-    const endereco = [
-      [obra.endereco, obra.num].filter(Boolean).join(", "),
-      obra.bairro,
-      obra.cidade,
-      obra.estado,
-      obra.cep,
-      "Brasil"
-    ].filter(Boolean).join(", ");
-    if (!endereco.replace(/Brasil|,/g, "").trim()) return;
+    const temAlgo = [obra.endereco, obra.num, obra.bairro, obra.cidade, obra.cep]
+      .some((v) => String(v || "").trim());
+    if (!temAlgo) return;
     setStatus("geo");
     try {
-      const resp = await fetch(
-        "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(endereco),
-        { headers: { "Accept-Language": "pt-BR" } }
-      );
-      const data = await resp.json();
-      if (!data || !data.length) {
+      // Geocodificação ESTRUTURADA compartilhada (shared/js/geo.js): resolve o
+      // NÚMERO do endereço — a antiga busca em texto livre ignorava o número e
+      // posicionava o pin longe do local real.
+      const r = await geocodificarEnderecoBR({
+        logradouro: obra.endereco,
+        numero: obra.num,
+        bairro: obra.bairro,
+        cidade: obra.cidade,
+        uf: obra.estado,
+        cep: obra.cep
+      });
+      if (!r) {
         setStatus("Endereço não encontrado. Informe a coordenada manualmente.");
         return;
       }
       setStatus("");
       setObra((p) => ({
         ...p,
-        lat: String(parseFloat(data[0].lat)),
-        lng: String(parseFloat(data[0].lon)),
-        utm: utmString(data[0].lat, data[0].lon)
+        lat: String(r.lat),
+        lng: String(r.lon),
+        utm: utmString(r.lat, r.lon)
       }));
     } catch (e) {
       setStatus("Falha ao geocodificar o endereço.");

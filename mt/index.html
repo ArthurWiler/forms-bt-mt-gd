@@ -50,7 +50,7 @@
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">2</span>
-          <span class="vstep-label">Proprietário</span>
+          <span class="vstep-label">Dados do Proprietário </span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">3</span>
@@ -155,12 +155,10 @@
           <div class="card">
             <div class="section-eyebrow">Etapa 2</div>
             <h3 class="card-title">Dados do Proprietário</h3>
-            <!-- Ordem (2 colunas): Nome→E-mail, Tel. cliente→Tel. solicitante,
-                 CPF/CNPJ→Filiação, RG→Nascimento, Laudo→NIS. Os campos de
-                 Pessoa Física (#pfBoxMT) só aparecem após CPF válido. Os
-                 telefones do RT (Responsável Técnico) ficam aqui, junto aos
-                 demais telefones (regra global: telefones em Dados do
-                 Proprietário). -->
+            <p class="card-sub">
+              Preencha os dados do titular da conta de energia ou do
+              proprietário do imóvel.
+            </p>
             <div class="grid grid-2">
               <div class="field">
                 <label
@@ -174,7 +172,7 @@
                 />
               </div>
               <div class="field">
-                <label>E-mail do cliente</label>
+                <label>E-mail do cliente <span class="req">*</span></label>
                 <input
                   type="email"
                   data-k="emailCliente"
@@ -189,6 +187,7 @@
                   type="tel"
                   data-k="telCliente"
                   placeholder="(31) 90000-0000"
+                  oninput="onTelInput(this)"
                   onblur="onTel('telCliente')"
                 />
                 <span id="status-telCliente" class="field-hint"></span>
@@ -199,6 +198,7 @@
                   type="tel"
                   data-k="telSolicitante"
                   placeholder="(31) 90000-0000"
+                  oninput="onTelInput(this)"
                   onblur="onTel('telSolicitante')"
                 />
                 <span id="status-telSolicitante" class="field-hint"></span>
@@ -210,7 +210,7 @@
                   id="f_cpfcnpj"
                   data-k="cpfCnpj"
                   placeholder="000.000.000-00 ou 00.000.000/0000-00"
-                  onblur="onCpfCnpj()"
+                  oninput="onCpfCnpj()"
                 />
                 <span class="field-hint" id="cpfMsg"></span>
               </div>
@@ -226,7 +226,12 @@
               </div>
               <div class="field pf-campo" style="display: none">
                 <label>RG / RNE / RANI</label>
-                <input type="text" data-k="rg" placeholder="00.000.000" />
+                <input
+                  type="text"
+                  data-k="rg"
+                  placeholder="00.000.000"
+                  oninput="onRgInput(this)"
+                />
               </div>
               <div class="field pf-campo" style="display: none">
                 <label>Data de Nascimento <span class="req">*</span></label>
@@ -260,8 +265,19 @@
                 style="display: none"
               >
                 <label>Número do NIS <span class="req">*</span></label>
-                <input type="text" data-k="numNis" placeholder="Número do NIS" />
+                <input
+                  type="text"
+                  data-k="numNis"
+                  placeholder="Número do NIS"
+                />
               </div>
+            </div>
+
+            <p class="card-sub divider">
+              Preencha os dados do responsável técnico pelo empreendimento, se
+              houver.
+            </p>
+            <div class="grid grid-2">
               <div class="field col-span-2">
                 <label>E-mail do solicitante</label>
                 <input
@@ -273,14 +289,15 @@
                 <span id="status-emailSolicitante" class="field-hint"></span>
               </div>
               <!-- Telefones do Responsável Técnico (migrados da antiga etapa
-                   Classificação; regra global: telefones em Dados do
-                   Proprietário). Opcionais. -->
+                    Classificação; regra global: telefones em Dados do
+                    Proprietário). Opcionais. -->
               <div class="field">
                 <label>Telefone do RT — Celular</label>
                 <input
                   type="tel"
                   data-k="rtCelular"
                   placeholder="(31) 90000-0000"
+                  oninput="onTelInput(this, 'celular')"
                   onblur="onTel('rtCelular')"
                 />
                 <span id="status-rtCelular" class="field-hint"></span>
@@ -291,6 +308,7 @@
                   type="tel"
                   data-k="rtFixo"
                   placeholder="(31) 0000-0000"
+                  oninput="onTelInput(this, 'fixo')"
                   onblur="onTel('rtFixo')"
                 />
                 <span id="status-rtFixo" class="field-hint"></span>
@@ -311,8 +329,7 @@
             <p class="card-sub">
               Escolha como e quando você deseja receber a conta de energia.
             </p>
-            <!-- Recebimento da fatura + vencimento: mesmo container do BT
-                 (um único .grid, campos empilhados em largura total). -->
+
             <div class="grid" style="margin-top: 16px">
               <div class="field field--plain">
                 <label
@@ -332,7 +349,10 @@
                 </select>
               </div>
               <div class="field field--plain">
-                <label>Data de Vencimento da Fatura <span class="req">*</span></label>
+                <label
+                  >Data de Vencimento da Fatura
+                  <span class="req">*</span></label
+                >
                 <div id="cardsDiaVenc"></div>
                 <select
                   data-k="desejaVenc"
@@ -357,27 +377,11 @@
                   <option>27</option>
                 </select>
               </div>
-              <div class="field field--plain">
-                <label
-                  >Modalidade da obra
-                  <span class="opt">(se houver)</span></label
-                >
-                <div id="cardsModalidadeObra"></div>
-                <select
-                  data-k="modalidadeObra"
-                  style="display: none"
-                  aria-hidden="true"
-                >
-                  <option value="">—</option>
-                  <option>PART</option>
-                  <option>CEMIG</option>
-                </select>
-              </div>
             </div>
             <!-- Bloco exibido só quando NÃO recebe a fatura no e-mail informado
                  (mesma lógica do BT): escolhe COMO receber a fatura + endereço/
                  e-mail alternativo e a conta globalizada. -->
-            <div id="correspNaoEmailBox" style="display: none">
+            <div id="correspNaoEmailBox" class="divider" style="display: none">
               <div class="grid" style="margin-top: 16px">
                 <div class="field field--plain">
                   <label
@@ -475,42 +479,42 @@
                 </div>
               </div>
 
-            <!-- Conta globalizada (poder público) — replica a lógica do BT:
+              <!-- Conta globalizada (poder público) — replica a lógica do BT:
                  pergunta Sim/Não e só então pede o número. -->
-            <div class="grid grid-2" style="margin-top: 24px">
-              <div class="field field--plain col-span-2">
-                <label
-                  >Possui conta globalizada (poder público)?
-                  <span class="opt">(opcional)</span></label
-                >
-                <div id="cardsPossuiContaGlobal"></div>
-                <select
-                  data-k="possuiContaGlobal"
-                  onchange="onContaGlobal()"
+              <div class="grid grid-2" style="margin-top: 24px">
+                <div class="field field--plain col-span-2">
+                  <label
+                    >Possui conta globalizada (poder público)?
+                    <span class="opt">(opcional)</span></label
+                  >
+                  <div id="cardsPossuiContaGlobal"></div>
+                  <select
+                    data-k="possuiContaGlobal"
+                    onchange="onContaGlobal()"
+                    style="display: none"
+                    aria-hidden="true"
+                  >
+                    <option value=""></option>
+                    <option>Sim</option>
+                    <option>Não</option>
+                  </select>
+                </div>
+                <div
+                  class="field col-span-2"
+                  id="contaGlobalBox"
                   style="display: none"
-                  aria-hidden="true"
                 >
-                  <option value=""></option>
-                  <option>Sim</option>
-                  <option>Não</option>
-                </select>
+                  <label
+                    >Conta globalizada (código de débito automático globalizado
+                    da fatura) <span class="req">*</span></label
+                  >
+                  <input
+                    type="text"
+                    data-k="contaGlobalizada"
+                    placeholder="000000000"
+                  />
+                </div>
               </div>
-              <div
-                class="field col-span-2"
-                id="contaGlobalBox"
-                style="display: none"
-              >
-                <label
-                  >Conta globalizada (código de débito automático globalizado
-                  da fatura) <span class="req">*</span></label
-                >
-                <input
-                  type="text"
-                  data-k="contaGlobalizada"
-                  placeholder="000000000"
-                />
-              </div>
-            </div>
             </div>
             <!-- /#correspNaoEmailBox -->
           </div>
@@ -567,42 +571,24 @@
                   <option>Rural</option>
                 </select>
               </div>
-              <div class="field">
-                <label>CEP <span class="req">*</span></label>
-                <input
-                  type="text"
-                  data-k="uc_cep"
-                  placeholder="00000-000"
-                  onblur="onCEP('uc')"
-                />
-                <span id="cep-status-uc" class="field-hint"></span>
-              </div>
-              <div class="field">
-                <label>Município <span class="req">*</span></label>
-                <input
-                  type="text"
-                  data-k="uc_municipio"
-                  placeholder=" "
-                  onblur="onEnderecoUrbanoMT()"
-                />
-              </div>
-              <div class="field">
-                <label>Estado <span class="req">*</span></label>
-                <input
-                  type="text"
-                  data-k="uc_estado"
-                  value="MG"
-                  placeholder=" "
-                />
-              </div>
             </div>
 
-            <!-- Bloco URBANO -->
+            <!-- Bloco URBANO — ordem do BT (dados-unidade.js): CEP → Endereço
+                 → Nº → Bairro → Município → Estado. Complemento (campo do MT,
+                 sem par no BT) fecha o bloco. CEP só existe na zona urbana,
+                 como no BT. -->
             <div id="blocoUrbano" style="display: none">
-              <div class="subbox-title" style="margin-top: 24px">
-                Endereço (Urbano)
-              </div>
-              <div class="grid grid-3" style="margin-top: 16px">
+              <div class="grid grid-2" style="margin-top: 16px" id="gridUrbano">
+                <div class="field">
+                  <label>CEP <span class="req">*</span></label>
+                  <input
+                    type="text"
+                    data-k="uc_cep"
+                    placeholder="00000-000"
+                    oninput="onCepUcInput(this)"
+                  />
+                  <span id="cep-status-uc" class="field-hint"></span>
+                </div>
                 <div class="field col-span-2">
                   <label>Endereço <span class="req">*</span></label>
                   <input
@@ -630,69 +616,154 @@
                     onblur="onEnderecoUrbanoMT()"
                   />
                 </div>
-                <div class="field col-span-2">
+                <!-- Município/Estado são campos únicos, reposicionados via JS
+                     (onLocalizacao) conforme a zona: aqui (após Bairro) no
+                     urbano, no topo do bloco rural — mesma ordem do BT. -->
+                <div class="field" id="fieldMunicipio">
+                  <label>Município <span class="req">*</span></label>
+                  <input
+                    type="text"
+                    data-k="uc_municipio"
+                    placeholder=" "
+                    onblur="onEnderecoUrbanoMT()"
+                  />
+                </div>
+                <div class="field" id="fieldEstado">
+                  <label>Estado <span class="req">*</span></label>
+                  <input
+                    type="text"
+                    data-k="uc_estado"
+                    value="MG"
+                    placeholder=" "
+                  />
+                </div>
+                <div class="field col-span-2" id="fieldComplUC">
                   <label>Complemento do endereço</label>
                   <input type="text" data-k="urb_compl" placeholder=" " />
                 </div>
               </div>
             </div>
-            <!-- Bloco RURAL -->
+            <!-- Bloco RURAL — ordem do BT: Município → Estado (movidos via JS)
+                 → Distrito → Nome da propriedade → Ponto de referência →
+                 Nº instalação. Distrito/Propriedade/Ponto/Instalação são
+                 opcionais no BT; Ponto de Referência e Nº Instalação do
+                 Vizinho só aparecem na zona rural (como no BT). -->
             <div id="blocoRural" style="display: none">
-              <div class="subbox-title" style="margin-top: 24px">
-                Endereço (Rural)
-              </div>
-              <div class="grid grid-2" style="margin-top: 16px">
+              <div class="grid grid-2" style="margin-top: 16px" id="gridRural">
                 <div class="field">
-                  <label
-                    >Distrito / Comunidade / Região
-                    <span class="req">*</span></label
-                  >
+                  <label>Distrito / Comunidade / Região</label>
                   <input type="text" data-k="rur_distrito" placeholder=" " />
                 </div>
                 <div class="field">
-                  <label>Nome da Propriedade <span class="req">*</span></label>
+                  <label>Nome da Propriedade</label>
                   <input type="text" data-k="rur_propriedade" placeholder=" " />
+                </div>
+                <div class="field">
+                  <label>Ponto de Referência</label>
+                  <input type="text" data-k="pontoReferencia" placeholder=" " />
+                </div>
+                <div class="field">
+                  <label>Nº Instalação do Vizinho</label>
+                  <input type="text" data-k="instalVizinho" placeholder=" " />
                 </div>
               </div>
             </div>
-            <div class="grid grid-2" style="margin-top: 16px">
-              <div class="field">
-                <label>Ponto de Referência</label>
-                <input type="text" data-k="pontoReferencia" placeholder=" " />
-              </div>
-              <div class="field">
-                <label>Nº Instalação do Vizinho</label>
-                <input type="text" data-k="instalVizinho" placeholder=" " />
-              </div>
-            </div>
+          </div>
+          <div class="nav-bottom no-print">
+            <button class="btn btn-ghost" onclick="goTo(2)">← Voltar</button>
+            <button class="btn btn-primary" onclick="goTo(4)">Avançar →</button>
+          </div>
+        </section>
 
-            <div class="subbox-title" style="margin-top: 24px">
-              Coordenadas do local de atendimento
+        <!-- ============ PÁGINA 4 — DADOS TÉCNICOS ============ -->
+        <section class="page" id="page-4">
+          <div class="card">
+            <div class="section-eyebrow">Etapa 5</div>
+            <h3 class="card-title">Dados Técnicos</h3>
+            <!-- Classificação do Atendimento (migrada da antiga etapa própria):
+                 Opção de Atendimento + Finalidade + Nº da instalação
+                 condicional. A Finalidade controla os blocos Conexão Nova /
+                 Alteração mais abaixo nesta mesma etapa. -->
+            <div class="grid grid-2">
+              <div class="field">
+                <label>Finalidade <span class="req">*</span></label>
+                <select
+                  id="f_finalidade"
+                  data-k="finalidade"
+                  onchange="onFinalidade()"
+                >
+                  <option value=""></option>
+                  <option>Conexão Nova</option>
+                  <option>Aumento de Demanda</option>
+                  <option>Redução de Demanda</option>
+                  <option>Adequação de Subestação</option>
+                  <option>Aderir a Tarifa Monômia</option>
+                  <option>Religação de Subestação</option>
+                  <option>Desconexão para encerramento contratual</option>
+                  <option>Alteração da tensão de fornecimento BT→MT</option>
+                  <option>Migração Mercado livre sem Aumento de Carga</option>
+                  <option>Migração Mercado livre com Aumento de Carga</option>
+                  <option>Migração Mercado livre com Redução de Carga</option>
+                </select>
+              </div>
+              <!-- Campo dependente da finalidade — .field padrão (sem o box
+                   .conditional), lado a lado com a Finalidade no grid. -->
+              <div class="field" id="instalBox" style="display: none">
+                <label id="instalLabel"
+                  >Informe o número da instalação
+                  <span class="req">*</span></label
+                >
+                <input
+                  type="text"
+                  data-k="numInstalacao"
+                  placeholder="Nº da instalação"
+                />
+              </div>
             </div>
             <p class="field-hint" id="coordHint" style="margin-bottom: 12px">
               Informe as coordenadas do local de atendimento.
             </p>
-            <div
-              class="field field--plain"
-              id="mudancaLocalBox"
-              style="display: none; margin-bottom: 12px"
-            >
-              <label
-                >Haverá mudança do local da subestação?
-                <span class="req">*</span></label
+
+            <div class="grid grid-3">
+              <div class="field field--plain">
+                <label>Opção de Atendimento <span class="req">*</span></label>
+                <select id="f_opcaoAtend" data-k="opcaoAtend">
+                  <option value=""></option>
+                  <option>Cativo</option>
+                  <option>Livre</option>
+                </select>
+              </div>
+              <div
+                class="field field--plain"
+                id="mudancaLocalBox"
+                style="display: none; margin-bottom: 12px"
               >
-              <select
-                id="f_mudancaLocal"
-                data-k="mudancaLocal"
-                onchange="onMudancaLocal()"
-              >
-                <option value=""></option>
-                <option>Sim</option>
-                <option>Não</option>
-              </select>
+                <label
+                  >Haverá mudança do local da subestação?
+                  <span class="req">*</span></label
+                >
+                <select
+                  id="f_mudancaLocal"
+                  data-k="mudancaLocal"
+                  onchange="onMudancaLocal()"
+                >
+                  <option value=""></option>
+                  <option>Sim</option>
+                  <option>Não</option>
+                </select>
+              </div>
+              <div class="field field--plain" style="margin-bottom: 12px">
+                <label
+                  >A subestação está pronta para ser ligada?
+                  <span class="req">*</span></label
+                >
+                <select data-k="subPronta" onchange="onSubPronta()">
+                  <option value=""></option>
+                  <option>Sim</option>
+                  <option>Não</option>
+                </select>
+              </div>
             </div>
-            <!-- Fuso removido: a coordenada é informada por Latitude/Longitude
-                 e convertida p/ UTM automaticamente, com o fuso calculado. -->
             <div class="grid grid-3">
               <div class="field">
                 <label id="latLabel">Latitude <span class="req">*</span></label>
@@ -716,24 +787,20 @@
                   oninput="onCoord()"
                 />
               </div>
+              <!-- Somente leitura no MESMO estilo do BT (readonly + disabled:
+                   o :has(input:disabled) do shared.css pinta a caixa inteira
+                   com o fundo desabilitado). -->
               <div class="field">
                 <label>Coordenada em UTM</label>
-                <input type="text" data-k="utm" readonly placeholder=" " />
+                <input
+                  type="text"
+                  data-k="utm"
+                  readonly
+                  disabled
+                  placeholder=" "
+                />
               </div>
             </div>
-            <p class="field-hint" style="margin-top: 8px">
-              Clique no mapa ou arraste o alfinete para ajustar a coordenada.
-            </p>
-            <div
-              id="map"
-              style="
-                height: 350px;
-                width: 100%;
-                margin-top: 15px;
-                border-radius: 8px;
-              "
-            ></div>
-            <!-- coordenadas novas (quando há mudança de local) -->
             <div
               class="grid grid-3"
               id="coordNovaBox"
@@ -761,14 +828,32 @@
               </div>
               <div class="field">
                 <label>UTM (novo)</label>
-                <input type="text" data-k="utmNova" readonly placeholder=" " />
+                <input
+                  type="text"
+                  data-k="utmNova"
+                  readonly
+                  disabled
+                  placeholder=" "
+                />
               </div>
             </div>
+
             <div id="coordAlert"></div>
 
-            <div class="subbox-title" style="margin-top: 24px">
-              Questões ambientais
-            </div>
+            <p class="field-hint" style="margin-top: 8px">
+              Clique no mapa ou arraste o alfinete para ajustar a coordenada.
+            </p>
+            <div
+              id="map"
+              style="
+                height: 350px;
+                width: 100%;
+                margin-top: 15px;
+                border-radius: 8px;
+              "
+            ></div>
+            <!-- coordenadas novas (quando há mudança de local) -->
+
             <div
               class="field field--plain"
               id="restricaoAmbientalBox"
@@ -777,80 +862,7 @@
               <label>Unidade consumidora em área de restrição ambiental?</label>
               <div id="restricaoAmbientalConteudo"></div>
             </div>
-
-            <div class="field field--plain" style="margin-top: 16px">
-              <label
-                >A subestação está pronta para ser ligada?
-                <span class="req">*</span></label
-              >
-              <select data-k="subPronta" onchange="onSubPronta()">
-                <option value=""></option>
-                <option>Sim</option>
-                <option>Não</option>
-              </select>
-            </div>
             <div id="subProntaAlert"></div>
-          </div>
-          <div class="nav-bottom no-print">
-            <button class="btn btn-ghost" onclick="goTo(2)">← Voltar</button>
-            <button class="btn btn-primary" onclick="goTo(4)">Avançar →</button>
-          </div>
-        </section>
-
-        <!-- ============ PÁGINA 4 — DADOS TÉCNICOS ============ -->
-        <section class="page" id="page-4">
-          <div class="card">
-            <div class="section-eyebrow">Etapa 5</div>
-            <h3 class="card-title">Dados Técnicos</h3>
-            <!-- Classificação do Atendimento (migrada da antiga etapa própria):
-                 Opção de Atendimento + Finalidade + Nº da instalação
-                 condicional. A Finalidade controla os blocos Conexão Nova /
-                 Alteração mais abaixo nesta mesma etapa. -->
-            <div class="grid grid-2">
-              <div class="field field--plain">
-                <label>Opção de Atendimento <span class="req">*</span></label>
-                <select id="f_opcaoAtend" data-k="opcaoAtend">
-                  <option value=""></option>
-                  <option>Cativo</option>
-                  <option>Livre</option>
-                </select>
-              </div>
-              <div class="field">
-                <label>Finalidade <span class="req">*</span></label>
-                <select
-                  id="f_finalidade"
-                  data-k="finalidade"
-                  onchange="onFinalidade()"
-                >
-                  <option value=""></option>
-                  <option>Conexão Nova</option>
-                  <option>Aumento de Demanda</option>
-                  <option>Redução de Demanda</option>
-                  <option>Adequação de Subestação</option>
-                  <option>Aderir a Tarifa Monômia</option>
-                  <option>Religação de Subestação</option>
-                  <option>Desconexão para encerramento contratual</option>
-                  <option>Alteração da tensão de fornecimento BT→MT</option>
-                  <option>Migração Mercado livre sem Aumento de Carga</option>
-                  <option>Migração Mercado livre com Aumento de Carga</option>
-                  <option>Migração Mercado livre com Redução de Carga</option>
-                </select>
-              </div>
-            </div>
-            <div class="conditional" id="instalBox" style="display: none">
-              <div class="conditional-tag">Campo dependente da finalidade</div>
-              <div class="field">
-                <label id="instalLabel"
-                  >Informe o número da instalação
-                  <span class="req">*</span></label
-                >
-                <input
-                  type="text"
-                  data-k="numInstalacao"
-                  placeholder="Nº da instalação"
-                />
-              </div>
-            </div>
             <div class="grid grid-3" style="margin-top: 16px">
               <div class="field field--plain">
                 <label

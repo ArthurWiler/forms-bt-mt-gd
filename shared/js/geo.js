@@ -122,6 +122,154 @@ async function geocodObra(obra) {
     label: data[0].display_name,
   };
 }
+/* ============================================================
+   Geocodificação de endereço → coordenada (Nominatim) — COMPARTILHADA
+   Fonte única usada pelo BT (bt/js/map.js) e pelo MT (mt/js/app.js).
+
+   Estratégia (validada com endereços reais de BH):
+   1) NÚMERO EXATO — busca estruturada (street="123 Rua X") retorna o prédio
+      quando o número existe no OSM (ex.: Av. Afonso Pena 1212 = Prefeitura).
+   2) MÉDIA DOS SEGMENTOS NO BAIRRO — quando o número NÃO existe no OSM, uma
+      busca limitada ao bbox do bairro (viewbox+bounded) traz os segmentos da
+      rua DENTRO do bairro; o ponto médio deles aproxima a altura do número
+      (no Brasil o trecho de uma rua num bairro corresponde à faixa de
+      numeração — ex.: Rua Platina no Calafate = nºs 1001–1729; média a ~70 m
+      do nº 1425 real). Um único segmento solto pode cair a centenas de
+      metros; a rua inteira sem bairro pode cair em OUTRO bairro.
+   3) TEXTO LIVRE COM BAIRRO — se o bbox do bairro falhar, a busca livre com
+      o bairro como token ainda ancora o trecho aproximado.
+   4) ESTRUTURADA SIMPLES → TEXTO LIVRE — fallbacks finais.
+
+   NÃO usar como âncora: postalcode do Nominatim (CEPs de logradouro quase
+   nunca existem no OSM — o parâmetro é ignorado silenciosamente) e
+   coordenadas de CEP do BrasilAPI/open-cep (são geocodificação do NOME da
+   rua, não centroide real do CEP — mesmo erro de trecho).
+
+   Respeita o rate-limit do Nominatim (1 req/s) espaçando as chamadas.
+   Retorna { lat, lon } ou null.
+   ============================================================ */
+const _nmBBoxCache = {};
+let _nmUltimaReq = 0;
+async function _nmBuscar(params) {
+  // Espaçamento ≥1s entre chamadas (política de uso do Nominatim).
+  const espera = _nmUltimaReq + 1000 - Date.now();
+  if (espera > 0) await new Promise((r) => setTimeout(r, espera));
+  _nmUltimaReq = Date.now();
+  const q = new URLSearchParams({
+    format: "json",
+    addressdetails: "1",
+    ...params,
+  });
+  const resp = await fetch(
+    "https://nominatim.openstreetmap.org/search?" + q.toString(),
+    { headers: { "Accept-Language": "pt-BR" } },
+  );
+  if (!resp.ok) return [];
+  const data = await resp.json();
+  return Array.isArray(data) ? data : [];
+}
+// bbox do bairro ({s,n,w,e}) via featureType=settlement (polígono do bairro,
+// não um prédio homônimo). Cacheado por bairro|cidade|uf. null se não achar.
+async function _nmBBoxBairro(bairro, cidade, uf) {
+  const key = [bairro, cidade, uf].join("|").toLowerCase();
+  if (key in _nmBBoxCache) return _nmBBoxCache[key];
+  const data = await _nmBuscar({
+    q: [bairro, cidade, uf, "Brasil"].filter(Boolean).join(", "),
+    featureType: "settlement",
+    limit: "1",
+  });
+  const bb = data[0] && data[0].boundingbox;
+  const out =
+    bb && bb.length === 4
+      ? { s: +bb[0], n: +bb[1], w: +bb[2], e: +bb[3] }
+      : null;
+  _nmBBoxCache[key] = out;
+  return out;
+}
+async function geocodificarEnderecoBR({
+  logradouro,
+  numero,
+  bairro,
+  cidade,
+  uf,
+  cep,
+} = {}) {
+  const limpo = (s) => String(s == null ? "" : s).trim();
+  const numDig = limpo(numero).replace(/\D/g, "");
+  const aPonto = (r) => {
+    const lat = parseFloat(r && r.lat);
+    const lon = parseFloat(r && r.lon);
+    return isNaN(lat) || isNaN(lon) ? null : { lat, lon };
+  };
+  // Nº exato: prioriza a feição cujo house_number bate com o digitado;
+  // aceita qualquer house_number como segunda opção (POI no endereço).
+  const acharExato = (data) => {
+    const comNum = data.filter(
+      (r) => r.address && limpo(r.address.house_number),
+    );
+    const igual = comNum.find(
+      (r) => r.address.house_number.replace(/\D/g, "") === numDig,
+    );
+    return aPonto(igual || comNum[0]);
+  };
+  // Ponto médio dos segmentos de rua retornados (class=highway).
+  const mediaRuas = (data) => {
+    const ruas = data.filter((r) => r.class === "highway").map(aPonto);
+    const pts = ruas.filter(Boolean);
+    if (!pts.length) return null;
+    return {
+      lat: pts.reduce((s, p) => s + p.lat, 0) / pts.length,
+      lon: pts.reduce((s, p) => s + p.lon, 0) / pts.length,
+    };
+  };
+  const street = [limpo(numero), limpo(logradouro)].filter(Boolean).join(" ");
+  const base = { country: "Brasil", limit: "10" };
+  if (street) base.street = street;
+  if (limpo(cidade)) base.city = limpo(cidade);
+  if (limpo(uf)) base.state = limpo(uf);
+  const enderecoLivre = [
+    [limpo(logradouro), limpo(numero)].filter(Boolean).join(", "),
+    limpo(bairro),
+    limpo(cidade),
+    limpo(uf),
+    limpo(cep),
+    "Brasil",
+  ]
+    .filter(Boolean)
+    .join(", ");
+  try {
+    if (street && limpo(cidade)) {
+      // 1) limitada ao bairro: nº exato ou média dos segmentos no bairro.
+      if (limpo(bairro)) {
+        const bbox = await _nmBBoxBairro(bairro, cidade, uf);
+        if (bbox) {
+          const data = await _nmBuscar({
+            ...base,
+            viewbox: `${bbox.w},${bbox.s},${bbox.e},${bbox.n}`,
+            bounded: "1",
+          });
+          const r = acharExato(data) || mediaRuas(data);
+          if (r) return r;
+        }
+        // 2) bbox indisponível/rua fora do bbox: texto livre com o bairro
+        //    como âncora do trecho.
+        const dataLivre = await _nmBuscar({ q: enderecoLivre, limit: "1" });
+        const rl = acharExato(dataLivre) || aPonto(dataLivre[0]);
+        if (rl) return rl;
+      }
+      // 3) estruturada simples (sem bairro): nº exato ou 1º segmento.
+      const data = await _nmBuscar(base);
+      const r = acharExato(data) || aPonto(data[0]);
+      if (r) return r;
+    }
+    // 4) texto livre — última tentativa.
+    if (!enderecoLivre.replace(/Brasil|,/g, "").trim()) return null;
+    const data = await _nmBuscar({ q: enderecoLivre, limit: "1" });
+    return aPonto(data[0]);
+  } catch (e) {
+    return null;
+  }
+}
 function _urlWfs(typeName, lat, lng) {
   const d = 8e-4;
   const box = SISEMA_FLIP_BBOX
@@ -344,12 +492,10 @@ function desenharRestricoesNoMapa(L, map, res) {
       },
     },
   ).addTo(map);
-  try {
-    const b = layer.getBounds();
-    if (b && b.isValid()) map.fitBounds(b, { padding: [24, 24], maxZoom: 16 });
-  } catch (e) {
-    /* getBounds pode falhar em geometrias degeneradas — ignora */
-  }
+  // NÃO reenquadrar o mapa: o contorno da reserva é desenhado mantendo o zoom
+  // e o centro atuais (o pino da UC continua visível no mesmo enquadramento).
+  // Antes havia um map.fitBounds(...) aqui, que dava zoom out para caber a área
+  // inteira da restrição (reservas são enormes) — comportamento indesejado.
   return layer;
 }
 // Resume a lista de camadas no formato consumido pela UI (idêntico ao BT):
