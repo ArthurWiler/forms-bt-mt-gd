@@ -1749,7 +1749,7 @@ function ViewCorrespondencia({ ctx }) {
             { className: "grid grid-2", style: { marginTop: 12 } },
             /* @__PURE__ */ React.createElement(
               Field,
-              { label: "CEP", span: 2 },
+              { label: "CEP" },
               /* @__PURE__ */ React.createElement(
                 "div",
                 { style: { maxWidth: 180 } },

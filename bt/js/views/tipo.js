@@ -68,106 +68,48 @@ function TabTipo({ ctx }) {
     trocaDisjGeral,
     validacaoDisjuntores,
     validacaoHibrido,
-    solicitacoesPermitidas
+    solicitacoesPermitidas,
   } = ctx;
   return /* @__PURE__ */ React.createElement(
     Card,
     {
       eyebrow: "Etapa " + ctx.etapaNum,
-      title: "Tipo de Atendimento",
-      sub: "O tipo de formulário é definido pela presença ou não de disjuntor geral. Os campos seguintes se adaptam à sua escolha."
+      title: "Dados para contato",
+      sub: "Preencha os dados de contato da pessoa responsável pelo empreendimento.",
     },
-    /* O item "Tipo do Atendimento" foi removido (Condomínio de Torres /
-       Atendimento coletivo): a solicitação vem do prefill do card. */
-    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2 divider" }, /* @__PURE__ */ React.createElement(Field, { label: "Solicitação", req: true, float: true }, /* @__PURE__ */ React.createElement(
-      Sel,
-      {
-        value: atend.escopo,
-        onChange: (e) => setAtend({ ...atend, escopo: e.target.value })
-      },
-      (ESCOPOS[atend.solicitacao] || []).map((s) => /* @__PURE__ */ React.createElement("option", { key: s }, s))
-    )), multiTorres && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Field, { label: "Atendimento a" }, /* @__PURE__ */ React.createElement(
-      Toggle,
-      {
-        value: atend.atendA,
-        onChange: (v) => setAtend({ ...atend, atendA: v }),
-        options: [
-          { v: "Bloco", l: "Bloco" },
-          { v: "Torre", l: "Torre" }
-        ]
-      }
-    )), /* @__PURE__ */ React.createElement(Field, { label: "Nº de Blocos / Torres", req: true }, /* @__PURE__ */ React.createElement(
-      Inp,
-      {
-        type: "number",
-        value: atend.nBlocos,
-        onChange: (e) => setAtend({
-          ...atend,
-          nBlocos: Math.max(1, parseInt(e.target.value))
-        })
-      }
-    )))),
-    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2" }, /* @__PURE__ */ React.createElement(Field, { label: "Possui disjuntor geral (proteção geral)?", req: true }, /* @__PURE__ */ React.createElement(
-      Toggle,
-      {
-        value: atend.disjGeral,
-        disabled: restrito,
-        onChange: (v) => setAtend({ ...atend, disjGeral: v }),
-        options: [
-          { v: "Não", l: "Não" },
-          { v: "Sim", l: "Sim" }
-        ]
-      }
-    )), !multiTorres && /* @__PURE__ */ React.createElement(Field, { label: "Nº de Unidades Consumidoras", req: true, float: true, hint: rural ? "Pedido rural é limitado a 1 unidade consumidora." : void 0 }, /* @__PURE__ */ React.createElement(
-      Inp,
-      {
-        type: "number",
-        max: rural ? 1 : restrito ? 3 : void 0,
-        disabled: rural,
-        value: atend.nUCs,
-        onChange: (e) => {
-          if (rural) {
-            setAtend({ ...atend, nUCs: 1, disjGeral: "Não" });
-            return;
-          }
-          const n = restrito ? Math.min(3, Math.max(1, parseInt(e.target.value) || 1)) : Math.max(1, parseInt(e.target.value));
-          setAtend({
-            ...atend,
-            nUCs: n,
-            disjGeral: restrito ? "Não" : n > 3 ? "Sim" : "Não"
-          });
-        },
-        options: [
-          { v: true, l: "Sim" },
-          { v: false, l: "Não" }
-        ]
-      }
-    ))),
-    /* @__PURE__ */ React.createElement("div", { className: "grid grid-2 divider" }, /* @__PURE__ */ React.createElement(Field, { label: "Há múltiplas unidades consumidoras com proteção acima de 63 A?" }, /* @__PURE__ */ React.createElement(
-      Toggle,
-      {
-        value: atend.biAcima63,
-        disabled: restrito,
-        onChange: (v) => setAtend({
-          ...atend,
-          biAcima63: v,
-          triAcima63: v,
-          disjGeral: v ? "Sim" : "Não"
-          // converte booleano para string
-        }),
-        options: [
-          { v: true, l: "Sim" },
-          { v: false, l: "Não" }
-        ]
-      }
-    ))),
     /* @__PURE__ */ React.createElement(
       "div",
-      {
-        className: "alert " + (coletivo ? "alert-ok" : "alert-info"),
-        style: { marginTop: 16 }
-      },
-      multiTorres ? "Atendimento caracterizado como empreendimento com 'Múltiplas Torres ou Blocos'." : coletivo ? "Atendimento caracterizado como 'Coletivo'." : "Atendimento caracterizado como 'Individual'."
-    )
+      { className: "grid grid-2" },
+      /* Nome → E-mail */
+      /* @__PURE__ */ React.createElement(
+        Field,
+        { label: "Nome Completo (sem abreviações)", req: true },
+        /* @__PURE__ */ React.createElement(Inp, {
+          value: prop.nome,
+          onChange: (e) => setProp({ ...prop, nome: e.target.value }),
+        }),
+      ),
+      /* @__PURE__ */ React.createElement(
+        Field,
+        { label: "E-mail", req: true },
+        /* @__PURE__ */ React.createElement(Inp, {
+          type: "email",
+          value: prop.email,
+          onChange: (e) => setProp({ ...prop, email: e.target.value }),
+        }),
+      ),
+      /* @__PURE__ */ React.createElement(
+        Field,
+        { label: "Celular", req: true },
+        /* @__PURE__ */ React.createElement(Inp, {
+          value: prop.celular,
+          onChange: (e) =>
+            setProp({
+              ...prop,
+              celular: mascararCelular(e.target.value),
+            }),
+        }),
+      ),
+    ),
   );
 }

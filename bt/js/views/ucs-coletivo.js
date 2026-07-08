@@ -145,13 +145,6 @@ function TabUcsColetivo({ ctx }) {
                 { className: "uc-colapsavel-titulo" },
                 u.identificacao || `UC ${ui + 1}`,
               ),
-              ui === 0 &&
-                ucBlocos.length > 1 &&
-                /* @__PURE__ */ React.createElement(
-                  "span",
-                  { className: "uc-mini-tag" },
-                  "modelo p/ replicar",
-                ),
               u.complemento &&
                 /* @__PURE__ */ React.createElement(
                   React.Fragment,

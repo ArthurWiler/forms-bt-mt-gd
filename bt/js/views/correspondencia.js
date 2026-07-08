@@ -151,7 +151,7 @@ function TabCorrespondencia({ ctx }) {
             { className: "grid grid-2", style: { marginTop: 12 } },
             /* @__PURE__ */ React.createElement(
               Field,
-              { label: "CEP", span: 2 },
+              { label: "CEP" },
               /* @__PURE__ */ React.createElement(
                 "div",
                 { style: { display: "flex", gap: 8, alignItems: "center" } },

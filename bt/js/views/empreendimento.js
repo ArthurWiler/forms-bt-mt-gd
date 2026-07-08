@@ -1,112 +1,200 @@
-/* ============================================================
-   CEMIG BT — Individual · Etapa "Dados da unidade" (Fase 4)
-   ------------------------------------------------------------
-   Funde TabDadosUnidade + TabObra num único Card, evitando
-   dois cabeçalhos separados. Os campos de solicitação/escopo/
-   nUCs aparecem na primeira linha; os de endereço e dados
-   técnicos continuam logo abaixo, na mesma superfície visual.
-   ============================================================ */
-function TabDadosUnidade({ ctx }) {
+function TabEmpreendimento({ ctx }) {
   const {
+    aba,
+    setAba,
+    modalidade,
+    setModalidade,
     atend,
     setAtend,
+    prop,
+    setProp,
+    corr,
+    setCorr,
+    obra,
+    setObra,
+    gerador,
+    setGerador,
+    obs,
+    setObs,
+    cepStatus,
+    setCepStatus,
+    cnpjStatus,
+    setCnpjStatus,
+    logoPDF,
+    setLogoPDF,
+    ucsDet,
+    setUcsDet,
+    ucBlocos,
+    setUcBlocos,
+    blocos,
+    setBlocos,
+    abas,
+    buscarCEP,
+    buscarCNPJ,
+    coletivo,
+    coordObrigatoria,
+    coordPreenchida,
+    demandaPrevTotal,
+    demandaTotalGeral,
+    disjGeralObrigatorio,
+    docInfo,
+    gerarPDF,
+    hibrido,
+    idx,
+    irAnt,
+    irProx,
+    isAlteracaoColetivo,
+    maiorCorrenteUC,
+    multiTorres,
+    opcoesDisjGeral,
+    pessoaFisica,
+    prevTotalKw,
+    redeMono,
+    replicarPrevTodas,
+    replicarPrevTorre,
+    replicarPrimeiro,
+    replicarUC1Coletivo,
+    replicarUC1Torre,
+    setBloco,
+    setBlocoPrev,
+    setTorre,
+    setUcDet,
+    setUcTorre,
+    setUcTorrePrev,
+    sincronizarUCsTorre,
+    totalUcsEmpreendimento,
+    trocaDisjGeral,
+    validacaoDisjuntores,
+    validacaoHibrido,
     restrito,
     rural,
     solicitacoesPermitidas,
-    obra,
-    setObra,
-    cepStatus,
-    buscarCEP,
-    coordObrigatoria,
-    coordPreenchida,
-    coletivo,
-    zonaTravada,
   } = ctx;
 
-  // Troca de zona limpa os campos da zona oposta.
-  const trocarZona = (v) => {
-    if (v === obra.localizacao) return;
-    if (v === "Rural")
-      setObra({
-        ...obra,
-        localizacao: v,
-        cep: "",
-        endereco: "",
-        num: "",
-        compl: "",
-        bairro: "",
-      });
-    else
-      setObra({
-        ...obra,
-        localizacao: v,
-        distritoComunidade: "",
-        nomePropriedade: "",
-        pontoRef: "",
-        instProxima: "",
-      });
-  };
+  // Nesta etapa a zona é sempre Urbano: o campo de seleção fica oculto e a
+  // localização é fixada em "Urbano" ao montar (cobre estados iniciais vazios
+  // ou herdados como "Rural").
+  useEffect(() => {
+    if (obra.localizacao !== "Urbano")
+      setObra({ ...obra, localizacao: "Urbano" });
+  }, [obra.localizacao]);
 
+  // Campos específicos de Pessoa Física só aparecem quando o CPF está
+  // COMPLETO e VÁLIDO (docInfo.valido === true) — antes disso não se sabe
+  // se o proprietário é CPF ou CNPJ.
+  const pfValidado = pessoaFisica && docInfo && docInfo.valido === true;
+  // Gate: os campos de endereço/coordenadas/dados técnicos (herdados de
+  // TabDadosUnidade) só aparecem depois que TODOS os campos próprios do
+  // empreendimento estiverem preenchidos: Nome/Razão Social, CPF/CNPJ válido
+  // e Nº ART/TRT.
+  const empreendimentoCompleto =
+    !!(prop.nome && prop.nome.trim()) &&
+    docInfo &&
+    docInfo.valido === true &&
+    !!(obra.art && obra.art.trim());
   return /* @__PURE__ */ React.createElement(
     Card,
     {
       eyebrow: "Etapa " + ctx.etapaNum,
-      /* A view serve o Individual ("dados") e o Coletivo/Múltiplas Torres
-         ("obra" — antiga TabObra, fundida aqui). */
-      title:
-        ctx.formType === "individual"
-          ? "Dados da unidade consumidora"
-          : "Dados da Obra",
-      sub: "Preencha os dados de identificação das unidades consumidoras.",
+      title: "Dados do empreendimento",
+      sub: "Preencha os dados gerais do empreendimento.",
     },
-
-    /* Aviso (variante warn): todas as UCs do pedido devem estar no mesmo
-       endereço, mudando apenas o complemento. Reutiliza o banner .cmg-aviso. */
+    /* Ordem (2 colunas): Nome→Email, Celular→Fixo, CPF/CNPJ→Filiação,
+       RG→Nascimento, Laudo→NIS. Campos de PF só após CPF válido (pfValidado). */
     /* @__PURE__ */ React.createElement(
       "div",
-      { className: "cmg-aviso cmg-aviso--warn" },
-      /* @__PURE__ */ React.createElement("div", {
-        className: "cmg-aviso-icon",
-        "aria-hidden": "true",
-      }),
+      { className: "grid grid-2" },
+      /* Nome → E-mail */
       /* @__PURE__ */ React.createElement(
-        "p",
-        { className: "cmg-aviso-texto" },
-        "Todas as unidades deste pedido devem estar no mesmo endereço exato (rua, número, bairro, cidade e UF), mudando apenas o complemento (ex: apto, bloco). Se houver qualquer outra diferença, como o número da casa/apartamento é necessário abrir uma nova solicitação de atendimento no Cemig Atende.",
+        Field,
+        {
+          label: "Cliente / Razão Social do empreendimento",
+          req: true,
+          span: 2,
+        },
+        /* @__PURE__ */ React.createElement(Inp, {
+          value: prop.nome,
+          onChange: (e) => setProp({ ...prop, nome: e.target.value }),
+        }),
+      ),
+      /* CPF/CNPJ → Filiação */
+      /* @__PURE__ */ React.createElement(
+        Field,
+        {
+          label: "CPF / CNPJ",
+          req: true,
+        },
+        /* @__PURE__ */ React.createElement(
+          "div",
+          { style: { display: "flex", gap: 8, alignItems: "center" } },
+          /* @__PURE__ */ React.createElement("input", {
+            value: prop.cpfCnpj || "",
+            onChange: (e) => {
+              const m = mascararCpfCnpj(e.target.value);
+              setProp({ ...prop, cpfCnpj: m });
+              if (ehCNPJ(m)) buscarCNPJ(m);
+              else setCnpjStatus("");
+            },
+            placeholder: "000.000.000-00",
+            style: {
+              borderColor:
+                docInfo.valido === false ? "var(--vermelho)" : void 0,
+            },
+          }),
+          cnpjStatus === "buscando" &&
+            /* @__PURE__ */ React.createElement("span", {
+              className: "spinner",
+            }),
+          cnpjStatus === "ok" &&
+            /* @__PURE__ */ React.createElement(
+              Badge,
+              null,
+              "dados preenchidos",
+            ),
+          cnpjStatus === "erro" &&
+            /* @__PURE__ */ React.createElement(
+              "span",
+              { style: { color: "var(--vermelho)", fontSize: 12 } },
+              "CNPJ não encontrado",
+            ),
+        ),
+      ),
+      /* @__PURE__ */ React.createElement(
+        Field,
+        { label: "Nº ART/TRT de Projeto", req: true },
+        /* @__PURE__ */ React.createElement(Inp, {
+          value: obra.art,
+          onChange: (e) => setObra({ ...obra, art: e.target.value }),
+        }),
       ),
     ),
+    /* Aviso (variante warn): todas as UCs do pedido devem estar no mesmo
+       endereço, mudando apenas o complemento. Reutiliza o banner .cmg-aviso. */
+    empreendimentoCompleto &&
+      /* @__PURE__ */ React.createElement(
+        "div",
+        { className: "cmg-aviso cmg-aviso--warn" },
+        /* @__PURE__ */ React.createElement("div", {
+          className: "cmg-aviso-icon",
+          "aria-hidden": "true",
+        }),
+        /* @__PURE__ */ React.createElement(
+          "p",
+          { className: "cmg-aviso-texto" },
+          "Todas as unidades deste pedido devem estar no mesmo endereço exato (rua, número, bairro, cidade e UF), mudando apenas o complemento (ex: apto, bloco). Se houver qualquer outra diferença, como o número da casa/apartamento é necessário abrir uma nova solicitação de atendimento no Cemig Atende.",
+        ),
+      ),
 
     /* Solicitação / Escopo / Nº UCs migraram para a aba "Atendimento"
        (ver views/cargas-individual.js): a Solicitação passou a ser por UC e o
        "Tipo do Atendimento" + Nº de UCs ficam no topo daquela etapa. */
 
-    /* ── Bloco 2: Zona + ART ── */
-    /* @__PURE__ */ React.createElement(
-      "div",
-      { className: "grid grid-2" },
-      /* @__PURE__ */ React.createElement(
-        Field,
-        {
-          label: "Zona de localização",
-          req: true,
-          hint: zonaTravada
-            ? "Modalidade rural: zona fixada em Rural."
-            : void 0,
-        },
-        /* @__PURE__ */ React.createElement(Toggle, {
-          value: obra.localizacao,
-          disabled: zonaTravada,
-          onChange: trocarZona,
-          options: [
-            { v: "Urbana", l: "Urbana" },
-            { v: "Rural", l: "Rural" },
-          ],
-        }),
-      ),
-    ),
+    /* ── Bloco 2: Zona ── oculto: nesta etapa a zona é sempre Urbano
+       (fixada via useEffect acima). O campo de seleção foi removido. */
 
     /* ── Bloco 3a: Endereço Urbano ── */
-    obra.localizacao === "Urbana" &&
+    empreendimentoCompleto &&
+      obra.localizacao === "Urbano" &&
       /* @__PURE__ */ React.createElement(
         "div",
         { className: "grid grid-2", style: { marginTop: 14 } },
@@ -189,164 +277,114 @@ function TabDadosUnidade({ ctx }) {
         ),
       ),
 
-    /* ── Bloco 3b: Endereço Rural ── */
-    obra.localizacao === "Rural" &&
-      /* @__PURE__ */ React.createElement(
-        "div",
-        { className: "grid grid-2", style: { marginTop: 14 } },
-        /* @__PURE__ */ React.createElement(
-          Field,
-          { label: "Município", req: true },
-          /* @__PURE__ */ React.createElement(Inp, {
-            value: obra.cidade,
-            onChange: (e) => setObra({ ...obra, cidade: e.target.value }),
-          }),
-        ),
-        /* @__PURE__ */ React.createElement(
-          Field,
-          { label: "Estado", req: true },
-          /* @__PURE__ */ React.createElement(Inp, {
-            value: obra.estado,
-            onChange: (e) => setObra({ ...obra, estado: e.target.value }),
-          }),
-        ),
-        /* @__PURE__ */ React.createElement(
-          Field,
-          { label: "Distrito / Comunidade / Região" },
-          /* @__PURE__ */ React.createElement(Inp, {
-            value: obra.distritoComunidade,
-            onChange: (e) =>
-              setObra({ ...obra, distritoComunidade: e.target.value }),
-          }),
-        ),
-        /* @__PURE__ */ React.createElement(
-          Field,
-          { label: "Nome da propriedade" },
-          /* @__PURE__ */ React.createElement(Inp, {
-            value: obra.nomePropriedade,
-            onChange: (e) =>
-              setObra({ ...obra, nomePropriedade: e.target.value }),
-          }),
-        ),
-        /* @__PURE__ */ React.createElement(
-          Field,
-          { label: "Ponto de referência" },
-          /* @__PURE__ */ React.createElement(Inp, {
-            value: obra.pontoRef,
-            onChange: (e) => setObra({ ...obra, pontoRef: e.target.value }),
-          }),
-        ),
-        /* @__PURE__ */ React.createElement(
-          Field,
-          { label: "Nº instalação mais próxima" },
-          /* @__PURE__ */ React.createElement(Inp, {
-            value: obra.instProxima,
-            onChange: (e) => setObra({ ...obra, instProxima: e.target.value }),
-          }),
-        ),
-      ),
+    /* ── Bloco 3b: Endereço Rural ── removido: a zona é sempre Urbano nesta
+       etapa, então o endereço rural nunca se aplica. */
 
     /* ── Bloco 4: Coordenadas ── */
-    /* @__PURE__ */ React.createElement(
-      "div",
-      { className: "grid grid-3 divider" },
+    empreendimentoCompleto &&
       /* @__PURE__ */ React.createElement(
-        Field,
-        { label: "Latitude", req: coordObrigatoria },
-        /* @__PURE__ */ React.createElement(Inp, {
-          value: obra.lat,
-          onChange: (e) =>
-            setObra({
-              ...obra,
-              lat: e.target.value,
-              utm: utmString(e.target.value, obra.lng),
-            }),
-        }),
-      ),
-      /* @__PURE__ */ React.createElement(
-        Field,
-        { label: "Longitude", req: coordObrigatoria },
-        /* @__PURE__ */ React.createElement(Inp, {
-          value: obra.lng,
-          onChange: (e) =>
-            setObra({
-              ...obra,
-              lng: e.target.value,
-              utm: utmString(obra.lat, e.target.value),
-            }),
-        }),
-      ),
-      /* @__PURE__ */ React.createElement(
-        Field,
-        {
-          label: "Coordenada UTM",
-        },
-        /* @__PURE__ */ React.createElement(Inp, {
-          value: utmString(obra.lat, obra.lng) || obra.utm || "",
-          readOnly: true,
-          disabled: true,
-        }),
-      ),
-    ),
-
-    /* ── Bloco 5: Dados técnicos ── */
-    /* @__PURE__ */ React.createElement(
-      "div",
-      { className: "grid grid-2 divider" },
-      /* @__PURE__ */ React.createElement(
-        Field,
-        {
-          label: "Distância do padrão até a rede Cemig inferior a 30m?",
-          req: true,
-        },
-        /* @__PURE__ */ React.createElement(Toggle, {
-          value: obra.distMenor30,
-          onChange: (v) => setObra({ ...obra, distMenor30: v }),
-          options: [
-            { v: "Sim", l: "Sim" },
-            { v: "Não", l: "Não" },
-          ],
-        }),
-      ),
-      /* @__PURE__ */ React.createElement(
-        Field,
-        { label: "O padrão está pronto para ser ligado?", req: true },
-        /* @__PURE__ */ React.createElement(Toggle, {
-          value: obra.prontoLigar,
-          onChange: (v) => setObra({ ...obra, prontoLigar: v }),
-          options: [
-            { v: "Sim", l: "Sim" },
-            { v: "Não", l: "Não" },
-          ],
-        }),
-      ),
-      /* @__PURE__ */ React.createElement(
-        Field,
-        { label: "Tipo de rede BT que atende o local" },
+        "div",
+        { className: "grid grid-3 divider" },
         /* @__PURE__ */ React.createElement(
-          Sel,
+          Field,
+          { label: "Latitude", req: coordObrigatoria },
+          /* @__PURE__ */ React.createElement(Inp, {
+            value: obra.lat,
+            onChange: (e) =>
+              setObra({
+                ...obra,
+                lat: e.target.value,
+                utm: utmString(e.target.value, obra.lng),
+              }),
+          }),
+        ),
+        /* @__PURE__ */ React.createElement(
+          Field,
+          { label: "Longitude", req: coordObrigatoria },
+          /* @__PURE__ */ React.createElement(Inp, {
+            value: obra.lng,
+            onChange: (e) =>
+              setObra({
+                ...obra,
+                lng: e.target.value,
+                utm: utmString(obra.lat, e.target.value),
+              }),
+          }),
+        ),
+        /* @__PURE__ */ React.createElement(
+          Field,
           {
-            value: obra.tipoRede,
-            onChange: (e) => setObra({ ...obra, tipoRede: e.target.value }),
+            label: "Coordenada UTM",
           },
-          /* @__PURE__ */ React.createElement("option", null, "Monofásica"),
-          /* @__PURE__ */ React.createElement("option", null, "Bifásica"),
-          /* @__PURE__ */ React.createElement("option", null, "Trifásica"),
+          /* @__PURE__ */ React.createElement(Inp, {
+            value: utmString(obra.lat, obra.lng) || obra.utm || "",
+            readOnly: true,
+            disabled: true,
+          }),
         ),
       ),
+
+    /* ── Bloco 5: Dados técnicos ── */
+    empreendimentoCompleto &&
       /* @__PURE__ */ React.createElement(
-        Field,
-        { label: "Código do transformador mais próximo" },
-        /* @__PURE__ */ React.createElement(Inp, {
-          value: obra.transformador,
-          onChange: (e) => setObra({ ...obra, transformador: e.target.value }),
-        }),
+        "div",
+        { className: "grid grid-2 divider" },
+        /* @__PURE__ */ React.createElement(
+          Field,
+          {
+            label: "Distância do padrão até a rede Cemig inferior a 30m?",
+            req: true,
+          },
+          /* @__PURE__ */ React.createElement(Toggle, {
+            value: obra.distMenor30,
+            onChange: (v) => setObra({ ...obra, distMenor30: v }),
+            options: [
+              { v: "Sim", l: "Sim" },
+              { v: "Não", l: "Não" },
+            ],
+          }),
+        ),
+        /* @__PURE__ */ React.createElement(
+          Field,
+          { label: "O padrão está pronto para ser ligado?", req: true },
+          /* @__PURE__ */ React.createElement(Toggle, {
+            value: obra.prontoLigar,
+            onChange: (v) => setObra({ ...obra, prontoLigar: v }),
+            options: [
+              { v: "Sim", l: "Sim" },
+              { v: "Não", l: "Não" },
+            ],
+          }),
+        ),
+        /* @__PURE__ */ React.createElement(
+          Field,
+          { label: "Tipo de rede BT que atende o local" },
+          /* @__PURE__ */ React.createElement(
+            Sel,
+            {
+              value: obra.tipoRede,
+              onChange: (e) => setObra({ ...obra, tipoRede: e.target.value }),
+            },
+            /* @__PURE__ */ React.createElement("option", null, "Monofásica"),
+            /* @__PURE__ */ React.createElement("option", null, "Bifásica"),
+            /* @__PURE__ */ React.createElement("option", null, "Trifásica"),
+          ),
+        ),
+        /* @__PURE__ */ React.createElement(
+          Field,
+          { label: "Código do transformador mais próximo" },
+          /* @__PURE__ */ React.createElement(Inp, {
+            value: obra.transformador,
+            onChange: (e) =>
+              setObra({ ...obra, transformador: e.target.value }),
+          }),
+        ),
       ),
-    ),
 
     /* ── Aviso contextual: pedido de vistoria/ligação (migrado da orientação
        geral "padrão pronto para ligar"). Reage ao toggle obra.prontoLigar. ── */
-    obra.prontoLigar === "Sim" &&
+    empreendimentoCompleto &&
+      obra.prontoLigar === "Sim" &&
       /* @__PURE__ */ React.createElement(
         "div",
         { className: "cmg-aviso no-print", style: { marginTop: 14 } },
@@ -360,7 +398,8 @@ function TabDadosUnidade({ ctx }) {
           "Como o padrão já está pronto para ligar, o pedido de vistoria e ligação será disparado automaticamente após a conclusão das etapas do orçamento de conexão.",
         ),
       ),
-    obra.prontoLigar === "Não" &&
+    empreendimentoCompleto &&
+      obra.prontoLigar === "Não" &&
       /* @__PURE__ */ React.createElement(
         "div",
         {
@@ -379,8 +418,9 @@ function TabDadosUnidade({ ctx }) {
       ),
 
     /* ── Aviso contextual: comprovação de propriedade/posse e regularidade do
-       imóvel em zona urbana (migrado da orientação geral de Conexão Nova). ── */
-    obra.localizacao === "Urbana" &&
+       imóvel em zona urbano (migrado da orientação geral de Conexão Nova). ── */
+    empreendimentoCompleto &&
+      obra.localizacao === "Urbano" &&
       /* @__PURE__ */ React.createElement(
         "div",
         { className: "cmg-aviso no-print", style: { marginTop: 14 } },
@@ -391,12 +431,13 @@ function TabDadosUnidade({ ctx }) {
         /* @__PURE__ */ React.createElement(
           "p",
           { className: "cmg-aviso-texto" },
-          "Para pedidos de Conexão Nova, anexe documento que comprove a propriedade ou posse do local a ser atendido. Por se tratar de unidade em área urbana, anexe também documento que comprove a regularidade do imóvel.",
+          "Para pedidos de Conexão Nova, anexe documento que comprove a propriedade ou posse do local a ser atendido. Por se tratar de unidade em área urbano, anexe também documento que comprove a regularidade do imóvel.",
         ),
       ),
 
     /* ── Alerta coordenada obrigatória ── */
-    coordObrigatoria &&
+    empreendimentoCompleto &&
+      coordObrigatoria &&
       !coordPreenchida &&
       /* @__PURE__ */ React.createElement(
         "div",
@@ -416,11 +457,13 @@ function TabDadosUnidade({ ctx }) {
       ),
 
     /* ── Mapa de localização ── */
-    /* @__PURE__ */ React.createElement(LocalizacaoObra, { obra, setObra }),
+    empreendimentoCompleto &&
+      /* @__PURE__ */ React.createElement(LocalizacaoObra, { obra, setObra }),
 
     /* ── Restrição ambiental ── só aparece quando o ponto ESTÁ em área de
        restrição; sem restrição (ou ainda não consultado) o bloco some. ── */
-    obra.restricaoAmbiental === "Sim" &&
+    empreendimentoCompleto &&
+      obra.restricaoAmbiental === "Sim" &&
       /* @__PURE__ */ React.createElement(
         "div",
         { className: "field", style: { marginTop: 14 } },
