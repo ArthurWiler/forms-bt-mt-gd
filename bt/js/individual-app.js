@@ -43,7 +43,7 @@ const CARD = (() => {
   const card = mod ? _todasModalidades.find((c) => c.id === mod) : null;
   if (!card || card.status !== "ok" || card.formType !== "individual") {
     window.location.href = "../index.html";
-    return null;
+    return {}; // o redirect não interrompe o script — segue com card vazio
   }
   return card;
 })();
@@ -760,6 +760,18 @@ function renderUcsBT() {
   const box = $("#ucsBox");
   if (!box) return;
   _sincronizarUcs();
+  // Resultados sempre atualizados, mesmo com o bloco da UC fechado (o preset
+  // do card já conta na demanda/validação sem o usuário precisar abrir).
+  state.ucsDet.forEach((u) => {
+    if (ucSemAlteracao(u)) return;
+    const d = Object.assign({ qtds: [], tipoA: "", catA: 0, mots: [] }, u.cargas || {});
+    d.qtds = CAT.map((_, i) => d.qtds[i] || 0);
+    const r = calcDemandaResultados(d, redeMonoBT());
+    d._demanda = r.demandaTotal;
+    d._cargaKw = r.cargaInstalada;
+    d._disjuntores = r.disjuntores.map((x) => x.fx);
+    u.cargas = d;
+  });
   atualizarSolicitacaoAuto();
   box.innerHTML = "";
   const multi = state.ucsDet.length > 1;

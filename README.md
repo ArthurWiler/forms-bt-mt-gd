@@ -50,7 +50,7 @@ A homepage (`index.html`) renderiza o portal reutilizando `MODALIDADES_SECOES` (
 - **Residencial · Comercial · Rural — Baixa Tensão**: casa até 50 m², casa até 100 m², casa > 100 m², comércio, indústria BT, rural — entram no fluxo BT interno, já pré-preenchido conforme o card escolhido (`prefill`).
 - **Empreendimentos — Baixa Tensão**: loteamento (`status: "link"` → `loteamento/`), condomínio de torres e atendimento coletivo (fluxo BT interno).
 
-Cards com `status: "ok"` abrem o app BT em `bt/?mod=<id>`, que aplica o pré-preenchimento do card na inicialização (`bt/js/app.js`); cards com `status: "link"` navegam para a subpasta do módulo correspondente.
+Cards com `status: "ok"` aplicam o pré-preenchimento do card na inicialização: os de `formType: "individual"` abrem o formulário vanilla `bt/individual.html?mod=<id>` (`bt/js/individual-app.js`); os de coletivo/condomínio abrem a SPA React `bt/?mod=<id>` (`bt/js/app.js`). Cards com `status: "link"` navegam para a subpasta do módulo correspondente.
 
 ### Modalidades pré-definidas de Microgeração (`?modo=`)
 
@@ -59,7 +59,7 @@ O app de microgeração (`microgeracao/js/app.js`) lê o parâmetro de query `mo
 - `?modo=fasttrack` — define e bloqueia o campo *Fast Track (art. 73-A)* como "Sim".
 - `?modo=gridzero` — define e bloqueia o campo *Grid Zero* como "Sim".
 
-O campo bloqueado fica desabilitado (via `ctx.locked` no schema de GD, `shared/js/gd-schema.js`) e um banner indica a modalidade ativa. Sem o parâmetro, o formulário abre normalmente, com todos os campos editáveis.
+O campo bloqueado fica desabilitado (overrides de `gdModoDaURL()` em `microgeracao/js/app.js`) e um banner indica a modalidade ativa. Sem o parâmetro, o formulário abre normalmente, com todos os campos editáveis.
 
 ## Baixa Tensão (`bt/`)
 
@@ -85,19 +85,19 @@ Estilos em [`css/`](css) (`formulario-bt.css` + `shared.css` + `variables.css`).
 
 ```
 bt/
-├── index.html            App de Baixa Tensão (aceita `?mod=<id>` vindo da homepage)
+├── index.html            SPA React dos fluxos Coletivo/Condomínio (aceita `?mod=<id>`)
+├── individual.html       Formulário vanilla do fluxo Individual (exige `?mod=<id>`)
+├── etapas/               Fragmentos HTML das 7 etapas do Individual
 └── js/
     ├── data.js           Constantes normativas ND-5.1/5.2 (tabelas, cargas, disjuntores)
     ├── calc.js           Cálculo de demanda e seleção de disjuntores
     ├── model.js           Modelo de dados e seletor de modalidades (MODALIDADES_SECOES)
     ├── geo.js / map.js    Geolocalização e mapa (coordenada obrigatória em área rural)
-    ├── components.js      Componentes de UI + calculadora de demanda (React/JSX)
-    ├── pdf.js             Geração do PDF final
-    ├── app.js             Aplicação principal: classificador, stepper, navegação
-    └── views/             Uma etapa do formulário por arquivo:
-        orient, tipo, proprietario, correspondencia, obra, blocos,
-        ucs-coletivo, ucs-individual, cargas-coletivo, cargas-individual,
-        gerador, obs, revisar
+    ├── components.js      Componentes de UI + calculadora de demanda (React — coletivo)
+    ├── pdf.js             Geração do PDF final (compartilhado pelos dois fluxos)
+    ├── app.js             SPA React: coletivo/condomínio (stepper, navegação)
+    ├── individual-app.js  App vanilla do Individual (estado no shape de gerarPdfDoc)
+    └── views/             Etapas React do coletivo/condomínio (uma por arquivo)
 ```
 
 ## Média Tensão (`mt/`)
@@ -133,18 +133,17 @@ Formulários de solicitação de acesso para sistemas de geração distribuída,
 - **Microgeração** (`microgeracao/`) — sistemas de menor porte, conexão em BT.
 - **Minigeração** (`minigeracao/`) — sistemas de maior porte, conexão em MT.
 
-Os dois módulos têm a mesma estrutura interna e reaproveitam a base comum de GD em `shared/` (`gd-schema.js`, `gd-pdf-base.js`):
+Os dois módulos são HTML/JS puro (padrão MT: fragmentos por etapa + estado plano) e reaproveitam a base comum de GD em `shared/` (`gd-pdf-base.js`, `calc-demanda.js`, `form-marcadores.js`, `etapas-loader.js`):
 
 ```
 microgeracao|minigeracao/
+├── index.html           Shell (topbar, sidebar, seções vazias das etapas)
+├── etapas/              Fragmentos HTML das 10 etapas
 └── js/
     ├── data.js          Constantes normativas e listas de documentos
-    ├── calc.js          Cálculo de potência/dimensionamento
-    ├── model.js         Modelo de dados do formulário
-    ├── components.js    Componentes de UI (React/JSX)
-    ├── views.js         Etapas do formulário
+    ├── model.js         Modelo de dados do formulário (estado plano)
     ├── pdf.js           Geração do PDF final
-    └── app.js           Aplicação principal
+    └── app.js           Aplicação vanilla (binding data-k, ilhas dinâmicas)
 ```
 
 ## Código compartilhado (`shared/`)
@@ -152,12 +151,14 @@ microgeracao|minigeracao/
 ```
 shared/
 └── js/
-    ├── api.js              Chamadas a APIs externas (ex.: ViaCEP)
+    ├── api.js               Chamadas a APIs externas (ex.: ViaCEP)
     ├── calc.js              Funções de cálculo reutilizáveis
-    ├── components.js        Componentes de UI genéricos (React/JSX)
-    ├── geo.js                Consulta de coordenadas / restrição ambiental (mapa Leaflet + Turf, IDE-Sisema)
-    ├── gd-schema.js          Schema de dados comum aos formulários de GD
-    └── gd-pdf-base.js        Base de geração de PDF comum aos formulários de GD
+    ├── calc-demanda.js      Formulário de Carga ND-5.1 vanilla (núcleo + ilha)
+    ├── etapas-loader.js     Injeção dos fragmentos etapas/*.html no shell
+    ├── form-marcadores.js   Convenção de obrigatoriedade + trava de avanço
+    ├── geo.js               Consulta de coordenadas / restrição ambiental (mapa Leaflet + Turf, IDE-Sisema)
+    ├── load-form-data.js    Catálogo de cargas/tabelas dos formulários de GD
+    └── gd-pdf-base.js       Base de geração de PDF comum aos formulários de GD
 ```
 
 ## Imagens (`imgs/`)

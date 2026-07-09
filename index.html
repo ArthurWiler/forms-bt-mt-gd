@@ -52,7 +52,12 @@
             return;
           }
           if (card.status === "soon") return;
-          window.location.href = "bt/?mod=" + encodeURIComponent(card.id);
+          // Individual: formulário vanilla próprio (bt/individual.html);
+          // Coletivo/Condomínio seguem na SPA React (bt/index.html).
+          window.location.href =
+            (card.formType === "individual"
+              ? "bt/individual.html?mod="
+              : "bt/?mod=") + encodeURIComponent(card.id);
         };
         return /* @__PURE__ */ React.createElement(
           "div",
