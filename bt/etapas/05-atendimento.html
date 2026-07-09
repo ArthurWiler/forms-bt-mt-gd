@@ -1,0 +1,45 @@
+<!-- Etapa 5 — Atendimento (TabCargasIndividual): Disjuntor Solicitado
+     (vinculado à carga instalada — somente leitura) + nº de UCs (1–3;
+     rural trava em 1). Os blocos colapsáveis por UC (identificação +
+     cargas + gerador + resultado) são renderizados pelo app em #ucsBox
+     (renderUcsBT). O avanço trava com combinação de disjuntores inválida
+     (data-gate="btCargasOk"). -->
+<div class="card">
+  <div class="section-eyebrow">Etapa 5</div>
+  <h3 class="card-title">Atendimento</h3>
+  <p class="card-sub">
+    Defina o disjuntor solicitado e a quantidade de unidades consumidoras.
+    Para cada UC, informe a solicitação e detalhe as cargas para
+    calcularmos a demanda e o disjuntor adequado.
+  </p>
+
+  <div class="grid grid-2" style="margin: 16px 0 24px">
+    <div class="field field--float">
+      <label>Disjuntor Solicitado</label>
+      <select data-k="atend.solicitacao" data-sem-vazio disabled>
+        <option>1- Disjuntor individual abaixo de 75 kW</option>
+        <option>2- Disjuntor individual acima de 75 kW</option>
+      </select>
+    </div>
+    <div class="field field--float">
+      <label>Número de unidades consumidoras</label>
+      <select data-k="atend.nUCs" data-sem-vazio onchange="onNUCsBT()">
+        <option>1</option>
+        <option>2</option>
+        <option>3</option>
+      </select>
+      <span id="nUCsHint" class="field-hint" style="display: none">
+        Pedido rural é limitado a 1 unidade consumidora.
+      </span>
+    </div>
+  </div>
+
+  <!-- Blocos por UC (ilha renderUcsBT) -->
+  <div id="ucsBox"></div>
+</div>
+<div class="nav-bottom no-print">
+  <button class="btn btn-ghost" onclick="goTo(3)">← Voltar</button>
+  <button class="btn btn-primary" onclick="goTo(5)" data-gate="btCargasOk">
+    Avançar →
+  </button>
+</div>

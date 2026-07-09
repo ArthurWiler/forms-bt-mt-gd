@@ -11,12 +11,113 @@
     <link rel="stylesheet" href="../css/variables.css" />
     <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/formulario-minigd.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   </head>
-  <body>
-    <div id="root"></div>
+  <!-- Shell canônico (.cemig-form, shared.css): topbar institucional, .layout
+       com .sidebar de etapas e .main-col. Cada etapa é um fragmento HTML em
+       etapas/*.html, injetado no boot por shared/js/etapas-loader.js
+       (exige servidor HTTP — como o app React anterior já exigia). -->
+  <body class="cemig-form">
+    <div class="topbar">
+      <div class="topbar-inner cmg-container">
+        <div class="topbar-left">
+          <img
+            src="../imgs/logos/logo-cemig-branca-com-verde.png"
+            alt="Cemig"
+            class="logo-img"
+          />
+          <span class="app-title"
+            >Formulário de Ligação Nova e Alteração de Carga</span
+          >
+        </div>
+      </div>
+    </div>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <a href="../index.html" class="form-back">VOLTAR</a>
+        <div class="sidebar-title">Progresso do preenchimento</div>
+        <button type="button" class="vstep active">
+          <span class="vstep-num">1</span>
+          <span class="vstep-label">Orientações</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">2</span>
+          <span class="vstep-label">Identificação</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">3</span>
+          <span class="vstep-label">Dados da UC</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">4</span>
+          <span class="vstep-label">Documentação</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">5</span>
+          <span class="vstep-label">Formulário de Carga</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">6</span>
+          <span class="vstep-label">Dados da Geração</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">7</span>
+          <span class="vstep-label">Armazenamento</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">8</span>
+          <span class="vstep-label">Declarações</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">9</span>
+          <span class="vstep-label">Correspondência</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">10</span>
+          <span class="vstep-label">Prévia &amp; PDF</span>
+        </button>
+      </aside>
+
+      <main class="main-col">
+        <div class="form-header">
+          <h1>Minigeração Distribuída - Solicitação de Acesso</h1>
+          <p>
+            Preenchimento digital do formulário de solicitação de acesso para
+            conexão de minigeração distribuída (potência instalada superior a
+            75 kW e de até 5.000 kW), conforme a REN ANEEL nº 1.000/2021 e as
+            normas de distribuição da CEMIG.
+          </p>
+        </div>
+
+        <!-- Etapas (fragmentos injetados por etapas-loader.js) -->
+        <section class="page show" id="page-0" data-src="etapas/01-orientacoes.html"></section>
+        <section class="page" id="page-1" data-src="etapas/02-identificacao.html"></section>
+        <section class="page" id="page-2" data-src="etapas/03-dados-uc.html"></section>
+        <section class="page" id="page-3" data-src="etapas/04-documentacao.html"></section>
+        <section class="page" id="page-4" data-src="etapas/05-carga.html"></section>
+        <section class="page" id="page-5" data-src="etapas/06-geracao.html"></section>
+        <section class="page" id="page-6" data-src="etapas/07-armazenamento.html"></section>
+        <section class="page" id="page-7" data-src="etapas/08-declaracoes.html"></section>
+        <section class="page" id="page-8" data-src="etapas/09-correspondencia.html"></section>
+        <section class="page" id="page-9" data-src="etapas/10-previa.html"></section>
+      </main>
+    </div>
+    <!-- /layout -->
+
+    <footer class="portal-footer">
+      <div class="portal-footer-inner cmg-container cmg-container--gutter">
+        <img
+          src="../imgs/logos/logo-cemig-branca-com-verde.png"
+          alt="Cemig"
+          class="logo-img"
+        />
+        <p class="portal-footer-copy">
+          CEMIG 2025© - Todos os Direitos Reservados
+        </p>
+      </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="js/data.js"></script>
     <script src="../mt/js/subestacoes-b64.js"></script>
     <script src="../shared/js/load-form-data.js"></script>
@@ -25,25 +126,9 @@
     <script src="../shared/js/gd-pdf-base.js"></script>
     <script src="js/pdf.js"></script>
     <script src="../shared/js/api.js"></script>
-    <script src="../shared/js/components.js"></script>
-    <script src="../shared/js/load-form.js"></script>
-    <script src="js/views.js"></script>
+    <script src="../shared/js/calc-demanda.js"></script>
+    <script src="../shared/js/form-marcadores.js"></script>
     <script src="js/app.js"></script>
-    <script>
-      window.addEventListener("load", function () {
-        setTimeout(function () {
-          var root = document.getElementById("root");
-          if (root && root.children.length === 0 && location.protocol === "file:") {
-            root.innerHTML =
-              '<div style="max-width:640px;margin:60px auto;padding:24px;font-family:Open Sans,system-ui,sans-serif;background:#fff8e6;border:1px solid #f0d48a;border-radius:12px;color:#8a6d1a;line-height:1.6">' +
-              "<strong>Para executar este formulário, sirva-o por um servidor HTTP.</strong><br>" +
-              "Na pasta do projeto, rode:<br>" +
-              '<code style="display:block;background:#fff;padding:8px;border-radius:6px;margin-top:6px">python3 -m http.server 8000</code>' +
-              "e acesse <code>http://localhost:8000</code>." +
-              "</div>";
-          }
-        }, 1500);
-      });
-    </script>
+    <script src="../shared/js/etapas-loader.js"></script>
   </body>
 </html>

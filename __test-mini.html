@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><title>harness mini</title></head>
+<body>
+<iframe id="f" src="minigeracao/index.html" style="width:1400px;height:900px;border:0"></iframe>
+<pre id="out">RUNNING</pre>
+<script>
+const results = [];
+const t = (name, cond, extra) =>
+  results.push((cond ? "PASS " : "FAIL ") + name + (extra != null ? " :: " + extra : ""));
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const aprox = (a, b) => Math.abs((a || 0) - (b || 0)) < 1e-9;
+
+// Valores esperados recalculados p/ o mini (scratchpad/parity-snapshot-mini.json):
+// mesma matemática React, mas redeMono=false SEMPRE (Grupo A) — só muda a
+// lista de disjuntores do caso res_tipico.
+const ESPERADO = {
+  res_tipico: { d: 18.3035, kw: 18.55, disj: ["Tripolar 63 A"] },
+  nr_oficina: { d: 65.548, kw: 52.2, disj: ["Tripolar 175 A"] },
+  tri_filtra_disj: { d: 8.13288, kw: 4.508, disj: ["Tripolar 63 A"] },
+  motores_c4: { d: 6.87, kw: 2, disj: ["Monopolar 63 A", "Bipolar 63 A", "Tripolar 63 A"] },
+  b3_pesado: { d: 9.258, kw: 9.3, disj: ["Bipolar 63 A", "Tripolar 63 A"] },
+};
+const CASOS = {
+  res_tipico: {
+    tipoA: "res", catA: 0,
+    qtds: [["Lâmpada LED 10W", 10], ["Incandescente 100W", 4], ["Chuveiro Elétrico 220V", 2],
+      ["Fogão elétrico 4 bocas", 1], ["Forno micro-ondas", 1], ["Geladeira duplex", 1],
+      ["Televisor", 2], ["Ar condicionado 12000 BTU", 2]],
+    mots: [{ fase: "mono", cv: "1", q: 1 }], extras: [],
+  },
+  nr_oficina: {
+    tipoA: "nr", catA: 0,
+    qtds: [["Fluorescente 40W", 300], ["Incandescente 100W", 120], ["Chuveiro Elétrico 127V", 3],
+      ["Máq. lavar roupas", 2], ["Raio X (dentista)", 1], ["Ar condicionado 30000 BTU", 3]],
+    mots: [{ fase: "tri", cv: "5", q: 2 }, { fase: "mono", cv: "2", q: 1 }],
+    extras: [{ fase: "tri", cv: "10", q: 1 }],
+  },
+  tri_filtra_disj: {
+    tipoA: "res", catA: 0,
+    qtds: [["Lâmpada LED 18W", 6], ["Chuveiro Elétrico 127V", 1]],
+    mots: [{ fase: "tri", cv: "3", q: 1 }], extras: [],
+  },
+  motores_c4: {
+    tipoA: "nr", catA: 6,
+    qtds: [["Fluorescente 20W", 100]],
+    mots: [{ fase: "mono", cv: "1", q: 3 }],
+    extras: [{ fase: "mono", cv: "0.5", q: 4 }],
+  },
+  b3_pesado: {
+    tipoA: "res", catA: 0,
+    qtds: [["Forno elétrico embutir", 2], ["Incandescente 60W", 5]],
+    mots: [], extras: [],
+  },
+};
+
+function setVal(el, v, evt) {
+  el.value = v;
+  el.dispatchEvent(new Event(evt || "input", { bubbles: true }));
+  if (evt !== "input") el.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+async function driveCaso(win, doc, nome, caso) {
+  // classe vazia para a atividade não travar o tipo de carga
+  win.state.classe = "";
+  win.state.cargas = { qtds: [], tipoA: "", catA: 0, mots: [], extras: [] };
+  win.initCargas();
+  const box = doc.getElementById("calcDemandaBox");
+  setVal(box.querySelector("select"), caso.tipoA, "change");
+  if (caso.tipoA === "nr" && caso.catA) {
+    const sels = box.querySelectorAll(".toggle-group select");
+    setVal(sels[1], String(caso.catA), "change");
+  }
+  for (const [nomeCarga, q] of caso.qtds) {
+    const row = [...box.querySelectorAll(".carga-row")].find((r) =>
+      r.querySelector(".nome").textContent.trim().startsWith(nomeCarga),
+    );
+    if (!row) { t(`${nome}: carga "${nomeCarga}" encontrada`, false); continue; }
+    setVal(row.querySelector(".qtd-ctrl input"), String(q));
+  }
+  for (const [chave, linhas] of [["mots", caso.mots], ["extras", caso.extras]]) {
+    for (let i = 0; i < linhas.length; i++) {
+      const m = linhas[i];
+      const boxM = box.querySelector(`[data-calc-chave="${chave}"]`);
+      boxM.querySelector(".motores-head .btn-primary").click();
+      const linha = [...box.querySelector(`[data-calc-chave="${chave}"]`)
+        .querySelectorAll("tbody tr")].pop();
+      if (m.fase !== "mono") {
+        setVal(linha.querySelector("td select"), m.fase, "change");
+      }
+      const linha2 = [...box.querySelector(`[data-calc-chave="${chave}"]`)
+        .querySelectorAll("tbody tr")].pop();
+      const selCv = linha2.querySelectorAll("select")[1];
+      setVal(selCv, m.cv, "change");
+      setVal(linha2.querySelector('input[type="number"]'), String(m.q));
+    }
+  }
+  await sleep(0);
+  const c = win.state.cargas;
+  const exp = ESPERADO[nome];
+  t(`paridade ${nome} _demanda`, aprox(c._demanda, exp.d), `${c._demanda} vs ${exp.d}`);
+  t(`paridade ${nome} _cargaKw`, aprox(c._cargaKw, exp.kw), `${c._cargaKw} vs ${exp.kw}`);
+  t(`paridade ${nome} _disjuntores`, JSON.stringify(c._disjuntores) === JSON.stringify(exp.disj),
+    JSON.stringify(c._disjuntores));
+}
+
+async function main() {
+  const f = document.getElementById("f");
+  let win, doc;
+  for (let i = 0; i < 300; i++) {
+    win = f.contentWindow;
+    doc = f.contentDocument;
+    if (doc && doc.readyState === "complete" &&
+        doc.querySelectorAll("section.page").length === 10 &&
+        [...doc.querySelectorAll("section.page")].every((s) => s.children.length > 0) &&
+        win.state && doc.querySelector("#calcDemandaBox > *")) break;
+    await sleep(100);
+  }
+  const pages = [...doc.querySelectorAll("section.page")];
+  t("10 fragmentos carregados", pages.length === 10 && pages.every((s) => s.children.length > 0),
+    pages.map((s) => s.children.length).join(","));
+
+  // ---- gating: Orientações (aceite) ----
+  const btnIniciar = doc.querySelector("#page-0 .nav-bottom .btn-primary");
+  t("Iniciar desabilitado sem aceite", btnIniciar && btnIniciar.disabled);
+  const aceite = doc.getElementById("aceiteOrient");
+  aceite.checked = true;
+  aceite.dispatchEvent(new Event("change", { bubbles: true }));
+  await sleep(0);
+  t("Iniciar habilitado com aceite", !btnIniciar.disabled);
+
+  // ---- navegação sidebar ----
+  win.goTo(1, true);
+  t("sidebar/goTo navega p/ etapa 2", doc.querySelector("#page-1").classList.contains("show"));
+
+  // ---- gating: Identificação ----
+  const btnAv1 = doc.querySelector("#page-1 .nav-bottom .btn-primary:last-child");
+  t("Avançar da Identificação desabilitado (vazios)", btnAv1.disabled);
+  const reqStars = doc.querySelectorAll("#page-1 .req").length;
+  t("convenção de marcadores aplicada (sem .req cru)", reqStars === 0, reqStars);
+  const opts = doc.querySelectorAll("#page-1 label .opt").length;
+  t("rótulos (opcional) presentes na Identificação", opts > 0, opts);
+
+  const set = (k, v) => { const el = doc.querySelector(`[data-k="${k}"]`); setVal(el, v); };
+  set("instalacao", "1234567");
+  set("titular", "Fulano de Tal");
+  set("email", "fulano@exemplo.com");
+  set("celular", "(31) 99999-8888");
+  const cpfEl = doc.querySelector('[data-k="cpfCnpj"]');
+  setVal(cpfEl, "52998224725");
+  win.onCpfCnpjGD(cpfEl);
+  await sleep(50);
+  t("campos PF aparecem com CPF válido",
+    doc.querySelector(".pf-campo").style.display !== "none");
+  set("filiacao", "Mãe de Tal");
+  set("nasc", "1990-01-01");
+  set("classe", "Comercial");
+  doc.querySelector('[data-k="classe"]').dispatchEvent(new Event("change", { bubbles: true }));
+  set("cep", "30190-131");
+  set("logradouro", "Av. Barbacena");
+  set("numero", "1200");
+  set("bairro", "Santo Agostinho");
+  set("municipio", "Belo Horizonte");
+  await sleep(0);
+  t("Avançar da Identificação habilita após preencher", !btnAv1.disabled);
+
+  // ---- Dados da UC ----
+  win.goTo(2, true);
+  set("latitude", "-19.916681");
+  win.onCoordGD(doc.querySelector('[data-k="latitude"]'));
+  set("longitude", "-43.934493");
+  win.onCoordGD(doc.querySelector('[data-k="longitude"]'));
+  t("UTM derivado de lat/lon", /E:\d+ N:\d+/.test(doc.getElementById("gd_utm").value),
+    doc.getElementById("gd_utm").value);
+  // mini é sempre Grupo A: galeria SE sempre visível
+  t("galeria SE sempre visível (Grupo A)", doc.getElementById("seBox").style.display !== "none");
+  t("galeria SE com cards", doc.querySelectorAll("#seGalleryGD .se-card").length >= 4,
+    doc.querySelectorAll("#seGalleryGD .se-card").length);
+  const cardSE = [...doc.querySelectorAll("#seGalleryGD .se-card")]
+    .find((c) => c.textContent.includes("Nº 5"));
+  cardSE.click();
+  await sleep(0);
+  t("tabela de trafos aparece ao escolher SE",
+    doc.getElementById("trafosBox").style.display !== "none");
+  // potência do trafo é campo LIVRE (aceita p.ex. 1500 kVA)
+  const potTrafo = doc.querySelectorAll("#trafoGdBody tr:first-child input")[1];
+  setVal(potTrafo, "1500");
+  t("potência de trafo livre aceita 1500 kVA", win.state.trafos[0].potencia === "1500",
+    JSON.stringify(win.state.trafos[0]));
+  // mudança de SE indisponibiliza tipos conforme regra (só sanity: galeria re-renderiza)
+  const selMudSE = doc.querySelector('select[data-k="mudancaSE"]');
+  setVal(selMudSE, "Sim", "change");
+  await sleep(0);
+  t("mudancaSE=Sim mantém galeria renderizada",
+    doc.querySelectorAll("#seGalleryGD .se-card").length >= 4);
+  setVal(selMudSE, "Não", "change");
+  // solicitação: ligação nova esconde blocos de instalação existente
+  setVal(doc.querySelector('[data-k="solicitacao"]'),
+    "Ligação de Nova Unidade Consumidora COM Geração Distribuída", "change");
+  await sleep(0);
+  t("aviso de Formulário de Carga aparece",
+    doc.getElementById("avisoFormCarga").style.display !== "none");
+  t("nº UC / instalação existente ocultos em ligação nova",
+    doc.getElementById("numUCBox").style.display === "none" &&
+    doc.getElementById("instExistenteBox").style.display === "none" &&
+    doc.getElementById("demandaConsumoAtualBox").style.display === "none");
+  t("demanda de consumo visível (não é SEM alteração)",
+    doc.getElementById("demandaConsumoBox").style.display !== "none");
+  // SEM Alteração de Demanda esconde demandaConsumo
+  setVal(doc.querySelector('[data-k="solicitacao"]'),
+    "Conexão de GD em Unidade Consumidora Existente SEM Alteração de Demanda Contratada", "change");
+  await sleep(0);
+  t("SEM alteração de demanda oculta demandaConsumo",
+    doc.getElementById("demandaConsumoBox").style.display === "none");
+  t("GD Existente oculto: potGeracaoAtual só p/ GD Existente",
+    doc.getElementById("potGeracaoAtualBox").style.display === "none");
+  setVal(doc.querySelector('[data-k="solicitacao"]'),
+    "GD Existente COM Alteração de Potência Ativa Instalada Total de Geração", "change");
+  await sleep(0);
+  t("potGeracaoAtual aparece em GD Existente",
+    doc.getElementById("potGeracaoAtualBox").style.display !== "none");
+  setVal(doc.querySelector('[data-k="solicitacao"]'),
+    "Ligação de Nova Unidade Consumidora COM Geração Distribuída", "change");
+  // entrada de energia compartilhada exige qtd de cubículos
+  setVal(doc.querySelector('[data-k="entradaEnergia"]'), "Subestação Compartilhada", "change");
+  await sleep(0);
+  t("entrada compartilhada mostra qtd de cubículos",
+    doc.getElementById("qtdCubiculosBox").style.display !== "none");
+  // Grid Zero trava demanda de geração em 0
+  const selGZ = doc.querySelector('select[data-k="gridZero"]');
+  setVal(selGZ, "Sim", "change");
+  await sleep(0);
+  const dgEl = doc.querySelector('[data-k="demandaGeracao"]');
+  t("gridZero=Sim trava demandaGeracao=0", win.state.demandaGeracao === "0" && dgEl.disabled,
+    `${win.state.demandaGeracao} disabled=${dgEl.disabled}`);
+  setVal(selGZ, "Não", "change");
+  await sleep(0);
+  t("gridZero=Não libera demandaGeracao", !dgEl.disabled);
+
+  // ---- Formulário de Carga: paridade numérica (redeMono sempre false) ----
+  win.goTo(4, true);
+  for (const [nome, caso] of Object.entries(CASOS)) {
+    await driveCaso(win, doc, nome, caso);
+  }
+  t("KPIs atualizados", doc.getElementById("kpiDemanda").textContent !== "0,00",
+    doc.getElementById("kpiDemanda").textContent);
+
+  // ---- Geração: multi-fontes ----
+  win.goTo(5, true);
+  const nBlocos = () => doc.querySelectorAll('#fontesBox [data-f="fontePrimaria"]').length;
+  t("1 fonte renderizada por padrão", nBlocos() === 1, nBlocos());
+  // FV: potência da fonte = menor entre módulos e inversores
+  const inpMod = doc.querySelector('#fontesBox [data-f="potTotalModulos"]');
+  setVal(inpMod, "600");
+  const inpInv = doc.querySelector('#fontesBox [data-f="potTotalInversores"]');
+  setVal(inpInv, "550");
+  await sleep(0);
+  t("FV: potência = menor(módulos, inversores)", win.state.fontes[0].potencia === "550",
+    win.state.fontes[0].potencia);
+  t("input da fonte FV exibe potência calculada",
+    doc.querySelector('#fontesBox [data-fonte-pot="0"]').value === "550");
+  // adicionar 2ª fonte
+  setVal(doc.querySelector('select[data-k="qtdFontes"]'), "2", "change");
+  await sleep(0);
+  t("qtdFontes=2 renderiza 2 blocos", nBlocos() === 2, nBlocos());
+  t("state.fontes tem 2 itens", win.state.fontes.length === 2);
+  // 2ª fonte: Hidráulica (potência digitável)
+  const selF2 = doc.querySelectorAll('#fontesBox [data-f="fontePrimaria"]')[1];
+  setVal(selF2, "Hidráulica", "change");
+  await sleep(0);
+  const potF2 = doc.querySelectorAll('#fontesBox [data-f="potencia"]')[1];
+  t("fonte Hidráulica tem potência editável", !potF2.disabled);
+  setVal(potF2, "100");
+  await sleep(0);
+  t("potAtivaInstalada = soma das fontes (650)", win.state.potAtivaInstalada === "650",
+    win.state.potAtivaInstalada);
+  t("input potAtivaInstalada exibe 650",
+    doc.querySelector('[data-k="potAtivaInstalada"]').value === "650");
+  // remover a 2ª fonte
+  setVal(doc.querySelector('select[data-k="qtdFontes"]'), "1", "change");
+  await sleep(0);
+  t("qtdFontes=1 remove a 2ª fonte", nBlocos() === 1 && win.state.fontes.length === 1);
+  t("potAtivaInstalada recalculada (550)", win.state.potAtivaInstalada === "550",
+    win.state.potAtivaInstalada);
+
+  // ---- GFC (Garantia de Fiel Cumprimento) ----
+  // 550 kW Solar, Autoconsumo Remoto: perc 2,5% → 0.025×550×4000 = 55000
+  setVal(doc.querySelector('select[data-k="modalidade"]'), "Autoconsumo Remoto", "change");
+  await sleep(0);
+  t("GFC exigida (>500 kW): bloco visível",
+    doc.getElementById("gfcBloco").style.display !== "none");
+  t("GFC calculada = 55000", win.state.gfcValor === "55000", win.state.gfcValor);
+  t("GFC exibida formatada", doc.getElementById("gd_gfcValor").value.includes("55.000"),
+    doc.getElementById("gd_gfcValor").value);
+  // Geração Compartilhada: GFC calculada 0, mas gdExigeGFC continua true
+  // enquanto o consórcio NÃO está verificado (bloco visível); verificado → dispensa
+  setVal(doc.querySelector('select[data-k="modalidade"]'), "Geração Compartilhada", "change");
+  await sleep(0);
+  t("Geração Compartilhada s/ consórcio verificado mantém bloco GFC",
+    doc.getElementById("gfcBloco").style.display !== "none");
+  t("GFC calculada 0 em Geração Compartilhada", win.state.gfcValor === "0", win.state.gfcValor);
+  t("consorcioBox aparece em Geração Compartilhada",
+    doc.getElementById("consorcioBox").style.display !== "none");
+  setVal(doc.querySelector('select[data-k="consorcioVerificado"]'), "Sim", "change");
+  await sleep(0);
+  t("consórcio verificado oculta bloco GFC",
+    doc.getElementById("gfcBloco").style.display === "none");
+  t("aviso de GFC dispensada (consórcio verificado)",
+    doc.getElementById("gfcIsentoAviso").style.display !== "none");
+
+  // ---- Grid Zero: modalidade travada + declaração 9.5 ----
+  setVal(selGZ, "Sim", "change");
+  await sleep(0);
+  const selMod = doc.querySelector('select[data-k="modalidade"]');
+  t("gridZero trava modalidade = Autoconsumo Local",
+    win.state.modalidade === "Autoconsumo Local" && selMod.disabled,
+    win.state.modalidade);
+  t("banner Grid Zero visível", doc.getElementById("gridZeroBanner").style.display !== "none");
+  t("declaração 9.5 aparece p/ Grid Zero",
+    doc.getElementById("decl95Item").style.display !== "none");
+  t("aviso 9.5 pendente visível", doc.getElementById("decl95Aviso").style.display !== "none");
+  const v0 = win.validarExportacao();
+  t("validação exige 9.5 no Grid Zero",
+    v0.faltas.some((x) => x.includes("9.5")), JSON.stringify(v0.faltas));
+  const chk95 = doc.querySelector('[data-decl="decl95"]');
+  chk95.checked = true;
+  chk95.dispatchEvent(new Event("change", { bubbles: true }));
+  await sleep(0);
+  t("aviso 9.5 some após marcar", doc.getElementById("decl95Aviso").style.display === "none");
+
+  // ---- validação de exportação + prévia + PDF ----
+  win.aplicarPatch({
+    classe: "Comercial", // driveCaso limpou p/ os casos de paridade
+    solicitacao: "Ligação de Nova Unidade Consumidora COM Geração Distribuída",
+    impedanciaTrafo: "4,5",
+    qtdCubiculos: "2",
+    demandaConsumo: "300",
+    garantiaForma: "Fiança bancária", // 550 kW em Autoconsumo Local exige GFC
+    vencimento: "06",
+    receberEmail: "Sim",
+  });
+  Object.assign(win.state, { decl84: true, decl86: true });
+  const v = win.validarExportacao();
+  t("validarExportacao ok com tudo preenchido", v.ok, JSON.stringify(v.faltas));
+  win.goTo(9, true);
+  await sleep(0);
+  t("prévia renderizada", doc.querySelectorAll("#previewContent .previa-secao").length >= 4,
+    doc.querySelectorAll("#previewContent .previa-secao").length);
+  t("botão Exportar habilitado", !doc.getElementById("btnExportarPDF").disabled);
+  let pdfBytes = 0;
+  win.jspdf.jsPDF.API.save = function () {
+    pdfBytes = this.output("arraybuffer").byteLength;
+  };
+  let pdfErro = "";
+  try { win.gerarPdfMiniGD(win.state); } catch (e) { pdfErro = String(e); }
+  t("gerarPdfMiniGD roda sem exceção e gera bytes", !pdfErro && pdfBytes > 1000,
+    pdfErro || pdfBytes + " bytes");
+
+  document.getElementById("out").textContent =
+    results.join("\n") + "\nDONE " +
+    results.filter((r) => r.startsWith("FAIL")).length + " failures";
+}
+main().catch((e) => {
+  document.getElementById("out").textContent =
+    results.join("\n") + "\nERRO: " + (e && e.stack || e);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!-- Etapa 9 — Correspondência e Fatura (ViewCorrespondencia). Replica o
+     bloco do BT: fatura por e-mail + vencimento; quando "Não", escolhe a
+     alternativa (novo endereço / endereço da obra / outro e-mail) e oferece
+     a conta globalizada. -->
+<div class="card">
+  <div class="section-eyebrow">Etapa 9</div>
+  <h3 class="card-title">Correspondência e Fatura</h3>
+  <p class="card-sub">
+    Escolha como e quando você deseja receber a conta de energia.
+  </p>
+  <div class="grid grid-3">
+    <div class="field field--plain" data-noopt>
+      <label>Deseja receber a fatura no e-mail informado? <span class="req">*</span></label>
+      <div id="cardsReceberEmail"></div>
+      <select
+        data-k="receberEmail"
+        onchange="onReceberEmailGD()"
+        style="display: none"
+        aria-hidden="true"
+      >
+        <option>Sim</option>
+        <option>Não</option>
+      </select>
+    </div>
+    <div class="field field--plain col-span-2" data-noopt>
+      <label>Data de Vencimento da Fatura <span class="req">*</span></label>
+      <div id="cardsVencimento"></div>
+      <select data-k="vencimento" style="display: none" aria-hidden="true">
+        <option value=""></option>
+        <option>01</option>
+        <option>06</option>
+        <option>11</option>
+        <option>17</option>
+        <option>22</option>
+        <option>27</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="correspNaoBox" class="divider" style="display: none">
+    <div class="grid" style="margin-top: 4px">
+      <div class="field field--plain" data-noopt>
+        <label>Como deseja receber a fatura? <span class="req">*</span></label>
+        <div id="cardsCorrAlternativa"></div>
+        <select
+          data-k="corrAlternativa"
+          onchange="onCorrAlternativa()"
+          style="display: none"
+          aria-hidden="true"
+        >
+          <option>Endereço novo</option>
+          <option>Mesmo da obra</option>
+          <option>Outro e-mail</option>
+        </select>
+      </div>
+    </div>
+    <div
+      id="corrObraAviso"
+      class="alert alert-info cmg-aviso"
+      style="margin-top: 12px; display: none"
+    >
+      <div class="cmg-aviso-icon" aria-hidden="true"></div>
+      <p class="cmg-aviso-texto">
+        A fatura será enviada para o endereço informado nos
+        <strong>Dados da Unidade Consumidora</strong>.
+      </p>
+    </div>
+    <div
+      id="corrEmailBox"
+      class="grid grid-2"
+      style="margin-top: 12px; display: none"
+    >
+      <div class="field col-span-2">
+        <label>E-mail para envio da fatura <span class="req">*</span></label>
+        <input type="email" data-k="corrOutroEmail" placeholder="email@exemplo.com" />
+      </div>
+    </div>
+    <div
+      id="corrEndBox"
+      class="grid grid-2"
+      style="margin-top: 12px; display: none"
+    >
+      <div class="field">
+        <label>CEP <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="corrCep"
+          placeholder="00000-000"
+          oninput="onMascara(this, mascararCEP)"
+        />
+      </div>
+      <div class="field">
+        <label>Rua / Av. <span class="req">*</span></label>
+        <input type="text" data-k="corrRua" placeholder=" " />
+      </div>
+      <div class="field">
+        <label>Nº <span class="req">*</span></label>
+        <input type="text" data-k="corrNum" placeholder=" " />
+      </div>
+      <div class="field">
+        <label>Complemento do endereço</label>
+        <input type="text" data-k="corrCompl" placeholder=" " />
+      </div>
+      <div class="field">
+        <label>Bairro / Distrito <span class="req">*</span></label>
+        <input type="text" data-k="corrBairro" placeholder=" " />
+      </div>
+      <div class="field">
+        <label>Município <span class="req">*</span></label>
+        <input type="text" data-k="corrMunicipio" placeholder=" " />
+      </div>
+      <div class="field">
+        <label>Estado</label>
+        <input type="text" data-k="corrEstado" placeholder=" " />
+      </div>
+    </div>
+    <div class="grid grid-2" style="margin-top: 20px">
+      <div class="field field--plain" data-noopt>
+        <label>Possui conta globalizada (poder público)?</label>
+        <div id="cardsPossuiContaGlobal"></div>
+        <select
+          data-k="possuiContaGlobal"
+          onchange="onContaGlobalGD()"
+          style="display: none"
+          aria-hidden="true"
+        >
+          <option>Não</option>
+          <option>Sim</option>
+        </select>
+      </div>
+      <div class="field col-span-2" id="contaGlobalBox" style="display: none">
+        <label>
+          Conta globalizada (código de débito automático globalizado)
+          <span class="req">*</span>
+        </label>
+        <input type="text" data-k="contaGlobal" placeholder="000000000" />
+      </div>
+    </div>
+  </div>
+</div>
+<div class="nav-bottom no-print">
+  <button class="btn btn-ghost" onclick="goTo(7)">← Voltar</button>
+  <button class="btn btn-primary" onclick="goTo(9)">Avançar →</button>
+</div>

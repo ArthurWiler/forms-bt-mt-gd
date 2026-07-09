@@ -1,0 +1,29 @@
+<!-- Etapa 10 — Prévia & PDF (ViewRevisao). O conteúdo é montado pelo app.js
+     (renderPreviewGD, padrão pvCampo/pvSecao do MT); as faltas de
+     obrigatórios vêm de validarExportacao(). O botão Exportar fica no
+     nav-bottom e é habilitado pelo gate de exportação. -->
+<div class="card">
+  <div class="section-eyebrow">Etapa 10</div>
+  <h3 class="card-title">Prévia do formulário</h3>
+  <p class="card-sub no-print">
+    Confira se todos os dados estão corretos e gere o PDF para anexar à sua
+    solicitação no Cemig Atende.
+  </p>
+  <div id="revFaltas"></div>
+  <div id="previewContent"></div>
+  <div class="cmg-aviso cmg-aviso--warn no-print">
+    <div class="cmg-aviso-icon" aria-hidden="true"></div>
+    <p class="cmg-aviso-texto">
+      <span>
+        Após exportar o PDF da sua solicitação, anexe-o no seu pedido no
+        <b>Cemig Atende</b>.
+      </span>
+    </p>
+  </div>
+</div>
+<div class="nav-bottom no-print">
+  <button class="btn btn-ghost" onclick="goTo(8)">← Voltar e editar</button>
+  <button class="btn btn-primary" id="btnExportarPDF" onclick="exportarPdfGD()">
+    📄 Exportar PDF
+  </button>
+</div>

@@ -1,0 +1,85 @@
+<!-- Etapa 7 — Prévia & PDF (TabRevisar): prévia por seções com lápis de
+     edição, documentos necessários derivados do preenchimento
+     (listaDocumentosBT), pendências obrigatórias, Análise de Partida de
+     Motores (sub-tela opcional em #analiseMotoresBox) e Termo de Opção
+     Grupo B (> 75 kW). Tudo renderizado pelo app (renderPreviaBT). -->
+<div id="previaWrap">
+  <div class="card">
+    <div class="section-eyebrow">Etapa 7</div>
+    <h3 class="card-title">Prévia do formulário</h3>
+    <p class="card-sub">
+      Confira se todos os dados estão corretos e gere o PDF para anexar à
+      sua solicitação no Cemig Atende.
+    </p>
+    <div id="previaConteudo"></div>
+  </div>
+  <div class="card">
+    <p class="card-sub">
+      Documentos a apresentar com a solicitação — a lista abaixo é gerada a
+      partir do preenchimento do formulário e pode ser exportada em PDF.
+    </p>
+    <div class="previa-secao">
+      <h4 class="previa-secao-titulo">Documentos necessários</h4>
+      <div id="docsNecessarios"></div>
+    </div>
+    <div id="previaFaltas"></div>
+    <div id="motoresPesadosAviso" style="display: none" class="alert alert-warn">
+      <span>
+        A solicitação possui motores que exigem mais informações, favor
+        preencher o formulário:
+      </span>
+      <button type="button" class="btn btn-dark" onclick="mostrarAnaliseMotoresBT(true)">
+        Preencher Análise de Partida
+      </button>
+    </div>
+    <div id="termoGrupoBBox" style="display: none" class="btn-row">
+      <button type="button" class="btn btn-ghost" onclick="exportarTermoGrupoBBT()">
+        📄 Exportar Termo de Opção - Grupo B
+      </button>
+    </div>
+    <div class="cmg-aviso cmg-aviso--warn">
+      <div class="cmg-aviso-icon" aria-hidden="true"></div>
+      <p class="cmg-aviso-texto">
+        <span>
+          Após exportar o PDF da sua solicitação, anexe-o no seu pedido no
+          <b>Cemig Atende</b>.
+        </span>
+      </p>
+    </div>
+  </div>
+  <div class="nav-bottom no-print">
+    <button class="btn btn-ghost" onclick="goTo(5)">← Voltar</button>
+    <button
+      type="button"
+      class="btn btn-primary"
+      id="btnExportarPDF"
+      onclick="exportarPdfBT()"
+      disabled
+    >
+      📄 Exportar PDF
+    </button>
+  </div>
+</div>
+
+<!-- Sub-tela: Análise de Partida de Motores (opcional, não bloqueia o PDF) -->
+<div id="analiseMotoresBox" style="display: none">
+  <div class="card">
+    <div class="section-eyebrow">Rede secundária (BT)</div>
+    <h3 class="card-title">Análise de Partida de Motores</h3>
+    <p class="card-sub">
+      Preencha, quando possível, os dados de cada motor pesado identificado
+      nas Unidades Consumidoras. Este bloco é opcional e não bloqueia a
+      exportação do formulário principal.
+    </p>
+    <div id="analiseMotoresConteudo"></div>
+  </div>
+  <div class="nav-bottom no-print">
+    <button class="btn btn-ghost" onclick="mostrarAnaliseMotoresBT(false)">
+      ← Voltar à prévia
+    </button>
+    <span class="nav-step-info">Análise de Partida de Motores</span>
+    <button class="btn btn-primary" onclick="exportarPDFPartidaBT()">
+      📄 Exportar Relatório de Motores
+    </button>
+  </div>
+</div>

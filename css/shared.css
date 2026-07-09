@@ -2198,6 +2198,27 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .fade-in {
   animation: fadeIn 0.25s ease;
 }
+/* ---- Troca de etapas (.page/.page.show) — shells vanilla ----
+   Cada .page reproduz o fluxo do main-col (cards + nav-bottom em coluna),
+   exibida uma por vez. Movido do CSS do MT para o shared: micro/mini/BT
+   individual usam o mesmo mecanismo. Na impressão, só a etapa ativa sai. */
+.cemig-form .page {
+  display: none;
+}
+.cemig-form .page.show {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cmg-space-8);
+  animation: fadeIn 0.25s ease;
+}
+@media print {
+  .cemig-form .page {
+    display: none !important;
+  }
+  .cemig-form .page.show {
+    display: block !important;
+  }
+}
 /* Aceite das Orientações ("Declaro que li…") — checkbox que libera o avanço.
    Comum a todos os formulários (React e HTML). Spec Figma:
      • caixa de seleção (hit area): 32×32, ícone centralizado;

@@ -1,0 +1,91 @@
+<!-- Etapa 7 — Sistema de Armazenamento de Energia (ViewArmazenamento).
+     Bloco condicional inteiro só quando "Possui" = Sim; chave de desconexão
+     e reconexão automática só com operação ilhada = Sim. -->
+<div class="card">
+  <div class="section-eyebrow">Etapa 7</div>
+  <h3 class="card-title">Sistema de Armazenamento de Energia</h3>
+  <div class="grid grid-3">
+    <div class="field field--plain col-span-3" data-noopt>
+      <label>Possui sistema de armazenamento de energia?</label>
+      <div id="cardsPossuiArmazenamento"></div>
+      <select
+        data-k="possuiArmazenamento"
+        onchange="onArmazenamento()"
+        style="display: none"
+        aria-hidden="true"
+      >
+        <option>Não</option>
+        <option>Sim</option>
+      </select>
+    </div>
+  </div>
+  <div id="armBloco" style="display: none">
+    <div class="grid grid-3" style="margin-top: 12px">
+      <div class="field field--plain col-span-3" data-noopt>
+        <label>Sistema com possibilidade de operação ilhada?</label>
+        <div id="cardsArmOperacaoIlhada"></div>
+        <select
+          data-k="armOperacaoIlhada"
+          onchange="onArmazenamento()"
+          style="display: none"
+          aria-hidden="true"
+        >
+          <option>Não</option>
+          <option>Sim</option>
+        </select>
+      </div>
+      <div class="field field--plain" id="armChaveBox" style="display: none" data-noopt>
+        <label>Chave de desconexão física?</label>
+        <div id="cardsArmChaveDesconexao"></div>
+        <select
+          data-k="armChaveDesconexao"
+          style="display: none"
+          aria-hidden="true"
+        >
+          <option>Não</option>
+          <option>Sim</option>
+        </select>
+      </div>
+      <div class="field field--plain col-span-2" id="armReconexaoBox" style="display: none" data-noopt>
+        <label>Reconexão automática?</label>
+        <div id="cardsArmReconexaoAuto"></div>
+        <select
+          data-k="armReconexaoAuto"
+          style="display: none"
+          aria-hidden="true"
+        >
+          <option>Não</option>
+          <option>Sim</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Capacidade do banco de baterias (kWh)</label>
+        <input type="text" data-k="armCapacidadeKwh" placeholder=" " oninput="onNumDec(this)" />
+      </div>
+      <div class="field">
+        <label>Potência total do banco de baterias (kW)</label>
+        <input type="text" data-k="armPotenciaKw" placeholder=" " oninput="onNumDec(this)" />
+      </div>
+      <div class="field">
+        <label>Capacidade nominal do banco (Ah)</label>
+        <input type="text" data-k="armCapacidadeAh" placeholder=" " oninput="onNumDec(this)" />
+      </div>
+      <div class="field">
+        <label>Tensão do banco em CC (V)</label>
+        <input type="text" data-k="armTensaoCC" placeholder=" " oninput="onNumDec(this)" />
+      </div>
+      <div class="field">
+        <label>Profundidade de descarga (%)</label>
+        <input type="text" data-k="armProfundidadeDescarga" placeholder=" " oninput="onNumDec(this)" />
+      </div>
+      <div class="field">
+        <label>Produção mensal da central geradora (kWh)</label>
+        <input type="text" data-k="armProducaoMensal" placeholder=" " oninput="onNumDec(this)" />
+      </div>
+    </div>
+  </div>
+</div>
+<div class="nav-bottom no-print">
+  <button class="btn btn-ghost" onclick="goTo(5)">← Voltar</button>
+  <button class="btn btn-primary" onclick="goTo(7)">Avançar →</button>
+</div>

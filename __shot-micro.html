@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><title>shot micro</title>
+<style>html,body{margin:0;padding:0}iframe{width:1440px;height:2400px;border:0;display:block}</style>
+</head>
+<body>
+<iframe id="f" src="microgeracao/index.html"></iframe>
+<script>
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+(async () => {
+  const p = parseInt(new URLSearchParams(location.search).get("p") || "0", 10);
+  const f = document.getElementById("f");
+  let win, doc;
+  for (let i = 0; i < 300; i++) {
+    win = f.contentWindow; doc = f.contentDocument;
+    if (doc && doc.readyState === "complete" &&
+        doc.querySelectorAll("section.page").length === 10 &&
+        [...doc.querySelectorAll("section.page")].every((s) => s.children.length > 0) &&
+        win.state) break;
+    await sleep(100);
+  }
+  // dados de exemplo p/ condicionais aparecerem nas capturas
+  if (p === 2) {
+    win.aplicarPatch({ grupo: "A" });
+    win.onGrupo();
+    const card = [...doc.querySelectorAll("#seGalleryGD .se-card")].find((c) => c.textContent.includes("Nº 5"));
+    if (card) card.click();
+  }
+  if (p === 4) {
+    win.state.cargas = { qtds: [], tipoA: "", catA: 0, mots: [{ fase: "mono", cv: "1", q: 1 }], extras: [] };
+    win.initCargas();
+    const sel = doc.querySelector("#calcDemandaBox select");
+    sel.value = "res"; sel.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+  win.goTo(p, true);
+  await sleep(300);
+  document.title = "shot-ready-" + p;
+})();
+</script>
+</body>
+</html>

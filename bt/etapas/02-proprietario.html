@@ -1,0 +1,96 @@
+<!-- Etapa 2 — Dados do Proprietário (TabProprietario). Campos exclusivos de
+     pessoa física (.pf-campo) só aparecem com CPF completo e VÁLIDO
+     (mostrarCamposPFBT); o Avançar também exige documento válido
+     (data-gate="btPropDocOk"). Toggles Sim/Não seguem o padrão do BT:
+     select oculto (fonte de verdade, data-k) + botões .toggle-btn. -->
+<div class="card">
+  <div class="section-eyebrow">Etapa 2</div>
+  <h3 class="card-title">Dados do Proprietário</h3>
+  <p class="card-sub">
+    Preencha os dados do titular da conta de energia ou do proprietário do
+    imóvel.
+  </p>
+  <div class="grid grid-2">
+    <div class="field">
+      <label>Nome Completo (sem abreviações) <span class="req">*</span></label>
+      <input type="text" data-k="prop.nome" placeholder=" " />
+    </div>
+    <div class="field">
+      <label>E-mail <span class="req">*</span></label>
+      <input type="email" data-k="prop.email" placeholder=" " />
+    </div>
+    <div class="field">
+      <label>Celular <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="prop.celular"
+        placeholder=" "
+        oninput="onMascara(this, mascararCelular)"
+      />
+    </div>
+    <div class="field">
+      <label>Telefone Fixo</label>
+      <input
+        type="text"
+        data-k="prop.fixo"
+        placeholder=" "
+        oninput="onMascara(this, mascararFixo)"
+      />
+    </div>
+    <div class="field">
+      <label>CPF / CNPJ <span class="req">*</span></label>
+      <div style="display: flex; gap: 8px; align-items: center">
+        <input
+          type="text"
+          data-k="prop.cpfCnpj"
+          placeholder="000.000.000-00"
+          oninput="onCpfCnpjBT(this)"
+        />
+        <span id="cnpjStatus"></span>
+      </div>
+    </div>
+    <div class="field pf-campo" style="display: none">
+      <label>Filiação (Mãe ou Pai) <span class="req">*</span></label>
+      <input type="text" data-k="prop.filiacao" placeholder=" " />
+    </div>
+    <div class="field pf-campo" style="display: none">
+      <label>RG / RNE / RANI</label>
+      <input
+        type="text"
+        data-k="prop.rg"
+        placeholder=" "
+        oninput="onMascara(this, mascararRG)"
+      />
+    </div>
+    <div class="field pf-campo" style="display: none">
+      <label>Data de Nascimento <span class="req">*</span></label>
+      <input type="date" data-k="prop.nasc" placeholder=" " />
+    </div>
+    <div class="field field--plain pf-campo" style="display: none" data-noopt>
+      <label>Possui laudo médico (equipamentos essenciais)?</label>
+      <div data-toggle="prop.laudoMedico"></div>
+      <select data-k="prop.laudoMedico" style="display: none" aria-hidden="true">
+        <option>Sim</option>
+        <option>Não</option>
+      </select>
+    </div>
+    <div class="field field--plain pf-campo" style="display: none" data-noopt>
+      <label>Possui NIS para Tarifa Social?</label>
+      <div data-toggle="prop.nis" data-toggle-onchange="onNisBT"></div>
+      <select data-k="prop.nis" style="display: none" aria-hidden="true">
+        <option>Sim</option>
+        <option>Não</option>
+      </select>
+    </div>
+    <div class="field col-span-2 pf-campo" id="numNisBox" style="display: none">
+      <label>Número do NIS <span class="req">*</span></label>
+      <input type="text" data-k="prop.numNis" placeholder=" " />
+    </div>
+  </div>
+</div>
+<div class="nav-bottom no-print">
+  <button class="btn btn-ghost" onclick="goTo(0)">← Voltar</button>
+  <button class="btn btn-primary" onclick="goTo(2)" data-gate="btPropDocOk">
+    Avançar →
+  </button>
+</div>

@@ -1,0 +1,47 @@
+<!-- Etapa 5 — Formulário de Carga (ViewFormularioCarga). Ilha
+     montarCalcDemanda em #calcDemandaBox; KPIs e disjuntor escolhido
+     atualizados pelo app.js. No mini a rede monofásica NUNCA está
+     disponível (Grupo A). -->
+<div class="card">
+  <div class="section-eyebrow">Etapa 5</div>
+  <h3 class="card-title">Formulário de Carga</h3>
+  <p class="card-sub">
+    Declare todas as cargas elétricas da unidade consumidora. A demanda e o
+    disjuntor sugerido são calculados automaticamente (ND-5.1).
+  </p>
+  <div id="avisoCargaObrigatoria" style="display: none">
+    <div class="cmg-aviso no-print" style="margin-bottom: 12px">
+      <div class="cmg-aviso-icon" aria-hidden="true"></div>
+      <p class="cmg-aviso-texto">
+        <strong>O preenchimento do Formulário de Carga é obrigatório. </strong>
+        Para Ligação Nova ou Aumento de Demanda Contratada de consumo, todas
+        as cargas elétricas devem ser declaradas aqui.
+      </p>
+    </div>
+  </div>
+  <div id="calcDemandaBox"></div>
+  <div class="kpi-row" style="margin-top: 12px">
+    <div class="kpi">
+      <div class="kpi-label">Carga Instalada</div>
+      <div class="kpi-value"><span id="kpiCargaKw">0,00</span> kW</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Demanda Calculada</div>
+      <div class="kpi-value"><span id="kpiDemanda">0,00</span> kVA</div>
+    </div>
+    <div class="kpi dark">
+      <div class="kpi-label">Disjuntor Sugerido</div>
+      <div class="kpi-value" id="kpiDisjuntores">—</div>
+    </div>
+  </div>
+  <div id="disjEscolhidoBox" style="display: none; margin-top: 12px">
+    <div class="field">
+      <label>Disjuntor escolhido</label>
+      <select data-k="cargaDisjEscolhido"></select>
+    </div>
+  </div>
+</div>
+<div class="nav-bottom no-print">
+  <button class="btn btn-ghost" onclick="goTo(3)">← Voltar</button>
+  <button class="btn btn-primary" onclick="goTo(5)">Avançar →</button>
+</div>

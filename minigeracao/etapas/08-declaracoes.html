@@ -1,0 +1,150 @@
+<!-- Etapa 8 — Garantia, documentação técnica, declarações (ViewDeclaracoes
+     do mini): Garantia de Fiel Cumprimento (>500 kW, calculada — Regra 19),
+     checklist técnico (GD_DOCS_TEC → state.docsTec) e declarações 9.x
+     (9.5 só aparece — e é obrigatória — quando Grid Zero = Sim). -->
+<div class="card">
+  <div class="section-eyebrow">Etapa 8</div>
+  <h3 class="card-title">
+    Garantia, documentação técnica, declarações e solicitante
+  </h3>
+
+  <div class="gd-subhead">6 — Garantia de Fiel Cumprimento</div>
+  <div class="cmg-aviso no-print">
+    <div class="cmg-aviso-icon" aria-hidden="true"></div>
+    <p class="cmg-aviso-texto">
+      Para minigeração com potência instalada superior a 500 kW, é necessário
+      apresentar a garantia de fiel cumprimento (art. 655-C da REN nº
+      1.000/2021).
+    </p>
+  </div>
+  <div id="gfcIsentoAviso" class="cmg-aviso no-print" style="margin-top: 10px; display: none">
+    <div class="cmg-aviso-icon" aria-hidden="true"></div>
+    <p class="cmg-aviso-texto">
+      <strong>GFC dispensada. </strong>
+      Geração Compartilhada com documentação do consórcio verificada não tem
+      cobrança de Garantia de Fiel Cumprimento.
+    </p>
+  </div>
+  <div id="gfcBloco" class="grid grid-3" style="margin-top: 10px; display: none">
+    <div class="field col-span-2">
+      <label>Forma de apresentação da garantia <span class="req">*</span></label>
+      <select data-k="garantiaForma"></select>
+    </div>
+    <div class="field col-span-3">
+      <label>Valor da Garantia de Fiel Cumprimento (R$)</label>
+      <input type="text" id="gd_gfcValor" readonly disabled placeholder=" " />
+      <span class="field-hint">
+        Calculado automaticamente: percentual × potência líquida × custo de
+        investimento da fonte.
+      </span>
+    </div>
+    <div class="field col-span-3">
+      <div class="cmg-aviso no-print">
+        <div class="cmg-aviso-icon" aria-hidden="true"></div>
+        <p class="cmg-aviso-texto">
+          Para informações bancárias e instruções de apresentação da
+          garantia, consulte as
+          <a
+            href="https://www.cemig.com.br/geracao-distribuida/duvidas-frequentes/"
+            target="_blank"
+            rel="noreferrer"
+            >Dúvidas Frequentes da CEMIG</a
+          >.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="gd-subhead">7 — Documentação Técnica (obrigatória)</div>
+  <div class="doc-list" id="docsTecChecklist"></div>
+
+  <div class="gd-subhead">8 — Contato na Distribuidora</div>
+  <div class="cmg-aviso no-print">
+    <div class="cmg-aviso-icon" aria-hidden="true"></div>
+    <p class="cmg-aviso-texto">
+      <span style="display: block">
+        <strong>
+          Gerência de Processos Especiais da Expansão de Média e Baixa Tensão
+          - EM/PE
+        </strong>
+      </span>
+      <span style="display: block">
+        Av. Barbacena, 1200, Santo Agostinho, CEP 30190-131, BH - MG
+      </span>
+      <span style="display: block">
+        Telefone: 0800 721 0167 · E-mail: geracaodistribuida@cemig.com.br
+      </span>
+    </p>
+  </div>
+
+  <div class="gd-subhead">9 — Solicitações e Declarações</div>
+  <div class="grid grid-3">
+    <div class="field field--plain col-span-3" data-noopt>
+      <label>
+        9.1 - O padrão está pronto para ser ligado e a usina está instalada?
+      </label>
+      <div id="cardsDecl81"></div>
+      <select data-k="decl81" style="display: none" aria-hidden="true">
+        <option>Não</option>
+        <option>Sim</option>
+      </select>
+      <span class="field-hint">
+        Se 'Não', solicite vistoria/ligação em até 120 dias após o orçamento
+        de conexão.
+      </span>
+    </div>
+  </div>
+  <div class="doc-list" style="margin-top: 10px">
+    <label class="doc-item">
+      <input type="checkbox" data-decl="decl82" />
+      <span class="doc-text">
+        <strong>9.2</strong> Renuncio ao direito de desistir do orçamento de
+        conexão. (Opcional)
+      </span>
+    </label>
+    <label class="doc-item">
+      <input type="checkbox" data-decl="decl83" />
+      <span class="doc-text">
+        <strong>9.3</strong> Autorizo a entrega dos contratos e meio de
+        pagamento junto ao orçamento. (Opcional)
+      </span>
+    </label>
+    <label class="doc-item">
+      <input type="checkbox" data-decl="decl84" />
+      <span class="doc-text">
+        <strong>9.4</strong> Declaro conformidade das instalações com normas
+        da distribuidora, ABNT e órgãos oficiais.
+        <span class="doc-req">(Obrigatório)</span>
+      </span>
+    </label>
+    <label class="doc-item" id="decl95Item" style="display: none">
+      <input type="checkbox" data-decl="decl95" />
+      <span class="doc-text">
+        <strong>9.5</strong> Solicito dispensa da análise de inversão de
+        fluxo em razão do atendimento ao art. 73-A, sob a seguinte regra
+        (opcional): não injeção na rede de distribuição de energia elétrica
+        (“Grid Zero”).
+        <span class="doc-req">(Obrigatório para Grid Zero)</span>
+      </span>
+    </label>
+    <div id="decl95Aviso" class="cmg-aviso cmg-aviso--warn no-print" style="margin-top: 10px; display: none">
+      <div class="cmg-aviso-icon" aria-hidden="true"></div>
+      <p class="cmg-aviso-texto">
+        Como o empreendimento é Grid Zero, marque a declaração 9.5 acima —
+        ela é obrigatória para prosseguir com a exportação.
+      </p>
+    </div>
+    <label class="doc-item">
+      <input type="checkbox" data-decl="decl86" />
+      <span class="doc-text">
+        <strong>9.6</strong> Declaro que todas as informações são
+        verdadeiras.
+        <span class="doc-req">(Obrigatório)</span>
+      </span>
+    </label>
+  </div>
+</div>
+<div class="nav-bottom no-print">
+  <button class="btn btn-ghost" onclick="goTo(6)">← Voltar</button>
+  <button class="btn btn-primary" onclick="goTo(8)">Avançar →</button>
+</div>

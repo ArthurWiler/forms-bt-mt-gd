@@ -14,18 +14,8 @@
    Nada de paleta/markup legado — identidade única via tokens --cmg-*.
    ============================================================ */
 
-/* ---- Etapas ----
-   Cada .page reproduz o fluxo do main-col do BT (cards + nav-bottom em
-   coluna com o mesmo respiro), exibida uma por vez. */
-.cemig-mtform .page {
-  display: none;
-}
-.cemig-mtform .page.show {
-  display: flex;
-  flex-direction: column;
-  gap: var(--cmg-space-8);
-  animation: fadeIn 0.25s ease;
-}
+/* ---- Etapas (.page/.page.show): fonte única em shared.css
+   (`.cemig-form .page`) — mecanismo compartilhado com micro/mini/BT. ---- */
 
 /* ---- Feedback de validação nos hints (e-mail/telefone/CEP/CNPJ) ---- */
 .cemig-mtform .field-ok {
@@ -577,12 +567,7 @@
     border: none;
     padding: 0;
   }
-  .cemig-mtform .page {
-    display: none !important;
-  }
-  .cemig-mtform .page.show {
-    display: block !important;
-  }
+  /* .page/.page.show na impressão: fonte única em shared.css. */
 }
 
 /* ---- Relatório de Motores e Solicitação de Desconto Irrigante/Aquicultor:

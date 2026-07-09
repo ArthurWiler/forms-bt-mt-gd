@@ -1,0 +1,257 @@
+<!-- Etapa 3 — Dados da Unidade Consumidora (transcrição de ViewDadosUC).
+     Coordenadas Lat/Lon → UTM derivado (onCoordGD); galeria de subestações e
+     tabela de trafos são ilhas dinâmicas (app.js: renderGaleriaSEGD /
+     renderTrafosGD). Condicionais controladas por onSolicitacao/onGrupo etc. -->
+<div class="card">
+  <div class="section-eyebrow">Etapa 3</div>
+  <h3 class="card-title">Dados da Unidade Consumidora</h3>
+  <div class="grid grid-3">
+    <div class="field">
+      <label>Latitude <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="latitude"
+        placeholder="-19.916681"
+        oninput="onCoordGD(this)"
+      />
+    </div>
+    <div class="field">
+      <label>Longitude <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="longitude"
+        placeholder="-43.934493"
+        oninput="onCoordGD(this)"
+      />
+    </div>
+    <div class="field">
+      <label>Coordenada UTM (calculada)</label>
+      <input
+        type="text"
+        id="gd_utm"
+        readonly
+        disabled
+        placeholder="Fuso E N (automático)"
+      />
+      <span id="utmHint" class="field-hint"></span>
+    </div>
+    <div class="field field--plain col-span-2" data-noopt>
+      <label>
+        Possui Grupo Motor Gerador de Emergência em Paralelo com a Cemig
+        (Diesel/Gás)?
+      </label>
+      <div id="cardsGeradorEmergencia"></div>
+      <select
+        data-k="geradorEmergencia"
+        onchange="onGeradorEmergencia()"
+        style="display: none"
+        aria-hidden="true"
+      >
+        <option>Não</option>
+        <option>Sim</option>
+      </select>
+    </div>
+    <div class="field" id="geradorPotBox" style="display: none">
+      <label>Potência (kVA) <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="geradorPotencia"
+        placeholder=" "
+        oninput="onNumDec(this)"
+      />
+    </div>
+    <div class="field field--plain col-span-3" id="seBox" style="display: none">
+      <label>Tipo de Subestação (Conforme ND 5.3)</label>
+      <div class="se-gallery" id="seGalleryGD"></div>
+      <span id="seBloqueioMsg" class="field-hint"></span>
+    </div>
+  </div>
+
+  <!-- Transformadores da subestação (aparece ao escolher o tipo de SE) -->
+  <div class="subbox" id="trafosBox" style="display: none; margin-top: 12px">
+    <div class="motores-head">
+      <span class="subbox-title">Transformadores (Qte × Potência)</span>
+      <button
+        type="button"
+        class="btn btn-primary"
+        style="padding: 5px 12px; font-size: 12px"
+        onclick="addTrafoGD()"
+      >
+        + Trafo
+      </button>
+    </div>
+    <table class="motores-table">
+      <thead>
+        <tr>
+          <th>Qte</th>
+          <th>Potência (kVA)</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="trafoGdBody"></tbody>
+    </table>
+  </div>
+
+  <div class="grid grid-3" style="margin-top: 12px">
+    <div class="field col-span-3">
+      <label>Tipo de Solicitação <span class="req">*</span></label>
+      <select data-k="solicitacao" onchange="onSolicitacao()"></select>
+    </div>
+    <!-- Aviso contextual: a solicitação exige o Formulário de Carga. -->
+    <div class="field col-span-3" id="avisoFormCarga" style="display: none">
+      <div class="cmg-aviso no-print">
+        <div class="cmg-aviso-icon" aria-hidden="true"></div>
+        <p class="cmg-aviso-texto">
+          Para este tipo de solicitação é obrigatório declarar todas as cargas
+          elétricas da unidade na etapa Formulário de Carga.
+        </p>
+      </div>
+    </div>
+    <div class="field col-span-3">
+      <label>Tipo de edificação <span class="req">*</span></label>
+      <select data-k="edificacao"></select>
+    </div>
+    <div class="field">
+      <label>Tipo de Padrão de Entrada</label>
+      <select data-k="edifTipo"></select>
+    </div>
+    <div class="field">
+      <label>Tipo de Ramal</label>
+      <select data-k="ramal" data-sem-vazio></select>
+    </div>
+    <div class="field" id="disjAtualBox">
+      <label>Disjuntor Individual Atual (A)</label>
+      <input
+        type="text"
+        data-k="disjAtualA"
+        placeholder=" "
+        oninput="onSoDigitos(this)"
+      />
+    </div>
+    <div class="field">
+      <label>Disjuntor Geral — Fase</label>
+      <select data-k="disjGeralFase" onchange="onDisjFase()"></select>
+    </div>
+    <div class="field">
+      <label>Disjuntor Geral — Corrente (A)</label>
+      <select data-k="disjGeralA" onchange="onDisjCorrente()"></select>
+      <span id="limiteInjHint" class="field-hint"></span>
+    </div>
+    <div class="field">
+      <label>Qte Disjuntor Geral</label>
+      <input
+        type="text"
+        data-k="qteDisjGeral"
+        placeholder=" "
+        oninput="onSoDigitos(this)"
+      />
+    </div>
+    <div class="field">
+      <label>Tensão de Atendimento (V)</label>
+      <select data-k="tensaoAtendimento"></select>
+    </div>
+    <div class="field field--plain col-span-2" data-noopt>
+      <label>Haverá Mudança de Local do Padrão de Entrada?</label>
+      <div id="cardsMudancaLocal"></div>
+      <select data-k="mudancaLocal" style="display: none" aria-hidden="true">
+        <option>Não</option>
+        <option>Sim</option>
+      </select>
+    </div>
+    <div class="field field--plain col-span-3" data-noopt>
+      <label>O padrão a ser ligado está a menos de 30 m do poste da CEMIG?</label>
+      <div id="cardsDistMenor30"></div>
+      <select data-k="distMenor30" style="display: none" aria-hidden="true">
+        <option value=""></option>
+        <option>Não</option>
+        <option>Sim</option>
+      </select>
+    </div>
+    <div class="field field--plain col-span-3" data-noopt>
+      <label>
+        O telhado será arrendado para pessoa/empresa diferente do
+        proprietário?
+      </label>
+      <div id="cardsTelhadoArrendado"></div>
+      <select
+        data-k="telhadoArrendado"
+        onchange="onTelhadoArrendado()"
+        style="display: none"
+        aria-hidden="true"
+      >
+        <option>Não</option>
+        <option>Sim</option>
+      </select>
+    </div>
+    <div
+      class="field field--plain col-span-3"
+      id="dubBox"
+      style="display: none"
+      data-noopt
+    >
+      <label>
+        As 2 instalações (existente + telhado) foram representadas no DUB e
+        memorial descritivo?
+      </label>
+      <div id="cardsDuasInstalacoesDUB"></div>
+      <select
+        data-k="duasInstalacoesDUB"
+        style="display: none"
+        aria-hidden="true"
+      >
+        <option>Não</option>
+        <option>Sim</option>
+      </select>
+      <span class="field-hint">
+        É necessário representar as 2 instalações no DUB e memorial descritivo
+      </span>
+    </div>
+    <div class="field col-span-2" id="instExistenteBox">
+      <label>Número da instalação existente no local</label>
+      <input
+        type="text"
+        data-k="instExistente"
+        placeholder=" "
+        oninput="onSoDigitos(this)"
+      />
+    </div>
+    <div class="field" id="instExistenteBTMTBox">
+      <label>A instalação existente é atendida em BT ou MT?</label>
+      <select data-k="instExistenteBTMT" onchange="onInstExistenteBTMT()"></select>
+    </div>
+    <div class="field col-span-3" id="novaProtecaoBox" style="display: none">
+      <label>Nova Proteção <span class="req">*</span></label>
+      <input type="text" data-k="novaProtecao" placeholder=" " />
+      <span class="field-hint">
+        Para Aumento de Potência, informe a nova proteção (ex.: tipo/corrente
+        do disjuntor geral a ser instalado).
+      </span>
+    </div>
+    <div class="field">
+      <label id="demandaConsumoLbl">Demanda contratada de consumo (kW)</label>
+      <input
+        type="text"
+        data-k="demandaConsumo"
+        placeholder=" "
+        oninput="onNumDec(this)"
+      />
+      <span id="demandaConsumoHint" class="field-hint" style="display: none">
+        Potência em relação ao consumo da UC (não incluir
+        trafos/inversores/placas)
+      </span>
+    </div>
+    <div class="field" id="demandaGeracaoBox" style="display: none">
+      <label>Demanda contratada de geração (kW)</label>
+      <input
+        type="text"
+        data-k="demandaGeracao"
+        placeholder=" "
+        oninput="onNumDec(this)"
+      />
+    </div>
+  </div>
+</div>
+<div class="nav-bottom no-print">
+  <button class="btn btn-ghost" onclick="goTo(1)">← Voltar</button>
+  <button class="btn btn-primary" onclick="goTo(3)">Avançar →</button>
+</div>

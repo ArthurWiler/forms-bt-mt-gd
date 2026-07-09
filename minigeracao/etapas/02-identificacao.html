@@ -1,0 +1,145 @@
+<!-- Etapa 2 — Identificação da UC (transcrição de ViewIdentificacao do mini:
+     sem Fast Track/Grid Zero — Grid Zero é campo da etapa Dados da UC).
+     Campos de Pessoa Física (.pf-campo) só com CPF completo e válido. -->
+<div class="card">
+  <div class="section-eyebrow">Etapa 2</div>
+  <h3 class="card-title">Identificação da Unidade Consumidora</h3>
+  <div class="grid grid-3">
+    <div class="field col-span-2">
+      <label>Número da instalação <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="instalacao"
+        placeholder="Nº da instalação CEMIG"
+        oninput="onSoDigitos(this)"
+      />
+    </div>
+    <div class="field">
+      <label>Titular da Unidade Consumidora <span class="req">*</span></label>
+      <input type="text" data-k="titular" placeholder=" " />
+    </div>
+    <div class="field">
+      <label>E-mail <span class="req">*</span></label>
+      <input type="email" data-k="email" placeholder=" " />
+    </div>
+    <div class="field">
+      <label>Celular <span class="req">*</span></label>
+      <input
+        type="tel"
+        data-k="celular"
+        placeholder="(31) 90000-0000"
+        oninput="onMascara(this, mascararCelular)"
+      />
+    </div>
+    <div class="field">
+      <label>Telefone</label>
+      <input
+        type="tel"
+        data-k="telefone"
+        placeholder="(31) 0000-0000"
+        oninput="onMascara(this, mascararFixo)"
+      />
+    </div>
+    <div class="field">
+      <label>CPF/CNPJ <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="cpfCnpj"
+        placeholder="Somente números"
+        oninput="onCpfCnpjGD(this)"
+      />
+      <span id="status-cnpj" class="field-hint"></span>
+    </div>
+    <div class="field pf-campo" style="display: none">
+      <label>Filiação (Mãe ou Pai) <span class="req">*</span></label>
+      <input type="text" data-k="filiacao" placeholder=" " />
+    </div>
+    <div class="field pf-campo" style="display: none">
+      <label>RG / RNE / RANI</label>
+      <input
+        type="text"
+        data-k="rg"
+        placeholder=" "
+        oninput="onMascara(this, mascararRG)"
+      />
+    </div>
+    <div class="field pf-campo" style="display: none">
+      <label>Data de Nascimento <span class="req">*</span></label>
+      <input type="date" data-k="nasc" />
+    </div>
+    <div class="field field--plain pf-campo" style="display: none" data-noopt>
+      <label>Possui laudo médico (equipamentos essenciais)? <span class="req">*</span></label>
+      <div id="cardsLaudoMedico"></div>
+      <select data-k="laudoMedico" style="display: none" aria-hidden="true">
+        <option>Não</option>
+        <option>Sim</option>
+      </select>
+    </div>
+    <div class="field field--plain pf-campo" style="display: none" data-noopt>
+      <label>Possui NIS para Tarifa Social? <span class="req">*</span></label>
+      <div id="cardsNis"></div>
+      <select data-k="nis" style="display: none" aria-hidden="true">
+        <option>Não</option>
+        <option>Sim</option>
+      </select>
+    </div>
+    <div
+      class="field pf-campo col-span-2"
+      id="numNisBox"
+      style="display: none"
+    >
+      <label>Número do NIS <span class="req">*</span></label>
+      <input type="text" data-k="numNis" placeholder="Número do NIS" />
+    </div>
+
+    <div class="field">
+      <label>Grupo <span class="req">*</span></label>
+      <select data-k="grupo" data-sem-vazio></select>
+    </div>
+    <div class="field">
+      <label>Classe <span class="req">*</span></label>
+      <select data-k="classe"></select>
+    </div>
+
+    <div class="field">
+      <label>CEP <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="cep"
+        placeholder="00000-000"
+        oninput="onCepGD(this)"
+      />
+      <span id="status-cep" class="field-hint"></span>
+    </div>
+    <div class="field col-span-2">
+      <label>Logradouro <span class="req">*</span></label>
+      <input type="text" data-k="logradouro" placeholder=" " />
+    </div>
+    <div class="field">
+      <label>Número <span class="req">*</span></label>
+      <input type="text" data-k="numero" placeholder=" " />
+    </div>
+    <div class="field">
+      <label>Complemento do endereço</label>
+      <input type="text" data-k="complemento" placeholder=" " />
+    </div>
+    <div class="field">
+      <label>Bairro <span class="req">*</span></label>
+      <input type="text" data-k="bairro" placeholder=" " />
+    </div>
+    <div class="field">
+      <label>Município <span class="req">*</span></label>
+      <input type="text" data-k="municipio" placeholder=" " />
+    </div>
+    <div class="field">
+      <label>Estado <span class="req">*</span></label>
+      <select data-k="estado" data-sem-vazio>
+        <option>MG</option>
+      </select>
+    </div>
+  </div>
+</div>
+<div class="nav-bottom no-print">
+  <button class="btn btn-ghost" onclick="goTo(0)">← Voltar</button>
+  <button class="btn btn-primary" onclick="goTo(2)">Avançar →</button>
+</div>

@@ -1,0 +1,96 @@
+<!-- Etapa 6 — Dados da Geração (ViewGeracao do mini): múltiplas fontes
+     (1–2) renderizadas pelo app.js em #fontesBox (ilha add/remove — o
+     estado fontes[] é preservado; o PDF o consome). A Potência Ativa
+     Instalada Total é a soma das fontes (FV: menor entre módulos e
+     inversores) — recalcFontes(). -->
+<div class="card">
+  <div class="section-eyebrow">Etapa 6</div>
+  <h3 class="card-title">Dados da Geração</h3>
+  <div class="grid grid-3">
+    <div class="field">
+      <label>Quantidade de fontes de geração <span class="req">*</span></label>
+      <select data-k="qtdFontes" data-sem-vazio onchange="onQtdFontes()">
+        <option>1</option>
+        <option>2</option>
+      </select>
+    </div>
+    <div class="field col-span-2">
+      <label>Potência Ativa Instalada Total de Geração (kW) <span class="req">*</span></label>
+      <input type="text" data-k="potAtivaInstalada" readonly disabled placeholder=" " />
+      <span class="field-hint">
+        Calculado automaticamente: soma das fontes (em FV, o menor entre
+        módulos e inversores).
+      </span>
+    </div>
+    <div class="field" id="potGeracaoAtualBox" style="display: none">
+      <label>Potência de Geração Atual (kW) <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="potGeracaoAtual"
+        placeholder=" "
+        oninput="onNumDec(this); recalcFontes()"
+      />
+      <span class="field-hint">Geração já existente/conectada na UC.</span>
+    </div>
+    <div class="field col-span-2">
+      <label>Modalidade de compensação <span class="req">*</span></label>
+      <select data-k="modalidade" onchange="onModalidade()"></select>
+      <span id="modalidadeHint" class="field-hint"></span>
+    </div>
+    <div class="field col-span-3" id="gridZeroBanner" style="display: none">
+      <div class="gd-modo-banner">
+        <strong>Modalidade definida automaticamente: Autoconsumo Local</strong>
+        <span>
+          Como o empreendimento é "Grid Zero" (sem injeção de excedentes na
+          rede), a modalidade de compensação fica travada em Autoconsumo
+          Local.
+        </span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Qtde. de Instalações a receber o crédito</label>
+      <input
+        type="text"
+        data-k="qtdInstalacoesCredito"
+        placeholder=" "
+        oninput="onSoDigitos(this)"
+      />
+    </div>
+    <div class="field field--plain col-span-2" data-noopt>
+      <label>Anexou contrato de constituição? (consórcio/cooperativa)</label>
+      <div id="cardsAnexouContrato"></div>
+      <select data-k="anexouContrato" style="display: none" aria-hidden="true">
+        <option>Não</option>
+        <option>Sim</option>
+      </select>
+    </div>
+    <div
+      class="field field--plain"
+      id="consorcioBox"
+      style="display: none"
+      data-noopt
+    >
+      <label>Documentação do consórcio verificada?</label>
+      <div id="cardsConsorcioVerificado"></div>
+      <select
+        data-k="consorcioVerificado"
+        onchange="atualizarGFC()"
+        style="display: none"
+        aria-hidden="true"
+      >
+        <option>Não</option>
+        <option>Sim</option>
+      </select>
+      <span class="field-hint">
+        Geração Compartilhada com consórcio verificado dispensa a GFC.
+      </span>
+    </div>
+  </div>
+
+  <!-- Fontes de geração (1–2), renderizadas por renderFontes() -->
+  <div id="fontesBox"></div>
+</div>
+<div class="nav-bottom no-print">
+  <button class="btn btn-ghost" onclick="goTo(4)">← Voltar</button>
+  <button class="btn btn-primary" onclick="goTo(6)">Avançar →</button>
+</div>

@@ -1,0 +1,203 @@
+<!-- Etapa 6 — Dados da Geração (ViewGeracao). Potências totais de módulos/
+     inversores e a Potência Ativa Instalada (FV = menor entre as duas) são
+     calculadas pelo app.js (recalcGeracao). Blocos FV só para fonte Solar. -->
+<div class="card">
+  <div class="section-eyebrow">Etapa 6</div>
+  <h3 class="card-title">Dados da Geração</h3>
+  <div class="grid grid-3">
+    <div class="field">
+      <label>Tipo de Fonte Primária <span class="req">*</span></label>
+      <select data-k="fontePrimaria" data-sem-vazio onchange="onFonte()"></select>
+    </div>
+    <div class="field col-span-2">
+      <label>
+        Potência Ativa Instalada Total de Geração da Usina (kW)
+        <span class="req">*</span>
+      </label>
+      <input
+        type="text"
+        data-k="potAtivaInstalada"
+        placeholder=" "
+        oninput="onPotAtivaInput(this)"
+      />
+      <span id="potAtivaHint" class="field-hint"></span>
+    </div>
+    <div class="field" id="potExistenteBox" style="display: none">
+      <label>Potência de geração já existente (kW) <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="potGeracaoExistente"
+        placeholder=" "
+        oninput="onNumDec(this)"
+      />
+      <span class="field-hint">
+        Usina já conectada — informe a potência atualmente instalada.
+      </span>
+    </div>
+    <div class="field col-span-3" id="fastExcedeAviso" style="display: none">
+      <div class="cmg-aviso cmg-aviso--warn no-print">
+        <div class="cmg-aviso-icon" aria-hidden="true"></div>
+        <p class="cmg-aviso-texto">
+          <strong>Limite do Fast Track excedido. </strong>
+          No enquadramento Fast Track, a potência da usina não pode ser
+          superior a 7,5 kW (7500 kW).
+        </p>
+      </div>
+    </div>
+    <div class="field col-span-2">
+      <label>Tipo de geração <span class="req">*</span></label>
+      <select data-k="tipoGeracao" data-sem-vazio onchange="onTipoGeracao()"></select>
+    </div>
+    <div class="field" id="tipoGeracaoOutroBox" style="display: none">
+      <label>Especificar</label>
+      <input type="text" data-k="tipoGeracaoOutro" placeholder=" " />
+    </div>
+    <div class="field col-span-2">
+      <label>Modalidade de compensação <span class="req">*</span></label>
+      <select data-k="modalidade"></select>
+      <span id="modalidadeHint" class="field-hint"></span>
+    </div>
+    <div class="field col-span-3" id="fastBanner" style="display: none">
+      <div class="gd-modo-banner">
+        <strong>Modalidade definida automaticamente: Autoconsumo local</strong>
+        <span>
+          Como o empreendimento é Fast Track (art. 73-A), a modalidade de
+          compensação fica travada em Autoconsumo local e a potência da usina
+          é limitada a 7,5 kW.
+        </span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Qtde. de Instalações a receber o crédito</label>
+      <input
+        type="text"
+        data-k="qtdInstalacoesCredito"
+        placeholder=" "
+        oninput="onSoDigitos(this)"
+      />
+    </div>
+  </div>
+
+  <div id="fvBlocos">
+    <div class="gd-subhead">Central Geradora Fotovoltaica — Módulos</div>
+    <div class="grid grid-3">
+      <div class="field">
+        <label>Modelo dos Módulos</label>
+        <input type="text" data-k="modeloModulos" placeholder=" " />
+      </div>
+      <div class="field">
+        <label>Fabricante dos Módulos</label>
+        <input type="text" data-k="fabricanteModulos" placeholder=" " />
+      </div>
+      <div class="field">
+        <label>Potência Nominal Módulo (W)</label>
+        <input
+          type="text"
+          data-k="potNominalModulo"
+          placeholder=" "
+          oninput="onNumDec(this); recalcGeracao()"
+        />
+      </div>
+      <div class="field">
+        <label>Quantidade de Módulos</label>
+        <input
+          type="text"
+          data-k="qtdModulos"
+          placeholder=" "
+          oninput="onSoDigitos(this); recalcGeracao()"
+        />
+      </div>
+      <div class="field">
+        <label>Potência Total Módulos (kW)</label>
+        <input type="text" id="gd_potTotalModulos" readonly disabled placeholder=" " />
+        <span class="field-hint">Calculado: qtd × nominal</span>
+      </div>
+      <div class="field">
+        <label>Área dos Arranjos (m²)</label>
+        <input
+          type="text"
+          data-k="areaArranjos"
+          placeholder=" "
+          oninput="onNumDec(this)"
+        />
+      </div>
+    </div>
+    <div class="gd-subhead">Central Geradora Fotovoltaica — Inversores</div>
+    <div class="grid grid-3">
+      <div class="field">
+        <label>Modelo dos Inversores</label>
+        <input type="text" data-k="modeloInversores" placeholder=" " />
+        <span class="field-hint">Para mais de 1 modelo, separar com barra (/)</span>
+      </div>
+      <div class="field">
+        <label>Fabricante dos Inversores</label>
+        <input type="text" data-k="fabricanteInversores" placeholder=" " />
+      </div>
+      <div class="field">
+        <label>Potência Nominal Inversor (kW)</label>
+        <input
+          type="text"
+          data-k="potNominalInversor"
+          placeholder=" "
+          oninput="onNumDec(this); recalcGeracao()"
+        />
+      </div>
+      <div class="field">
+        <label>Quantidade de Inversores</label>
+        <input
+          type="text"
+          data-k="qtdInversores"
+          placeholder=" "
+          oninput="onSoDigitos(this); recalcGeracao()"
+        />
+      </div>
+      <div class="field">
+        <label>Potência Total dos Inversores (kW)</label>
+        <input type="text" id="gd_potTotalInversores" readonly disabled placeholder=" " />
+        <span class="field-hint">Calculado: qtd × nominal</span>
+      </div>
+      <div class="field">
+        <label>Tensão de Conexão do Inversor (V)</label>
+        <input
+          type="text"
+          data-k="tensaoConexaoInversor"
+          placeholder=" "
+          oninput="onNumDec(this)"
+        />
+      </div>
+    </div>
+  </div>
+
+  <div class="gd-subhead">Outorga ou Registro (preencher somente se aplicável)</div>
+  <div class="grid grid-3">
+    <div class="field col-span-2">
+      <label>CEG do empreendimento</label>
+      <input type="text" data-k="ceg" placeholder=" " />
+    </div>
+    <div class="field">
+      <label>Número do Ato de Outorga ou Registro</label>
+      <input type="text" data-k="numAtoOutorga" placeholder=" " />
+    </div>
+    <div class="field col-span-2">
+      <label>Nome da Usina</label>
+      <input type="text" data-k="nomeUsina" placeholder=" " />
+    </div>
+    <div class="field">
+      <label>Ano do Ato de Outorga ou Registro</label>
+      <input
+        type="text"
+        data-k="anoAtoOutorga"
+        placeholder=" "
+        oninput="onSoDigitos(this)"
+      />
+    </div>
+    <div class="field col-span-3">
+      <label>Tipo do Ato de Outorga ou Registro</label>
+      <input type="text" data-k="tipoAtoOutorga" placeholder=" " />
+    </div>
+  </div>
+</div>
+<div class="nav-bottom no-print">
+  <button class="btn btn-ghost" onclick="goTo(4)">← Voltar</button>
+  <button class="btn btn-primary" onclick="goTo(6)">Avançar →</button>
+</div>
