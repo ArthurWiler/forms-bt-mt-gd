@@ -1,0 +1,106 @@
+<!doctype html>
+<!-- Etapa — Previsão de Carga (TabCargasColetivo): tabela de previsão por
+     UC (ilum/tomada/chuveiro/ar/outros → carga kW + demanda kVA manual),
+     bloco ND-5.2 (demanda residencial calculada + override manual), demanda
+     não residencial, KPIs e cards de disjuntor geral / troca do disjuntor.
+     Tabela e cards são renderizados pelo app (renderCargasColetivo); as
+     células calculadas são atualizadas IN-PLACE durante a digitação. -->
+<div class="card">
+  <div class="section-eyebrow">Etapa 6</div>
+  <h3 class="card-title">Previsão de Carga por Unidade Consumidora</h3>
+  <p class="card-sub">
+    Informe a previsão de carga instalada (kW) de cada UC. A demanda total do
+    agrupamento é calculada separadamente: parte residencial pelo ND-5.2,
+    parte não residencial pelo campo abaixo.
+  </p>
+  <div id="prevToolbar" class="prev-toolbar" style="display: none">
+    <button class="btn btn-ghost" type="button" onclick="replicarPrevTodas()">
+      Replicar previsão da UC 1 para todas
+    </button>
+  </div>
+  <div id="nd52Alertas"></div>
+  <div
+    class="grid grid-2"
+    id="demandaManualBox"
+    style="display: none; margin-bottom: 14px"
+  >
+    <div class="field">
+      <label>Demanda residencial manual (kVA)</label>
+      <input
+        type="number"
+        data-k="atend.demandaResidencialManual"
+        placeholder="0,00"
+        oninput="_sync('atend.demandaResidencialManual'); atualizarCargasColetivo()"
+      />
+      <span class="field-hint" id="demandaManualHint"></span>
+    </div>
+  </div>
+  <div id="demandaManualInvalida"></div>
+  <div
+    class="grid grid-2"
+    id="demandaNaoResBox"
+    style="display: none; margin-bottom: 14px"
+  >
+    <div class="field" data-noopt>
+      <label>Demanda geral não residencial (kVA)</label>
+      <input
+        type="number"
+        data-k="atend.demandaNaoResidencial"
+        placeholder="0,0"
+        oninput="_sync('atend.demandaNaoResidencial'); atualizarCargasColetivo()"
+      />
+      <span class="field-hint">
+        Demanda calculada pelo responsável técnico para o conjunto das UCs não
+        residenciais (comercial/industrial/rural) do empreendimento — não é a
+        soma das UCs abaixo.
+      </span>
+    </div>
+  </div>
+  <div class="prev-table-wrap" id="prevTableBox"></div>
+  <div class="prev-total" style="margin-top: 14px">
+    <div class="kpi">
+      <div class="kpi-label">Total Carga Instalada</div>
+      <div class="kpi-value"><span id="kpiPrevKw">0,00</span> kW</div>
+    </div>
+    <div class="kpi dark">
+      <div class="kpi-label">Demanda do atendimento</div>
+      <div class="kpi-value" style="font-size: 18px">
+        <span id="kpiDemandaAtendimento">0,00</span> kVA
+      </div>
+    </div>
+  </div>
+  <div
+    class="alert alert-info"
+    id="aviso304Cargas"
+    style="margin-top: 14px; display: none"
+  >
+    Demanda total acima de 304 kVA: o atendimento fica condicionado à
+    apresentação do projeto elétrico com ART/TRT.
+  </div>
+</div>
+
+<!-- Alteração de carga: troca do disjuntor geral (só quando o escopo é
+     "Alteração de Carga com alteração do disjuntor geral"). -->
+<div class="card" id="trocaDisjBox" style="display: none">
+  <div class="section-eyebrow">Alteração de carga</div>
+  <h3 class="card-title">Troca do Disjuntor Geral e Demandas</h3>
+  <p class="card-sub">
+    Informe o disjuntor geral existente e o novo, além da demanda atual e
+    futura do agrupamento. A demanda futura corresponde à demanda prevista
+    total do agrupamento.
+  </p>
+  <div class="grid grid-2" id="trocaDisjCampos"></div>
+</div>
+
+<!-- Proteção geral: disjuntor geral do agrupamento (sugestão automática). -->
+<div class="card" id="disjGeralBox" style="display: none">
+  <div class="section-eyebrow">Proteção geral</div>
+  <h3 class="card-title">Disjuntor Geral do Agrupamento</h3>
+  <p class="card-sub" id="disjGeralSub"></p>
+  <div class="geral-box" id="disjGeralCampos" style="margin-top: 0"></div>
+</div>
+
+<div class="nav-bottom no-print">
+  <button class="btn btn-ghost" data-nav="prev">← Voltar</button>
+  <button class="btn btn-primary" data-nav="next">Avançar →</button>
+</div>

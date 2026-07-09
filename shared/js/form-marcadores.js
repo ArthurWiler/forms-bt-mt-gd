@@ -86,14 +86,17 @@
     }
   });
 
-  // Botão "Avançar/Iniciar" de uma etapa: o primary do .nav-bottom que chama
-  // goTo(...) para FRENTE (não é o "Voltar", que é ghost). Retorna null se não
-  // houver (ex.: última etapa, que exporta em vez de avançar).
+  // Botão "Avançar/Iniciar" de uma etapa: o primary do .nav-bottom que
+  // navega para FRENTE — via data-nav="next" (fragmentos compartilhados do
+  // BT) ou onclick="goTo(...)" (MT/Loteamento/Desistência). Não é o
+  // "Voltar", que é ghost. Retorna null se não houver (ex.: última etapa,
+  // que exporta em vez de avançar).
   function _botaoAvancar(page) {
     const nb = page.querySelector(".nav-bottom");
     if (!nb) return null;
     const btns = nb.querySelectorAll("button.btn-primary");
     for (let i = 0; i < btns.length; i++) {
+      if (btns[i].getAttribute("data-nav") === "next") return btns[i];
       const oc = btns[i].getAttribute("onclick") || "";
       if (/goTo\s*\(/.test(oc)) return btns[i];
     }

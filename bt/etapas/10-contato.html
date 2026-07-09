@@ -1,0 +1,33 @@
+<!doctype html>
+<!-- Etapa — Dados para contato (TabTipo do coletivo/condomínio): só
+     Nome, E-mail e Celular da pessoa responsável pelo empreendimento. -->
+<div class="card">
+  <div class="section-eyebrow">Etapa 2</div>
+  <h3 class="card-title">Dados para contato</h3>
+  <p class="card-sub">
+    Preencha os dados de contato da pessoa responsável pelo empreendimento.
+  </p>
+  <div class="grid grid-2">
+    <div class="field">
+      <label>Nome Completo (sem abreviações) <span class="req">*</span></label>
+      <input type="text" data-k="prop.nome" placeholder=" " />
+    </div>
+    <div class="field">
+      <label>E-mail <span class="req">*</span></label>
+      <input type="email" data-k="prop.email" placeholder=" " />
+    </div>
+    <div class="field">
+      <label>Celular <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="prop.celular"
+        placeholder=" "
+        oninput="onMascara(this, mascararCelular)"
+      />
+    </div>
+  </div>
+</div>
+<div class="nav-bottom no-print">
+  <button class="btn btn-ghost" data-nav="prev">← Voltar</button>
+  <button class="btn btn-primary" data-nav="next">Avançar →</button>
+</div>

@@ -6,20 +6,16 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=5"
     />
-    <title>Formulário Orçamento de Conexão BT — Cemig</title>
+    <title>Formulário Orçamento de Conexão BT — Coletivo — Cemig</title>
     <meta
       name="description"
-      content="Formulário digital para orçamento de conexão / alteração de carga em Baixa Tensão (BT) — atendimento individual ou em agrupamento até 3 caixas e agrupamento com proteção geral via APR Web."
+      content="Formulário digital para orçamento de conexão / alteração de carga em Baixa Tensão (BT) — atendimento coletivo (agrupamento com proteção geral) e empreendimentos com múltiplas torres/blocos."
     />
-
-    <!-- Fontes -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <!-- Open Sans: identidade visual CEMIG -->
     <link
       href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-
     <!-- Estilos: tokens → compartilhado → página -->
     <link rel="stylesheet" href="../css/variables.css" />
     <link rel="stylesheet" href="../css/shared.css" />
@@ -28,67 +24,145 @@
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
+  </head>
+  <!-- Fluxos BT COLETIVO e CONDOMÍNIO (múltiplas torres) em HTML/JS puro
+       (padrão MT): um único shell serve os dois — as seções abaixo declaram
+       o SUPERSET das etapas e o coletivo-app.js remove, ANTES do
+       etapas-loader, as seções/vsteps [data-flow] que não pertencem ao fluxo
+       do card (?mod=coletivo → 8 etapas | ?mod=condominiotorres → 7).
+       Entrada SEMPRE com ?mod=<id>; cards individuais são redirecionados a
+       individual.html. Fragmentos exigem servidor HTTP. -->
+  <body class="cemig-form">
+    <div class="topbar">
+      <div class="topbar-inner cmg-container">
+        <div class="topbar-left">
+          <img
+            src="../imgs/logos/logo-cemig-branca-com-verde.png"
+            alt="Cemig"
+            class="logo-img"
+          />
+          <span class="app-title"
+            >Formulário de Ligação Nova e Alteração de Carga</span
+          >
+        </div>
+      </div>
+    </div>
 
-    <!-- Bibliotecas -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <div class="layout">
+      <aside class="sidebar">
+        <a href="../index.html" class="form-back">VOLTAR</a>
+        <div class="sidebar-title">Progresso do preenchimento</div>
+        <button type="button" class="vstep active">
+          <span class="vstep-num">1</span>
+          <span class="vstep-label">Orientações</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">2</span>
+          <span class="vstep-label">Dados para contato</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">3</span>
+          <span class="vstep-label">Correspondência</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">4</span>
+          <span class="vstep-label">Empreendimento</span>
+        </button>
+        <button type="button" class="vstep" data-flow="condominio">
+          <span class="vstep-num">5</span>
+          <span class="vstep-label">Torres / Blocos</span>
+        </button>
+        <button type="button" class="vstep" data-flow="coletivo">
+          <span class="vstep-num">5</span>
+          <span class="vstep-label">Unidades Consumidoras</span>
+        </button>
+        <button type="button" class="vstep" data-flow="coletivo">
+          <span class="vstep-num">6</span>
+          <span class="vstep-label">Previsão de Carga</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">7</span>
+          <span class="vstep-label">Observações</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">8</span>
+          <span class="vstep-label">Prévia &amp; PDF</span>
+        </button>
+      </aside>
+
+      <main class="main-col">
+        <div class="form-header">
+          <h1 id="formTitulo">Baixa Tensão</h1>
+          <p>
+            Preenchimento digital unificado do formulário para solicitações de
+            orçamento de Conexão / Alteração de Carga em baixa tensão, conforme
+            as normas CEMIG ND-5.1 / ND-5.2 e a REN ANEEL nº 1.000/2021.
+          </p>
+        </div>
+
+        <!-- Etapas (fragmentos injetados por etapas-loader.js). As seções
+             [data-flow] do fluxo alheio são removidas pelo coletivo-app.js
+             antes do loader buscar os fragmentos. -->
+        <section
+          class="page show"
+          data-src="etapas/01-orientacoes.html"
+        ></section>
+        <section class="page" data-src="etapas/10-contato.html"></section>
+        <section
+          class="page"
+          data-src="etapas/03-correspondencia.html"
+        ></section>
+        <section
+          class="page"
+          data-src="etapas/11-empreendimento.html"
+        ></section>
+        <section
+          class="page"
+          data-flow="condominio"
+          data-src="etapas/12-blocos.html"
+        ></section>
+        <section
+          class="page"
+          data-flow="coletivo"
+          data-src="etapas/13-ucs-coletivo.html"
+        ></section>
+        <section
+          class="page"
+          data-flow="coletivo"
+          data-src="etapas/14-cargas-coletivo.html"
+        ></section>
+        <section class="page" data-src="etapas/06-observacoes.html"></section>
+        <section class="page" data-src="etapas/07-previa.html"></section>
+      </main>
+    </div>
+    <!-- /layout -->
+
+    <footer class="portal-footer">
+      <div class="portal-footer-inner cmg-container cmg-container--gutter">
+        <img
+          src="../imgs/logos/logo-cemig-branca-com-verde.png"
+          alt="Cemig"
+          class="logo-img"
+        />
+        <p class="portal-footer-copy">
+          CEMIG 2025© - Todos os Direitos Reservados
+        </p>
+      </div>
+    </footer>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
-  </head>
-  <body>
-    <div id="root"></div>
-
-    <!-- Dados normativos e cálculo (JS puro) -->
     <script src="js/data.js"></script>
     <script src="js/calc.js"></script>
     <script src="js/model.js"></script>
     <script src="js/pdf.js"></script>
-    <script src="js/termo-grupo-b.js"></script>
-
-    <!-- Componentes React -->
-    <script src="js/components.js"></script>
-    <script src="../shared/js/geo.js"></script>
+    <!-- map.js: usado pelas funções puras latLonParaUTM/utmString. -->
     <script src="js/map.js"></script>
-    <script src="js/views/orient.js"></script>
-    <script src="js/views/tipo.js"></script>
-    <script src="js/views/proprietario.js"></script>
-    <script src="js/views/empreendimento.js"></script>
-    <script src="js/views/correspondencia.js"></script>
-    <script src="js/views/blocos.js"></script>
-    <script src="js/views/ucs-coletivo.js"></script>
-    <script src="js/views/ucs-individual.js"></script>
-    <script src="js/views/cargas-coletivo.js"></script>
-    <script src="js/views/cargas-individual.js"></script>
-    <script src="js/views/obs.js"></script>
-    <script src="js/views/revisar.js"></script>
-    <script src="js/views/dados-unidade.js"></script>
-    <script src="js/flow.js"></script>
-    <script src="js/app.js"></script>
-
-    <!-- Aviso caso aberto via file:// (Babel não carrega scripts externos sem HTTP) -->
-    <script>
-      window.addEventListener("load", function () {
-        setTimeout(function () {
-          var root = document.getElementById("root");
-          if (
-            root &&
-            root.children.length === 0 &&
-            location.protocol === "file:"
-          ) {
-            root.innerHTML =
-              '<div style="max-width:640px;margin:60px auto;padding:24px;font-family:Open Sans,system-ui,sans-serif;' +
-              'background:#fff8e6;border:1px solid #f0d48a;border-radius:12px;color:#8a6d1a;line-height:1.6">' +
-              "<strong>Para executar este formulário, sirva-o por um servidor HTTP.</strong><br>" +
-              "O navegador bloqueia o carregamento dos arquivos <code>js/*.js</code> quando a página é aberta " +
-              "diretamente do disco (<code>file://</code>).<br><br>" +
-              "Na pasta do projeto, rode:<br>" +
-              '<code style="display:block;background:#fff;padding:8px;border-radius:6px;margin-top:6px">python3 -m http.server 8000</code>' +
-              "e acesse <code>http://localhost:8000</code> — ou faça o deploy (ex.: Vercel/Netlify)." +
-              "</div>";
-          }
-        }, 1500);
-      });
-    </script>
+    <script src="../shared/js/geo.js"></script>
+    <script src="../shared/js/form-marcadores.js"></script>
+    <script src="js/bt-core.js"></script>
+    <script src="js/coletivo-app.js"></script>
+    <script src="../shared/js/etapas-loader.js"></script>
   </body>
 </html>

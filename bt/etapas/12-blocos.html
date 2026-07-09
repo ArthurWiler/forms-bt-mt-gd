@@ -1,0 +1,71 @@
+<!doctype html>
+<!-- Etapa — Torres / Blocos (TabBlocos, só condomínio/multiTorres): torres
+     colapsáveis com identificação das UCs + previsão de carga (acordeões) e
+     card de resultado com os disjuntores geral e de incêndio por torre.
+     Renderizado pelo app em #blocosBox (renderBlocos). -->
+<div class="card">
+  <div class="section-eyebrow">Etapa 5</div>
+  <h3 class="card-title">
+    Atendimento a Empreendimento com Múltiplas Torres ou Blocos
+  </h3>
+  <p class="card-sub" id="blocosSub"></p>
+
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="kpi-label">Atendimento a</div>
+      <div class="kpi-value" style="font-size: 15px" id="kpiAtendA"></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Total de UCs do empreendimento</div>
+      <div class="kpi-value" id="kpiTotalUcs">0</div>
+    </div>
+    <div class="kpi dark">
+      <div class="kpi-label">Demanda total do empreendimento</div>
+      <div class="kpi-value" style="font-size: 18px">
+        <span id="kpiDemandaTotal">0,00</span> kVA
+      </div>
+    </div>
+  </div>
+
+  <div
+    style="
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    "
+  >
+    <div class="field" data-noopt>
+      <label id="nBlocosLabel">Nº de Torres</label>
+      <div style="max-width: 120px">
+        <input
+          type="number"
+          data-k="atend.nBlocos"
+          oninput="onNBlocos(this)"
+        />
+      </div>
+    </div>
+    <button
+      class="btn btn-ghost"
+      type="button"
+      id="btnReplicarTorre1"
+      onclick="replicarPrimeiro()"
+    ></button>
+  </div>
+
+  <div id="blocosBox"></div>
+
+  <div
+    class="alert alert-info"
+    id="aviso304Blocos"
+    style="margin-top: 10px; display: none"
+  >
+    Demanda total acima de 304 kVA: o atendimento fica condicionado à
+    apresentação do projeto elétrico com ART/TRT.
+  </div>
+</div>
+<div class="nav-bottom no-print">
+  <button class="btn btn-ghost" data-nav="prev">← Voltar</button>
+  <button class="btn btn-primary" data-nav="next">Avançar →</button>
+</div>

@@ -1,0 +1,232 @@
+<!doctype html>
+<!-- Etapa — Empreendimento (TabEmpreendimento do coletivo/condomínio):
+     Razão Social + CPF/CNPJ (busca) + Nº ART/TRT; os demais blocos
+     (endereço urbano, coordenadas, dados técnicos, mapa e restrição
+     ambiental — herdados de 04-dados-unidade.html) só aparecem quando o
+     gate empreendimentoCompleto libera (#emprDetalhes — ver onEmprGate no
+     coletivo-app.js). A zona é sempre "Urbano" neste fluxo (sem toggle). -->
+<div class="card">
+  <div class="section-eyebrow">Etapa 4</div>
+  <h3 class="card-title">Dados do empreendimento</h3>
+  <p class="card-sub">Preencha os dados gerais do empreendimento.</p>
+
+  <div class="grid grid-2">
+    <div class="field col-span-2">
+      <label>
+        Cliente / Razão Social do empreendimento <span class="req">*</span>
+      </label>
+      <input
+        type="text"
+        data-k="prop.nome"
+        placeholder=" "
+        oninput="onEmprGate()"
+      />
+    </div>
+    <div class="field">
+      <label>CPF / CNPJ <span class="req">*</span></label>
+      <div style="display: flex; gap: 8px; align-items: center">
+        <input
+          type="text"
+          data-k="prop.cpfCnpj"
+          placeholder="000.000.000-00"
+          oninput="onCpfCnpjBT(this); onEmprGate()"
+        />
+        <span id="cnpjStatus"></span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Nº ART/TRT de Projeto <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="obra.art"
+        placeholder=" "
+        oninput="onEmprGate()"
+      />
+    </div>
+  </div>
+
+  <div id="emprDetalhes" style="display: none">
+    <div class="cmg-aviso cmg-aviso--warn">
+      <div class="cmg-aviso-icon" aria-hidden="true"></div>
+      <p class="cmg-aviso-texto">
+        Todas as unidades deste pedido devem estar no mesmo endereço exato
+        (rua, número, bairro, cidade e UF), mudando apenas o complemento (ex:
+        apto, bloco). Se houver qualquer outra diferença, como o número da
+        casa/apartamento é necessário abrir uma nova solicitação de
+        atendimento no Cemig Atende.
+      </p>
+    </div>
+
+    <div class="grid grid-2" style="margin-top: 14px">
+      <div class="field">
+        <label>CEP <span class="req">*</span></label>
+        <div style="display: flex; gap: 8px; align-items: center">
+          <div style="max-width: 180px">
+            <input
+              type="text"
+              data-k="obra.cep"
+              placeholder="00000-000"
+              oninput="onCepBT(this, 'obra')"
+            />
+          </div>
+          <span id="cepStatusObra"></span>
+        </div>
+      </div>
+      <div class="field col-span-2">
+        <label>Endereço <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="obra.endereco"
+          placeholder=" "
+          onblur="onEnderecoUrbanoBT()"
+        />
+      </div>
+      <div class="field">
+        <label>Nº <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="obra.num"
+          placeholder=" "
+          onblur="onEnderecoUrbanoBT()"
+        />
+      </div>
+      <div class="field">
+        <label>Bairro <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="obra.bairro"
+          placeholder=" "
+          onblur="onEnderecoUrbanoBT()"
+        />
+      </div>
+      <div class="field">
+        <label>Cidade / Município <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="obra.cidade"
+          placeholder=" "
+          onblur="onEnderecoUrbanoBT()"
+        />
+      </div>
+      <div class="field">
+        <label>Estado <span class="req">*</span></label>
+        <input type="text" data-k="obra.estado" placeholder=" " />
+      </div>
+    </div>
+
+    <div class="grid grid-3 divider">
+      <div class="field">
+        <label>Latitude</label>
+        <input
+          type="text"
+          data-k="obra.lat"
+          placeholder=" "
+          oninput="onCoordBT()"
+        />
+      </div>
+      <div class="field">
+        <label>Longitude</label>
+        <input
+          type="text"
+          data-k="obra.lng"
+          placeholder=" "
+          oninput="onCoordBT()"
+        />
+      </div>
+      <div class="field">
+        <label>Coordenada UTM</label>
+        <input type="text" id="bt_utm" readonly disabled placeholder=" " />
+      </div>
+    </div>
+
+    <div class="grid grid-2 divider">
+      <div class="field field--plain" data-noopt>
+        <label>Distância do padrão até a rede Cemig inferior a 30m?</label>
+        <div data-toggle="obra.distMenor30"></div>
+        <select
+          data-k="obra.distMenor30"
+          style="display: none"
+          aria-hidden="true"
+        >
+          <option>Sim</option>
+          <option>Não</option>
+        </select>
+      </div>
+      <div class="field field--plain" data-noopt>
+        <label>O padrão está pronto para ser ligado?</label>
+        <div
+          data-toggle="obra.prontoLigar"
+          data-toggle-onchange="onProntoLigarBT"
+        ></div>
+        <select
+          data-k="obra.prontoLigar"
+          style="display: none"
+          aria-hidden="true"
+        >
+          <option>Sim</option>
+          <option>Não</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Tipo de rede BT que atende o local</label>
+        <select data-k="obra.tipoRede" data-sem-vazio>
+          <option>Monofásica</option>
+          <option>Bifásica</option>
+          <option>Trifásica</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Código do transformador mais próximo</label>
+        <input type="text" data-k="obra.transformador" placeholder=" " />
+      </div>
+    </div>
+
+    <div
+      class="cmg-aviso no-print"
+      id="prontoSimAviso"
+      style="margin-top: 14px; display: none"
+    >
+      <div class="cmg-aviso-icon" aria-hidden="true"></div>
+      <p class="cmg-aviso-texto">
+        Como o padrão já está pronto para ligar, o pedido de vistoria e
+        ligação será disparado automaticamente após a conclusão das etapas do
+        orçamento de conexão.
+      </p>
+    </div>
+    <div
+      class="cmg-aviso cmg-aviso--warn no-print"
+      id="prontoNaoAviso"
+      style="margin-top: 14px; display: none"
+    >
+      <div class="cmg-aviso-icon" aria-hidden="true"></div>
+      <p class="cmg-aviso-texto">
+        Solicite o pedido de vistoria e ligação em até 120 dias após a
+        conclusão das etapas do orçamento de conexão. O orçamento pode ser
+        cancelado após duas reprovações pelo mesmo motivo, e há cobrança de
+        taxa a partir do segundo serviço realizado.
+      </p>
+    </div>
+
+    <div class="mapa-obra">
+      <div class="mapa-actions">
+        <span class="field-hint" id="mapaStatus"></span>
+      </div>
+      <div id="map" class="mapa-canvas"></div>
+    </div>
+
+    <div
+      class="field"
+      id="restricaoAmbientalBox"
+      style="margin-top: 14px; display: none"
+    >
+      <label>Unidade consumidora em área de restrição ambiental?</label>
+      <div id="restricaoAmbientalConteudo"></div>
+    </div>
+  </div>
+</div>
+<div class="nav-bottom no-print">
+  <button class="btn btn-ghost" data-nav="prev">← Voltar</button>
+  <button class="btn btn-primary" data-nav="next" data-gate="btEmprOk">
+    Avançar →
+  </button>
+</div>
