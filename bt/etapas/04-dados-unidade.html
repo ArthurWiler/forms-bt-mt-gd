@@ -1,31 +1,21 @@
-<!-- Etapa 4 — Dados da unidade consumidora (TabDadosUnidade): zona +
-     endereço (urbano/rural), coordenadas com UTM derivado, dados técnicos,
-     avisos contextuais, mapa Leaflet e restrição ambiental automática
-     (IDE-Sisema, shared/js/geo.js). Latitude/Longitude só são obrigatórias
-     em zona Rural (data-req dinâmico — atualizarZonaBT). -->
+<!doctype html>
+
 <div class="card">
-  <div class="section-eyebrow">Etapa 4</div>
+  <div class="section-eyebrow">Etapa 3</div>
   <h3 class="card-title">Dados da unidade consumidora</h3>
   <p class="card-sub">
     Preencha os dados de identificação das unidades consumidoras.
   </p>
 
-  <div class="cmg-aviso cmg-aviso--warn">
-    <div class="cmg-aviso-icon" aria-hidden="true"></div>
-    <p class="cmg-aviso-texto">
-      Todas as unidades deste pedido devem estar no mesmo endereço exato
-      (rua, número, bairro, cidade e UF), mudando apenas o complemento (ex:
-      apto, bloco). Se houver qualquer outra diferença, como o número da
-      casa/apartamento é necessário abrir uma nova solicitação de
-      atendimento no Cemig Atende.
-    </p>
-  </div>
-
   <div class="grid grid-2">
     <div class="field field--plain" data-noopt>
       <label>Zona de localização</label>
       <div data-toggle="obra.localizacao" data-toggle-onchange="onZonaBT"></div>
-      <select data-k="obra.localizacao" style="display: none" aria-hidden="true">
+      <select
+        data-k="obra.localizacao"
+        style="display: none"
+        aria-hidden="true"
+      >
         <option>Urbana</option>
         <option>Rural</option>
       </select>
@@ -52,19 +42,39 @@
     </div>
     <div class="field col-span-2">
       <label>Endereço <span class="req">*</span></label>
-      <input type="text" data-k="obra.endereco" placeholder=" " onblur="onEnderecoUrbanoBT()" />
+      <input
+        type="text"
+        data-k="obra.endereco"
+        placeholder=" "
+        onblur="onEnderecoUrbanoBT()"
+      />
     </div>
     <div class="field">
       <label>Nº <span class="req">*</span></label>
-      <input type="text" data-k="obra.num" placeholder=" " onblur="onEnderecoUrbanoBT()" />
+      <input
+        type="text"
+        data-k="obra.num"
+        placeholder=" "
+        onblur="onEnderecoUrbanoBT()"
+      />
     </div>
     <div class="field">
       <label>Bairro <span class="req">*</span></label>
-      <input type="text" data-k="obra.bairro" placeholder=" " onblur="onEnderecoUrbanoBT()" />
+      <input
+        type="text"
+        data-k="obra.bairro"
+        placeholder=" "
+        onblur="onEnderecoUrbanoBT()"
+      />
     </div>
     <div class="field">
       <label>Cidade / Município <span class="req">*</span></label>
-      <input type="text" data-k="obra.cidade" placeholder=" " onblur="onEnderecoUrbanoBT()" />
+      <input
+        type="text"
+        data-k="obra.cidade"
+        placeholder=" "
+        onblur="onEnderecoUrbanoBT()"
+      />
     </div>
     <div class="field">
       <label>Estado <span class="req">*</span></label>
@@ -72,7 +82,11 @@
     </div>
   </div>
 
-  <div class="grid grid-2" id="endRuralBox" style="margin-top: 14px; display: none">
+  <div
+    class="grid grid-2"
+    id="endRuralBox"
+    style="margin-top: 14px; display: none"
+  >
     <div class="field">
       <label>Município <span class="req">*</span></label>
       <input type="text" data-k="obra.cidade" data-k-espelho placeholder=" " />
@@ -102,11 +116,21 @@
   <div class="grid grid-3 divider">
     <div class="field">
       <label id="latLabel">Latitude</label>
-      <input type="text" data-k="obra.lat" placeholder=" " oninput="onCoordBT()" />
+      <input
+        type="text"
+        data-k="obra.lat"
+        placeholder=" "
+        oninput="onCoordBT()"
+      />
     </div>
     <div class="field">
       <label id="lngLabel">Longitude</label>
-      <input type="text" data-k="obra.lng" placeholder=" " oninput="onCoordBT()" />
+      <input
+        type="text"
+        data-k="obra.lng"
+        placeholder=" "
+        oninput="onCoordBT()"
+      />
     </div>
     <div class="field">
       <label>Coordenada UTM</label>
@@ -118,15 +142,26 @@
     <div class="field field--plain" data-noopt>
       <label>Distância do padrão até a rede Cemig inferior a 30m?</label>
       <div data-toggle="obra.distMenor30"></div>
-      <select data-k="obra.distMenor30" style="display: none" aria-hidden="true">
+      <select
+        data-k="obra.distMenor30"
+        style="display: none"
+        aria-hidden="true"
+      >
         <option>Sim</option>
         <option>Não</option>
       </select>
     </div>
     <div class="field field--plain" data-noopt>
       <label>O padrão está pronto para ser ligado?</label>
-      <div data-toggle="obra.prontoLigar" data-toggle-onchange="onProntoLigarBT"></div>
-      <select data-k="obra.prontoLigar" style="display: none" aria-hidden="true">
+      <div
+        data-toggle="obra.prontoLigar"
+        data-toggle-onchange="onProntoLigarBT"
+      ></div>
+      <select
+        data-k="obra.prontoLigar"
+        style="display: none"
+        aria-hidden="true"
+      >
         <option>Sim</option>
         <option>Não</option>
       </select>
@@ -145,46 +180,54 @@
     </div>
   </div>
 
-  <div class="cmg-aviso no-print" id="prontoSimAviso" style="margin-top: 14px; display: none">
+  <div
+    class="cmg-aviso no-print"
+    id="prontoSimAviso"
+    style="margin-top: 14px; display: none"
+  >
     <div class="cmg-aviso-icon" aria-hidden="true"></div>
     <p class="cmg-aviso-texto">
-      Como o padrão já está pronto para ligar, o pedido de vistoria e
-      ligação será disparado automaticamente após a conclusão das etapas do
-      orçamento de conexão.
+      Como o padrão já está pronto para ligar, o pedido de vistoria e ligação
+      será disparado automaticamente após a conclusão das etapas do orçamento de
+      conexão.
     </p>
   </div>
-  <div class="cmg-aviso cmg-aviso--warn no-print" id="prontoNaoAviso" style="margin-top: 14px; display: none">
+  <div
+    class="cmg-aviso cmg-aviso--warn no-print"
+    id="prontoNaoAviso"
+    style="margin-top: 14px; display: none"
+  >
     <div class="cmg-aviso-icon" aria-hidden="true"></div>
     <p class="cmg-aviso-texto">
-      Solicite o pedido de vistoria e ligação em até 120 dias após a
-      conclusão das etapas do orçamento de conexão. O orçamento pode ser
-      cancelado após duas reprovações pelo mesmo motivo, e há cobrança de
-      taxa a partir do segundo serviço realizado.
+      Solicite o pedido de vistoria e ligação em até 120 dias após a conclusão
+      das etapas do orçamento de conexão. O orçamento pode ser cancelado após
+      duas reprovações pelo mesmo motivo, e há cobrança de taxa a partir do
+      segundo serviço realizado.
     </p>
   </div>
-  <div class="cmg-aviso no-print" id="urbanaAviso" style="margin-top: 14px">
+  <div
+    class="cmg-aviso cmg-aviso--warn no-print"
+    id="coordRuralAviso"
+    style="margin-top: 8px; display: none"
+  >
     <div class="cmg-aviso-icon" aria-hidden="true"></div>
     <p class="cmg-aviso-texto">
-      Para pedidos de Conexão Nova, anexe documento que comprove a
-      propriedade ou posse do local a ser atendido. Por se tratar de unidade
-      em área urbana, anexe também documento que comprove a regularidade do
-      imóvel.
-    </p>
-  </div>
-  <div class="cmg-aviso cmg-aviso--warn no-print" id="coordRuralAviso" style="margin-top: 8px; display: none">
-    <div class="cmg-aviso-icon" aria-hidden="true"></div>
-    <p class="cmg-aviso-texto">
-      Em área rural, a coordenada é obrigatória para localização da
-      propriedade.
+      Em área rural, a coordenada é obrigatória para localização da propriedade.
     </p>
   </div>
 
   <div class="mapa-obra">
-    <div class="mapa-actions"><span class="field-hint" id="mapaStatus"></span></div>
+    <div class="mapa-actions">
+      <span class="field-hint" id="mapaStatus"></span>
+    </div>
     <div id="map" class="mapa-canvas"></div>
   </div>
 
-  <div class="field" id="restricaoAmbientalBox" style="margin-top: 14px; display: none">
+  <div
+    class="field"
+    id="restricaoAmbientalBox"
+    style="margin-top: 14px; display: none"
+  >
     <label>Unidade consumidora em área de restrição ambiental?</label>
     <div id="restricaoAmbientalConteudo"></div>
   </div>

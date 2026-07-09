@@ -1,7 +1,5 @@
-<!-- Etapa 9 — Correspondência e Fatura (ViewCorrespondencia). Replica o
-     bloco do BT: fatura por e-mail + vencimento; quando "Não", escolhe a
-     alternativa (novo endereço / endereço da obra / outro e-mail) e oferece
-     a conta globalizada. -->
+<!doctype html>
+
 <div class="card">
   <div class="section-eyebrow">Etapa 9</div>
   <h3 class="card-title">Correspondência e Fatura</h3>
@@ -10,7 +8,10 @@
   </p>
   <div class="grid grid-3">
     <div class="field field--plain" data-noopt>
-      <label>Deseja receber a fatura no e-mail informado? <span class="req">*</span></label>
+      <label
+        >Deseja receber a fatura no e-mail informado?
+        <span class="req">*</span></label
+      >
       <div id="cardsReceberEmail"></div>
       <select
         data-k="receberEmail"
@@ -72,7 +73,11 @@
     >
       <div class="field col-span-2">
         <label>E-mail para envio da fatura <span class="req">*</span></label>
-        <input type="email" data-k="corrOutroEmail" placeholder="email@exemplo.com" />
+        <input
+          type="email"
+          data-k="corrOutroEmail"
+          placeholder="email@exemplo.com"
+        />
       </div>
     </div>
     <div

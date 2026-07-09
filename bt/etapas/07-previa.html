@@ -1,15 +1,12 @@
-<!-- Etapa 7 — Prévia & PDF (TabRevisar): prévia por seções com lápis de
-     edição, documentos necessários derivados do preenchimento
-     (listaDocumentosBT), pendências obrigatórias, Análise de Partida de
-     Motores (sub-tela opcional em #analiseMotoresBox) e Termo de Opção
-     Grupo B (> 75 kW). Tudo renderizado pelo app (renderPreviaBT). -->
+<!doctype html>
+
 <div id="previaWrap">
   <div class="card">
     <div class="section-eyebrow">Etapa 7</div>
     <h3 class="card-title">Prévia do formulário</h3>
     <p class="card-sub">
-      Confira se todos os dados estão corretos e gere o PDF para anexar à
-      sua solicitação no Cemig Atende.
+      Confira se todos os dados estão corretos e gere o PDF para anexar à sua
+      solicitação no Cemig Atende.
     </p>
     <div id="previaConteudo"></div>
   </div>
@@ -23,17 +20,29 @@
       <div id="docsNecessarios"></div>
     </div>
     <div id="previaFaltas"></div>
-    <div id="motoresPesadosAviso" style="display: none" class="alert alert-warn">
+    <div
+      id="motoresPesadosAviso"
+      style="display: none"
+      class="alert alert-warn"
+    >
       <span>
         A solicitação possui motores que exigem mais informações, favor
         preencher o formulário:
       </span>
-      <button type="button" class="btn btn-dark" onclick="mostrarAnaliseMotoresBT(true)">
+      <button
+        type="button"
+        class="btn btn-dark"
+        onclick="mostrarAnaliseMotoresBT(true)"
+      >
         Preencher Análise de Partida
       </button>
     </div>
     <div id="termoGrupoBBox" style="display: none" class="btn-row">
-      <button type="button" class="btn btn-ghost" onclick="exportarTermoGrupoBBT()">
+      <button
+        type="button"
+        class="btn btn-ghost"
+        onclick="exportarTermoGrupoBBT()"
+      >
         📄 Exportar Termo de Opção - Grupo B
       </button>
     </div>
@@ -67,9 +76,9 @@
     <div class="section-eyebrow">Rede secundária (BT)</div>
     <h3 class="card-title">Análise de Partida de Motores</h3>
     <p class="card-sub">
-      Preencha, quando possível, os dados de cada motor pesado identificado
-      nas Unidades Consumidoras. Este bloco é opcional e não bloqueia a
-      exportação do formulário principal.
+      Preencha, quando possível, os dados de cada motor pesado identificado nas
+      Unidades Consumidoras. Este bloco é opcional e não bloqueia a exportação
+      do formulário principal.
     </p>
     <div id="analiseMotoresConteudo"></div>
   </div>

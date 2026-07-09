@@ -1,8 +1,5 @@
-<!-- Etapa 2 — Dados do Proprietário (TabProprietario). Campos exclusivos de
-     pessoa física (.pf-campo) só aparecem com CPF completo e VÁLIDO
-     (mostrarCamposPFBT); o Avançar também exige documento válido
-     (data-gate="btPropDocOk"). Toggles Sim/Não seguem o padrão do BT:
-     select oculto (fonte de verdade, data-k) + botões .toggle-btn. -->
+<!doctype html>
+
 <div class="card">
   <div class="section-eyebrow">Etapa 2</div>
   <h3 class="card-title">Dados do Proprietário</h3>
@@ -69,7 +66,11 @@
     <div class="field field--plain pf-campo" style="display: none" data-noopt>
       <label>Possui laudo médico (equipamentos essenciais)?</label>
       <div data-toggle="prop.laudoMedico"></div>
-      <select data-k="prop.laudoMedico" style="display: none" aria-hidden="true">
+      <select
+        data-k="prop.laudoMedico"
+        style="display: none"
+        aria-hidden="true"
+      >
         <option>Sim</option>
         <option>Não</option>
       </select>

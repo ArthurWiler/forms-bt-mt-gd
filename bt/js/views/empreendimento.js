@@ -428,11 +428,6 @@ function TabEmpreendimento({ ctx }) {
           className: "cmg-aviso-icon",
           "aria-hidden": "true",
         }),
-        /* @__PURE__ */ React.createElement(
-          "p",
-          { className: "cmg-aviso-texto" },
-          "Para pedidos de Conexão Nova, anexe documento que comprove a propriedade ou posse do local a ser atendido. Por se tratar de unidade em área urbano, anexe também documento que comprove a regularidade do imóvel.",
-        ),
       ),
 
     /* ── Alerta coordenada obrigatória ── */

@@ -54,27 +54,64 @@ const atividadeTravada = !!(CARD && CARD.prefill && CARD.prefill.atividade);
 /* ===== Estado (mesmo shape do App React / gerarPdfDoc) ===== */
 function propPadrao() {
   return {
-    nome: "", filiacao: "", email: "", rg: "", nasc: "", celular: "",
-    fixo: "", cpfCnpj: "", laudoMedico: "Não", nis: "Não", numNis: "",
+    nome: "",
+    filiacao: "",
+    email: "",
+    rg: "",
+    nasc: "",
+    celular: "",
+    fixo: "",
+    cpfCnpj: "",
+    laudoMedico: "Não",
+    nis: "Não",
+    numNis: "",
   };
 }
 function corrPadrao() {
   return {
-    vencimento: "", receberEmail: "Sim", alternativa: "Endereço novo",
-    outroEmail: "", rua: "", bairro: "", num: "", compl: "",
-    municipio: "", cep: "", estado: "MG",
-    possuiContaGlobal: "Não", contaGlobal: "",
+    vencimento: "",
+    receberEmail: "Sim",
+    alternativa: "Endereço novo",
+    outroEmail: "",
+    rua: "",
+    bairro: "",
+    num: "",
+    compl: "",
+    municipio: "",
+    cep: "",
+    estado: "MG",
+    possuiContaGlobal: "Não",
+    contaGlobal: "",
   };
 }
 function obraPadrao() {
   return {
-    art: "", prontoLigar: "Não", restricaoAmbiental: "",
-    restricaoAceite: false, restricoesTexto: "", restricoesDetalhe: [],
-    endereco: "", num: "", compl: "", bairro: "", cidade: "", estado: "MG",
-    cep: "", localizacao: "Urbana", instalacaoUC: "", coordenada: "",
-    lat: "", lng: "", utm: "", distMenor30: "Sim", tipoRede: "Trifásica",
-    transformador: "", pontoRef: "", nomePropriedade: "",
-    distritoComunidade: "", instProxima: "",
+    art: "",
+    prontoLigar: "",
+    restricaoAmbiental: "",
+    restricaoAceite: false,
+    restricoesTexto: "",
+    restricoesDetalhe: [],
+    endereco: "",
+    num: "",
+    compl: "",
+    bairro: "",
+    cidade: "",
+    estado: "MG",
+    cep: "",
+    localizacao: "Urbana",
+    instalacaoUC: "",
+    coordenada: "",
+    lat: "",
+    lng: "",
+    utm: "",
+    distMenor30: "",
+    tipoRede: "Trifásica",
+    transformador: "",
+    pontoRef: "",
+    nomePropriedade: "",
+    distritoComunidade: "",
+    instProxima: "",
   };
 }
 // Porte de selectModalidade (bt/js/app.js): estado limpo + prefill do card.
@@ -95,7 +132,10 @@ function novaUcDet() {
   return uc;
 }
 const state = {
-  atend: Object.assign(atendPadrao(), (CARD.prefill && CARD.prefill.atend) || {}),
+  atend: Object.assign(
+    atendPadrao(),
+    (CARD.prefill && CARD.prefill.atend) || {},
+  ),
   prop: propPadrao(),
   corr: corrPadrao(),
   obra: Object.assign(obraPadrao(), (CARD.prefill && CARD.prefill.obra) || {}),
@@ -117,7 +157,8 @@ const ruralBT = () => state.obra.localizacao === "Rural";
 
 function demandaTotalGeralBT() {
   return state.ucsDet.reduce(
-    (s, u) => s + (ucSemAlteracao(u) ? 0 : (u.cargas && u.cargas._demanda) || 0),
+    (s, u) =>
+      s + (ucSemAlteracao(u) ? 0 : (u.cargas && u.cargas._demanda) || 0),
     0,
   );
 }
@@ -146,7 +187,8 @@ function motoresPesadosBT() {
   const lista = [];
   state.ucsDet.forEach((u, ui) => {
     ((u.cargas && u.cargas.mots) || []).forEach((m, mi) => {
-      if (motorPesadoBT(m)) lista.push({ ucIndex: ui, motorIndex: mi, motor: m });
+      if (motorPesadoBT(m))
+        lista.push({ ucIndex: ui, motorIndex: mi, motor: m });
     });
   });
   return lista;
@@ -276,7 +318,8 @@ function _toggleRender(box, sel) {
   const valor = sel.value;
   const opts = [...sel.options].filter((o) => o.value !== "" || o.textContent);
   const ehSimNao =
-    opts.length === 2 && opts.every((o) => o.value === "Sim" || o.value === "Não");
+    opts.length === 2 &&
+    opts.every((o) => o.value === "Sim" || o.value === "Não");
   const desab = sel.disabled;
   box.className =
     "toggle-group" +
@@ -308,7 +351,8 @@ function _toggleRender(box, sel) {
 function montarToggles() {
   $$("[data-toggle]").forEach((box) => {
     const k = box.dataset.toggle;
-    const sel = $(`select[data-k="${k}"]`, box.parentElement) ||
+    const sel =
+      $(`select[data-k="${k}"]`, box.parentElement) ||
       $(`select[data-k="${k}"]`);
     if (!sel) return;
     _toggleRender(box, sel);
@@ -340,7 +384,12 @@ function onCpfCnpjBT(el) {
   if (info.tipo === "CNPJ") {
     // PF → PJ: limpa campos exclusivos de pessoa física (como o React)
     Object.assign(state.prop, {
-      filiacao: "", rg: "", nasc: "", laudoMedico: "Não", nis: "Não", numNis: "",
+      filiacao: "",
+      rg: "",
+      nasc: "",
+      laudoMedico: "Não",
+      nis: "Não",
+      numNis: "",
     });
     ["prop.filiacao", "prop.rg", "prop.nasc", "prop.numNis"].forEach((k) => {
       const c = $(`[data-k="${k}"]`);
@@ -368,7 +417,8 @@ async function buscarCNPJ(doc) {
     const p = state.prop;
     p.nome = dd.razao_social || dd.nome_fantasia || p.nome;
     p.email = dd.email || p.email;
-    if (dd.ddd_telefone_1 && !p.fixo) p.fixo = mascararTelefone(dd.ddd_telefone_1);
+    if (dd.ddd_telefone_1 && !p.fixo)
+      p.fixo = mascararTelefone(dd.ddd_telefone_1);
     ["prop.nome", "prop.email", "prop.fixo"].forEach((k) => {
       const el = $(`[data-k="${k}"]`);
       if (el) el.value = _get(state, k) || "";
@@ -403,7 +453,9 @@ async function onCepBT(el, alvo) {
       o.estado = dd.uf || o.estado;
       ["obra.endereco", "obra.bairro", "obra.cidade", "obra.estado"].forEach(
         (k) => {
-          $$(`[data-k="${k}"]`).forEach((c) => (c.value = _get(state, k) || ""));
+          $$(`[data-k="${k}"]`).forEach(
+            (c) => (c.value = _get(state, k) || ""),
+          );
         },
       );
       onEnderecoUrbanoBT();
@@ -459,16 +511,25 @@ function onZonaBT() {
   // Troca de zona limpa os campos da zona oposta (React trocarZona)
   if (rural) {
     Object.assign(o, { cep: "", endereco: "", num: "", compl: "", bairro: "" });
-    ["obra.cep", "obra.endereco", "obra.num", "obra.compl", "obra.bairro"].forEach(
-      (k) => $$(`[data-k="${k}"]`).forEach((c) => (c.value = "")),
-    );
+    [
+      "obra.cep",
+      "obra.endereco",
+      "obra.num",
+      "obra.compl",
+      "obra.bairro",
+    ].forEach((k) => $$(`[data-k="${k}"]`).forEach((c) => (c.value = "")));
   } else {
     Object.assign(o, {
-      distritoComunidade: "", nomePropriedade: "", pontoRef: "", instProxima: "",
+      distritoComunidade: "",
+      nomePropriedade: "",
+      pontoRef: "",
+      instProxima: "",
     });
     [
-      "obra.distritoComunidade", "obra.nomePropriedade",
-      "obra.pontoRef", "obra.instProxima",
+      "obra.distritoComunidade",
+      "obra.nomePropriedade",
+      "obra.pontoRef",
+      "obra.instProxima",
     ].forEach((k) => $$(`[data-k="${k}"]`).forEach((c) => (c.value = "")));
   }
   const urb = $("#endUrbanoBox"),
@@ -709,8 +770,10 @@ async function consultarRestricaoAmbientalBT(lat, lng) {
     const errosTodos = res.length > 0 && res.every((r) => r.erro);
     if (errosTodos) {
       Object.assign(state.obra, {
-        restricaoAmbiental: "", restricaoAceite: false,
-        restricoesTexto: "", restricoesDetalhe: [],
+        restricaoAmbiental: "",
+        restricaoAceite: false,
+        restricoesTexto: "",
+        restricoesDetalhe: [],
       });
       _btLastRestrKey = "";
       _limparRestricaoLayer();
@@ -724,7 +787,8 @@ async function consultarRestricaoAmbientalBT(lat, lng) {
     state.obra.restricaoAceite = false;
     state.obra.restricoesTexto = dentros
       .map(
-        (r) => r.rotulo + (r.nomes.length ? " (" + r.nomes.join(", ") + ")" : ""),
+        (r) =>
+          r.rotulo + (r.nomes.length ? " (" + r.nomes.join(", ") + ")" : ""),
       )
       .join("\n");
     state.obra.restricoesDetalhe = detalhesRestricoes(res);
@@ -737,7 +801,8 @@ async function consultarRestricaoAmbientalBT(lat, lng) {
   } catch (e) {
     _btLastRestrKey = "";
     if (status)
-      status.textContent = (e && e.message) || "Falha na consulta de restrições.";
+      status.textContent =
+        (e && e.message) || "Falha na consulta de restrições.";
   }
 }
 
@@ -764,7 +829,10 @@ function renderUcsBT() {
   // do card já conta na demanda/validação sem o usuário precisar abrir).
   state.ucsDet.forEach((u) => {
     if (ucSemAlteracao(u)) return;
-    const d = Object.assign({ qtds: [], tipoA: "", catA: 0, mots: [] }, u.cargas || {});
+    const d = Object.assign(
+      { qtds: [], tipoA: "", catA: 0, mots: [] },
+      u.cargas || {},
+    );
     d.qtds = CAT.map((_, i) => d.qtds[i] || 0);
     const r = calcDemandaResultados(d, redeMonoBT());
     d._demanda = r.demandaTotal;
@@ -810,7 +878,7 @@ function renderUcsBT() {
         const info = document.createElement("div");
         info.className = "alert alert-info";
         info.innerHTML =
-          'Esta UC foi marcada como <strong>Caixa Existente sem Alteração</strong>. O preenchimento de cargas foi omitido; ela aparecerá apenas no resumo do PDF.';
+          "Esta UC foi marcada como <strong>Caixa Existente sem Alteração</strong>. O preenchimento de cargas foi omitido; ela aparecerá apenas no resumo do PDF.";
         corpo.appendChild(info);
       } else {
         const cargasBox = document.createElement("div");
@@ -851,7 +919,7 @@ function _selectDe(opcoes, valor, onchange, comVazio) {
 }
 function _ucIdentificacao(u, ui) {
   const grid = document.createElement("div");
-  grid.className = "grid grid-3";
+  grid.className = "grid grid-2";
   grid.style.marginBottom = "24px";
   const atividadeBloqueada = restrito || atividadeTravada;
   // Solicitação por UC
@@ -892,7 +960,9 @@ function _ucIdentificacao(u, ui) {
     inp.value = u.ramo || "";
     inp.disabled = restrito;
     inp.addEventListener("input", () => (u.ramo = inp.value));
-    grid.appendChild(_campo('Ramo de atividade <span class="req">*</span>', inp));
+    grid.appendChild(
+      _campo('Ramo de atividade <span class="req">*</span>', inp),
+    );
   }
   // Complemento (obrigatório com 2+ UCs)
   const inpCompl = document.createElement("input");
@@ -912,10 +982,7 @@ function _ucIdentificacao(u, ui) {
     inpUC.type = "text";
     inpUC.placeholder = " ";
     inpUC.value = u.unidadeConsumidora || "";
-    inpUC.addEventListener(
-      "input",
-      () => (u.unidadeConsumidora = inpUC.value),
-    );
+    inpUC.addEventListener("input", () => (u.unidadeConsumidora = inpUC.value));
     grid.appendChild(_campo("Unidade Consumidora", inpUC));
     const inpInst = document.createElement("input");
     inpInst.type = "text";
@@ -923,7 +990,10 @@ function _ucIdentificacao(u, ui) {
     inpInst.value = u.instalacao || "";
     inpInst.addEventListener("input", () => (u.instalacao = inpInst.value));
     grid.appendChild(
-      _campo('Nº Instalação / Medidor <span class="req">*</span>', inpInst),
+      _campo(
+        'Instalação / Unidade Consumidora / Medidor<span class="req">*</span>',
+        inpInst,
+      ),
     );
     const selDisj = _selectDe(
       DISJ.map((d) => d.fx),
@@ -963,7 +1033,12 @@ function _ucIdentificacao(u, ui) {
   return grid;
 }
 function _ucGerador(u, ui) {
-  const ger = u.gerador || { possui: "Não", potencia: "", fonte: "", descricao: "" };
+  const ger = u.gerador || {
+    possui: "Não",
+    potencia: "",
+    fonte: "",
+    descricao: "",
+  };
   u.gerador = ger;
   const wrap = document.createElement("div");
   wrap.style.marginTop = "24px";
@@ -1000,7 +1075,9 @@ function _ucGerador(u, ui) {
     inpDesc.placeholder = "Modelo, finalidade, regime de operação...";
     inpDesc.value = ger.descricao || "";
     inpDesc.addEventListener("input", () => (ger.descricao = inpDesc.value));
-    detalhe.appendChild(_campo("Observações do gerador", inpDesc, "col-span-2"));
+    detalhe.appendChild(
+      _campo("Observações do gerador", inpDesc, "col-span-2"),
+    );
     const aviso = document.createElement("div");
     aviso.className = "col-span-2 cmg-aviso";
     aviso.innerHTML =
@@ -1097,16 +1174,28 @@ function _renderResultadoUC(box, u, ui, multi) {
    do React via calcDemandaResultados (shared/js/calc-demanda.js).
    ============================================================ */
 const _REFRI = new Set([
-  "Geladeira comum", "Geladeira duplex", "Freezer vertical",
-  "Freezer horiz. médio", "Freezer horiz. grande", "Adega climatizada",
+  "Geladeira comum",
+  "Geladeira duplex",
+  "Freezer vertical",
+  "Freezer horiz. médio",
+  "Freezer horiz. grande",
+  "Adega climatizada",
 ]);
 const _ehRefri = (c) => c.g === "b5" && _REFRI.has(c.n);
 const CARGA_CATS_BT = [
   { id: "il", label: "Iluminação e tomada", match: (c) => c.g === "il" },
-  { id: "b1", label: "Chuveiro, torneira e cafeteira", match: (c) => c.g === "b1" },
+  {
+    id: "b1",
+    label: "Chuveiro, torneira e cafeteira",
+    match: (c) => c.g === "b1",
+  },
   { id: "b2", label: "Aquecedor de água", match: (c) => c.g === "b2" },
   { id: "b3", label: "Forno, fogão e grill", match: (c) => c.g === "b3" },
-  { id: "b4", label: "Lavadoras, secadores e ferro", match: (c) => c.g === "b4" },
+  {
+    id: "b4",
+    label: "Lavadoras, secadores e ferro",
+    match: (c) => c.g === "b4",
+  },
   { id: "refri", label: "Refrigeração", match: _ehRefri },
   { id: "c", label: "Ar condicionado", match: (c) => c.g === "c" },
   {
@@ -1197,7 +1286,8 @@ function montarCargasBT(container, u, ui, aoMudar) {
       group.appendChild(selCat);
     }
     field.appendChild(group);
-    if (window.CemigMarcadores) CemigMarcadores.aplicar(field.parentElement || field);
+    if (window.CemigMarcadores)
+      CemigMarcadores.aplicar(field.parentElement || field);
     return field;
   }
   function _busca() {
@@ -1307,10 +1397,16 @@ function montarCargasBT(container, u, ui, aoMudar) {
     const acc = document.createElement("div");
     acc.className = "carga-acc" + (open ? " is-open" : "");
     acc.appendChild(
-      _accHead("_mot", "Motores e cargas especiais", d.mots.length, open, () => {
-        abertos._mot = !abertos._mot;
-        _renderAccList(lista);
-      }),
+      _accHead(
+        "_mot",
+        "Motores e cargas especiais",
+        d.mots.length,
+        open,
+        () => {
+          abertos._mot = !abertos._mot;
+          _renderAccList(lista);
+        },
+      ),
     );
     if (open) {
       const body = document.createElement("div");
@@ -1441,7 +1537,10 @@ function validacaoObrigatoriosBT() {
   const p = state.prop,
     c = state.corr,
     o = state.obra;
-  req(p.nome, pessoaFisica() ? "Nome completo do proprietário" : "Razão social");
+  req(
+    p.nome,
+    pessoaFisica() ? "Nome completo do proprietário" : "Razão social",
+  );
   req(p.cpfCnpj, "CPF/CNPJ");
   req(p.email, "E-mail");
   req(p.celular, "Celular");
@@ -1553,8 +1652,16 @@ function renderPreviaBT() {
       o.distMenor30,
       3,
     );
-    html += pvCampoBT("O padrão está pronto para ser ligado?", o.prontoLigar, 3);
-    html += pvCampoBT("O padrão precisa ser mudado de local?", u.mudancaLocal, 4);
+    html += pvCampoBT(
+      "O padrão está pronto para ser ligado?",
+      o.prontoLigar,
+      3,
+    );
+    html += pvCampoBT(
+      "O padrão precisa ser mudado de local?",
+      u.mudancaLocal,
+      4,
+    );
     html += pvCampoBT("Tipo de rede BT que atende o local", o.tipoRede, 3);
     html += `</div></div>`;
   });
@@ -1578,7 +1685,9 @@ function renderPreviaBT() {
       temMotoresPesados: motoresPesadosBT().length > 0,
     });
     docsBox.innerHTML = docs
-      .map((dd) => `<div class="preview-item"><span class="v">${dd}</span></div>`)
+      .map(
+        (dd) => `<div class="preview-item"><span class="v">${dd}</span></div>`,
+      )
       .join("");
   }
   // Pendências + botão exportar
@@ -1679,14 +1788,20 @@ function renderAnaliseMotoresBT() {
     sub.appendChild(
       grade([
         _campo("Potência do transformador do consumidor (kVA)", travado),
-        _campo("Corrente Nominal (A)", inputNum("correnteNominal", "Ex.: 12,5")),
+        _campo(
+          "Corrente Nominal (A)",
+          inputNum("correnteNominal", "Ex.: 12,5"),
+        ),
         _campo("Relação Ip/In", inputNum("ipIn", "Ex.: 6")),
       ]),
     );
     sub.appendChild(
       grade([
         _campo("Corrente de partida (A)", cPartidaInp),
-        _campo("Fator de potência na partida", inputNum("fpPartida", "Ex.: 0,35")),
+        _campo(
+          "Fator de potência na partida",
+          inputNum("fpPartida", "Ex.: 0,35"),
+        ),
         _campo("Número de partidas", inputNum("numPartidas")),
       ]),
     );
@@ -1809,7 +1924,10 @@ function exportarPDFPartidaBT() {
       sec("IDENTIFICAÇÃO");
       kv("Cliente:", nomeCliente || "________________");
       sec("TIPO DO MOTOR / NÚMERO DE FASES");
-      kv("Número de fases:", motor.fase === "mono" ? "Monofásico" : "Trifásico");
+      kv(
+        "Número de fases:",
+        motor.fase === "mono" ? "Monofásico" : "Trifásico",
+      );
       const ap = motor.analisePartida || {};
       const cNom = parseFloat(ap.correnteNominal) || 0;
       const ipIn = parseFloat(ap.ipIn) || 0;
@@ -1882,7 +2000,11 @@ function exportarPDFPartidaBT() {
 
 /* ===== Exportações ===== */
 function exportarTermoGrupoBBT() {
-  gerarTermoGrupoB({ prop: state.prop, obra: state.obra, ucsDet: state.ucsDet });
+  gerarTermoGrupoB({
+    prop: state.prop,
+    obra: state.obra,
+    ucsDet: state.ucsDet,
+  });
 }
 function exportarPdfBT() {
   const v = validacaoObrigatoriosBT();

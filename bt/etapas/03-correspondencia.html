@@ -1,10 +1,7 @@
-<!-- Etapa 3 — Correspondência e Fatura (TabCorrespondencia). Vencimento e
-     alternativas de recebimento são toggles (padrão .toggle-btn do BT) com
-     select oculto data-k; os obrigatórios condicionais são validados pelo
-     gate do botão (data-gate="btCorrOk") — toggles ocultos não contam nos
-     marcadores por serem invisíveis. -->
+<!doctype html>
+
 <div class="card">
-  <div class="section-eyebrow">Etapa 3</div>
+  <div class="section-eyebrow">Etapa 5</div>
   <h3 class="card-title">Correspondência e Fatura</h3>
   <p class="card-sub">
     Escolha como e quando você deseja receber a conta de energia.
@@ -12,8 +9,15 @@
   <div class="grid">
     <div class="field field--plain" data-noopt>
       <label>Deseja receber a fatura no e-mail informado?</label>
-      <div data-toggle="corr.receberEmail" data-toggle-onchange="onReceberEmailBT"></div>
-      <select data-k="corr.receberEmail" style="display: none" aria-hidden="true">
+      <div
+        data-toggle="corr.receberEmail"
+        data-toggle-onchange="onReceberEmailBT"
+      ></div>
+      <select
+        data-k="corr.receberEmail"
+        style="display: none"
+        aria-hidden="true"
+      >
         <option>Sim</option>
         <option>Não</option>
       </select>
@@ -35,24 +39,47 @@
   <div class="divider" id="correspNaoBox" style="display: none">
     <div class="field field--plain" data-noopt>
       <label>Como deseja receber a fatura?</label>
-      <div data-toggle="corr.alternativa" data-toggle-onchange="onCorrAlternativaBT"></div>
-      <select data-k="corr.alternativa" style="display: none" aria-hidden="true">
+      <div
+        data-toggle="corr.alternativa"
+        data-toggle-onchange="onCorrAlternativaBT"
+      ></div>
+      <select
+        data-k="corr.alternativa"
+        style="display: none"
+        aria-hidden="true"
+      >
         <option value="Endereço novo">Novo endereço</option>
         <option value="Mesmo da obra">Endereço da obra</option>
         <option value="Outro e-mail">Outro e-mail</option>
       </select>
     </div>
-    <div class="alert alert-info" id="corrObraAviso" style="margin-top: 12px; display: none">
+    <div
+      class="alert alert-info"
+      id="corrObraAviso"
+      style="margin-top: 12px; display: none"
+    >
       A fatura será enviada para o endereço informado em
       <strong>Dados da Obra</strong>.
     </div>
-    <div class="grid grid-2" id="corrEmailBox" style="margin-top: 12px; display: none">
+    <div
+      class="grid grid-2"
+      id="corrEmailBox"
+      style="margin-top: 12px; display: none"
+    >
       <div class="field col-span-2">
         <label>E-mail para envio da fatura <span class="req">*</span></label>
-        <input type="email" data-k="corr.outroEmail" placeholder="email@exemplo.com" />
+        <input
+          type="email"
+          data-k="corr.outroEmail"
+          placeholder="email@exemplo.com"
+        />
       </div>
     </div>
-    <div class="grid grid-2" id="corrEndBox" style="margin-top: 12px; display: none">
+    <div
+      class="grid grid-2"
+      id="corrEndBox"
+      style="margin-top: 12px; display: none"
+    >
       <div class="field">
         <label>CEP</label>
         <div style="display: flex; gap: 8px; align-items: center">
@@ -95,8 +122,15 @@
     <div style="margin-top: 12px">
       <div class="field field--plain col-span-2" data-noopt>
         <label>Possui conta globalizada (poder público)?</label>
-        <div data-toggle="corr.possuiContaGlobal" data-toggle-onchange="onContaGlobalBT"></div>
-        <select data-k="corr.possuiContaGlobal" style="display: none" aria-hidden="true">
+        <div
+          data-toggle="corr.possuiContaGlobal"
+          data-toggle-onchange="onContaGlobalBT"
+        ></div>
+        <select
+          data-k="corr.possuiContaGlobal"
+          style="display: none"
+          aria-hidden="true"
+        >
           <option>Sim</option>
           <option>Não</option>
         </select>

@@ -2,16 +2,28 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=5"
+    />
     <title>Formulário Orçamento de Conexão BT — Individual — Cemig</title>
-    <meta name="description" content="Formulário digital para orçamento de conexão / alteração de carga em Baixa Tensão (BT) — atendimento individual (até 3 caixas sem proteção geral)." />
+    <meta
+      name="description"
+      content="Formulário digital para orçamento de conexão / alteração de carga em Baixa Tensão (BT) — atendimento individual (até 3 caixas sem proteção geral)."
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
     <!-- Estilos: tokens → compartilhado → página -->
     <link rel="stylesheet" href="../css/variables.css" />
     <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/formulario-bt.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
   </head>
   <!-- Fluxo BT INDIVIDUAL em HTML/JS puro (padrão MT): cada etapa é um
        fragmento em etapas/*.html injetado por shared/js/etapas-loader.js
@@ -48,15 +60,15 @@
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">3</span>
-          <span class="vstep-label">Correspondência</span>
-        </button>
-        <button type="button" class="vstep">
-          <span class="vstep-num">4</span>
           <span class="vstep-label">Dados da unidade</span>
         </button>
         <button type="button" class="vstep">
+          <span class="vstep-num">4</span>
+          <span class="vstep-label">Atendimento e cargas</span>
+        </button>
+        <button type="button" class="vstep">
           <span class="vstep-num">5</span>
-          <span class="vstep-label">Atendimento</span>
+          <span class="vstep-label">Correspondência</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">6</span>
@@ -72,21 +84,48 @@
         <div class="form-header">
           <h1 id="formTitulo">Baixa Tensão</h1>
           <p>
-            Preenchimento digital unificado do formulário para solicitações
-            de orçamento de Conexão / Alteração de Carga em baixa tensão,
-            conforme as normas CEMIG ND-5.1 / ND-5.2 e a REN ANEEL nº
-            1.000/2021.
+            Preenchimento digital unificado do formulário para solicitações de
+            orçamento de Conexão / Alteração de Carga em baixa tensão, conforme
+            as normas CEMIG ND-5.1 / ND-5.2 e a REN ANEEL nº 1.000/2021.
           </p>
         </div>
 
         <!-- Etapas (fragmentos injetados por etapas-loader.js) -->
-        <section class="page show" id="page-0" data-src="etapas/01-orientacoes.html"></section>
-        <section class="page" id="page-1" data-src="etapas/02-proprietario.html"></section>
-        <section class="page" id="page-2" data-src="etapas/03-correspondencia.html"></section>
-        <section class="page" id="page-3" data-src="etapas/04-dados-unidade.html"></section>
-        <section class="page" id="page-4" data-src="etapas/05-atendimento.html"></section>
-        <section class="page" id="page-5" data-src="etapas/06-observacoes.html"></section>
-        <section class="page" id="page-6" data-src="etapas/07-previa.html"></section>
+        <section
+          class="page show"
+          id="page-0"
+          data-src="etapas/01-orientacoes.html"
+        ></section>
+        <section
+          class="page"
+          id="page-1"
+          data-src="etapas/02-proprietario.html"
+        ></section>
+        <section
+          class="page"
+          id="page-2"
+          data-src="etapas/04-dados-unidade.html"
+        ></section>
+        <section
+          class="page"
+          id="page-3"
+          data-src="etapas/05-atendimento.html"
+        ></section>
+        <section
+          class="page"
+          id="page-4"
+          data-src="etapas/03-correspondencia.html"
+        ></section>
+        <section
+          class="page"
+          id="page-5"
+          data-src="etapas/06-observacoes.html"
+        ></section>
+        <section
+          class="page"
+          id="page-6"
+          data-src="etapas/07-previa.html"
+        ></section>
       </main>
     </div>
     <!-- /layout -->
@@ -100,14 +139,6 @@
         />
         <p class="portal-footer-copy">
           CEMIG 2025© - Todos os Direitos Reservados
-        </p>
-        <p>
-          <a
-            href="https://www.cemig.com.br/como-solicitar-os-principais-servicos/ligacao-nova-e-aumento-de-carga/ligacao-nova-ou-alteracao-de-carga-para-demandas-especificas/"
-            target="_blank"
-            rel="noreferrer"
-            >Saiba mais no portal Cemig</a
-          >
         </p>
       </div>
     </footer>

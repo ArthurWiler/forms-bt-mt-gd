@@ -918,7 +918,8 @@ function App() {
     // O fluxo Individual saiu do React: entradas diretas em bt/?mod=<id>
     // de cards individuais são redirecionadas ao formulário vanilla.
     if (card.formType === "individual") {
-      window.location.href = "individual.html?mod=" + encodeURIComponent(card.id);
+      window.location.href =
+        "individual.html?mod=" + encodeURIComponent(card.id);
       return;
     }
     // Troca de categoria reinicia TODOS os campos dependentes (atividade, tipo
