@@ -947,17 +947,16 @@ function validacaoObrigatoriosBT() {
   req(p.cpfCnpj, "CPF/CNPJ");
   req(p.email, "E-mail");
   req(p.celular, "Celular");
-  if (c.receberEmail === "Não") {
-    if (c.alternativa === "Outro e-mail")
-      req(c.outroEmail, "E-mail alternativo da fatura");
-    else if (c.alternativa === "Endereço novo") {
-      req(c.cep, "CEP de correspondência");
-      req(c.rua, "Rua/Av. de correspondência");
-      req(c.num, "Nº de correspondência");
-      req(c.bairro, "Bairro de correspondência");
-      req(c.municipio, "Município de correspondência");
-    }
-  }
+  if (c.alternativa === "Outro e-mail")
+    req(c.outroEmail, "E-mail alternativo da fatura");
+  else if (c.alternativa === "Endereço novo") {
+    req(c.cep, "CEP de correspondência");
+    req(c.rua, "Rua/Av. de correspondência");
+    req(c.num, "Nº de correspondência");
+    req(c.bairro, "Bairro de correspondência");
+    req(c.municipio, "Município de correspondência");
+  } else if (c.alternativa === "Conta globalizada")
+    req(c.contaGlobal, "Conta globalizada");
   if (o.localizacao !== "Rural") {
     req(o.endereco, "Endereço da obra");
     req(o.num, "Nº da obra");
@@ -989,11 +988,11 @@ function renderPreviaBT() {
   const pf = pessoaFisica();
   const rural = ruralBT();
   const emailFatura =
-    c.receberEmail === "Não"
-      ? c.alternativa === "Outro e-mail"
+    c.alternativa === "E-mail informado"
+      ? p.email
+      : c.alternativa === "Outro e-mail"
         ? c.outroEmail
-        : c.alternativa
-      : p.email;
+        : c.alternativa;
   const modalidadeTexto = "Individual - até 3 caixas sem proteção geral";
   let html = `<div class="previa-secao"><h4 class="previa-secao-titulo">Dados do proprietário</h4><div class="previa-grid">`;
   html += pvCampoBT("Nome", p.nome, PG.prop, true);
@@ -1452,7 +1451,6 @@ window.initFormulario = function () {
   }
   onZonaBT();
   onReceberEmailBT();
-  onContaGlobalBT();
   onProntoLigarBT();
   mostrarCamposPFBT();
   onCoordBT(true);

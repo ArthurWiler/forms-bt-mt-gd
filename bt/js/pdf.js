@@ -287,44 +287,42 @@ function gerarPdfDoc(S) {
   sec("2.  CORRESPONDÊNCIA E FATURA");
   {
     const corrPairs = [
-      ["Receber fatura por e-mail", corr.receberEmail],
+      ["Forma de recebimento da fatura", corr.alternativa],
       ["Dia de vencimento", corr.vencimento ? "Dia " + corr.vencimento : ""],
     ];
-    // Conta globalizada só é oferecida quando NÃO recebe por e-mail e o cliente
-    // marca que a possui — só então entra no PDF.
-    if (corr.receberEmail === "Não" && corr.possuiContaGlobal === "Sim") {
+    if (corr.alternativa === "Conta globalizada") {
       corrPairs.push(["Conta globalizada", corr.contaGlobal]);
     }
     corrPairs.push(["", ""]);
     kvPairs(corrPairs);
   }
-  if (corr.receberEmail === "Não") {
-    if (corr.alternativa === "Outro e-mail") {
-      fullLine("E-mail alternativo para a fatura", corr.outroEmail);
-    } else if (corr.alternativa === "Mesmo da obra") {
-      const endO = [
-        [obra.endereco, obra.num].filter(Boolean).join(", "),
-        obra.compl,
-        obra.bairro,
-        [obra.cidade, obra.estado].filter(Boolean).join("/"),
-        obra.cep ? "CEP " + obra.cep : "",
-      ]
-        .filter(Boolean)
-        .join(" - ");
-      fullLine("Endereço de correspondência", "Mesmo da obra — " + endO);
-    } else {
-      const endC = [
-        [corr.rua, corr.num].filter(Boolean).join(", "),
-        corr.compl,
-        corr.bairro,
-        corr.municipio,
-        corr.estado,
-        corr.cep ? "CEP " + corr.cep : "",
-      ]
-        .filter(Boolean)
-        .join(" - ");
-      fullLine("Endereço de correspondência", endC);
-    }
+  if (corr.alternativa === "E-mail informado") {
+    fullLine("E-mail para envio da fatura", prop.email);
+  } else if (corr.alternativa === "Outro e-mail") {
+    fullLine("E-mail alternativo para a fatura", corr.outroEmail);
+  } else if (corr.alternativa === "Mesmo da obra") {
+    const endO = [
+      [obra.endereco, obra.num].filter(Boolean).join(", "),
+      obra.compl,
+      obra.bairro,
+      [obra.cidade, obra.estado].filter(Boolean).join("/"),
+      obra.cep ? "CEP " + obra.cep : "",
+    ]
+      .filter(Boolean)
+      .join(" - ");
+    fullLine("Endereço de correspondência", "Mesmo da obra — " + endO);
+  } else if (corr.alternativa === "Endereço novo") {
+    const endC = [
+      [corr.rua, corr.num].filter(Boolean).join(", "),
+      corr.compl,
+      corr.bairro,
+      corr.municipio,
+      corr.estado,
+      corr.cep ? "CEP " + corr.cep : "",
+    ]
+      .filter(Boolean)
+      .join(" - ");
+    fullLine("Endereço de correspondência", endC);
   }
   cy += 2;
 

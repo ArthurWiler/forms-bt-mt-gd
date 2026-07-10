@@ -1438,17 +1438,16 @@ function validacaoObrigatoriosColetivo() {
   req(p.cpfCnpj, "CPF/CNPJ");
   req(p.email, "E-mail");
   req(p.celular, "Celular");
-  if (c.receberEmail === "Não") {
-    if (c.alternativa === "Outro e-mail")
-      req(c.outroEmail, "E-mail alternativo da fatura");
-    else if (c.alternativa === "Endereço novo") {
-      req(c.cep, "CEP de correspondência");
-      req(c.rua, "Rua/Av. de correspondência");
-      req(c.num, "Nº de correspondência");
-      req(c.bairro, "Bairro de correspondência");
-      req(c.municipio, "Município de correspondência");
-    }
-  }
+  if (c.alternativa === "Outro e-mail")
+    req(c.outroEmail, "E-mail alternativo da fatura");
+  else if (c.alternativa === "Endereço novo") {
+    req(c.cep, "CEP de correspondência");
+    req(c.rua, "Rua/Av. de correspondência");
+    req(c.num, "Nº de correspondência");
+    req(c.bairro, "Bairro de correspondência");
+    req(c.municipio, "Município de correspondência");
+  } else if (c.alternativa === "Conta globalizada")
+    req(c.contaGlobal, "Conta globalizada");
   req(o.endereco, "Endereço da obra");
   req(o.num, "Nº da obra");
   req(o.bairro, "Bairro da obra");
@@ -1487,11 +1486,11 @@ function renderPreviaColetivo() {
     o = state.obra;
   const pf = pessoaFisica();
   const emailFatura =
-    c.receberEmail === "Não"
-      ? c.alternativa === "Outro e-mail"
+    c.alternativa === "E-mail informado"
+      ? p.email
+      : c.alternativa === "Outro e-mail"
         ? c.outroEmail
-        : c.alternativa
-      : p.email;
+        : c.alternativa;
   const modalidadeTexto = MULTI
     ? `Múltiplas Torres/Blocos · ${state.blocos.length} ${(state.atend.atendA || "").toLowerCase()}(s)`
     : "Coletivo — Agrupamento com Proteção Geral (APR Web)";
@@ -1658,7 +1657,6 @@ window.initFormulario = function () {
   sincronizarBlocos();
   autoSelecionarDisjTorres();
   onReceberEmailBT();
-  onContaGlobalBT();
   onProntoLigarBT();
   onEmprGate();
   renderRestricaoAmbiental();

@@ -84,8 +84,7 @@ function propPadrao() {
 function corrPadrao() {
   return {
     vencimento: "",
-    receberEmail: "Sim",
-    alternativa: "Endereço novo",
+    alternativa: "E-mail informado",
     outroEmail: "",
     rua: "",
     bairro: "",
@@ -94,7 +93,6 @@ function corrPadrao() {
     municipio: "",
     cep: "",
     estado: "MG",
-    possuiContaGlobal: "Não",
     contaGlobal: "",
   };
 }
@@ -147,15 +145,14 @@ window.btCorrOk = () => {
   const c = window.state.corr;
   const ok = (v) => String(v == null ? "" : v).trim() !== "";
   if (!ok(c.vencimento)) return false;
-  if (c.receberEmail === "Não") {
-    if (c.alternativa === "Outro e-mail" && !ok(c.outroEmail)) return false;
-    if (
-      c.alternativa === "Endereço novo" &&
-      !(ok(c.cep) && ok(c.rua) && ok(c.num) && ok(c.bairro) && ok(c.municipio))
-    )
-      return false;
-    if (c.possuiContaGlobal === "Sim" && !ok(c.contaGlobal)) return false;
-  }
+  if (c.alternativa === "Outro e-mail" && !ok(c.outroEmail)) return false;
+  if (
+    c.alternativa === "Endereço novo" &&
+    !(ok(c.cep) && ok(c.rua) && ok(c.num) && ok(c.bairro) && ok(c.municipio))
+  )
+    return false;
+  if (c.alternativa === "Conta globalizada" && !ok(c.contaGlobal))
+    return false;
   return true;
 };
 
@@ -424,26 +421,29 @@ async function onCepBT(el, alvo) {
 }
 
 /* ===== Correspondência ===== */
+// Mantido pelo nome (chamado no render das apps); apenas sincroniza os
+// blocos condicionais do dropdown "Como deseja receber a fatura?".
 function onReceberEmailBT() {
-  const box = $("#correspNaoBox");
-  const mostrar = window.state.corr.receberEmail === "Não";
-  if (box) box.style.display = mostrar ? "" : "none";
-  if (mostrar) onCorrAlternativaBT();
+  onCorrAlternativaBT();
 }
 function onCorrAlternativaBT() {
+  _sync("corr.alternativa");
   const v = window.state.corr.alternativa;
-  const obra = $("#corrObraAviso"),
+  const informado = $("#corrEmailInformadoBox"),
+    obra = $("#corrObraAviso"),
     email = $("#corrEmailBox"),
-    end = $("#corrEndBox");
+    end = $("#corrEndBox"),
+    global = $("#contaGlobalBox");
+  if (informado) {
+    informado.style.display = v === "E-mail informado" ? "" : "none";
+    // Espelha o e-mail do proprietário no campo (somente leitura).
+    const inp = $('[data-k="prop.email"]', informado);
+    if (inp) inp.value = window.state.prop.email || "";
+  }
   if (obra) obra.style.display = v === "Mesmo da obra" ? "" : "none";
   if (email) email.style.display = v === "Outro e-mail" ? "" : "none";
   if (end) end.style.display = v === "Endereço novo" ? "" : "none";
-}
-function onContaGlobalBT() {
-  const box = $("#contaGlobalBox");
-  if (box)
-    box.style.display =
-      window.state.corr.possuiContaGlobal === "Sim" ? "" : "none";
+  if (global) global.style.display = v === "Conta globalizada" ? "" : "none";
 }
 
 /* ===== Avisos do padrão pronto p/ ligar ===== */
