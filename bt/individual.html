@@ -28,8 +28,9 @@
   <!-- Fluxo BT INDIVIDUAL em HTML/JS puro (padrão MT): cada etapa é um
        fragmento em etapas/*.html injetado por shared/js/etapas-loader.js
        (exige servidor HTTP). Entrada SEMPRE com ?mod=<id> — o card define o
-       pré-preenchimento (selectModalidade portado do app React). Os fluxos
-       Coletivo/Condomínio continuam no React em bt/index.html. -->
+       pré-preenchimento. O núcleo comum aos apps BT vanilla vive em
+       js/bt-core.js; os fluxos Coletivo/Condomínio usam js/coletivo-app.js
+       em bt/index.html. -->
   <body class="cemig-form">
     <div class="topbar">
       <div class="topbar-inner cmg-container">
