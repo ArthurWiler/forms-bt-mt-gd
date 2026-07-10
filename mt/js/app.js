@@ -28,31 +28,6 @@ const CAMPOS_CARDS_CONFIG = {
       ],
     },
     {
-      // Recebe a fatura no e-mail informado? (mesma lógica do BT). Só quando
-      // "Não" é que aparece "Como deseja receber a fatura?" e a conta
-      // globalizada. O onchange="onReceberEmail()" (HTML) mostra/esconde o bloco.
-      chave: "receberEmail",
-      gridId: "cardsReceberEmail",
-      valorPadrao: "Sim",
-      opcoes: [
-        { valor: "Sim", texto: "Sim" },
-        { valor: "Não", texto: "Não" },
-      ],
-    },
-    {
-      chave: "formaCorresp",
-      gridId: "cardsFormaCorresp",
-      opcoes: [
-        { valor: "Novo endereço", texto: "Novo endereço" },
-        { valor: "Endereço da obra", texto: "Endereço da obra" },
-        { valor: "Outro e-mail", texto: "Outro e-mail" },
-        {
-          valor: "Agência Correios(Caixa Postal)",
-          texto: "Agência dos Correios (Caixa Postal)",
-        },
-      ],
-    },
-    {
       // Zona de localização — como no BT, inicia em "Urbana" (o bloco de
       // endereço correspondente já aparece preenchível desde o início).
       chave: "localizacao",
@@ -80,17 +55,6 @@ const CAMPOS_CARDS_CONFIG = {
       opcoes: [
         { valor: "Verde", texto: "Verde" },
         { valor: "Azul", texto: "Azul" },
-      ],
-    },
-    {
-      // Conta globalizada (poder público) — replica a lógica do BT: só pede o
-      // número quando "Sim". O clique no card dispara 'change' no <select>,
-      // cujo onchange="onContaGlobal()" (no HTML) mostra/esconde o número.
-      chave: "possuiContaGlobal",
-      gridId: "cardsPossuiContaGlobal",
-      opcoes: [
-        { valor: "Sim", texto: "Sim" },
-        { valor: "Não", texto: "Não" },
       ],
     },
   ],
@@ -561,57 +525,39 @@ async function onCpfCnpj() {
     msg.className = "field-hint field-err";
   }
 }
-// "Deseja receber a fatura no e-mail informado?" (mesma lógica do BT): só quando
-// "Não" é que se pergunta COMO receber a fatura + conta globalizada. Ao voltar
-// para "Sim", limpa a escolha alternativa para não vazar dados obsoletos.
-function onReceberEmail() {
-  const sel = $('select[data-k="receberEmail"]');
-  const v = sel ? sel.value : "";
-  state.receberEmail = v;
-  const box = $("#correspNaoEmailBox");
-  const mostrar = v === "Não";
-  if (box) box.style.display = mostrar ? "" : "none";
-  if (!mostrar) {
-    state.formaCorresp = "";
-    const fc = $('select[data-k="formaCorresp"]');
-    if (fc) {
-      fc.value = "";
-      fc.dispatchEvent(new Event("change"));
-    }
-  }
-  if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
-}
-// Como deseja receber a fatura? (visível só quando NÃO recebe no e-mail):
+// Como deseja receber a fatura? (dropdown único, mesma lógica do BT):
+//  - E-mail informado → mostra o e-mail do proprietário (somente leitura)
 //  - Novo endereço / Agência Correios → endereço de correspondência (ec_*)
 //  - Endereço da obra → usa o endereço da UC (aviso, sem campos próprios)
 //  - Outro e-mail → e-mail alternativo
+//  - Conta globalizada → pede o número da conta globalizada
 function onCorresp() {
   const sel = $('select[data-k="formaCorresp"]');
   const v = sel ? sel.value : "";
   state.formaCorresp = v;
   const ehEndereco =
     v === "Novo endereço" || v === "Agência Correios(Caixa Postal)";
+  const informado = $("#corrEmailInformadoBox");
+  if (informado) {
+    informado.style.display = v === "E-mail informado" ? "" : "none";
+    // Espelha o e-mail do proprietário no campo (somente leitura).
+    const inp = $('[data-k="emailCliente"]', informado);
+    if (inp) inp.value = state.emailCliente || "";
+  }
   $("#correspEmailBox").style.display = v === "Outro e-mail" ? "" : "none";
   // "" (não "block") restaura o display:grid do .grid grid-2 (shared.css) — um
   // "block" inline sobrescreveria a grade e empilharia os campos em 1 coluna.
   $("#endCorrespBox").style.display = ehEndereco ? "" : "none";
   const obra = $("#correspObraBox");
   if (obra) obra.style.display = v === "Endereço da obra" ? "" : "none";
-}
-// Conta globalizada (poder público): só pede o número quando "Sim" (lógica do
-// BT). Ao esconder, limpa o número para não vazar valor obsoleto no PDF.
-function onContaGlobal() {
-  const sel = $('select[data-k="possuiContaGlobal"]');
-  const v = sel ? sel.value : "";
-  state.possuiContaGlobal = v;
-  const box = $("#contaGlobalBox");
-  const mostrar = v === "Sim";
-  if (box) box.style.display = mostrar ? "" : "none";
-  if (!mostrar) {
+  const global = $("#contaGlobalBox");
+  if (global) global.style.display = v === "Conta globalizada" ? "" : "none";
+  if (v !== "Conta globalizada") {
     state.contaGlobalizada = "";
     const inp = $('input[data-k="contaGlobalizada"]');
     if (inp) inp.value = "";
   }
+  if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
 
 /* ===== Etapa 3: atividade, localização, coordenadas, ambiental ===== */
@@ -2390,94 +2336,88 @@ function renderPreview() {
   );
   secoes.push(pvSecao("Dados do Proprietário", propMT));
 
-  // 2. Correspondência (etapa 3/page-2) — mesma ordem/lógica do BT: recebe no
-  // e-mail informado? + vencimento; só quando "Não" é que aparece COMO receber
-  // a fatura, o endereço/e-mail alternativo e a conta globalizada.
+  // 2. Correspondência (etapa 5/page-4) — dropdown único (igual ao BT): a forma
+  // de recebimento define e-mail informado, endereço/e-mail alternativo ou a
+  // conta globalizada; vencimento sempre presente.
   let cor =
-    pvCampo("Receber fatura no e-mail informado?", state.receberEmail, {
-      step: 2,
-    }) +
+    pvCampo("Como deseja receber a fatura?", state.formaCorresp, { step: 4 }) +
     pvCampo(
       "Vencimento escolhido",
       state.desejaVenc === "Sim"
         ? "Sim — dia " + (state.diaVenc || "—")
         : state.desejaVenc,
-      { step: 2 },
+      { step: 4 },
     );
-  if (state.receberEmail === "Não") {
-    cor += pvCampo("Como deseja receber a fatura?", state.formaCorresp, {
-      step: 2,
+  if (state.formaCorresp === "E-mail informado")
+    cor += pvCampo("E-mail para envio da fatura", state.emailCliente, {
+      full: true,
+      step: 4,
     });
-    if (state.formaCorresp === "Outro e-mail")
-      cor += pvCampo("E-mail para envio da fatura", state.emailCorresp, {
-        full: true,
-        step: 2,
-      });
-    else if (state.formaCorresp === "Endereço da obra") {
-      const endObra = [
-        [state.urb_endereco, state.urb_num].filter(Boolean).join(", "),
-        state.urb_compl,
-        state.urb_bairro,
-        state.uc_municipio,
-        state.uc_estado,
-        state.uc_cep,
+  else if (state.formaCorresp === "Outro e-mail")
+    cor += pvCampo("E-mail para envio da fatura", state.emailCorresp, {
+      full: true,
+      step: 4,
+    });
+  else if (state.formaCorresp === "Endereço da obra") {
+    const endObra = [
+      [state.urb_endereco, state.urb_num].filter(Boolean).join(", "),
+      state.urb_compl,
+      state.urb_bairro,
+      state.uc_municipio,
+      state.uc_estado,
+      state.uc_cep,
+    ]
+      .filter(Boolean)
+      .join(", ");
+    cor += pvCampo(
+      "Endereço da fatura",
+      "Mesmo da unidade consumidora — " + endObra,
+      { full: true, step: 4 },
+    );
+  } else if (
+    state.formaCorresp === "Novo endereço" ||
+    state.formaCorresp === "Agência Correios(Caixa Postal)"
+  )
+    cor += pvCampo(
+      "Endereço da fatura",
+      [
+        state.ec_rua,
+        state.ec_num,
+        state.ec_bairro,
+        state.ec_municipio,
+        state.ec_estado,
+        state.ec_cep,
       ]
         .filter(Boolean)
-        .join(", ");
-      cor += pvCampo(
-        "Endereço da fatura",
-        "Mesmo da unidade consumidora — " + endObra,
-        { full: true, step: 2 },
-      );
-    } else if (
-      state.formaCorresp === "Novo endereço" ||
-      state.formaCorresp === "Agência Correios(Caixa Postal)"
-    )
-      cor += pvCampo(
-        "Endereço da fatura",
-        [
-          state.ec_rua,
-          state.ec_num,
-          state.ec_bairro,
-          state.ec_municipio,
-          state.ec_estado,
-          state.ec_cep,
-        ]
-          .filter(Boolean)
-          .join(", "),
-        { full: true, step: 2 },
-      );
-    if (state.possuiContaGlobal)
-      cor += pvCampo("Possui conta globalizada?", state.possuiContaGlobal, {
-        step: 2,
-      });
-    if (state.possuiContaGlobal === "Sim" && state.contaGlobalizada)
-      cor += pvCampo("Conta globalizada", state.contaGlobalizada, { step: 2 });
-  }
+        .join(", "),
+      { full: true, step: 4 },
+    );
+  else if (state.formaCorresp === "Conta globalizada")
+    cor += pvCampo("Conta globalizada", state.contaGlobalizada, { step: 4 });
   secoes.push(pvSecao("Correspondência", cor));
 
   // 4. Unidade Consumidora (etapa 3)
   let uc =
-    pvCampo("Atividade", state.atividade, { step: 3 }) +
-    pvCampo("Ramo", state.ramoAtividade, { step: 3 }) +
-    pvCampo("Localização", state.localizacao, { step: 3 }) +
-    pvCampo("CEP", state.uc_cep, { step: 3 }) +
+    pvCampo("Atividade", state.atividade, { step: 2 }) +
+    pvCampo("Ramo", state.ramoAtividade, { step: 2 }) +
+    pvCampo("Localização", state.localizacao, { step: 2 }) +
+    pvCampo("CEP", state.uc_cep, { step: 2 }) +
     pvCampo(
       "Município / Estado",
       [state.uc_municipio, state.uc_estado].filter(Boolean).join(" / "),
-      { step: 3 },
+      { step: 2 },
     ) +
     pvCampo(
       "Coordenadas",
       [state.latitude, state.longitude].filter(Boolean).join(" , "),
-      { step: 3 },
+      { step: 2 },
     );
-  if (state.utm) uc += pvCampo("Coordenada UTM", state.utm, { step: 3 });
+  if (state.utm) uc += pvCampo("Coordenada UTM", state.utm, { step: 2 });
   if (state.finalidade && state.finalidade !== "Conexão Nova")
     uc += pvCampo(
       "Coordenadas novas",
       [state.latitudeNova, state.longitudeNova].filter(Boolean).join(" , "),
-      { step: 3 },
+      { step: 2 },
     );
   if (state.localizacao === "Urbana")
     uc += pvCampo(
@@ -2485,47 +2425,47 @@ function renderPreview() {
       [state.urb_endereco, state.urb_num, state.urb_bairro, state.urb_compl]
         .filter(Boolean)
         .join(", "),
-      { full: true, step: 3 },
+      { full: true, step: 2 },
     );
   if (state.localizacao === "Rural")
     uc += pvCampo(
       "Distrito / Propriedade",
       [state.rur_distrito, state.rur_propriedade].filter(Boolean).join(" / "),
-      { full: true, step: 3 },
+      { full: true, step: 2 },
     );
   // Restrição ambiental só aparece na prévia quando HÁ restrição (igual ao form).
   if (state.restricaoAmbiental === "Sim" && state.restricoesTexto)
     uc += pvCampo(
       "Área de restrição ambiental",
       `<span class="restricao-destaque">${state.restricoesTexto}</span>`,
-      { full: true, step: 3 },
+      { full: true, step: 2 },
     );
-  uc += pvCampo("Subestação pronta?", state.subPronta, { step: 3 });
+  uc += pvCampo("Subestação pronta?", state.subPronta, { step: 2 });
   secoes.push(pvSecao("Unidade Consumidora", uc));
 
   // 4. Dados Técnicos (etapa 5). Começa pela Classificação do Atendimento
   //    (Opção/Finalidade/Nº instalação), migrada da antiga etapa própria.
   let tec =
-    pvCampo("Opção de Atendimento", state.opcaoAtend, { step: 4 }) +
-    pvCampo("Finalidade", state.finalidade, { step: 4 });
+    pvCampo("Opção de Atendimento", state.opcaoAtend, { step: 3 }) +
+    pvCampo("Finalidade", state.finalidade, { step: 3 });
   if (state.finalidade && state.finalidade !== "Conexão Nova")
-    tec += pvCampo("Nº da Instalação", state.numInstalacao, { step: 4 });
+    tec += pvCampo("Nº da Instalação", state.numInstalacao, { step: 3 });
   tec +=
     pvCampo(
       "Nível de tensão MT",
       state.tensaoMT ? state.tensaoMT.replace(".", ",") + " kV" : "",
-      { step: 4 },
-    ) + pvCampo("Compartilhada?", state.compartilhada, { step: 4 });
+      { step: 3 },
+    ) + pvCampo("Compartilhada?", state.compartilhada, { step: 3 });
   if (state.compartilhada === "Sim") {
     tec += pvCampo(
       "Soma dos transformadores (kVA)",
       fmt(state.potTotalTrafos),
-      { step: 4 },
+      { step: 3 },
     );
     tec += pvCampo("Soma das demandas (kW)", fmt(state.demandaTotalCubiculos), {
-      step: 4,
+      step: 3,
     });
-    tec += pvCampo("Tipo de Subestação", tipoSE, { step: 4 });
+    tec += pvCampo("Tipo de Subestação", tipoSE, { step: 3 });
   } else {
     // tabela trafos
     if (trafos.length) {
@@ -2535,7 +2475,7 @@ function renderPreview() {
         tt += `<tr><td>TRF${String(i + 1).padStart(2, "0")}</td><td>${t.potencia || "—"}</td><td>${t.quantidade || "—"}</td><td>${t.relacao || "—"}</td></tr>`;
       });
       tt += `</tbody><tfoot><tr><td>Σ</td><td>${fmt(state.potTotalTrafos)}</td><td>${state.qtdTotalTrafos || 0}</td><td></td></tr></tfoot></table></div>`;
-      tec += pvCampo("Transformadores", tt, { full: true, step: 4 });
+      tec += pvCampo("Transformadores", tt, { full: true, step: 3 });
     }
     if (motores.length) {
       let mtt =
@@ -2554,44 +2494,44 @@ function renderPreview() {
         mtt += `<tr><td>${m.tipo || "—"}</td><td>${m.cv || "—"}</td><td>${m.fp || "—"}</td><td>${m.rend || "—"}</td><td>${m.volts || "—"}</td><td>${m.ipIn || "—"}</td><td>${fmt(c.iNominal)}</td><td>${fmt(c.iPartida)}</td></tr>`;
       });
       mtt += "</tbody></table></div>";
-      tec += pvCampo("Motores", mtt, { full: true, step: 4 });
+      tec += pvCampo("Motores", mtt, { full: true, step: 3 });
     }
-    tec += pvCampo("Tipo de Subestação", tipoSE, { step: 4 });
+    tec += pvCampo("Tipo de Subestação", tipoSE, { step: 3 });
     if (state.finalidade !== "Conexão Nova")
-      tec += pvCampo("Troca de Subestação?", state.alt_troca, { step: 4 });
+      tec += pvCampo("Troca de Subestação?", state.alt_troca, { step: 3 });
     tec +=
-      pvCampo("Tarifa monômia?", state.monomia, { step: 4 }) +
-      pvCampo("Modalidade tarifária", state.modalidade, { step: 4 }) +
-      pvCampo("Demanda escalonada?", state.escalonada, { step: 4 });
+      pvCampo("Tarifa monômia?", state.monomia, { step: 3 }) +
+      pvCampo("Modalidade tarifária", state.modalidade, { step: 3 }) +
+      pvCampo("Demanda escalonada?", state.escalonada, { step: 3 });
     const azulPv = state.modalidade === "Azul";
     const ehAltPv =
       state.finalidade === "Aumento de Demanda" ||
       state.finalidade === "Redução de Demanda";
     if (azulPv) {
       tec += pvCampo("Demanda Ponta Atual (kW)", state.dem_ponta_atual, {
-        step: 4,
+        step: 3,
       });
       if (ehAltPv)
         tec += pvCampo("Ponta Futura (kW)", state.dem_ponta_futura, {
-          step: 4,
+          step: 3,
         });
       tec += pvCampo("Fora de Ponta Atual (kW)", state.dem_foraponta_atual, {
-        step: 4,
+        step: 3,
       });
       if (ehAltPv)
         tec += pvCampo(
           "Fora de Ponta Futura (kW)",
           state.dem_foraponta_futura,
-          { step: 4 },
+          { step: 3 },
         );
     } else {
       tec += pvCampo(
         ehAltPv ? "Demanda Atual (kW)" : "Demanda (kW)",
         state.dem_atual,
-        { step: 4 },
+        { step: 3 },
       );
       if (ehAltPv)
-        tec += pvCampo("Demanda Futura (kW)", state.dem_futura, { step: 4 });
+        tec += pvCampo("Demanda Futura (kW)", state.dem_futura, { step: 3 });
     }
     if (escalonada.length) {
       let et = azulPv
@@ -2603,7 +2543,7 @@ function renderPreview() {
           : `<tr><td>${e.demanda || "—"}</td><td>${e.inicio || "—"}</td></tr>`;
       });
       et += "</tbody></table></div>";
-      tec += pvCampo("Demanda Escalonada", et, { full: true, step: 4 });
+      tec += pvCampo("Demanda Escalonada", et, { full: true, step: 3 });
     }
   }
   secoes.push(pvSecao("Dados Técnicos", tec));
@@ -2614,30 +2554,30 @@ function renderPreview() {
     cubiculos.forEach((c, i) => {
       const rt = CalculoMT.calcularTrafos(c.trafos);
       cub += pvCampo(`Cubículo ${i + 1} — Nº Instalação`, c.instalacao, {
-        step: 4,
+        step: 3,
       });
       cub += pvCampo(
         `Cubículo ${i + 1} — Transformadores`,
         `${fmt(rt.potenciaTotal)} kVA / ${rt.quantidadeTotal} un.`,
-        { step: 4 },
+        { step: 3 },
       );
       cub += pvCampo(`Cubículo ${i + 1} — Modalidade tarifária`, c.modalidade, {
-        step: 4,
+        step: 3,
       });
       if (c.modalidade === "Azul") {
         cub += pvCampo(
           `Cubículo ${i + 1} — Demanda Ponta (kW)`,
           c.demandaPonta,
-          { step: 4 },
+          { step: 3 },
         );
         cub += pvCampo(
           `Cubículo ${i + 1} — Demanda Fora de Ponta (kW)`,
           c.demandaForaPonta,
-          { step: 4 },
+          { step: 3 },
         );
       } else {
         cub += pvCampo(`Cubículo ${i + 1} — Demanda (kW)`, c.demanda, {
-          step: 4,
+          step: 3,
         });
       }
     });
@@ -2647,16 +2587,16 @@ function renderPreview() {
   // Geração + Ramal + Observações (etapa 4)
   let ger =
     pvCampo("Geração paralelismo momentâneo", state.gerMomentaneo, {
-      step: 4,
+      step: 3,
     }) +
-    pvCampo("GRID ZERO", state.gridZero, { step: 4 }) +
-    pvCampo("BT na mesma propriedade", state.btMesmaProp, { step: 4 });
+    pvCampo("GRID ZERO", state.gridZero, { step: 3 }) +
+    pvCampo("BT na mesma propriedade", state.btMesmaProp, { step: 3 });
   if (state.gerMomentaneo === "Sim")
     ger += pvCampo("Potência ger. momentânea (kVA)", state.gerMomentaneoPot, {
-      step: 4,
+      step: 3,
     });
   if (state.gridZero === "Sim")
-    ger += pvCampo("Potência GRID ZERO (kVA)", state.gridZeroPot, { step: 4 });
+    ger += pvCampo("Potência GRID ZERO (kVA)", state.gridZeroPot, { step: 3 });
   secoes.push(pvSecao("Geração e Baixa Tensão", ger));
 
   const ramal =
@@ -2664,11 +2604,11 @@ function renderPreview() {
       ? pvCampo(
           "Ramal de Entrada selecionado",
           `<img src="${RAMAL_IMGS[state.ramalIndice]}" style="max-width:100%;border:1px solid var(--cmg-neutral-200);border-radius:6px;margin-bottom:6px"><br>${CalculoMT.textoRamal(state.ramalIndice)}`,
-          { full: true, step: 4 },
+          { full: true, step: 3 },
         )
       : pvCampo("Ramal de Entrada", "(não selecionado)", {
           full: true,
-          step: 4,
+          step: 3,
         });
   secoes.push(pvSecao("Ramal de Entrada", ramal));
 
@@ -2676,7 +2616,7 @@ function renderPreview() {
     secoes.push(
       pvSecao(
         "Observações",
-        pvCampo("Observações", state.observacoes, { full: true, step: 4 }),
+        pvCampo("Observações", state.observacoes, { full: true, step: 3 }),
       ),
     );
 
@@ -2834,6 +2774,7 @@ document.addEventListener("DOMContentLoaded", () => {
   fillAtividades();
   bindInputs();
   inicializarCamposCards();
+  onCorresp(); // sincroniza os blocos condicionais da correspondência
   addTrafo(); // começa com 1 linha de trafo
   aplicarAtividadeDaURL();
   // Normaliza rótulos/obrigatoriedade das coordenadas (opcional em zona

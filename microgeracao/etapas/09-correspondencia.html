@@ -6,24 +6,21 @@
   <p class="card-sub">
     Escolha como e quando você deseja receber a conta de energia.
   </p>
-  <div class="grid grid-3">
-    <div class="field field--plain" data-noopt>
-      <label
-        >Deseja receber a fatura no e-mail informado?
-        <span class="req">*</span></label
-      >
-      <div id="cardsReceberEmail"></div>
-      <select
-        data-k="receberEmail"
-        onchange="onReceberEmailGD()"
-        style="display: none"
-        aria-hidden="true"
-      >
-        <option>Sim</option>
-        <option>Não</option>
+  <div class="grid grid-2" id="correspNaoBox">
+    <div class="field" data-noopt>
+      <label>Como deseja receber a fatura? <span class="req">*</span></label>
+      <select data-k="corrAlternativa" onchange="onCorrAlternativa()">
+        <option value="">Selecione</option>
+        <option value="E-mail informado">E-mail informado</option>
+        <option value="Endereço novo">Novo endereço</option>
+        <option value="Mesmo da obra">Endereço da unidade</option>
+        <option value="Outro e-mail">Outro e-mail</option>
+        <option value="Conta globalizada">
+          Conta globalizada (poder público)
+        </option>
       </select>
     </div>
-    <div class="field field--plain col-span-2" data-noopt>
+    <div class="field field--plain" data-noopt>
       <label>Data de Vencimento da Fatura <span class="req">*</span></label>
       <div id="cardsVencimento"></div>
       <select data-k="vencimento" style="display: none" aria-hidden="true">
@@ -36,28 +33,21 @@
         <option>27</option>
       </select>
     </div>
-  </div>
 
-  <div id="correspNaoBox" class="divider" style="display: none">
-    <div class="grid" style="margin-top: 4px">
-      <div class="field field--plain" data-noopt>
-        <label>Como deseja receber a fatura? <span class="req">*</span></label>
-        <div id="cardsCorrAlternativa"></div>
-        <select
-          data-k="corrAlternativa"
-          onchange="onCorrAlternativa()"
-          style="display: none"
-          aria-hidden="true"
-        >
-          <option>Endereço novo</option>
-          <option>Mesmo da obra</option>
-          <option>Outro e-mail</option>
-        </select>
+    <div
+      class="grid grid-2 col-span-2"
+      id="corrEmailInformadoBox"
+      style="display: none"
+    >
+      <div class="field col-span-2">
+        <label>E-mail para envio da fatura</label>
+        <input type="email" data-k="email" data-sem-vazio disabled />
       </div>
     </div>
+
     <div
       id="corrObraAviso"
-      class="alert alert-info cmg-aviso"
+      class="alert alert-info cmg-aviso col-span-2"
       style="margin-top: 12px; display: none"
     >
       <div class="cmg-aviso-icon" aria-hidden="true"></div>
@@ -68,7 +58,7 @@
     </div>
     <div
       id="corrEmailBox"
-      class="grid grid-2"
+      class="grid grid-2 col-span-2"
       style="margin-top: 12px; display: none"
     >
       <div class="field col-span-2">
@@ -82,7 +72,7 @@
     </div>
     <div
       id="corrEndBox"
-      class="grid grid-2"
+      class="grid grid-2 col-span-2"
       style="margin-top: 12px; display: none"
     >
       <div class="field">
@@ -119,21 +109,12 @@
         <input type="text" data-k="corrEstado" placeholder=" " />
       </div>
     </div>
-    <div class="grid grid-2" style="margin-top: 20px">
-      <div class="field field--plain" data-noopt>
-        <label>Possui conta globalizada (poder público)?</label>
-        <div id="cardsPossuiContaGlobal"></div>
-        <select
-          data-k="possuiContaGlobal"
-          onchange="onContaGlobalGD()"
-          style="display: none"
-          aria-hidden="true"
-        >
-          <option>Não</option>
-          <option>Sim</option>
-        </select>
-      </div>
-      <div class="field col-span-2" id="contaGlobalBox" style="display: none">
+    <div
+      class="grid grid-2 col-span-2"
+      id="contaGlobalBox"
+      style="display: none"
+    >
+      <div class="field col-span-2">
         <label>
           Conta globalizada (código de débito automático globalizado)
           <span class="req">*</span>

@@ -46,14 +46,6 @@ const CARDS_GD = [
   { chave: "armReconexaoAuto", gridId: "cardsArmReconexaoAuto", opcoes: SIM_NAO },
   { chave: "decl81", gridId: "cardsDecl81", opcoes: SIM_NAO },
   {
-    chave: "receberEmail",
-    gridId: "cardsReceberEmail",
-    opcoes: [
-      { valor: "Sim", texto: "Sim" },
-      { valor: "Não", texto: "Não" },
-    ],
-  },
-  {
     chave: "vencimento",
     gridId: "cardsVencimento",
     opcoes: ["01", "06", "11", "17", "22", "27"].map((d) => ({
@@ -61,16 +53,6 @@ const CARDS_GD = [
       texto: d,
     })),
   },
-  {
-    chave: "corrAlternativa",
-    gridId: "cardsCorrAlternativa",
-    opcoes: [
-      { valor: "Endereço novo", texto: "Novo endereço" },
-      { valor: "Mesmo da obra", texto: "Endereço da obra" },
-      { valor: "Outro e-mail", texto: "Outro e-mail" },
-    ],
-  },
-  { chave: "possuiContaGlobal", gridId: "cardsPossuiContaGlobal", opcoes: SIM_NAO },
 ];
 function _cardDispatch(select, valor) {
   select.value = valor;
@@ -823,29 +805,25 @@ function bindDeclaracoes() {
 }
 
 /* ===== Etapa 9 — Correspondência ===== */
-function onReceberEmailGD() {
-  _sync("receberEmail");
-  const box = $("#correspNaoBox");
-  const mostrar = state.receberEmail === "Não";
-  if (box) box.style.display = mostrar ? "" : "none";
-  if (mostrar) onCorrAlternativa();
-}
 function onCorrAlternativa() {
   _sync("corrAlternativa");
   const v = state.corrAlternativa;
-  const obra = $("#corrObraAviso"),
+  const informado = $("#corrEmailInformadoBox"),
+    obra = $("#corrObraAviso"),
     email = $("#corrEmailBox"),
-    end = $("#corrEndBox");
+    end = $("#corrEndBox"),
+    global = $("#contaGlobalBox");
+  if (informado) {
+    informado.style.display = v === "E-mail informado" ? "" : "none";
+    // Espelha o e-mail do titular no campo (somente leitura).
+    const inp = $('[data-k="email"]', informado);
+    if (inp) inp.value = state.email || "";
+  }
   if (obra) obra.style.display = v === "Mesmo da obra" ? "" : "none";
   if (email) email.style.display = v === "Outro e-mail" ? "" : "none";
   if (end) end.style.display = v === "Endereço novo" ? "" : "none";
-}
-function onContaGlobalGD() {
-  _sync("possuiContaGlobal");
-  const box = $("#contaGlobalBox");
-  const sim = state.possuiContaGlobal === "Sim";
-  if (box) box.style.display = sim ? "" : "none";
-  if (!sim) aplicarPatch({ contaGlobal: "" });
+  if (global) global.style.display = v === "Conta globalizada" ? "" : "none";
+  if (v !== "Conta globalizada") aplicarPatch({ contaGlobal: "" });
 }
 
 /* ===== Etapa 10 — validação de exportação + prévia ===== */
@@ -909,20 +887,17 @@ function validarExportacao() {
   if (d.gridZero === "Sim" && !d.decl95)
     faltas.push("Declaração 9.5 (obrigatória para Grid Zero)");
   if (!d.decl86) faltas.push("Declaração 9.6 (obrigatória)");
-  req(d.receberEmail, "Deseja receber a fatura no e-mail?");
   req(d.vencimento, "Data de vencimento da fatura");
-  if (d.receberEmail === "Não") {
-    if (d.corrAlternativa === "Outro e-mail")
-      req(d.corrOutroEmail, "E-mail alternativo da fatura");
-    else if (d.corrAlternativa === "Endereço novo") {
-      req(d.corrCep, "CEP de correspondência");
-      req(d.corrRua, "Rua/Av. de correspondência");
-      req(d.corrNum, "Número de correspondência");
-      req(d.corrBairro, "Bairro de correspondência");
-      req(d.corrMunicipio, "Município de correspondência");
-    }
-    if (d.possuiContaGlobal === "Sim") req(d.contaGlobal, "Conta globalizada");
-  }
+  if (d.corrAlternativa === "Outro e-mail")
+    req(d.corrOutroEmail, "E-mail alternativo da fatura");
+  else if (d.corrAlternativa === "Endereço novo") {
+    req(d.corrCep, "CEP de correspondência");
+    req(d.corrRua, "Rua/Av. de correspondência");
+    req(d.corrNum, "Número de correspondência");
+    req(d.corrBairro, "Bairro de correspondência");
+    req(d.corrMunicipio, "Município de correspondência");
+  } else if (d.corrAlternativa === "Conta globalizada")
+    req(d.contaGlobal, "Conta globalizada");
   return { ok: faltas.length === 0, faltas };
 }
 
@@ -1014,39 +989,34 @@ function renderPreviewGD() {
     ),
   );
   let cor =
-    pvCampo("Receber fatura por e-mail", d.receberEmail, { step: 8 }) +
+    pvCampo("Como deseja receber a fatura", d.corrAlternativa, { step: 8 }) +
     pvCampo("Vencimento", d.vencimento, { step: 8 });
-  if (d.receberEmail === "Não") {
-    cor += pvCampo("Como deseja receber a fatura", d.corrAlternativa, {
+  if (d.corrAlternativa === "E-mail informado")
+    cor += pvCampo("E-mail para envio da fatura", d.email, {
+      full: true,
       step: 8,
     });
-    if (d.corrAlternativa === "Outro e-mail")
-      cor += pvCampo("E-mail para envio da fatura", d.corrOutroEmail, {
-        full: true,
-        step: 8,
-      });
-    if (d.corrAlternativa === "Endereço novo")
-      cor += pvCampo(
-        "Endereço da fatura",
-        [
-          [d.corrRua, d.corrNum].filter(Boolean).join(", "),
-          d.corrBairro,
-          d.corrMunicipio,
-          d.corrEstado,
-          d.corrCep,
-        ]
-          .filter(Boolean)
-          .join(" · "),
-        { full: true, step: 8 },
-      );
+  if (d.corrAlternativa === "Outro e-mail")
+    cor += pvCampo("E-mail para envio da fatura", d.corrOutroEmail, {
+      full: true,
+      step: 8,
+    });
+  if (d.corrAlternativa === "Endereço novo")
     cor += pvCampo(
-      "Conta globalizada",
-      d.possuiContaGlobal === "Sim"
-        ? d.contaGlobal || "Sim"
-        : d.possuiContaGlobal,
-      { step: 8 },
+      "Endereço da fatura",
+      [
+        [d.corrRua, d.corrNum].filter(Boolean).join(", "),
+        d.corrBairro,
+        d.corrMunicipio,
+        d.corrEstado,
+        d.corrCep,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+      { full: true, step: 8 },
     );
-  }
+  if (d.corrAlternativa === "Conta globalizada")
+    cor += pvCampo("Conta globalizada", d.contaGlobal, { step: 8 });
   secoes.push(pvSecao("Correspondência e Fatura", cor));
   const content = $("#previewContent");
   if (content) content.innerHTML = secoes.join(PV_DIVISOR);
@@ -1091,8 +1061,7 @@ window.initFormulario = function () {
   onModalidade();
   recalcFontes();
   onArmazenamento();
-  onReceberEmailGD();
-  onContaGlobalGD();
+  onCorrAlternativa();
   onCoordGD();
   atualizarDecl95();
   atualizarGFC();

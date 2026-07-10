@@ -54,15 +54,15 @@
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">3</span>
-          <span class="vstep-label">Correspondência</span>
-        </button>
-        <button type="button" class="vstep">
-          <span class="vstep-num">4</span>
           <span class="vstep-label">Unidade Consumidora</span>
         </button>
         <button type="button" class="vstep">
-          <span class="vstep-num">5</span>
+          <span class="vstep-num">4</span>
           <span class="vstep-label">Dados Técnicos</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">5</span>
+          <span class="vstep-label">Correspondência</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">6</span>
@@ -322,30 +322,28 @@
         </section>
 
         <!-- ============ PÁGINA 2 — CORRESPONDÊNCIA ============ -->
-        <section class="page" id="page-2">
+        <section class="page" id="page-4">
           <div class="card">
-            <div class="section-eyebrow">Etapa 3</div>
+            <div class="section-eyebrow">Etapa 5</div>
             <h3 class="card-title">Correspondência e Fatura</h3>
             <p class="card-sub">
               Escolha como e quando você deseja receber a conta de energia.
             </p>
 
-            <div class="grid" style="margin-top: 16px">
-              <div class="field field--plain">
+            <div class="grid grid-2" style="margin-top: 16px">
+              <div class="field" data-noopt>
                 <label
-                  >Deseja receber a fatura no e-mail informado?
+                  >Como deseja receber a fatura?
                   <span class="req">*</span></label
                 >
-                <div id="cardsReceberEmail"></div>
-                <select
-                  data-k="receberEmail"
-                  onchange="onReceberEmail()"
-                  style="display: none"
-                  aria-hidden="true"
-                >
-                  <option value=""></option>
-                  <option>Sim</option>
-                  <option>Não</option>
+                <select data-k="formaCorresp" onchange="onCorresp()">
+                  <option value="">Selecione</option>
+                  <option>E-mail informado</option>
+                  <option>Novo endereço</option>
+                  <option>Endereço da obra</option>
+                  <option>Outro e-mail</option>
+                  <option>Agência Correios(Caixa Postal)</option>
+                  <option>Conta globalizada</option>
                 </select>
               </div>
               <div class="field field--plain">
@@ -378,29 +376,22 @@
                 </select>
               </div>
             </div>
-            <!-- Bloco exibido só quando NÃO recebe a fatura no e-mail informado
-                 (mesma lógica do BT): escolhe COMO receber a fatura + endereço/
-                 e-mail alternativo e a conta globalizada. -->
-            <div id="correspNaoEmailBox" class="divider" style="display: none">
-              <div class="grid" style="margin-top: 16px">
-                <div class="field field--plain">
-                  <label
-                    >Como deseja receber a fatura?
-                    <span class="req">*</span></label
-                  >
-                  <div id="cardsFormaCorresp"></div>
-                  <select
-                    data-k="formaCorresp"
-                    onchange="onCorresp()"
-                    style="display: none"
-                    aria-hidden="true"
-                  >
-                    <option value=""></option>
-                    <option>Novo endereço</option>
-                    <option>Endereço da obra</option>
-                    <option>Outro e-mail</option>
-                    <option>Agência Correios(Caixa Postal)</option>
-                  </select>
+            <!-- Blocos condicionais conforme a forma de recebimento escolhida
+                 (dropdown único, mesma lógica do BT). -->
+            <div id="correspNaoEmailBox">
+              <div
+                id="corrEmailInformadoBox"
+                class="grid grid-2"
+                style="margin-top: 16px; display: none"
+              >
+                <div class="field col-span-2">
+                  <label>E-mail para envio da fatura</label>
+                  <input
+                    type="email"
+                    data-k="emailCliente"
+                    data-sem-vazio
+                    disabled
+                  />
                 </div>
               </div>
 
@@ -479,31 +470,14 @@
                 </div>
               </div>
 
-              <!-- Conta globalizada (poder público) — replica a lógica do BT:
-                 pergunta Sim/Não e só então pede o número. -->
-              <div class="grid grid-2" style="margin-top: 24px">
-                <div class="field field--plain col-span-2">
-                  <label
-                    >Possui conta globalizada (poder público)?
-                    <span class="opt">(opcional)</span></label
-                  >
-                  <div id="cardsPossuiContaGlobal"></div>
-                  <select
-                    data-k="possuiContaGlobal"
-                    onchange="onContaGlobal()"
-                    style="display: none"
-                    aria-hidden="true"
-                  >
-                    <option value=""></option>
-                    <option>Sim</option>
-                    <option>Não</option>
-                  </select>
-                </div>
-                <div
-                  class="field col-span-2"
-                  id="contaGlobalBox"
-                  style="display: none"
-                >
+              <!-- Conta globalizada (poder público) — exibida quando a forma de
+                 recebimento escolhida é "Conta globalizada" (lógica do BT). -->
+              <div
+                class="grid grid-2"
+                id="contaGlobalBox"
+                style="margin-top: 16px; display: none"
+              >
+                <div class="field col-span-2">
                   <label
                     >Conta globalizada (código de débito automático globalizado
                     da fatura) <span class="req">*</span></label
@@ -519,15 +493,15 @@
             <!-- /#correspNaoEmailBox -->
           </div>
           <div class="nav-bottom no-print">
-            <button class="btn btn-ghost" onclick="goTo(1)">← Voltar</button>
-            <button class="btn btn-primary" onclick="goTo(3)">Avançar →</button>
+            <button class="btn btn-ghost" onclick="goTo(3)">← Voltar</button>
+            <button class="btn btn-primary" onclick="goTo(5)">Avançar →</button>
           </div>
         </section>
 
-        <!-- ============ PÁGINA 3 — UNIDADE CONSUMIDORA ============ -->
-        <section class="page" id="page-3">
+        <!-- ============ PÁGINA 2 — UNIDADE CONSUMIDORA ============ -->
+        <section class="page" id="page-2">
           <div class="card">
-            <div class="section-eyebrow">Etapa 4</div>
+            <div class="section-eyebrow">Etapa 3</div>
             <h3 class="card-title">Dados da Unidade Consumidora</h3>
             <p class="card-sub">Endereço do ponto de entrega.</p>
             <div class="grid grid-2">
@@ -670,15 +644,15 @@
             </div>
           </div>
           <div class="nav-bottom no-print">
-            <button class="btn btn-ghost" onclick="goTo(2)">← Voltar</button>
-            <button class="btn btn-primary" onclick="goTo(4)">Avançar →</button>
+            <button class="btn btn-ghost" onclick="goTo(1)">← Voltar</button>
+            <button class="btn btn-primary" onclick="goTo(3)">Avançar →</button>
           </div>
         </section>
 
-        <!-- ============ PÁGINA 4 — DADOS TÉCNICOS ============ -->
-        <section class="page" id="page-4">
+        <!-- ============ PÁGINA 3 — DADOS TÉCNICOS ============ -->
+        <section class="page" id="page-3">
           <div class="card">
-            <div class="section-eyebrow">Etapa 5</div>
+            <div class="section-eyebrow">Etapa 4</div>
             <h3 class="card-title">Dados Técnicos</h3>
             <!-- Classificação do Atendimento (migrada da antiga etapa própria):
                  Opção de Atendimento + Finalidade + Nº da instalação
@@ -1426,10 +1400,8 @@
             </div>
           </div>
           <div class="nav-bottom no-print">
-            <button class="btn btn-ghost" onclick="goTo(3)">← Voltar</button>
-            <button class="btn btn-primary" onclick="goTo(5)">
-              Ver prévia →
-            </button>
+            <button class="btn btn-ghost" onclick="goTo(2)">← Voltar</button>
+            <button class="btn btn-primary" onclick="goTo(4)">Avançar →</button>
           </div>
         </section>
 

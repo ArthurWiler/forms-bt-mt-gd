@@ -98,13 +98,13 @@ function gdEstadoInicial() {
     // Regra 22: item 9.5 — dispensa de análise de inversão de fluxo (obrigatório quando Grid Zero = Sim).
     decl95: false,
     // Correspondência (etapa própria — replica o bloco do BT) + Solicitante.
-    receberEmail: "Sim", vencimento: "",
-    // Quando NÃO recebe a fatura no e-mail informado (mesma lógica do BT):
-    // escolhe entre novo endereço, endereço da obra ou outro e-mail.
-    corrAlternativa: "Endereço novo", corrOutroEmail: "",
+    vencimento: "",
+    // Forma de recebimento da fatura (dropdown único, igual ao BT): e-mail
+    // informado, novo endereço, endereço da unidade, outro e-mail ou conta
+    // globalizada.
+    corrAlternativa: "E-mail informado", corrOutroEmail: "",
     corrCep: "", corrRua: "", corrNum: "", corrCompl: "",
     corrBairro: "", corrMunicipio: "", corrEstado: "MG",
-    // Conta globalizada só é oferecida quando NÃO recebe fatura por e-mail.
-    possuiContaGlobal: "Não", contaGlobal: "",
+    contaGlobal: "",
   };
 }
