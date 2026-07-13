@@ -21,9 +21,56 @@
     return el && !el.disabled && !el.readOnly && el.type !== "hidden";
   }
 
+  // Campos de data (input[type=date]) mostram um placeholder nativo
+  // "dd/mm/aaaa" que não pode ser removido via atributo `placeholder`.
+  // Convenção do projeto: enquanto vazio/sem foco, mostrar SÓ o rótulo
+  // (nenhum placeholder). O seletor de data (com o formato dd/mm/aaaa) só
+  // aparece quando o usuário interage. Truque: manter o controle como
+  // `type="text"` (rótulo isolado) e trocar para `type="date"` no foco;
+  // reverter no blur se continuar vazio. O valor persiste em ISO
+  // (yyyy-mm-dd), idêntico ao input date nativo, então o bind por data-k
+  // (listeners input/change no mesmo elemento) não é afetado.
+  function _prepararDatas(root) {
+    // Pega os que ainda são type=date (estáticos ou recém-injetados). Os já
+    // convertidos numa passada anterior carregam a flag data-cmg-date e são
+    // ignorados pelo guard de idempotência abaixo.
+    root.querySelectorAll('input[type="date"]').forEach(_ativarData);
+  }
+  function _ativarData(el) {
+    if (el.hasAttribute("data-cmg-date")) return; // handlers já ligados
+    el.setAttribute("data-cmg-date", ""); // marca/idempotência
+    if (!el.value) _paraTextoVazio(el); // vazio → esconde o dd/mm/aaaa nativo
+    el.addEventListener("focus", function () {
+      if (el.type !== "date") {
+        el.type = "date";
+        el.removeAttribute("placeholder"); // date ignora placeholder
+      }
+      if (typeof el.showPicker === "function") {
+        try {
+          el.showPicker();
+        } catch (e) {
+          /* showPicker exige gesto do usuário em alguns browsers */
+        }
+      }
+    });
+    el.addEventListener("blur", function () {
+      if (!el.value) _paraTextoVazio(el); // vazio → volta a mostrar só o rótulo
+    });
+  }
+  // Campo vazio como texto: um placeholder " " (espaço) mantém o estado
+  // :placeholder-shown ativo, que é o gatilho do rótulo flutuante (Padrão B,
+  // shared.css) para OCUPAR a célula (16px, centralizado) — igual aos demais
+  // campos vazios. Sem esse placeholder o :placeholder-shown não vale e o
+  // rótulo iria pro topo. O espaço não é visível (mesma convenção do Inp React).
+  function _paraTextoVazio(el) {
+    el.type = "text";
+    if (!el.getAttribute("placeholder")) el.setAttribute("placeholder", " ");
+  }
+
   // Aplica a convenção. Idempotente: pode rodar de novo após render dinâmico.
   function aplicar(root) {
     root = root || document;
+    _prepararDatas(root);
     root.querySelectorAll(".field").forEach(function (field) {
       const label = field.querySelector(":scope > label");
       if (!label) return;

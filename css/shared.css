@@ -398,7 +398,7 @@ html {
   align-items: stretch;
   width: 100%;
   /* default breathing room so the banner never hugs neighbouring blocks */
-  margin: var(--cmg-space-4) 0;
+  margin: 0px;
   border: 1px solid var(--cmg-neutral-200); /* #D1D4D3 */
   border-radius: 8px;
   overflow: hidden; /* let the rounded corners clip the column backgrounds */

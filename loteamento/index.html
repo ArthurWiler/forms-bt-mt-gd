@@ -89,13 +89,7 @@
           <div class="card">
             <div class="section-eyebrow">Etapa 1</div>
             <h3 class="card-title">Orientações</h3>
-            <p class="card-sub">
-              Solicitação inicial de fornecimento de energia para loteamentos e
-              condomínios fechados horizontais, conforme a Resolução Normativa
-              ANEEL nº 1.000/2021. Os documentos abaixo deverão ser anexados ao
-              pedido junto à Cemig (o envio dos arquivos é feito fora deste
-              formulário).
-            </p>
+            <p class="card-sub">Preencha os dados gerais do empreendimento.</p>
             <!-- Subtítulos de bloco: mesmo estilo inline do TabOrient do BT. -->
             <div
               style="
@@ -175,8 +169,12 @@
           <div class="card">
             <div class="section-eyebrow">Etapa 2</div>
             <h3 class="card-title">Dados para contato</h3>
+            <p class="card-sub">
+              Preencha os dados de contato da pessoa responsável pelo
+              empreendimento.
+            </p>
             <div class="grid grid-2">
-              <div class="field col-span-2">
+              <div class="field">
                 <label
                   >Nome completo (sem abreviações)
                   <span class="req">*</span></label
@@ -184,7 +182,10 @@
                 <input data-k="nome" placeholder=" " />
               </div>
               <div class="field">
-                <label>E-mail para contato</label>
+                <label
+                  >E-mail para contato
+                  <span class="req">*</span>
+                </label>
                 <input
                   data-k="email"
                   placeholder="nome@exemplo.com"
@@ -193,7 +194,10 @@
                 <span id="status-email" class="field-hint"></span>
               </div>
               <div class="field">
-                <label>Celular</label>
+                <label
+                  >Celular
+                  <span class="req">*</span>
+                </label>
                 <input
                   data-k="celular"
                   placeholder="(31) 99999-9999"
@@ -208,9 +212,7 @@
           </div>
           <div class="nav-bottom no-print">
             <button class="btn btn-ghost" onclick="goTo(0)">← Voltar</button>
-            <button class="btn btn-primary" onclick="goTo(2)">
-              Avançar →
-            </button>
+            <button class="btn btn-primary" onclick="goTo(2)">Avançar →</button>
           </div>
         </section>
 
@@ -219,10 +221,7 @@
           <div class="card">
             <div class="section-eyebrow">Etapa 3</div>
             <h3 class="card-title">Dados do Empreendimento</h3>
-            <p class="card-sub">
-              Preencha os dados gerais do empreendimento. Os campos marcados
-              como opcionais podem ser deixados em branco.
-            </p>
+            <p class="card-sub">Preencha os dados gerais do empreendimento.</p>
             <div class="grid grid-2">
               <div class="field col-span-2">
                 <label
@@ -274,13 +273,9 @@
                 <input type="date" data-k="dataEntrada" />
               </div>
             </div>
-          </div>
-
-          <div class="card">
-            <h3 class="card-title">Localização do Empreendimento</h3>
             <!-- Mesmo bloco de coordenadas do BT (dados-unidade): Latitude,
                  Longitude e UTM lado a lado; UTM calculada, não editável. -->
-            <div class="grid grid-3">
+            <div class="grid grid-3 divider">
               <div class="field">
                 <label>Latitude <span class="req">*</span></label>
                 <input data-k="latitude" oninput="onCoord()" placeholder=" " />
@@ -298,9 +293,7 @@
           </div>
           <div class="nav-bottom no-print">
             <button class="btn btn-ghost" onclick="goTo(1)">← Voltar</button>
-            <button class="btn btn-primary" onclick="goTo(3)">
-              Avançar →
-            </button>
+            <button class="btn btn-primary" onclick="goTo(3)">Avançar →</button>
           </div>
         </section>
 
@@ -367,9 +360,7 @@
           </div>
           <div class="nav-bottom no-print">
             <button class="btn btn-ghost" onclick="goTo(2)">← Voltar</button>
-            <button class="btn btn-primary" onclick="goTo(4)">
-              Avançar →
-            </button>
+            <button class="btn btn-primary" onclick="goTo(4)">Avançar →</button>
           </div>
         </section>
 
@@ -383,6 +374,14 @@
               pelas informações nele prestadas, ciente de que a Cemig poderá
               solicitar documentos complementares para análise do pedido.
             </p>
+            <div class="cmg-aviso cmg-aviso--warn">
+              <div class="cmg-aviso-icon" aria-hidden="true"></div>
+              <p class="cmg-aviso-texto">
+                Este formulário deve ser assinado pelo responsável legal do
+                empreendimento ou pelo representante do Poder Público, conforme
+                o caso, antes do envio à Cemig.
+              </p>
+            </div>
             <label
               style="
                 display: flex;
@@ -404,17 +403,10 @@
                 <span class="req">*</span></span
               ></label
             >
-            <p class="field-hint" style="margin-top: 10px">
-              Este formulário deve ser assinado pelo responsável legal do
-              empreendimento ou pelo representante do Poder Público, conforme o
-              caso, antes do envio à Cemig.
-            </p>
           </div>
           <div class="nav-bottom no-print">
             <button class="btn btn-ghost" onclick="goTo(3)">← Voltar</button>
-            <button class="btn btn-primary" onclick="goTo(5)">
-              Avançar →
-            </button>
+            <button class="btn btn-primary" onclick="goTo(5)">Avançar →</button>
           </div>
         </section>
 
@@ -433,14 +425,22 @@
           </div>
           <div class="nav-bottom no-print">
             <button class="btn btn-ghost" onclick="goTo(4)">← Voltar</button>
-            <button class="btn btn-primary" onclick="goTo(6)">
-              Avançar →
-            </button>
+            <button class="btn btn-primary" onclick="goTo(6)">Avançar →</button>
           </div>
         </section>
 
         <!-- ============ PÁGINA 6 — PRÉVIA & PDF ============ -->
         <section class="page" id="page-6">
+          <!-- Aviso pós-exportação (banner canônico .cmg-aviso, shared.css) -->
+          <div class="cmg-aviso cmg-aviso--warn">
+            <div class="cmg-aviso-icon" aria-hidden="true"></div>
+            <p class="cmg-aviso-texto">
+              <span
+                >Após exportar o PDF da sua solicitação, anexe-o no seu pedido
+                no <b>Cemig Atende</b>.</span
+              >
+            </p>
+          </div>
           <div class="card">
             <div class="section-eyebrow">Etapa 7</div>
             <h3 class="card-title">Prévia do formulário</h3>
@@ -449,16 +449,6 @@
               à sua solicitação no Cemig Atende.
             </p>
             <div id="previewContent"></div>
-            <!-- Aviso pós-exportação (banner canônico .cmg-aviso, shared.css) -->
-            <div class="cmg-aviso cmg-aviso--warn no-print">
-              <div class="cmg-aviso-icon" aria-hidden="true"></div>
-              <p class="cmg-aviso-texto">
-                <span
-                  >Após exportar o PDF da sua solicitação, anexe-o no seu pedido
-                  no <b>Cemig Atende</b>.</span
-                >
-              </p>
-            </div>
           </div>
           <div class="nav-bottom no-print">
             <button class="btn btn-ghost" onclick="goTo(5)">← Voltar</button>
