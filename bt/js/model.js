@@ -167,7 +167,7 @@ const ucDetalhadaPadrao = () => ({
   disjDe: "",
   disjPara: "",
   disjEscolhido: "",
-  cargas: { qtds: CAT.map(() => 0), tipoA: "", catA: 0, mots: [] },
+  cargas: { qtds: CAT.map(() => 0), tipoA: "", catA: null, mots: [] },
   // Gerador de emergência é vinculado à UC (subseção abaixo das cargas)
   gerador: { possui: "Não", potencia: "", fonte: "", descricao: "" },
 });
@@ -392,10 +392,10 @@ const SEC_BT_RESIDENCIAL = {
       img: "imgs/img_rural.webp",
       status: "ok",
       travaZonaRural: true, // zona de localização fixa em Rural (não editável)
-      // Regras 8/9: a categoria Rural NÃO trava nem força a "Atividade principal".
-      // O usuário escolhe livremente (Residencial/Comercial/Industrial/Rural) e,
-      // em atividades não-rurais, libera-se o "Nº Predial" editável (Regra 1). As
-      // demais regras rurais (zona travada em Rural, limite de 1 UC) permanecem.
+      // A categoria Rural NÃO trava nem força a "Atividade principal": o usuário
+      // escolhe livremente entre Residencial/Comercial/Industrial e o tipo de
+      // carga deriva sempre da atividade (res ou nr + categoria da Tabela 11).
+      // As demais regras rurais (zona travada em Rural, limite de 1 UC) permanecem.
       solicitacoesPermitidas: SOLICITACOES_INDIVIDUAIS,
       prefill: {
         atend: {

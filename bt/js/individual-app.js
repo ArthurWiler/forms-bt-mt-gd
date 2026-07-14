@@ -250,7 +250,7 @@ function renderUcsBT() {
   state.ucsDet.forEach((u) => {
     if (ucSemAlteracao(u)) return;
     const d = Object.assign(
-      { qtds: [], tipoA: "", catA: 0, mots: [] },
+      { qtds: [], tipoA: "", catA: null, mots: [] },
       u.cargas || {},
     );
     d.qtds = CAT.map((_, i) => d.qtds[i] || 0);
@@ -324,7 +324,8 @@ function _ucIdentificacao(u, ui) {
   const grid = document.createElement("div");
   grid.className = "grid grid-2";
   grid.style.marginBottom = "24px";
-  const atividadeBloqueada = restrito || atividadeTravada;
+  // Só a UC 1 fica presa ao tipo principal do formulário; UCs 2/3 são livres.
+  const atividadeBloqueada = (restrito || atividadeTravada) && ui === 0;
   // Solicitação por UC
   const selSol = _selectDe(
     ["Conexão Nova", "Alteração de Carga", "Caixa Existente sem Alteração"],
@@ -339,7 +340,7 @@ function _ucIdentificacao(u, ui) {
   );
   // Atividade principal
   const selAtiv = _selectDe(
-    ["Residencial", "Comercial", "Industrial", "Rural"],
+    ["Residencial", "Comercial", "Industrial"],
     u.atividade,
     (v) => {
       u.atividade = v;
@@ -361,7 +362,7 @@ function _ucIdentificacao(u, ui) {
     inp.type = "text";
     inp.placeholder = " ";
     inp.value = u.ramo || "";
-    inp.disabled = restrito;
+    inp.disabled = restrito && ui === 0;
     inp.addEventListener("input", () => (u.ramo = inp.value));
     grid.appendChild(
       _campo('Ramo de atividade <span class="req">*</span>', inp),
@@ -607,9 +608,27 @@ const CARGA_CATS_BT = [
     match: (c) => (c.g === "b5" && !_ehRefri(c)) || c.g === "f",
   },
 ];
+// Grupos de equipamentos prioritários por categoria não-residencial
+// (índice da TABELA_11 → ids de CARGA_CATS_BT). Só reordena; nada é ocultado.
+const PRIORIDADE_ACC_NR = {
+  0: ["demais", "c", "il"], // Oficina, indústrias
+  1: ["b2", "b1", "c", "refri", "b4"], // Hotéis
+  2: ["c", "il", "demais"], // Auditórios, cinemas
+  3: ["c", "il", "demais"], // Bancos
+  4: ["demais", "b1", "c"], // Barbearia, salões
+  5: ["c", "refri", "b3", "b1"], // Clubes
+  6: ["il", "c", "refri", "demais"], // Escolas
+  7: ["c", "il", "demais", "refri"], // Escritórios, lojas
+  8: ["il", "demais"], // Garagens
+  9: ["demais", "c", "b2", "il"], // Clínicas, hospitais (raio X em "demais")
+  10: ["c", "il"], // Igrejas, templos
+  11: ["b3", "refri", "b1", "c"], // Restaurantes, bares
+  12: ["il", "c", "b4"], // Áreas comuns e condomínios
+  13: ["b3", "refri", "c", "il"], // Salão de festas
+};
 function montarCargasBT(container, u, ui, aoMudar) {
   const d = Object.assign(
-    { qtds: [], tipoA: "", catA: 0, mots: [] },
+    { qtds: [], tipoA: "", catA: null, mots: [] },
     u.cargas || {},
   );
   d.qtds = CAT.map((_, i) => d.qtds[i] || 0);
@@ -626,68 +645,69 @@ function montarCargasBT(container, u, ui, aoMudar) {
     CemigMarcadores.atualizarAvancar();
     return r;
   }
-  // Trava do tipo de carga pela atividade (Residencial → res; Com/Ind → nr)
+  // Tipo de carga sempre derivado da atividade (Residencial → res; Com/Ind → nr)
   function aplicarAtividade() {
     const a = u.atividade || "";
-    if (a === "Residencial") {
-      if (d.tipoA !== "res") d.tipoA = "res";
-      return true;
-    }
-    if (a === "Comercial" || a === "Industrial") {
-      if (d.tipoA !== "nr") d.tipoA = "nr";
-      return true;
-    }
-    return false;
+    if (a === "Residencial") d.tipoA = "res";
+    else if (a === "Comercial" || a === "Industrial") d.tipoA = "nr";
+    else d.tipoA = "";
+  }
+  function _hint(txt) {
+    const hint = document.createElement("div");
+    hint.className = "field-hint";
+    hint.style.marginTop = "10px";
+    hint.textContent = txt;
+    return hint;
   }
   function render() {
-    const bloqueado = aplicarAtividade();
+    aplicarAtividade();
     notificar();
     container.innerHTML = "";
-    // Tipo de carga: o BT OCULTA o campo quando a atividade o define.
-    if (!bloqueado) container.appendChild(_fieldTipo());
     if (!d.tipoA) {
-      const hint = document.createElement("div");
-      hint.className = "field-hint";
-      hint.style.marginTop = "10px";
-      hint.textContent =
-        "Selecione o tipo de carga para detalhar os equipamentos.";
-      container.appendChild(hint);
+      container.appendChild(
+        _hint("Selecione a atividade principal para detalhar os equipamentos."),
+      );
       return;
+    }
+    // Não-residencial: o usuário escolhe a categoria (Tabela 11); a lista de
+    // equipamentos só aparece (priorizada) depois da escolha.
+    if (d.tipoA === "nr") {
+      container.appendChild(_fieldCategoria());
+      if (d.catA == null) {
+        container.appendChild(
+          _hint(
+            "Selecione a categoria de atividade para detalhar os equipamentos.",
+          ),
+        );
+        return;
+      }
     }
     container.appendChild(_busca());
     container.appendChild(_accList());
   }
-  function _fieldTipo() {
+  function _fieldCategoria() {
     const field = document.createElement("div");
     field.className = "field field--plain";
     const label = document.createElement("label");
-    label.innerHTML = 'Tipo de carga <span class="req">*</span>';
+    label.innerHTML = 'Categoria de atividade <span class="req">*</span>';
     field.appendChild(label);
     const group = document.createElement("div");
     group.className = "toggle-group";
     group.style.alignItems = "center";
-    const sel = document.createElement("select");
-    sel.innerHTML =
-      '<option value=""></option><option value="res">Residencial</option><option value="nr">Não-Residencial</option>';
-    sel.value = d.tipoA;
-    sel.addEventListener("change", () => {
-      d.tipoA = sel.value;
+    const selCat = document.createElement("select");
+    selCat.style.width = "auto";
+    // Obrigatório: o aplicar() dos marcadores só marca controles com data-k,
+    // então este select (bindado programaticamente) recebe data-req direto.
+    selCat.setAttribute("data-req", "");
+    selCat.innerHTML =
+      '<option value=""></option>' +
+      TABELA_11.map((c, i) => `<option value="${i}">${c.d}</option>`).join("");
+    selCat.value = d.catA == null ? "" : String(d.catA);
+    selCat.addEventListener("change", () => {
+      d.catA = selCat.value === "" ? null : +selCat.value;
       render();
     });
-    group.appendChild(sel);
-    if (d.tipoA === "nr") {
-      const selCat = document.createElement("select");
-      selCat.style.width = "auto";
-      selCat.innerHTML = TABELA_11.map(
-        (c, i) => `<option value="${i}">${c.d}</option>`,
-      ).join("");
-      selCat.value = String(d.catA);
-      selCat.addEventListener("change", () => {
-        d.catA = +selCat.value;
-        notificar();
-      });
-      group.appendChild(selCat);
-    }
+    group.appendChild(selCat);
     field.appendChild(group);
     if (window.CemigMarcadores)
       CemigMarcadores.aplicar(field.parentElement || field);
@@ -732,7 +752,16 @@ function montarCargasBT(container, u, ui, aoMudar) {
     const filtrado = CAT.map((c, i) => ({ ...c, i })).filter(
       (c) => !busca || c.n.toLowerCase().includes(busca.toLowerCase()),
     );
-    CARGA_CATS_BT.forEach((cat) => {
+    // Não-residencial: grupos relevantes para a categoria vêm primeiro
+    const prioridade =
+      (d.tipoA === "nr" && d.catA != null && PRIORIDADE_ACC_NR[d.catA]) || [];
+    const cats = prioridade.length
+      ? prioridade
+          .map((id) => CARGA_CATS_BT.find((c) => c.id === id))
+          .filter(Boolean)
+          .concat(CARGA_CATS_BT.filter((c) => !prioridade.includes(c.id)))
+      : CARGA_CATS_BT;
+    cats.forEach((cat) => {
       const items = filtrado.filter(cat.match);
       if (busca && !items.length) return;
       const open = busca ? items.length > 0 : !!abertos[cat.id];
@@ -1027,6 +1056,11 @@ function renderPreviaBT() {
     html += pvCampoBT("Tipo de solicitação", u.solicitacao, PG.atend);
     html += pvCampoBT("Atividade principal", u.atividade);
     html += pvCampoBT("Ramo da atividade", u.ramo);
+    if (cg.tipoA === "nr" && cg.catA != null)
+      html += pvCampoBT(
+        "Categoria de atividade",
+        (TABELA_11[cg.catA] || {}).d,
+      );
     html += pvCampoBT("Solicitação", state.atend.solicitacao);
     if (!rural) {
       html += pvCampoBT("CEP", o.cep, PG.dados, true);

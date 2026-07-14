@@ -574,10 +574,17 @@ function gerarPdfDoc(S) {
       const pares = [
         ["Atividade principal", u.atividade],
         ["Ramo de atividade", u.ramo],
+      ];
+      if (u.cargas?.tipoA === "nr" && u.cargas?.catA != null)
+        pares.push([
+          "Categoria de atividade",
+          (TABELA_11[u.cargas.catA] || {}).d,
+        ]);
+      pares.push(
         ["Nº Predial", u.nPredial || obra.num],
         ["Complemento do endereço", u.complemento],
         ["Caixa / Identificação", u.caixa],
-      ];
+      );
       if (u.solicitacao !== "Conexão Nova")
         pares.push(["Nº Instalação", u.instalacao]);
       if (u.solicitacao === "Alteração de Carga")
