@@ -1,7 +1,4 @@
-<!-- Etapa 3 — Dados da Unidade Consumidora (transcrição de ViewDadosUC).
-     Coordenadas Lat/Lon → UTM derivado (onCoordGD); galeria de subestações e
-     tabela de trafos são ilhas dinâmicas (app.js: renderGaleriaSEGD /
-     renderTrafosGD). Condicionais controladas por onSolicitacao/onGrupo etc. -->
+
 <div class="card">
   <div class="section-eyebrow">Etapa 3</div>
   <h3 class="card-title">Dados da Unidade Consumidora</h3>
@@ -67,7 +64,6 @@
     </div>
   </div>
 
-  <!-- Transformadores da subestação (aparece ao escolher o tipo de SE) -->
   <div class="subbox" id="trafosBox" style="display: none; margin-top: 12px">
     <div class="motores-head">
       <span class="subbox-title">Transformadores (Qte × Potência)</span>
@@ -97,7 +93,7 @@
       <label>Tipo de Solicitação <span class="req">*</span></label>
       <select data-k="solicitacao" onchange="onSolicitacao()"></select>
     </div>
-    <!-- Aviso contextual: a solicitação exige o Formulário de Carga. -->
+
     <div class="field col-span-3" id="avisoFormCarga" style="display: none">
       <div class="cmg-aviso no-print">
         <div class="cmg-aviso-icon" aria-hidden="true"></div>

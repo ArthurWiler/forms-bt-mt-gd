@@ -18,15 +18,9 @@
 const CARD = btResolverCard(["coletivo", "condominio"]) || {};
 const MULTI = CARD.formType === "condominio";
 
-// Pruning do superset: remove as seções/vsteps do fluxo alheio ANTES do
-// etapas-loader (este script roda em top-level, antes do DOMContentLoaded) —
-// o loader nem busca os fragmentos removidos e o goTo indexa certo.
-(function () {
-  const fluxo = MULTI ? "condominio" : "coletivo";
-  document.querySelectorAll("[data-flow]").forEach((el) => {
-    if (el.dataset.flow !== fluxo) el.remove();
-  });
-})();
+// Pruning do superset [data-flow]: feito por script inline no index.html,
+// antes do primeiro paint e dos CDNs — aqui já chegaria tarde (a lista
+// aparecia sendo podada/renumerada na tela).
 
 /* ===== Estado (mesmo shape do App React / gerarPdfDoc) ===== */
 const _prefAtividade = (CARD.prefill && CARD.prefill.atividade) || "";
@@ -80,8 +74,6 @@ const trocaDisjGeralF = () =>
   !MULTI &&
   state.atend.escopo === "Alteração de Carga com alteração do disjuntor geral";
 // Concordância dos rótulos: "Torre" é feminino, "Bloco" masculino.
-const _fem = () => state.atend.atendA !== "Bloco";
-const _unidLower = () => (state.atend.atendA || "Torre").toLowerCase();
 
 /* ===== derivados (portes verbatim dos useMemo de app.js) ===== */
 // app.js:241-245
@@ -221,7 +213,9 @@ function aplicarPresetResidencial() {
 // só redimensiona com número válido, sem apagar torres preenchidas)
 function sincronizarBlocos() {
   if (!MULTI) return;
-  if (String(state.atend.nBlocos == null ? "" : state.atend.nBlocos).trim() === "")
+  if (
+    String(state.atend.nBlocos == null ? "" : state.atend.nBlocos).trim() === ""
+  )
     return;
   const n = Math.max(1, Number(state.atend.nBlocos) || 1);
   const arr = state.blocos;
@@ -685,8 +679,7 @@ function renderCargasColetivo() {
   sincronizarUcBlocos();
   aplicarPresetResidencial();
   const toolbar = $("#prevToolbar");
-  if (toolbar)
-    toolbar.style.display = state.ucBlocos.length > 1 ? "" : "none";
+  if (toolbar) toolbar.style.display = state.ucBlocos.length > 1 ? "" : "none";
   const table = document.createElement("table");
   table.className = "prev-table";
   table.innerHTML =
@@ -790,8 +783,7 @@ function atualizarCargasColetivo() {
       ? `<div class="alert alert-warn" style="margin-bottom:14px">⚠ A demanda residencial manual (${fmt2(num(state.atend.demandaResidencialManual))} kVA) é menor que a calculada pelo ND-5.2 (${fmt2(info.nd52.demandaKVA)} kVA) e não pode ser usada — corrija ou deixe em branco para usar o valor calculado.</div>`
       : "";
   const naoResBox = $("#demandaNaoResBox");
-  if (naoResBox)
-    naoResBox.style.display = temUCNaoResidencialF() ? "" : "none";
+  if (naoResBox) naoResBox.style.display = temUCNaoResidencialF() ? "" : "none";
   const aviso = $("#aviso304Cargas");
   if (aviso) aviso.style.display = demandaTotalGeralF() > 304 ? "" : "none";
   autoSelecionarDisjGeral();
@@ -815,7 +807,11 @@ function renderDisjGeralColetivo() {
         (v) => (state.atend.disjGeralAtual = v),
         true,
       );
-      const fAtual = _campo("Disjuntor geral existente", selAtual, "field--float");
+      const fAtual = _campo(
+        "Disjuntor geral existente",
+        selAtual,
+        "field--float",
+      );
       fAtual.setAttribute("data-noopt", "");
       campos.appendChild(fAtual);
       const selNovo = _selectDe(
@@ -924,7 +920,7 @@ function atualizarTorreCalc(bi) {
   const nd52Box = $(`#torreNd52-${bi}`);
   if (nd52Box)
     nd52Box.innerHTML = calcTorre.nd52
-      ? `<div class="alert alert-ok" style="margin-top:6px"><b>Demanda residencial (ND-5.2) dest${_fem() ? "a" : "e"} ${_unidLower()}:</b> ${calcTorre.qtdApart} apartamento(s) · área média ${fmt2(calcTorre.areaMedia)} m² → ${fmt2(calcTorre.nd52.demandaKVA)} kVA.</div>`
+      ? `<div class="alert alert-ok" style="margin-top:6px"><b>Demanda residencial (ND-5.2) desta torre:</b> ${calcTorre.qtdApart} apartamento(s) · área média ${fmt2(calcTorre.areaMedia)} m² → ${fmt2(calcTorre.nd52.demandaKVA)} kVA.</div>`
       : "";
   $$(`[data-tprev-carga^="${bi}-"]`).forEach((td) => {
     const ui = +td.dataset.tprevCarga.split("-")[1];
@@ -933,7 +929,9 @@ function atualizarTorreCalc(bi) {
   });
   const totKw = $(`#torreTotKw-${bi}`);
   if (totKw)
-    totKw.textContent = fmt2((b.ucs || []).reduce((s, u) => s + prevKwUC(u), 0));
+    totKw.textContent = fmt2(
+      (b.ucs || []).reduce((s, u) => s + prevKwUC(u), 0),
+    );
   const totDem = $(`#torreTotDem-${bi}`);
   if (totDem) totDem.textContent = fmt2(calcTorre.demandaUcs);
   renderTorreResultado(bi);
@@ -947,13 +945,12 @@ function renderTorreResultado(bi) {
   const demandaTorre = calcTorre.demandaUcs + num(b.demandaIncendio);
   const opcoesDG = opcoesDisjGeralTorre(b);
   const opcoesDI = opcoesDisjIncendioTorre(b);
-  const dArt = _fem() ? "da" : "do";
   box.innerHTML = "";
   const kpis = document.createElement("div");
   kpis.className = "resultado-kpis";
   kpis.innerHTML =
     `<div class="resultado-card"><div class="resultado-card-label">Demanda das UCs</div><div class="resultado-card-valor">${fmt2(calcTorre.demandaUcs)} kVA</div></div>` +
-    `<div class="resultado-card"><div class="resultado-card-label">Demanda total ${dArt} ${_unidLower()} (com condomínio/incêndio)</div><div class="resultado-card-valor">${fmt2(demandaTorre)} kVA</div></div>`;
+    `<div class="resultado-card"><div class="resultado-card-label">Demanda total da torre (com condomínio/incêndio)</div><div class="resultado-card-valor">${fmt2(demandaTorre)} kVA</div></div>`;
   box.appendChild(kpis);
   const mkDisj = (label, opcoes, valor, aoEscolher, hintVazio) => {
     const card = document.createElement("div");
@@ -1127,7 +1124,7 @@ function renderTorreAccs(bi) {
             tr2.className = "uc-linha-2";
             const defs2 = [
               [
-                "Disjuntor da UC",
+                "Disjuntor",
                 _selectDe(
                   DISJ.map((d) => d.fx),
                   u.disjPara,
@@ -1141,10 +1138,14 @@ function renderTorreAccs(bi) {
               residencial
                 ? [
                     "Área (m²)",
-                    _inp(u.area, (v) => {
-                      u.area = v;
-                      atualizarTorreCalc(bi);
-                    }, { type: "number", placeholder: "Ex: 65" }),
+                    _inp(
+                      u.area,
+                      (v) => {
+                        u.area = v;
+                        atualizarTorreCalc(bi);
+                      },
+                      { type: "number", placeholder: "Ex: 65" },
+                    ),
                   ]
                 : [
                     "Ramo de atividade",
@@ -1161,7 +1162,10 @@ function renderTorreAccs(bi) {
                     placeholder: "Nº instalação",
                   }),
                 ],
-                ["Nº UC", _inp(u.unidadeConsumidora, (v) => (u.unidadeConsumidora = v))],
+                [
+                  "Nº UC",
+                  _inp(u.unidadeConsumidora, (v) => (u.unidadeConsumidora = v)),
+                ],
               );
             }
             defs2.forEach(([rotulo, controle], i) => {
@@ -1244,9 +1248,8 @@ function renderTorreAccs(bi) {
             tbody.appendChild(tr);
           });
           table.appendChild(tbody);
-          const dArt = _fem() ? "da" : "do";
           const tfoot = document.createElement("tfoot");
-          tfoot.innerHTML = `<tr><td class="uc-name">Total ${dArt} ${_unidLower()}</td><td colspan="5"></td><td class="carga-cell" id="torreTotKw-${bi}"></td><td class="col-demanda total-dem" id="torreTotDem-${bi}"></td></tr>`;
+          tfoot.innerHTML = `<tr><td class="uc-name">Total da torre</td><td colspan="5"></td><td class="carga-cell" id="torreTotKw-${bi}"></td><td class="col-demanda total-dem" id="torreTotDem-${bi}"></td></tr>`;
           table.appendChild(tfoot);
           wrap.appendChild(table);
           body.appendChild(wrap);
@@ -1265,26 +1268,34 @@ function renderTorreCampos(bi) {
   const b = state.blocos[bi];
   if (!box || !b) return;
   const calcTorre = calcBlocoMultiTorres(b);
-  const dArt = _fem() ? "da" : "do";
   box.innerHTML = "";
   {
     const f = _campo(
-      `Identificação ${dArt} ${_unidLower()}`,
-      _inp(b.nome, (v) => {
-        b.nome = v;
-        const tit = $(`[data-torre-titulo="${bi}"]`);
-        if (tit) tit.textContent = `${state.atend.atendA} ${b.nome || bi + 1}`;
-      }, { placeholder: `${bi + 1}` }),
+      "Identificação da torre",
+      _inp(
+        b.nome,
+        (v) => {
+          b.nome = v;
+          const tit = $(`[data-torre-titulo="${bi}"]`);
+          if (tit)
+            tit.textContent = `Torre ${b.nome || bi + 1}`;
+        },
+        { placeholder: `${bi + 1}` },
+      ),
     );
     box.appendChild(f);
   }
   {
     const f = _campo(
-      `Qtd. de UCs ${dArt} ${_unidLower()}`,
-      _inp(b.qtdUCs, (v) => {
-        sincronizarUCsTorre(bi, v);
-        renderTorreAccs(bi);
-      }, { type: "number", placeholder: "0" }),
+      "Qtd. de UCs da torre",
+      _inp(
+        b.qtdUCs,
+        (v) => {
+          sincronizarUCsTorre(bi, v);
+          renderTorreAccs(bi);
+        },
+        { type: "number", placeholder: "0" },
+      ),
     );
     f.setAttribute("data-noopt", "");
     box.appendChild(f);
@@ -1292,20 +1303,28 @@ function renderTorreCampos(bi) {
   {
     const f = _campo(
       "Demanda Condomínio / Incêndio (kVA)",
-      _inp(b.demandaIncendio, (v) => {
-        b.demandaIncendio = v;
-        atualizarTorreCalc(bi);
-      }, { type: "number", placeholder: "0" }),
+      _inp(
+        b.demandaIncendio,
+        (v) => {
+          b.demandaIncendio = v;
+          atualizarTorreCalc(bi);
+        },
+        { type: "number", placeholder: "0" },
+      ),
     );
     box.appendChild(f);
   }
   if (calcTorre.temNaoResidencial) {
     const f = _campo(
       "Demanda geral não residencial (kVA)",
-      _inp(b.demandaNaoResidencial, (v) => {
-        b.demandaNaoResidencial = v;
-        atualizarTorreCalc(bi);
-      }, { type: "number", placeholder: "0,0" }),
+      _inp(
+        b.demandaNaoResidencial,
+        (v) => {
+          b.demandaNaoResidencial = v;
+          atualizarTorreCalc(bi);
+        },
+        { type: "number", placeholder: "0,0" },
+      ),
     );
     f.setAttribute("data-noopt", "");
     box.appendChild(f);
@@ -1316,19 +1335,12 @@ function renderBlocos() {
   if (!box) return;
   sincronizarBlocos();
   autoSelecionarDisjTorres();
-  const fem = _fem();
-  const dArt = fem ? "da" : "do";
   const sub = $("#blocosSub");
   if (sub)
-    sub.textContent = `Cada ${_unidLower()} tem seu disjuntor geral — sugerido a partir da demanda calculada — e seu disjuntor de combate a incêndio. Preencha ${fem ? "a primeira" : "o primeiro"} e use "Replicar" para preenchimento em massa.`;
-  const kAtendA = $("#kpiAtendA");
-  if (kAtendA) kAtendA.textContent = state.atend.atendA;
-  const lblN = $("#nBlocosLabel");
-  if (lblN)
-    lblN.textContent = `Nº de ${state.atend.atendA === "Bloco" ? "Blocos" : "Torres"}`;
+    sub.textContent =
+      "Preencha os dados das torres do empreendimento. Para agilizar o preenchimento, você pode usar o botão para replicar os dados da torre 1 para o restante das torres.";
   const btnRep = $("#btnReplicarTorre1");
-  if (btnRep)
-    btnRep.textContent = `⧉ Replicar ${state.atend.atendA} 1 para ${fem ? "todas" : "todos"}`;
+  if (btnRep) btnRep.textContent = "⧉ Replicar Torre 1 para todas";
   box.innerHTML = "";
   state.blocos.forEach((b, bi) => {
     const aberta = _torreAberta[bi] === true;
@@ -1339,7 +1351,7 @@ function renderBlocos() {
     head.className = "uc-colapsavel-head";
     head.setAttribute("aria-expanded", aberta ? "true" : "false");
     head.innerHTML =
-      `<span class="uc-head-info"><span class="uc-colapsavel-titulo" data-torre-titulo="${bi}">${state.atend.atendA} ${b.nome || bi + 1}</span>` +
+      `<span class="uc-head-info"><span class="uc-colapsavel-titulo" data-torre-titulo="${bi}">Torre ${b.nome || bi + 1}</span>` +
       `<span class="uc-head-endereco-label">Demanda</span><span class="uc-head-endereco" data-torre-head="${bi}"></span>` +
       `</span><span class="carga-acc-chevron uc-colapsavel-chevron" aria-hidden="true"></span>`;
     head.addEventListener("click", () => {
@@ -1372,10 +1384,14 @@ function renderBlocos() {
         let btnGerar;
         const fCompl = _campo(
           "Primeiro complemento",
-          _inp(b.complInicial, (v) => {
-            b.complInicial = v;
-            if (btnGerar) btnGerar.disabled = !/\d/.test(String(v || ""));
-          }, { placeholder: "Ex: 101 ou Apto 01" }),
+          _inp(
+            b.complInicial,
+            (v) => {
+              b.complInicial = v;
+              if (btnGerar) btnGerar.disabled = !/\d/.test(String(v || ""));
+            },
+            { placeholder: "Ex: 101 ou Apto 01" },
+          ),
         );
         gen.appendChild(fCompl);
         btnGerar = document.createElement("button");
@@ -1422,10 +1438,11 @@ function renderBlocos() {
    views/revisar.js + validacaoObrigatorios de app.js:750-823)
    ============================================================ */
 // Índices das etapas para os lápis (após o pruning): coletivo tem 8 páginas,
-// condomínio 7 — tipo=1, corr=2, empr=3 e o miolo varia.
+// condomínio 7 — tipo=1, empr=2 e o miolo varia; corr fica antes de
+// Observações (penúltima antes de obs/prévia).
 const PG = MULTI
-  ? { tipo: 1, corr: 2, empr: 3, blocos: 4 }
-  : { tipo: 1, corr: 2, empr: 3, ucs: 4, cargas: 5 };
+  ? { tipo: 1, empr: 2, blocos: 3, corr: 4 }
+  : { tipo: 1, empr: 2, ucs: 3, cargas: 4, corr: 5 };
 function validacaoObrigatoriosColetivo() {
   const faltando = [];
   const req = (v, label) => {
@@ -1434,7 +1451,10 @@ function validacaoObrigatoriosColetivo() {
   const p = state.prop,
     c = state.corr,
     o = state.obra;
-  req(p.nome, pessoaFisica() ? "Nome completo do proprietário" : "Razão social");
+  req(
+    p.nome,
+    pessoaFisica() ? "Nome completo do proprietário" : "Razão social",
+  );
   req(p.cpfCnpj, "CPF/CNPJ");
   req(p.email, "E-mail");
   req(p.celular, "Celular");
@@ -1457,7 +1477,10 @@ function validacaoObrigatoriosColetivo() {
   if (!(demandaTotalGeralF() > 0))
     faltando.push("Previsão de carga / demanda das UCs");
   if (!MULTI && temUCNaoResidencialF())
-    req(state.atend.demandaNaoResidencial, "Demanda geral não residencial (kVA)");
+    req(
+      state.atend.demandaNaoResidencial,
+      "Demanda geral não residencial (kVA)",
+    );
   if (MULTI)
     state.blocos.forEach((b, bi) => {
       if (
@@ -1465,7 +1488,7 @@ function validacaoObrigatoriosColetivo() {
         !String(b.demandaNaoResidencial || "").trim()
       )
         faltando.push(
-          `Demanda geral não residencial — ${state.atend.atendA} ${b.nome || bi + 1} (kVA)`,
+          `Demanda geral não residencial — Torre ${b.nome || bi + 1} (kVA)`,
         );
     });
   if (demandaResidencialManualInvalidaF())
@@ -1492,7 +1515,7 @@ function renderPreviaColetivo() {
         ? c.outroEmail
         : c.alternativa;
   const modalidadeTexto = MULTI
-    ? `Múltiplas Torres/Blocos · ${state.blocos.length} ${(state.atend.atendA || "").toLowerCase()}(s)`
+    ? `Múltiplas Torres · ${state.blocos.length} torre(s)`
     : "Coletivo — Agrupamento com Proteção Geral (APR Web)";
   let html = `<div class="previa-secao"><h4 class="previa-secao-titulo">Dados do proprietário</h4><div class="previa-grid">`;
   html += pvCampoBT("Nome", p.nome, PG.tipo, true);
@@ -1552,7 +1575,7 @@ function renderPreviaColetivo() {
     state.blocos.forEach((b, bi) => {
       const demanda =
         calcBlocoMultiTorres(b).demandaUcs + num(b.demandaIncendio);
-      html += `<div class="preview-item" style="display:flex;justify-content:space-between"><span class="v">${state.atend.atendA} ${b.nome || bi + 1} · ${b.qtdUCs || 0} UCs · Geral: ${b.disjGeral || "—"} · Incêndio: ${b.disjIncendio || "—"}</span><span style="color:var(--verde);font-weight:700">${fmt2(demanda)} kVA</span></div>`;
+      html += `<div class="preview-item" style="display:flex;justify-content:space-between"><span class="v">Torre ${b.nome || bi + 1} · ${b.qtdUCs || 0} UCs · Geral: ${b.disjGeral || "—"} · Incêndio: ${b.disjIncendio || "—"}</span><span style="color:var(--verde);font-weight:700">${fmt2(demanda)} kVA</span></div>`;
     });
     html += `</div>`;
   } else {

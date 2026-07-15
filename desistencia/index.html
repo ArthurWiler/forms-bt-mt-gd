@@ -5,30 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Termo de Desistência de Obra — Cemig</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <!-- Open Sans: identidade visual CEMIG -->
+
     <link
       href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <!-- Estilos: tokens → compartilhado → página -->
+
     <link rel="stylesheet" href="../css/variables.css" />
     <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/formulario-desistencia.css" />
   </head>
-  <!-- Shell BT (.cemig-form): mesmo esqueleto do formulário BT individual —
-       topbar institucional, .layout com .sidebar de etapas e .main-col.
-       .cemig-desist guarda apenas os extras da página (etapas .page,
-       marcadores A/B/C das orientações e o documento de impressão do
-       Termo), definidos em formulario-desistencia.css. -->
+
   <body class="cemig-form cemig-desist">
     <div class="topbar">
       <div class="topbar-inner cmg-container">
         <div class="topbar-left">
-          <img
-            src="../imgs/logos/logo-cemig-branca-com-verde.png"
-            alt="Cemig"
-            class="logo-img"
-          />
+          <a
+            href="../index.html"
+            class="logo-link"
+            title="Voltar à página inicial"
+          >
+            <img
+              src="../imgs/logos/logo-cemig-branca-com-verde.png"
+              alt="Cemig"
+              class="logo-img"
+            />
+          </a>
           <span class="app-title">Termo de Desistência de Obra</span>
         </div>
       </div>
@@ -36,7 +38,6 @@
 
     <div class="layout">
       <aside class="sidebar">
-        <a href="../index.html" class="form-back">VOLTAR</a>
         <div class="sidebar-title">Progresso do preenchimento</div>
         <button type="button" class="vstep active">
           <span class="vstep-num">1</span>
@@ -65,7 +66,7 @@
       </aside>
 
       <main class="main-col">
-        <!-- Título do formulário no topo, padrão BT (.form-header, shared.css). -->
+
         <div class="form-header">
           <h1>Termo de Desistência de Obra</h1>
           <p>
@@ -76,7 +77,6 @@
           </p>
         </div>
 
-        <!-- ============ PÁGINA 0 — ORIENTAÇÕES ============ -->
         <section class="page show" id="page-0">
           <div class="card">
             <div class="section-eyebrow">Etapa 1</div>
@@ -149,7 +149,6 @@
           </div>
         </section>
 
-        <!-- ============ PÁGINA 1 — OBRA ============ -->
         <section class="page" id="page-1">
           <div class="card">
             <div class="section-eyebrow">Etapa 2</div>
@@ -193,7 +192,6 @@
           </div>
         </section>
 
-        <!-- ============ PÁGINA 2 — SOLICITANTE ============ -->
         <section class="page" id="page-2">
           <div class="card">
             <div class="section-eyebrow">Etapa 3</div>
@@ -288,7 +286,6 @@
           </div>
         </section>
 
-        <!-- ============ PÁGINA 3 — ENDEREÇO ============ -->
         <section class="page" id="page-3">
           <div class="card">
             <div class="section-eyebrow">Etapa 4</div>
@@ -343,7 +340,6 @@
           </div>
         </section>
 
-        <!-- ============ PÁGINA 4 — DADOS BANCÁRIOS & DESISTÊNCIA ============ -->
         <section class="page" id="page-4">
           <div class="card">
             <div class="section-eyebrow">Etapa 5</div>
@@ -371,10 +367,7 @@
               style="display: none"
             >
               <div class="conditional-tag">Para devolução do valor pago</div>
-              <!-- Aviso contextual (migrado da nota C): a desistência é uma
-                   resilição; o cliente assume os custos já incorridos e recebe de
-                   volta a diferença eventualmente paga a mais. Aparece junto com o
-                   box, que só é exibido quando "Efetuou pagamento?" = Sim. -->
+
               <div class="cmg-aviso no-print">
                 <div class="cmg-aviso-icon" aria-hidden="true"></div>
                 <p class="cmg-aviso-texto">
@@ -431,7 +424,6 @@
           </div>
         </section>
 
-        <!-- ============ PÁGINA 5 — PRÉVIA & PDF ============ -->
         <section class="page" id="page-5">
           <div class="card">
             <div class="section-eyebrow">Etapa 6</div>
@@ -461,10 +453,7 @@
         </section>
       </main>
     </div>
-    <!-- /layout -->
 
-    <!-- Documento de impressão (folha única A4) — populado por renderDocumentoImpressao()
-     e exibido somente durante a impressão/geração de PDF via window.print() -->
     <div id="documentoImpressao"></div>
 
     <footer class="portal-footer">

@@ -368,10 +368,10 @@ function gerarPdfDoc(S) {
   cy += 2;
 
   if (multiTorres) {
-    sec("4.  EMPREENDIMENTO COM MÚLTIPLAS TORRES OU BLOCOS");
+    sec("4.  EMPREENDIMENTO COM MÚLTIPLAS TORRES");
     kvPairs([
-      ["Atendimento a", atend.atendA],
-      ["Nº de blocos/torres", blocos.length],
+      ["Atendimento a", "Torre"],
+      ["Nº de torres", blocos.length],
       ["Total de UCs do empreendimento", totalUcsEmpreendimento],
       ["", ""],
     ]);
@@ -402,7 +402,7 @@ function gerarPdfDoc(S) {
       const ucs = b.ucs || [];
       if (!ucs.length) return;
       sec(
-        `4.${bi + 1}  ${atend.atendA.toUpperCase()} ${b.nome || bi + 1} — UNIDADES CONSUMIDORAS`,
+        `4.${bi + 1}  TORRE ${b.nome || bi + 1} — UNIDADES CONSUMIDORAS`,
       );
       // Tabela 1: identificação das UCs
       tabelaAuto(
@@ -427,7 +427,7 @@ function gerarPdfDoc(S) {
       cy += 2;
       // Tabela 2: previsão de carga das UCs
       sec(
-        `4.${bi + 1}.1  ${atend.atendA} ${b.nome || bi + 1} — PREVISÃO DE CARGA`,
+        `4.${bi + 1}.1  Torre ${b.nome || bi + 1} — PREVISÃO DE CARGA`,
       );
       tabela(
         [

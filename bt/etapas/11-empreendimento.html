@@ -1,10 +1,5 @@
 <!doctype html>
-<!-- Etapa — Empreendimento (TabEmpreendimento do coletivo/condomínio):
-     Razão Social + CPF/CNPJ (busca) + Nº ART/TRT; os demais blocos
-     (endereço urbano, coordenadas, dados técnicos, mapa e restrição
-     ambiental — herdados de 04-dados-unidade.html) só aparecem quando o
-     gate empreendimentoCompleto libera (#emprDetalhes — ver onEmprGate no
-     coletivo-app.js). A zona é sempre "Urbano" neste fluxo (sem toggle). -->
+
 <div class="card">
   <div class="section-eyebrow">Etapa 4</div>
   <h3 class="card-title">Dados do empreendimento</h3>
@@ -29,7 +24,10 @@
           type="text"
           data-k="prop.cpfCnpj"
           placeholder="000.000.000-00"
-          oninput="onCpfCnpjBT(this); onEmprGate()"
+          oninput="
+            onCpfCnpjBT(this);
+            onEmprGate();
+          "
         />
         <span id="cnpjStatus"></span>
       </div>
@@ -49,11 +47,11 @@
     <div class="cmg-aviso cmg-aviso--warn">
       <div class="cmg-aviso-icon" aria-hidden="true"></div>
       <p class="cmg-aviso-texto">
-        Todas as unidades deste pedido devem estar no mesmo endereço exato
-        (rua, número, bairro, cidade e UF), mudando apenas o complemento (ex:
-        apto, bloco). Se houver qualquer outra diferença, como o número da
-        casa/apartamento é necessário abrir uma nova solicitação de
-        atendimento no Cemig Atende.
+        Todas as unidades deste pedido devem estar no mesmo endereço exato (rua,
+        número, bairro, cidade e UF), mudando apenas o complemento (ex: apto,
+        bloco). Se houver qualquer outra diferença, como o número da
+        casa/apartamento é necessário abrir uma nova solicitação de atendimento
+        no Cemig Atende.
       </p>
     </div>
 
@@ -114,31 +112,6 @@
       </div>
     </div>
 
-    <div class="grid grid-3 divider">
-      <div class="field">
-        <label>Latitude</label>
-        <input
-          type="text"
-          data-k="obra.lat"
-          placeholder=" "
-          oninput="onCoordBT()"
-        />
-      </div>
-      <div class="field">
-        <label>Longitude</label>
-        <input
-          type="text"
-          data-k="obra.lng"
-          placeholder=" "
-          oninput="onCoordBT()"
-        />
-      </div>
-      <div class="field">
-        <label>Coordenada UTM</label>
-        <input type="text" id="bt_utm" readonly disabled placeholder=" " />
-      </div>
-    </div>
-
     <div class="grid grid-2 divider">
       <div class="field field--plain" data-noopt>
         <label>Distância do padrão até a rede Cemig inferior a 30m?</label>
@@ -188,9 +161,9 @@
     >
       <div class="cmg-aviso-icon" aria-hidden="true"></div>
       <p class="cmg-aviso-texto">
-        Como o padrão já está pronto para ligar, o pedido de vistoria e
-        ligação será disparado automaticamente após a conclusão das etapas do
-        orçamento de conexão.
+        Como o padrão já está pronto para ligar, o pedido de vistoria e ligação
+        será disparado automaticamente após a conclusão das etapas do orçamento
+        de conexão.
       </p>
     </div>
     <div
@@ -200,18 +173,47 @@
     >
       <div class="cmg-aviso-icon" aria-hidden="true"></div>
       <p class="cmg-aviso-texto">
-        Solicite o pedido de vistoria e ligação em até 120 dias após a
-        conclusão das etapas do orçamento de conexão. O orçamento pode ser
-        cancelado após duas reprovações pelo mesmo motivo, e há cobrança de
-        taxa a partir do segundo serviço realizado.
+        Solicite o pedido de vistoria e ligação em até 120 dias após a conclusão
+        das etapas do orçamento de conexão. O orçamento pode ser cancelado após
+        duas reprovações pelo mesmo motivo, e há cobrança de taxa a partir do
+        segundo serviço realizado.
       </p>
     </div>
 
-    <div class="mapa-obra">
+    <div class="mapa-obra divider">
+      <p class="mapa-hint">
+        Confirme a localização da unidade no mapa. Se o pin estiver incorreto,
+        você pode clicar e arrastá-lo para ajustar.
+      </p>
       <div class="mapa-actions">
         <span class="field-hint" id="mapaStatus"></span>
       </div>
       <div id="map" class="mapa-canvas"></div>
+    </div>
+
+    <div class="grid grid-3">
+      <div class="field">
+        <label>Latitude</label>
+        <input
+          type="text"
+          data-k="obra.lat"
+          placeholder=" "
+          oninput="onCoordBT()"
+        />
+      </div>
+      <div class="field">
+        <label>Longitude</label>
+        <input
+          type="text"
+          data-k="obra.lng"
+          placeholder=" "
+          oninput="onCoordBT()"
+        />
+      </div>
+      <div class="field">
+        <label>Coordenada UTM</label>
+        <input type="text" id="bt_utm" readonly disabled placeholder=" " />
+      </div>
     </div>
 
     <div
@@ -219,7 +221,6 @@
       id="restricaoAmbientalBox"
       style="margin-top: 14px; display: none"
     >
-      <label>Unidade consumidora em área de restrição ambiental?</label>
       <div id="restricaoAmbientalConteudo"></div>
     </div>
   </div>

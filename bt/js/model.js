@@ -93,7 +93,6 @@ const atendPadrao = () => ({
   demandaAtual: "",
   demandaNaoResidencial: "",
   demandaResidencialManual: "",
-  atendA: "Bloco",
   nBlocos: 1,
 });
 
@@ -432,7 +431,6 @@ const SEC_BT_EMPREENDIMENTOS = {
           disjGeral: "Sim",
           solicitacao: SOLICITACOES[4],
           escopo: "Ligação Nova",
-          atendA: "Torre",
           nBlocos: 2,
         },
         obra: { tipoRede: "Trifásica", localizacao: "Urbana" },

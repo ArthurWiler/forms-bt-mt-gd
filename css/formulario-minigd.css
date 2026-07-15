@@ -747,12 +747,10 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
   transition: border-color 0.12s ease, background 0.12s ease;
 }
 .doc-item:hover { border-color: var(--verde-acento); }
+/* Forma do checkbox: regra canônica `.cemig-form input[type="checkbox"]`
+   (shared.css); aqui só o alinhamento com a 1ª linha do texto. */
 .doc-item input[type="checkbox"] {
   margin-top: 3px;
-  width: 18px;
-  height: 18px;
-  accent-color: var(--verde-cemig);
-  flex-shrink: 0;
 }
 .doc-text { font-size: 13px; line-height: 1.5; color: var(--texto); }
 .doc-text strong { color: var(--verde-cemig); margin-right: 4px; }

@@ -1,10 +1,5 @@
 <!doctype html>
-<!-- Etapa — Previsão de Carga (TabCargasColetivo): tabela de previsão por
-     UC (ilum/tomada/chuveiro/ar/outros → carga kW + demanda kVA manual),
-     bloco ND-5.2 (demanda residencial calculada + override manual), demanda
-     não residencial, KPIs e cards de disjuntor geral / troca do disjuntor.
-     Tabela e cards são renderizados pelo app (renderCargasColetivo); as
-     células calculadas são atualizadas IN-PLACE durante a digitação. -->
+
 <div class="card">
   <div class="section-eyebrow">Etapa 6</div>
   <h3 class="card-title">Previsão de Carga por Unidade Consumidora</h3>
@@ -79,8 +74,6 @@
   </div>
 </div>
 
-<!-- Alteração de carga: troca do disjuntor geral (só quando o escopo é
-     "Alteração de Carga com alteração do disjuntor geral"). -->
 <div class="card" id="trocaDisjBox" style="display: none">
   <div class="section-eyebrow">Alteração de carga</div>
   <h3 class="card-title">Troca do Disjuntor Geral e Demandas</h3>
@@ -92,7 +85,6 @@
   <div class="grid grid-2" id="trocaDisjCampos"></div>
 </div>
 
-<!-- Proteção geral: disjuntor geral do agrupamento (sugestão automática). -->
 <div class="card" id="disjGeralBox" style="display: none">
   <div class="section-eyebrow">Proteção geral</div>
   <h3 class="card-title">Disjuntor Geral do Agrupamento</h3>

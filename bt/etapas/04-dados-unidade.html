@@ -113,31 +113,6 @@
     </div>
   </div>
 
-  <div class="grid grid-3 divider">
-    <div class="field">
-      <label id="latLabel">Latitude</label>
-      <input
-        type="text"
-        data-k="obra.lat"
-        placeholder=" "
-        oninput="onCoordBT()"
-      />
-    </div>
-    <div class="field">
-      <label id="lngLabel">Longitude</label>
-      <input
-        type="text"
-        data-k="obra.lng"
-        placeholder=" "
-        oninput="onCoordBT()"
-      />
-    </div>
-    <div class="field">
-      <label>Coordenada UTM</label>
-      <input type="text" id="bt_utm" readonly disabled placeholder=" " />
-    </div>
-  </div>
-
   <div class="grid grid-2 divider">
     <div class="field field--plain" data-noopt>
       <label>Distância do padrão até a rede Cemig inferior a 30m?</label>
@@ -216,11 +191,40 @@
     </p>
   </div>
 
-  <div class="mapa-obra">
+  <div class="mapa-obra divider">
+    <p class="mapa-hint">
+      Confirme a localização da unidade no mapa. Se o pin estiver incorreto,
+      você pode clicar e arrastá-lo para ajustar.
+    </p>
     <div class="mapa-actions">
       <span class="field-hint" id="mapaStatus"></span>
     </div>
     <div id="map" class="mapa-canvas"></div>
+  </div>
+
+  <div class="grid grid-3">
+    <div class="field">
+      <label id="latLabel">Latitude</label>
+      <input
+        type="text"
+        data-k="obra.lat"
+        placeholder=" "
+        oninput="onCoordBT()"
+      />
+    </div>
+    <div class="field">
+      <label id="lngLabel">Longitude</label>
+      <input
+        type="text"
+        data-k="obra.lng"
+        placeholder=" "
+        oninput="onCoordBT()"
+      />
+    </div>
+    <div class="field">
+      <label>Coordenada UTM</label>
+      <input type="text" id="bt_utm" readonly disabled placeholder=" " />
+    </div>
   </div>
 
   <div
@@ -228,7 +232,6 @@
     id="restricaoAmbientalBox"
     style="margin-top: 14px; display: none"
   >
-    <label>Unidade consumidora em área de restrição ambiental?</label>
     <div id="restricaoAmbientalConteudo"></div>
   </div>
 </div>

@@ -24,31 +24,18 @@
 }
 
 /* ---- Tabela "Quantidade de lotes por área" (spec Figma) ----
-   Cabeçalho em faixa neutra/200 (44px), linhas brancas de 72px com
+   Base e cabeçalho (faixa neutra/200 de 44px) vêm de shared.css
+   (`.cemig-form .tbl` / `.tbl th` / `.tbl-scroll`). Aqui ficam os
+   extras da página: 2 colunas fixas de 50%, linhas brancas de 72px com
    divisória horizontal neutra/200 (a última e o rodapé em neutra/400),
-   campo de 48px com borda neutra/400 e raio 4px; caixa externa com
-   borda neutra/200 e raio 8px. Sem grade vertical. */
+   campo de 48px com borda neutra/400 e raio 4px. Sem grade vertical. */
 .cemig-lote .tbl {
-  width: 100%;
-  border-collapse: collapse;
   table-layout: fixed;
-  font-family: var(--cmg-font-family);
-  color: var(--cmg-neutral-600);
 }
 .cemig-lote .tbl th,
 .cemig-lote .tbl td {
   width: 50%;
   text-align: left;
-}
-.cemig-lote .tbl th {
-  background: var(--cmg-neutral-200);
-  color: var(--cmg-neutral-600);
-  font-weight: var(--cmg-fw-bold);
-  font-size: 14px;
-  line-height: 24px;
-  letter-spacing: 0.2px;
-  padding: 16px 12px;
-  height: 44px;
 }
 .cemig-lote .tbl td {
   padding: 12px;
@@ -62,7 +49,11 @@
 .cemig-lote .tbl tbody tr:last-child td {
   border-bottom: 1px solid var(--cmg-neutral-400);
 }
+/* Rodapé (TOTAL): célula padrão de 44px com padding 12px (spec Figma
+   "tabela célula"), sem a altura de 72px das linhas de preenchimento. */
 .cemig-lote .tbl tfoot td {
+  padding: 12px;
+  height: 44px;
   border-bottom: none;
 }
 .cemig-lote .tbl td input {
@@ -94,11 +85,7 @@
   text-transform: uppercase;
   color: var(--cmg-neutral-600);
 }
-.cemig-lote .tbl-scroll {
-  overflow: hidden;
-  border: 1px solid var(--cmg-neutral-200);
-  border-radius: 8px;
-}
+/* .tbl-scroll (caixa externa com borda/raio) vem de shared.css. */
 /* Sem spinner nos campos numéricos da tabela (mesmo ajuste do BT). */
 .cemig-lote input[type="number"]::-webkit-inner-spin-button,
 .cemig-lote input[type="number"]::-webkit-outer-spin-button {
@@ -109,6 +96,27 @@
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+/* ---- Mapa de localização (Leaflet) — mesmo visual do BT ----
+   O wrapper .mapa-obra usa .divider (shared.css) para a linha/respiro
+   acima; abaixo, a grade de coordenadas retoma o espaçamento aqui. */
+.cemig-lote .mapa-canvas {
+  height: 320px;
+  width: 100%;
+  border: 1px solid var(--cmg-neutral-200);
+  border-radius: 8px;
+  background: var(--cmg-surface);
+  /* z-index 0 cria stacking context que prende os panes do Leaflet
+     (z-index 400–1000) DENTRO do mapa — mesma proteção do BT/MT contra
+     o mapa passar por cima da topbar sticky. */
+  position: relative;
+  z-index: 0;
+}
+.cemig-lote .mapa-canvas .leaflet-control-attribution {
+  font-size: 10px;
+}
+/* A orientação acima do mapa (.mapa-hint) e o respiro da grade de
+   coordenadas abaixo (.mapa-obra + .grid) são globais em shared.css. */
 
 /* ---- Impressão (Exportar PDF → window.print) ----
    Imprime apenas o conteúdo da etapa visível (a Prévia): o shell

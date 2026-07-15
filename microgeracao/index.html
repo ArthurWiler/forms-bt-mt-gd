@@ -7,24 +7,27 @@
     <meta name="description" content="Formulário digital para solicitação de acesso de Microgeração Distribuída (REN 1.000/2021) — CEMIG." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
-    <!-- Estilos: tokens → compartilhado → página -->
+
     <link rel="stylesheet" href="../css/variables.css" />
     <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/formulario-microgd.css" />
   </head>
-  <!-- Shell canônico (.cemig-form, shared.css): topbar institucional, .layout
-       com .sidebar de etapas e .main-col. Cada etapa é um fragmento HTML em
-       etapas/*.html, injetado no boot por shared/js/etapas-loader.js
-       (exige servidor HTTP — como o app React anterior já exigia). -->
+
   <body class="cemig-form">
     <div class="topbar">
       <div class="topbar-inner cmg-container">
         <div class="topbar-left">
-          <img
-            src="../imgs/logos/logo-cemig-branca-com-verde.png"
-            alt="Cemig"
-            class="logo-img"
-          />
+          <a
+            href="../index.html"
+            class="logo-link"
+            title="Voltar à página inicial"
+          >
+            <img
+              src="../imgs/logos/logo-cemig-branca-com-verde.png"
+              alt="Cemig"
+              class="logo-img"
+            />
+          </a>
           <span class="app-title"
             >Formulário de Ligação Nova e Alteração de Carga</span
           >
@@ -34,7 +37,6 @@
 
     <div class="layout">
       <aside class="sidebar">
-        <a href="../index.html" class="form-back">VOLTAR</a>
         <div class="sidebar-title">Progresso do preenchimento</div>
         <button type="button" class="vstep active">
           <span class="vstep-num">1</span>
@@ -88,10 +90,9 @@
             distribuição da CEMIG.
           </p>
         </div>
-        <!-- Banner do modo (Fast Track / Grid Zero via ?modo=) — app.js -->
+
         <div id="modoBanner"></div>
 
-        <!-- Etapas (fragmentos injetados por etapas-loader.js) -->
         <section class="page show" id="page-0" data-src="etapas/01-orientacoes.html"></section>
         <section class="page" id="page-1" data-src="etapas/02-identificacao.html"></section>
         <section class="page" id="page-2" data-src="etapas/03-dados-uc.html"></section>
@@ -104,7 +105,6 @@
         <section class="page" id="page-9" data-src="etapas/10-previa.html"></section>
       </main>
     </div>
-    <!-- /layout -->
 
     <footer class="portal-footer">
       <div class="portal-footer-inner cmg-container cmg-container--gutter">

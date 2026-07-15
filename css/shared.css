@@ -207,6 +207,15 @@ html {
   width: 112px;
   height: 28px;
 }
+/* Logo clicável (volta ao portal — substitui o antigo .form-back da sidebar).
+   Com .topbar-left em display:contents, o LINK é o item flex: precisa do
+   mesmo order/flex que a .logo-img solta tinha. */
+.cemig-form .topbar .logo-link {
+  order: 1;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+}
 .cemig-portal .topbar .logo-cemig,
 .cemig-form .topbar .logo-cemig {
   order: 1;
@@ -505,10 +514,9 @@ html {
 .restricao-docs-nota {
   margin: 12px 0 0;
 }
-/* label.restricao-aceite … tem especificidade (0,2,x) para VENCER o controle
-   genérico `.cemig-form .field input { width:100%; min-height:48px; border; … }`
-   (0,2,1), que senão transforma o checkbox num campo de formulário de linha
-   inteira. Reseta explicitamente tamanho/borda/padding herdados. */
+/* A forma do checkbox vem da regra canônica `.cemig-form
+   input[type="checkbox"]` (final do arquivo); aqui só o layout do rótulo
+   e o alinhamento da caixa com a 1ª linha do texto. */
 label.restricao-aceite {
   display: flex;
   align-items: flex-start;
@@ -522,17 +530,7 @@ label.restricao-aceite {
   cursor: pointer;
 }
 label.restricao-aceite input[type="checkbox"] {
-  flex: none;
-  width: 18px;
-  height: 18px;
-  min-height: 0;
   margin: 2px 0 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: none;
-  cursor: pointer;
-  accent-color: var(--cmg-green-600, #0f6c58);
 }
 
 /* ============================================================
@@ -1710,8 +1708,8 @@ label.restricao-aceite input[type="checkbox"] {
 }
 .cemig-form .divider {
   border-top: 1px solid var(--cmg-divider);
-  margin-top: var(--cmg-space-4);
-  padding-top: var(--cmg-space-4);
+  margin-top: var(--cmg-space-8);
+  padding-top: var(--cmg-space-8);
 }
 .cemig-form .subbox,
 .cemig-form .uc-block,
@@ -1773,6 +1771,54 @@ label.restricao-aceite input[type="checkbox"] {
    `.cmg-aviso` banner (defined above). The `.cemig-form .callout` rules were
    removed — no `.cemig-form` markup uses that class anymore. */
 
+/* ---- Mapa de localização (Leaflet) — todos os formulários ----
+   Orientação ACIMA do mapa (spec Figma corpo/grande: 16/26 regular,
+   letter-spacing 0.2px, neutra/600) e legenda das restrições ambientais
+   ABAIXO (inserida por geo.js SÓ quando o pin cai em restrição; cada item
+   usa a MESMA cor do contorno desenhado no mapa). A grade de coordenadas
+   fica logo abaixo do bloco do mapa. */
+.cemig-form .mapa-hint {
+  display: block;
+  margin: 0 0 var(--cmg-space-2);
+  font-family: var(--cmg-font-family);
+  font-weight: var(--cmg-fw-regular);
+  font-size: var(--cmg-fs-body-lg);
+  line-height: var(--cmg-lh-body-lg);
+  letter-spacing: 0.2px;
+  color: var(--cmg-neutral-600);
+}
+.cemig-form .mapa-legenda {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cmg-space-2) var(--cmg-space-4);
+  margin-top: var(--cmg-space-2);
+}
+.cemig-form .mapa-legenda-item {
+  display: flex;
+  align-items: center;
+  gap: var(--cmg-space-2);
+}
+.cemig-form .mapa-legenda-cor {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+}
+/* Rótulo da restrição — spec Figma corpo/médio: 14/22 regular,
+   letter-spacing 0.25px, neutra/500. */
+.cemig-form .mapa-legenda-rotulo {
+  font-family: var(--cmg-font-family);
+  font-weight: var(--cmg-fw-regular);
+  font-size: var(--cmg-fs-body);
+  line-height: 22px;
+  letter-spacing: 0.25px;
+  color: var(--cmg-neutral-500);
+}
+.cemig-form .mapa-obra + .grid {
+  margin-top: 16px;
+}
+
 /* ============================================================
    8. Tables — data/entry (migrated form roots `.cemig-form`)
    ============================================================ */
@@ -1785,7 +1831,39 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .motores-table {
   font-family: var(--cmg-font-family);
 }
-.cemig-form .prev-table th,
+/* ---- Tabela técnica (.tbl) — base compartilhada Loteamento/MT ----
+   Cada página mantém só os próprios extras (grade, altura de linha,
+   campos) em formulario-loteamento.css / formulario-mt.css. */
+.cemig-form .tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--cmg-font-family);
+  color: var(--cmg-neutral-600);
+}
+.cemig-form .tbl-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--cmg-neutral-200);
+  border-radius: 8px;
+}
+/* ---- Cabeçalho canônico de tabela (spec Figma "tabela cabeçalho") ----
+   Faixa neutra/200 de 44px REAIS (10px de padding vertical + linha de
+   24px), texto 14/24 bold neutra/600. Fonte única para as tabelas
+   técnicas (.tbl do Loteamento e do MT) e para a previsão de carga do
+   coletivo/múltiplas torres (.prev-table). A identificação das UCs
+   (.uc-ident-table) não tem linha de cabeçalho — os rótulos vivem
+   dentro das células. */
+.cemig-form .tbl th,
+.cemig-form .prev-table th {
+  background: var(--cmg-neutral-200);
+  color: var(--cmg-neutral-600);
+  font-weight: var(--cmg-fw-bold);
+  font-size: 14px;
+  line-height: 24px;
+  letter-spacing: 0.2px;
+  text-align: left;
+  padding: 10px 12px;
+  height: 44px;
+}
 .cemig-form .carga-group-title {
   background: var(--cmg-surface-accent);
   color: var(--cmg-green-600);
@@ -1953,36 +2031,8 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .sidebar-title {
   display: none;
 }
-.cemig-form .form-back {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--cmg-space-2);
-  align-self: flex-start;
-  padding: var(--cmg-space-1) 0 var(--cmg-space-1) var(--cmg-space-3);
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-family: var(--cmg-font-family);
-  font-size: var(--cmg-fs-body-lg);
-  font-weight: var(--cmg-fw-bold);
-  letter-spacing: 0.1px;
-  color: var(--cmg-green-600);
-}
-.cemig-form .form-back:hover {
-  text-decoration: underline;
-}
-.cemig-form .form-back::before {
-  content: "";
-  flex: none;
-  display: inline-flex;
-  width: 28px;
-  height: 28px;
-  background-image: url("../imgs/arrow-left.png");
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 28px;
-  text-decoration: none;
-}
+/* O antigo botão "VOLTAR" (.form-back) da sidebar foi removido: o retorno ao
+   portal agora é pela LOGO da topbar (.logo-link, seção 3). */
 /* ---- Canonical step rail (single source for BT/Micro/Mini AND
    MT/Loteamento/Desistência — all render under `.cemig-form`). Markup is
    canonical everywhere: `.vstep > .vstep-num + .vstep-label`. ---- */
@@ -2219,34 +2269,26 @@ label.restricao-aceite input[type="checkbox"] {
     display: block !important;
   }
 }
-/* Aceite das Orientações ("Declaro que li…") — checkbox que libera o avanço.
-   Comum a todos os formulários (React e HTML). Spec Figma:
-     • caixa de seleção (hit area): 32×32, ícone centralizado;
+/* ---- Checkbox canônico (spec Figma do Aceite das Orientações) ----
+   TODO checkbox dos formulários segue esta forma; os contextos
+   (.aceite-orient, .restricao-aceite, .doc-item, …) definem apenas o
+   layout do rótulo. Spec:
      • estado (anel hover/foco): círculo 32×32 (radius 100px);
      • forma: 18×18, borda 2px neutra/500 (#576864), radius 2px.
-   Marcado → preenche em verde (green/600) com o "check" branco. */
-.cemig-form .aceite-orient {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 16px;
-  cursor: pointer;
-  font-family: var(--cmg-font-family);
-  font-size: var(--cmg-fs-body-lg, 16px);
-  line-height: var(--cmg-lh-body-lg, 24px);
-  color: var(--cmg-neutral-600, #364b46);
-}
-.cemig-form .aceite-orient input[type="checkbox"] {
+   Marcado → preenche em verde (green/600) com o "check" branco.
+   min-height/padding zerados para vencer o controle genérico
+   `.cemig-form .field input` (mesma especificidade, esta regra vem
+   depois no arquivo). */
+.cemig-form input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
   box-sizing: border-box;
   flex: none;
-  /* forma: 18×18, borda 2px neutra/500 (#576864), radius 2px */
   width: 18px;
   height: 18px;
-  /* margem lateral compõe a área de toque 32×32 sem desalinhar o texto; o
-     clique também funciona pelo <label> que envolve o checkbox. */
-  margin: 0 7px 0 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
   border: 2px solid #576864;
   border-radius: 2px;
   background: transparent no-repeat center;
@@ -2258,22 +2300,39 @@ label.restricao-aceite input[type="checkbox"] {
 }
 /* estado (anel hover/foco): círculo 32×32 ao redor da forma, via box-shadow
    (radius 100px) — não altera o layout, então não há salto. */
-.cemig-form .aceite-orient input[type="checkbox"]:hover,
-.cemig-form .aceite-orient input[type="checkbox"]:focus-visible {
+.cemig-form input[type="checkbox"]:hover,
+.cemig-form input[type="checkbox"]:focus-visible {
   outline: none;
   box-shadow: 0 0 0 7px rgba(87, 104, 100, 0.12);
   border-radius: 2px;
 }
 /* marcado: forma preenchida em verde + "check" branco (SVG inline). */
-.cemig-form .aceite-orient input[type="checkbox"]:checked {
+.cemig-form input[type="checkbox"]:checked {
   border-color: var(--cmg-green-600, #0f6c58);
   background-color: var(--cmg-green-600, #0f6c58);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
   background-size: 12px 12px;
 }
-.cemig-form .aceite-orient input[type="checkbox"]:checked:hover,
-.cemig-form .aceite-orient input[type="checkbox"]:checked:focus-visible {
+.cemig-form input[type="checkbox"]:checked:hover,
+.cemig-form input[type="checkbox"]:checked:focus-visible {
   box-shadow: 0 0 0 7px rgba(15, 108, 88, 0.14);
+}
+/* Aceite das Orientações ("Declaro que li…") — layout do rótulo. */
+.cemig-form .aceite-orient {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  cursor: pointer;
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-body-lg, 16px);
+  line-height: var(--cmg-lh-body-lg, 24px);
+  color: var(--cmg-neutral-600, #364b46);
+}
+/* margem lateral compõe a área de toque 32×32 sem desalinhar o texto; o
+   clique também funciona pelo <label> que envolve o checkbox. */
+.cemig-form .aceite-orient input[type="checkbox"] {
+  margin: 0 7px 0 0;
 }
 
 /* ---- Orientation numbered list (single source for ALL forms) ----
@@ -2296,7 +2355,7 @@ label.restricao-aceite input[type="checkbox"] {
   display: flex;
   align-items: flex-start; /* number top-aligned with the text (no badge) */
   gap: var(--cmg-space-4);
-  padding: var(--cmg-space-4) 0;
+  padding: var(--cmg-space-2) 0;
   border: none; /* drop the MT card border/background */
   border-top: 1px solid var(--cmg-divider);
   border-radius: 0;
@@ -2351,9 +2410,6 @@ label.restricao-aceite input[type="checkbox"] {
     align-items: center;
     gap: var(--cmg-space-2);
     overflow-x: auto;
-  }
-  .cemig-form .form-back {
-    width: 100%;
   }
   .cemig-form .main-col {
     flex-basis: auto;

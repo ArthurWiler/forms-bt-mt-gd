@@ -947,6 +947,9 @@ function _limparRestricaoLayer() {
     mapaObra.removeLayer(restricaoLayer);
   }
   restricaoLayer = null;
+  // Some com a legenda junto do contorno (desenharRestricoesNoMapa recria).
+  if (mapaObra && typeof atualizarLegendaRestricoes === "function")
+    atualizarLegendaRestricoes(mapaObra, null);
 }
 async function consultarRestricaoAmbientalMT(lat, lon) {
   if (!window.turf || typeof consultarRestricoesObra !== "function") return;

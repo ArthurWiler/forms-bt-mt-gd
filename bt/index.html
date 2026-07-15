@@ -16,7 +16,23 @@
       href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <!-- Estilos: tokens → compartilhado → página -->
+
+    <script>
+      // Fluxo decidido pela URL antes do primeiro paint (o id espelha o
+      // card formType "condominio" em js/model.js): o CSS abaixo esconde
+      // os passos do fluxo alheio para a sidebar já nascer só com o
+      // essencial — sem o flash da lista sendo podada/renumerada.
+      document.documentElement.dataset.fluxo =
+        new URLSearchParams(location.search).get("mod") === "condominiotorres"
+          ? "condominio"
+          : "coletivo";
+    </script>
+    <style>
+      html[data-fluxo="coletivo"] [data-flow="condominio"],
+      html[data-fluxo="condominio"] [data-flow="coletivo"] {
+        display: none;
+      }
+    </style>
     <link rel="stylesheet" href="../css/variables.css" />
     <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/formulario-bt.css" />
@@ -25,22 +41,22 @@
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
   </head>
-  <!-- Fluxos BT COLETIVO e CONDOMÍNIO (múltiplas torres) em HTML/JS puro
-       (padrão MT): um único shell serve os dois — as seções abaixo declaram
-       o SUPERSET das etapas e o coletivo-app.js remove, ANTES do
-       etapas-loader, as seções/vsteps [data-flow] que não pertencem ao fluxo
-       do card (?mod=coletivo → 8 etapas | ?mod=condominiotorres → 7).
-       Entrada SEMPRE com ?mod=<id>; cards individuais são redirecionados a
-       individual.html. Fragmentos exigem servidor HTTP. -->
+
   <body class="cemig-form">
     <div class="topbar">
       <div class="topbar-inner cmg-container">
         <div class="topbar-left">
-          <img
-            src="../imgs/logos/logo-cemig-branca-com-verde.png"
-            alt="Cemig"
-            class="logo-img"
-          />
+          <a
+            href="../index.html"
+            class="logo-link"
+            title="Voltar à página inicial"
+          >
+            <img
+              src="../imgs/logos/logo-cemig-branca-com-verde.png"
+              alt="Cemig"
+              class="logo-img"
+            />
+          </a>
           <span class="app-title"
             >Formulário de Ligação Nova e Alteração de Carga</span
           >
@@ -50,7 +66,6 @@
 
     <div class="layout">
       <aside class="sidebar">
-        <a href="../index.html" class="form-back">VOLTAR</a>
         <div class="sidebar-title">Progresso do preenchimento</div>
         <button type="button" class="vstep active">
           <span class="vstep-num">1</span>
@@ -62,23 +77,23 @@
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">3</span>
-          <span class="vstep-label">Correspondência</span>
-        </button>
-        <button type="button" class="vstep">
-          <span class="vstep-num">4</span>
           <span class="vstep-label">Empreendimento</span>
         </button>
         <button type="button" class="vstep" data-flow="condominio">
-          <span class="vstep-num">5</span>
-          <span class="vstep-label">Torres / Blocos</span>
+          <span class="vstep-num">4</span>
+          <span class="vstep-label">Dados das Torres</span>
         </button>
         <button type="button" class="vstep" data-flow="coletivo">
-          <span class="vstep-num">5</span>
+          <span class="vstep-num">4</span>
           <span class="vstep-label">Unidades Consumidoras</span>
         </button>
         <button type="button" class="vstep" data-flow="coletivo">
-          <span class="vstep-num">6</span>
+          <span class="vstep-num">5</span>
           <span class="vstep-label">Previsão de Carga</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">6</span>
+          <span class="vstep-label">Correspondência</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">7</span>
@@ -100,18 +115,11 @@
           </p>
         </div>
 
-        <!-- Etapas (fragmentos injetados por etapas-loader.js). As seções
-             [data-flow] do fluxo alheio são removidas pelo coletivo-app.js
-             antes do loader buscar os fragmentos. -->
         <section
           class="page show"
           data-src="etapas/01-orientacoes.html"
         ></section>
         <section class="page" data-src="etapas/10-contato.html"></section>
-        <section
-          class="page"
-          data-src="etapas/03-correspondencia.html"
-        ></section>
         <section
           class="page"
           data-src="etapas/11-empreendimento.html"
@@ -131,11 +139,32 @@
           data-flow="coletivo"
           data-src="etapas/14-cargas-coletivo.html"
         ></section>
+        <section
+          class="page"
+          data-src="etapas/03-correspondencia.html"
+        ></section>
         <section class="page" data-src="etapas/06-observacoes.html"></section>
         <section class="page" data-src="etapas/07-previa.html"></section>
       </main>
     </div>
-    <!-- /layout -->
+
+    <script>
+      // Pruning do superset antes de qualquer script externo: remove as
+      // seções/vsteps do fluxo alheio e corrige a numeração da sidebar no
+      // mesmo tick de parse — o app (coletivo-app.js) só carrega depois
+      // dos CDNs e chegaria tarde demais para evitar o flash.
+      (function () {
+        var fluxo = document.documentElement.dataset.fluxo;
+        document.querySelectorAll("[data-flow]").forEach(function (el) {
+          if (el.dataset.flow !== fluxo) el.remove();
+        });
+        document
+          .querySelectorAll(".vstep .vstep-num")
+          .forEach(function (num, i) {
+            num.textContent = String(i + 1);
+          });
+      })();
+    </script>
 
     <footer class="portal-footer">
       <div class="portal-footer-inner cmg-container cmg-container--gutter">
@@ -157,7 +186,7 @@
     <script src="js/calc.js"></script>
     <script src="js/model.js"></script>
     <script src="js/pdf.js"></script>
-    <!-- map.js: usado pelas funções puras latLonParaUTM/utmString. -->
+
     <script src="js/map.js"></script>
     <script src="../shared/js/geo.js"></script>
     <script src="../shared/js/form-marcadores.js"></script>

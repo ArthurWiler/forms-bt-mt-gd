@@ -16,7 +16,7 @@
       href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <!-- Estilos: tokens → compartilhado → página -->
+
     <link rel="stylesheet" href="../css/variables.css" />
     <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/formulario-bt.css" />
@@ -25,21 +25,22 @@
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
   </head>
-  <!-- Fluxo BT INDIVIDUAL em HTML/JS puro (padrão MT): cada etapa é um
-       fragmento em etapas/*.html injetado por shared/js/etapas-loader.js
-       (exige servidor HTTP). Entrada SEMPRE com ?mod=<id> — o card define o
-       pré-preenchimento. O núcleo comum aos apps BT vanilla vive em
-       js/bt-core.js; os fluxos Coletivo/Condomínio usam js/coletivo-app.js
-       em bt/index.html. -->
+
   <body class="cemig-form">
     <div class="topbar">
       <div class="topbar-inner cmg-container">
         <div class="topbar-left">
-          <img
-            src="../imgs/logos/logo-cemig-branca-com-verde.png"
-            alt="Cemig"
-            class="logo-img"
-          />
+          <a
+            href="../index.html"
+            class="logo-link"
+            title="Voltar à página inicial"
+          >
+            <img
+              src="../imgs/logos/logo-cemig-branca-com-verde.png"
+              alt="Cemig"
+              class="logo-img"
+            />
+          </a>
           <span class="app-title"
             >Formulário de Ligação Nova e Alteração de Carga</span
           >
@@ -49,7 +50,6 @@
 
     <div class="layout">
       <aside class="sidebar">
-        <a href="../index.html" class="form-back">VOLTAR</a>
         <div class="sidebar-title">Progresso do preenchimento</div>
         <button type="button" class="vstep active">
           <span class="vstep-num">1</span>
@@ -91,7 +91,6 @@
           </p>
         </div>
 
-        <!-- Etapas (fragmentos injetados por etapas-loader.js) -->
         <section
           class="page show"
           id="page-0"
@@ -129,7 +128,6 @@
         ></section>
       </main>
     </div>
-    <!-- /layout -->
 
     <footer class="portal-footer">
       <div class="portal-footer-inner cmg-container cmg-container--gutter">
@@ -152,8 +150,7 @@
     <script src="js/model.js"></script>
     <script src="js/pdf.js"></script>
     <script src="js/termo-grupo-b.js"></script>
-    <!-- map.js: usado pelas funções puras latLonParaUTM/utmString (o
-         componente React LocalizacaoObra fica inerte sem React). -->
+
     <script src="js/map.js"></script>
     <script src="../shared/js/geo.js"></script>
     <script src="../shared/js/calc-demanda.js"></script>

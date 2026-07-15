@@ -58,25 +58,14 @@
 }
 
 /* ---- Tabelas técnicas (trafos, demanda escalonada, Anexo II) ----
-   Multi-coluna com grade completa (diferente da tabela do Loteamento):
-   cabeçalho em faixa neutra/200, bordas neutra/200, campos de 40px com
-   borda neutra/400 e raio 4px; caixa externa com raio 8px. */
+   Base, cabeçalho (faixa neutra/200 de 44px, spec Figma) e caixa externa
+   (.tbl-scroll) vêm de shared.css. Aqui ficam os extras do MT:
+   multi-coluna com grade completa (diferente da tabela do Loteamento),
+   corpo em 13px e campos de 40px com borda neutra/400 e raio 4px. */
 .cemig-mtform .tbl {
-  width: 100%;
-  border-collapse: collapse;
-  font-family: var(--cmg-font-family);
   font-size: 13px;
-  color: var(--cmg-neutral-600);
 }
 .cemig-mtform .tbl th {
-  background: var(--cmg-neutral-200);
-  color: var(--cmg-neutral-600);
-  font-weight: var(--cmg-fw-bold);
-  text-align: left;
-  padding: 10px 12px;
-  font-size: 13px;
-  line-height: 20px;
-  letter-spacing: 0.2px;
   border: 1px solid var(--cmg-neutral-200);
 }
 .cemig-mtform .tbl td {
@@ -121,11 +110,7 @@
   font-weight: var(--cmg-fw-bold);
   color: var(--cmg-neutral-600);
 }
-.cemig-mtform .tbl-scroll {
-  overflow-x: auto;
-  border: 1px solid var(--cmg-neutral-200);
-  border-radius: 8px;
-}
+/* .tbl-scroll (caixa externa com borda/raio) vem de shared.css. */
 /* Sem spinner nos campos numéricos (mesmo ajuste do BT). */
 .cemig-mtform input[type="number"]::-webkit-inner-spin-button,
 .cemig-mtform input[type="number"]::-webkit-outer-spin-button {
@@ -283,6 +268,8 @@
   color: var(--cmg-green-600);
   font-variant-numeric: tabular-nums;
 }
+/* Forma do checkbox: regra canônica `.cemig-form input[type="checkbox"]`
+   (shared.css); aqui só o layout do rótulo. */
 .cemig-mtform .motor-irrigacao-check {
   display: flex;
   align-items: center;
@@ -290,10 +277,6 @@
   font-size: 11.5px;
   color: var(--cmg-text-muted);
   margin-top: 8px;
-}
-.cemig-mtform .motor-irrigacao-check input {
-  width: auto;
-  accent-color: var(--cmg-green-600);
 }
 @media (max-width: 560px) {
   .cemig-mtform .motor-card-grid {

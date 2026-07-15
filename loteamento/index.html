@@ -8,29 +8,36 @@
       Cemig
     </title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <!-- Open Sans: identidade visual CEMIG -->
+
     <link
       href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <!-- Estilos: tokens → compartilhado → página -->
+
     <link rel="stylesheet" href="../css/variables.css" />
     <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/formulario-loteamento.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
   </head>
-  <!-- Shell BT (.cemig-form): mesmo esqueleto do formulário BT individual —
-       topbar institucional, .layout com .sidebar de etapas e .main-col.
-       .cemig-lote guarda apenas os extras da página (etapas .page, tabela
-       de lotes e impressão), definidos em formulario-loteamento.css. -->
+
   <body class="cemig-form cemig-lote">
     <div class="topbar">
       <div class="topbar-inner cmg-container">
         <div class="topbar-left">
-          <img
-            src="../imgs/logos/logo-cemig-branca-com-verde.png"
-            alt="Cemig"
-            class="logo-img"
-          />
+          <a
+            href="../index.html"
+            class="logo-link"
+            title="Voltar à página inicial"
+          >
+            <img
+              src="../imgs/logos/logo-cemig-branca-com-verde.png"
+              alt="Cemig"
+              class="logo-img"
+            />
+          </a>
           <span class="app-title"
             >Formulário de Ligação Nova e Alteração de Carga</span
           >
@@ -40,7 +47,6 @@
 
     <div class="layout">
       <aside class="sidebar">
-        <a href="../index.html" class="form-back">VOLTAR</a>
         <div class="sidebar-title">Progresso do preenchimento</div>
         <button type="button" class="vstep active">
           <span class="vstep-num">1</span>
@@ -73,8 +79,7 @@
       </aside>
 
       <main class="main-col">
-        <!-- Título do formulário no topo, padrão BT (.form-header, shared.css).
-             Fica fora das páginas para permanecer visível em todas as etapas. -->
+
         <div class="form-header">
           <h1>Baixa Tensão - Loteamento</h1>
           <p>
@@ -84,13 +89,12 @@
           </p>
         </div>
 
-        <!-- ============ PÁGINA 0 — ORIENTAÇÕES ============ -->
         <section class="page show" id="page-0">
           <div class="card">
             <div class="section-eyebrow">Etapa 1</div>
             <h3 class="card-title">Orientações</h3>
             <p class="card-sub">Preencha os dados gerais do empreendimento.</p>
-            <!-- Subtítulos de bloco: mesmo estilo inline do TabOrient do BT. -->
+
             <div
               style="
                 font-weight: 700;
@@ -109,20 +113,11 @@
               <li class="orient-item">
                 <span class="orient-num">2</span>
                 <p>
-                  Licença Ambiental ou declaração de não passível de
-                  licenciamento
-                </p>
-              </li>
-              <li class="orient-item">
-                <span class="orient-num">3</span>
-                <p>
                   Projeto da infraestrutura essencial (arruamento, meio fio,
                   demarcação dos lotes)
                 </p>
               </li>
-              <!-- "Ato administrativo municipal (Poder Público)" migrou para aviso
-                   contextual (.cmg-aviso), exibido ao selecionar Tipo de
-                   solicitante = "Poder Público (Prefeitura)" na etapa da Obra. -->
+
             </ul>
             <div
               style="
@@ -164,7 +159,6 @@
           </div>
         </section>
 
-        <!-- ============ PÁGINA 1 — DADOS PARA CONTATO ============ -->
         <section class="page" id="page-1">
           <div class="card">
             <div class="section-eyebrow">Etapa 2</div>
@@ -216,7 +210,6 @@
           </div>
         </section>
 
-        <!-- ============ PÁGINA 2 — EMPREENDIMENTO ============ -->
         <section class="page" id="page-2">
           <div class="card">
             <div class="section-eyebrow">Etapa 3</div>
@@ -236,8 +229,7 @@
               </div>
               <div class="field">
                 <label>Área do empreendimento <span class="req">*</span></label>
-                <!-- Mesmo seletor Urbana/Rural do BT (toggle sobre select
-                     oculto, montado em js/app.js). -->
+
                 <select data-k="area">
                   <option selected>Urbano</option>
                   <option>Rural</option>
@@ -273,9 +265,21 @@
                 <input type="date" data-k="dataEntrada" />
               </div>
             </div>
-            <!-- Mesmo bloco de coordenadas do BT (dados-unidade): Latitude,
-                 Longitude e UTM lado a lado; UTM calculada, não editável. -->
-            <div class="grid grid-3 divider">
+
+            <div class="mapa-obra divider no-print">
+              <p class="mapa-hint">
+                Confirme a localização da unidade no mapa. Se o pin estiver
+                incorreto, você pode clicar e arrastá-lo para ajustar.
+              </p>
+              <div id="map" class="mapa-canvas"></div>
+              <!-- Licença ambiental: aviso fixo abaixo do mapa (a legenda de
+                   restrições entra entre o mapa e ele, via geo.js). Quando o
+                   pino cai em restrição, o texto é trocado pelo da(s) área(s)
+                   — renderLicencaAmbiental (js/app.js). -->
+              <div id="licencaAmbientalBox" style="margin-top: 14px"></div>
+            </div>
+
+            <div class="grid grid-3">
               <div class="field">
                 <label>Latitude <span class="req">*</span></label>
                 <input data-k="latitude" oninput="onCoord()" placeholder=" " />
@@ -293,11 +297,16 @@
           </div>
           <div class="nav-bottom no-print">
             <button class="btn btn-ghost" onclick="goTo(1)">← Voltar</button>
-            <button class="btn btn-primary" onclick="goTo(3)">Avançar →</button>
+            <button
+              class="btn btn-primary"
+              data-gate="loteRestricaoOk"
+              onclick="goTo(3)"
+            >
+              Avançar →
+            </button>
           </div>
         </section>
 
-        <!-- ============ PÁGINA 3 — QUANTIDADE DE LOTES ============ -->
         <section class="page" id="page-3">
           <div class="card">
             <div class="section-eyebrow">Etapa 4</div>
@@ -364,7 +373,6 @@
           </div>
         </section>
 
-        <!-- ============ PÁGINA 4 — DECLARAÇÃO ============ -->
         <section class="page" id="page-4">
           <div class="card">
             <div class="section-eyebrow">Etapa 5</div>
@@ -382,23 +390,8 @@
                 o caso, antes do envio à Cemig.
               </p>
             </div>
-            <label
-              style="
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                cursor: pointer;
-              "
-              ><input
-                type="checkbox"
-                data-k="declaracao"
-                style="
-                  accent-color: var(--cmg-green-600);
-                  width: 18px;
-                  height: 18px;
-                  flex: none;
-                "
-              /><span
+            <label class="aceite-orient"
+              ><input type="checkbox" data-k="declaracao" /><span
                 >Declaro que as informações acima são verdadeiras
                 <span class="req">*</span></span
               ></label
@@ -410,7 +403,6 @@
           </div>
         </section>
 
-        <!-- ============ PÁGINA 5 — OBSERVAÇÕES ============ -->
         <section class="page" id="page-5">
           <div class="card">
             <div class="section-eyebrow">Etapa 6</div>
@@ -429,9 +421,8 @@
           </div>
         </section>
 
-        <!-- ============ PÁGINA 6 — PRÉVIA & PDF ============ -->
         <section class="page" id="page-6">
-          <!-- Aviso pós-exportação (banner canônico .cmg-aviso, shared.css) -->
+
           <div class="cmg-aviso cmg-aviso--warn">
             <div class="cmg-aviso-icon" aria-hidden="true"></div>
             <p class="cmg-aviso-texto">
@@ -484,6 +475,9 @@
       </div>
     </footer>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+    <script src="../shared/js/geo.js"></script>
     <script src="../shared/js/form-marcadores.js"></script>
     <script src="js/app.js"></script>
   </body>

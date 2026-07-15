@@ -434,22 +434,54 @@ async function consultarRestricoesObra(lat, lng) {
 // em BT (bt/js/map.js) e MT (mt/js/app.js) p/ manter o mesmo estilo/UX. O
 // chamador é responsável por remover a camada anterior antes de chamar.
 // `res` é o retorno de consultarRestricoesObra; `L` é window.L.
-// Paleta para diferenciar VÁRIAS restrições no mapa. A 1ª é o vermelho de
-// erro (coerente com o banner de restrição); as demais alternam em cores
-// distintas e de bom contraste. Cicla se houver mais áreas que cores.
+// Paleta para diferenciar VÁRIAS restrições no mapa (contorno + legenda).
+// Ordem definida pelo design: erro/600, amarelo aviso, neutra/300,
+// neutra/600 e verde on. Cicla se houver mais áreas que cores.
 const CORES_RESTRICAO = [
-  "#C8303F", // erro/500 (vermelho)
-  "#1F6FEB", // azul
-  "#E8830C", // laranja
-  "#2E7D32", // verde
-  "#7B1FA2", // roxo
-  "#00838F", // teal
+  "#C8303F", // erro/600 (vermelho)
+  "#FFC107", // amarelo (warning/500)
+  "#B1B9B7", // neutra/300
+  "#364B46", // neutra/600
+  "#C4FF3F", // verde on
 ];
+// Legenda ABAIXO do mapa: um item por CAMADA intersectada, na MESMA cor do
+// contorno desenhado (CORES_RESTRICAO por índice, como desenharRestricoesNoMapa
+// e detalhesRestricoes). O elemento .mapa-legenda (shared.css) é inserido logo
+// após o container do mapa e SÓ existe quando o ponto cai em restrição —
+// atualizar com `res` vazio/null remove a legenda (usado também ao limpar a
+// camada nos fluxos de erro do BT/MT).
+function atualizarLegendaRestricoes(map, res) {
+  if (!map || typeof map.getContainer !== "function") return;
+  const cont = map.getContainer();
+  const pai = cont.parentNode;
+  if (!pai) return;
+  const antiga = pai.querySelector(".mapa-legenda");
+  if (antiga) antiga.remove();
+  const dentros = (res || []).filter((r) => r && r.dentro);
+  if (!dentros.length) return;
+  const div = document.createElement("div");
+  div.className = "mapa-legenda";
+  div.innerHTML = dentros
+    .map((r, li) => {
+      const cor = CORES_RESTRICAO[li % CORES_RESTRICAO.length];
+      return (
+        `<span class="mapa-legenda-item">` +
+        `<span class="mapa-legenda-cor" style="background:${cor}"></span>` +
+        `<span class="mapa-legenda-rotulo">${_escHtml(r.rotulo)}</span>` +
+        `</span>`
+      );
+    })
+    .join("");
+  cont.insertAdjacentElement("afterend", div);
+}
 function desenharRestricoesNoMapa(L, map, res) {
   if (!L || !map || !res) return null;
   // Cor por CAMADA intersectada (índice em `dentros`) — mesma ordem/critério
   // de detalhesRestricoes, para o mapa e os dropdowns baterem de cor.
   const dentros = (res || []).filter((r) => r && r.dentro);
+  // Legenda abaixo do mapa acompanha o desenho: aparece com as camadas
+  // intersectadas e some quando o ponto sai de todas as restrições.
+  atualizarLegendaRestricoes(map, res);
   const feicoes = [];
   dentros.forEach((r, li) => {
     if (!Array.isArray(r.geometrias)) return;

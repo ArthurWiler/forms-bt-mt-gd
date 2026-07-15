@@ -12,22 +12,18 @@
       content="Portal de seleção de modalidade para solicitação de ligação nova e alteração de carga — Baixa Tensão, Média Tensão e Geração Distribuída."
     />
 
-    <!-- Fontes -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <!-- Open Sans: identidade visual CEMIG (tela inicial / portal) -->
+
     <link
       href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
 
-    <!-- Estilos: tokens → compartilhado → página -->
     <link rel="stylesheet" href="css/variables.css" />
     <link rel="stylesheet" href="css/shared.css" />
     <link rel="stylesheet" href="css/homepage.css" />
   </head>
-  <!-- Portal em HTML/JS puro: as seções/cards são gerados de
-       MODALIDADES_SECOES (bt/js/model.js) com o mesmo markup do antigo
-       componente React SecaoModalidade. -->
+
   <body>
     <div class="cemig-portal">
       <div class="topbar">
@@ -77,11 +73,9 @@
       </footer>
     </div>
 
-    <!-- Dados e modelo (catálogo + definição das modalidades) -->
     <script src="bt/js/data.js"></script>
     <script src="bt/js/model.js"></script>
 
-    <!-- Homepage: portal de seleção de modalidade -->
     <script>
       // Navegação a partir do card selecionado:
       //  - cards "link" abrem o módulo correspondente (MT/Loteamento/GD);
@@ -164,7 +158,6 @@
         "© - Todos os Direitos Reservados";
     </script>
 
-    <!-- Aviso caso aberto via file:// -->
     <script>
       window.addEventListener("load", function () {
         setTimeout(function () {

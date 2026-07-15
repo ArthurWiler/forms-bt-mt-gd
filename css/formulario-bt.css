@@ -513,13 +513,9 @@ select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
   font-size: 13px;
   min-width: 720px;
 }
+/* Visual do cabeçalho (faixa neutra/200 de 44px, spec Figma) vem de
+   shared.css (`.cemig-form .prev-table th`) — aqui só o nowrap. */
 .prev-table th {
-  background: var(--verde-claro);
-  color: var(--verde-escuro);
-  font-weight: 700;
-  font-size: 11.5px;
-  text-align: left;
-  padding: 8px 10px;
   white-space: nowrap;
 }
 .prev-table td {

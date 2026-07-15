@@ -69,6 +69,12 @@ function goTo(n,livre){
   steps.forEach((s,i)=>{s.classList.remove('active','done'); if(i<n)s.classList.add('done'); if(i===n)s.classList.add('active');});
   window.scrollTo({top:0,behavior:'smooth'});
   if(n===6) renderPreview();
+  // Mapa vive numa .page oculta: inicia na primeira exibição e recalcula o
+  // tamanho ao voltar (lição do bt-core: Leaflet não mede display:none).
+  if($('#page-'+n+' #map')){
+    initMapaObra();
+    if(mapaObra) setTimeout(()=>mapaObra.invalidateSize(),150);
+  }
   if(window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
 
@@ -116,6 +122,140 @@ function onCoord(){
   state.utm=$('[data-k=utm]').value;
   const r=validarCoordenadas(state.latitude,state.longitude);
   $('#coordAlert').innerHTML = r.ok ? '' : alertHTML('err',r.msg);
+  // Move o pino do mapa quando a coordenada digitada já tem precisão útil
+  // (mesmo guarda de 5 dígitos do BT, para não pular enquanto digita).
+  if(!isNaN(lat)&&!isNaN(lon)&&_nDig(state.latitude)>=5&&_nDig(state.longitude)>=5)
+    sincronizarMapaComCoordenadas(lat,lon);
+}
+
+/* ===== Mapa de localização (porte compacto do bt-core.js: Leaflet com
+   camadas Satélite/Ruas, clique e arraste do pino preenchem as
+   coordenadas; sem geocodificação por endereço). ===== */
+let mapaObra=null, marcadorObra=null, _mapaObraDebounce=null;
+
+/* ===== Restrição ambiental (IDE-Sisema) — consulta compartilhada de
+   shared/js/geo.js, como BT/MT: desenha o contorno das reservas e a
+   legenda abaixo do mapa (some quando o pino sai da restrição). Aqui não
+   há o bloco de documentos/aceite do BT/MT — só a sinalização no mapa. */
+let restricaoLayer=null, _loteLastRestrKey='';
+// Aviso fixo abaixo do mapa: a Licença Ambiental é documento obrigatório do
+// loteamento (item migrado das Orientações). Quando o pino cai em restrição,
+// o texto é TROCADO pela frase de localização + documentos da(s) respectiva(s)
+// área(s) (mesmos textos compartilhados do BT/MT em shared/js/geo.js); ao
+// sair da restrição, o aviso da licença volta.
+function renderLicencaAmbiental(det){
+  const box=$('#licencaAmbientalBox');
+  if(!box) return;
+  // Qualquer re-render (nova consulta/área) exige aceitar de novo — mesmo
+  // comportamento do BT/MT (restricaoAceite=false a cada consulta).
+  state.restricaoAceite=false;
+  state.restricaoAmbiental=det&&det.length?'Sim':'Não';
+  if(det&&det.length){
+    const sentenca=typeof restricaoSentencaHTML==='function'?restricaoSentencaHTML(det):'';
+    const docs=typeof restricaoDocsHTML==='function'?restricaoDocsHTML(det):'';
+    const label=typeof RESTRICAO_ACEITE_LABEL!=='undefined'
+      ?RESTRICAO_ACEITE_LABEL
+      :'Declaro que li e estou de acordo com as informações acima.';
+    box.innerHTML=alertHTML('warn',`<span>${sentenca}</span>`)+docs+
+      `<label class="restricao-aceite"><input type="checkbox" id="restricaoAceite"> <span>${label}</span></label>`;
+    // O 'change' nativo borbulha até o montarNavReativa (reavalia o gate do
+    // botão Avançar); aqui só o estado.
+    const chk=$('#restricaoAceite');
+    if(chk) chk.onchange=e=>{state.restricaoAceite=e.target.checked;};
+  } else {
+    box.innerHTML=alertHTML('warn',
+      '<span><strong>Documento obrigatório:</strong> Licença Ambiental ou declaração de não passível de licenciamento.</span>');
+  }
+  if(window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
+}
+// Gate do Avançar da etapa do mapa (data-gate="loteRestricaoOk") e da
+// exportação: com restrição ambiental, o aceite é obrigatório.
+window.loteRestricaoOk=function(){
+  return state.restricaoAmbiental!=='Sim'||!!state.restricaoAceite;
+};
+function _limparRestricaoLayer(){
+  if(mapaObra&&restricaoLayer) mapaObra.removeLayer(restricaoLayer);
+  restricaoLayer=null;
+  if(mapaObra&&typeof atualizarLegendaRestricoes==='function')
+    atualizarLegendaRestricoes(mapaObra,null);
+}
+async function consultarRestricaoAmbientalLote(lat,lng){
+  if(!window.turf||typeof consultarRestricoesObra!=='function') return;
+  if(isNaN(lat)||isNaN(lng)) return;
+  const key=lat.toFixed(5)+','+lng.toFixed(5);
+  if(_loteLastRestrKey===key) return;
+  _loteLastRestrKey=key;
+  try{
+    const res=await consultarRestricoesObra(lat,lng);
+    if(res.length>0&&res.every(r=>r.erro)){
+      _loteLastRestrKey='';
+      _limparRestricaoLayer();
+      renderLicencaAmbiental();
+      return;
+    }
+    if(mapaObra&&typeof desenharRestricoesNoMapa==='function'){
+      _limparRestricaoLayer();
+      restricaoLayer=desenharRestricoesNoMapa(window.L,mapaObra,res);
+    }
+    renderLicencaAmbiental(typeof detalhesRestricoes==='function'?detalhesRestricoes(res):null);
+  }catch(_){
+    _loteLastRestrKey='';
+  }
+}
+const _nDig=(s)=>(String(s||'').match(/\d/g)||[]).length;
+function _aplicarCoordDoMapa(lat,lng){
+  const la=$('[data-k=latitude]'), lo=$('[data-k=longitude]');
+  if(la) la.value=String(lat);
+  if(lo) lo.value=String(lng);
+  // 'input' sintético mantém bind genérico, marcadores e onCoord na mesma
+  // rota do preenchimento manual.
+  if(la) la.dispatchEvent(new Event('input',{bubbles:true}));
+  if(lo) lo.dispatchEvent(new Event('input',{bubbles:true}));
+}
+function initMapaObra(){
+  const div=$('#map');
+  if(!div||!window.L||mapaObra) return;
+  mapaObra=window.L.map(div).setView([-19.9167,-43.9345],12);
+  const ruas=window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {maxZoom:19,attribution:'© OpenStreetMap'});
+  const satelite=window.L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    {maxZoom:19,attribution:'Tiles © Esri — Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'});
+  satelite.addTo(mapaObra);
+  window.L.control.layers({'Satélite':satelite,'Ruas':ruas}).addTo(mapaObra);
+  mapaObra.on('click',e=>_aplicarCoordDoMapa(e.latlng.lat,e.latlng.lng));
+  setTimeout(()=>mapaObra.invalidateSize(),200);
+  const lat=parseFloat(String(state.latitude||'').replace(',','.')),
+    lng=parseFloat(String(state.longitude||'').replace(',','.'));
+  if(!isNaN(lat)&&!isNaN(lng)) sincronizarMapaComCoordenadas(lat,lng,true);
+}
+function sincronizarMapaComCoordenadas(lat,lng,imediato){
+  if(isNaN(lat)||isNaN(lng)) return;
+  clearTimeout(_mapaObraDebounce);
+  const atualizar=()=>{
+    if(!mapaObra) return;
+    const ll=window.L.latLng(lat,lng);
+    if(marcadorObra){
+      marcadorObra.setLatLng([lat,lng]);
+      if(!mapaObra.getBounds().contains(ll))
+        mapaObra.setView(ll,Math.max(mapaObra.getZoom(),17));
+    } else {
+      marcadorObra=window.L.marker([lat,lng],{draggable:true}).addTo(mapaObra);
+      marcadorObra.on('dragend',e=>{
+        const p=e.target.getLatLng();
+        _aplicarCoordDoMapa(p.lat,p.lng);
+      });
+      // Primeira aparição do pino: centraliza no ZOOM MÁXIMO dos tiles.
+      const zMax=Number.isFinite(mapaObra.getMaxZoom())?mapaObra.getMaxZoom():19;
+      mapaObra.setView(ll,zMax);
+    }
+    setTimeout(()=>mapaObra.invalidateSize(),100);
+    // Toda coordenada nova (digitada, clique ou arraste) passa por aqui —
+    // ponto único para a validação ambiental, como o onCoordBT do BT.
+    consultarRestricaoAmbientalLote(lat,lng);
+  };
+  if(imediato) atualizar();
+  else _mapaObraDebounce=setTimeout(atualizar,600);
 }
 
 /* ===== Validação de e-mail / telefone ===== */
@@ -237,6 +377,13 @@ function exportarPDF(){
     const r=window.CemigMarcadores.validar(document);
     if(!r.ok){ if(r.primeiro) r.primeiro.scrollIntoView({behavior:'smooth',block:'center'}); return; }
   }
+  // Restrição ambiental sem aceite: volta à etapa do mapa e destaca o checkbox.
+  if(!window.loteRestricaoOk()){
+    goTo(2,true);
+    const chk=$('#restricaoAceite');
+    if(chk) setTimeout(()=>chk.scrollIntoView({behavior:'smooth',block:'center'}),150);
+    return;
+  }
   renderPreview(); window.print();
 }
 
@@ -244,6 +391,7 @@ function exportarPDF(){
 document.addEventListener('DOMContentLoaded',()=>{
   bindInputs();
   montarToggle('area');
+  renderLicencaAmbiental(); // aviso da licença sempre visível abaixo do mapa
   // Semeia o estado com os valores pré-preenchidos no HTML (ex.: Estado=MG,
   // Área=Urbana), para que apareçam na prévia mesmo sem edição do usuário.
   $$('[data-k]').forEach(el=>{

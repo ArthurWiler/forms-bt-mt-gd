@@ -27,7 +27,7 @@
    | Passo da trilha (linha) | `.vstep` | ~~`.step`~~ |
    | Número do passo | `.vstep-num` | ~~`.num`~~ |
    | Rótulo do passo | `.vstep-label` | rótulo solto no `.vstep` |
-   | Botão voltar | `.form-back` | — |
+   | Volta ao portal (logo da topbar) | `.logo-link` | ~~`.form-back`~~ (botão VOLTAR removido) |
    | Lista numerada de orientações | `.orient-list` / `.orient-num` | ~~`.bullet`~~ |
    | Aviso informativo (banner com ícone + texto) | `.cmg-aviso` / `.cmg-aviso-icon` / `.cmg-aviso-texto` | ~~`.modalidade-aviso`~~, ~~`.callout`~~ |
    | Aviso de alerta (variante do banner) | `.cmg-aviso--warn` (modificador sobre `.cmg-aviso`) | classe de aviso duplicada |

@@ -206,6 +206,12 @@ function btRenumerarEtapas() {
     );
     if (eb) eb.textContent = "Etapa " + (i + 1);
   });
+  // Sidebar: os números dos vsteps são estáticos no HTML e goTo só os
+  // recalcula ao navegar — após o pruning [data-flow] a sequência inicial
+  // ficaria com buracos (…5, 7, 8) até o primeiro clique.
+  $$(".vstep .vstep-num").forEach((num, i) => {
+    num.textContent = String(i + 1);
+  });
 }
 
 /* ===== binding por caminho (data-k="prop.nome") ===== */
@@ -591,6 +597,9 @@ function onEnderecoUrbanoBT() {
 function _limparRestricaoLayer() {
   if (mapaObra && restricaoLayer) mapaObra.removeLayer(restricaoLayer);
   restricaoLayer = null;
+  // Some com a legenda junto do contorno (desenharRestricoesNoMapa recria).
+  if (mapaObra && typeof atualizarLegendaRestricoes === "function")
+    atualizarLegendaRestricoes(mapaObra, null);
 }
 function renderRestricaoAmbiental() {
   const box = $("#restricaoAmbientalConteudo");
