@@ -63,7 +63,12 @@ window.state = state;
 // Abertura dos acordeões (fora do estado do formulário, como no React)
 const _ucAberta = {};
 const _torreAberta = {};
-const _secAberta = {};
+const _uniAberta = {}; // unidades da etapa Dados das unidades ("bi:ui")
+// Paginação e torre selecionada das etapas do condomínio (UI apenas)
+const ITENS_POR_PAGINA = 10;
+let _torrePagina = 0; // página da lista de torres (etapa Dados das torres)
+let _uniTorre = 0; // torre selecionada na etapa Dados das unidades
+const _uniPagina = {}; // página da lista de unidades, por torre
 
 /* ===== flags de fluxo (paridade com app.js:67-68) ===== */
 const coletivoF = () => state.atend.disjGeral === "Sim";
@@ -76,9 +81,23 @@ const trocaDisjGeralF = () =>
 // Concordância dos rótulos: "Torre" é feminino, "Bloco" masculino.
 
 /* ===== derivados (portes verbatim dos useMemo de app.js) ===== */
-// app.js:241-245
-const prevTotalKwF = () =>
-  state.ucBlocos.reduce((s, u) => s + (ucSemAlteracao(u) ? 0 : prevKwUC(u)), 0);
+// Modo de previsão do coletivo, decidido SÓ pela quantidade de apartamentos
+// residenciais (a área não participa da escolha do método — ela só define o
+// valor A dentro do ND-5.2):
+//  • 4+ apartamentos residenciais → método 5.2 (Carga prevista por UC +
+//    demanda geral não residencial informada pelo RT);
+//  • menos de 4 (ou nenhuma UC residencial) → TODAS as UCs detalham as
+//    cargas como no BT individual (montarCargasBT / ND-5.1).
+const modoCalculadoraF = () => nd52InfoF().quantidadeApartamentos < 4;
+// Carga instalada total (kW): campo Carga prevista no método 5.2; soma das
+// cargas detalhadas (calculadora) quando o ND-5.2 não calcula.
+const prevTotalKwF = () => {
+  const calc = modoCalculadoraF();
+  return state.ucBlocos.reduce((s, u) => {
+    if (ucSemAlteracao(u)) return s;
+    return s + (calc ? num((u.cargas || {})._cargaKw) : prevKwUC(u));
+  }, 0);
+};
 // app.js:246-268
 function nd52InfoF() {
   const residenciais = state.ucBlocos.filter(
@@ -103,34 +122,21 @@ const temUCNaoResidencialF = () =>
   state.ucBlocos.some(
     (u) => u.atividade && u.atividade !== "Residencial" && !ucSemAlteracao(u),
   );
-// app.js:277-280
-const demandaResidencialManualInvalidaF = () => {
-  const nd52 = nd52InfoF().nd52;
-  return (
-    !!nd52 &&
-    String(state.atend.demandaResidencialManual).trim() !== "" &&
-    num(state.atend.demandaResidencialManual) < nd52.demandaKVA
-  );
-};
-// app.js:281-306
+// Demanda total das UCs do agrupamento, conforme o modo (ver modoCalculadoraF)
 function demandaPrevTotalF() {
+  if (modoCalculadoraF())
+    // Modo calculadora: soma das demandas calculadas pelas cargas de cada UC
+    return state.ucBlocos.reduce(
+      (s, u) => s + (ucSemAlteracao(u) ? 0 : num((u.cargas || {})._demanda)),
+      0,
+    );
+  // Método 5.2: residencial pelo ND-5.2 (0 enquanto a área média estiver
+  // fora da tabela — a validação aponta a pendência) + não residencial do RT.
   const nd52 = nd52InfoF().nd52;
-  let demandaResidencial;
-  if (nd52) {
-    const manual = num(state.atend.demandaResidencialManual);
-    const manualValida =
-      String(state.atend.demandaResidencialManual).trim() !== "" &&
-      manual >= nd52.demandaKVA;
-    demandaResidencial = manualValida ? manual : nd52.demandaKVA;
-  } else {
-    demandaResidencial = state.ucBlocos
-      .filter((u) => u.atividade === "Residencial" && !ucSemAlteracao(u))
-      .reduce((s, u) => s + num((u.prev || {}).demanda), 0);
-  }
   const demandaNaoResidencial = temUCNaoResidencialF()
     ? num(state.atend.demandaNaoResidencial)
     : 0;
-  return demandaResidencial + demandaNaoResidencial;
+  return (nd52 ? nd52.demandaKVA : 0) + demandaNaoResidencial;
 }
 // app.js:315-343
 function validacaoHibridoF() {
@@ -195,18 +201,18 @@ function sincronizarUcBlocos() {
   while (arr.length < n) arr.push(novaUcBloco(arr.length));
   while (arr.length > n) arr.pop();
 }
-// app.js:503-521: preset de previsão da UC Residencial pelo disjPara
+// Preset de carga prevista da UC Residencial pelo disjPara: preenche quando
+// o campo está vazio ou ainda com o valor de outro preset (não sobrescreve
+// valor digitado pelo usuário).
 function aplicarPresetResidencial() {
+  const presets = Object.values(PRESET_PREV_RESIDENCIAL_COLETIVO);
   state.ucBlocos.forEach((u) => {
     if (u.atividade !== "Residencial") return;
     const preset = PRESET_PREV_RESIDENCIAL_COLETIVO[u.disjPara];
     if (!preset) return;
-    const atual = u.prev || {};
-    const jaAplicado = Object.keys(preset).every(
-      (k) => String(atual[k] == null ? "" : atual[k]) === String(preset[k]),
-    );
-    if (jaAplicado) return;
-    u.prev = Object.assign({}, atual, preset);
+    const atual = String(u.cargaPrevista == null ? "" : u.cargaPrevista);
+    if (atual === "" || (presets.includes(atual) && atual !== preset))
+      u.cargaPrevista = preset;
   });
 }
 // app.js:522-535: blocos acompanha atend.nBlocos (aceita valor bruto —
@@ -253,7 +259,8 @@ function replicarUC1Coletivo() {
     k === 0
       ? u
       : Object.assign({}, base, {
-          prev: Object.assign({}, base.prev || {}),
+          cargas: JSON.parse(JSON.stringify(base.cargas || {})),
+          _acc: {},
           identificacao: u.identificacao || `UC ${k + 1}`,
           nPredial: u.nPredial,
           complemento: u.complemento,
@@ -263,15 +270,6 @@ function replicarUC1Coletivo() {
         }),
   );
   renderUcsColetivo();
-}
-// app.js:235-240
-function replicarPrevTodas() {
-  const base = (state.ucBlocos[0] || {}).prev || {};
-  state.ucBlocos.forEach((u, k) => {
-    if (k > 0) u.prev = Object.assign({}, base);
-  });
-  aplicarPresetResidencial();
-  renderCargasColetivo();
 }
 // app.js:365-376
 function replicarPrimeiro() {
@@ -283,7 +281,10 @@ function replicarPrimeiro() {
       : Object.assign({}, base, {
           nome: `${i + 1}`,
           ucs: (base.ucs || []).map((u) =>
-            Object.assign({}, u, { prev: Object.assign({}, u.prev || {}) }),
+            Object.assign({}, u, {
+              cargas: JSON.parse(JSON.stringify(u.cargas || {})),
+              _acc: {},
+            }),
           ),
         }),
   );
@@ -316,18 +317,7 @@ function gerarComplementosTorre(bi) {
   );
   if (!lista) return;
   (b.ucs || []).forEach((u, k) => (u.complemento = lista[k]));
-  renderTorreAccs(bi);
-}
-// app.js:437-449
-function replicarPrevTorre(bi) {
-  const b = state.blocos[bi];
-  if (!b) return;
-  const base = ((b.ucs || [])[0] || {}).prev || {};
-  (b.ucs || []).forEach((u, k) => {
-    if (k > 0) u.prev = Object.assign({}, base);
-  });
-  autoSelecionarDisjTorres();
-  renderTorreAccs(bi);
+  renderUnidadesTorreAtual();
 }
 // app.js:450-473 (preserva complemento/instalação/nº UC de cada unidade)
 function replicarUC1Torre(bi) {
@@ -338,7 +328,8 @@ function replicarUC1Torre(bi) {
     k === 0
       ? u
       : Object.assign({}, base, {
-          prev: Object.assign({}, base.prev || {}),
+          cargas: JSON.parse(JSON.stringify(base.cargas || {})),
+          _acc: {},
           identificacao: `UC ${k + 1}`,
           complemento: u.complemento,
           instalacao: u.instalacao,
@@ -346,7 +337,7 @@ function replicarUC1Torre(bi) {
         }),
   );
   autoSelecionarDisjTorres();
-  renderTorreAccs(bi);
+  renderUnidadesTorreAtual();
 }
 
 /* ===== Gate da etapa Empreendimento ===== */
@@ -426,6 +417,7 @@ function renderUcsColetivo() {
     toolbar.style.display = state.ucBlocos.length > 1 ? "flex" : "none";
   }
   const hibrido = hibridoF();
+  const modoCalc = modoCalculadoraF();
   box.innerHTML = "";
   state.ucBlocos.forEach((u, ui) => {
     const aberta = _ucAberta[ui] === true;
@@ -443,7 +435,7 @@ function renderUcsColetivo() {
       `</span><span class="carga-acc-chevron uc-colapsavel-chevron" aria-hidden="true"></span>`;
     head.innerHTML = headHtml();
     head.addEventListener("click", () => {
-      _ucAberta[ui] = !aberta;
+      btToggleExclusivo(_ucAberta, ui, !aberta);
       renderUcsColetivo();
     });
     bloco.appendChild(head);
@@ -596,10 +588,19 @@ function renderUcsColetivo() {
       } else {
         const f = _campo(
           "Área (m²)",
-          _inp(u.area, (v) => (u.area = v), {
-            type: "number",
-            placeholder: "Ex: 65",
-          }),
+          _inp(
+            u.area,
+            (v) => {
+              u.area = v;
+              // A área não muda o método (só o valor A do ND-5.2) —
+              // atualiza apenas os calculados, sem re-render (mantém o foco).
+              atualizarCargasColetivo();
+            },
+            {
+              type: "number",
+              placeholder: "Ex: 65",
+            },
+          ),
         );
         f.setAttribute("data-noopt", "");
         grid.appendChild(f);
@@ -644,13 +645,46 @@ function renderUcsColetivo() {
               u.disjPara = v;
               aplicarPresetResidencial();
               autoSelecionarDisjGeral();
+              // Re-render para o campo Carga prevista refletir o preset
+              renderUcsColetivo();
             },
             true,
           ),
           "field--float",
         ),
       );
+      // Carga prevista (kW) — substitui a antiga tabela de previsão de carga;
+      // aparece no método 5.2 quando o agrupamento tem mais de 3 UCs.
+      if (!modoCalc && state.ucBlocos.length > 3 && !ucSemAlteracao(u)) {
+        const f = _campo(
+          "Carga prevista (kW)",
+          _inp(
+            u.cargaPrevista,
+            (v) => {
+              u.cargaPrevista = v;
+              atualizarCargasColetivo();
+            },
+            { type: "number", placeholder: "0,0" },
+          ),
+        );
+        f.setAttribute("data-noopt", "");
+        grid.appendChild(f);
+      }
       corpo.appendChild(grid);
+      // ND-5.2 não calcula → a UC detalha as cargas como no BT individual
+      // (mesma ilha montarCargasBT; demanda/carga da UC saem do cálculo).
+      if (modoCalc && !ucSemAlteracao(u)) {
+        const divisor = document.createElement("div");
+        divisor.className = "divider";
+        const titulo = document.createElement("span");
+        titulo.className = "subbox-title";
+        titulo.textContent = "Cargas da unidade";
+        divisor.appendChild(titulo);
+        corpo.appendChild(divisor);
+        const cargasBox = document.createElement("div");
+        corpo.appendChild(cargasBox);
+        montarCargasBT(cargasBox, u, ui, () => atualizarCargasColetivo());
+      }
       bloco.appendChild(corpo);
     }
     box.appendChild(bloco);
@@ -662,128 +696,46 @@ function renderUcsColetivo() {
 }
 
 /* ============================================================
-   Etapa Previsão de Carga do coletivo (renderCargasColetivo —
-   porte de views/cargas-coletivo.js). Tabela com update
-   IN-PLACE das células calculadas (não perde o foco).
+   Etapa Demanda do coletivo (a antiga tabela de previsão de
+   carga foi substituída pelo campo Carga prevista por UC na
+   etapa de Identificação das UCs).
    ============================================================ */
-function onPrev(ui, k, v) {
-  const u = state.ucBlocos[ui];
-  if (!u) return;
-  u.prev = u.prev || {};
-  u.prev[k] = v;
-  atualizarCargasColetivo();
-}
 function renderCargasColetivo() {
-  const box = $("#prevTableBox");
-  if (!box) return;
   sincronizarUcBlocos();
   aplicarPresetResidencial();
-  const toolbar = $("#prevToolbar");
-  if (toolbar) toolbar.style.display = state.ucBlocos.length > 1 ? "" : "none";
-  const table = document.createElement("table");
-  table.className = "prev-table";
-  table.innerHTML =
-    '<thead><tr><th>Unidade</th><th>Ilum. (kW)</th><th>Tomada (kW)</th><th>Chuveiro (kW)</th><th>Ar Cond. (kW)</th><th>Outros (kW)</th><th>Carga (kW)</th><th class="col-demanda">Demanda (kVA) *</th></tr></thead>';
-  const tbody = document.createElement("tbody");
-  state.ucBlocos.forEach((u, ui) => {
-    const tr = document.createElement("tr");
-    const tdNome = document.createElement("td");
-    tdNome.className = "uc-name";
-    tdNome.textContent = u.identificacao || `UC ${ui + 1}`;
-    tr.appendChild(tdNome);
-    if (ucSemAlteracao(u)) {
-      const td = document.createElement("td");
-      td.colSpan = 7;
-      td.className = "field-hint";
-      td.textContent =
-        "Caixa existente sem alteração — não entra na previsão de carga.";
-      tr.appendChild(td);
-    } else {
-      ["ilum", "tomada", "chuveiro", "ar", "outros"].forEach((k) => {
-        const td = document.createElement("td");
-        const inp = document.createElement("input");
-        inp.type = "number";
-        inp.placeholder = "0,0";
-        inp.value = (u.prev || {})[k] || "";
-        inp.addEventListener("input", () => onPrev(ui, k, inp.value));
-        td.appendChild(inp);
-        tr.appendChild(td);
-      });
-      const tdCarga = document.createElement("td");
-      tdCarga.className = "carga-cell";
-      tdCarga.dataset.prevCarga = String(ui);
-      tr.appendChild(tdCarga);
-      const tdDem = document.createElement("td");
-      tdDem.className = "col-demanda";
-      const inpDem = document.createElement("input");
-      inpDem.className = "demanda-prev";
-      inpDem.type = "number";
-      inpDem.placeholder = "0,0";
-      inpDem.value = (u.prev || {}).demanda || "";
-      inpDem.addEventListener("input", () =>
-        onPrev(ui, "demanda", inpDem.value),
-      );
-      tdDem.appendChild(inpDem);
-      tr.appendChild(tdDem);
-    }
-    tbody.appendChild(tr);
-  });
-  table.appendChild(tbody);
-  const tfoot = document.createElement("tfoot");
-  tfoot.innerHTML =
-    '<tr><td class="uc-name">Total</td><td colspan="5"></td><td class="carga-cell" id="prevTotKw"></td><td class="col-demanda total-dem" id="prevTotDem"></td></tr>';
-  table.appendChild(tfoot);
-  box.innerHTML = "";
-  box.appendChild(table);
   atualizarCargasColetivo();
 }
-// Atualiza SÓ o que é calculado (células, KPIs, alertas, disjuntor geral).
+// Atualiza SÓ o que é calculado (KPIs, alertas, disjuntor geral).
 function atualizarCargasColetivo() {
   const info = nd52InfoF();
-  const dem = demandaPrevTotalF();
-  $$("[data-prev-carga]").forEach((td) => {
-    const u = state.ucBlocos[+td.dataset.prevCarga];
-    if (u) td.textContent = fmt2(prevKwUC(u));
-  });
-  const totKw = $("#prevTotKw");
-  if (totKw) totKw.textContent = fmt2(prevTotalKwF());
-  const totDem = $("#prevTotDem");
-  if (totDem) totDem.textContent = fmt2(dem);
   const kKw = $("#kpiPrevKw");
   if (kKw) kKw.textContent = fmt2(prevTotalKwF());
   const kDem = $("#kpiDemandaAtendimento");
   if (kDem) kDem.textContent = fmt2(demandaTotalGeralF());
-  // Alertas ND-5.2
+  // Alertas ND-5.2 / modo calculadora
   const alertas = $("#nd52Alertas");
   if (alertas) {
     let html = "";
-    if (info.quantidadeApartamentos > 0 && info.nd52) {
-      html = `<div class="alert alert-ok" style="margin-bottom:14px"><b>Demanda dos apartamentos residenciais (ND-5.2):</b> ${info.quantidadeApartamentos} apartamento(s) · área média ponderada ${fmt2(info.areaMediaPonderada)} m² · Fator F ${fmt2(info.nd52.fatorF)} · A ${fmt2(info.nd52.demandaAreaA)} → D = ${fmt2(info.nd52.demandaKVA)} kVA (incluída automaticamente na demanda total abaixo).</div>`;
-    } else if (info.quantidadeApartamentos > 0 && !info.nd52) {
-      html =
-        info.quantidadeApartamentos < 4
-          ? `<div class="alert alert-info" style="margin-bottom:14px">ND-5.2 exige no mínimo 4 apartamentos para o cálculo automático (atualmente ${info.quantidadeApartamentos}). Informe a demanda manualmente para as UCs residenciais abaixo.</div>`
-          : `<div class="alert alert-warn" style="margin-bottom:14px">Área média ponderada inválida ou superior a 1000 m² (${fmt2(info.areaMediaPonderada)} m²). Confira a área de cada apartamento ou informe a demanda manualmente.</div>`;
+    if (!modoCalculadoraF()) {
+      html = info.nd52
+        ? `<div class="alert alert-ok" style="margin-bottom:14px"><b>Demanda dos apartamentos residenciais (ND-5.2):</b> ${info.quantidadeApartamentos} apartamento(s) · área média ponderada ${fmt2(info.areaMediaPonderada)} m² · Fator F ${fmt2(info.nd52.fatorF)} · A ${fmt2(info.nd52.demandaAreaA)} → D = ${fmt2(info.nd52.demandaKVA)} kVA (incluída automaticamente na demanda total abaixo).</div>`
+        : `<div class="alert alert-warn" style="margin-bottom:14px"><b>Método ND-5.2 (${info.quantidadeApartamentos} apartamentos):</b> informe a área de cada apartamento residencial — a área média ponderada precisa ficar entre 1 e 1000 m² (atual: ${fmt2(info.areaMediaPonderada)} m²). A demanda residencial permanece zerada até lá.</div>`;
+    } else {
+      const motivo =
+        info.quantidadeApartamentos === 0
+          ? "Não há UCs residenciais para o cálculo automático pelo ND-5.2"
+          : `ND-5.2 exige no mínimo 4 apartamentos para o cálculo automático (atualmente ${info.quantidadeApartamentos})`;
+      html = `<div class="alert alert-info" style="margin-bottom:14px">${motivo}: a demanda do agrupamento é a soma das demandas calculadas pelas cargas detalhadas em cada UC (método ND-5.1), na etapa de Unidades Consumidoras.</div>`;
     }
     alertas.innerHTML = html;
   }
-  // Demanda residencial manual (só quando o ND-5.2 calcula)
-  const manualBox = $("#demandaManualBox");
-  if (manualBox) {
-    manualBox.style.display = info.nd52 ? "" : "none";
-    const hint = $("#demandaManualHint");
-    if (hint && info.nd52)
-      hint.textContent = `Substitui o valor calculado pelo ND-5.2 acima, se informado. Não pode ser menor que ${fmt2(info.nd52.demandaKVA)} kVA.`;
-    const inp = manualBox.querySelector("input");
-    if (inp && info.nd52) inp.placeholder = fmt2(info.nd52.demandaKVA);
-  }
-  const inval = $("#demandaManualInvalida");
-  if (inval)
-    inval.innerHTML = demandaResidencialManualInvalidaF()
-      ? `<div class="alert alert-warn" style="margin-bottom:14px">⚠ A demanda residencial manual (${fmt2(num(state.atend.demandaResidencialManual))} kVA) é menor que a calculada pelo ND-5.2 (${fmt2(info.nd52.demandaKVA)} kVA) e não pode ser usada — corrija ou deixe em branco para usar o valor calculado.</div>`
-      : "";
+  // Demanda geral não residencial: só no método 5.2 (quando o ND-5.2 calcula
+  // a parte residencial); no modo calculadora as UCs não residenciais também
+  // detalham as próprias cargas.
   const naoResBox = $("#demandaNaoResBox");
-  if (naoResBox) naoResBox.style.display = temUCNaoResidencialF() ? "" : "none";
+  if (naoResBox)
+    naoResBox.style.display =
+      !modoCalculadoraF() && temUCNaoResidencialF() ? "" : "none";
   const aviso = $("#aviso304Cargas");
   if (aviso) aviso.style.display = demandaTotalGeralF() > 304 ? "" : "none";
   autoSelecionarDisjGeral();
@@ -883,8 +835,11 @@ function renderDisjGeralColetivo() {
 }
 
 /* ============================================================
-   Etapa Torres/Blocos do condomínio (renderBlocos — porte de
-   views/blocos.js decomposto por torre)
+   Etapa "Dados das torres" (condomínio) — torres em acordeões
+   paginados com os dados gerais de cada torre (identificação,
+   qtd. de unidades, demanda/disjuntor do condomínio); as
+   unidades são preenchidas na etapa seguinte, "Dados das
+   unidades" (renderUnidadesTorres abaixo).
    ============================================================ */
 function onNBlocos(el) {
   state.atend.nBlocos = el.value;
@@ -892,556 +847,615 @@ function onNBlocos(el) {
   autoSelecionarDisjTorres();
   renderBlocos();
 }
-function onPrevTorre(bi, ui, k, v) {
-  const u = ((state.blocos[bi] || {}).ucs || [])[ui];
-  if (!u) return;
-  u.prev = u.prev || {};
-  u.prev[k] = v;
-  atualizarTorreCalc(bi);
-}
 function atualizarBlocosKpis() {
+  const dem = demandaTotalGeralF();
   const kTot = $("#kpiTotalUcs");
   if (kTot) kTot.textContent = String(totalUcsEmpreendimentoF());
   const kDem = $("#kpiDemandaTotal");
-  if (kDem) kDem.textContent = fmt2(demandaTotalGeralF());
+  if (kDem) kDem.textContent = fmt2(dem);
   const aviso = $("#aviso304Blocos");
-  if (aviso) aviso.style.display = demandaTotalGeralF() > 304 ? "" : "none";
+  if (aviso) aviso.style.display = dem > 304 ? "" : "none";
+  const avisoUni = $("#aviso304Unidades");
+  if (avisoUni) avisoUni.style.display = dem > 304 ? "" : "none";
 }
-// Recalcula os pedaços derivados de UMA torre sem re-renderizar os inputs.
-function atualizarTorreCalc(bi) {
-  const b = state.blocos[bi];
-  if (!b) return;
-  autoSelecionarDisjTorres();
-  const calcTorre = calcBlocoMultiTorres(b);
-  const demandaTorre = calcTorre.demandaUcs + num(b.demandaIncendio);
-  const head = $(`[data-torre-head="${bi}"]`);
-  if (head)
-    head.textContent = `${fmt2(demandaTorre)} kVA · ${(b.ucs || []).length} UC(s)`;
-  const nd52Box = $(`#torreNd52-${bi}`);
-  if (nd52Box)
-    nd52Box.innerHTML = calcTorre.nd52
-      ? `<div class="alert alert-ok" style="margin-top:6px"><b>Demanda residencial (ND-5.2) desta torre:</b> ${calcTorre.qtdApart} apartamento(s) · área média ${fmt2(calcTorre.areaMedia)} m² → ${fmt2(calcTorre.nd52.demandaKVA)} kVA.</div>`
-      : "";
-  $$(`[data-tprev-carga^="${bi}-"]`).forEach((td) => {
-    const ui = +td.dataset.tprevCarga.split("-")[1];
-    const u = (b.ucs || [])[ui];
-    if (u) td.textContent = fmt2(prevKwUC(u));
+// Carga total da torre (kW): soma da Carga prevista por UC (método 5.2) ou
+// das cargas detalhadas na calculadora — só das UCs ativas.
+function cargaTotalTorre(b) {
+  const modoCalc = calcBlocoMultiTorres(b).modoCalculadora;
+  return (b.ucs || []).reduce((s, u) => {
+    if (ucSemAlteracao(u)) return s;
+    return s + num(modoCalc ? (u.cargas || {})._cargaKw : u.cargaPrevista);
+  }, 0);
+}
+// Endereço da obra (readonly nos cards de torre/unidade)
+function enderecoObraTxt(complemento) {
+  const o = state.obra;
+  const base = [o.endereco, o.num].filter(Boolean).join(", ");
+  return (base || "—") + (complemento ? `, ${complemento}` : "");
+}
+function _blocoEndereco(complemento) {
+  const box = document.createElement("div");
+  box.className = "endereco-bloco";
+  const lbl = document.createElement("span");
+  lbl.className = "uc-head-endereco-label";
+  lbl.textContent = "Endereço";
+  const val = document.createElement("span");
+  val.className = "uc-head-endereco";
+  val.textContent = enderecoObraTxt(complemento);
+  box.append(lbl, val);
+  return box;
+}
+// Paginação (torres e unidades): « ‹ [n] de N › »
+function _mkPaginacao(totalPaginas, atual, aoIr) {
+  const nav = document.createElement("div");
+  nav.className = "paginacao";
+  if (totalPaginas <= 1) return nav;
+  const btn = (rotulo, alvo, aria) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "paginacao-btn";
+    b.textContent = rotulo;
+    b.setAttribute("aria-label", aria);
+    b.disabled = alvo < 0 || alvo >= totalPaginas || alvo === atual;
+    b.addEventListener("click", () => aoIr(alvo));
+    return b;
+  };
+  nav.append(
+    btn("«", 0, "Primeira página"),
+    btn("‹", atual - 1, "Página anterior"),
+  );
+  const inp = document.createElement("input");
+  inp.type = "number";
+  inp.className = "paginacao-input";
+  inp.min = "1";
+  inp.max = String(totalPaginas);
+  inp.value = String(atual + 1);
+  inp.addEventListener("change", () => {
+    const n = Math.min(totalPaginas, Math.max(1, parseInt(inp.value) || 1));
+    aoIr(n - 1);
   });
-  const totKw = $(`#torreTotKw-${bi}`);
-  if (totKw)
-    totKw.textContent = fmt2(
-      (b.ucs || []).reduce((s, u) => s + prevKwUC(u), 0),
-    );
-  const totDem = $(`#torreTotDem-${bi}`);
-  if (totDem) totDem.textContent = fmt2(calcTorre.demandaUcs);
-  renderTorreResultado(bi);
-  atualizarBlocosKpis();
-}
-function renderTorreResultado(bi) {
-  const box = $(`#torreResultado-${bi}`);
-  const b = state.blocos[bi];
-  if (!box || !b) return;
-  const calcTorre = calcBlocoMultiTorres(b);
-  const demandaTorre = calcTorre.demandaUcs + num(b.demandaIncendio);
-  const opcoesDG = opcoesDisjGeralTorre(b);
-  const opcoesDI = opcoesDisjIncendioTorre(b);
-  box.innerHTML = "";
-  const kpis = document.createElement("div");
-  kpis.className = "resultado-kpis";
-  kpis.innerHTML =
-    `<div class="resultado-card"><div class="resultado-card-label">Demanda das UCs</div><div class="resultado-card-valor">${fmt2(calcTorre.demandaUcs)} kVA</div></div>` +
-    `<div class="resultado-card"><div class="resultado-card-label">Demanda total da torre (com condomínio/incêndio)</div><div class="resultado-card-valor">${fmt2(demandaTorre)} kVA</div></div>`;
-  box.appendChild(kpis);
-  const mkDisj = (label, opcoes, valor, aoEscolher, hintVazio) => {
-    const card = document.createElement("div");
-    card.className = "resultado-card resultado-disjuntor";
-    card.innerHTML = `<div class="resultado-card-label">${label}</div>`;
-    if (opcoes.length) {
-      const tg = document.createElement("div");
-      tg.className = "toggle-group";
-      opcoes.forEach((dj) => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className =
-          "toggle-btn" + ((valor || opcoes[0]) === dj ? " on" : "");
-        btn.textContent = dj;
-        btn.addEventListener("click", () => {
-          aoEscolher(dj);
-          renderTorreResultado(bi);
-        });
-        tg.appendChild(btn);
-      });
-      card.appendChild(tg);
-    } else {
-      const hint = document.createElement("div");
-      hint.className = "field-hint";
-      hint.textContent = hintVazio;
-      card.appendChild(hint);
-    }
-    return card;
-  };
-  box.appendChild(
-    mkDisj(
-      "Disjuntor Geral adequado de acordo com a Demanda das UCs",
-      opcoesDG,
-      b.disjGeral,
-      (v) => (b.disjGeral = v),
-      "Informe os disjuntores e a previsão de carga das UCs para ver o disjuntor geral adequado.",
-    ),
+  const de = document.createElement("span");
+  de.className = "paginacao-total";
+  de.textContent = `de ${totalPaginas}`;
+  nav.append(
+    inp,
+    de,
+    btn("›", atual + 1, "Próxima página"),
+    btn("»", totalPaginas - 1, "Última página"),
   );
-  box.appendChild(
-    mkDisj(
-      "Disjuntor do Condomínio / Combate a Incêndio adequado à demanda",
-      opcoesDI,
-      b.disjIncendio,
-      (v) => (b.disjIncendio = v),
-      "Informe a Demanda Condomínio / Incêndio (kVA) para ver o disjuntor adequado.",
-    ),
-  );
-}
-// Acordeões de Identificação e Previsão de carga da torre (re-renderizados
-// juntos quando a estrutura muda: qtd de UCs, solicitação, atividade).
-function renderTorreAccs(bi) {
-  const box = $(`#torreAccs-${bi}`);
-  const b = state.blocos[bi];
-  if (!box || !b) return;
-  const ucs = b.ucs || [];
-  box.innerHTML = "";
-  const genRow = $(`#torreGen-${bi}`);
-  if (genRow) genRow.style.display = ucs.length > 1 ? "flex" : "none";
-  const mkAcc = (chave, label, corpoFn, rodapeBtn) => {
-    const aberta = !!_secAberta[`${bi}-${chave}`];
-    const acc = document.createElement("div");
-    acc.className = "carga-acc" + (aberta ? " is-open" : "");
-    acc.style.marginTop = "14px";
-    const head = document.createElement("button");
-    head.type = "button";
-    head.className = "carga-acc-head";
-    head.setAttribute("aria-expanded", aberta ? "true" : "false");
-    head.innerHTML =
-      `<span class="carga-acc-label">${label}</span>` +
-      `<span class="carga-acc-meta"><span class="carga-acc-badge">${ucs.length}</span><span class="carga-acc-chevron" aria-hidden="true"></span></span>`;
-    head.addEventListener("click", () => {
-      _secAberta[`${bi}-${chave}`] = !aberta;
-      renderTorreAccs(bi);
-    });
-    acc.appendChild(head);
-    if (aberta) {
-      const body = document.createElement("div");
-      body.className = "carga-acc-body";
-      corpoFn(body);
-      if (ucs.length > 1 && rodapeBtn) {
-        const add = document.createElement("div");
-        add.className = "motores-add";
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "btn btn-ghost";
-        btn.textContent = rodapeBtn.label;
-        btn.addEventListener("click", rodapeBtn.onClick);
-        add.appendChild(btn);
-        body.appendChild(add);
-      }
-      acc.appendChild(body);
-    }
-    return acc;
-  };
-  // ── Identificação das UCs (tabela em 2 linhas por UC) ──
-  if (ucs.length > 0)
-    box.appendChild(
-      mkAcc(
-        "ident",
-        "Identificação das UCs",
-        (body) => {
-          const table = document.createElement("table");
-          table.className = "motores-table uc-ident-table";
-          const tbody = document.createElement("tbody");
-          ucs.forEach((u, ui) => {
-            const residencial = u.atividade === "Residencial";
-            const conexaoNova = u.solicitacao === "Conexão Nova";
-            const cel = (rotulo, controle, colSpan) => {
-              const td = document.createElement("td");
-              if (colSpan) td.colSpan = colSpan;
-              const lbl = document.createElement("span");
-              lbl.className = "cell-label";
-              lbl.textContent = rotulo;
-              td.append(lbl, controle);
-              return td;
-            };
-            const tr1 = document.createElement("tr");
-            tr1.className = "uc-linha-1";
-            tr1.appendChild(
-              cel(
-                "Unidade",
-                _inp(u.identificacao, (v) => (u.identificacao = v), {
-                  placeholder: `UC ${ui + 1}`,
-                }),
-              ),
-            );
-            tr1.appendChild(
-              cel(
-                "Complemento",
-                _inp(u.complemento, (v) => (u.complemento = v), {
-                  placeholder: "101",
-                }),
-              ),
-            );
-            tr1.appendChild(
-              cel(
-                "Solicitação",
-                _selectDe(
-                  [
-                    "Conexão Nova",
-                    "Alteração de Carga",
-                    "Caixa Existente sem Alteração",
-                  ],
-                  u.solicitacao,
-                  (v) => {
-                    u.solicitacao = v;
-                    renderTorreAccs(bi);
-                    atualizarTorreCalc(bi);
-                  },
-                ),
-              ),
-            );
-            tr1.appendChild(
-              cel(
-                "Atividade",
-                _selectDe(
-                  ["Residencial", "Comercial", "Industrial", "Rural"],
-                  u.atividade,
-                  (v) => {
-                    u.atividade = v;
-                    renderTorreAccs(bi);
-                    renderTorreCampos(bi);
-                    atualizarTorreCalc(bi);
-                  },
-                  true,
-                ),
-              ),
-            );
-            tbody.appendChild(tr1);
-            const tr2 = document.createElement("tr");
-            tr2.className = "uc-linha-2";
-            const defs2 = [
-              [
-                "Disjuntor",
-                _selectDe(
-                  DISJ.map((d) => d.fx),
-                  u.disjPara,
-                  (v) => {
-                    u.disjPara = v;
-                    atualizarTorreCalc(bi);
-                  },
-                  true,
-                ),
-              ],
-              residencial
-                ? [
-                    "Área (m²)",
-                    _inp(
-                      u.area,
-                      (v) => {
-                        u.area = v;
-                        atualizarTorreCalc(bi);
-                      },
-                      { type: "number", placeholder: "Ex: 65" },
-                    ),
-                  ]
-                : [
-                    "Ramo de atividade",
-                    _inp(u.ramo, (v) => (u.ramo = v), {
-                      placeholder: "Obrigatório",
-                    }),
-                  ],
-            ];
-            if (!conexaoNova) {
-              defs2.push(
-                [
-                  "Instalação",
-                  _inp(u.instalacao, (v) => (u.instalacao = v), {
-                    placeholder: "Nº instalação",
-                  }),
-                ],
-                [
-                  "Nº UC",
-                  _inp(u.unidadeConsumidora, (v) => (u.unidadeConsumidora = v)),
-                ],
-              );
-            }
-            defs2.forEach(([rotulo, controle], i) => {
-              tr2.appendChild(
-                cel(
-                  rotulo,
-                  controle,
-                  i === defs2.length - 1 ? 4 - defs2.length + 1 : 0,
-                ),
-              );
-            });
-            tbody.appendChild(tr2);
-          });
-          table.appendChild(tbody);
-          body.appendChild(table);
-        },
-        {
-          label: "⧉ Replicar UC 1 para todas",
-          onClick: () => replicarUC1Torre(bi),
-        },
-      ),
-    );
-  // ── Previsão de carga das UCs (tabela por torre) ──
-  if (ucs.length > 0)
-    box.appendChild(
-      mkAcc(
-        "prev",
-        "Previsão de carga das UCs",
-        (body) => {
-          const wrap = document.createElement("div");
-          wrap.className = "prev-table-wrap";
-          const table = document.createElement("table");
-          table.className = "prev-table";
-          table.innerHTML =
-            '<thead><tr><th>Unidade</th><th>Ilum. (kW)</th><th>Tomada (kW)</th><th>Chuveiro (kW)</th><th>Ar Cond. (kW)</th><th>Outros (kW)</th><th>Carga (kW)</th><th class="col-demanda">Demanda (kVA)</th></tr></thead>';
-          const tbody = document.createElement("tbody");
-          ucs.forEach((u, ui) => {
-            const tr = document.createElement("tr");
-            const tdNome = document.createElement("td");
-            tdNome.className = "uc-name";
-            tdNome.textContent = u.identificacao || `UC ${ui + 1}`;
-            tr.appendChild(tdNome);
-            if (ucSemAlteracao(u)) {
-              const td = document.createElement("td");
-              td.colSpan = 7;
-              td.className = "field-hint";
-              td.textContent =
-                "Caixa existente sem alteração — não entra na previsão de carga.";
-              tr.appendChild(td);
-            } else {
-              ["ilum", "tomada", "chuveiro", "ar", "outros"].forEach((k) => {
-                const td = document.createElement("td");
-                const inp = document.createElement("input");
-                inp.type = "number";
-                inp.placeholder = "0,0";
-                inp.value = (u.prev || {})[k] || "";
-                inp.addEventListener("input", () =>
-                  onPrevTorre(bi, ui, k, inp.value),
-                );
-                td.appendChild(inp);
-                tr.appendChild(td);
-              });
-              const tdCarga = document.createElement("td");
-              tdCarga.className = "carga-cell";
-              tdCarga.dataset.tprevCarga = `${bi}-${ui}`;
-              tr.appendChild(tdCarga);
-              const tdDem = document.createElement("td");
-              tdDem.className = "col-demanda";
-              const inpDem = document.createElement("input");
-              inpDem.className = "demanda-prev";
-              inpDem.type = "number";
-              inpDem.placeholder = "0,0";
-              inpDem.value = (u.prev || {}).demanda || "";
-              inpDem.addEventListener("input", () =>
-                onPrevTorre(bi, ui, "demanda", inpDem.value),
-              );
-              tdDem.appendChild(inpDem);
-              tr.appendChild(tdDem);
-            }
-            tbody.appendChild(tr);
-          });
-          table.appendChild(tbody);
-          const tfoot = document.createElement("tfoot");
-          tfoot.innerHTML = `<tr><td class="uc-name">Total da torre</td><td colspan="5"></td><td class="carga-cell" id="torreTotKw-${bi}"></td><td class="col-demanda total-dem" id="torreTotDem-${bi}"></td></tr>`;
-          table.appendChild(tfoot);
-          wrap.appendChild(table);
-          body.appendChild(wrap);
-        },
-        {
-          label: "Replicar previsão da UC 1 para todas",
-          onClick: () => replicarPrevTorre(bi),
-        },
-      ),
-    );
-  atualizarTorreCalc(bi);
-}
-// Campos do topo da torre (re-render quando temNaoResidencial muda)
-function renderTorreCampos(bi) {
-  const box = $(`#torreCampos-${bi}`);
-  const b = state.blocos[bi];
-  if (!box || !b) return;
-  const calcTorre = calcBlocoMultiTorres(b);
-  box.innerHTML = "";
-  {
-    const f = _campo(
-      "Identificação da torre",
-      _inp(
-        b.nome,
-        (v) => {
-          b.nome = v;
-          const tit = $(`[data-torre-titulo="${bi}"]`);
-          if (tit)
-            tit.textContent = `Torre ${b.nome || bi + 1}`;
-        },
-        { placeholder: `${bi + 1}` },
-      ),
-    );
-    box.appendChild(f);
-  }
-  {
-    const f = _campo(
-      "Qtd. de UCs da torre",
-      _inp(
-        b.qtdUCs,
-        (v) => {
-          sincronizarUCsTorre(bi, v);
-          renderTorreAccs(bi);
-        },
-        { type: "number", placeholder: "0" },
-      ),
-    );
-    f.setAttribute("data-noopt", "");
-    box.appendChild(f);
-  }
-  {
-    const f = _campo(
-      "Demanda Condomínio / Incêndio (kVA)",
-      _inp(
-        b.demandaIncendio,
-        (v) => {
-          b.demandaIncendio = v;
-          atualizarTorreCalc(bi);
-        },
-        { type: "number", placeholder: "0" },
-      ),
-    );
-    box.appendChild(f);
-  }
-  if (calcTorre.temNaoResidencial) {
-    const f = _campo(
-      "Demanda geral não residencial (kVA)",
-      _inp(
-        b.demandaNaoResidencial,
-        (v) => {
-          b.demandaNaoResidencial = v;
-          atualizarTorreCalc(bi);
-        },
-        { type: "number", placeholder: "0,0" },
-      ),
-    );
-    f.setAttribute("data-noopt", "");
-    box.appendChild(f);
-  }
+  return nav;
 }
 function renderBlocos() {
   const box = $("#blocosBox");
   if (!box) return;
   sincronizarBlocos();
   autoSelecionarDisjTorres();
-  const sub = $("#blocosSub");
-  if (sub)
-    sub.textContent =
-      "Preencha os dados das torres do empreendimento. Para agilizar o preenchimento, você pode usar o botão para replicar os dados da torre 1 para o restante das torres.";
-  const btnRep = $("#btnReplicarTorre1");
-  if (btnRep) btnRep.textContent = "⧉ Replicar Torre 1 para todas";
+  if (!(0 in _torreAberta)) _torreAberta[0] = true;
+  const total = state.blocos.length;
+  const totalPag = Math.max(1, Math.ceil(total / ITENS_POR_PAGINA));
+  if (_torrePagina >= totalPag) _torrePagina = totalPag - 1;
   box.innerHTML = "";
-  state.blocos.forEach((b, bi) => {
-    const aberta = _torreAberta[bi] === true;
-    const bloco = document.createElement("div");
-    bloco.className = "uc-colapsavel" + (aberta ? " is-open" : "");
-    const head = document.createElement("button");
-    head.type = "button";
-    head.className = "uc-colapsavel-head";
-    head.setAttribute("aria-expanded", aberta ? "true" : "false");
-    head.innerHTML =
-      `<span class="uc-head-info"><span class="uc-colapsavel-titulo" data-torre-titulo="${bi}">Torre ${b.nome || bi + 1}</span>` +
-      `<span class="uc-head-endereco-label">Demanda</span><span class="uc-head-endereco" data-torre-head="${bi}"></span>` +
-      `</span><span class="carga-acc-chevron uc-colapsavel-chevron" aria-hidden="true"></span>`;
-    head.addEventListener("click", () => {
-      _torreAberta[bi] = !aberta;
-      renderBlocos();
-    });
-    bloco.appendChild(head);
-    if (aberta) {
-      const corpo = document.createElement("div");
-      corpo.className = "uc-colapsavel-corpo";
-      const grid = document.createElement("div");
-      grid.className = "grid grid-2";
-      grid.id = `torreCampos-${bi}`;
-      corpo.appendChild(grid);
-      // Geração automática de complementos (2+ UCs)
-      const gen = document.createElement("div");
-      gen.id = `torreGen-${bi}`;
-      gen.style.cssText =
-        "display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:10px";
-      {
-        const fAndar = _campo(
-          "Aptos por andar",
-          _inp(b.aptosPorAndar, (v) => (b.aptosPorAndar = v), {
-            type: "number",
-            placeholder: "Ex: 4",
-          }),
-        );
-        fAndar.querySelector("input").parentElement.style.maxWidth = "";
-        gen.appendChild(fAndar);
-        let btnGerar;
-        const fCompl = _campo(
-          "Primeiro complemento",
-          _inp(
-            b.complInicial,
-            (v) => {
-              b.complInicial = v;
-              if (btnGerar) btnGerar.disabled = !/\d/.test(String(v || ""));
-            },
-            { placeholder: "Ex: 101 ou Apto 01" },
-          ),
-        );
-        gen.appendChild(fCompl);
-        btnGerar = document.createElement("button");
-        btnGerar.type = "button";
-        btnGerar.className = "btn btn-ghost";
-        btnGerar.disabled = !/\d/.test(String(b.complInicial || ""));
-        btnGerar.textContent = `⧉ Gerar complementos das ${(b.ucs || []).length} UCs`;
-        btnGerar.addEventListener("click", () => gerarComplementosTorre(bi));
-        gen.appendChild(btnGerar);
-      }
-      corpo.appendChild(gen);
-      const nd52Box = document.createElement("div");
-      nd52Box.id = `torreNd52-${bi}`;
-      corpo.appendChild(nd52Box);
-      const accs = document.createElement("div");
-      accs.id = `torreAccs-${bi}`;
-      corpo.appendChild(accs);
-      const resultado = document.createElement("div");
-      resultado.className = "resultado-cargas divider";
-      resultado.id = `torreResultado-${bi}`;
-      corpo.appendChild(resultado);
-      bloco.appendChild(corpo);
-    }
-    box.appendChild(bloco);
+  const ini = _torrePagina * ITENS_POR_PAGINA;
+  state.blocos.slice(ini, ini + ITENS_POR_PAGINA).forEach((b, k) => {
+    box.appendChild(_mkTorreCard(ini + k, total));
   });
-  // Preenche campos/accs/resultados das torres abertas + heads/KPIs
-  state.blocos.forEach((b, bi) => {
-    if (_torreAberta[bi] === true) {
-      renderTorreCampos(bi);
-      renderTorreAccs(bi);
-    } else {
-      atualizarTorreCalc(bi);
-    }
-  });
+  const pag = $("#blocosPag");
+  if (pag) {
+    pag.innerHTML = "";
+    pag.appendChild(
+      _mkPaginacao(totalPag, _torrePagina, (p) => {
+        _torrePagina = p;
+        renderBlocos();
+      }),
+    );
+  }
   atualizarBlocosKpis();
   if (window.CemigMarcadores) {
     CemigMarcadores.aplicar(box);
     CemigMarcadores.atualizarAvancar();
   }
 }
+function _mkTorreCard(bi, total) {
+  const b = state.blocos[bi];
+  const aberta = _torreAberta[bi] === true;
+  const bloco = document.createElement("div");
+  bloco.className = "uc-colapsavel" + (aberta ? " is-open" : "");
+  const head = document.createElement("button");
+  head.type = "button";
+  head.className = "uc-colapsavel-head";
+  head.setAttribute("aria-expanded", aberta ? "true" : "false");
+  head.innerHTML =
+    `<span class="uc-colapsavel-titulo">Torre <span class="carga-acc-badge">${bi + 1} de ${total}</span></span>` +
+    `<span class="carga-acc-chevron uc-colapsavel-chevron" aria-hidden="true"></span>`;
+  head.addEventListener("click", () => {
+    btToggleExclusivo(_torreAberta, bi, !aberta);
+    renderBlocos();
+  });
+  bloco.appendChild(head);
+  if (!aberta) return bloco;
+  const corpo = document.createElement("div");
+  corpo.className = "uc-colapsavel-corpo";
+  corpo.appendChild(_blocoEndereco(""));
+  const grid = document.createElement("div");
+  grid.className = "grid grid-2";
+  grid.appendChild(
+    _campo(
+      "Identificação da torre",
+      _inp(b.nome, (v) => (b.nome = v), { placeholder: `${bi + 1}` }),
+    ),
+  );
+  {
+    const f = _campo(
+      `Quantidade de unidades na torre ${bi + 1}`,
+      _inp(b.qtdUCs, (v) => sincronizarUCsTorre(bi, v), {
+        type: "number",
+        placeholder: "0",
+      }),
+    );
+    f.setAttribute("data-noopt", "");
+    grid.appendChild(f);
+  }
+  grid.appendChild(
+    _campo(
+      "Demanda do condomínio (kVA)",
+      _inp(
+        b.demandaIncendio,
+        (v) => {
+          b.demandaIncendio = v;
+          autoSelecionarDisjTorres();
+          _refreshDisjCondominio(bi);
+          atualizarBlocosKpis();
+        },
+        { type: "number", placeholder: "0" },
+      ),
+    ),
+  );
+  {
+    const sel = _selectDe(
+      opcoesDisjIncendioTorre(b),
+      b.disjIncendio,
+      (v) => (b.disjIncendio = v),
+      true,
+    );
+    sel.id = `disjCondominio-${bi}`;
+    grid.appendChild(_campo("Disjuntor do condomínio", sel, "field--float"));
+  }
+  corpo.appendChild(grid);
+  if (bi === 0 && total > 1) {
+    const row = document.createElement("div");
+    row.className = "acao-central";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn btn-ghost";
+    btn.textContent = "⧉ Replicar torre 1 para todas as torres";
+    btn.addEventListener("click", replicarPrimeiro);
+    row.appendChild(btn);
+    corpo.appendChild(row);
+  }
+  bloco.appendChild(corpo);
+  return bloco;
+}
+// Reapresenta as opções do Disjuntor do condomínio quando a demanda muda
+// (sem re-render do card — mantém o foco no campo de demanda).
+function _refreshDisjCondominio(bi) {
+  const sel = $(`#disjCondominio-${bi}`);
+  const b = state.blocos[bi];
+  if (!sel || !b) return;
+  const ops = opcoesDisjIncendioTorre(b);
+  sel.innerHTML =
+    '<option value=""></option>' +
+    ops.map((o) => `<option value="${o}">${o}</option>`).join("");
+  sel.value =
+    b.disjIncendio && ops.includes(b.disjIncendio) ? b.disjIncendio : "";
+}
+
+/* ============================================================
+   Etapa "Dados das unidades" (condomínio) — chips por torre +
+   unidades da torre selecionada em acordeões paginados; no
+   rodapé os totais da torre e o disjuntor geral (radio).
+   ============================================================ */
+function renderUnidadesTorres() {
+  const chips = $("#unidadesChips");
+  if (!chips) return;
+  sincronizarBlocos();
+  autoSelecionarDisjTorres();
+  if (_uniTorre >= state.blocos.length) _uniTorre = 0;
+  chips.innerHTML = "";
+  state.blocos.forEach((b, bi) => {
+    const c = document.createElement("button");
+    c.type = "button";
+    c.className = "torre-chip" + (bi === _uniTorre ? " on" : "");
+    c.textContent = `Torre ${b.nome || bi + 1}`;
+    c.addEventListener("click", () => {
+      _uniTorre = bi;
+      renderUnidadesTorres();
+    });
+    chips.appendChild(c);
+  });
+  renderUnidadesTorreAtual();
+}
+// Re-render estrutural da torre selecionada (topo, acordeões, rodapé).
+function renderUnidadesTorreAtual() {
+  const box = $("#unidadesBox");
+  const bi = _uniTorre;
+  const b = state.blocos[bi];
+  if (!box || !b) return;
+  const ucs = b.ucs || [];
+  const modoCalc = calcBlocoMultiTorres(b).modoCalculadora;
+  renderUnidadesTopo(bi);
+  const totalPag = Math.max(1, Math.ceil(ucs.length / ITENS_POR_PAGINA));
+  let pagAtual = _uniPagina[bi] || 0;
+  if (pagAtual >= totalPag) pagAtual = _uniPagina[bi] = totalPag - 1;
+  box.innerHTML = "";
+  const ini = pagAtual * ITENS_POR_PAGINA;
+  ucs.slice(ini, ini + ITENS_POR_PAGINA).forEach((u, k) => {
+    box.appendChild(_mkUnidadeCard(bi, ini + k, modoCalc));
+  });
+  const pag = $("#unidadesPag");
+  if (pag) {
+    pag.innerHTML = "";
+    pag.appendChild(
+      _mkPaginacao(totalPag, pagAtual, (p) => {
+        _uniPagina[bi] = p;
+        renderUnidadesTorreAtual();
+      }),
+    );
+  }
+  renderUnidadesResultado();
+  if (window.CemigMarcadores) {
+    CemigMarcadores.aplicar(box.closest(".card") || box);
+    CemigMarcadores.atualizarAvancar();
+  }
+}
+// Ferramentas da torre acima da lista: Demanda geral não residencial (só no
+// método 5.2 com UCs não residenciais) + geração de complementos/replicar.
+function renderUnidadesTopo(bi) {
+  const topo = $("#unidadesTopo");
+  const b = state.blocos[bi];
+  if (!topo || !b) return;
+  const ucs = b.ucs || [];
+  const calcTorre = calcBlocoMultiTorres(b);
+  topo.innerHTML = "";
+  if (!calcTorre.modoCalculadora && calcTorre.temNaoResidencial) {
+    const grid = document.createElement("div");
+    grid.className = "grid grid-2";
+    const f = _campo(
+      "Demanda geral não residencial (kVA)",
+      _inp(
+        b.demandaNaoResidencial,
+        (v) => {
+          b.demandaNaoResidencial = v;
+          atualizarUnidadesCalc();
+        },
+        { type: "number", placeholder: "0,0" },
+      ),
+    );
+    f.setAttribute("data-noopt", "");
+    const hint = document.createElement("span");
+    hint.className = "field-hint";
+    hint.textContent =
+      "Demanda calculada pelo responsável técnico para o conjunto das UCs não residenciais (comercial/industrial/rural) da torre.";
+    f.appendChild(hint);
+    grid.appendChild(f);
+    topo.appendChild(grid);
+  }
+  if (ucs.length > 1) {
+    const linha = document.createElement("div");
+    linha.className = "unidades-toolbar";
+    const fAndar = _campo(
+      "Aptos por andar",
+      _inp(b.aptosPorAndar, (v) => (b.aptosPorAndar = v), {
+        type: "number",
+        placeholder: "Ex: 4",
+      }),
+    );
+    let btnGerar;
+    const fCompl = _campo(
+      "Primeiro complemento",
+      _inp(
+        b.complInicial,
+        (v) => {
+          b.complInicial = v;
+          if (btnGerar) btnGerar.disabled = !/\d/.test(String(v || ""));
+        },
+        { placeholder: "Ex: 101 ou Apto 01" },
+      ),
+    );
+    btnGerar = document.createElement("button");
+    btnGerar.type = "button";
+    btnGerar.className = "btn btn-ghost";
+    btnGerar.disabled = !/\d/.test(String(b.complInicial || ""));
+    btnGerar.textContent = `⧉ Gerar complementos das ${ucs.length} UCs`;
+    btnGerar.addEventListener("click", () => gerarComplementosTorre(bi));
+    const btnRep = document.createElement("button");
+    btnRep.type = "button";
+    btnRep.className = "btn btn-ghost";
+    btnRep.textContent = "⧉ Replicar UC 1 para todas";
+    btnRep.addEventListener("click", () => replicarUC1Torre(bi));
+    linha.append(fAndar, fCompl, btnGerar, btnRep);
+    topo.appendChild(linha);
+  }
+}
+function _mkUnidadeCard(bi, ui, modoCalc) {
+  const b = state.blocos[bi];
+  const u = b.ucs[ui];
+  const chave = `${bi}:${ui}`;
+  if (!(chave in _uniAberta) && ui === 0) _uniAberta[chave] = true;
+  const aberta = _uniAberta[chave] === true;
+  const bloco = document.createElement("div");
+  bloco.className = "uc-colapsavel" + (aberta ? " is-open" : "");
+  const head = document.createElement("button");
+  head.type = "button";
+  head.className = "uc-colapsavel-head";
+  head.setAttribute("aria-expanded", aberta ? "true" : "false");
+  head.innerHTML =
+    `<span class="uc-head-info"><span class="uc-head-eyebrow">Torre ${b.nome || bi + 1}</span>` +
+    `<span class="uc-colapsavel-titulo">Unidade consumidora <span class="carga-acc-badge">${ui + 1} de ${b.ucs.length}</span></span></span>` +
+    `<span class="carga-acc-chevron uc-colapsavel-chevron" aria-hidden="true"></span>`;
+  head.addEventListener("click", () => {
+    btToggleExclusivo(_uniAberta, chave, !aberta);
+    renderUnidadesTorreAtual();
+  });
+  bloco.appendChild(head);
+  if (!aberta) return bloco;
+  const corpo = document.createElement("div");
+  corpo.className = "uc-colapsavel-corpo";
+  const endereco = _blocoEndereco(u.complemento);
+  corpo.appendChild(endereco);
+  const grid = document.createElement("div");
+  grid.className = "grid grid-2";
+  {
+    const f = _campo(
+      "Complemento da unidade",
+      _inp(
+        u.complemento,
+        (v) => {
+          u.complemento = v;
+          endereco.querySelector(".uc-head-endereco").textContent =
+            enderecoObraTxt(v);
+        },
+        { placeholder: "Ex: 101" },
+      ),
+    );
+    if (b.ucs.length > 1) f.setAttribute("data-noopt", "");
+    grid.appendChild(f);
+  }
+  {
+    const f = _campo(
+      "Tipo de solicitação",
+      _selectDe(
+        ["Conexão Nova", "Alteração de Carga", "Caixa Existente sem Alteração"],
+        u.solicitacao,
+        (v) => {
+          u.solicitacao = v;
+          renderUnidadesTorreAtual();
+        },
+      ),
+      "field--float",
+    );
+    f.setAttribute("data-noopt", "");
+    grid.appendChild(f);
+  }
+  {
+    const f = _campo(
+      "Atividade principal",
+      _selectDe(
+        ["Residencial", "Comercial", "Industrial", "Rural"],
+        u.atividade,
+        (v) => {
+          u.atividade = v;
+          renderUnidadesTorreAtual();
+        },
+        true,
+      ),
+      "field--float",
+    );
+    f.setAttribute("data-noopt", "");
+    grid.appendChild(f);
+  }
+  if (u.atividade === "Residencial") {
+    const f = _campo(
+      "Área privativa (m²)",
+      _inp(
+        u.area,
+        (v) => {
+          u.area = v;
+          // A área não muda o método (só o valor A do ND-5.2) — atualiza
+          // apenas os calculados, sem re-render (mantém o foco).
+          atualizarUnidadesCalc();
+        },
+        { type: "number", placeholder: "Ex: 65" },
+      ),
+    );
+    f.setAttribute("data-noopt", "");
+    grid.appendChild(f);
+  } else {
+    const f = _campo(
+      "Ramo de atividade",
+      _inp(u.ramo, (v) => (u.ramo = v), { placeholder: "Obrigatório" }),
+    );
+    f.setAttribute("data-noopt", "");
+    grid.appendChild(f);
+  }
+  if (u.solicitacao !== "Conexão Nova") {
+    const f = _campo(
+      "Instalação",
+      _inp(u.instalacao, (v) => (u.instalacao = v), {
+        placeholder: "Nº instalação existente",
+      }),
+    );
+    f.setAttribute("data-noopt", "");
+    grid.appendChild(f);
+    grid.appendChild(
+      _campo(
+        "Unidade Consumidora",
+        _inp(u.unidadeConsumidora, (v) => (u.unidadeConsumidora = v)),
+      ),
+    );
+  }
+  const semAlt = ucSemAlteracao(u);
+  // Carga prevista (kW) — substitui a antiga tabela de previsão de carga;
+  // aparece no método 5.2 quando a torre tem mais de 3 UCs.
+  if (!modoCalc && b.ucs.length > 3 && !semAlt) {
+    const f = _campo(
+      "Carga prevista da unidade (kW)",
+      _inp(
+        u.cargaPrevista,
+        (v) => {
+          u.cargaPrevista = v;
+          atualizarUnidadesCalc();
+        },
+        { type: "number", placeholder: "0,0" },
+      ),
+    );
+    f.setAttribute("data-noopt", "");
+    grid.appendChild(f);
+  }
+  grid.appendChild(
+    _campo(
+      "Disjuntor da unidade",
+      _selectDe(
+        DISJ.map((d) => d.fx),
+        u.disjPara,
+        (v) => {
+          u.disjPara = v;
+          atualizarUnidadesCalc();
+        },
+        true,
+      ),
+      "field--float",
+    ),
+  );
+  corpo.appendChild(grid);
+  // ND-5.2 não calcula → a UC detalha as cargas como no BT individual
+  // (mesma ilha montarCargasBT; demanda/carga da UC saem do cálculo).
+  if (modoCalc && !semAlt) {
+    const divisor = document.createElement("div");
+    divisor.className = "divider";
+    const titulo = document.createElement("span");
+    titulo.className = "subbox-title";
+    titulo.textContent = "Cargas da unidade";
+    divisor.appendChild(titulo);
+    corpo.appendChild(divisor);
+    const cargasBox = document.createElement("div");
+    corpo.appendChild(cargasBox);
+    montarCargasBT(cargasBox, u, ui, () => atualizarUnidadesCalc());
+  }
+  if (b.ucs.length > 1) {
+    const row = document.createElement("div");
+    row.className = "acao-central";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn btn-ghost btn-danger-ghost";
+    btn.textContent = "🗑 Excluir unidade";
+    btn.addEventListener("click", () => excluirUnidadeTorre(bi, ui));
+    row.appendChild(btn);
+    corpo.appendChild(row);
+  }
+  bloco.appendChild(corpo);
+  return bloco;
+}
+function excluirUnidadeTorre(bi, ui) {
+  const b = state.blocos[bi];
+  if (!b || (b.ucs || []).length <= 1) return;
+  b.ucs.splice(ui, 1);
+  b.qtdUCs = String(b.ucs.length);
+  // Estados de abertura ficam defasados após o splice — zera os da torre.
+  Object.keys(_uniAberta).forEach((k) => {
+    if (k.startsWith(`${bi}:`)) delete _uniAberta[k];
+  });
+  autoSelecionarDisjTorres();
+  renderUnidadesTorreAtual();
+}
+// Atualiza SÓ os derivados da torre selecionada (rodapé, KPIs, avisos) —
+// mudanças estruturais (solicitação/atividade/qtd) re-renderizam a torre.
+function atualizarUnidadesCalc() {
+  autoSelecionarDisjTorres();
+  renderUnidadesResultado();
+  atualizarBlocosKpis();
+}
+// Rodapé da torre: Carga total + Demanda total + Disjuntor da torre (radio).
+function renderUnidadesResultado() {
+  const box = $("#unidadesResultado");
+  const b = state.blocos[_uniTorre];
+  if (!box || !b) return;
+  const calcTorre = calcBlocoMultiTorres(b);
+  const demandaTorre = calcTorre.demandaUcs + num(b.demandaIncendio);
+  box.innerHTML = "";
+  // Método 5.2 com área média fora da tabela: avisa e mantém residencial 0.
+  if (!calcTorre.modoCalculadora && !calcTorre.nd52) {
+    const aviso = document.createElement("div");
+    aviso.className = "alert alert-warn";
+    aviso.style.marginTop = "14px";
+    aviso.textContent = `Método ND-5.2 (${calcTorre.qtdApart} apartamentos): informe a área de cada apartamento residencial da torre — a área média ponderada precisa ficar entre 1 e 1000 m² (atual: ${fmt2(calcTorre.areaMedia)} m²). A demanda residencial permanece zerada até lá.`;
+    box.appendChild(aviso);
+  }
+  const wrap = document.createElement("div");
+  wrap.className = "resultado-cargas divider";
+  const kpis = document.createElement("div");
+  kpis.className = "resultado-kpis";
+  const mkKpi = (label, valor, titulo) => {
+    const card = document.createElement("div");
+    card.className = "resultado-card";
+    card.innerHTML =
+      `<span class="resultado-card-info" title="${titulo}" aria-hidden="true">i</span>` +
+      `<div class="resultado-card-label">${label}</div>` +
+      `<div class="resultado-card-valor">${valor}</div>`;
+    return card;
+  };
+  kpis.append(
+    mkKpi(
+      "Carga total da Torre",
+      `${fmt2(cargaTotalTorre(b))} kW`,
+      "Soma das cargas previstas (ou calculadas) das unidades ativas da torre.",
+    ),
+    mkKpi(
+      "Demanda total da torre",
+      `${fmt2(demandaTorre)} kVA`,
+      "Demanda das UCs pelo método aplicável (ND-5.2 ou calculadora) mais a demanda do condomínio.",
+    ),
+  );
+  wrap.appendChild(kpis);
+  const card = document.createElement("div");
+  card.className = "resultado-card resultado-disjuntor";
+  card.innerHTML = `<div class="resultado-card-label">Disjuntor da torre adequado de acordo com a seleção</div>`;
+  const ops = opcoesDisjGeralTorre(b);
+  if (ops.length) {
+    const tg = document.createElement("div");
+    tg.className = "toggle-group";
+    ops.forEach((dj) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className =
+        "toggle-btn" + ((b.disjGeral || ops[0]) === dj ? " on" : "");
+      btn.textContent = dj;
+      btn.addEventListener("click", () => {
+        b.disjGeral = dj;
+        renderUnidadesResultado();
+      });
+      tg.appendChild(btn);
+    });
+    card.appendChild(tg);
+  } else {
+    const hint = document.createElement("div");
+    hint.className = "field-hint";
+    hint.textContent =
+      "Informe os disjuntores e a previsão de carga das unidades para ver o disjuntor adequado.";
+    card.appendChild(hint);
+  }
+  wrap.appendChild(card);
+  box.appendChild(wrap);
+}
 
 /* ============================================================
    Prévia & PDF (porte dos ramos coletivo/multi de
    views/revisar.js + validacaoObrigatorios de app.js:750-823)
    ============================================================ */
-// Índices das etapas para os lápis (após o pruning): coletivo tem 8 páginas,
-// condomínio 7 — tipo=1, empr=2 e o miolo varia; corr fica antes de
+// Índices das etapas para os lápis (após o pruning): coletivo e condomínio
+// têm 8 páginas — tipo=1, empr=2 e o miolo varia; corr fica antes de
 // Observações (penúltima antes de obs/prévia).
 const PG = MULTI
-  ? { tipo: 1, empr: 2, blocos: 3, corr: 4 }
+  ? { tipo: 1, empr: 2, blocos: 3, unidades: 4, corr: 5 }
   : { tipo: 1, empr: 2, ucs: 3, cargas: 4, corr: 5 };
 function validacaoObrigatoriosColetivo() {
   const faltando = [];
@@ -1474,27 +1488,50 @@ function validacaoObrigatoriosColetivo() {
   req(o.cidade, "Cidade da obra");
   req(o.cep, "CEP da obra");
   req(o.art, "Nº ART/TRT de Projeto");
-  if (!(demandaTotalGeralF() > 0))
-    faltando.push("Previsão de carga / demanda das UCs");
-  if (!MULTI && temUCNaoResidencialF())
+  if (!(demandaTotalGeralF() > 0)) faltando.push("Demanda das UCs");
+  // Demanda geral não residencial: exigida apenas no método 5.2 (no modo
+  // calculadora as UCs não residenciais detalham as próprias cargas).
+  if (!MULTI && !modoCalculadoraF() && temUCNaoResidencialF())
     req(
       state.atend.demandaNaoResidencial,
       "Demanda geral não residencial (kVA)",
     );
+  // Método 5.2 sem ND-5.2 calculando = área média fora da tabela (vazia ou
+  // acima de 1000 m²) — a demanda residencial está zerada até corrigir.
+  if (!MULTI && !modoCalculadoraF() && !nd52InfoF().nd52)
+    faltando.push(
+      "Área dos apartamentos residenciais (média ponderada entre 1 e 1000 m²)",
+    );
+  if (!MULTI && modoCalculadoraF())
+    state.ucBlocos.forEach((u, ui) => {
+      if (!ucSemAlteracao(u) && !(num((u.cargas || {})._demanda) > 0))
+        faltando.push(
+          `Cargas da ${u.identificacao || `UC ${ui + 1}`} (demanda calculada)`,
+        );
+    });
   if (MULTI)
     state.blocos.forEach((b, bi) => {
+      const cb = calcBlocoMultiTorres(b);
       if (
-        calcBlocoMultiTorres(b).temNaoResidencial &&
+        !cb.modoCalculadora &&
+        cb.temNaoResidencial &&
         !String(b.demandaNaoResidencial || "").trim()
       )
         faltando.push(
           `Demanda geral não residencial — Torre ${b.nome || bi + 1} (kVA)`,
         );
+      if (!cb.modoCalculadora && !cb.nd52)
+        faltando.push(
+          `Área dos apartamentos residenciais — Torre ${b.nome || bi + 1} (média ponderada entre 1 e 1000 m²)`,
+        );
+      if (cb.modoCalculadora)
+        (b.ucs || []).forEach((u, ui) => {
+          if (!ucSemAlteracao(u) && !(num((u.cargas || {})._demanda) > 0))
+            faltando.push(
+              `Cargas da ${u.identificacao || `UC ${ui + 1}`} — Torre ${b.nome || bi + 1}`,
+            );
+        });
     });
-  if (demandaResidencialManualInvalidaF())
-    faltando.push(
-      "Demanda residencial manual não pode ser menor que a calculada (ND-5.2)",
-    );
   if (hibridoF() && !validacaoHibridoF().ok)
     faltando.push("Pendências do atendimento híbrido");
   if (o.restricaoAmbiental === "Sim" && !o.restricaoAceite)
@@ -1638,6 +1675,9 @@ function exportarPdfBT() {
   gerarPdfDoc({
     multiTorres: MULTI,
     coletivo: coletivoF(),
+    // ND-5.2 não calculou: as UCs detalharam as cargas (ND-5.1) e o PDF
+    // imprime carga/demanda calculadas por UC.
+    modoCalculadora: !MULTI && modoCalculadoraF(),
     atend: state.atend,
     prop: state.prop,
     corr: state.corr,
@@ -1660,8 +1700,9 @@ function exportarPdfBT() {
 /* ===== hooks por página (chamados pelo goTo do core) ===== */
 window.onPaginaAtiva = function (sec) {
   if (sec.querySelector("#ucsColetivoBox")) renderUcsColetivo();
-  if (sec.querySelector("#prevTableBox")) renderCargasColetivo();
+  if (sec.querySelector("#kpiDemandaAtendimento")) renderCargasColetivo();
   if (sec.querySelector("#blocosBox")) renderBlocos();
+  if (sec.querySelector("#unidadesChips")) renderUnidadesTorres();
   if (sec.querySelector("#previaConteudo")) renderPreviaColetivo();
 };
 

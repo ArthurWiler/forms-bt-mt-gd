@@ -2,35 +2,15 @@
 
 <div class="card">
   <div class="section-eyebrow">Etapa 6</div>
-  <h3 class="card-title">Previsão de Carga por Unidade Consumidora</h3>
+  <h3 class="card-title">Demanda do Atendimento</h3>
   <p class="card-sub">
-    Informe a previsão de carga instalada (kW) de cada UC. A demanda total do
-    agrupamento é calculada separadamente: parte residencial pelo ND-5.2,
-    parte não residencial pelo campo abaixo.
+    Quando o ND-5.2 calcula (4 ou mais apartamentos residenciais), a demanda
+    do agrupamento é a parte residencial pelo ND-5.2 mais a demanda geral não
+    residencial informada abaixo. Quando o ND-5.2 não se aplica, cada UC
+    detalha as próprias cargas na etapa de Unidades Consumidoras (método
+    ND-5.1) e a demanda é a soma das demandas calculadas.
   </p>
-  <div id="prevToolbar" class="prev-toolbar" style="display: none">
-    <button class="btn btn-ghost" type="button" onclick="replicarPrevTodas()">
-      Replicar previsão da UC 1 para todas
-    </button>
-  </div>
   <div id="nd52Alertas"></div>
-  <div
-    class="grid grid-2"
-    id="demandaManualBox"
-    style="display: none; margin-bottom: 14px"
-  >
-    <div class="field field--plain">
-      <label>Demanda residencial manual (kVA)</label>
-      <input
-        type="number"
-        data-k="atend.demandaResidencialManual"
-        placeholder="0,00"
-        oninput="_sync('atend.demandaResidencialManual'); atualizarCargasColetivo()"
-      />
-      <span class="field-hint" id="demandaManualHint"></span>
-    </div>
-  </div>
-  <div id="demandaManualInvalida"></div>
   <div
     class="grid grid-2"
     id="demandaNaoResBox"
@@ -51,7 +31,6 @@
       </span>
     </div>
   </div>
-  <div class="prev-table-wrap" id="prevTableBox"></div>
   <div class="prev-total" style="margin-top: 14px">
     <div class="kpi">
       <div class="kpi-label">Total Carga Instalada</div>

@@ -691,8 +691,11 @@ select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
   color: var(--verde-cemig);
   white-space: nowrap;
 }
+/* :not() — a ilha de cargas (busca com lupa + contadores .qtd-ctrl) vive
+   dentro da tabela de UCs (.motores-table.uc-ident-table) no coletivo/
+   torres e mantém o próprio visual (ver shared.css, bloco .motores-table). */
 .motores-table select,
-.motores-table input {
+.motores-table input:not(.carga-busca input, .qtd-ctrl input) {
   width: 100%;
   padding: 5px 8px;
   border: 1px solid var(--borda);

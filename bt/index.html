@@ -83,13 +83,17 @@
           <span class="vstep-num">4</span>
           <span class="vstep-label">Dados das Torres</span>
         </button>
+        <button type="button" class="vstep" data-flow="condominio">
+          <span class="vstep-num">5</span>
+          <span class="vstep-label">Dados das Unidades</span>
+        </button>
         <button type="button" class="vstep" data-flow="coletivo">
           <span class="vstep-num">4</span>
           <span class="vstep-label">Unidades Consumidoras</span>
         </button>
         <button type="button" class="vstep" data-flow="coletivo">
           <span class="vstep-num">5</span>
-          <span class="vstep-label">Previsão de Carga</span>
+          <span class="vstep-label">Demanda</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">6</span>
@@ -128,6 +132,11 @@
           class="page"
           data-flow="condominio"
           data-src="etapas/12-blocos.html"
+        ></section>
+        <section
+          class="page"
+          data-flow="condominio"
+          data-src="etapas/15-unidades-torres.html"
         ></section>
         <section
           class="page"
@@ -189,6 +198,7 @@
 
     <script src="js/map.js"></script>
     <script src="../shared/js/geo.js"></script>
+    <script src="../shared/js/calc-demanda.js"></script>
     <script src="../shared/js/form-marcadores.js"></script>
     <script src="js/bt-core.js"></script>
     <script src="js/coletivo-app.js"></script>

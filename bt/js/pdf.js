@@ -7,6 +7,7 @@ function gerarPdfDoc(S) {
   const {
     multiTorres,
     coletivo,
+    modoCalculadora, // coletivo com ND-5.2 sem calcular: cargas detalhadas por UC
     atend,
     prop,
     corr,
@@ -404,7 +405,12 @@ function gerarPdfDoc(S) {
       sec(
         `4.${bi + 1}  TORRE ${b.nome || bi + 1} — UNIDADES CONSUMIDORAS`,
       );
-      // Tabela 1: identificação das UCs
+      // Identificação das UCs (carga/demanda integram a identificação).
+      // Modo da torre: 4+ apartamentos residenciais → método 5.2 (Carga
+      // prevista informada); senão → carga/demanda calculadas pelas cargas
+      // detalhadas (ND-5.1) da UC.
+      const cb = calcBlocoMultiTorres(b);
+      const modoCalcTorre = cb.modoCalculadora;
       tabelaAuto(
         [
           "Unidade",
@@ -413,8 +419,10 @@ function gerarPdfDoc(S) {
           "Instalação",
           "Solicitação",
           "Disjuntor",
+          "Carga (kW)",
+          "Dem. (kVA)",
         ],
-        [26, 22, 30, 28, 38, 26],
+        [22, 18, 24, 22, 30, 22, 18, 18],
         ucs.map((u, ui) => [
           u.identificacao || `UC ${ui + 1}`,
           u.complemento || "—",
@@ -422,53 +430,34 @@ function gerarPdfDoc(S) {
           u.solicitacao !== "Conexão Nova" ? u.instalacao || "—" : "—",
           u.solicitacao,
           u.disjPara || "—",
+          ucSemAlteracao(u)
+            ? "—"
+            : modoCalcTorre
+              ? fmt2(num((u.cargas || {})._cargaKw))
+              : fmt2(prevKwUC(u)),
+          ucSemAlteracao(u) || !modoCalcTorre
+            ? "—"
+            : fmt2(num((u.cargas || {})._demanda)),
         ]),
       );
       cy += 2;
-      // Tabela 2: previsão de carga das UCs
-      sec(
-        `4.${bi + 1}.1  Torre ${b.nome || bi + 1} — PREVISÃO DE CARGA`,
-      );
-      tabela(
-        [
-          "Unidade",
-          "Ilum.",
-          "Tomada",
-          "Chuv.",
-          "Ar Cond.",
-          "Outros",
-          "Carga (kW)",
-          "Dem. (kVA)",
-        ],
-        [30, 20, 22, 20, 22, 20, 24, 24],
-        ucs
-          .filter((u) => !ucSemAlteracao(u))
-          .map((u, ui) => [
-            u.identificacao || `UC ${ui + 1}`,
-            (u.prev || {}).ilum || "—",
-            (u.prev || {}).tomada || "—",
-            (u.prev || {}).chuveiro || "—",
-            (u.prev || {}).ar || "—",
-            (u.prev || {}).outros || "—",
-            fmt2(prevKwUC(u)),
-            (u.prev || {}).demanda || "—",
-          ]),
-      );
-      cy += 2;
-      // Demanda da torre (ND-5.2 por torre): residencial + não residencial + incêndio
-      const cb = calcBlocoMultiTorres(b);
+      // Demanda da torre: ND-5.2 (residencial + não residencial) ou soma
+      // das demandas calculadas por UC; incêndio somado à parte.
       kvPairs([
-        cb.qtdApart
+        !modoCalcTorre
           ? [
               "Demanda residencial (ND-5.2)",
-              `${fmt2(cb.demResidencial)} kVA` +
-                (cb.nd52
-                  ? ` (${cb.qtdApart} ap. · área méd. ${fmt2(cb.areaMedia)} m²)`
-                  : " (manual)"),
+              `${fmt2(cb.demResidencial)} kVA (${cb.qtdApart} ap. · área méd. ${fmt2(cb.areaMedia)} m²)`,
             ]
           : null,
-        cb.temNaoResidencial
+        !modoCalcTorre && cb.temNaoResidencial
           ? ["Demanda não residencial", `${fmt2(cb.demNaoResidencial)} kVA`]
+          : null,
+        modoCalcTorre
+          ? [
+              "Demanda das UCs (cargas detalhadas)",
+              `${fmt2(cb.demandaUcs)} kVA`,
+            ]
           : null,
         num(b.demandaIncendio)
           ? [
@@ -508,42 +497,33 @@ function gerarPdfDoc(S) {
     );
     cy += 1;
     tabela(
-      ["Unidade", "Norma", "Caixa", "Atividade principal", "Ramo de atividade"],
-      [26, 22, 26, 50, 50],
+      [
+        "Unidade",
+        "Norma",
+        "Caixa",
+        "Atividade principal",
+        "Ramo de atividade",
+        "Carga (kW)",
+        "Dem. (kVA)",
+      ],
+      [24, 18, 22, 38, 36, 20, 20],
       ucBlocos.map((u, ui) => [
         u.identificacao || "UC " + (ui + 1),
         hibrido ? `ND ${u.nd}` : "—",
         u.caixa || "—",
         u.atividade || "—",
         u.ramo || "—",
+        ucSemAlteracao(u)
+          ? "—"
+          : modoCalculadora
+            ? fmt2(num((u.cargas || {})._cargaKw))
+            : fmt2(prevKwUC(u)),
+        // Demanda por UC só existe no modo calculadora (ND-5.1 por UC);
+        // no método 5.2 a demanda é agregada (ND-5.2 + não residencial).
+        ucSemAlteracao(u) || !modoCalculadora
+          ? "—"
+          : fmt2(num((u.cargas || {})._demanda)),
       ]),
-    );
-    cy += 2;
-    sec("5.  PREVISÃO DE CARGA POR UNIDADE CONSUMIDORA");
-    tabela(
-      [
-        "Unidade",
-        "Ilum.",
-        "Tomada",
-        "Chuveiro",
-        "Ar Cond.",
-        "Outros",
-        "Carga (kW)",
-        "Dem. (kVA)",
-      ],
-      [30, 20, 22, 24, 22, 20, 22, 22],
-      ucBlocos
-        .filter((u) => !ucSemAlteracao(u))
-        .map((u) => [
-          u.identificacao || "UC",
-          (u.prev || {}).ilum || "—",
-          (u.prev || {}).tomada || "—",
-          (u.prev || {}).chuveiro || "—",
-          (u.prev || {}).ar || "—",
-          (u.prev || {}).outros || "—",
-          fmt2(prevKwUC(u)),
-          (u.prev || {}).demanda || "—",
-        ]),
     );
     totRow(
       `Total ${fmt2(prevTotalKw)} kW  |  Demanda`,
@@ -551,7 +531,7 @@ function gerarPdfDoc(S) {
     );
     cy += 2;
     if (atend.disjuntorGeral || trocaDisjGeral) {
-      sec("6.  DISJUNTOR GERAL");
+      sec("5.  DISJUNTOR GERAL");
       if (trocaDisjGeral) {
         kvPairs([
           ["Disjuntor geral existente", atend.disjGeralAtual],

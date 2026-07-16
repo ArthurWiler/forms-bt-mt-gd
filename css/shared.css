@@ -27,15 +27,29 @@ html {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 @keyframes fade {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ============================================================
@@ -685,7 +699,9 @@ label.restricao-aceite input[type="checkbox"] {
 .modalidade-screen .modalidade-secao.is-collapsed .modalidade-secao-chevron {
   transform: none;
 }
-.modalidade-screen .modalidade-secao:not(.is-collapsed) .modalidade-secao-chevron {
+.modalidade-screen
+  .modalidade-secao:not(.is-collapsed)
+  .modalidade-secao-chevron {
   transform: rotate(180deg);
 }
 
@@ -693,7 +709,10 @@ label.restricao-aceite input[type="checkbox"] {
 .modalidade-screen .modalidade-secao-corpo > .modalidade-grid {
   padding: var(--cmg-space-4) var(--cmg-space-4) var(--cmg-space-6);
 }
-.modalidade-screen .modalidade-secao.is-collapsed .modalidade-secao-corpo > .modalidade-grid {
+.modalidade-screen
+  .modalidade-secao.is-collapsed
+  .modalidade-secao-corpo
+  > .modalidade-grid {
   padding-top: 0;
   padding-bottom: 0;
 }
@@ -1496,8 +1515,8 @@ label.restricao-aceite input[type="checkbox"] {
    Bloco colapsável "Unidade consumidora N" (BT Individual).
    Envolve o seletor de equipamentos + o resultado de cada UC. O
    cabeçalho traz o título e um chevron (reaproveita o desenho de
-   .carga-acc-chevron via máscara). Aberto por padrão; ao fechar,
-   o chevron aponta para cima e o corpo some.
+   .carga-acc-chevron via máscara). Fechado o chevron aponta para
+   baixo; aberto, para cima (mesma convenção do .carga-acc).
    ============================================================ */
 /* Todo o bloco da UC (cabeçalho + corpo) é a caixa cinza #F4F5F4 arredondada;
    a busca e os acordeões ficam como cartões brancos por cima. O corpo é
@@ -1560,11 +1579,152 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .uc-colapsavel-chevron {
   color: var(--cmg-text);
 }
-.cemig-form .uc-colapsavel:not(.is-open) .uc-colapsavel-chevron {
+.cemig-form .uc-colapsavel.is-open .uc-colapsavel-chevron {
   transform: rotate(180deg);
 }
 .cemig-form .uc-colapsavel-corpo {
   padding-bottom: var(--cmg-space-4);
+}
+/* Eyebrow do card ("Torre N" acima de "Unidade consumidora") */
+.cemig-form .uc-head-eyebrow {
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-caption);
+  line-height: var(--cmg-lh-caption);
+  letter-spacing: var(--cmg-ls-tight);
+  color: var(--cmg-green-600);
+}
+/* Endereço readonly no corpo do card (torres/unidades do condomínio) —
+   reusa a tipografia do cabeçalho de UC (rótulo pequeno + valor bold). */
+.cemig-form .endereco-bloco {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: var(--cmg-space-4);
+}
+/* Linha de ação centrada dentro do card (replicar torre / excluir unidade) */
+.cemig-form .acao-central {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--cmg-space-6);
+}
+/* Ferramentas da torre acima da lista de unidades (gerar complementos,
+   replicar UC 1) */
+.cemig-form .unidades-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: var(--cmg-space-4);
+}
+/* ============================================================
+   Chips de torre (etapa "Dados das unidades" — múltiplas torres):
+   pílulas horizontais roláveis; a ativa fica verde sólida.
+   ============================================================ */
+.cemig-form .torre-chips {
+  display: flex;
+  gap: var(--cmg-space-3);
+  overflow-x: auto;
+  padding-bottom: var(--cmg-space-2);
+  margin-bottom: var(--cmg-space-4);
+}
+.cemig-form .torre-chips:empty {
+  display: none;
+}
+.cemig-form .torre-chip {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 var(--cmg-space-6);
+  border: 1px solid var(--cmg-neutral-400);
+  border-radius: var(--cmg-radius-pill);
+  background: var(--cmg-surface);
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-body);
+  letter-spacing: 0.2px;
+  color: var(--cmg-text-strong);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cemig-form .torre-chip:hover:not(.on) {
+  border-color: var(--cmg-green-600);
+  color: var(--cmg-green-600);
+}
+.cemig-form .torre-chip.on {
+  background: var(--cmg-green-600);
+  border-color: var(--cmg-green-600);
+  color: #fff;
+  font-weight: var(--cmg-fw-bold);
+}
+/* ============================================================
+   Paginação (listas de torres/unidades): « ‹ [n] de N › »
+   ============================================================ */
+.cemig-form .paginacao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cmg-space-2);
+  margin-top: var(--cmg-space-6);
+}
+.cemig-form .paginacao-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  border-radius: var(--cmg-radius-sm);
+  font-family: var(--cmg-font-family);
+  font-size: 18px;
+  color: var(--cmg-text);
+  cursor: pointer;
+}
+.cemig-form .paginacao-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.cemig-form .paginacao-btn:hover:not(:disabled) {
+  background: var(--cmg-surface-accent);
+  color: var(--cmg-green-600);
+}
+.cemig-form .paginacao-input {
+  width: 64px;
+  height: 44px;
+  box-sizing: border-box;
+  text-align: center;
+  border: 1px solid var(--cmg-neutral-400);
+  border-radius: var(--cmg-radius-sm);
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-body);
+  color: var(--cmg-text-strong);
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.cemig-form .paginacao-input::-webkit-outer-spin-button,
+.cemig-form .paginacao-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.cemig-form .paginacao-total {
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-body);
+  letter-spacing: 0.2px;
+  color: var(--cmg-text-strong);
+  margin-right: var(--cmg-space-2);
+}
+/* Ícone "i" dos KPIs da torre (tooltip nativo via title) */
+.cemig-form .resultado-card-info {
+  float: right;
+  width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--cmg-text);
+  border-radius: 50%;
+  font-family: var(--cmg-font-family);
+  font-size: 12px;
+  font-style: italic;
+  font-weight: var(--cmg-fw-bold);
+  color: var(--cmg-text);
+  cursor: help;
 }
 /* ============================================================
    Radio de seleção (○ vazio / ● preenchido) — componente único
@@ -1888,9 +2048,14 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .prev-table tbody tr:nth-child(even) {
   background: var(--cmg-surface);
 }
+/* No coletivo/múltiplas torres a ilha de cargas (montarCargasBT) é injetada
+   dentro de um td da tabela de UCs (.motores-table.uc-ident-table); os
+   inputs da busca (.carga-busca, lupa com padding-left próprio) e dos
+   contadores (.qtd-ctrl) mantêm o próprio visual — por isso os :not()
+   abaixo. A .motores-table interna da ilha (motores) segue valendo. */
 .cemig-form .prev-table input,
 .cemig-form .prev-table select,
-.cemig-form .motores-table input,
+.cemig-form .motores-table input:not(.carga-busca input, .qtd-ctrl input),
 .cemig-form .motores-table select,
 .cemig-form .qtd-ctrl input {
   border: 1px solid var(--cmg-border);
@@ -1901,7 +2066,7 @@ label.restricao-aceite input[type="checkbox"] {
 }
 .cemig-form .prev-table input:focus,
 .cemig-form .prev-table select:focus,
-.cemig-form .motores-table input:focus,
+.cemig-form .motores-table input:focus:not(.carga-busca input, .qtd-ctrl input),
 .cemig-form .motores-table select:focus {
   outline: none;
   border-color: var(--cmg-green-600);
@@ -1928,7 +2093,7 @@ label.restricao-aceite input[type="checkbox"] {
    escuros à esquerda, total à direita (valor em negrito) e botão "Adicionar
    motor" em pílula centralizada; remover é uma lixeira vermelha. */
 .cemig-form .motores-table select,
-.cemig-form .motores-table input {
+.cemig-form .motores-table input:not(.carga-busca input, .qtd-ctrl input) {
   min-height: 44px;
   padding: 0 var(--cmg-space-3);
   border-radius: var(--cmg-radius);
@@ -2094,7 +2259,7 @@ label.restricao-aceite input[type="checkbox"] {
   line-height: 20px;
   letter-spacing: 0.5px;
   text-align: center;
-  color: var(--cmg-success-700, #0B5445);
+  color: var(--cmg-success-700, #0b5445);
   flex: none;
 }
 .cemig-form .vstep.active {

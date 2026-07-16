@@ -86,7 +86,10 @@ function nd52ObterF(qtd) {
 // Calcula a demanda do agrupamento de apartamentos residenciais (ND-5.2).
 // Retorna null quando os parâmetros estão fora da faixa válida da norma
 // (qtd < 4 apartamentos ou área média ponderada > 1000 m²).
-function nd52CalcularDemandaApartamentos(areaMediaPonderada, quantidadeApartamentos) {
+function nd52CalcularDemandaApartamentos(
+  areaMediaPonderada,
+  quantidadeApartamentos,
+) {
   const A = nd52ObterA(areaMediaPonderada);
   const F = nd52ObterF(quantidadeApartamentos);
   if (A == null || F == null) return null;
@@ -111,30 +114,46 @@ function calcBlocoMultiTorres(b) {
   const ativos = ucs.filter((u) => !ucSemAlteracao(u));
   const residenciais = ativos.filter((u) => u.atividade === "Residencial");
   const qtdApart = residenciais.length;
+  // O método da torre depende SÓ da quantidade de apartamentos residenciais
+  // (ND-5.2 exige 4+); a área média define apenas o valor A dentro do 5.2.
+  const modoCalculadora = qtdApart < 4;
   let areaMedia = 0,
-    nd52 = null,
-    demResidencial = 0;
+    nd52 = null;
   if (qtdApart > 0) {
     areaMedia = residenciais.reduce((s, u) => s + num(u.area), 0) / qtdApart;
     nd52 = nd52CalcularDemandaApartamentos(areaMedia, qtdApart);
-    // Fallback (qtd < 4 apartamentos ou área fora da tabela): soma das demandas
-    // informadas manualmente por UC residencial.
-    demResidencial = nd52
-      ? nd52.demandaKVA
-      : residenciais.reduce((s, u) => s + num((u.prev || {}).demanda), 0);
   }
   const temNaoResidencial = ativos.some(
     (u) => u.atividade && u.atividade !== "Residencial",
   );
-  const demNaoResidencial = num(b && b.demandaNaoResidencial);
+  let demResidencial = 0,
+    demNaoResidencial = 0,
+    demandaUcs;
+  if (!modoCalculadora) {
+    // Método ND-5.2: residencial pela tabela + não residencial informada
+    // pelo responsável técnico para a torre. Com a área média fora da
+    // tabela (não informada ou > 1000 m²) a parte residencial fica 0 até
+    // as áreas serem corrigidas (a validação aponta a pendência).
+    demResidencial = nd52 ? nd52.demandaKVA : 0;
+    demNaoResidencial = temNaoResidencial
+      ? num(b && b.demandaNaoResidencial)
+      : 0;
+    demandaUcs = demResidencial + demNaoResidencial;
+  } else {
+    // Menos de 4 apartamentos residenciais (ou nenhum): todas as UCs
+    // detalham as cargas (ND-5.1) e a demanda da torre é a soma das
+    // demandas calculadas por UC.
+    demandaUcs = ativos.reduce((s, u) => s + num((u.cargas || {})._demanda), 0);
+  }
   return {
     qtdApart,
     areaMedia,
     nd52,
+    modoCalculadora,
     demResidencial,
     temNaoResidencial,
     demNaoResidencial,
-    demandaUcs: demResidencial + demNaoResidencial,
+    demandaUcs,
   };
 }
 
@@ -180,11 +199,10 @@ function disjuntoresGeraisAcima(maiorCorrenteUC, demandaTotal) {
 
 // Disjuntor Geral de uma torre/bloco (múltiplas torres): derivado da Demanda
 // das UCs da torre, com a mesma regra de seletividade/capacidade do
-// agrupamento coletivo acima. Como a proteção geral é sempre tripolar,
-// existe UMA opção correta — a menor adequada (as maiores seriam
-// superdimensionadas); espelha o selecionarDisjuntores do fluxo individual,
-// que sugere apenas o mínimo por tipo. O condomínio/combate a incêndio tem
-// disjuntor próprio (ver opcoesDisjIncendioTorre abaixo) e não entra aqui.
+// agrupamento coletivo acima. Como a proteção geral é sempre tripolar, a
+// sugestão é a menor adequada; as duas faixas seguintes ficam disponíveis
+// para o RT que precisar folgar a proteção. O condomínio/combate a incêndio
+// tem disjuntor próprio (ver opcoesDisjIncendioTorre abaixo) e não entra aqui.
 function opcoesDisjGeralTorre(b) {
   const demanda = calcBlocoMultiTorres(b).demandaUcs;
   if (demanda <= 0) return [];
@@ -192,7 +210,7 @@ function opcoesDisjGeralTorre(b) {
     0,
     ...((b && b.ucs) || []).map((u) => correnteDisj(u.disjPara)),
   );
-  return disjuntoresGeraisAcima(maiorCorrente, demanda).slice(0, 1);
+  return disjuntoresGeraisAcima(maiorCorrente, demanda).slice(0, 3);
 }
 
 // Opções de disjuntor do Condomínio / Combate a Incêndio da torre: menores

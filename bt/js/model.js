@@ -92,7 +92,6 @@ const atendPadrao = () => ({
   disjGeralAtual: "",
   demandaAtual: "",
   demandaNaoResidencial: "",
-  demandaResidencialManual: "",
   nBlocos: 1,
 });
 
@@ -103,12 +102,12 @@ const atendPadrao = () => ({
 const SOLICITACOES_INDIVIDUAIS = [SOLICITACOES[0], SOLICITACOES[1]];
 const SOLICITACOES_COLETIVAS = [SOLICITACOES[2], SOLICITACOES[3]];
 
-// Previsão de carga padrão para UC Residencial no coletivo, conforme o
-// disjuntor solicitado (disjPara). Aplicada automaticamente quando a UC é
-// Residencial e o disjuntor solicitado é um dos dois tipos abaixo.
+// Carga prevista (kW) padrão para UC Residencial no coletivo, conforme o
+// disjuntor solicitado (disjPara). Valores = soma dos antigos presets por
+// componente (mono: 1 + 1,5 + 4,4; bi: 1 + 1,5 + 1,3 + 12).
 const PRESET_PREV_RESIDENCIAL_COLETIVO = {
-  "Monopolar 63 A": { ilum: "1", tomada: "1.5", chuveiro: "4.4" },
-  "Bipolar 63 A": { ilum: "1", tomada: "1.5", ar: "1.3", chuveiro: "12" },
+  "Monopolar 63 A": "6.9",
+  "Bipolar 63 A": "15.8",
 };
 
 // Bloco de UC (identificação no coletivo) — valores padrão
@@ -127,16 +126,10 @@ const ucBlocoPadrao = (i) => ({
   disjDe: "",
   disjPara: "",
   nd: "5.2", // norma atendente (atendimento híbrido): "5.1" ou "5.2"
-  // Previsão de carga por UC (coletivo)
-  prev: {
-    ilum: "",
-    tomada: "",
-    chuveiro: "",
-    ar: "",
-    outros: "",
-    outrosDesc: "",
-    demanda: "",
-  },
+  cargaPrevista: "", // carga prevista da UC (kW) — método 5.2 com mais de 3 UCs
+  // Cargas detalhadas (calculadora do BT individual) — usadas quando o
+  // ND-5.2 não calcula (menos de 4 aptos residenciais ou área fora da tabela)
+  cargas: { qtds: CAT.map(() => 0), tipoA: "", catA: null, mots: [] },
 });
 
 // UC marcada como "Caixa Existente sem Alteração": não tem preenchimento de
@@ -144,13 +137,14 @@ const ucBlocoPadrao = (i) => ({
 const ucSemAlteracao = (u) =>
   (u && u.solicitacao) === "Caixa Existente sem Alteração";
 
-// Soma de carga prevista (kW) de uma UC do coletivo
+// Carga prevista (kW) informada para uma UC do coletivo/torre
 const prevKwUC = (u) =>
-  ["ilum", "tomada", "chuveiro", "ar", "outros"].reduce(
-    (s, k) =>
-      s + (parseFloat(String((u.prev || {})[k]).replace(",", ".")) || 0),
-    0,
-  );
+  parseFloat(
+    String((u && u.cargaPrevista) == null ? "" : u.cargaPrevista).replace(
+      ",",
+      ".",
+    ),
+  ) || 0;
 
 // UC detalhada (individual) — identificação + calculadora
 const ucDetalhadaPadrao = () => ({
@@ -184,15 +178,10 @@ const ucTorrePadrao = (i) => ({
   instalacao: "",
   unidadeConsumidora: "",
   disjPara: "",
-  prev: {
-    ilum: "",
-    tomada: "",
-    chuveiro: "",
-    ar: "",
-    outros: "",
-    outrosDesc: "",
-    demanda: "",
-  },
+  cargaPrevista: "", // carga prevista da UC (kW) — método 5.2 com mais de 3 UCs
+  // Cargas detalhadas (calculadora do BT individual) — usadas quando o
+  // ND-5.2 da torre não calcula
+  cargas: { qtds: CAT.map(() => 0), tipoA: "", catA: null, mots: [] },
 });
 
 // Torre/Bloco (modo múltiplas torres) — preenchimento em massa
