@@ -50,8 +50,7 @@ function btResolverCard(formTypesAceitos) {
     card.formType === "individual" &&
     !formTypesAceitos.includes("individual")
   ) {
-    window.location.href =
-      "individual.html?mod=" + encodeURIComponent(card.id);
+    window.location.href = "individual.html?mod=" + encodeURIComponent(card.id);
     return null;
   }
   if (
@@ -151,8 +150,7 @@ window.btCorrOk = () => {
     !(ok(c.cep) && ok(c.rua) && ok(c.num) && ok(c.bairro) && ok(c.municipio))
   )
     return false;
-  if (c.alternativa === "Conta globalizada" && !ok(c.contaGlobal))
-    return false;
+  if (c.alternativa === "Conta globalizada" && !ok(c.contaGlobal)) return false;
   return true;
 };
 
@@ -321,8 +319,7 @@ function mostrarCamposPFBT() {
   });
   const nisBox = $("#numNisBox");
   if (nisBox)
-    nisBox.style.display =
-      pf && window.state.prop.nis === "Sim" ? "" : "none";
+    nisBox.style.display = pf && window.state.prop.nis === "Sim" ? "" : "none";
   CemigMarcadores.aplicar();
   CemigMarcadores.atualizarAvancar();
 }

@@ -681,10 +681,7 @@ function renderPreviaBT() {
     html += pvCampoBT("Atividade principal", u.atividade);
     html += pvCampoBT("Ramo da atividade", u.ramo);
     if (cg.tipoA === "nr" && cg.catA != null)
-      html += pvCampoBT(
-        "Categoria de atividade",
-        (TABELA_11[cg.catA] || {}).d,
-      );
+      html += pvCampoBT("Categoria de atividade", (TABELA_11[cg.catA] || {}).d);
     html += pvCampoBT("Solicitação", state.atend.solicitacao);
     if (!rural) {
       html += pvCampoBT("CEP", o.cep, PG.dados, true);
@@ -693,7 +690,11 @@ function renderPreviaBT() {
       html += pvCampoBT("Complemento", u.complemento, PG.atend);
       html += pvCampoBT("Bairro", o.bairro, PG.dados);
     } else {
-      html += pvCampoBT("Distrito / Comunidade", o.distritoComunidade, PG.dados);
+      html += pvCampoBT(
+        "Distrito / Comunidade",
+        o.distritoComunidade,
+        PG.dados,
+      );
       html += pvCampoBT("Nome da propriedade", o.nomePropriedade, PG.dados);
       html += pvCampoBT("Ponto de referência", o.pontoRef, PG.dados);
     }
@@ -714,7 +715,11 @@ function renderPreviaBT() {
       u.mudancaLocal,
       PG.atend,
     );
-    html += pvCampoBT("Tipo de rede BT que atende o local", o.tipoRede, PG.dados);
+    html += pvCampoBT(
+      "Tipo de rede BT que atende o local",
+      o.tipoRede,
+      PG.dados,
+    );
     html += `</div></div>`;
   });
   box.innerHTML = html;
