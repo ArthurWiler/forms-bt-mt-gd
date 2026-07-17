@@ -52,16 +52,77 @@ function _nomeFeicaoSicar(p) {
   const partes = [cod, sit ? `(${sit})` : null].filter(Boolean);
   return partes.length ? partes.join(" ") : null;
 }
-// Texto de documentos/exigências exibido em cada área. VARIA POR TIPO.
-// Cada tipo expõe { bullets:[...], notas:[...] }; a introdução (DOC_INTRO) é
-// ÚNICA e compartilhada. Quando o ponto intersecta várias áreas, os textos são
-// MESCLADOS (intro 1×, bullets unidos e deduplicados, notas ao final) por
-// restricaoDocsMesclado(). Áreas do mesmo tipo (ex.: UC Estadual + Federal)
-// compartilham o mesmo objeto e, portanto, não duplicam.
-// TODO(textos): APE ainda sem texto oficial — `null` mostra só a frase de
-// localização. Os demais vieram da referência do cliente.
+
+const URFBIO_APP_HIDRICA = [
+  ["ne", "da URFBio Nordeste"],
+  ["amsf", "na URFBio Alto Médio São Francisco"],
+  ["ap", "na URFBio Alto Paranaíba"],
+  ["cnor", "na URFBio Centro-Norte"],
+  ["co", "na URFBio Centro-Oeste"],
+  ["cs", "na URFBio Centro-Sul"],
+  ["jeq", "na URFBio Jequitinhonha"],
+  ["mata", "na URFBio Mata"],
+  ["cm", "na URFBio Metropolitana"],
+  ["nor", "na URFBio Noroeste"],
+  ["no", "na URFBio Norte"],
+  ["riodoce", "na URFBio Rio Doce"],
+  ["sul", "na URFBio Sul"],
+  ["tm", "na URFBio Triângulo"],
+];
+
+// APPs (FBDS) por circunscrição hidrográfica — camadas
+// ide_240905_<suf>_apps_fbds_pol (43 circunscrições, partição do território:
+// cada ponto cai em no máximo uma). typeNames confirmados no GetCapabilities.
+// Cada par [sufixo, complemento do rótulo]; o rótulo final é
+// "APPs da Circunscrição hidrográfica <complemento>".
+const APP_FBDS_CIRCUNSCRICAO = [
+  ["bu1", "do rio Buranhém"],
+  ["do1", "do rio Piranga"],
+  ["do2", "do rio Piracicaba"],
+  ["do3", "do rio Santo Antônio"],
+  ["do4", "do rio Suaçuí Grande"],
+  ["do5", "do rio Caratinga"],
+  ["do6", "do rio Manhuaçu"],
+  ["gd1", "dos Afluentes Mineiros do Alto rio Grande"],
+  ["gd2", "Vertentes do rio Grande"],
+  ["gd3", "do Entorno do Reservatório de Furnas"],
+  ["gd4", "do rio Verde"],
+  ["gd5", "do rio Sapucaí"],
+  ["gd6", "dos rios Mogi-Guaçu e Pardo"],
+  ["gd7", "do Médio rio Grande"],
+  ["gd8", "do Baixo rio Grande"],
+  ["ib1", "do rio Itabapoana"],
+  ["in1", "do rio Itanhém"],
+  ["ip1", "do rio Itapemirim"],
+  ["iu1", "do rio Itaúnas"],
+  ["jq1", "do Alto rio Jequitinhonha"],
+  ["jq2", "do rio Araçuaí"],
+  ["jq3", "do Médio e Baixo rio Jequitinhonha"],
+  ["ju1", "do rio Jucuruçu"],
+  ["mu1", "do rio Mucuri"],
+  ["pa1", "do rio Pardo"],
+  ["pe1", "do rio Peruípe"],
+  ["pj1", "dos rios Piracicaba e Jaguari"],
+  ["pn1", "do rio Dourados e Alto rio Paranaíba"],
+  ["pn2", "do rio Araguari"],
+  ["pn3", "do Baixo rio Paranaíba"],
+  ["ps1", "dos rios Preto e Paraibuna"],
+  ["ps2", "dos rios Pompa e Muriaé"],
+  ["sf1", "do Alto rio São Francisco"],
+  ["sf2", "do rio Pará"],
+  ["sf3", "do rio Paraopeba"],
+  ["sf4", "do Entorno da Represa de Três Marias"],
+  ["sf5", "do rio das Velhas"],
+  ["sf6", "dos rios Jequitaí e Pacuí"],
+  ["sf7", "do rio Paracatu"],
+  ["sf8", "do rio Urucuia"],
+  ["sf9", "do rio Pandeiros"],
+  ["sf10", "do rio Verde Grande"],
+  ["sm1", "do rio São Mateus"],
+];
+
 const DOC_INTRO =
-  "Para que o cliente obtenha ligação de energia elétrica, é necessário anexar os seguintes documentos no Cemig Atende:";
+  "Para que o cliente obtenha ligação de energia elétrica, é necessário anexar os seguintes documentos:";
 const DOC_UNIDADE_CONSERVACAO = {
   bullets: [
     "Comprovação da posse e regularidade do imóvel simultaneamente (IPTU, Registro do Imóvel, Escritura Pública, etc.); ou",
@@ -96,6 +157,40 @@ const DOC_TERRA_INDIGENA = {
   ],
 };
 
+// Reserva Legal (CAR) — as exigências VARIAM pelo status do cadastro
+// (campo nom_tema da camada bases:mg_reserva_legal). Três status possíveis,
+// cada um com seu bloco de documentos. PLACEHOLDERS — preencher bullets/notas.
+const DOC_RL_APROVADA_NAO_AVERBADA = {
+  bullets: [
+    // TODO(textos): documentos p/ "Reserva Legal Aprovada e não Averbada".
+  ],
+  notas: [],
+};
+const DOC_RL_AVERBADA = {
+  bullets: [],
+  notas: [
+    "Em atendimento à sua solicitação, identificamos que o ponto para a ligação de energia elétrica encontra-se em uma área de reserva legal averbada de interesse de preservação ambiental, definidas pela lei federal 12.651/2012. Sendo assim não podemos realizar o fornecimento de energia elétrica a essa unidade consumidora.",
+  ],
+};
+const DOC_RL_PROPOSTA = {
+  bullets: [
+    "Constar realocação da reserva no registro do imóvel ou CAR, em processo de ou concluída.",
+  ],
+  notas: [],
+};
+// Seleciona o bloco de documentos da RL pelo status (nom_tema) da feição.
+// Retorna null quando o status é desconhecido (só a frase de localização).
+function _docsReservaLegal(props) {
+  const t =
+    props && props.nom_tema != null ? String(props.nom_tema).trim() : "";
+  if (/averbada/i.test(t) && !/n[ãa]o\s+averbada/i.test(t))
+    return DOC_RL_AVERBADA;
+  if (/aprovada\s+e\s+n[ãa]o\s+averbada/i.test(t))
+    return DOC_RL_APROVADA_NAO_AVERBADA;
+  if (/proposta/i.test(t)) return DOC_RL_PROPOSTA;
+  return null;
+}
+
 const SISEMA_CAMADAS = [
   // { id, rotulo, typeName, tipoNome, documentos }
   //   rotulo    — título do dropdown (categoria da camada)
@@ -112,7 +207,7 @@ const SISEMA_CAMADAS = [
     rotulo: "Área de Proteção Especial",
     typeName: "IDE:ide_2010_mg_areas_protecao_especial_pol",
     tipoNome: "Área de Proteção Especial",
-    documentos: null, // TODO(textos): texto oficial de APE
+    documentos: DOC_UNIDADE_CONSERVACAO,
   },
   {
     id: "uce",
@@ -125,6 +220,13 @@ const SISEMA_CAMADAS = [
     id: "ucf",
     rotulo: "Unidade de Conservação Federal",
     typeName: "IDE:ide_2010_mg_unidades_conservacao_federais_pol",
+    tipoNome: "Unidade de Conservação",
+    documentos: DOC_UNIDADE_CONSERVACAO,
+  },
+  {
+    id: "ucm",
+    rotulo: "Unidade de Conservação Municipal",
+    typeName: "IDE:ide_2010_mg_unidades_conservacao_municipais_pol",
     tipoNome: "Unidade de Conservação",
     documentos: DOC_UNIDADE_CONSERVACAO,
   },
@@ -145,35 +247,64 @@ const SISEMA_CAMADAS = [
   {
     id: "rl",
     rotulo: "Reserva Legal (CAR)",
-    // Fonte: AgroTag/Embrapa (o SICAR não publica RL — ver blocos de config
-    // acima). typeName, JSON, eixos e CORS confirmados em GetFeature real.
     typeName: "bases:mg_reserva_legal",
     tipoNome: "Reserva Legal",
-    documentos: null, // TODO(textos): exigências específicas de RL, se houver
+    // Varia por status (nom_tema): Proposta / Aprovada e não Averbada /
+    // Averbada. Resolvido por feição em _areasRestricao.
+    documentos: _docsReservaLegal,
     wfs: AGROTAG_WFS,
     version: AGROTAG_VERSION,
     flipBBox: AGROTAG_FLIP_BBOX,
-    // A camada não tem nome nem nº do CAR; o melhor rótulo é nom_tema, que
-    // traz o status ("Reserva Legal Proposta"/"Aprovada"…).
     nomeFeicao: (p) => {
       const t = p && p.nom_tema != null ? String(p.nom_tema).trim() : "";
       return t || null;
     },
   },
+
+  ...URFBIO_APP_HIDRICA.map(([suf, regiao]) => ({
+    id: "apph_" + suf,
+    rotulo: "APPs hídricas " + regiao,
+    typeName: `IDE:ide_210603_mg_hid_app_hidrica_mapcar_${suf}_pol`,
+    tipoNome: "APP hídrica",
+    documentos: DOC_UNIDADE_CONSERVACAO,
+    nomeFeicao: (p) => {
+      const c = p && p.categoria != null ? String(p.categoria).trim() : "";
+      return c ? "faixa " + c.replace(/\bAte\b/g, "até") : null;
+    },
+  })),
+
+  ...APP_FBDS_CIRCUNSCRICAO.map(([suf, circ]) => ({
+    id: "appfbds_" + suf,
+    rotulo: "APPs da Circunscrição hidrográfica " + circ,
+    typeName: `IDE:ide_240905_${suf}_apps_fbds_pol`,
+    tipoNome: "Área de Preservação Permanente",
+    documentos: DOC_UNIDADE_CONSERVACAO,
+    // Feição sem nome próprio: tipo hidrográfico + faixa da APP (m).
+    // Ex.: props {hidro:"nascente", app_m:50} → "nascente — faixa de 50 m".
+    nomeFeicao: (p) => {
+      if (!p) return null;
+      const h = p.hidro != null ? String(p.hidro).trim() : "";
+      const m = p.app_m != null ? String(p.app_m).trim() : "";
+      const faixa = m ? "faixa de " + m + " m" : "";
+      return [h, faixa].filter(Boolean).join(" — ") || null;
+    },
+  })),
+
+  {
+    id: "rppn",
+    rotulo: "Reserva Particular do Patrimônio Natural (RPPN)",
+    typeName: "IDE:ide_2010_mg_reservas_particulares_patrimonio_natural_pol",
+    tipoNome: "Reserva Particular do Patrimônio Natural",
+    documentos: DOC_UNIDADE_CONSERVACAO,
+    nomeFeicao: (p) => {
+      const n = p && p.nome_uc != null ? String(p.nome_uc).trim() : "";
+      return n || null;
+    },
+  },
 ];
-/* ------------------------------------------------------------------
-   Imóvel CAR (SICAR) — consulta INFORMATIVA, FORA de SISEMA_CAMADAS.
-   Todo ponto rural de MG cai em algum imóvel CAR, então incluir essa
-   camada no fluxo de restrição acenderia o banner de "restrição
-   ambiental" indevidamente em quase toda consulta rural. Uso: obter o
-   nº do CAR, situação do cadastro, atributos e o perímetro do imóvel
-   que contém o ponto (p/ exibição, PDF ou desenho avulso no mapa).
-   Retorna { dentro:false } | { dentro:true, nome, props, feicao } |
-   { erro:"..." }. `feicao` é a Feature GeoJSON com contorno COMPLETO
-   (fallback: recortada pela bbox).
-   ------------------------------------------------------------------ */
+
 const SICAR_CAM_IMOVEL = {
-  typeName: "sicar:sicar_imoveis_mg", // CONFIRMADO no GetCapabilities
+  typeName: "sicar:sicar_imoveis_mg",
   wfs: SICAR_WFS_IMOVEIS,
   version: SICAR_VERSION,
   flipBBox: SICAR_FLIP_BBOX,
@@ -203,41 +334,6 @@ async function consultarImovelCAR(lat, lng) {
   } catch (e) {
     return { erro: "Falha de rede/CORS" };
   }
-}
-async function geocodObra(obra) {
-  if (obra.localizacao === "Rural") {
-    const m = String(obra.coordenada || "")
-      .trim()
-      .match(/(-?\d+(?:[.,]\d+)?)\s*[,; ]\s*(-?\d+(?:[.,]\d+)?)/);
-    if (!m) return null;
-    const lat = parseFloat(m[1].replace(",", "."));
-    const lng = parseFloat(m[2].replace(",", "."));
-    if (isNaN(lat) || isNaN(lng)) return null;
-    return { lat, lng, label: "Coordenada informada" };
-  }
-  const endereco = [
-    [obra.endereco, obra.num].filter(Boolean).join(", "),
-    obra.bairro,
-    obra.cidade,
-    obra.estado,
-    obra.cep,
-    "Brasil",
-  ]
-    .filter(Boolean)
-    .join(", ");
-  if (!endereco.replace(/Brasil|,/g, "").trim()) return null;
-  const resp = await fetch(
-    "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" +
-      encodeURIComponent(endereco),
-    { headers: { "Accept-Language": "pt-BR" } },
-  );
-  const data = await resp.json();
-  if (!data || !data.length) return null;
-  return {
-    lat: parseFloat(data[0].lat),
-    lng: parseFloat(data[0].lon),
-    label: data[0].display_name,
-  };
 }
 /* ============================================================
    Geocodificação de endereço → coordenada (Nominatim) — COMPARTILHADA
@@ -408,40 +504,6 @@ function _urlWfs(cam, lat, lng) {
   });
   return `${cam.wfs || SISEMA_WFS}?${q.toString()}`;
 }
-async function consultarRestricoes(lat, lng) {
-  if (!window.turf) throw new Error("Turf.js não carregado.");
-  const ponto = window.turf.point([lng, lat]);
-  const out = [];
-  for (const cam of SISEMA_CAMADAS) {
-    try {
-      const resp = await fetch(_urlWfs(cam, lat, lng));
-      if (!resp.ok) {
-        out.push({ ...cam, erro: `HTTP ${resp.status}` });
-        continue;
-      }
-      const gj = await resp.json();
-      const feats = (gj && gj.features) || [];
-      let dentro = false;
-      let propsDentro = null;
-      for (const f of feats) {
-        const g = f.geometry;
-        if (!g) continue;
-        if (
-          (g.type === "Polygon" || g.type === "MultiPolygon") &&
-          window.turf.booleanPointInPolygon(ponto, f)
-        ) {
-          dentro = true;
-          propsDentro = f.properties || {};
-          break;
-        }
-      }
-      out.push({ ...cam, dentro, feicoes: feats.length, props: propsDentro });
-    } catch (e) {
-      out.push({ ...cam, erro: "Falha de rede/CORS" });
-    }
-  }
-  return out;
-}
 /* ============================================================
    Restrição ambiental (IDE-Sisema) — consulta COMPARTILHADA
    Fonte única de verdade usada de forma idêntica pelo BT
@@ -523,18 +585,24 @@ async function consultarRestricoesObra(lat, lng) {
         const completa = await geometriaCompletaFeicao(cam, f.id);
         geometrias.push(completa || f);
       }
+      // Uma entrada por FEIÇÃO intersectada, preservando o alinhamento entre
+      // nome/props/geometria (o extrator de nome pode retornar null sem
+      // desalinhar as demais). Extrator específico da camada (cam.nomeFeicao)
+      // tem prioridade — ex.: RL/SICAR exibe nº do CAR + situação.
+      const feicoes = dentro.map((f, i) => ({
+        nome:
+          (cam.nomeFeicao && cam.nomeFeicao(f.properties)) ||
+          nomeFeicaoRestricao(f.properties),
+        props: f.properties || {},
+        geometria: geometrias[i],
+      }));
       out.push({
         ...cam,
         dentro: dentro.length > 0,
-        // Extrator específico da camada (cam.nomeFeicao) tem prioridade —
-        // ex.: RL/SICAR exibe nº do CAR + situação; fallback: heurística.
-        nomes: dentro
-          .map(
-            (f) =>
-              (cam.nomeFeicao && cam.nomeFeicao(f.properties)) ||
-              nomeFeicaoRestricao(f.properties),
-          )
-          .filter(Boolean),
+        feicoes,
+        // Compat: listas paralelas mantidas p/ consumidores que ainda as usam
+        // (resumirRestricoes). `nomes` é filtrado; `geometrias` completo.
+        nomes: feicoes.map((x) => x.nome).filter(Boolean),
         geometrias,
       });
     } catch (e) {
@@ -558,12 +626,52 @@ const CORES_RESTRICAO = [
   "#364B46", // neutra/600
   "#C4FF3F", // verde on
 ];
-// Legenda ABAIXO do mapa: um item por CAMADA intersectada, na MESMA cor do
-// contorno desenhado (CORES_RESTRICAO por índice, como desenharRestricoesNoMapa
-// e detalhesRestricoes). O elemento .mapa-legenda (shared.css) é inserido logo
-// após o container do mapa e SÓ existe quando o ponto cai em restrição —
-// atualizar com `res` vazio/null remove a legenda (usado também ao limpar a
-// camada nos fluxos de erro do BT/MT).
+// Achata `res` numa lista PLANA de ÁREAS (uma por FEIÇÃO intersectada, não por
+// camada), com a cor definida pelo ÍNDICE GLOBAL da área. Fonte única de cor/
+// ordem p/ legenda, desenho no mapa e detalhesRestricoes — assim duas feições
+// da MESMA camada (ex.: 2 UCs Estaduais) viram DUAS áreas, com cores e itens de
+// legenda distintos. Cada área: { camada, id, rotulo, tipoNome, nome, props,
+// documentos, geometria, cor }. `documentos` de camada pode ser função dos
+// props da feição (ex.: RL varia por status) — resolvido aqui.
+function _areasRestricao(res) {
+  const dentros = (res || []).filter((r) => r && r.dentro);
+  const out = [];
+  for (const r of dentros) {
+    // Compat: se a camada não trouxer `feicoes` (formato novo), reconstrói a
+    // partir de nomes/geometrias paralelos.
+    const feicoes =
+      r.feicoes ||
+      (r.geometrias || []).map((g, i) => ({
+        nome: (r.nomes && r.nomes[i]) || null,
+        props: {},
+        geometria: g,
+      }));
+    for (const f of feicoes) {
+      const doc =
+        typeof r.documentos === "function"
+          ? r.documentos(f.props)
+          : r.documentos || null;
+      out.push({
+        camada: r.id,
+        id: r.id,
+        rotulo: r.rotulo,
+        tipoNome: r.tipoNome || r.rotulo,
+        nome: f.nome || null,
+        props: f.props || {},
+        documentos: doc,
+        geometria: f.geometria || null,
+        cor: CORES_RESTRICAO[out.length % CORES_RESTRICAO.length],
+      });
+    }
+  }
+  return out;
+}
+// Legenda ABAIXO do mapa: um item por ÁREA intersectada, na MESMA cor do
+// contorno desenhado (cor por índice global de área, via _areasRestricao, como
+// desenharRestricoesNoMapa e detalhesRestricoes). O elemento .mapa-legenda
+// (shared.css) é inserido logo após o container do mapa e SÓ existe quando o
+// ponto cai em restrição — atualizar com `res` vazio/null remove a legenda
+// (usado também ao limpar a camada nos fluxos de erro do BT/MT).
 function atualizarLegendaRestricoes(map, res) {
   if (!map || typeof map.getContainer !== "function") return;
   const cont = map.getContainer();
@@ -571,17 +679,18 @@ function atualizarLegendaRestricoes(map, res) {
   if (!pai) return;
   const antiga = pai.querySelector(".mapa-legenda");
   if (antiga) antiga.remove();
-  const dentros = (res || []).filter((r) => r && r.dentro);
-  if (!dentros.length) return;
+  const areas = _areasRestricao(res);
+  if (!areas.length) return;
   const div = document.createElement("div");
   div.className = "mapa-legenda";
-  div.innerHTML = dentros
-    .map((r, li) => {
-      const cor = CORES_RESTRICAO[li % CORES_RESTRICAO.length];
+  div.innerHTML = areas
+    .map((a) => {
+      // Nome da área quando houver; senão, cai no rótulo da camada.
+      const texto = a.nome || a.rotulo;
       return (
         `<span class="mapa-legenda-item">` +
-        `<span class="mapa-legenda-cor" style="background:${cor}"></span>` +
-        `<span class="mapa-legenda-rotulo">${_escHtml(r.rotulo)}</span>` +
+        `<span class="mapa-legenda-cor" style="background:${a.cor}"></span>` +
+        `<span class="mapa-legenda-rotulo">${_escHtml(texto)}</span>` +
         `</span>`
       );
     })
@@ -590,31 +699,27 @@ function atualizarLegendaRestricoes(map, res) {
 }
 function desenharRestricoesNoMapa(L, map, res) {
   if (!L || !map || !res) return null;
-  // Cor por CAMADA intersectada (índice em `dentros`) — mesma ordem/critério
-  // de detalhesRestricoes, para o mapa e os dropdowns baterem de cor.
-  const dentros = (res || []).filter((r) => r && r.dentro);
-  // Legenda abaixo do mapa acompanha o desenho: aparece com as camadas
+  // Cor por ÁREA intersectada (índice global em _areasRestricao) — mesma ordem/
+  // critério da legenda e de detalhesRestricoes, p/ mapa e dropdowns baterem.
+  const areas = _areasRestricao(res);
+  // Legenda abaixo do mapa acompanha o desenho: aparece com as áreas
   // intersectadas e some quando o ponto sai de todas as restrições.
   atualizarLegendaRestricoes(map, res);
   const feicoes = [];
-  dentros.forEach((r, li) => {
-    if (!Array.isArray(r.geometrias)) return;
-    const cor = CORES_RESTRICAO[li % CORES_RESTRICAO.length];
-    for (const f of r.geometrias) {
-      if (f && f.geometry) {
-        const nome = (r.nomes && r.nomes[0]) || r.rotulo;
-        feicoes.push({
-          ...f,
-          properties: {
-            ...(f.properties || {}),
-            _rotulo: r.rotulo,
-            _nome: nome,
-            _cor: cor,
-          },
-        });
-      }
+  for (const a of areas) {
+    const f = a.geometria;
+    if (f && f.geometry) {
+      feicoes.push({
+        ...f,
+        properties: {
+          ...(f.properties || {}),
+          _rotulo: a.rotulo,
+          _nome: a.nome || a.rotulo,
+          _cor: a.cor,
+        },
+      });
     }
-  });
+  }
   if (!feicoes.length) return null;
   const layer = L.geoJSON(
     { type: "FeatureCollection", features: feicoes },
@@ -675,26 +780,17 @@ function resumirRestricoes(res) {
 // A frase de localização e o bloco de documentos são montados a partir desta
 // lista por restricaoSentencaSegmentos() e restricaoDocsMesclado().
 function detalhesRestricoes(res) {
-  const dentros = (res || []).filter((r) => r.dentro);
-  const out = [];
-  dentros.forEach((r, li) => {
-    const tipoNome = r.tipoNome || r.rotulo;
-    // Cor por CAMADA (mesma da desenharRestricoesNoMapa) — todas as áreas de
-    // uma mesma camada compartilham a cor do seu contorno no mapa.
-    const cor = CORES_RESTRICAO[li % CORES_RESTRICAO.length];
-    const nomes = r.nomes && r.nomes.length ? r.nomes : [null];
-    for (const nome of nomes) {
-      out.push({
-        id: r.id,
-        rotulo: r.rotulo,
-        tipoNome,
-        nome: nome || null,
-        cor,
-        documentos: r.documentos || null,
-      });
-    }
-  });
-  return out;
+  // Cor por ÁREA (índice global em _areasRestricao) — mesma da legenda e do
+  // contorno no mapa. Duas feições da mesma camada viram duas entradas com
+  // cores distintas; `documentos` já resolvido por feição (RL varia por status).
+  return _areasRestricao(res).map((a) => ({
+    id: a.id,
+    rotulo: a.rotulo,
+    tipoNome: a.tipoNome,
+    nome: a.nome || null,
+    cor: a.cor,
+    documentos: a.documentos || null,
+  }));
 }
 // Escapa texto p/ inserção segura em HTML (usado no builder do MT/innerHTML).
 function _escHtml(s) {
@@ -781,105 +877,4 @@ function restricaoDocsHTML(detalhe) {
     .join("");
   html += "</div>";
   return html;
-}
-function RestricaoAmbiental({ obra }) {
-  const [status, setStatus] = useState("");
-  const [coords, setCoords] = useState(null);
-  const [resultados, setResultados] = useState(null);
-  const consultar = async () => {
-    setStatus("loading");
-    setResultados(null);
-    try {
-      const c = await geocodObra(obra);
-      if (!c) {
-        setStatus(
-          "Não foi possível obter as coordenadas (preencha o endereço ou a coordenada).",
-        );
-        return;
-      }
-      setCoords(c);
-      const res = await consultarRestricoes(c.lat, c.lng);
-      setResultados(res);
-      setStatus("");
-    } catch (e) {
-      setStatus(e && e.message ? e.message : "Falha na consulta.");
-    }
-  };
-  const algumaErro = resultados && resultados.some((r) => r.erro);
-  const algumaDentro = resultados && resultados.some((r) => r.dentro);
-  return /* @__PURE__ */ React.createElement(
-    "div",
-    { className: "restricao-amb" },
-    /* @__PURE__ */ React.createElement(
-      "div",
-      { className: "mapa-actions" },
-      /* @__PURE__ */ React.createElement(
-        Btn,
-        { variant: "ghost", onClick: consultar },
-        "🌿 Consultar restrição ambiental (IDE-Sisema)",
-      ),
-      status === "loading" &&
-        /* @__PURE__ */ React.createElement(
-          "span",
-          { className: "field-hint" },
-          "Consultando camadas…",
-        ),
-      status &&
-        status !== "loading" &&
-        /* @__PURE__ */ React.createElement(
-          "span",
-          { className: "field-hint", style: { color: "var(--vermelho)" } },
-          status,
-        ),
-    ),
-    resultados &&
-      /* @__PURE__ */ React.createElement(
-        "div",
-        { className: "restricao-result" },
-        coords &&
-          /* @__PURE__ */ React.createElement(
-            "div",
-            { className: "field-hint", style: { marginBottom: 8 } },
-            "Ponto consultado: ",
-            coords.lat.toFixed(6),
-            ", ",
-            coords.lng.toFixed(6),
-          ),
-        /* @__PURE__ */ React.createElement(
-          "div",
-          {
-            className: "alert " + (algumaDentro ? "alert-warn" : "alert-ok"),
-            style: { marginBottom: 10 },
-          },
-          algumaDentro
-            ? "⚠ O ponto intersecta ao menos uma restrição ambiental. Verifique as camadas abaixo."
-            : "Nenhuma restrição ambiental encontrada nas camadas consultadas para o ponto.",
-        ),
-        /* @__PURE__ */ React.createElement(
-          "div",
-          { className: "restricao-chips" },
-          resultados.map((r) =>
-            /* @__PURE__ */ React.createElement(
-              "span",
-              {
-                key: r.id,
-                className:
-                  "chip " +
-                  (r.erro ? "chip-err" : r.dentro ? "chip-on" : "chip-off"),
-                title: r.typeName,
-              },
-              r.rotulo,
-              ": ",
-              r.erro ? r.erro : r.dentro ? "DENTRO" : "fora",
-            ),
-          ),
-        ),
-        algumaErro &&
-          /* @__PURE__ */ React.createElement(
-            "div",
-            { className: "field-hint", style: { marginTop: 8 } },
-            "Erro no servidor, tente novamente mais tarde.",
-          ),
-      ),
-  );
 }
