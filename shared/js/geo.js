@@ -1,6 +1,57 @@
 const SISEMA_WFS = "https://geoserver.meioambiente.mg.gov.br/ows";
 const SISEMA_VERSION = "1.1.0";
 const SISEMA_FLIP_BBOX = false;
+/* ------------------------------------------------------------------
+   SICAR (CAR federal) — GeoServer público, serviços virtuais POR CAMADA
+   (padrão .../geoserver/sicar/<camada>/wfs).
+   CONFIRMADO no GetCapabilities de sicar_imoveis_mg (17/07/2026):
+   - typeName sicar:sicar_imoveis_mg (perímetro do IMÓVEL/CAR de MG)
+   - outputFormat application/json habilitado
+   - WFS 1.0.0/1.1.0; DefaultSRS EPSG:4674 (SIRGAS 2000) — pedimos
+     srsName=EPSG:4326 e o GeoServer reprojeta (diferença desprezível)
+   - BBOX com "EPSG:4326" (código simples) => ordem long,lat (flip=false)
+   - CORS OK: o servidor ECOA o Origin no Access-Control-Allow-Origin
+     (o header só aparece quando a requisição envia Origin — testar
+     sem ele dá falso negativo).
+   - NÃO existe camada de Reserva Legal: o GetCapabilities do workspace
+     (https://geoserver.car.gov.br/geoserver/sicar/wfs) lista 27 camadas,
+     todas sicar_imoveis_<uf>. A RL vem do AgroTag/Embrapa (abaixo).
+   ------------------------------------------------------------------ */
+const SICAR_WFS_IMOVEIS =
+  "https://geoserver.car.gov.br/geoserver/sicar/sicar_imoveis_mg/wfs";
+const SICAR_VERSION = "1.1.0";
+const SICAR_FLIP_BBOX = false;
+/* ------------------------------------------------------------------
+   AgroTag/Embrapa — GeoServer público com a RESERVA LEGAL do CAR de MG
+   (base derivada do SICAR). CONFIRMADO em GetFeature real (17/07/2026):
+   - typeName bases:mg_reserva_legal (workspace "bases")
+   - outputFormat application/json habilitado; resposta ~1 s
+   - DefaultSRS EPSG:4674; srsName=EPSG:4326 reprojeta; coords long,lat
+     (flip=false)
+   - CORS liberado: Access-Control-Allow-Origin: *
+   - atributos: idf, nom_tema ("Reserva Legal Proposta"…), num_area (ha),
+     geocodigo (município IBGE) — não há nº do CAR
+   ------------------------------------------------------------------ */
+const AGROTAG_WFS = "https://www.agrotag.cnpma.embrapa.br/geoserver/ows";
+const AGROTAG_VERSION = "1.1.0";
+const AGROTAG_FLIP_BBOX = false;
+// Extrator de rótulo p/ feições do SICAR (não têm "nome" próprio): nº do
+// CAR + situação/condição do cadastro. Atributos confirmados em GetFeature
+// real de sicar_imoveis_mg: cod_imovel e condicao ("Aguardando análise").
+function _nomeFeicaoSicar(p) {
+  if (!p) return null;
+  const pega = (...ks) => {
+    for (const k of ks) {
+      const v = p[k] != null ? p[k] : p[String(k).toUpperCase()];
+      if (v != null && String(v).trim() !== "") return String(v).trim();
+    }
+    return null;
+  };
+  const cod = pega("cod_imovel", "codigo_car", "cod_car");
+  const sit = pega("situacao", "ind_status", "des_condic", "condicao");
+  const partes = [cod, sit ? `(${sit})` : null].filter(Boolean);
+  return partes.length ? partes.join(" ") : null;
+}
 // Texto de documentos/exigências exibido em cada área. VARIA POR TIPO.
 // Cada tipo expõe { bullets:[...], notas:[...] }; a introdução (DOC_INTRO) é
 // ÚNICA e compartilhada. Quando o ponto intersecta várias áreas, os textos são
@@ -51,6 +102,11 @@ const SISEMA_CAMADAS = [
   //   tipoNome  — como o TIPO aparece na frase de localização
   //   documentos— texto de exigências (varia por tipo; null = só a frase)
   //   typeName DEVE ser confirmado no GetCapabilities
+  // OPCIONAIS por camada (default = servidor do Sisema):
+  //   wfs, version, flipBBox — endpoint/versão/ordem do BBOX próprios,
+  //     permitindo camadas de OUTROS GeoServers (ex.: SICAR) no mesmo fluxo
+  //   nomeFeicao(props) — extrator de rótulo específico da camada (tem
+  //     prioridade sobre a heurística genérica nomeFeicaoRestricao)
   {
     id: "ape",
     rotulo: "Área de Proteção Especial",
@@ -86,7 +142,68 @@ const SISEMA_CAMADAS = [
     tipoNome: "Terra Indígena",
     documentos: DOC_TERRA_INDIGENA,
   },
+  {
+    id: "rl",
+    rotulo: "Reserva Legal (CAR)",
+    // Fonte: AgroTag/Embrapa (o SICAR não publica RL — ver blocos de config
+    // acima). typeName, JSON, eixos e CORS confirmados em GetFeature real.
+    typeName: "bases:mg_reserva_legal",
+    tipoNome: "Reserva Legal",
+    documentos: null, // TODO(textos): exigências específicas de RL, se houver
+    wfs: AGROTAG_WFS,
+    version: AGROTAG_VERSION,
+    flipBBox: AGROTAG_FLIP_BBOX,
+    // A camada não tem nome nem nº do CAR; o melhor rótulo é nom_tema, que
+    // traz o status ("Reserva Legal Proposta"/"Aprovada"…).
+    nomeFeicao: (p) => {
+      const t = p && p.nom_tema != null ? String(p.nom_tema).trim() : "";
+      return t || null;
+    },
+  },
 ];
+/* ------------------------------------------------------------------
+   Imóvel CAR (SICAR) — consulta INFORMATIVA, FORA de SISEMA_CAMADAS.
+   Todo ponto rural de MG cai em algum imóvel CAR, então incluir essa
+   camada no fluxo de restrição acenderia o banner de "restrição
+   ambiental" indevidamente em quase toda consulta rural. Uso: obter o
+   nº do CAR, situação do cadastro, atributos e o perímetro do imóvel
+   que contém o ponto (p/ exibição, PDF ou desenho avulso no mapa).
+   Retorna { dentro:false } | { dentro:true, nome, props, feicao } |
+   { erro:"..." }. `feicao` é a Feature GeoJSON com contorno COMPLETO
+   (fallback: recortada pela bbox).
+   ------------------------------------------------------------------ */
+const SICAR_CAM_IMOVEL = {
+  typeName: "sicar:sicar_imoveis_mg", // CONFIRMADO no GetCapabilities
+  wfs: SICAR_WFS_IMOVEIS,
+  version: SICAR_VERSION,
+  flipBBox: SICAR_FLIP_BBOX,
+};
+async function consultarImovelCAR(lat, lng) {
+  if (!window.turf) throw new Error("Turf.js não carregado.");
+  const ponto = window.turf.point([lng, lat]);
+  try {
+    const resp = await fetch(_urlWfs(SICAR_CAM_IMOVEL, lat, lng));
+    if (!resp.ok) return { erro: `HTTP ${resp.status}` };
+    const gj = await resp.json();
+    const feats = (gj && gj.features) || [];
+    const f = feats.find(
+      (x) =>
+        x.geometry &&
+        (x.geometry.type === "Polygon" || x.geometry.type === "MultiPolygon") &&
+        window.turf.booleanPointInPolygon(ponto, x),
+    );
+    if (!f) return { dentro: false };
+    const completa = await geometriaCompletaFeicao(SICAR_CAM_IMOVEL, f.id);
+    return {
+      dentro: true,
+      nome: _nomeFeicaoSicar(f.properties),
+      props: f.properties || {},
+      feicao: completa || f,
+    };
+  } catch (e) {
+    return { erro: "Falha de rede/CORS" };
+  }
+}
 async function geocodObra(obra) {
   if (obra.localizacao === "Rural") {
     const m = String(obra.coordenada || "")
@@ -270,22 +387,26 @@ async function geocodificarEnderecoBR({
     return null;
   }
 }
-function _urlWfs(typeName, lat, lng) {
+// Monta a URL de GetFeature por bbox usando o endpoint/versão/ordem de BBOX
+// DA CAMADA (cam.wfs/version/flipBBox), com fallback nos defaults do Sisema —
+// assim camadas de outros GeoServers (SICAR) usam o MESMO fluxo de consulta.
+function _urlWfs(cam, lat, lng) {
   const d = 8e-4;
-  const box = SISEMA_FLIP_BBOX
+  const flip = cam.flipBBox != null ? cam.flipBBox : SISEMA_FLIP_BBOX;
+  const box = flip
     ? `${lat - d},${lng - d},${lat + d},${lng + d}`
     : `${lng - d},${lat - d},${lng + d},${lat + d}`;
   const q = new URLSearchParams({
     service: "WFS",
-    version: SISEMA_VERSION,
+    version: cam.version || SISEMA_VERSION,
     request: "GetFeature",
-    typeName,
+    typeName: cam.typeName,
     outputFormat: "application/json",
     srsName: "EPSG:4326",
     maxFeatures: "50",
     bbox: `${box},EPSG:4326`,
   });
-  return `${SISEMA_WFS}?${q.toString()}`;
+  return `${cam.wfs || SISEMA_WFS}?${q.toString()}`;
 }
 async function consultarRestricoes(lat, lng) {
   if (!window.turf) throw new Error("Turf.js não carregado.");
@@ -293,7 +414,7 @@ async function consultarRestricoes(lat, lng) {
   const out = [];
   for (const cam of SISEMA_CAMADAS) {
     try {
-      const resp = await fetch(_urlWfs(cam.typeName, lat, lng));
+      const resp = await fetch(_urlWfs(cam, lat, lng));
       if (!resp.ok) {
         out.push({ ...cam, erro: `HTTP ${resp.status}` });
         continue;
@@ -345,20 +466,20 @@ function nomeFeicaoRestricao(props) {
 // ponto-em-polígono, o que RECORTA polígonos grandes. Para desenhar o
 // contorno inteiro da reserva no mapa, refazemos o GetFeature filtrando
 // pelo id da feição (sem bbox). Retorna a Feature GeoJSON completa ou null.
-async function geometriaCompletaFeicao(typeName, featureId) {
+async function geometriaCompletaFeicao(cam, featureId) {
   if (!featureId) return null;
   try {
     const q = new URLSearchParams({
       service: "WFS",
-      version: SISEMA_VERSION,
+      version: cam.version || SISEMA_VERSION,
       request: "GetFeature",
-      typeName,
+      typeName: cam.typeName,
       outputFormat: "application/json",
       srsName: "EPSG:4326",
       maxFeatures: "1",
       featureID: featureId,
     });
-    const resp = await fetch(`${SISEMA_WFS}?${q.toString()}`);
+    const resp = await fetch(`${cam.wfs || SISEMA_WFS}?${q.toString()}`);
     if (!resp.ok) return null;
     const gj = await resp.json();
     const f = gj && gj.features && gj.features[0];
@@ -376,25 +497,12 @@ async function consultarRestricoesObra(lat, lng) {
   if (typeof SISEMA_CAMADAS === "undefined")
     throw new Error("Configuração do Sisema (geo.js) não carregada.");
   const ponto = window.turf.point([lng, lat]);
-  const d = 8e-4;
   const out = [];
   for (const cam of SISEMA_CAMADAS) {
     try {
-      const box =
-        typeof SISEMA_FLIP_BBOX !== "undefined" && SISEMA_FLIP_BBOX
-          ? `${lat - d},${lng - d},${lat + d},${lng + d}`
-          : `${lng - d},${lat - d},${lng + d},${lat + d}`;
-      const q = new URLSearchParams({
-        service: "WFS",
-        version: SISEMA_VERSION,
-        request: "GetFeature",
-        typeName: cam.typeName,
-        outputFormat: "application/json",
-        srsName: "EPSG:4326",
-        maxFeatures: "50",
-        bbox: `${box},EPSG:4326`,
-      });
-      const resp = await fetch(`${SISEMA_WFS}?${q.toString()}`);
+      // URL única de GetFeature (fonte: _urlWfs) — respeita endpoint/versão/
+      // flip de BBOX POR CAMADA (Sisema ou SICAR).
+      const resp = await fetch(_urlWfs(cam, lat, lng));
       if (!resp.ok) {
         out.push({ ...cam, erro: `HTTP ${resp.status}` });
         continue;
@@ -412,14 +520,20 @@ async function consultarRestricoesObra(lat, lng) {
       // se a busca ampla falhar, usa a própria feição (recortada pela bbox).
       const geometrias = [];
       for (const f of dentro) {
-        const completa = await geometriaCompletaFeicao(cam.typeName, f.id);
+        const completa = await geometriaCompletaFeicao(cam, f.id);
         geometrias.push(completa || f);
       }
       out.push({
         ...cam,
         dentro: dentro.length > 0,
+        // Extrator específico da camada (cam.nomeFeicao) tem prioridade —
+        // ex.: RL/SICAR exibe nº do CAR + situação; fallback: heurística.
         nomes: dentro
-          .map((f) => nomeFeicaoRestricao(f.properties))
+          .map(
+            (f) =>
+              (cam.nomeFeicao && cam.nomeFeicao(f.properties)) ||
+              nomeFeicaoRestricao(f.properties),
+          )
           .filter(Boolean),
         geometrias,
       });
