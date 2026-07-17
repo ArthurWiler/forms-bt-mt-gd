@@ -130,14 +130,15 @@ function calcBlocoMultiTorres(b) {
     demNaoResidencial = 0,
     demandaUcs;
   if (!modoCalculadora) {
-    // Método ND-5.2: residencial pela tabela + não residencial informada
-    // pelo responsável técnico para a torre. Com a área média fora da
-    // tabela (não informada ou > 1000 m²) a parte residencial fica 0 até
-    // as áreas serem corrigidas (a validação aponta a pendência).
+    // Método ND-5.2: residencial pela tabela (por m²) + não residencial
+    // informada pelo responsável técnico UC a UC (cada UC comercial/industrial/
+    // rural carrega a sua própria demanda em kVA; a torre soma). Com a área
+    // média fora da tabela (não informada ou > 1000 m²) a parte residencial
+    // fica 0 até as áreas serem corrigidas (a validação aponta a pendência).
     demResidencial = nd52 ? nd52.demandaKVA : 0;
-    demNaoResidencial = temNaoResidencial
-      ? num(b && b.demandaNaoResidencial)
-      : 0;
+    demNaoResidencial = ativos
+      .filter((u) => u.atividade && u.atividade !== "Residencial")
+      .reduce((s, u) => s + num(u.demandaNaoResidencial), 0);
     demandaUcs = demResidencial + demNaoResidencial;
   } else {
     // Menos de 4 apartamentos residenciais (ou nenhum): todas as UCs
@@ -198,11 +199,10 @@ function disjuntoresGeraisAcima(maiorCorrenteUC, demandaTotal) {
 }
 
 // Disjuntor Geral de uma torre/bloco (múltiplas torres): derivado da Demanda
-// das UCs da torre, com a mesma regra de seletividade/capacidade do
-// agrupamento coletivo acima. Como a proteção geral é sempre tripolar, a
-// sugestão é a menor adequada; as duas faixas seguintes ficam disponíveis
-// para o RT que precisar folgar a proteção. O condomínio/combate a incêndio
-// tem disjuntor próprio (ver opcoesDisjIncendioTorre abaixo) e não entra aqui.
+// das UCs da torre. Mesmo critério de dimensionamento mínimo dos demais campos
+// (ver selecionarDisjuntores): o MENOR tripolar que atende seletividade
+// (corrente > maior UC) E capacidade (suporta a demanda). O condomínio/combate
+// a incêndio tem disjuntor próprio (ver opcoesDisjIncendioTorre) e não entra aqui.
 function opcoesDisjGeralTorre(b) {
   const demanda = calcBlocoMultiTorres(b).demandaUcs;
   if (demanda <= 0) return [];
@@ -210,7 +210,7 @@ function opcoesDisjGeralTorre(b) {
     0,
     ...((b && b.ucs) || []).map((u) => correnteDisj(u.disjPara)),
   );
-  return disjuntoresGeraisAcima(maiorCorrente, demanda).slice(0, 3);
+  return disjuntoresGeraisAcima(maiorCorrente, demanda).slice(0, 1);
 }
 
 // Opções de disjuntor do Condomínio / Combate a Incêndio da torre: menores

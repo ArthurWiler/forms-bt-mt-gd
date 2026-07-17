@@ -179,6 +179,7 @@ const ucTorrePadrao = (i) => ({
   unidadeConsumidora: "",
   disjPara: "",
   cargaPrevista: "", // carga prevista da UC (kW) — método 5.2 com mais de 3 UCs
+  demandaNaoResidencial: "", // demanda da UC não residencial (kVA) — método ND-5.2
   // Cargas detalhadas (calculadora do BT individual) — usadas quando o
   // ND-5.2 da torre não calcula
   cargas: { qtds: CAT.map(() => 0), tipoA: "", catA: null, mots: [] },
@@ -194,7 +195,6 @@ const blocoPadrao = (i) => ({
   complInicial: "", // primeiro complemento da torre (ex: "101", "Apto 01")
   disjIncendio: "",
   demandaIncendio: "",
-  demandaNaoResidencial: "", // demanda geral das UCs não residenciais da torre (kVA)
   ucs: [ucTorrePadrao(0)],
 });
 

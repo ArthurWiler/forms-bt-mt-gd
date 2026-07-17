@@ -864,9 +864,15 @@ label.restricao-aceite input[type="checkbox"] {
   border-color: var(--cmg-neutral-400); /* #8C9895 */
 }
 .cemig-form .btn-ghost:hover:not(:disabled) {
-  background: var(--cmg-surface-accent);
+  /* Figma não define hover para o outlined; só a borda fica verde. */
   border-color: var(--cmg-green-600);
-  color: var(--cmg-green-600);
+}
+/* Botão de ação secundária (outlined médio, spec Figma): 40px de altura,
+   padding 10px 24px. Aplicado às ações "Replicar torre/UC" sem afetar a
+   navegação (Voltar/Avançar), que mantêm a altura padrão de 48px. */
+.cemig-form .btn-outlined-acao {
+  height: 40px;
+  padding: 10px 24px;
 }
 .cemig-form .btn-danger-ghost {
   background: transparent;
@@ -1089,7 +1095,7 @@ label.restricao-aceite input[type="checkbox"] {
   line-height: 20px; /* spec */
   font-weight: 400;
   letter-spacing: 0.2px; /* spec */
-  color: var(--cmg-neutral-600);
+  color: var(--cmg-neutral-500); /* rótulo flutuado (preenchido): neutra/500 #576864 */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1120,7 +1126,7 @@ label.restricao-aceite input[type="checkbox"] {
   transform: translateY(-50%);
   font-size: 16px;
   line-height: 24px;
-  color: var(--cmg-text-muted);
+  color: var(--cmg-neutral-600); /* rótulo em estado placeholder (vazio): neutra/600 #364B46 */
 }
 /* Rótulo em ERRO (erro/600). O estado "placeholder" acima tem especificidade
    alta (muitos :has/:not) e coloriria o rótulo de muted mesmo inválido; como
@@ -1155,7 +1161,7 @@ label.restricao-aceite input[type="checkbox"] {
   font-size: 16px;
   line-height: 24px; /* spec 26px; reduzido p/ caber em 56px */
   letter-spacing: 0.2px;
-  color: var(--cmg-neutral-600); /* spec neutra/600 #364B46 */
+  color: var(--cmg-text-strong); /* valor preenchido: neutra/700 #041E18 */
 }
 /* Chevron do select (trailing icon 24px, neutra/600) — seta nativa
    substituída por ícone alinhado ao centro vertical, à direita; o select
@@ -1470,16 +1476,17 @@ label.restricao-aceite input[type="checkbox"] {
   flex: 0 0 auto;
 }
 .cemig-form .carga-acc-badge {
-  min-width: 24px;
-  height: 24px;
+  display: inline-flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
   padding: 0 7px;
   box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: #c3e956;
+  min-width: 24px;
+  height: 24px;
+  background: #c4ff3f;
   color: var(--cmg-neutral-700);
-  border-radius: var(--cmg-radius-pill);
+  border-radius: 100px;
   font-size: 13px;
   font-weight: var(--cmg-fw-bold);
 }
@@ -1639,14 +1646,15 @@ label.restricao-aceite input[type="checkbox"] {
   background: var(--cmg-surface);
   font-family: var(--cmg-font-family);
   font-size: var(--cmg-fs-body);
-  letter-spacing: 0.2px;
+  font-weight: 600;
+  line-height: 24px;
+  letter-spacing: 0.5px;
   color: var(--cmg-text-strong);
   cursor: pointer;
   white-space: nowrap;
 }
 .cemig-form .torre-chip:hover:not(.on) {
   border-color: var(--cmg-green-600);
-  color: var(--cmg-green-600);
 }
 .cemig-form .torre-chip.on {
   background: var(--cmg-green-600);

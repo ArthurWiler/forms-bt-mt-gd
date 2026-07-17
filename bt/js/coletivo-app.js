@@ -178,8 +178,10 @@ const maiorCorrenteUCF = () =>
         0,
       );
 // app.js:635-638
+// Mesmo critério de dimensionamento mínimo do disjuntor da torre e dos demais
+// campos: só o MENOR disjuntor geral adequado (seletividade + capacidade).
 const opcoesDisjGeralF = () =>
-  disjuntoresGeraisAcima(maiorCorrenteUCF(), demandaPrevTotalF());
+  disjuntoresGeraisAcima(maiorCorrenteUCF(), demandaPrevTotalF()).slice(0, 1);
 // app.js:698-701
 const totalUcsEmpreendimentoF = () =>
   state.blocos.reduce((s, b) => s + (parseInt(b.qtdUCs) || 0), 0);
@@ -288,6 +290,9 @@ function replicarPrimeiro() {
           ),
         }),
   );
+  // Replicar a torre 1 copia o primeiro complemento/aptos por andar; reaplica a
+  // geração de complementos em cada torre para que as UCs fiquem numeradas.
+  state.blocos.forEach((_, i) => autoGerarComplementosTorre(i));
   autoSelecionarDisjTorres();
   renderBlocos();
 }
@@ -306,8 +311,10 @@ function sincronizarUCsTorre(bi, qtd) {
   }
   while (arr.length > n) arr.pop();
 }
-// app.js:395-410
-function gerarComplementosTorre(bi) {
+// Preenche os complementos das UCs da torre a partir do primeiro complemento
+// (+ aptos por andar). Não re-renderiza — os campos que disparam ficam na etapa
+// "Dados das torres" e não devem perder o foco enquanto o usuário digita.
+function autoGerarComplementosTorre(bi) {
   const b = state.blocos[bi];
   if (!b) return;
   const lista = gerarComplementos(
@@ -317,7 +324,6 @@ function gerarComplementosTorre(bi) {
   );
   if (!lista) return;
   (b.ucs || []).forEach((u, k) => (u.complemento = lista[k]));
-  renderUnidadesTorreAtual();
 }
 // app.js:450-473 (preserva complemento/instalação/nº UC de cada unidade)
 function replicarUC1Torre(bi) {
@@ -930,7 +936,6 @@ function renderBlocos() {
   if (!box) return;
   sincronizarBlocos();
   autoSelecionarDisjTorres();
-  if (!(0 in _torreAberta)) _torreAberta[0] = true;
   const total = state.blocos.length;
   const totalPag = Math.max(1, Math.ceil(total / ITENS_POR_PAGINA));
   if (_torrePagina >= totalPag) _torrePagina = totalPag - 1;
@@ -987,10 +992,21 @@ function _mkTorreCard(bi, total) {
   {
     const f = _campo(
       `Quantidade de unidades na torre ${bi + 1}`,
-      _inp(b.qtdUCs, (v) => sincronizarUCsTorre(bi, v), {
-        type: "number",
-        placeholder: "0",
-      }),
+      _inp(
+        b.qtdUCs,
+        (v) => {
+          const antes = (b.ucs || []).length > 1;
+          sincronizarUCsTorre(bi, v);
+          // Aptos por andar / primeiro complemento só existem com 2+ UCs;
+          // re-renderiza apenas quando a visibilidade muda (não a cada tecla,
+          // para não perder o foco do campo de quantidade).
+          if ((b.ucs || []).length > 1 !== antes) renderBlocos();
+        },
+        {
+          type: "number",
+          placeholder: "0",
+        },
+      ),
     );
     f.setAttribute("data-noopt", "");
     grid.appendChild(f);
@@ -1020,14 +1036,51 @@ function _mkTorreCard(bi, total) {
     sel.id = `disjCondominio-${bi}`;
     grid.appendChild(_campo("Disjuntor do condomínio", sel, "field--float"));
   }
+  // Geração de complementos das unidades desta torre: ao preencher o primeiro
+  // complemento (e, opcionalmente, aptos por andar) os complementos das UCs são
+  // preenchidos automaticamente, sem botão de disparo (ver autoGerarComplementosTorre).
+  if ((b.ucs || []).length > 1) {
+    const maxAptos = (b.ucs || []).length;
+    const inpAndar = _inp(
+      b.aptosPorAndar,
+      (v) => {
+        // Não faz sentido mais aptos por andar do que UCs na torre; limita ao total.
+        const n = parseInt(v);
+        if (Number.isFinite(n) && n > maxAptos) {
+          v = String(maxAptos);
+          inpAndar.value = v;
+        }
+        b.aptosPorAndar = v;
+        autoGerarComplementosTorre(bi);
+      },
+      { type: "number", placeholder: "Ex: 4" },
+    );
+    inpAndar.max = String(maxAptos);
+    const fAndar = _campo("Aptos por andar", inpAndar);
+    fAndar.setAttribute("data-noopt", "");
+    grid.appendChild(fAndar);
+    const fCompl = _campo(
+      "Primeiro complemento",
+      _inp(
+        b.complInicial,
+        (v) => {
+          b.complInicial = v;
+          autoGerarComplementosTorre(bi);
+        },
+        { placeholder: "Ex: 101 ou Apto 01" },
+      ),
+    );
+    fCompl.setAttribute("data-noopt", "");
+    grid.appendChild(fCompl);
+  }
   corpo.appendChild(grid);
   if (bi === 0 && total > 1) {
     const row = document.createElement("div");
     row.className = "acao-central";
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "btn btn-ghost";
-    btn.textContent = "⧉ Replicar torre 1 para todas as torres";
+    btn.className = "btn btn-ghost btn-outlined-acao";
+    btn.textContent = "Replicar torre 1 para todas as torres";
     btn.addEventListener("click", replicarPrimeiro);
     row.appendChild(btn);
     corpo.appendChild(row);
@@ -1108,79 +1161,21 @@ function renderUnidadesTorreAtual() {
   }
 }
 // Ferramentas da torre acima da lista: Demanda geral não residencial (só no
-// método 5.2 com UCs não residenciais) + geração de complementos/replicar.
+// método 5.2 com UCs não residenciais). Aptos por andar / primeiro complemento
+// e a geração de complementos vivem agora na etapa "Dados das torres"; a
+// replicação da UC 1 fica dentro da própria primeira unidade (ver _mkUnidadeCard).
 function renderUnidadesTopo(bi) {
   const topo = $("#unidadesTopo");
   const b = state.blocos[bi];
   if (!topo || !b) return;
-  const ucs = b.ucs || [];
-  const calcTorre = calcBlocoMultiTorres(b);
+  // A demanda não residencial agora é preenchida por UC (ver _mkUnidadeCard);
+  // não há mais ferramenta de topo nesta etapa.
   topo.innerHTML = "";
-  if (!calcTorre.modoCalculadora && calcTorre.temNaoResidencial) {
-    const grid = document.createElement("div");
-    grid.className = "grid grid-2";
-    const f = _campo(
-      "Demanda geral não residencial (kVA)",
-      _inp(
-        b.demandaNaoResidencial,
-        (v) => {
-          b.demandaNaoResidencial = v;
-          atualizarUnidadesCalc();
-        },
-        { type: "number", placeholder: "0,0" },
-      ),
-    );
-    f.setAttribute("data-noopt", "");
-    const hint = document.createElement("span");
-    hint.className = "field-hint";
-    hint.textContent =
-      "Demanda calculada pelo responsável técnico para o conjunto das UCs não residenciais (comercial/industrial/rural) da torre.";
-    f.appendChild(hint);
-    grid.appendChild(f);
-    topo.appendChild(grid);
-  }
-  if (ucs.length > 1) {
-    const linha = document.createElement("div");
-    linha.className = "unidades-toolbar";
-    const fAndar = _campo(
-      "Aptos por andar",
-      _inp(b.aptosPorAndar, (v) => (b.aptosPorAndar = v), {
-        type: "number",
-        placeholder: "Ex: 4",
-      }),
-    );
-    let btnGerar;
-    const fCompl = _campo(
-      "Primeiro complemento",
-      _inp(
-        b.complInicial,
-        (v) => {
-          b.complInicial = v;
-          if (btnGerar) btnGerar.disabled = !/\d/.test(String(v || ""));
-        },
-        { placeholder: "Ex: 101 ou Apto 01" },
-      ),
-    );
-    btnGerar = document.createElement("button");
-    btnGerar.type = "button";
-    btnGerar.className = "btn btn-ghost";
-    btnGerar.disabled = !/\d/.test(String(b.complInicial || ""));
-    btnGerar.textContent = `⧉ Gerar complementos das ${ucs.length} UCs`;
-    btnGerar.addEventListener("click", () => gerarComplementosTorre(bi));
-    const btnRep = document.createElement("button");
-    btnRep.type = "button";
-    btnRep.className = "btn btn-ghost";
-    btnRep.textContent = "⧉ Replicar UC 1 para todas";
-    btnRep.addEventListener("click", () => replicarUC1Torre(bi));
-    linha.append(fAndar, fCompl, btnGerar, btnRep);
-    topo.appendChild(linha);
-  }
 }
 function _mkUnidadeCard(bi, ui, modoCalc) {
   const b = state.blocos[bi];
   const u = b.ucs[ui];
   const chave = `${bi}:${ui}`;
-  if (!(chave in _uniAberta) && ui === 0) _uniAberta[chave] = true;
   const aberta = _uniAberta[chave] === true;
   const bloco = document.createElement("div");
   bloco.className = "uc-colapsavel" + (aberta ? " is-open" : "");
@@ -1204,6 +1199,7 @@ function _mkUnidadeCard(bi, ui, modoCalc) {
   corpo.appendChild(endereco);
   const grid = document.createElement("div");
   grid.className = "grid grid-2";
+  if (modoCalc && !ucSemAlteracao(u)) grid.style.marginBottom = "24px";
   {
     const f = _campo(
       "Complemento da unidade",
@@ -1221,18 +1217,11 @@ function _mkUnidadeCard(bi, ui, modoCalc) {
     grid.appendChild(f);
   }
   {
-    const f = _campo(
-      "Tipo de solicitação",
-      _selectDe(
-        ["Conexão Nova", "Alteração de Carga", "Caixa Existente sem Alteração"],
-        u.solicitacao,
-        (v) => {
-          u.solicitacao = v;
-          renderUnidadesTorreAtual();
-        },
-      ),
-      "field--float",
-    );
+    // Múltiplas torres: o tipo de solicitação é sempre Conexão Nova (travado).
+    u.solicitacao = "Conexão Nova";
+    const sel = _selectDe(["Conexão Nova"], u.solicitacao, () => {});
+    sel.disabled = true;
+    const f = _campo("Tipo de solicitação", sel, "field--float");
     f.setAttribute("data-noopt", "");
     grid.appendChild(f);
   }
@@ -1276,6 +1265,23 @@ function _mkUnidadeCard(bi, ui, modoCalc) {
     );
     f.setAttribute("data-noopt", "");
     grid.appendChild(f);
+    // Método ND-5.2 (torre com 4+ apartamentos residenciais): a demanda de cada
+    // UC não residencial é informada individualmente pelo RT e somada na torre.
+    if (!modoCalc && !ucSemAlteracao(u)) {
+      const fd = _campo(
+        "Demanda não residencial (kVA)",
+        _inp(
+          u.demandaNaoResidencial,
+          (v) => {
+            u.demandaNaoResidencial = v;
+            atualizarUnidadesCalc();
+          },
+          { type: "number", placeholder: "0,0" },
+        ),
+      );
+      fd.setAttribute("data-noopt", "");
+      grid.appendChild(fd);
+    }
   }
   if (u.solicitacao !== "Conexão Nova") {
     const f = _campo(
@@ -1315,7 +1321,7 @@ function _mkUnidadeCard(bi, ui, modoCalc) {
     _campo(
       "Disjuntor da unidade",
       _selectDe(
-        DISJ.map((d) => d.fx),
+        DISJ_CN.map((d) => d.fx),
         u.disjPara,
         (v) => {
           u.disjPara = v;
@@ -1330,42 +1336,24 @@ function _mkUnidadeCard(bi, ui, modoCalc) {
   // ND-5.2 não calcula → a UC detalha as cargas como no BT individual
   // (mesma ilha montarCargasBT; demanda/carga da UC saem do cálculo).
   if (modoCalc && !semAlt) {
-    const divisor = document.createElement("div");
-    divisor.className = "divider";
-    const titulo = document.createElement("span");
-    titulo.className = "subbox-title";
-    titulo.textContent = "Cargas da unidade";
-    divisor.appendChild(titulo);
-    corpo.appendChild(divisor);
     const cargasBox = document.createElement("div");
     corpo.appendChild(cargasBox);
     montarCargasBT(cargasBox, u, ui, () => atualizarUnidadesCalc());
   }
-  if (b.ucs.length > 1) {
+  // Replicar UC 1 para as demais unidades da torre — dentro da própria UC 1.
+  if (ui === 0 && b.ucs.length > 1) {
     const row = document.createElement("div");
     row.className = "acao-central";
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "btn btn-ghost btn-danger-ghost";
-    btn.textContent = "🗑 Excluir unidade";
-    btn.addEventListener("click", () => excluirUnidadeTorre(bi, ui));
+    btn.className = "btn btn-ghost btn-outlined-acao";
+    btn.textContent = "Replicar UC 1 para todas";
+    btn.addEventListener("click", () => replicarUC1Torre(bi));
     row.appendChild(btn);
     corpo.appendChild(row);
   }
   bloco.appendChild(corpo);
   return bloco;
-}
-function excluirUnidadeTorre(bi, ui) {
-  const b = state.blocos[bi];
-  if (!b || (b.ucs || []).length <= 1) return;
-  b.ucs.splice(ui, 1);
-  b.qtdUCs = String(b.ucs.length);
-  // Estados de abertura ficam defasados após o splice — zera os da torre.
-  Object.keys(_uniAberta).forEach((k) => {
-    if (k.startsWith(`${bi}:`)) delete _uniAberta[k];
-  });
-  autoSelecionarDisjTorres();
-  renderUnidadesTorreAtual();
 }
 // Atualiza SÓ os derivados da torre selecionada (rodapé, KPIs, avisos) —
 // mudanças estruturais (solicitação/atividade/qtd) re-renderizam a torre.
@@ -1512,14 +1500,18 @@ function validacaoObrigatoriosColetivo() {
   if (MULTI)
     state.blocos.forEach((b, bi) => {
       const cb = calcBlocoMultiTorres(b);
-      if (
-        !cb.modoCalculadora &&
-        cb.temNaoResidencial &&
-        !String(b.demandaNaoResidencial || "").trim()
-      )
-        faltando.push(
-          `Demanda geral não residencial — Torre ${b.nome || bi + 1} (kVA)`,
-        );
+      if (!cb.modoCalculadora)
+        (b.ucs || []).forEach((u, ui) => {
+          if (
+            !ucSemAlteracao(u) &&
+            u.atividade &&
+            u.atividade !== "Residencial" &&
+            !String(u.demandaNaoResidencial || "").trim()
+          )
+            faltando.push(
+              `Demanda não residencial da ${u.identificacao || `UC ${ui + 1}`} — Torre ${b.nome || bi + 1} (kVA)`,
+            );
+        });
       if (!cb.modoCalculadora && !cb.nd52)
         faltando.push(
           `Área dos apartamentos residenciais — Torre ${b.nome || bi + 1} (média ponderada entre 1 e 1000 m²)`,
