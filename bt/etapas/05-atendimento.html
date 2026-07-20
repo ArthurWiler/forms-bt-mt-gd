@@ -2,14 +2,13 @@
 
 <div class="card">
   <div class="section-eyebrow">Etapa 4</div>
-  <h3 class="card-title">Atendimento e cargas</h3>
+  <h3 class="card-title">Tipo de atendimento</h3>
   <p class="card-sub">
-    Defina o disjuntor solicitado e a quantidade de unidades consumidoras. Para
-    cada UC, informe a solicitação e detalhe as cargas para calcularmos a
-    demanda e o disjuntor adequado.
+    Defina o disjuntor solicitado e a quantidade de unidades consumidoras. As
+    cargas de cada UC são detalhadas na etapa seguinte.
   </p>
 
-  <div class="grid grid-2" style="margin: 16px 0 24px">
+  <div class="grid grid-2" style="margin: 16px 0 0">
     <div class="field field--float" data-noopt>
       <label>Disjuntor Solicitado</label>
       <select data-k="atend.solicitacao" data-sem-vazio disabled>
@@ -29,12 +28,8 @@
       </span>
     </div>
   </div>
-
-  <div id="ucsBox"></div>
 </div>
 <div class="nav-bottom no-print">
   <button class="btn btn-ghost" data-nav="prev">← Voltar</button>
-  <button class="btn btn-primary" data-nav="next" data-gate="btCargasOk">
-    Avançar →
-  </button>
+  <button class="btn btn-primary" data-nav="next">Avançar →</button>
 </div>

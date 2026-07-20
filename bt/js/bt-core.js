@@ -173,7 +173,10 @@ function goTo(n, livre) {
     s.classList.toggle("active", i === n);
     s.classList.toggle("done", i < n);
     const num = s.querySelector(".vstep-num");
-    if (num) num.textContent = i < n ? "✓" : String(i + 1);
+    // Etapas concluídas: o check vem do CSS (ícone SVG mascarado em
+    // .cemig-form .vstep.done .vstep-num::after), não do glifo "✓" da fonte.
+    // Zeramos o texto para não competir com o ícone; não-concluídas mostram o nº.
+    if (num) num.textContent = i < n ? "" : String(i + 1);
   });
   // Conteúdo dinâmico por presença (lição do MT). O mapa é do core; os
   // demais hooks são do fluxo e vivem em window.onPaginaAtiva.
@@ -499,8 +502,7 @@ function initMapaObra() {
     "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     {
       maxZoom: 19,
-      attribution:
-        "Tiles © Esri — Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community",
+      attribution: "",
     },
   );
   satelite.addTo(mapaObra);

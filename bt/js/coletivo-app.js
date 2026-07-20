@@ -60,6 +60,11 @@ const state = {
   logoPDF: null,
 };
 window.state = state;
+// Múltiplas torres: "Quantidade de torres" começa em branco — os cards das
+// torres (e a etapa "Dados das unidades") só aparecem depois que o usuário
+// informar o número. state.blocos mantém 1 torre como armazém interno; é o
+// nBlocos vazio que segura a renderização (ver renderBlocos/renderUnidadesTorres).
+if (MULTI) state.atend.nBlocos = "";
 // Abertura dos acordeões (fora do estado do formulário, como no React)
 const _ucAberta = {};
 const _torreAberta = {};
@@ -321,9 +326,33 @@ function autoGerarComplementosTorre(bi) {
     b.complInicial,
     (b.ucs || []).length,
     b.aptosPorAndar,
+    b.aptosPorAndarFaixas,
   );
   if (!lista) return;
   (b.ucs || []).forEach((u, k) => (u.complemento = lista[k]));
+}
+// Coletivo: reaproveita state.blocos[0] SÓ como armazém do card de agrupamento
+// (aptos por andar / primeiro complemento / demanda / disjuntor do card) — o
+// fluxo coletivo não usa `blocos` para cálculo/PDF (usa `ucBlocos`).
+function _coletivoAgr() {
+  if (!state.blocos[0]) state.blocos[0] = novaTorre(0);
+  return state.blocos[0];
+}
+// Coletivo: preenche os complementos das UCs (ucBlocos) a partir do primeiro
+// complemento (+ unidades por andar) do card de agrupamento. Não re-renderiza —
+// os campos que disparam ficam no topo da etapa e não devem perder o foco.
+function autoGerarComplementosColetivo() {
+  const ag = _coletivoAgr();
+  const lista = gerarComplementos(
+    ag.complInicial,
+    state.ucBlocos.length,
+    ag.aptosPorAndar,
+    ag.aptosPorAndarFaixas,
+  );
+  if (!lista) return;
+  state.ucBlocos.forEach((u, k) => (u.complemento = lista[k]));
+  // Reflete os complementos gerados nos cabeçalhos/campos das UCs abaixo.
+  renderUcsColetivo();
 }
 // app.js:450-473 (preserva complemento/instalação/nº UC de cada unidade)
 function replicarUC1Torre(bi) {
@@ -934,6 +963,19 @@ function _mkPaginacao(totalPaginas, atual, aoIr) {
 function renderBlocos() {
   const box = $("#blocosBox");
   if (!box) return;
+  // Enquanto "Quantidade de torres" estiver em branco, não apresentar os cards
+  // das torres — só uma orientação para o usuário informar o número primeiro.
+  const nBlocosVazio =
+    String(state.atend.nBlocos == null ? "" : state.atend.nBlocos).trim() === "";
+  if (nBlocosVazio) {
+    box.innerHTML =
+      '<p class="field-hint">Informe a quantidade de torres para preencher os dados de cada torre.</p>';
+    const pagVazio = $("#blocosPag");
+    if (pagVazio) pagVazio.innerHTML = "";
+    atualizarBlocosKpis();
+    if (window.CemigMarcadores) CemigMarcadores.atualizarAvancar();
+    return;
+  }
   sincronizarBlocos();
   autoSelecionarDisjTorres();
   const total = state.blocos.length;
@@ -960,6 +1002,355 @@ function renderBlocos() {
     CemigMarcadores.atualizarAvancar();
   }
 }
+// Campo com botão de ação DENTRO da própria célula (uma única caixa com borda):
+// rótulo flutuante + valor à esquerda, botão à direita. Usado por "Quantidade
+// de unidades por andar" + "Customizar". O rótulo flutua como nos demais campos
+// (encolhe quando há valor); o input não tem borda própria (a borda é da célula).
+function _campoComAcao(labelTxt, controle, botao) {
+  const f = document.createElement("div");
+  // field--plain sai do rótulo flutuante automático; a caixa/estados ficam por
+  // conta de .field--com-acao no CSS. data-noopt: não recebe marca de opcional.
+  f.className = "field field--plain field--com-acao";
+  f.setAttribute("data-noopt", "");
+  const corpo = document.createElement("div");
+  corpo.className = "field-acao-corpo";
+  const lbl = document.createElement("label");
+  lbl.className = "field-acao-label";
+  lbl.textContent = labelTxt;
+  controle.classList.add("field-acao-input");
+  corpo.append(lbl, controle);
+  f.append(corpo, botao);
+  return f;
+}
+// ============================================================
+// Popup "Composição por pavimento" (botão Customizar)
+// Descreve a distribuição das unidades por andar em faixas de
+// pavimento [{ ini, fim, unidades }]. Ao salvar, chama onSalvar(faixas)
+// com as faixas válidas (ou null quando esvaziadas). Overlay + diálogo
+// montados no <body>, fechados por Cancelar/X/Esc/clique no overlay.
+// ============================================================
+function abrirComposicaoPavimento(faixasAtuais, onSalvar) {
+  // Cópia de trabalho: faixas existentes ou uma linha em branco inicial.
+  const base = normalizarFaixasPavimento(faixasAtuais);
+  const linhas = base.length
+    ? base.map((f) => ({ ini: f.ini, fim: f.fim, unidades: f.unidades }))
+    : [{ ini: "", fim: "", unidades: "" }];
+
+  const overlay = document.createElement("div");
+  overlay.className = "cmg-modal-overlay";
+
+  const dialog = document.createElement("div");
+  dialog.className = "cmg-modal";
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-modal", "true");
+  dialog.setAttribute("aria-labelledby", "cmg-modal-titulo");
+
+  const fechar = () => {
+    document.removeEventListener("keydown", onKey);
+    overlay.remove();
+  };
+  const onKey = (e) => {
+    if (e.key === "Escape") fechar();
+  };
+
+  // Cabeçalho: botão X
+  const btnX = document.createElement("button");
+  btnX.type = "button";
+  btnX.className = "cmg-modal-fechar";
+  btnX.setAttribute("aria-label", "Fechar");
+  btnX.innerHTML =
+    '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+  btnX.addEventListener("click", fechar);
+
+  const titulo = document.createElement("h2");
+  titulo.className = "cmg-modal-titulo";
+  titulo.id = "cmg-modal-titulo";
+  titulo.textContent = "Composição por pavimento";
+
+  const desc = document.createElement("p");
+  desc.className = "cmg-modal-desc";
+  desc.textContent =
+    "Descreva a distribuição das unidades por andar. Se o padrão mudar ao longo da torre, adicione novas faixas de pavimento (ex: uma faixa para andares com 4 unidades e outra para andares com 3).";
+
+  // Tabela de faixas
+  const tabela = document.createElement("div");
+  tabela.className = "cmg-pav-tabela";
+
+  const corpo = document.createElement("div");
+  corpo.className = "cmg-modal-conteudo";
+
+  const rodape = document.createElement("div");
+  rodape.className = "cmg-modal-rodape";
+  const btnCancelar = document.createElement("button");
+  btnCancelar.type = "button";
+  btnCancelar.className = "btn btn-ghost";
+  btnCancelar.textContent = "Cancelar";
+  btnCancelar.addEventListener("click", fechar);
+  const btnSalvar = document.createElement("button");
+  btnSalvar.type = "button";
+  btnSalvar.className = "btn btn-primary";
+  btnSalvar.textContent = "Salvar";
+  btnSalvar.addEventListener("click", () => {
+    const validas = normalizarFaixasPavimento(linhas);
+    onSalvar(validas.length ? validas : null);
+    fechar();
+  });
+  rodape.append(btnCancelar, btnSalvar);
+
+  // Renderiza as linhas da tabela (cabeçalho + campos por faixa + adicionar).
+  const renderTabela = () => {
+    tabela.innerHTML = "";
+    const head = document.createElement("div");
+    head.className = "cmg-pav-linha cmg-pav-head";
+    ["Andar inicial", "Andar final", "Unidades por andar"].forEach((t) => {
+      const c = document.createElement("div");
+      c.className = "cmg-pav-cel";
+      c.textContent = t;
+      head.appendChild(c);
+    });
+    // Espaço da coluna de remover (mantém o alinhamento das colunas)
+    head.appendChild(
+      Object.assign(document.createElement("div"), {
+        className: "cmg-pav-cel cmg-pav-cel-acao",
+      }),
+    );
+    tabela.appendChild(head);
+
+    linhas.forEach((ln, idx) => {
+      const linha = document.createElement("div");
+      linha.className = "cmg-pav-linha";
+      const campo = (chave, placeholder) => {
+        const cel = document.createElement("div");
+        cel.className = "cmg-pav-cel";
+        const inp = document.createElement("input");
+        inp.type = "number";
+        inp.min = "1";
+        inp.placeholder = placeholder;
+        inp.value = ln[chave] == null ? "" : ln[chave];
+        inp.addEventListener("input", () => (ln[chave] = inp.value));
+        cel.appendChild(inp);
+        return cel;
+      };
+      linha.append(
+        campo("ini", "1"),
+        campo("fim", "6"),
+        campo("unidades", "4"),
+      );
+      const celAcao = document.createElement("div");
+      celAcao.className = "cmg-pav-cel cmg-pav-cel-acao";
+      // A remoção só aparece com mais de uma faixa (sempre resta pelo menos 1).
+      if (linhas.length > 1) {
+        const btnDel = document.createElement("button");
+        btnDel.type = "button";
+        btnDel.className = "cmg-pav-remover";
+        btnDel.setAttribute("aria-label", "Remover faixa");
+        btnDel.innerHTML =
+          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+        btnDel.addEventListener("click", () => {
+          linhas.splice(idx, 1);
+          renderTabela();
+        });
+        celAcao.appendChild(btnDel);
+      }
+      linha.appendChild(celAcao);
+      tabela.appendChild(linha);
+    });
+
+    const rodapeTabela = document.createElement("div");
+    rodapeTabela.className = "cmg-pav-adicionar-wrap";
+    const btnAdd = document.createElement("button");
+    btnAdd.type = "button";
+    btnAdd.className = "btn btn-ghost btn-outlined-acao cmg-pav-adicionar";
+    btnAdd.innerHTML =
+      '<span class="cmg-pav-mais" aria-hidden="true">+</span> Adicionar pavimento';
+    btnAdd.addEventListener("click", () => {
+      linhas.push({ ini: "", fim: "", unidades: "" });
+      renderTabela();
+    });
+    rodapeTabela.appendChild(btnAdd);
+    tabela.appendChild(rodapeTabela);
+  };
+  renderTabela();
+
+  corpo.append(titulo, desc, tabela);
+  dialog.append(btnX, corpo, rodape);
+  overlay.appendChild(dialog);
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) fechar();
+  });
+  document.addEventListener("keydown", onKey);
+  document.body.appendChild(overlay);
+  // Foco inicial no primeiro campo para acessibilidade.
+  const primeiro = tabela.querySelector("input");
+  if (primeiro) primeiro.focus();
+}
+// Campos do agrupamento compartilhados entre torre (condomínio) e coletivo. O
+// LAYOUT é o mesmo dos dois; a origem/destino de cada campo varia por fluxo e
+// vem no adaptador `cfg` (ver _cfgAgrupamentoTorre / _cfgAgrupamentoColetivo).
+// Ordem-alvo (imagem):
+//   Quantidade de unidades
+//   Unidades por andar (+ Customizar) | Primeiro complemento (i)
+//   Demanda do condomínio | Disjuntor do condomínio
+// A "Identificação da torre" (exclusiva do condomínio) é montada por quem chama.
+function _mkAgrupamentoCampos(grid, cfg) {
+  {
+    const f = _campo(
+      cfg.qtdLabel || "Quantidade de unidades na torre",
+      _inp(cfg.qtd(), (v) => cfg.setQtd(v), { type: "number", placeholder: "0" }),
+    );
+    f.setAttribute("data-noopt", "");
+    grid.appendChild(f);
+  }
+  // Geração de complementos das unidades: ao preencher o primeiro complemento
+  // (e, opcionalmente, unidades por andar) os complementos das UCs são
+  // preenchidos automaticamente (ver cfg.gerarComplementos).
+  if (cfg.ucsLen() > 1) {
+    const maxAptos = cfg.ucsLen();
+    const inpAndar = _inp(
+      cfg.andar(),
+      (v) => {
+        // Não faz sentido mais unidades por andar do que UCs; limita ao total.
+        const n = parseInt(v);
+        if (Number.isFinite(n) && n > maxAptos) {
+          v = String(maxAptos);
+          inpAndar.value = v;
+        }
+        cfg.setAndar(v);
+        cfg.gerarComplementos();
+      },
+      { type: "number", placeholder: "Ex: 4" },
+    );
+    inpAndar.max = String(maxAptos);
+    // Botão "Customizar" — abre o popup "Composição por pavimento" para
+    // descrever faixas de andares com unidades distintas por andar.
+    // Ícone: imagem imgs/edit.svg (lápis), sempre centralizada no botão.
+    const btnCustom = document.createElement("button");
+    btnCustom.type = "button";
+    btnCustom.className = "btn btn-ghost btn-outlined-acao field-acao-btn";
+    btnCustom.innerHTML =
+      '<img class="field-acao-icon" src="../imgs/edit.svg" alt="" aria-hidden="true" />Customizar';
+    btnCustom.title = "Personalizar a quantidade de unidades por andar";
+    btnCustom.addEventListener("click", () => {
+      abrirComposicaoPavimento(cfg.faixas(), (faixas) => {
+        cfg.setFaixas(faixas);
+        cfg.gerarComplementos();
+      });
+    });
+    const fAndar = _campoComAcao(
+      "Quantidade de unidades por andar",
+      inpAndar,
+      btnCustom,
+    );
+    grid.appendChild(fAndar);
+    const fCompl = _campo(
+      'Primeiro complemento <span class="cmg-hint" tabindex="0" role="img" aria-label="Ajuda: primeiro complemento" data-hint="Esse campo gera automaticamente a lista de complementos das suas unidades."><img class="field-info" src="../imgs/info.svg" alt="" aria-hidden="true" /></span>',
+      _inp(
+        cfg.compl(),
+        (v) => {
+          cfg.setCompl(v);
+          cfg.gerarComplementos();
+        },
+        { placeholder: "Ex: 101 ou Apto 01" },
+      ),
+    );
+    fCompl.setAttribute("data-noopt", "");
+    grid.appendChild(fCompl);
+  }
+  grid.appendChild(
+    _campo(
+      "Demanda do condomínio (kVA)",
+      _inp(cfg.demanda(), (v) => cfg.setDemanda(v), {
+        type: "number",
+        placeholder: "0",
+      }),
+    ),
+  );
+  {
+    const sel = _selectDe(cfg.disjOpts(), cfg.disj(), (v) => cfg.setDisj(v), true);
+    if (cfg.disjId) sel.id = cfg.disjId;
+    grid.appendChild(_campo("Disjuntor do condomínio", sel, "field--float"));
+  }
+}
+// Adaptador do condomínio (torre bi): mesma lógica de antes do adaptador.
+function _cfgAgrupamentoTorre(b, bi) {
+  return {
+    disjId: `disjCondominio-${bi}`,
+    qtd: () => b.qtdUCs,
+    setQtd: (v) => {
+      const antes = (b.ucs || []).length > 1;
+      sincronizarUCsTorre(bi, v);
+      // Re-renderiza só quando a visibilidade de "por andar"/complemento muda
+      // (não a cada tecla, para não perder o foco do campo de quantidade).
+      if ((b.ucs || []).length > 1 !== antes) renderBlocos();
+    },
+    ucsLen: () => (b.ucs || []).length,
+    andar: () => b.aptosPorAndar,
+    setAndar: (v) => (b.aptosPorAndar = v),
+    faixas: () => b.aptosPorAndarFaixas,
+    setFaixas: (v) => (b.aptosPorAndarFaixas = v),
+    compl: () => b.complInicial,
+    setCompl: (v) => (b.complInicial = v),
+    gerarComplementos: () => autoGerarComplementosTorre(bi),
+    demanda: () => b.demandaIncendio,
+    setDemanda: (v) => {
+      b.demandaIncendio = v;
+      autoSelecionarDisjTorres();
+      _refreshDisjCondominio(bi);
+      atualizarBlocosKpis();
+    },
+    disjOpts: () => opcoesDisjIncendioTorre(b),
+    disj: () => b.disjIncendio,
+    setDisj: (v) => (b.disjIncendio = v),
+  };
+}
+// Adaptador do coletivo: "Quantidade de unidades" = nº de UCs (ucBlocos, via
+// atend.nUCs); "por andar"/"primeiro complemento" geram os complementos das UCs.
+// Demanda/Disjuntor do condomínio ficam guardados em state.blocos[0] (armazém do
+// card — destino de cálculo/PDF a definir; ver _coletivoAgr).
+function _cfgAgrupamentoColetivo() {
+  const ag = _coletivoAgr();
+  return {
+    disjId: "disjCondominio-coletivo",
+    qtdLabel: "Quantidade de unidades",
+    qtd: () => state.atend.nUCs,
+    setQtd: (v) => {
+      const antes = state.ucBlocos.length > 1;
+      state.atend.nUCs = v;
+      sincronizarUcBlocos();
+      // A lista de UCs abaixo acompanha a quantidade (não contém o campo que
+      // dispara, então não há perda de foco). O card do topo só é refeito
+      // quando a visibilidade de "por andar"/complemento muda (0/1 ↔ 2+ UCs),
+      // para não perder o foco do próprio campo de quantidade a cada tecla.
+      renderUcsColetivo();
+      if (state.ucBlocos.length > 1 !== antes) renderAgrupamentoColetivo();
+    },
+    ucsLen: () => state.ucBlocos.length,
+    andar: () => ag.aptosPorAndar,
+    setAndar: (v) => (ag.aptosPorAndar = v),
+    faixas: () => ag.aptosPorAndarFaixas,
+    setFaixas: (v) => (ag.aptosPorAndarFaixas = v),
+    compl: () => ag.complInicial,
+    setCompl: (v) => (ag.complInicial = v),
+    gerarComplementos: () => autoGerarComplementosColetivo(),
+    demanda: () => ag.demandaIncendio,
+    setDemanda: (v) => (ag.demandaIncendio = v),
+    disjOpts: () => opcoesDisjIncendioTorre(ag),
+    disj: () => ag.disjIncendio,
+    setDisj: (v) => (ag.disjIncendio = v),
+  };
+}
+// Card de agrupamento do coletivo (topo da etapa "Unidades Consumidoras"):
+// mesmo card do condomínio, SEM "Identificação da torre".
+function renderAgrupamentoColetivo() {
+  const box = $("#agrupamentoColetivoBox");
+  if (!box) return;
+  box.innerHTML = "";
+  const grid = document.createElement("div");
+  grid.className = "grid grid-2";
+  _mkAgrupamentoCampos(grid, _cfgAgrupamentoColetivo());
+  box.appendChild(grid);
+  if (window.CemigMarcadores) CemigMarcadores.aplicar(box);
+}
 function _mkTorreCard(bi, total) {
   const b = state.blocos[bi];
   const aberta = _torreAberta[bi] === true;
@@ -983,96 +1374,18 @@ function _mkTorreCard(bi, total) {
   corpo.appendChild(_blocoEndereco(""));
   const grid = document.createElement("div");
   grid.className = "grid grid-2";
+  // Ordem-alvo do card (identidade da torre é o único campo exclusivo do
+  // condomínio; ver _mkAgrupamentoCampos, compartilhado com o coletivo):
+  //   Identificação | Quantidade de unidades
+  //   Unidades por andar (+ Customizar) | Primeiro complemento (i)
+  //   Demanda do condomínio | Disjuntor do condomínio
   grid.appendChild(
     _campo(
       "Identificação da torre",
       _inp(b.nome, (v) => (b.nome = v), { placeholder: `${bi + 1}` }),
     ),
   );
-  {
-    const f = _campo(
-      `Quantidade de unidades na torre ${bi + 1}`,
-      _inp(
-        b.qtdUCs,
-        (v) => {
-          const antes = (b.ucs || []).length > 1;
-          sincronizarUCsTorre(bi, v);
-          // Aptos por andar / primeiro complemento só existem com 2+ UCs;
-          // re-renderiza apenas quando a visibilidade muda (não a cada tecla,
-          // para não perder o foco do campo de quantidade).
-          if ((b.ucs || []).length > 1 !== antes) renderBlocos();
-        },
-        {
-          type: "number",
-          placeholder: "0",
-        },
-      ),
-    );
-    f.setAttribute("data-noopt", "");
-    grid.appendChild(f);
-  }
-  grid.appendChild(
-    _campo(
-      "Demanda do condomínio (kVA)",
-      _inp(
-        b.demandaIncendio,
-        (v) => {
-          b.demandaIncendio = v;
-          autoSelecionarDisjTorres();
-          _refreshDisjCondominio(bi);
-          atualizarBlocosKpis();
-        },
-        { type: "number", placeholder: "0" },
-      ),
-    ),
-  );
-  {
-    const sel = _selectDe(
-      opcoesDisjIncendioTorre(b),
-      b.disjIncendio,
-      (v) => (b.disjIncendio = v),
-      true,
-    );
-    sel.id = `disjCondominio-${bi}`;
-    grid.appendChild(_campo("Disjuntor do condomínio", sel, "field--float"));
-  }
-  // Geração de complementos das unidades desta torre: ao preencher o primeiro
-  // complemento (e, opcionalmente, aptos por andar) os complementos das UCs são
-  // preenchidos automaticamente, sem botão de disparo (ver autoGerarComplementosTorre).
-  if ((b.ucs || []).length > 1) {
-    const maxAptos = (b.ucs || []).length;
-    const inpAndar = _inp(
-      b.aptosPorAndar,
-      (v) => {
-        // Não faz sentido mais aptos por andar do que UCs na torre; limita ao total.
-        const n = parseInt(v);
-        if (Number.isFinite(n) && n > maxAptos) {
-          v = String(maxAptos);
-          inpAndar.value = v;
-        }
-        b.aptosPorAndar = v;
-        autoGerarComplementosTorre(bi);
-      },
-      { type: "number", placeholder: "Ex: 4" },
-    );
-    inpAndar.max = String(maxAptos);
-    const fAndar = _campo("Aptos por andar", inpAndar);
-    fAndar.setAttribute("data-noopt", "");
-    grid.appendChild(fAndar);
-    const fCompl = _campo(
-      "Primeiro complemento",
-      _inp(
-        b.complInicial,
-        (v) => {
-          b.complInicial = v;
-          autoGerarComplementosTorre(bi);
-        },
-        { placeholder: "Ex: 101 ou Apto 01" },
-      ),
-    );
-    fCompl.setAttribute("data-noopt", "");
-    grid.appendChild(fCompl);
-  }
+  _mkAgrupamentoCampos(grid, _cfgAgrupamentoTorre(b, bi));
   corpo.appendChild(grid);
   if (bi === 0 && total > 1) {
     const row = document.createElement("div");
@@ -1080,7 +1393,7 @@ function _mkTorreCard(bi, total) {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "btn btn-ghost btn-outlined-acao";
-    btn.textContent = "Replicar torre 1 para todas as torres";
+    btn.textContent = "Replicar dados para todas as torres";
     btn.addEventListener("click", replicarPrimeiro);
     row.appendChild(btn);
     corpo.appendChild(row);
@@ -1110,6 +1423,25 @@ function _refreshDisjCondominio(bi) {
 function renderUnidadesTorres() {
   const chips = $("#unidadesChips");
   if (!chips) return;
+  // Só apresentar as unidades depois que a quantidade de torres for informada
+  // (etapa "Dados das torres"); antes disso não há torres definidas.
+  const nBlocosVazio =
+    String(state.atend.nBlocos == null ? "" : state.atend.nBlocos).trim() === "";
+  if (nBlocosVazio) {
+    chips.innerHTML = "";
+    ["unidadesTopo", "unidadesBox", "unidadesPag", "unidadesResultado"].forEach(
+      (id) => {
+        const el = $("#" + id);
+        if (el) el.innerHTML = "";
+      },
+    );
+    const box = $("#unidadesBox");
+    if (box)
+      box.innerHTML =
+        '<p class="field-hint">Informe a quantidade de torres na etapa “Dados das torres” para preencher as unidades.</p>';
+    if (window.CemigMarcadores) CemigMarcadores.atualizarAvancar();
+    return;
+  }
   sincronizarBlocos();
   autoSelecionarDisjTorres();
   if (_uniTorre >= state.blocos.length) _uniTorre = 0;
@@ -1386,7 +1718,7 @@ function renderUnidadesResultado() {
     const card = document.createElement("div");
     card.className = "resultado-card";
     card.innerHTML =
-      `<span class="resultado-card-info" title="${titulo}" aria-hidden="true">i</span>` +
+      `<span class="resultado-card-info cmg-hint" tabindex="0" role="img" aria-label="${label}: ajuda" data-hint="${titulo}"><img class="field-info" src="../imgs/info.svg" alt="" aria-hidden="true" /></span>` +
       `<div class="resultado-card-label">${label}</div>` +
       `<div class="resultado-card-valor">${valor}</div>`;
     return card;
@@ -1395,12 +1727,12 @@ function renderUnidadesResultado() {
     mkKpi(
       "Carga total da Torre",
       `${fmt2(cargaTotalTorre(b))} kW`,
-      "Soma das cargas previstas (ou calculadas) das unidades ativas da torre.",
+      "A carga total é a soma da carga estimada para todos os apartamentos mais a carga necessária para as áreas de uso comum (como elevadores e iluminação externa).",
     ),
     mkKpi(
       "Demanda total da torre",
       `${fmt2(demandaTorre)} kVA`,
-      "Demanda das UCs pelo método aplicável (ND-5.2 ou calculadora) mais a demanda do condomínio.",
+      "O cálculo da demanda total da torre é feito cruzando o tamanho médio das moradias com o número total de unidades.",
     ),
   );
   wrap.appendChild(kpis);
@@ -1691,6 +2023,7 @@ function exportarPdfBT() {
 
 /* ===== hooks por página (chamados pelo goTo do core) ===== */
 window.onPaginaAtiva = function (sec) {
+  if (sec.querySelector("#agrupamentoColetivoBox")) renderAgrupamentoColetivo();
   if (sec.querySelector("#ucsColetivoBox")) renderUcsColetivo();
   if (sec.querySelector("#kpiDemandaAtendimento")) renderCargasColetivo();
   if (sec.querySelector("#blocosBox")) renderBlocos();

@@ -192,6 +192,10 @@ const blocoPadrao = (i) => ({
   demandaBloco: "",
   qtdUCs: "",
   aptosPorAndar: "", // qtd. de apartamentos por andar — usada na geração de complementos
+  // Composição por pavimento (popup "Customizar"): faixas de andares com
+  // unidades por andar distintas — [{ ini, fim, unidades }]. Quando preenchida,
+  // tem precedência sobre aptosPorAndar na geração de complementos numéricos.
+  aptosPorAndarFaixas: null,
   complInicial: "", // primeiro complemento da torre (ex: "101", "Apto 01")
   disjIncendio: "",
   demandaIncendio: "",
@@ -205,7 +209,13 @@ const blocoPadrao = (i) => ({
 // Qualquer outro padrão com número (ex: "Apto 01") → mantém o texto fixo e
 // incrementa só o número, preservando zeros à esquerda (Apto 02, Apto 03…).
 // Retorna null quando o primeiro complemento não contém número.
-function gerarComplementos(primeiro, total, aptosPorAndar) {
+//
+// `faixas` (opcional): composição por pavimento do popup "Customizar" —
+// [{ ini, fim, unidades }]. Quando informada e o padrão for numérico, cada
+// andar usa a quantidade de unidades da faixa em que ele se encaixa (o número
+// de andar dado por `andar` inicial, não pela posição em `ini/fim`); fora de
+// qualquer faixa, cai no `aptosPorAndar` padrão. Faixas têm precedência.
+function gerarComplementos(primeiro, total, aptosPorAndar, faixas) {
   const n = Math.max(1, parseInt(total) || 1);
   const m = String(primeiro || "")
     .trim()
@@ -213,15 +223,22 @@ function gerarComplementos(primeiro, total, aptosPorAndar) {
   if (!m) return null;
   const [, pre, num, suf] = m;
   const porAndar = Math.max(0, parseInt(aptosPorAndar) || 0);
+  const faixasOk = normalizarFaixasPavimento(faixas);
   const out = [];
-  if (!pre && !suf && num.length >= 3 && porAndar > 0) {
+  const numerico = !pre && !suf && num.length >= 3;
+  if (numerico && (porAndar > 0 || faixasOk.length)) {
     let andar = parseInt(num.slice(0, -2), 10);
     const aptoIni = parseInt(num.slice(-2), 10);
     let apto = aptoIni;
+    // Unidades do andar atual: faixa que cobre o andar, senão o padrão.
+    const unidadesDoAndar = (a) => {
+      const f = faixasOk.find((x) => a >= x.ini && a <= x.fim);
+      return f ? f.unidades : porAndar || 1;
+    };
     for (let i = 0; i < n; i++) {
       out.push(`${andar}${String(apto).padStart(2, "0")}`);
       apto++;
-      if (apto - aptoIni >= porAndar) {
+      if (apto - aptoIni >= unidadesDoAndar(andar)) {
         andar++;
         apto = aptoIni;
       }
@@ -232,6 +249,28 @@ function gerarComplementos(primeiro, total, aptosPorAndar) {
       out.push(pre + String(ini + i).padStart(num.length, "0") + suf);
   }
   return out;
+}
+
+// Sanitiza a composição por pavimento vinda do popup: mantém só faixas com
+// ini/fim/unidades numéricos válidos (fim >= ini, unidades >= 1) e as ordena
+// por andar inicial. Retorna [] para entrada ausente/vazia/inválida.
+function normalizarFaixasPavimento(faixas) {
+  if (!Array.isArray(faixas)) return [];
+  return faixas
+    .map((f) => ({
+      ini: parseInt(f && f.ini, 10),
+      fim: parseInt(f && f.fim, 10),
+      unidades: parseInt(f && f.unidades, 10),
+    }))
+    .filter(
+      (f) =>
+        Number.isFinite(f.ini) &&
+        Number.isFinite(f.fim) &&
+        Number.isFinite(f.unidades) &&
+        f.fim >= f.ini &&
+        f.unidades >= 1,
+    )
+    .sort((a, b) => a.ini - b.ini);
 }
 
 // ============================================================

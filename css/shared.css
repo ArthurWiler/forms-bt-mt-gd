@@ -557,11 +557,11 @@ label.restricao-aceite input[type="checkbox"] {
 .previa-secao-titulo {
   margin: 0 0 var(--cmg-space-4);
   font-family: var(--cmg-font-family);
-  font-size: 20px;
-  line-height: 28px;
+  font-size: var(--cmg-fs-subtitle);
+  line-height: var(--cmg-lh-subtitle);
   font-weight: 600;
   letter-spacing: 0.2px;
-  color: var(--cmg-green-500);
+  color: var(--cmg-green-600);
 }
 .previa-grid {
   display: grid;
@@ -633,7 +633,7 @@ label.restricao-aceite input[type="checkbox"] {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--cmg-space-4);
-  margin: 0 0 var(--cmg-space-5);
+  margin: 0 0 var(--cmg-space-6);
 }
 @media (max-width: 900px) {
   .previa-cards {
@@ -1454,15 +1454,16 @@ label.restricao-aceite input[type="checkbox"] {
   align-items: center;
   justify-content: space-between;
   gap: var(--cmg-space-3);
-  min-height: 56px;
-  padding: 0 var(--cmg-space-4);
+  min-height: 44px;
+  padding: var(--cmg-space-2) var(--cmg-space-4);
   background: transparent;
   border: none;
   cursor: pointer;
   font-family: var(--cmg-font-family);
-  font-size: 16px;
+  font-size: var(--cmg-fs-body-lg);
+  line-height: var(--cmg-lh-body-lg);
   letter-spacing: 0.2px;
-  color: var(--cmg-green-600);
+  color: var(--cmg-neutral-700);
   text-align: left;
 }
 .cemig-form .carga-acc.is-open .carga-acc-head {
@@ -1732,6 +1733,96 @@ label.restricao-aceite input[type="checkbox"] {
   font-style: italic;
   font-weight: var(--cmg-fw-bold);
   color: var(--cmg-text);
+  cursor: help;
+}
+/* Quando o KPI usa a imagem (info.svg) — que já é o círculo com "i" — o span
+   deixa de desenhar o próprio círculo (sem borda/tipografia). A imagem herda o
+   tamanho fixo de .field-info. */
+.cemig-form .resultado-card-info:has(.field-info) {
+  border: 0;
+}
+.cemig-form .resultado-card-info .field-info {
+  margin: 0;
+  cursor: help;
+}
+/* ============================================================
+   Dica (tooltip) customizada — .cmg-hint[data-hint]
+   Balão flutuante (verde neutra/600) exibido no hover/foco de
+   ícones de ajuda: (i) do "Primeiro complemento" e dos KPIs de
+   Carga/Demanda da torre. Substitui o tooltip nativo (title).
+   ============================================================ */
+.cemig-form .cmg-hint {
+  position: relative;
+  cursor: help;
+  outline: none;
+}
+.cemig-form .cmg-hint::after {
+  content: attr(data-hint);
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 325px;
+  box-sizing: border-box;
+  padding: 16px;
+  background: var(--cmg-neutral-600); /* #364B46 */
+  color: #fff;
+  border-radius: 8px;
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-body, 14px);
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.2px;
+  text-align: left;
+  white-space: normal;
+  box-shadow: 0 4px 8px 3px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease;
+  z-index: 60;
+  pointer-events: none;
+}
+/* Seta apontando para o ícone */
+.cemig-form .cmg-hint::before {
+  content: "";
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--cmg-neutral-600);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease;
+  z-index: 60;
+  pointer-events: none;
+}
+.cemig-form .cmg-hint:hover::after,
+.cemig-form .cmg-hint:focus-visible::after,
+.cemig-form .cmg-hint:hover::before,
+.cemig-form .cmg-hint:focus-visible::before {
+  opacity: 1;
+  visibility: visible;
+}
+/* Variante ancorada à direita: usada quando o ícone fica no canto direito
+   do campo (ex.: (i) do "Primeiro complemento"). Centralizar o balão sobre
+   o ícone o jogaria para fora da coluna/tela — aqui ele abre para a esquerda,
+   alinhando a borda direita do balão com a do ícone. */
+.cemig-form .field label .cmg-hint::after {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+.cemig-form .field label .cmg-hint::before {
+  left: auto;
+  right: 8px;
+  transform: none;
+}
+/* O ícone dentro do wrapper não deve interceptar o foco/hover isolado. */
+.cemig-form .cmg-hint .field-info {
+  display: block;
+  margin: 0;
   cursor: help;
 }
 /* ============================================================
@@ -2158,16 +2249,22 @@ label.restricao-aceite input[type="checkbox"] {
    vivem em css/formulario-mt.css (escopo .cemig-mtform, tokens --cmg-*).
    O antigo bloco .cemig-mt daqui foi removido na migração do MT para o
    shell canônico .cemig-form. */
+/* Botões +/− dos equipamentos: somente ícone (sem contorno/preenchimento),
+   conforme o Figma. Alvo de toque mantido pelo tamanho do botão (28px em
+   formulario-bt.css); hover só um tint sutil, sem preenchimento sólido. */
 .cemig-form .qtd-ctrl button {
-  border: 1px solid var(--cmg-border);
+  border: none;
   border-radius: 6px;
-  background: var(--cmg-surface);
-  color: var(--cmg-text-strong);
+  background: transparent;
+  color: var(--cmg-neutral-700);
 }
 .cemig-form .qtd-ctrl button.plus {
-  background: var(--cmg-green-600);
-  border-color: var(--cmg-green-600);
-  color: var(--cmg-neutral-0);
+  background: transparent;
+  border-color: transparent;
+  color: var(--cmg-neutral-700);
+}
+.cemig-form .qtd-ctrl button:hover {
+  background: var(--cmg-surface-accent);
 }
 
 /* ============================================================
@@ -2288,6 +2385,20 @@ label.restricao-aceite input[type="checkbox"] {
   background: var(--cmg-green-600);
   border-color: var(--cmg-green-600);
   color: var(--cmg-neutral-0);
+  /* O texto é zerado pelo JS (goTo); o check vem do ::after mascarado abaixo,
+     garantindo o mesmo desenho SVG do Figma em qualquer navegador (sem depender
+     do glifo "✓" da fonte). Mesma técnica do .carga-acc-chevron. */
+  position: relative;
+}
+.cemig-form .vstep.done .vstep-num::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 13l4 4L19 7' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    center / 14px 14px no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 13l4 4L19 7' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    center / 14px 14px no-repeat;
 }
 .cemig-form .vstep.done .vstep-label {
   font-weight: 600;
@@ -2441,6 +2552,20 @@ label.restricao-aceite input[type="checkbox"] {
   .cemig-form .page.show {
     display: block !important;
   }
+}
+/* Prévia & PDF: o conteúdo (cards) e os botões vivem dentro de #previaWrap,
+   que é o único filho da .page — então o gap de 32px da .page não os separa.
+   Reproduzimos aqui o mesmo layout em coluna (cards + nav-bottom) para manter
+   o espaçamento de 32px entre o conteúdo e os botões, igual às demais etapas. */
+.cemig-form #previaWrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cmg-space-8);
+}
+/* O gap do #previaWrap já separa os cards em 32px; sem isto o
+   `.card + .card { margin-top: 32px }` somaria e daria 64px entre os cards. */
+.cemig-form #previaWrap .card + .card {
+  margin-top: 0;
 }
 /* ---- Checkbox canônico (spec Figma do Aceite das Orientações) ----
    TODO checkbox dos formulários segue esta forma; os contextos
@@ -2610,3 +2735,306 @@ label.restricao-aceite input[type="checkbox"] {
    O antigo restyle `.cemig-mt` foi removido — nenhum formulário usa
    mais esse escopo.
    ============================================================ */
+
+/* ============================================================
+   11. Campos com ícone de ajuda (.field-info, imagem) e campo com
+   botão de ação DENTRO da célula (.field--com-acao: rótulo + valor
+   à esquerda, botão "Customizar" à direita, numa única caixa).
+   Usados nos cards de agrupamento do BT (torre/coletivo).
+   ============================================================ */
+/* Rótulo com ícone (i) à direita: vira linha e empurra o ícone p/ o fim.
+   Só quando o label realmente contém um .field-info. */
+.cemig-form .field label:has(.field-info) {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--cmg-space-2);
+}
+/* O rótulo flutuante tem `overflow: hidden` + altura fixa (p/ o text-overflow
+   do texto). Isso recortava o balão da dica (que sobe acima do ícone) e ele
+   nunca aparecia. Quando o rótulo carrega o (i), liberamos o overflow para o
+   balão escapar. O texto do rótulo aqui é curto (usa flex), então o ellipsis
+   não é necessário. A regra do ellipsis (`> label`) é bem específica, por isso
+   repetimos o mesmo formato para vencê-la. */
+:is(.cemig-form, .cemig-lote)
+  .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
+    :has([type="checkbox"])
+  ):not(:has([type="radio"]))
+  > label:has(.field-info) {
+  overflow: visible;
+}
+/* Ícone envolto no wrapper de dica (.cmg-hint): o wrapper é quem vai ao fim.
+   O <label> flutuante é `pointer-events: none` (p/ não bloquear o input); por
+   isso o (i) precisa reativar os eventos, senão o hover nunca dispara e o
+   balão nunca aparece. z-index/relative garantem que ele fique acima do input
+   e receba o mouse. */
+.cemig-form .field label .cmg-hint {
+  margin-left: auto;
+  flex: none;
+  display: inline-flex;
+  pointer-events: auto;
+  position: relative;
+  z-index: 2;
+}
+.cemig-form .field label .cmg-hint .field-info {
+  margin-left: 0;
+}
+/* Ícone de ajuda: a própria imagem (imgs/info.svg) já é o círculo com "i".
+   Sempre centralizada, tamanho fixo, alinhada à direita do rótulo. */
+.cemig-form .field-info {
+  margin-left: auto;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  object-position: center;
+  cursor: help;
+}
+/* Campo com ação: uma única caixa (borda/altura como um .field), rótulo+valor
+   à esquerda e botão à direita. field--plain já tira o rótulo flutuante auto. */
+.cemig-form .field--com-acao {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--cmg-space-3);
+  min-height: 48px;
+  background: var(--cmg-surface);
+  border: 1px solid var(--cmg-border);
+  border-radius: 4px;
+  padding: 6px var(--cmg-space-4);
+}
+.cemig-form .field--com-acao:focus-within {
+  border-color: var(--cmg-green-600);
+}
+/* Corpo esquerdo: rótulo flutuante (encolhido) por cima do valor. */
+.cemig-form .field--com-acao .field-acao-corpo {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.cemig-form .field--com-acao .field-acao-label {
+  margin: 0;
+  font-family: var(--cmg-font-family);
+  font-size: 12px;
+  line-height: 20px;
+  font-weight: 400;
+  letter-spacing: 0.2px;
+  color: var(--cmg-neutral-500);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+/* Input do valor: sem borda/padding próprios (a caixa é o .field--com-acao). */
+.cemig-form .field--com-acao .field-acao-input {
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-body-lg);
+  color: var(--cmg-text);
+}
+.cemig-form .field--com-acao .field-acao-input:focus {
+  outline: none;
+  box-shadow: none;
+  border: 0;
+}
+/* Botão "Customizar" à direita, dentro da célula. */
+.cemig-form .field-acao-btn {
+  flex: none;
+  align-self: center;
+  height: 36px;
+  padding: 0 18px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cmg-space-2);
+}
+/* Ícone do botão: imagem (imgs/edit.svg, lápis), sempre centralizada. */
+.cemig-form .field-acao-icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  object-fit: contain;
+  object-position: center;
+}
+
+/* ============================================================
+   12. Modal "Composição por pavimento" (botão Customizar)
+   Overlay + caixa de diálogo (spec Figma: 750px, sombra, radius
+   12px) com a tabela de faixas de andares. Montado no <body>
+   (dentro de .cemig-form) por abrirComposicaoPavimento().
+   ============================================================ */
+.cemig-form .cmg-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--cmg-space-4);
+  background: rgba(4, 30, 24, 0.45);
+}
+.cemig-form .cmg-modal {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 750px;
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  background: var(--cmg-surface);
+  border-radius: 12px;
+  box-shadow: 0 4px 8px 3px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+.cemig-form .cmg-modal-fechar {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--cmg-text-strong, #041e18);
+  cursor: pointer;
+  border-radius: 8px;
+}
+.cemig-form .cmg-modal-fechar:hover {
+  background: var(--cmg-neutral-100, #e6e9e8);
+}
+.cemig-form .cmg-modal-conteudo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--cmg-space-6, 24px);
+  padding: 40px 24px 24px;
+}
+.cemig-form .cmg-modal-titulo {
+  margin: 0;
+  width: 100%;
+  text-align: center;
+  font-family: var(--cmg-font-family);
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 38px;
+  letter-spacing: 0.4px;
+  color: var(--cmg-green-600, #0f6c58);
+}
+.cemig-form .cmg-modal-desc {
+  margin: 0;
+  width: 100%;
+  text-align: center;
+  font-family: var(--cmg-font-family);
+  font-size: 14px;
+  line-height: 24px;
+  letter-spacing: 0.2px;
+  color: var(--cmg-neutral-600, #364b46);
+}
+/* Tabela de faixas */
+.cemig-form .cmg-pav-tabela {
+  width: 100%;
+  border: 1px solid var(--cmg-border, #d1d4d3);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.cemig-form .cmg-pav-linha {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 44px;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border-bottom: 1px solid var(--cmg-border, #d1d4d3);
+}
+.cemig-form .cmg-pav-head {
+  background: var(--cmg-neutral-200, #d1d4d3);
+  padding: 16px 12px;
+}
+.cemig-form .cmg-pav-head .cmg-pav-cel {
+  font-family: var(--cmg-font-family);
+  font-weight: var(--cmg-fw-bold, 700);
+  font-size: 14px;
+  line-height: 24px;
+  letter-spacing: 0.2px;
+  color: var(--cmg-neutral-600, #364b46);
+}
+.cemig-form .cmg-pav-cel {
+  min-width: 0;
+}
+.cemig-form .cmg-pav-cel input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 48px;
+  padding: 4px 16px;
+  border: 1px solid var(--cmg-neutral-400, #8c9895);
+  border-radius: 4px;
+  background: var(--cmg-surface);
+  font-family: var(--cmg-font-family);
+  font-size: 16px;
+  color: var(--cmg-text);
+}
+.cemig-form .cmg-pav-cel input:focus {
+  outline: none;
+  border-color: var(--cmg-green-600, #0f6c58);
+}
+.cemig-form .cmg-pav-cel-acao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cemig-form .cmg-pav-remover {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  color: var(--cmg-neutral-500, #5b6b67);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.cemig-form .cmg-pav-remover:hover {
+  background: var(--cmg-neutral-100, #e6e9e8);
+  color: var(--cmg-text-strong, #041e18);
+}
+.cemig-form .cmg-pav-adicionar-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 16px 12px;
+}
+.cemig-form .cmg-pav-mais {
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 700;
+}
+/* Rodapé: Cancelar | Salvar */
+.cemig-form .cmg-modal-rodape {
+  display: flex;
+  justify-content: center;
+  gap: var(--cmg-space-4, 16px);
+  padding: 0 24px 24px;
+}
+.cemig-form .cmg-modal-rodape .btn {
+  min-width: 200px;
+}
+@media (max-width: 640px) {
+  .cemig-form .cmg-pav-linha {
+    grid-template-columns: 1fr 1fr 1fr 36px;
+    gap: 8px;
+  }
+  .cemig-form .cmg-modal-rodape {
+    flex-direction: column-reverse;
+  }
+  .cemig-form .cmg-modal-rodape .btn {
+    width: 100%;
+    min-width: 0;
+  }
+}

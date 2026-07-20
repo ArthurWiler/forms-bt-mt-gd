@@ -1,7 +1,8 @@
 // A consulta de restrições agora vive em shared/js/geo.js (consultarRestricoesObra),
 // compartilhada com o MT para garantir critério/UX idênticos (Regras 2 e 3).
 // Mantém-se o nome local como fino encaminhamento para não tocar no restante.
-const _consultarTodasRestricoes = (lat, lng) => consultarRestricoesObra(lat, lng);
+const _consultarTodasRestricoes = (lat, lng) =>
+  consultarRestricoesObra(lat, lng);
 /* ============================================================
    Conversão Geográfica → UTM (WGS-84)
    A zona/fuso é determinada automaticamente a partir da longitude
@@ -80,7 +81,9 @@ function LocalizacaoObra({ obra, setObra }) {
   const rural = obra.localizacao === "Rural";
   const toNum = (s) => {
     const v = parseFloat(
-      String(s == null ? "" : s).replace(",", ".").trim()
+      String(s == null ? "" : s)
+        .replace(",", ".")
+        .trim(),
     );
     return isNaN(v) ? null : v;
   };
@@ -101,15 +104,14 @@ function LocalizacaoObra({ obra, setObra }) {
     // e a ordem dos eixos é {z}/{y}/{x}.
     const ruas = window.L.tileLayer(
       "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-      { maxZoom: 19, attribution: "© OpenStreetMap" }
+      { maxZoom: 19, attribution: "© OpenStreetMap" },
     );
     const satelite = window.L.tileLayer(
       "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
       {
         maxZoom: 19,
-        attribution:
-          "Tiles © Esri — Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community"
-      }
+        attribution: "",
+      },
     );
     satelite.addTo(map);
     window.L.control.layers({ Satélite: satelite, Ruas: ruas }).addTo(map);
@@ -125,9 +127,12 @@ function LocalizacaoObra({ obra, setObra }) {
       const ll = window.L.latLng(lat, lng);
       if (markerRef.current) {
         markerRef.current.setLatLng([lat, lng]);
-        if (!map.getBounds().contains(ll)) map.setView(ll, Math.max(map.getZoom(), 17));
+        if (!map.getBounds().contains(ll))
+          map.setView(ll, Math.max(map.getZoom(), 17));
       } else {
-        markerRef.current = window.L.marker([lat, lng], { draggable: true }).addTo(map);
+        markerRef.current = window.L.marker([lat, lng], {
+          draggable: true,
+        }).addTo(map);
         markerRef.current.on("dragend", (e) => {
           const p = e.target.getLatLng();
           aplicarCoord(p.lat, p.lng);
@@ -153,27 +158,30 @@ function LocalizacaoObra({ obra, setObra }) {
           restricaoAmbiental: "",
           restricaoAceite: false,
           restricoesTexto: "",
-          restricoesDetalhe: []
+          restricoesDetalhe: [],
         }));
         if (map && restricaoLayerRef.current) {
           map.removeLayer(restricaoLayerRef.current);
           restricaoLayerRef.current = null;
         }
         setStatus(
-          "Não foi possível consultar a restrição ambiental (verifique conexão/camadas)."
+          "Não foi possível consultar a restrição ambiental (verifique conexão/camadas).",
         );
         return;
       }
       // Uma reserva por linha ("\n"); o display usa white-space: pre-line.
-      const texto = dentros.map(
-        (r) => r.rotulo + (r.nomes.length ? " (" + r.nomes.join(", ") + ")" : "")
-      ).join("\n");
+      const texto = dentros
+        .map(
+          (r) =>
+            r.rotulo + (r.nomes.length ? " (" + r.nomes.join(", ") + ")" : ""),
+        )
+        .join("\n");
       setObra((p) => ({
         ...p,
         restricaoAmbiental: dentros.length ? "Sim" : "Não",
         restricaoAceite: false,
         restricoesTexto: texto,
-        restricoesDetalhe: detalhesRestricoes(res)
+        restricoesDetalhe: detalhesRestricoes(res),
       }));
       // Desenha o contorno das reservas no mapa (limpa o anterior primeiro).
       if (map) {
@@ -181,16 +189,25 @@ function LocalizacaoObra({ obra, setObra }) {
           map.removeLayer(restricaoLayerRef.current);
           restricaoLayerRef.current = null;
         }
-        restricaoLayerRef.current = desenharRestricoesNoMapa(window.L, map, res);
+        restricaoLayerRef.current = desenharRestricoesNoMapa(
+          window.L,
+          map,
+          res,
+        );
       }
       setStatus("");
     } catch (e) {
-      setStatus(e && e.message || "Falha na consulta de restrições.");
+      setStatus((e && e.message) || "Falha na consulta de restrições.");
     }
   };
   const buscarPorEndereco = async () => {
-    const temAlgo = [obra.endereco, obra.num, obra.bairro, obra.cidade, obra.cep]
-      .some((v) => String(v || "").trim());
+    const temAlgo = [
+      obra.endereco,
+      obra.num,
+      obra.bairro,
+      obra.cidade,
+      obra.cep,
+    ].some((v) => String(v || "").trim());
     if (!temAlgo) return;
     setStatus("geo");
     try {
@@ -203,7 +220,7 @@ function LocalizacaoObra({ obra, setObra }) {
         bairro: obra.bairro,
         cidade: obra.cidade,
         uf: obra.estado,
-        cep: obra.cep
+        cep: obra.cep,
       });
       if (!r) {
         setStatus("Endereço não encontrado. Informe a coordenada manualmente.");
@@ -214,7 +231,7 @@ function LocalizacaoObra({ obra, setObra }) {
         ...p,
         lat: String(r.lat),
         lng: String(r.lon),
-        utm: utmString(r.lat, r.lon)
+        utm: utmString(r.lat, r.lon),
       }));
     } catch (e) {
       setStatus("Falha ao geocodificar o endereço.");
@@ -223,10 +240,15 @@ function LocalizacaoObra({ obra, setObra }) {
   const lastGeoRef = useRef("");
   useEffect(() => {
     if (rural) return;
-    const pronto = String(obra.endereco || "").trim() && String(obra.num || "").trim() && String(obra.cidade || "").trim();
+    const pronto =
+      String(obra.endereco || "").trim() &&
+      String(obra.num || "").trim() &&
+      String(obra.cidade || "").trim();
     if (!pronto) return;
     if (nDig(obra.lat) >= 5 && nDig(obra.lng) >= 5) return;
-    const key = [obra.endereco, obra.num, obra.bairro, obra.cidade, obra.cep].join("|").toLowerCase();
+    const key = [obra.endereco, obra.num, obra.bairro, obra.cidade, obra.cep]
+      .join("|")
+      .toLowerCase();
     if (lastGeoRef.current === key) return;
     const t = setTimeout(() => {
       lastGeoRef.current = key;
@@ -247,5 +269,36 @@ function LocalizacaoObra({ obra, setObra }) {
     }, 600);
     return () => clearTimeout(t);
   }, [obra.lat, obra.lng]);
-  return /* @__PURE__ */ React.createElement("div", { className: "mapa-obra" }, /* @__PURE__ */ React.createElement("div", { className: "mapa-actions" }, status === "geo" && /* @__PURE__ */ React.createElement("span", { className: "field-hint" }, "Buscando coordenada…"), status === "restr" && /* @__PURE__ */ React.createElement("span", { className: "field-hint" }, "Consultando restrições…"), status && status !== "geo" && status !== "restr" && /* @__PURE__ */ React.createElement("span", { className: "field-hint", style: { color: "var(--vermelho)" } }, status)), /* @__PURE__ */ React.createElement("div", { ref: divRef, className: "mapa-canvas" }));
+  return /* @__PURE__ */ React.createElement(
+    "div",
+    { className: "mapa-obra" },
+    /* @__PURE__ */ React.createElement(
+      "div",
+      { className: "mapa-actions" },
+      status === "geo" &&
+        /* @__PURE__ */ React.createElement(
+          "span",
+          { className: "field-hint" },
+          "Buscando coordenada…",
+        ),
+      status === "restr" &&
+        /* @__PURE__ */ React.createElement(
+          "span",
+          { className: "field-hint" },
+          "Consultando restrições…",
+        ),
+      status &&
+        status !== "geo" &&
+        status !== "restr" &&
+        /* @__PURE__ */ React.createElement(
+          "span",
+          { className: "field-hint", style: { color: "var(--vermelho)" } },
+          status,
+        ),
+    ),
+    /* @__PURE__ */ React.createElement("div", {
+      ref: divRef,
+      className: "mapa-canvas",
+    }),
+  );
 }

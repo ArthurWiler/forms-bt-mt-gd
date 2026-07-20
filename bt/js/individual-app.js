@@ -631,7 +631,10 @@ function validacaoObrigatoriosBT() {
 }
 // Índices das etapas para os lápis da prévia (ordem real do
 // bt/individual.html: orient=0, prop=1, dados=2, atend=3, corr=4).
-const PG = { prop: 1, dados: 2, atend: 3, corr: 4 };
+// Índices de página para os lápis de edição da prévia. A etapa de atendimento
+// (selects) e a etapa de cargas (cards por-UC) são separadas: atend=3, cargas=4,
+// e correspondência passa a 5.
+const PG = { prop: 1, dados: 2, atend: 3, cargas: 4, corr: 5 };
 function renderPreviaBT() {
   const box = $("#previaConteudo");
   if (!box) return;
@@ -677,7 +680,7 @@ function renderPreviaBT() {
       u.disjEscolhido || (cg._disjuntores || [])[0] || "—",
     );
     html += `</div><div class="previa-grid">`;
-    html += pvCampoBT("Tipo de solicitação", u.solicitacao, PG.atend);
+    html += pvCampoBT("Tipo de solicitação", u.solicitacao, PG.cargas);
     html += pvCampoBT("Atividade principal", u.atividade);
     html += pvCampoBT("Ramo da atividade", u.ramo);
     if (cg.tipoA === "nr" && cg.catA != null)
@@ -687,7 +690,7 @@ function renderPreviaBT() {
       html += pvCampoBT("CEP", o.cep, PG.dados, true);
       html += pvCampoBT("Endereço", o.endereco, PG.dados);
       html += pvCampoBT("Número", o.num, PG.dados);
-      html += pvCampoBT("Complemento", u.complemento, PG.atend);
+      html += pvCampoBT("Complemento", u.complemento, PG.cargas);
       html += pvCampoBT("Bairro", o.bairro, PG.dados);
     } else {
       html += pvCampoBT(
@@ -713,7 +716,7 @@ function renderPreviaBT() {
     html += pvCampoBT(
       "O padrão precisa ser mudado de local?",
       u.mudancaLocal,
-      PG.atend,
+      PG.cargas,
     );
     html += pvCampoBT(
       "Tipo de rede BT que atende o local",
@@ -1111,6 +1114,23 @@ window.initFormulario = function () {
     }
     const hint = $("#zonaHint");
     if (hint) hint.style.display = "";
+  } else {
+    // Cards não-rurais (residencial/comercial/industrial…): sem opção urbano/
+    // rural — a zona fica fixa em Urbana e o seletor é ocultado. Rural só existe
+    // no card Rural (travaZonaRural). O bloco rural fica oculto por onZonaBT().
+    state.obra.localizacao = "Urbana";
+    const sel = $(`select[data-k="obra.localizacao"]`);
+    if (sel) sel.value = "Urbana";
+    // Oculta a .grid inteira da "Zona de localização" (não só o .field): uma grid
+    // vazia ainda ocupa espaço e, somada ao margin-top do #endUrbanoBox, deixava
+    // o gap subtítulo→campos maior que o dos outros cards.
+    const zonaToggle = $(`[data-toggle="obra.localizacao"]`);
+    const zonaGrid = zonaToggle && zonaToggle.closest(".grid");
+    if (zonaGrid) zonaGrid.style.display = "none";
+    // Sem a linha da zona, o endereço urbano é o 1º bloco de campos — o
+    // espaçamento vem do margin-bottom do .card-sub (como nos demais cards).
+    const endUrbano = $("#endUrbanoBox");
+    if (endUrbano) endUrbano.style.marginTop = "0";
   }
   onZonaBT();
   onReceberEmailBT();

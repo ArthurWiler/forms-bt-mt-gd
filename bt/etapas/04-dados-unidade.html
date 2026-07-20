@@ -141,6 +141,33 @@
         <option>Não</option>
       </select>
     </div>
+    <!-- Aviso do campo "pronto para ligar" logo abaixo dele (col-span-2 mantém
+         a largura total; alterna por id via onProntoLigarBT). -->
+    <div
+      class="cmg-aviso no-print col-span-2"
+      id="prontoSimAviso"
+      style="display: none"
+    >
+      <div class="cmg-aviso-icon" aria-hidden="true"></div>
+      <p class="cmg-aviso-texto">
+        Como o padrão já está pronto para ligar, o pedido de vistoria e ligação
+        será disparado automaticamente após a conclusão das etapas do orçamento
+        de conexão.
+      </p>
+    </div>
+    <div
+      class="cmg-aviso cmg-aviso--warn no-print col-span-2"
+      id="prontoNaoAviso"
+      style="display: none"
+    >
+      <div class="cmg-aviso-icon" aria-hidden="true"></div>
+      <p class="cmg-aviso-texto">
+        Solicite o pedido de vistoria e ligação em até 120 dias após a conclusão
+        das etapas do orçamento de conexão. O orçamento pode ser cancelado após
+        duas reprovações pelo mesmo motivo, e há cobrança de taxa a partir do
+        segundo serviço realizado.
+      </p>
+    </div>
     <div class="field">
       <label>Tipo de rede BT que atende o local</label>
       <select data-k="obra.tipoRede" data-sem-vazio onchange="onTipoRedeBT()">
@@ -155,31 +182,6 @@
     </div>
   </div>
 
-  <div
-    class="cmg-aviso no-print"
-    id="prontoSimAviso"
-    style="margin-top: 14px; display: none"
-  >
-    <div class="cmg-aviso-icon" aria-hidden="true"></div>
-    <p class="cmg-aviso-texto">
-      Como o padrão já está pronto para ligar, o pedido de vistoria e ligação
-      será disparado automaticamente após a conclusão das etapas do orçamento de
-      conexão.
-    </p>
-  </div>
-  <div
-    class="cmg-aviso cmg-aviso--warn no-print"
-    id="prontoNaoAviso"
-    style="margin-top: 14px; display: none"
-  >
-    <div class="cmg-aviso-icon" aria-hidden="true"></div>
-    <p class="cmg-aviso-texto">
-      Solicite o pedido de vistoria e ligação em até 120 dias após a conclusão
-      das etapas do orçamento de conexão. O orçamento pode ser cancelado após
-      duas reprovações pelo mesmo motivo, e há cobrança de taxa a partir do
-      segundo serviço realizado.
-    </p>
-  </div>
   <div
     class="cmg-aviso cmg-aviso--warn no-print"
     id="coordRuralAviso"
