@@ -160,6 +160,11 @@ const ucDetalhadaPadrao = () => ({
   disjDe: "",
   disjPara: "",
   disjEscolhido: "",
+  // Novo local do padrão (só em zona Rural com "Mudança de local" = Sim):
+  // coordenada escolhida no mapa da etapa "Tipo de atendimento".
+  padraoLat: "",
+  padraoLng: "",
+  padraoUtm: "",
   cargas: { qtds: CAT.map(() => 0), tipoA: "", catA: null, mots: [] },
   // Gerador de emergência é vinculado à UC (subseção abaixo das cargas)
   gerador: { possui: "Não", potencia: "", fonte: "", descricao: "" },

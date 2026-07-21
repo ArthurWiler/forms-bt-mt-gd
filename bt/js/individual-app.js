@@ -486,9 +486,13 @@ function _ucIdentificacao(u, ui) {
         b.textContent = v;
         b.addEventListener("click", () => {
           u.mudancaLocal = v;
-          tg.querySelectorAll(".toggle-btn").forEach((x) =>
-            x.classList.toggle("on", x === b),
-          );
+          // Rural + "Sim": libera o mapa de novo local do padrão (re-render da
+          // etapa). Fora disso, basta alternar o destaque do botão.
+          if (ruralBT()) _aoMudarUcIdent();
+          else
+            tg.querySelectorAll(".toggle-btn").forEach((x) =>
+              x.classList.toggle("on", x === b),
+            );
         });
         tg.appendChild(b);
       });
@@ -496,7 +500,144 @@ function _ucIdentificacao(u, ui) {
       grid.appendChild(f);
     }
   }
+  // Novo local do padrão: em zona rural, quando a UC pede mudança de local,
+  // apresenta mapa + coordenadas para escolher o ponto do padrão (Etapa 4).
+  const novoLocal =
+    ruralBT() &&
+    u.mudancaLocal === "Sim" &&
+    (u.solicitacao === "Alteração de Carga" ||
+      u.solicitacao === "Caixa Existente sem Alteração");
+  if (novoLocal) return _ucIdentComNovoLocal(grid, u, ui);
   return grid;
+}
+// Envolve a grade de identificação e anexa a seção "Novo local do padrão"
+// (mapa Leaflet clicável/arrastável + latitude/longitude + UTM). Cada UC tem
+// seu próprio mapa, identificado por índice, inicializado após o DOM montar.
+function _ucIdentComNovoLocal(grid, u, ui) {
+  const wrap = document.createElement("div");
+  wrap.appendChild(grid);
+  const sec = document.createElement("div");
+  sec.className = "mapa-obra divider";
+  const titulo = document.createElement("div");
+  titulo.className = "subbox-title";
+  titulo.textContent = "Novo local do padrão";
+  const hint = document.createElement("p");
+  hint.className = "mapa-hint";
+  hint.textContent =
+    "Indique no mapa o novo ponto do padrão. Clique no mapa ou arraste o pino para ajustar; a coordenada e o UTM são preenchidos automaticamente.";
+  const canvas = document.createElement("div");
+  canvas.className = "mapa-canvas";
+  canvas.id = `padraoMap${ui}`;
+  sec.append(titulo, hint, canvas);
+  wrap.appendChild(sec);
+
+  const grade = document.createElement("div");
+  grade.className = "grid grid-3";
+  grade.style.marginTop = "14px";
+  const inpLat = document.createElement("input");
+  inpLat.type = "text";
+  inpLat.placeholder = " ";
+  inpLat.value = u.padraoLat || "";
+  const inpLng = document.createElement("input");
+  inpLng.type = "text";
+  inpLng.placeholder = " ";
+  inpLng.value = u.padraoLng || "";
+  const inpUtm = document.createElement("input");
+  inpUtm.type = "text";
+  inpUtm.readOnly = true;
+  inpUtm.disabled = true;
+  inpUtm.placeholder = " ";
+  inpUtm.value = u.padraoUtm || "";
+  const recalcUtm = () => {
+    u.padraoUtm = utmString(u.padraoLat, u.padraoLng);
+    inpUtm.value = u.padraoUtm;
+  };
+  inpLat.addEventListener("input", () => {
+    u.padraoLat = inpLat.value;
+    recalcUtm();
+    _sincronizarPadraoMapa(ui, u);
+  });
+  inpLng.addEventListener("input", () => {
+    u.padraoLng = inpLng.value;
+    recalcUtm();
+    _sincronizarPadraoMapa(ui, u);
+  });
+  grade.appendChild(_campo("Latitude", inpLat));
+  grade.appendChild(_campo("Longitude", inpLng));
+  grade.appendChild(_campo("Coordenada UTM", inpUtm));
+  wrap.appendChild(grade);
+
+  // Callback para o mapa escrever de volta nos inputs quando o pino move.
+  u._padraoAplicar = (lat, lng) => {
+    u.padraoLat = String(lat);
+    u.padraoLng = String(lng);
+    inpLat.value = u.padraoLat;
+    inpLng.value = u.padraoLng;
+    recalcUtm();
+  };
+  // Inicializa o mapa após o nó entrar no DOM (renderUcsIdentBT limpa o box).
+  setTimeout(() => _initPadraoMapa(ui, u), 60);
+  return wrap;
+}
+// Registro dos mapas de novo local do padrão, por índice de UC. Recriados a
+// cada render da etapa (o box é limpo), então descartamos o mapa anterior.
+const _padraoMaps = {};
+function _initPadraoMapa(ui, u) {
+  const div = document.getElementById(`padraoMap${ui}`);
+  if (!div || !window.L) return;
+  if (_padraoMaps[ui]) {
+    _padraoMaps[ui].remove();
+    _padraoMaps[ui] = null;
+  }
+  const map = window.L.map(div).setView([-19.9167, -43.9345], 12);
+  const ruas = window.L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    { maxZoom: 19, attribution: "© OpenStreetMap" },
+  );
+  const satelite = window.L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    { maxZoom: 19, attribution: "" },
+  );
+  satelite.addTo(map);
+  window.L.control.layers({ Satélite: satelite, Ruas: ruas }).addTo(map);
+  const marker = { ref: null };
+  const colocar = (lat, lng, centralizar) => {
+    const ll = window.L.latLng(lat, lng);
+    if (marker.ref) {
+      marker.ref.setLatLng(ll);
+      if (centralizar && !map.getBounds().contains(ll))
+        map.setView(ll, Math.max(map.getZoom(), 17));
+    } else {
+      marker.ref = window.L.marker(ll, { draggable: true }).addTo(map);
+      marker.ref.on("dragend", (e) => {
+        const p = e.target.getLatLng();
+        if (u._padraoAplicar) u._padraoAplicar(p.lat, p.lng);
+      });
+      const zMax = Number.isFinite(map.getMaxZoom()) ? map.getMaxZoom() : 19;
+      map.setView(ll, zMax);
+    }
+  };
+  map.on("click", (e) => {
+    if (u._padraoAplicar) u._padraoAplicar(e.latlng.lat, e.latlng.lng);
+    colocar(e.latlng.lat, e.latlng.lng, false);
+  });
+  map._padraoColocar = colocar;
+  _padraoMaps[ui] = map;
+  setTimeout(() => map.invalidateSize(), 120);
+  // Semeia o mapa: coordenada do padrão já informada ou, senão, a da obra.
+  const lat = num(u.padraoLat) || num(state.obra.lat);
+  const lng = num(u.padraoLng) || num(state.obra.lng);
+  if (lat && lng) colocar(lat, lng, true);
+}
+// Reposiciona o pino quando lat/long são digitados manualmente (debounce leve).
+function _sincronizarPadraoMapa(ui, u) {
+  const map = _padraoMaps[ui];
+  if (!map || !map._padraoColocar) return;
+  const lat = parseFloat(String(u.padraoLat).replace(",", "."));
+  const lng = parseFloat(String(u.padraoLng).replace(",", "."));
+  if (isNaN(lat) || isNaN(lng)) return;
+  if (_nDig(u.padraoLat) < 5 || _nDig(u.padraoLng) < 5) return;
+  map._padraoColocar(lat, lng, true);
 }
 function _ucGerador(u, ui) {
   const ger = u.gerador || {
@@ -780,6 +921,14 @@ function renderPreviaBT() {
       u.mudancaLocal,
       PG.atend,
     );
+    if (rural && u.mudancaLocal === "Sim" && (u.padraoLat || u.padraoLng)) {
+      html += pvCampoBT(
+        "Novo local do padrão (lat/long)",
+        [u.padraoLat, u.padraoLng].filter(Boolean).join(", "),
+        PG.atend,
+      );
+      html += pvCampoBT("Novo local do padrão (UTM)", u.padraoUtm, PG.atend);
+    }
     html += pvCampoBT(
       "Tipo de rede BT que atende o local",
       o.tipoRede,

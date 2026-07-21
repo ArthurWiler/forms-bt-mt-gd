@@ -569,6 +569,18 @@ function gerarPdfDoc(S) {
         pares.push(["Nº Instalação", u.instalacao]);
       if (u.solicitacao === "Alteração de Carga")
         pares.push(["Mudança de local", u.mudancaLocal]);
+      // Novo local do padrão (rural + mudança de local): coordenada escolhida.
+      if (
+        obra.localizacao === "Rural" &&
+        u.mudancaLocal === "Sim" &&
+        (u.padraoLat || u.padraoLng)
+      ) {
+        pares.push([
+          "Novo local do padrão (lat/long)",
+          [u.padraoLat, u.padraoLng].filter(Boolean).join(", "),
+        ]);
+        if (u.padraoUtm) pares.push(["Novo local do padrão (UTM)", u.padraoUtm]);
+      }
       kvPairs(pares);
       const qtds = u.cargas?.qtds || [];
       const itens = CAT.map((c, i) => ({ ...c, q: qtds[i] || 0 })).filter(
