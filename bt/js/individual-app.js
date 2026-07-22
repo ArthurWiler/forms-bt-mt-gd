@@ -453,7 +453,13 @@ function _ucIdentificacao(u, ui) {
     inpInst.type = "text";
     inpInst.placeholder = " ";
     inpInst.value = u.instalacao || "";
-    inpInst.addEventListener("input", () => (u.instalacao = inpInst.value));
+    // Instalação (10 dígitos, inicia por 3) ou UC nova (15 dígitos, "018"
+    // antes do verificador) — REN ANEEL 1.095/2024.
+    inpInst.setAttribute("data-fmt", "fmtInstalacaoUC");
+    inpInst.addEventListener("input", () => {
+      inpInst.value = mascararInstalacaoUC(inpInst.value);
+      u.instalacao = inpInst.value;
+    });
     grid.appendChild(
       _campo(
         'Instalação / Unidade Consumidora / Medidor<span class="req">*</span>',
@@ -827,6 +833,13 @@ function validacaoObrigatoriosBT() {
     faltando.push("Previsão de carga / demanda das UCs");
   const vd = validacaoDisjuntoresBT();
   if (vd.ok === false) faltando.push("Combinação de disjuntores inválida");
+  // Número de instalação/UC fora do padrão (REN ANEEL 1.095/2024): as UCs
+  // são re-renderizadas, então o gate do data-fmt não basta na exportação.
+  state.ucsDet.forEach((u, ui) => {
+    const r = validarInstalacaoUC(u.instalacao);
+    if (!r.valido)
+      faltando.push(`UC ${ui + 1}: Instalação / UC / Medidor — ${r.msg}`);
+  });
   if (o.restricaoAmbiental === "Sim" && !o.restricaoAceite)
     faltando.push("Declaração de ciência da restrição ambiental");
   return { ok: faltando.length === 0, faltando };

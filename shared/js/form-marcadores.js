@@ -105,6 +105,41 @@
     });
   }
 
+  // Validação de FORMATO declarada no campo via `data-fmt="nomeDaFuncao"`.
+  // A função global recebe o valor e retorna { valido, msg } — ver
+  // shared/js/valida-instalacao.js. Campo vazio nunca é reprovado aqui
+  // (isso é papel do data-req), então os dois atributos se combinam.
+  function _fmtErro(el) {
+    const nome = el.getAttribute && el.getAttribute("data-fmt");
+    if (!nome || typeof window[nome] !== "function") return "";
+    const v = String(el.value || "").trim();
+    if (v === "") return "";
+    try {
+      const r = window[nome](v);
+      return r && r.valido === false ? r.msg || "Formato inválido." : "";
+    } catch (e) {
+      return "";
+    }
+  }
+
+  // Mostra/limpa a mensagem de erro de formato abaixo do campo. Reutiliza a
+  // supporting-text de erro já usada pelos formulários (.field-hint.field-err).
+  function _mostrarErroFmt(el, msg) {
+    const campo = el.closest && el.closest(".field");
+    if (!campo) return;
+    let sp = campo.querySelector(":scope > .field-err-fmt");
+    if (!msg) {
+      if (sp) sp.remove();
+      return;
+    }
+    if (!sp) {
+      sp = document.createElement("span");
+      sp.className = "field-hint field-err field-err-fmt";
+      campo.appendChild(sp);
+    }
+    sp.textContent = msg;
+  }
+
   // Valida os obrigatórios VISÍVEIS dentro de `scope`. Marca faltas com
   // `.is-invalid`. Retorna { ok, primeiro } (primeiro campo inválido).
   function validar(scope) {
@@ -122,6 +157,18 @@
         ok = false;
       }
     });
+    // Formato inválido também reprova (mesmo em campo não obrigatório: se foi
+    // preenchido, precisa estar certo).
+    scope.querySelectorAll("[data-fmt]").forEach(function (el) {
+      if (el.offsetParent === null) return;
+      const msg = _fmtErro(el);
+      _mostrarErroFmt(el, msg);
+      if (msg) {
+        el.classList.add("is-invalid");
+        if (!primeiro) primeiro = el;
+        ok = false;
+      }
+    });
     return { ok: ok, primeiro: primeiro };
   }
 
@@ -131,6 +178,27 @@
     if (el && el.hasAttribute && el.hasAttribute("data-req")) {
       el.classList.remove("is-invalid");
     }
+  });
+
+  // Campos com validação de formato: o aviso aparece ao SAIR do campo (não a
+  // cada tecla, que acusaria erro no meio da digitação) e some ao voltar a
+  // editar.
+  document.addEventListener(
+    "blur",
+    function (e) {
+      const el = e.target;
+      if (!el || !el.hasAttribute || !el.hasAttribute("data-fmt")) return;
+      const msg = _fmtErro(el);
+      _mostrarErroFmt(el, msg);
+      el.classList.toggle("is-invalid", !!msg);
+    },
+    true,
+  );
+  document.addEventListener("input", function (e) {
+    const el = e.target;
+    if (!el || !el.hasAttribute || !el.hasAttribute("data-fmt")) return;
+    _mostrarErroFmt(el, "");
+    el.classList.remove("is-invalid");
   });
 
   // Botão "Avançar/Iniciar" de uma etapa: o primary do .nav-bottom que
@@ -158,6 +226,11 @@
     scope.querySelectorAll("[data-req]").forEach(function (el) {
       if (el.offsetParent !== null && String(el.value || "").trim() === "")
         ok = false;
+    });
+    // Formato inválido trava o "Avançar" do mesmo jeito que um obrigatório
+    // em branco (sem marcar .is-invalid — isso só ao tentar avançar).
+    scope.querySelectorAll("[data-fmt]").forEach(function (el) {
+      if (el.offsetParent !== null && _fmtErro(el)) ok = false;
     });
     return ok;
   }

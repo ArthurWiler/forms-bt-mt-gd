@@ -3113,3 +3113,35 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .ramo-ativ-item:hover {
   background: var(--cmg-surface-disabled);
 }
+
+/* ============================================================
+   15. Erro de FORMATO (data-fmt) — mensagem específica abaixo do campo
+   ------------------------------------------------------------
+   O ::after genérico da seção de campos escreve "Campo obrigatório" para
+   qualquer .is-invalid; quando o erro é de formato (ex.: número de
+   instalação/UC fora do padrão da REN 1.095/2024) a mensagem vem do JS
+   neste span, que por ser .field-hint já desliga aquele ::after.
+   ============================================================ */
+.cemig-form .field .field-err-fmt {
+  display: block;
+  font-family: "Open Sans", var(--cmg-font-family);
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 20px;
+  letter-spacing: 0.2px;
+  color: var(--cmg-error-500);
+  margin-top: var(--cmg-space-1);
+}
+/* Campo com rótulo flutuante: o span entra DENTRO do container do campo,
+   então precisa sair da caixa de 56px para não empurrar o valor. */
+.cemig-form .field--float .field-err-fmt,
+:is(.cemig-form, .cemig-lote)
+  .field:not(.field--plain):not(:has(textarea)):has(input, select)
+  .field-err-fmt {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -20px;
+  padding: 0 var(--cmg-space-4);
+  margin-top: 0;
+}

@@ -612,7 +612,12 @@
                 </div>
                 <div class="field">
                   <label>Nº Instalação / UC / Medidor do Vizinho</label>
-                  <input type="text" data-k="instalVizinho" placeholder=" " />
+                  <input
+                    type="text"
+                    data-k="instalVizinho"
+                    data-fmt="fmtInstalacaoUC"
+                    placeholder=" "
+                  />
                 </div>
               </div>
             </div>
@@ -659,6 +664,7 @@
                 <input
                   type="text"
                   data-k="numInstalacao"
+                  data-fmt="fmtInstalacaoUC"
                   placeholder="Nº da instalação, UC ou medidor"
                 />
               </div>
@@ -1890,6 +1896,7 @@
     <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
     <script src="../shared/js/ramo-atividade.js"></script>
     <script src="../shared/js/geo.js"></script>
+    <script src="../shared/js/valida-instalacao.js"></script>
     <script src="../shared/js/form-marcadores.js"></script>
     <script src="../shared/js/pdf-sucesso.js"></script>
     <script src="../shared/js/gd-pdf-base.js"></script>

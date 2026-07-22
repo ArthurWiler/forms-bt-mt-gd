@@ -436,6 +436,20 @@ function _inpRamo(valor, onChange) {
   ramoAtivAttach(i, onChange);
   return i;
 }
+// Campo "Instalação / UC / Medidor": máscara + validação de formato
+// (10 dígitos iniciando por 3, ou 15 dígitos com "018" antes do verificador).
+function _inpInstalacao(valor, onChange) {
+  const i = document.createElement("input");
+  i.type = "text";
+  i.placeholder = "Nº instalação, UC ou medidor";
+  i.value = valor == null ? "" : valor;
+  i.setAttribute("data-fmt", "fmtInstalacaoUC");
+  i.addEventListener("input", () => {
+    i.value = mascararInstalacaoUC(i.value);
+    onChange(i.value);
+  });
+  return i;
+}
 function renderHibridoAlertas() {
   const box = $("#hibridoAlertas");
   if (!box) return;
@@ -655,9 +669,7 @@ function renderUcsColetivo() {
         // Consumidora" separado duplicando esta informação.
         const f = _campo(
           "Instalação / Unidade Consumidora / Medidor",
-          _inp(u.instalacao, (v) => (u.instalacao = v), {
-            placeholder: "Nº instalação, UC ou medidor",
-          }),
+          _inpInstalacao(u.instalacao, (v) => (u.instalacao = v)),
         );
         f.setAttribute("data-noopt", "");
         grid.appendChild(f);
@@ -1624,9 +1636,7 @@ function _mkUnidadeCard(bi, ui, modoCalc) {
   if (u.solicitacao !== "Conexão Nova") {
     const f = _campo(
       "Instalação / Unidade Consumidora / Medidor",
-      _inp(u.instalacao, (v) => (u.instalacao = v), {
-        placeholder: "Nº instalação, UC ou medidor",
-      }),
+      _inpInstalacao(u.instalacao, (v) => (u.instalacao = v)),
     );
     f.setAttribute("data-noopt", "");
     grid.appendChild(f);
@@ -1856,6 +1866,26 @@ function validacaoObrigatoriosColetivo() {
             );
         });
     });
+  // Número de instalação/UC fora do padrão (REN ANEEL 1.095/2024) — as UCs
+  // são re-renderizadas, então o gate do data-fmt não basta na exportação.
+  const _checaInst = (u, rotulo) => {
+    const r = validarInstalacaoUC(u.instalacao);
+    if (!r.valido)
+      faltando.push(`${rotulo}: Instalação / UC / Medidor — ${r.msg}`);
+  };
+  if (MULTI)
+    state.blocos.forEach((b, bi) =>
+      (b.ucs || []).forEach((u, ui) =>
+        _checaInst(
+          u,
+          `${u.identificacao || `UC ${ui + 1}`} — Torre ${b.nome || bi + 1}`,
+        ),
+      ),
+    );
+  else
+    state.ucBlocos.forEach((u, ui) =>
+      _checaInst(u, u.identificacao || `UC ${ui + 1}`),
+    );
   if (hibridoF() && !validacaoHibridoF().ok)
     faltando.push("Pendências do atendimento híbrido");
   if (o.restricaoAmbiental === "Sim" && !o.restricaoAceite)

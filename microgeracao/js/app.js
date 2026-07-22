@@ -198,6 +198,12 @@ function onSoDigitos(el) {
   el.value = soDigitos(el.value);
   state[el.dataset.k] = el.value;
 }
+// Instalação / UC / Medidor: mantém dígitos e o hífen do verificador da UC
+// nova (15 dígitos). Validação de formato via data-fmt="fmtInstalacaoUC".
+function onInstalacaoUC(el) {
+  el.value = mascararInstalacaoUC(el.value);
+  state[el.dataset.k] = el.value;
+}
 // números decimais (mantém dígitos e ponto)
 function onNumDec(el) {
   el.value = String(el.value || "").replace(/[^\d.]/g, "");
