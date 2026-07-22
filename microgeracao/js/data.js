@@ -455,7 +455,7 @@ const GD_ORIENTACOES = {
     },
   ],
   callout:
-    "Ao final, revise os dados na etapa Prévia & PDF, exporte o formulário preenchido e anexe-o ao seu pedido no Cemig Atende. Dúvidas: " +
+    "Ao final, revise os dados na etapa Prévia & PDF, exporte o formulário preenchido e anexe-o ao seu pedido. Dúvidas: " +
     GD_CONTATO_CEMIG.responsavel +
     " — " +
     GD_CONTATO_CEMIG.telefone +

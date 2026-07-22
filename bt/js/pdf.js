@@ -715,6 +715,8 @@ function gerarPdfDoc(S) {
   doc.save(
     `CEMIG_${multiTorres ? "torres" : coletivo ? "coletivo" : "individual"}_${nomeArq}.pdf`,
   );
+  if (typeof mostrarModalPdfExportado === "function")
+    mostrarModalPdfExportado();
 }
 
 /* ============================================================
@@ -772,7 +774,7 @@ function listaDocumentosBT(S) {
   // Coletivo / múltiplas torres
   if (coletivo) {
     docs.push(
-      "Planta de situação da edificação com indicação do padrão de entrada e distância do ramal de entrada (ND-5.2) — enviar no portal Cemig Atende e no APR Web",
+      "Planta de situação da edificação com indicação do padrão de entrada e distância do ramal de entrada (ND-5.2) — enviar junto ao pedido e no APR Web",
     );
     if ((demandaTotalGeral || 0) > 304)
       docs.push(

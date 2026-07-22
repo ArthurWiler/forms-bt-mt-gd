@@ -32,13 +32,13 @@ const ORIENTACOES = {
     titulo:
       "Agrupamento com proteção geral, atendimento híbrido ou múltiplas torres/blocos",
     itens: [
-      "É obrigatório anexar no momento do pedido a planta de situação da edificação, com a indicação do padrão de entrada e a distância do ramal de entrada, conforme ND-5.2, com exceção para solicitação de alteração de carga sem mudança de local do ramal de Conexão. O Documento deve ser encaminhado no portal Cemig Atende e no APR Web.",
+      "É obrigatório anexar no momento do pedido a planta de situação da edificação, com a indicação do padrão de entrada e a distância do ramal de entrada, conforme ND-5.2, com exceção para solicitação de alteração de carga sem mudança de local do ramal de Conexão. O Documento deve ser encaminhado junto ao pedido e no APR Web.",
       "Para atendimentos híbridos, deve ser informada na planta de situação: quantidade de ramais de Conexão com a respectiva numeração predial de cada ponto de entrega, demanda de cada ramal de Conexão com a respectiva proteção geral (quando couber) e especificações dos cabos subterrâneos. Na ART/TRT deverão ser informados todos os números prediais que serão atendidos. Em casos de desmembramento, o ramal que não sofrerá alteração poderá apenas ser indicado na planta.",
       "Se a solicitação for para atendimento híbrido, é obrigatório indicar na planta de situação o número predial de cada unidade consumidora",
     ],
   },
   callout:
-    "Ao final, revise os dados na etapa Prévia & PDF, exporte o formulário e anexe-o ao seu pedido no Cemig Atende.",
+    "Ao final, revise os dados na etapa Prévia & PDF, exporte o formulário e anexe-o ao seu pedido.",
 };
 
 // ===== Solicitação -> Escopos dependentes =====

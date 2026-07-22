@@ -1559,206 +1559,13 @@ function voltarDaAnalise() {
   goTo(5);
 }
 
-/* ============================================================
-   RELATÓRIO DE MOTORES — impressão dedicada (folha oficial Cemig)
-   "FORMULÁRIO PARA A ANÁLISE DE PARTIDA DE MOTORES": bloco de
-   Identificação (só "Cliente:", sem NS), dados do motor com texto
-   direto (sem checkbox) e Notas 1/2 originais no rodapé. Campos
-   vazios saem com sublinhado para preenchimento manual.
-   ============================================================ */
-function _campoImpresso(valor, unidade) {
-  const v = String(valor ?? "").trim();
-  if (!v) return `<span class="linha-vazia"></span>`;
-  return `${v}${unidade ? " " + unidade : ""}`;
-}
-function renderDocumentoMotoresImpressao() {
-  syncState();
-  const box = $("#documentoMotoresImpressao");
-  if (!box) return;
-  const idxs = motoresPesadosIdx();
-  const tMT = parseFloat(state.tensaoMT);
-  const hoje = new Date();
-  const dataExtenso = `${String(hoje.getDate()).padStart(2, "0")} de ${hoje.toLocaleDateString("pt-BR", { month: "long" })} de ${hoje.getFullYear()}`;
-  const notas = `<div class="doc-notas">
-    <p>1 - Em caso de partida sequencial de motores, preencher uma folha para cada motor, indicando a ordem de partida.</p>
-    <p>2 - Anexar, sempre que possível, a(s) folha(s) das características elétricas, fornecida(s) pelo fabricante do motor.</p>
-  </div>`;
-  const assinatura = `<div class="doc-assinatura">
-    <div class="linha"></div>
-    <div>Responsável pelas informações</div>
-  </div>`;
-  if (!idxs.length) {
-    box.innerHTML = `<div class="folha-motor">
-      <div class="doc-titulo">FORMULÁRIO PARA A ANÁLISE DE PARTIDA DE MOTORES</div>
-      <div class="doc-sec">IDENTIFICAÇÃO</div>
-      <div class="doc-kv"><b>Cliente:</b><span>${_campoImpresso(state.nome)}</span></div>
-      <div class="doc-kv" style="margin-top:10px"><b>&nbsp;</b><span>Nenhum motor pesado identificado (trifásico acima de 50 CV ou monofásico acima de 15 CV).</span></div>
-      <div class="doc-sec">NOTAS</div>
-      ${notas}
-      <div class="doc-kv" style="margin-top:14px"><b>Data:</b><span>${dataExtenso}</span></div>
-      ${assinatura}
-    </div>`;
-    return;
-  }
-  box.innerHTML = idxs
-    .map((i) => {
-      const m = motores[i];
-      const ap = ensureAnalisePartida(m);
-      const c = CalculoMT.calcularMotor(
-        {
-          potenciaCV: m.cv,
-          fp: m.fp,
-          rendimento: m.rend,
-          tensaoV: m.volts,
-          relacaoIpIn: m.ipIn,
-        },
-        tMT,
-      );
-      const dispositivoTexto = ap.dispositivo
-        ? ap.dispositivo +
-          (ap.dispositivo === "Chave Compensadora"
-            ? ` — Tap: ${_campoImpresso(ap.tap, "%")}`
-            : "")
-        : `<span class="linha-vazia"></span>`;
-      return `<div class="folha-motor">
-      <div class="doc-titulo">FORMULÁRIO PARA A ANÁLISE DE PARTIDA DE MOTORES</div>
-
-      <div class="doc-sec">IDENTIFICAÇÃO</div>
-      <div class="doc-kv"><b>Cliente:</b><span>${_campoImpresso(state.nome)}</span></div>
-
-      <div class="doc-sec">TIPO DO MOTOR / NÚMERO DE FASES</div>
-      <div class="doc-kv"><b>Tipo do motor:</b><span>${_campoImpresso(m.tipo)}</span></div>
-      <div class="doc-kv"><b>Número de fases:</b><span>${_campoImpresso(m.fases || "Trifásico")}</span></div>
-
-      <div class="doc-sec">DADOS ELÉTRICOS</div>
-      <div class="doc-kv"><b>Potência do motor:</b><span>${_campoImpresso(m.cv, "CV")}</span></div>
-      <div class="doc-kv"><b>Tensão no motor:</b><span>${_campoImpresso(m.volts, "V")}</span></div>
-      <div class="doc-kv"><b>Corrente de partida (sem dispositivo de partida):</b><span>${_campoImpresso(c.iPartida == null ? "" : fmt(c.iPartida), "A")}</span></div>
-      <div class="doc-kv"><b>Corrente nominal:</b><span>${_campoImpresso(c.iNominal == null ? "" : fmt(c.iNominal), "A")}</span></div>
-      <div class="doc-kv"><b>Relação Ip/In:</b><span>${_campoImpresso(m.ipIn)}</span></div>
-      <div class="doc-kv"><b>Fator de potência em regime:</b><span>${_campoImpresso(m.fp)}</span></div>
-      <div class="doc-kv"><b>Fator de potência na partida:</b><span>${_campoImpresso(ap.fpPartida)}</span></div>
-
-      <div class="doc-sec">NÚMERO DE PARTIDAS</div>
-      <div class="doc-kv"><b>Número de partidas:</b><span>${_campoImpresso(ap.numPartidas)}</span></div>
-
-      <div class="doc-sec">DISPOSITIVO AUXILIAR DE PARTIDA (QUANDO HOUVER)</div>
-      <div class="doc-kv"><b>Dispositivo:</b><span>${dispositivoTexto}</span></div>
-
-      <div class="doc-sec">ORDEM DE PARTIDA DO MOTOR (CASOS DE DOIS OU MAIS MOTORES)</div>
-      <div class="doc-kv"><b>Ordem de partida:</b><span>${_campoImpresso(ap.ordemPartida)}</span></div>
-
-      <div class="doc-sec">CARGAS OPERANDO ENQUANTO O MOTOR PARTE (QUANDO HOUVER)</div>
-      <div class="doc-kv"><b>Potência:</b><span>${_campoImpresso(ap.cargaOperanteKVA, "kVA")}</span></div>
-      <div class="doc-kv"><b>Fator de potência:</b><span>${_campoImpresso(ap.cargaOperanteFP)}</span></div>
-
-      <div class="doc-sec">CARGAS SENSÍVEIS A FLUTUAÇÕES DE TENSÃO</div>
-      <div class="doc-kv"><b>Tipo:</b><span>${_campoImpresso(ap.cargaSensivelTipo)}</span></div>
-      <div class="doc-kv"><b>Flutuação admissível:</b><span>${_campoImpresso(ap.cargaSensivelPercentual, "%")}</span></div>
-
-      <div class="doc-sec">SIMULTANEIDADE DE PARTIDA</div>
-      <div class="doc-kv"><b>Em caso de simultaneidade, relacionar os motores e suas características elétricas:</b><span>${_campoImpresso(ap.simultaneidade)}</span></div>
-
-      <div class="doc-sec">TRANSFORMADOR DO CONSUMIDOR</div>
-      <div class="doc-kv"><b>Potência do transformador:</b><span>${_campoImpresso(fmt(state.potTotalTrafos), "kVA")}</span></div>
-      <div class="doc-kv"><b>Impedância percentual do transformador:</b><span>${_campoImpresso(ap.impedanciaZ, "%")}</span></div>
-
-      <div class="doc-sec">NOTAS</div>
-      ${notas}
-
-      <div class="doc-kv" style="margin-top:14px"><b>Data:</b><span>${dataExtenso}</span></div>
-      ${assinatura}
-    </div>`;
-    })
-    .join("");
-}
-// Nomeia o PDF dinamicamente: como a exportação é via impressão do
-// navegador (Salvar como PDF), o nome sugerido no diálogo de impressão
-// segue o document.title — por isso ele é trocado temporariamente.
 function exportarPDFPartida() {
-  renderDocumentoMotoresImpressao();
-  const tituloOriginal = document.title;
-  const nomeCliente = (state.nome || "Cliente").trim().replace(/\s+/g, "_");
-  document.title = `Analise_Partida_Motores_${nomeCliente}`;
-  document.body.classList.add("print-motores-only");
-  window.print();
-  document.title = tituloOriginal;
+  gerarPdfAnalisePartidaMT();
 }
-window.addEventListener("afterprint", () => {
-  document.body.classList.remove("print-motores-only");
-});
 
-/* ============================================================
-   Solicitação de Desconto para Irrigante/Aquicultor (Versão D) —
-   folha única A4, dados do cliente vindos da Aba 2/3, tabela de
-   cargas só com motores destinadoIrrigacao===true (CV convertido
-   para kW a 0,7355) e Notas/assinatura no rodapé.
-   ============================================================ */
-function renderDocumentoIrrigacaoImpressao() {
-  syncState();
-  const box = $("#documentoIrrigacaoImpressao");
-  if (!box) return;
-  const hoje = new Date();
-  const dataExtenso = `${String(hoje.getDate()).padStart(2, "0")} de ${hoje.toLocaleDateString("pt-BR", { month: "long" })} de ${hoje.getFullYear()}`;
-  const motoresIrrigacao = motores.filter((m) => m.destinadoIrrigacao === true);
-  const linhasMotores = motoresIrrigacao.length
-    ? motoresIrrigacao
-        .map((m) => {
-          const cv = parseFloat(m.cv);
-          const kw = isNaN(cv) ? null : cv * 0.7355;
-          const potenciaTexto =
-            kw == null
-              ? `<span class="linha-vazia"></span>`
-              : `${fmt(kw)} kW (${fmt(cv)} CV)`;
-          return `<tr><td>${_campoImpresso(m.tipo || "Motor")}</td><td>${_campoImpresso(m.fases || "Trifásico")}</td><td>${potenciaTexto}</td></tr>`;
-        })
-        .join("")
-    : `<tr><td colspan="3">Nenhum motor destinado à irrigação foi marcado.</td></tr>`;
-  box.innerHTML = `<div class="folha-motor">
-    <div class="doc-titulo">SOLICITAÇÃO DE DESCONTO PARA IRRIGANTE / AQUICULTOR</div>
-
-    <div class="doc-sec">IDENTIFICAÇÃO DO CLIENTE</div>
-    <div class="doc-kv"><b>Cliente:</b><span>${_campoImpresso(state.nome)}</span></div>
-    <div class="doc-kv"><b>Município:</b><span>${_campoImpresso(state.uc_municipio)}</span></div>
-    <div class="doc-kv"><b>Nº da Instalação:</b><span>${_campoImpresso(state.numInstalacao)}</span></div>
-    <div class="doc-kv"><b>CPF/CNPJ:</b><span>${_campoImpresso(state.cpfCnpj)}</span></div>
-    <div class="doc-kv"><b>E-mail:</b><span>${_campoImpresso(state.emailCliente)}</span></div>
-    <div class="doc-kv"><b>Telefone:</b><span>${_campoImpresso(state.telCliente)}</span></div>
-
-    <div class="doc-sec">HORÁRIO PARA INÍCIO DO DESCONTO</div>
-    <div class="doc-kv"><b>Horário:</b><span>${_campoImpresso(state.irrigacaoHorarioInicio)}</span></div>
-    <div class="doc-kv"><b>&nbsp;</b><span>A distribuidora garante janela contínua de 8h30 entre 21h30 e 06h00.</span></div>
-
-    <div class="doc-sec">CARGAS DESTINADAS À IRRIGAÇÃO</div>
-    <table class="doc-tabela">
-      <thead><tr><th>Tipo</th><th>Fases</th><th>Potência</th></tr></thead>
-      <tbody>${linhasMotores}</tbody>
-    </table>
-
-    <div class="doc-notas">
-      <p>1 - O desconto na tarifa de energia elétrica para irrigantes e aquicultores está condicionado à comprovação de licença ambiental e outorga de uso de recursos hídricos vigentes (REN nº 1.000/2021, §7º; Lei nº 12.787/2013, arts. 22 e 23).</p>
-      <p>2 - A distribuidora garante a janela contínua de 8h30 (oito horas e trinta minutos) entre 21h30 e 06h00 para o horário reduzido, conforme horário de início informado pelo cliente.</p>
-    </div>
-
-    <div class="doc-kv" style="margin-top:14px"><b>Data:</b><span>${dataExtenso}</span></div>
-    <div class="doc-assinatura">
-      <div class="linha"></div>
-      <div>Responsável pelas informações</div>
-    </div>
-  </div>`;
-}
 function exportarPDFIrrigante() {
-  renderDocumentoIrrigacaoImpressao();
-  const tituloOriginal = document.title;
-  const nomeCliente = (state.nome || "Cliente").trim().replace(/\s+/g, "_");
-  document.title = `Solicitacao_Desconto_Irrigante_${nomeCliente}`;
-  document.body.classList.add("print-irrigante-only");
-  window.print();
-  document.title = tituloOriginal;
+  gerarPdfIrriganteMT();
 }
-window.addEventListener("afterprint", () => {
-  document.body.classList.remove("print-irrigante-only");
-});
 
 /* ===== Recalcular bloco técnico (trafos, tipo SE, demanda) ===== */
 function recalcTecnico() {
@@ -2303,326 +2110,51 @@ function pvSecao(titulo, campos) {
   );
 }
 const PV_DIVISOR = '<hr class="previa-divider"/>';
+
+/* ===== Prévia a partir do modelo de conteúdo =====
+   O QUE a prévia mostra vem de conteudoFormularioMT() (mt/js/conteudo.js);
+   aqui só há a tradução para HTML. O PDF (mt/js/pdf.js) renderiza o MESMO
+   modelo — então um campo criado no modelo aparece nos dois de uma vez,
+   sem a duplicação que existia quando cada saída montava seu conteúdo. */
+const _pvVal = (v) =>
+  v === undefined || v === null || String(v).trim() === "" ? "—" : v;
+
+function pvCampoModelo(c) {
+  if (c.tipo === "tabela") {
+    if (!c.rows || !c.rows.length) return "";
+    const th = c.headers.map((h) => `<th>${h}</th>`).join("");
+    const tb = c.rows
+      .map((r) => "<tr>" + r.map((v) => `<td>${_pvVal(v)}</td>`).join("") + "</tr>")
+      .join("");
+    const tf = c.rodape
+      ? "<tfoot><tr>" +
+        c.rodape.map((v) => `<td>${v === "" ? "" : _pvVal(v)}</td>`).join("") +
+        "</tr></tfoot>"
+      : "";
+    const tabela =
+      `<div class="tbl-scroll"><table class="tbl"><thead><tr>${th}</tr></thead>` +
+      `<tbody>${tb}</tbody>${tf}</table></div>`;
+    return pvCampo(c.label, tabela, { full: true, step: c.step });
+  }
+  if (c.tipo === "imagem") {
+    const img = `<img src="${c.src}" style="max-width:100%;border:1px solid var(--cmg-neutral-200);border-radius:6px;margin-bottom:6px">`;
+    return pvCampo(c.label, img + "<br>" + (c.valor || ""), {
+      full: true,
+      step: c.step,
+    });
+  }
+  const valor = c.destaque
+    ? `<span class="restricao-destaque">${c.valor}</span>`
+    : c.valor;
+  return pvCampo(c.label, valor, { full: c.full, step: c.step });
+}
+
 function renderPreview() {
   syncState();
-  const tipoSE = tipoSEefetivo();
-  const secoes = [];
+  $("#previewContent").innerHTML = conteudoFormularioMT()
+    .map((s) => pvSecao(s.titulo, s.campos.map(pvCampoModelo).join("")))
+    .join(PV_DIVISOR);
 
-  // 1. Proprietário (etapa 2/page-1). Campos de PF só entram se preenchidos
-  //    (CPF). Os telefones do RT ficam aqui (migrados da antiga Classificação).
-  let propMT =
-    pvCampo("Nome / Razão Social", state.nome, { full: true, step: 1 }) +
-    pvCampo("E-mail do cliente", state.emailCliente, { step: 1 }) +
-    pvCampo("Telefone do cliente", state.telCliente, { step: 1 }) +
-    pvCampo("Telefone do solicitante", state.telSolicitante, { step: 1 }) +
-    pvCampo("CPF/CNPJ", state.cpfCnpj, { step: 1 });
-  if (state.filiacao)
-    propMT += pvCampo("Filiação", state.filiacao, { step: 1 });
-  if (state.rg) propMT += pvCampo("RG / RNE / RANI", state.rg, { step: 1 });
-  if (state.nasc)
-    propMT += pvCampo("Data de Nascimento", state.nasc, { step: 1 });
-  if (state.laudoMedico)
-    propMT += pvCampo("Laudo médico?", state.laudoMedico, { step: 1 });
-  if (state.nis)
-    propMT += pvCampo("NIS (Tarifa Social)?", state.nis, { step: 1 });
-  if (state.nis === "Sim" && state.numNis)
-    propMT += pvCampo("Número do NIS", state.numNis, { step: 1 });
-  propMT += pvCampo("E-mail do solicitante", state.emailSolicitante, {
-    full: true,
-    step: 1,
-  });
-  propMT += pvCampo(
-    "Tel. RT (cel/fixo)",
-    [state.rtCelular, state.rtFixo].filter(Boolean).join(" / "),
-    { step: 1 },
-  );
-  secoes.push(pvSecao("Dados do Proprietário", propMT));
-
-  // 2. Correspondência (etapa 5/page-4) — dropdown único (igual ao BT): a forma
-  // de recebimento define e-mail informado, endereço/e-mail alternativo ou a
-  // conta globalizada; vencimento sempre presente.
-  let cor =
-    pvCampo("Como deseja receber a fatura?", state.formaCorresp, { step: 4 }) +
-    pvCampo(
-      "Vencimento escolhido",
-      state.desejaVenc === "Sim"
-        ? "Sim — dia " + (state.diaVenc || "—")
-        : state.desejaVenc,
-      { step: 4 },
-    );
-  if (state.formaCorresp === "E-mail informado")
-    cor += pvCampo("E-mail para envio da fatura", state.emailCliente, {
-      full: true,
-      step: 4,
-    });
-  else if (state.formaCorresp === "Outro e-mail")
-    cor += pvCampo("E-mail para envio da fatura", state.emailCorresp, {
-      full: true,
-      step: 4,
-    });
-  else if (state.formaCorresp === "Endereço da obra") {
-    const endObra = [
-      [state.urb_endereco, state.urb_num].filter(Boolean).join(", "),
-      state.urb_compl,
-      state.urb_bairro,
-      state.uc_municipio,
-      state.uc_estado,
-      state.uc_cep,
-    ]
-      .filter(Boolean)
-      .join(", ");
-    cor += pvCampo(
-      "Endereço da fatura",
-      "Mesmo da unidade consumidora — " + endObra,
-      { full: true, step: 4 },
-    );
-  } else if (
-    state.formaCorresp === "Novo endereço" ||
-    state.formaCorresp === "Agência Correios(Caixa Postal)"
-  )
-    cor += pvCampo(
-      "Endereço da fatura",
-      [
-        state.ec_rua,
-        state.ec_num,
-        state.ec_bairro,
-        state.ec_municipio,
-        state.ec_estado,
-        state.ec_cep,
-      ]
-        .filter(Boolean)
-        .join(", "),
-      { full: true, step: 4 },
-    );
-  else if (state.formaCorresp === "Conta globalizada")
-    cor += pvCampo("Conta globalizada", state.contaGlobalizada, { step: 4 });
-  secoes.push(pvSecao("Correspondência", cor));
-
-  // 4. Unidade Consumidora (etapa 3)
-  let uc =
-    pvCampo("Atividade", state.atividade, { step: 2 }) +
-    pvCampo("Ramo", state.ramoAtividade, { step: 2 }) +
-    pvCampo("Localização", state.localizacao, { step: 2 }) +
-    pvCampo("CEP", state.uc_cep, { step: 2 }) +
-    pvCampo(
-      "Município / Estado",
-      [state.uc_municipio, state.uc_estado].filter(Boolean).join(" / "),
-      { step: 2 },
-    ) +
-    pvCampo(
-      "Coordenadas",
-      [state.latitude, state.longitude].filter(Boolean).join(" , "),
-      { step: 2 },
-    );
-  if (state.utm) uc += pvCampo("Coordenada UTM", state.utm, { step: 2 });
-  if (state.finalidade && state.finalidade !== "Conexão Nova")
-    uc += pvCampo(
-      "Coordenadas novas",
-      [state.latitudeNova, state.longitudeNova].filter(Boolean).join(" , "),
-      { step: 2 },
-    );
-  if (state.localizacao === "Urbana")
-    uc += pvCampo(
-      "Endereço",
-      [state.urb_endereco, state.urb_num, state.urb_bairro, state.urb_compl]
-        .filter(Boolean)
-        .join(", "),
-      { full: true, step: 2 },
-    );
-  if (state.localizacao === "Rural")
-    uc += pvCampo(
-      "Distrito / Propriedade",
-      [state.rur_distrito, state.rur_propriedade].filter(Boolean).join(" / "),
-      { full: true, step: 2 },
-    );
-  // Restrição ambiental só aparece na prévia quando HÁ restrição (igual ao form).
-  if (state.restricaoAmbiental === "Sim" && state.restricoesTexto)
-    uc += pvCampo(
-      "Área de restrição ambiental",
-      `<span class="restricao-destaque">${state.restricoesTexto}</span>`,
-      { full: true, step: 2 },
-    );
-  uc += pvCampo("Subestação pronta?", state.subPronta, { step: 2 });
-  secoes.push(pvSecao("Unidade Consumidora", uc));
-
-  // 4. Dados Técnicos (etapa 5). Começa pela Classificação do Atendimento
-  //    (Opção/Finalidade/Nº instalação), migrada da antiga etapa própria.
-  let tec =
-    pvCampo("Opção de Atendimento", state.opcaoAtend, { step: 3 }) +
-    pvCampo("Finalidade", state.finalidade, { step: 3 });
-  if (state.finalidade && state.finalidade !== "Conexão Nova")
-    tec += pvCampo("Nº da Instalação", state.numInstalacao, { step: 3 });
-  tec +=
-    pvCampo(
-      "Nível de tensão MT",
-      state.tensaoMT ? state.tensaoMT.replace(".", ",") + " kV" : "",
-      { step: 3 },
-    ) + pvCampo("Compartilhada?", state.compartilhada, { step: 3 });
-  if (state.compartilhada === "Sim") {
-    tec += pvCampo(
-      "Soma dos transformadores (kVA)",
-      fmt(state.potTotalTrafos),
-      { step: 3 },
-    );
-    tec += pvCampo("Soma das demandas (kW)", fmt(state.demandaTotalCubiculos), {
-      step: 3,
-    });
-    tec += pvCampo("Tipo de Subestação", tipoSE, { step: 3 });
-  } else {
-    // tabela trafos
-    if (trafos.length) {
-      let tt =
-        '<div class="tbl-scroll"><table class="tbl"><thead><tr><th>Trafo</th><th>Pot (kVA)</th><th>Qtde</th><th>Rel. Imag/In</th></tr></thead><tbody>';
-      trafos.forEach((t, i) => {
-        tt += `<tr><td>TRF${String(i + 1).padStart(2, "0")}</td><td>${t.potencia || "—"}</td><td>${t.quantidade || "—"}</td><td>${t.relacao || "—"}</td></tr>`;
-      });
-      tt += `</tbody><tfoot><tr><td>Σ</td><td>${fmt(state.potTotalTrafos)}</td><td>${state.qtdTotalTrafos || 0}</td><td></td></tr></tfoot></table></div>`;
-      tec += pvCampo("Transformadores", tt, { full: true, step: 3 });
-    }
-    if (motores.length) {
-      let mtt =
-        '<div class="tbl-scroll"><table class="tbl"><thead><tr><th>Tipo</th><th>CV</th><th>FP</th><th>η</th><th>V</th><th>Ip/In</th><th>I nom</th><th>I part</th></tr></thead><tbody>';
-      motores.forEach((m) => {
-        const c = CalculoMT.calcularMotor(
-          {
-            potenciaCV: m.cv,
-            fp: m.fp,
-            rendimento: m.rend,
-            tensaoV: m.volts,
-            relacaoIpIn: m.ipIn,
-          },
-          parseFloat(state.tensaoMT),
-        );
-        mtt += `<tr><td>${m.tipo || "—"}</td><td>${m.cv || "—"}</td><td>${m.fp || "—"}</td><td>${m.rend || "—"}</td><td>${m.volts || "—"}</td><td>${m.ipIn || "—"}</td><td>${fmt(c.iNominal)}</td><td>${fmt(c.iPartida)}</td></tr>`;
-      });
-      mtt += "</tbody></table></div>";
-      tec += pvCampo("Motores", mtt, { full: true, step: 3 });
-    }
-    tec += pvCampo("Tipo de Subestação", tipoSE, { step: 3 });
-    if (state.finalidade !== "Conexão Nova")
-      tec += pvCampo("Troca de Subestação?", state.alt_troca, { step: 3 });
-    tec +=
-      pvCampo("Tarifa monômia?", state.monomia, { step: 3 }) +
-      pvCampo("Modalidade tarifária", state.modalidade, { step: 3 }) +
-      pvCampo("Demanda escalonada?", state.escalonada, { step: 3 });
-    const azulPv = state.modalidade === "Azul";
-    const ehAltPv =
-      state.finalidade === "Aumento de Demanda" ||
-      state.finalidade === "Redução de Demanda";
-    if (azulPv) {
-      tec += pvCampo("Demanda Ponta Atual (kW)", state.dem_ponta_atual, {
-        step: 3,
-      });
-      if (ehAltPv)
-        tec += pvCampo("Ponta Futura (kW)", state.dem_ponta_futura, {
-          step: 3,
-        });
-      tec += pvCampo("Fora de Ponta Atual (kW)", state.dem_foraponta_atual, {
-        step: 3,
-      });
-      if (ehAltPv)
-        tec += pvCampo(
-          "Fora de Ponta Futura (kW)",
-          state.dem_foraponta_futura,
-          { step: 3 },
-        );
-    } else {
-      tec += pvCampo(
-        ehAltPv ? "Demanda Atual (kW)" : "Demanda (kW)",
-        state.dem_atual,
-        { step: 3 },
-      );
-      if (ehAltPv)
-        tec += pvCampo("Demanda Futura (kW)", state.dem_futura, { step: 3 });
-    }
-    if (escalonada.length) {
-      let et = azulPv
-        ? '<div class="tbl-scroll"><table class="tbl"><thead><tr><th>Ponta (kW)</th><th>Fora-ponta (kW)</th><th>Início de Uso</th></tr></thead><tbody>'
-        : '<div class="tbl-scroll"><table class="tbl"><thead><tr><th>Demanda Futura (kW)</th><th>Início de Uso</th></tr></thead><tbody>';
-      escalonada.forEach((e) => {
-        et += azulPv
-          ? `<tr><td>${e.ponta || "—"}</td><td>${e.foraponta || "—"}</td><td>${e.inicio || "—"}</td></tr>`
-          : `<tr><td>${e.demanda || "—"}</td><td>${e.inicio || "—"}</td></tr>`;
-      });
-      et += "</tbody></table></div>";
-      tec += pvCampo("Demanda Escalonada", et, { full: true, step: 3 });
-    }
-  }
-  secoes.push(pvSecao("Dados Técnicos", tec));
-
-  // Cubículos (etapa 4)
-  if (cubiculos.length) {
-    let cub = "";
-    cubiculos.forEach((c, i) => {
-      const rt = CalculoMT.calcularTrafos(c.trafos);
-      cub += pvCampo(`Cubículo ${i + 1} — Nº Instalação`, c.instalacao, {
-        step: 3,
-      });
-      cub += pvCampo(
-        `Cubículo ${i + 1} — Transformadores`,
-        `${fmt(rt.potenciaTotal)} kVA / ${rt.quantidadeTotal} un.`,
-        { step: 3 },
-      );
-      cub += pvCampo(`Cubículo ${i + 1} — Modalidade tarifária`, c.modalidade, {
-        step: 3,
-      });
-      if (c.modalidade === "Azul") {
-        cub += pvCampo(
-          `Cubículo ${i + 1} — Demanda Ponta (kW)`,
-          c.demandaPonta,
-          { step: 3 },
-        );
-        cub += pvCampo(
-          `Cubículo ${i + 1} — Demanda Fora de Ponta (kW)`,
-          c.demandaForaPonta,
-          { step: 3 },
-        );
-      } else {
-        cub += pvCampo(`Cubículo ${i + 1} — Demanda (kW)`, c.demanda, {
-          step: 3,
-        });
-      }
-    });
-    secoes.push(pvSecao("Cubículos da Subestação Compartilhada", cub));
-  }
-
-  // Geração + Ramal + Observações (etapa 4)
-  let ger =
-    pvCampo("Geração paralelismo momentâneo", state.gerMomentaneo, {
-      step: 3,
-    }) +
-    pvCampo("GRID ZERO", state.gridZero, { step: 3 }) +
-    pvCampo("BT na mesma propriedade", state.btMesmaProp, { step: 3 });
-  if (state.gerMomentaneo === "Sim")
-    ger += pvCampo("Potência ger. momentânea (kVA)", state.gerMomentaneoPot, {
-      step: 3,
-    });
-  if (state.gridZero === "Sim")
-    ger += pvCampo("Potência GRID ZERO (kVA)", state.gridZeroPot, { step: 3 });
-  secoes.push(pvSecao("Geração e Baixa Tensão", ger));
-
-  const ramal =
-    state.ramalIndice != null
-      ? pvCampo(
-          "Ramal de Entrada selecionado",
-          `<img src="${RAMAL_IMGS[state.ramalIndice]}" style="max-width:100%;border:1px solid var(--cmg-neutral-200);border-radius:6px;margin-bottom:6px"><br>${CalculoMT.textoRamal(state.ramalIndice)}`,
-          { full: true, step: 3 },
-        )
-      : pvCampo("Ramal de Entrada", "(não selecionado)", {
-          full: true,
-          step: 3,
-        });
-  secoes.push(pvSecao("Ramal de Entrada", ramal));
-
-  if (state.observacoes)
-    secoes.push(
-      pvSecao(
-        "Observações",
-        pvCampo("Observações", state.observacoes, { full: true, step: 3 }),
-      ),
-    );
-
-  $("#previewContent").innerHTML = secoes.join(PV_DIVISOR);
   const btnMonomia = $("#btnCartaMonomia");
   if (btnMonomia)
     btnMonomia.style.display = state.monomia === "Sim" ? "" : "none";
@@ -2747,13 +2279,16 @@ async function onCEP(prefixo) {
   }
 }
 
-/* ===== Exportar PDF ===== */
+/* ===== Exportar PDF =====
+   Gerado por jsPDF (mt/js/pdf.js), não mais pela impressão do navegador:
+   a saída não depende das margens/opções do usuário e o modal de sucesso
+   dispara no momento certo (o afterprint não distinguia salvar de cancelar). */
 function exportarPDF() {
   if (atualizarGateExportacao().length) {
     goTo(5);
     return;
   }
-  window.print();
+  gerarPdfFormularioMT();
 }
 
 /* ===== Modal Anexo II ===== */

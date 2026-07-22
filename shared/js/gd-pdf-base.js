@@ -221,6 +221,8 @@ function criarPdfGD(tituloCabecalho, subtitulo) {
   const save = (filename) => {
     footer();
     doc.save(filename);
+    if (typeof mostrarModalPdfExportado === "function")
+      mostrarModalPdfExportado();
   };
   // Compatibilidade: kv(label, val) antigo == fullLine.
   const kv = (label, val) => fullLine(label, val);
