@@ -18,7 +18,7 @@ function gerarPdfMicroGD(d) {
   // ---- 1. Identificação ----
   sec("1.  IDENTIFICAÇÃO DA UNIDADE CONSUMIDORA");
   const idPairs = [
-    ["Número da instalação", d.instalacao],
+    ["Instalação / UC / Medidor", d.instalacao],
     ["Titular", d.titular],
     ["Grupo", d.grupo],
     ["Classe", d.classe],
@@ -89,7 +89,7 @@ function gerarPdfMicroGD(d) {
     ucPairs.push(["2 instalações no DUB/memorial", d.duasInstalacoesDUB]);
   if (!ehLigacaoNova) {
     ucPairs.push(
-      ["Instalação existente no local", d.instExistente],
+      ["Instalação / UC / Medidor existente no local", d.instExistente],
       ["Instalação existente BT/MT", d.instExistenteBTMT],
     );
   }

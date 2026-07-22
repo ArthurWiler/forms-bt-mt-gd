@@ -141,7 +141,7 @@ function gerarTermoGrupoB(ctx) {
   doc.text(`Documento: ${labelDocumento} ${cpfCnpj}`, xAss, cy);
 
   cy += 6;
-  doc.text(`Nº da Instalação: ${numInstalacao}`, xAss, cy);
+  doc.text(`Nº da Instalação / UC / Medidor: ${numInstalacao}`, xAss, cy);
 
   // Rodapé institucional — centralizado na base da folha
   doc.setDrawColor(220, 220, 220);

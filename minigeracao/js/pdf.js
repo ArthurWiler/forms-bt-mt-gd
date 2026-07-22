@@ -19,7 +19,7 @@ function gerarPdfMiniGD(d) {
   // ---- 1. Identificação ----
   sec("1.  IDENTIFICAÇÃO DA UNIDADE CONSUMIDORA");
   kvPairs([
-    ["Número da instalação", d.instalacao],
+    ["Instalação / UC / Medidor", d.instalacao],
     ["Titular", d.titular],
     ["E-mail", d.email],
     ["Celular", d.celular],
@@ -84,7 +84,7 @@ function gerarPdfMiniGD(d) {
   if (!ehLigacaoNova)
     ucPairs.push(
       ["Número da Unidade Consumidora", d.numUC],
-      ["Instalação existente no local", d.instExistente],
+      ["Instalação / UC / Medidor existente no local", d.instExistente],
       ["Instalação existente BT/MT", d.instExistenteBTMT],
     );
   kvPairs(ucPairs);

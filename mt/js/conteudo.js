@@ -197,7 +197,7 @@ function conteudoFormularioMT() {
     _c("Finalidade", state.finalidade, { step: 3 }),
   ];
   if (state.finalidade && state.finalidade !== "Conexão Nova")
-    tec.push(_c("Nº da Instalação", state.numInstalacao, { step: 3 }));
+    tec.push(_c("Instalação / UC / Medidor", state.numInstalacao, { step: 3 }));
   tec.push(
     _c(
       "Nível de tensão MT",
@@ -563,7 +563,7 @@ function conteudoIrrigante() {
       campos: [
         _c("Cliente", state.nome),
         _c("Município", state.uc_municipio),
-        _c("Nº da Instalação", state.numInstalacao),
+        _c("Instalação / UC / Medidor", state.numInstalacao),
         _c("CPF/CNPJ", state.cpfCnpj),
         _c("E-mail", state.emailCliente),
         _c("Telefone", state.telCliente),

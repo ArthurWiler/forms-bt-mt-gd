@@ -122,7 +122,6 @@ const ucBlocoPadrao = (i) => ({
   ramo: "",
   area: "", // área privativa (m²) — usada no cálculo ND-5.2 quando Residencial
   instalacao: "",
-  unidadeConsumidora: "",
   disjDe: "",
   disjPara: "",
   nd: "5.2", // norma atendente (atendimento híbrido): "5.1" ou "5.2"
@@ -155,7 +154,6 @@ const ucDetalhadaPadrao = () => ({
   complemento: "",
   caixa: "",
   instalacao: "",
-  unidadeConsumidora: "",
   mudancaLocal: "",
   disjDe: "",
   disjPara: "",
@@ -181,7 +179,6 @@ const ucTorrePadrao = (i) => ({
   ramo: "",
   area: "", // área privativa (m²) — usada no cálculo ND-5.2 por torre
   instalacao: "",
-  unidadeConsumidora: "",
   disjPara: "",
   cargaPrevista: "", // carga prevista da UC (kW) — método 5.2 com mais de 3 UCs
   demandaNaoResidencial: "", // demanda da UC não residencial (kVA) — método ND-5.2

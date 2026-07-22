@@ -316,23 +316,23 @@ function onFinalidade() {
     box.style.display = "";
     const map = {
       "Aumento de Demanda":
-        "Para Aumento de Demanda, informe o número da instalação",
+        "Para Aumento de Demanda, informe o número da Instalação / UC / Medidor",
       "Redução de Demanda":
-        "Para Redução de Demanda, informe o número da instalação",
+        "Para Redução de Demanda, informe o número da Instalação / UC / Medidor",
       "Adequação de Subestação":
-        "Para Adequação de Subestação, informe o número da instalação",
+        "Para Adequação de Subestação, informe o número da Instalação / UC / Medidor",
       "Aderir a Tarifa Monômia":
-        "Para Aderir a Tarifa Monômia, informe o número da instalação",
+        "Para Aderir a Tarifa Monômia, informe o número da Instalação / UC / Medidor",
       "Religação de Subestação":
-        "Para Religação de Subestação, informe o número da instalação",
+        "Para Religação de Subestação, informe o número da Instalação / UC / Medidor",
       "Desconexão para encerramento contratual":
-        "Para Desconexão, informe o número da instalação",
+        "Para Desconexão, informe o número da Instalação / UC / Medidor",
       "Alteração da tensão de fornecimento BT→MT":
-        "Para Alteração da tensão, informe o número da instalação",
+        "Para Alteração da tensão, informe o número da Instalação / UC / Medidor",
     };
     lbl.innerHTML =
       (map[v] ||
-        "Para Migração Mercado livre, informe o número da instalação") +
+        "Para Migração Mercado livre, informe o número da Instalação / UC / Medidor") +
       ' <span class="req">*</span>';
   } else box.style.display = "none";
   // mostra bloco conexão nova ou alteração na etapa técnica

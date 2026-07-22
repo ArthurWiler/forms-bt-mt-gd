@@ -232,7 +232,7 @@ function gerarPdfDoc(S) {
     });
   };
   // Regra 2 (PDF): variante de `tabela` que omite colunas inteiramente vazias
-  // ou não aplicáveis (ex.: "Unid. Consum." / "Instalação" quando todas as UCs
+  // ou não aplicáveis (ex.: "Inst. / UC / Medidor" quando todas as UCs
   // são Conexão Nova). Preserva sempre a 1ª coluna (identificação da UC).
   const tabelaAuto = (headers, widths, rows) => {
     const manter = headers.map(
@@ -427,18 +427,16 @@ function gerarPdfDoc(S) {
         [
           "Unidade",
           "Compl.",
-          "Unid. Consum.",
-          "Instalação",
+          "Inst. / UC / Medidor",
           "Solicitação",
           "Disjuntor",
           "Carga (kW)",
           "Dem. (kVA)",
         ],
-        [22, 18, 24, 22, 30, 22, 18, 18],
+        [22, 20, 44, 30, 22, 18, 18],
         ucs.map((u, ui) => [
           u.identificacao || `UC ${ui + 1}`,
           u.complemento || "—",
-          u.unidadeConsumidora || "—",
           u.solicitacao !== "Conexão Nova" ? u.instalacao || "—" : "—",
           u.solicitacao,
           u.disjPara || "—",
@@ -491,17 +489,15 @@ function gerarPdfDoc(S) {
         "Unidade",
         "Nº Predial",
         "Compl.",
-        "Unid. Consum.",
-        "Instalação",
+        "Inst. / UC / Medidor",
         "Solicitação",
         "Disjuntor",
       ],
-      [24, 22, 20, 28, 26, 32, 22],
+      [24, 22, 22, 52, 32, 22],
       ucBlocos.map((u, ui) => [
         u.identificacao || "UC " + (ui + 1),
         hibrido && u.nd === "5.1" ? u.nPredial : obra.num,
         u.complemento || "—",
-        u.unidadeConsumidora || "—",
         u.solicitacao !== "Conexão Nova" ? u.instalacao || "—" : "—",
         u.solicitacao,
         u.disjPara || "—",
@@ -578,7 +574,7 @@ function gerarPdfDoc(S) {
         ["Caixa / Identificação", u.caixa],
       );
       if (u.solicitacao !== "Conexão Nova")
-        pares.push(["Nº Instalação", u.instalacao]);
+        pares.push(["Instalação / UC / Medidor", u.instalacao]);
       if (u.solicitacao === "Alteração de Carga")
         pares.push(["Mudança de local", u.mudancaLocal]);
       // Novo local do padrão (rural + mudança de local): coordenada escolhida.

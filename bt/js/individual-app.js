@@ -446,12 +446,9 @@ function _ucIdentificacao(u, ui) {
     ),
   );
   if (u.solicitacao !== "Conexão Nova") {
-    const inpUC = document.createElement("input");
-    inpUC.type = "text";
-    inpUC.placeholder = " ";
-    inpUC.value = u.unidadeConsumidora || "";
-    inpUC.addEventListener("input", () => (u.unidadeConsumidora = inpUC.value));
-    grid.appendChild(_campo("Unidade Consumidora", inpUC));
+    // Um único campo para o número que identifica a UC existente: a Cemig
+    // aceita instalação, unidade consumidora ou medidor (antes havia um
+    // campo "Unidade Consumidora" separado, duplicando esta informação).
     const inpInst = document.createElement("input");
     inpInst.type = "text";
     inpInst.placeholder = " ";

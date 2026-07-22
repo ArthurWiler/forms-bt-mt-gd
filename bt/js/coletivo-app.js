@@ -273,7 +273,6 @@ function replicarUC1Coletivo() {
           complemento: u.complemento,
           caixa: u.caixa,
           instalacao: u.instalacao,
-          unidadeConsumidora: u.unidadeConsumidora,
         }),
   );
   renderUcsColetivo();
@@ -368,7 +367,6 @@ function replicarUC1Torre(bi) {
           identificacao: `UC ${k + 1}`,
           complemento: u.complemento,
           instalacao: u.instalacao,
-          unidadeConsumidora: u.unidadeConsumidora,
         }),
   );
   autoSelecionarDisjTorres();
@@ -652,20 +650,17 @@ function renderUcsColetivo() {
         grid.appendChild(f);
       }
       if (u.solicitacao !== "Conexão Nova") {
+        // Um só campo para o número que identifica a UC existente (instalação,
+        // unidade consumidora ou medidor) — antes havia um campo "Unidade
+        // Consumidora" separado duplicando esta informação.
         const f = _campo(
-          "Instalação",
+          "Instalação / Unidade Consumidora / Medidor",
           _inp(u.instalacao, (v) => (u.instalacao = v), {
-            placeholder: "Nº instalação existente",
+            placeholder: "Nº instalação, UC ou medidor",
           }),
         );
         f.setAttribute("data-noopt", "");
         grid.appendChild(f);
-        grid.appendChild(
-          _campo(
-            "Unidade Consumidora",
-            _inp(u.unidadeConsumidora, (v) => (u.unidadeConsumidora = v)),
-          ),
-        );
         grid.appendChild(
           _campo(
             "Disjuntor atual",
@@ -1628,19 +1623,13 @@ function _mkUnidadeCard(bi, ui, modoCalc) {
   }
   if (u.solicitacao !== "Conexão Nova") {
     const f = _campo(
-      "Instalação",
+      "Instalação / Unidade Consumidora / Medidor",
       _inp(u.instalacao, (v) => (u.instalacao = v), {
-        placeholder: "Nº instalação existente",
+        placeholder: "Nº instalação, UC ou medidor",
       }),
     );
     f.setAttribute("data-noopt", "");
     grid.appendChild(f);
-    grid.appendChild(
-      _campo(
-        "Unidade Consumidora",
-        _inp(u.unidadeConsumidora, (v) => (u.unidadeConsumidora = v)),
-      ),
-    );
   }
   const semAlt = ucSemAlteracao(u);
   // Carga prevista (kW) — substitui a antiga tabela de previsão de carga;
