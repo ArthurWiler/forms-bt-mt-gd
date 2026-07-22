@@ -423,9 +423,11 @@ function _ucIdentificacao(u, ui) {
     const inp = document.createElement("input");
     inp.type = "text";
     inp.placeholder = " ";
-    inp.value = u.ramo || "";
+    // O campo mostra só a descrição; u.ramo guarda "código - descrição"
+    // (o código sai no PDF).
+    inp.value = ramoDescricao(u.ramo);
     inp.disabled = restrito && ui === 0;
-    inp.addEventListener("input", () => (u.ramo = inp.value));
+    ramoAtivAttach(inp, (v) => (u.ramo = v));
     grid.appendChild(
       _campo('Ramo de atividade <span class="req">*</span>', inp),
     );
@@ -885,7 +887,7 @@ function renderPreviaBT() {
     html += `</div><div class="previa-grid">`;
     html += pvCampoBT("Tipo de solicitação", u.solicitacao, PG.atend);
     html += pvCampoBT("Atividade principal", u.atividade);
-    html += pvCampoBT("Ramo da atividade", u.ramo);
+    html += pvCampoBT("Ramo da atividade", ramoParaPdf(u.ramo));
     if (cg.tipoA === "nr" && cg.catA != null)
       html += pvCampoBT("Categoria de atividade", (TABELA_11[cg.catA] || {}).d);
     html += pvCampoBT("Solicitação", state.atend.solicitacao);

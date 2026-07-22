@@ -283,6 +283,17 @@ function reaplicarMarcadores() {
 function bindInputs() {
   $$("[data-k]").forEach((el) => {
     const k = el.dataset.k;
+    // Ramo de atividade: lista com filtro de digitação. O campo mostra só a
+    // descrição; state.ramoAtividade guarda "código - descrição" (o código
+    // não é escolhido pelo usuário, mas sai no PDF).
+    if (k === "ramoAtividade") {
+      el.value = ramoDescricao(state[k]);
+      ramoAtivAttach(el, (v) => {
+        state[k] = v;
+        if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
+      });
+      return;
+    }
     if (state[k] != null && el.value === "") el.value = state[k];
     el.addEventListener("input", () => {
       state[k] = el.value;

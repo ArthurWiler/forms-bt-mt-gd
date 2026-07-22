@@ -128,11 +128,17 @@ function gerarPdfDoc(S) {
         const lw = doc.getTextWidth(lbl);
         doc.setFont("helvetica", "normal");
         doc.setFontSize(9);
-        doc.text(
-          doc.splitTextToSize(String(p[1]), Math.max(10, colW - 4 - lw))[0],
-          x + 1 + lw,
-          cy + 4.5,
-        );
+        // Altura de linha fixa: corta com reticências o valor que não cabe na
+        // meia-coluna (ex.: ramo de atividade com código + descrição longa).
+        const larg = Math.max(10, colW - 4 - lw);
+        const ls = doc.splitTextToSize(String(p[1]), larg);
+        let val = ls[0] || "";
+        if (ls.length > 1) {
+          while (val && doc.getTextWidth(val + "…") > larg)
+            val = val.slice(0, -1);
+          val += "…";
+        }
+        doc.text(val, x + 1 + lw, cy + 4.5);
       });
       cy += 7;
     }
@@ -208,11 +214,17 @@ function gerarPdfDoc(S) {
       doc.setTextColor(30, 32, 42);
       let xx = MG + 2;
       row.forEach((cell, i) => {
-        doc.text(
-          doc.splitTextToSize(String(cell ?? "—"), widths[i] - 2)[0] || "—",
-          xx,
-          cy + 3.5,
-        );
+        // A linha da tabela é de altura fixa: o texto que não cabe na coluna
+        // é cortado com reticências (antes ele sumia sem aviso no meio da
+        // palavra — nota-se no "Ramo de atividade", que traz o código CNAE).
+        const linhas = doc.splitTextToSize(String(cell ?? "—"), widths[i] - 2);
+        let txt = linhas[0] || "—";
+        if (linhas.length > 1) {
+          while (txt && doc.getTextWidth(txt + "…") > widths[i] - 2)
+            txt = txt.slice(0, -1);
+          txt += "…";
+        }
+        doc.text(txt, xx, cy + 3.5);
         xx += widths[i];
       });
       ri++;
@@ -512,7 +524,7 @@ function gerarPdfDoc(S) {
         hibrido ? `ND ${u.nd}` : "—",
         u.caixa || "—",
         u.atividade || "—",
-        u.ramo || "—",
+        ramoParaPdf(u.ramo) || "—",
         ucSemAlteracao(u)
           ? "—"
           : modoCalculadora
@@ -553,7 +565,7 @@ function gerarPdfDoc(S) {
       subSec(`4.${ui + 1}  UC ${ui + 1}`);
       const pares = [
         ["Atividade principal", u.atividade],
-        ["Ramo de atividade", u.ramo],
+        ["Ramo de atividade", ramoParaPdf(u.ramo)],
       ];
       if (u.cargas?.tipoA === "nr" && u.cargas?.catA != null)
         pares.push([

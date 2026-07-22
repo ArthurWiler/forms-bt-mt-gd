@@ -113,11 +113,17 @@ function criarPdfGD(tituloCabecalho, subtitulo) {
         const lw = doc.getTextWidth(lbl);
         doc.setFont("helvetica", "normal");
         doc.setFontSize(9);
-        doc.text(
-          doc.splitTextToSize(String(p[1]), Math.max(10, colW - 4 - lw))[0],
-          x + 1 + lw,
-          st.cy + 4.5,
-        );
+        // Altura de linha fixa: o valor que não cabe na meia-coluna é cortado
+        // com reticências (ex.: ramo de atividade com código CNAE + descrição).
+        const larg = Math.max(10, colW - 4 - lw);
+        const ls = doc.splitTextToSize(String(p[1]), larg);
+        let val = ls[0] || "";
+        if (ls.length > 1) {
+          while (val && doc.getTextWidth(val + "…") > larg)
+            val = val.slice(0, -1);
+          val += "…";
+        }
+        doc.text(val, x + 1 + lw, st.cy + 4.5);
       });
       st.cy += 7;
     }
@@ -180,11 +186,15 @@ function criarPdfGD(tituloCabecalho, subtitulo) {
       doc.setTextColor(30, 32, 42);
       let xx = MG + 2;
       row.forEach((cell, i) => {
-        doc.text(
-          doc.splitTextToSize(String(cell ?? "—"), widths[i] - 2)[0] || "—",
-          xx,
-          st.cy + 3.5,
-        );
+        // Idem kvPairs: corta com reticências em vez de sumir no meio da palavra.
+        const linhas = doc.splitTextToSize(String(cell ?? "—"), widths[i] - 2);
+        let txt = linhas[0] || "—";
+        if (linhas.length > 1) {
+          while (txt && doc.getTextWidth(txt + "…") > widths[i] - 2)
+            txt = txt.slice(0, -1);
+          txt += "…";
+        }
+        doc.text(txt, xx, st.cy + 3.5);
         xx += widths[i];
       });
       ri++;

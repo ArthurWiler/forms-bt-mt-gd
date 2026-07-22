@@ -137,7 +137,7 @@ function conteudoFormularioMT() {
   /* --- Unidade Consumidora (etapa 2) --- */
   const uc = [
     _c("Atividade", state.atividade, { step: 2 }),
-    _c("Ramo", state.ramoAtividade, { step: 2 }),
+    _c("Ramo", ramoParaPdf(state.ramoAtividade), { step: 2 }),
     _c("Localização", state.localizacao, { step: 2 }),
     _c("CEP", state.uc_cep, { step: 2 }),
     _c(

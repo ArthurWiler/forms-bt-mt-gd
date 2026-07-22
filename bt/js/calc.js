@@ -164,8 +164,14 @@ function selecionarDisjuntores(demanda, redeMono) {
   const tipos = ["mono", "bi", "tri"];
   const result = [];
   for (const tp of tipos) {
-    if (!redeMono && tp === "bi" && demanda > 16) continue;
-    const cand = DISJ_CN.filter((dj) => dj.tipo === tp && dj.d >= demanda);
+    const cand = DISJ_CN.filter(
+      (dj) =>
+        dj.tipo === tp &&
+        dj.d >= demanda &&
+        // Em rede trifásica o bipolar é admitido apenas até 63 A; acima disso
+        // o atendimento deve ser tripolar.
+        (redeMono || tp !== "bi" || correnteDisj(dj.fx) <= 63),
+    );
     if (cand.length > 0) {
       cand.sort((a, b) => a.d - b.d);
       result.push(cand[0]);

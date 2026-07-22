@@ -427,6 +427,17 @@ function _inp(valor, oninput, props) {
   i.addEventListener("input", () => oninput(i.value));
   return i;
 }
+// Campo "Ramo de atividade": input com lista filtrada (shared/js/ramo-atividade.js).
+// Exibe só a descrição; o valor guardado é "código - descrição" (o código
+// não é escolhido pelo usuário, mas sai no PDF).
+function _inpRamo(valor, onChange) {
+  const i = document.createElement("input");
+  i.type = "text";
+  i.placeholder = "Obrigatório";
+  i.value = ramoDescricao(valor);
+  ramoAtivAttach(i, onChange);
+  return i;
+}
 function renderHibridoAlertas() {
   const box = $("#hibridoAlertas");
   if (!box) return;
@@ -616,7 +627,7 @@ function renderUcsColetivo() {
       if (u.atividade !== "Residencial") {
         const f = _campo(
           "Ramo de atividade",
-          _inp(u.ramo, (v) => (u.ramo = v), { placeholder: "Obrigatório" }),
+          _inpRamo(u.ramo, (v) => (u.ramo = v)),
         );
         f.setAttribute("data-noopt", "");
         grid.appendChild(f);
@@ -1593,7 +1604,7 @@ function _mkUnidadeCard(bi, ui, modoCalc) {
   } else {
     const f = _campo(
       "Ramo de atividade",
-      _inp(u.ramo, (v) => (u.ramo = v), { placeholder: "Obrigatório" }),
+      _inpRamo(u.ramo, (v) => (u.ramo = v)),
     );
     f.setAttribute("data-noopt", "");
     grid.appendChild(f);

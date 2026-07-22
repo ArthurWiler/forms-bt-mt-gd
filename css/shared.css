@@ -3077,3 +3077,39 @@ label.restricao-aceite input[type="checkbox"] {
     display: none !important;
   }
 }
+
+/* ============================================================
+   14. Ramo de atividade — lista com filtro de digitação
+   (shared/js/ramo-atividade.js; BT individual/coletivo e MT)
+   O campo mostra só a descrição — o código CNAE fica no valor
+   guardado e aparece apenas no PDF.
+   ============================================================ */
+.cemig-form .ramo-ativ-lista {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 120;
+  max-height: 280px;
+  overflow-y: auto;
+  margin-top: 2px;
+  background: var(--cmg-surface);
+  border: 1px solid var(--cmg-border);
+  border-radius: 4px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+.cemig-form .ramo-ativ-item {
+  padding: 10px var(--cmg-space-4);
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-body);
+  line-height: var(--cmg-lh-body);
+  color: var(--cmg-text-strong);
+  cursor: pointer;
+}
+.cemig-form .ramo-ativ-item + .ramo-ativ-item {
+  border-top: 1px solid var(--cmg-border);
+}
+.cemig-form .ramo-ativ-item.is-ativo,
+.cemig-form .ramo-ativ-item:hover {
+  background: var(--cmg-surface-disabled);
+}
