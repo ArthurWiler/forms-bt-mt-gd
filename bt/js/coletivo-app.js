@@ -74,6 +74,8 @@ const ITENS_POR_PAGINA = 10;
 let _torrePagina = 0; // página da lista de torres (etapa Dados das torres)
 let _uniTorre = 0; // torre selecionada na etapa Dados das unidades
 const _uniPagina = {}; // página da lista de unidades, por torre
+const _previaTorrePag = {}; // página da tabela de UCs de cada torre, na prévia
+let _previaTorreExterna = 0; // torre exibida na prévia (paginação externa)
 
 /* ===== flags de fluxo (paridade com app.js:67-68) ===== */
 const coletivoF = () => state.atend.disjGeral === "Sim";
@@ -1040,19 +1042,34 @@ function _campoComAcao(labelTxt, controle, botao) {
   f.append(corpo, botao);
   return f;
 }
+// Frase de resumo do cálculo do popup de pavimentos: quantos andares e
+// pavimentos as unidades por andar informadas produzem.
+function _resumoPavimentos(calculadas, total) {
+  if (!total) return "Informe a quantidade de unidades para calcular os andares.";
+  if (!calculadas.length) return `${total} unidades a distribuir.`;
+  const andares = calculadas.reduce((s, f) => s + f.andares, 0);
+  const p = (n, sing, plur) => `${n} ${n === 1 ? sing : plur}`;
+  return `${total} unidades → ${p(andares, "andar", "andares")}, ${p(calculadas.length, "pavimento", "pavimentos")}.`;
+}
 // ============================================================
 // Popup "Composição por pavimento" (botão Customizar)
-// Descreve a distribuição das unidades por andar em faixas de
-// pavimento [{ ini, fim, unidades }]. Ao salvar, chama onSalvar(faixas)
-// com as faixas válidas (ou null quando esvaziadas). Overlay + diálogo
-// montados no <body>, fechados por Cancelar/X/Esc/clique no overlay.
+// O usuário informa SÓ as unidades por andar de cada pavimento; os andares
+// (inicial/final) são calculados a partir do total de UCs e ficam bloqueados —
+// o primeiro andar de um pavimento é o seguinte ao último do anterior
+// (ver calcularFaixasPavimento). Ao salvar, chama onSalvar(faixas) com as
+// faixas calculadas (ou null quando não há pavimento válido). Overlay +
+// diálogo montados no <body>, fechados por Cancelar/X/Esc/clique no overlay.
 // ============================================================
-function abrirComposicaoPavimento(faixasAtuais, onSalvar) {
-  // Cópia de trabalho: faixas existentes ou uma linha em branco inicial.
+function abrirComposicaoPavimento(faixasAtuais, onSalvar, totalUCs) {
+  const total = Math.max(0, parseInt(totalUCs) || 0);
+  // Cópia de trabalho: só as unidades por andar de cada pavimento (os andares
+  // vêm do cálculo). Sem faixas salvas, começa com um pavimento em branco.
   const base = normalizarFaixasPavimento(faixasAtuais);
   const linhas = base.length
-    ? base.map((f) => ({ ini: f.ini, fim: f.fim, unidades: f.unidades }))
-    : [{ ini: "", fim: "", unidades: "" }];
+    ? base.map((f) => ({ unidades: f.unidades }))
+    : [{ unidades: "" }];
+  // Faixas calculadas da vez — recalculadas a cada digitação.
+  let calculadas = calcularFaixasPavimento(linhas, total);
 
   const overlay = document.createElement("div");
   overlay.className = "cmg-modal-overlay";
@@ -1088,11 +1105,15 @@ function abrirComposicaoPavimento(faixasAtuais, onSalvar) {
   const desc = document.createElement("p");
   desc.className = "cmg-modal-desc";
   desc.textContent =
-    "Descreva a distribuição das unidades por andar. Se o padrão mudar ao longo da torre, adicione novas faixas de pavimento (ex: uma faixa para andares com 4 unidades e outra para andares com 3).";
+    "Informe apenas quantas unidades há por andar em cada pavimento — os andares são calculados automaticamente a partir da quantidade de unidades. Cada pavimento adicionado ocupa um andar (ex: uma ou duas coberturas); o último da lista é o corpo da torre e recebe as unidades restantes.";
 
   // Tabela de faixas
   const tabela = document.createElement("div");
   tabela.className = "cmg-pav-tabela";
+
+  // Resumo do cálculo, abaixo da tabela (preenchido por renderTabela).
+  const resumo = document.createElement("p");
+  resumo.className = "cmg-pav-resumo";
 
   const corpo = document.createElement("div");
   corpo.className = "cmg-modal-conteudo";
@@ -1109,7 +1130,7 @@ function abrirComposicaoPavimento(faixasAtuais, onSalvar) {
   btnSalvar.className = "btn btn-primary";
   btnSalvar.textContent = "Salvar";
   btnSalvar.addEventListener("click", () => {
-    const validas = normalizarFaixasPavimento(linhas);
+    const validas = normalizarFaixasPavimento(calculadas);
     onSalvar(validas.length ? validas : null);
     fechar();
   });
@@ -1134,45 +1155,149 @@ function abrirComposicaoPavimento(faixasAtuais, onSalvar) {
     );
     tabela.appendChild(head);
 
-    linhas.forEach((ln, idx) => {
+    // Célula só-leitura de andar (inicial/final), calculada.
+    const campoCalculado = (valor) => {
+      const cel = document.createElement("div");
+      cel.className = "cmg-pav-cel";
+      const inp = document.createElement("input");
+      inp.type = "text";
+      inp.readOnly = true;
+      inp.tabIndex = -1;
+      inp.className = "cmg-pav-calculado";
+      inp.value = valor == null ? "—" : String(valor);
+      cel.appendChild(inp);
+      return cel;
+    };
+    // Re-renderiza recalculando, devolvendo o foco/caret ao input de unidades
+    // da linha `posFoco` (índice na tabela renderizada).
+    const rerender = (posFoco, caret) => {
+      calculadas = calcularFaixasPavimento(linhas, total);
+      renderTabela();
+      const inputs = tabela.querySelectorAll(".cmg-pav-linha input[type=number]");
+      const alvo = inputs[posFoco];
+      if (alvo) {
+        alvo.focus();
+        try {
+          if (caret != null) alvo.setSelectionRange(caret, caret);
+        } catch (_) {}
+      }
+    };
+    // Monta uma linha de pavimento. `valor` é a unidade exibida; `faixa` traz
+    // ini/fim calculados. `onInput(v)` recebe o valor digitado; `onRemover`,
+    // quando presente, mostra o botão de remover; `onFocus`, quando presente,
+    // roda ao focar o campo (usado para materializar a linha da sobra ANTES de
+    // qualquer digitação, evitando push por-tecla). `posFoco` é o índice desta
+    // linha entre as linhas renderizadas (para devolver o foco no rerender).
+    const mkLinha = (valor, faixa, posFoco, onInput, onRemover, onFocus) => {
       const linha = document.createElement("div");
       linha.className = "cmg-pav-linha";
-      const campo = (chave, placeholder) => {
-        const cel = document.createElement("div");
-        cel.className = "cmg-pav-cel";
-        const inp = document.createElement("input");
-        inp.type = "number";
-        inp.min = "1";
-        inp.placeholder = placeholder;
-        inp.value = ln[chave] == null ? "" : ln[chave];
-        inp.addEventListener("input", () => (ln[chave] = inp.value));
-        cel.appendChild(inp);
-        return cel;
-      };
+      const celUnidades = document.createElement("div");
+      celUnidades.className = "cmg-pav-cel";
+      const inp = document.createElement("input");
+      inp.type = "number";
+      inp.min = "1";
+      // Não faz sentido mais unidades por andar do que o total de UCs da torre.
+      if (total > 0) inp.max = String(total);
+      inp.placeholder = "4";
+      inp.value = valor == null ? "" : valor;
+      if (onFocus) inp.addEventListener("focus", onFocus);
+      inp.addEventListener("input", () => {
+        // Limita ao total de UCs (igual ao campo principal "por andar").
+        const n = parseInt(inp.value, 10);
+        if (total > 0 && Number.isFinite(n) && n > total) {
+          inp.value = String(total);
+        }
+        const caret = inp.selectionStart;
+        onInput(inp.value, caret);
+      });
+      celUnidades.appendChild(inp);
       linha.append(
-        campo("ini", "1"),
-        campo("fim", "6"),
-        campo("unidades", "4"),
+        campoCalculado(faixa ? faixa.ini : null),
+        campoCalculado(faixa ? faixa.fim : null),
+        celUnidades,
       );
       const celAcao = document.createElement("div");
       celAcao.className = "cmg-pav-cel cmg-pav-cel-acao";
-      // A remoção só aparece com mais de uma faixa (sempre resta pelo menos 1).
-      if (linhas.length > 1) {
+      if (onRemover) {
         const btnDel = document.createElement("button");
         btnDel.type = "button";
         btnDel.className = "cmg-pav-remover";
         btnDel.setAttribute("aria-label", "Remover faixa");
         btnDel.innerHTML =
           '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
-        btnDel.addEventListener("click", () => {
-          linhas.splice(idx, 1);
-          renderTabela();
-        });
+        btnDel.addEventListener("click", onRemover);
         celAcao.appendChild(btnDel);
       }
       linha.appendChild(celAcao);
       tabela.appendChild(linha);
+    };
+
+    // Faixa calculada de cada linha real: a i-ésima entre os pavimentos com
+    // "unidades" preenchido (os em branco não entram no cálculo).
+    const faixasReais = calculadas.filter((f) => !f.sobra);
+    let posCalc = 0;
+    const sobra = calculadas.find((f) => f.sobra);
+    // As linhas reais só ganham remover quando há mais de um pavimento visível
+    // (real + sobra), garantindo que sempre reste ao menos um pavimento.
+    const totalLinhasVisiveis = linhas.length + (sobra ? 1 : 0);
+
+    linhas.forEach((ln, idx) => {
+      const preenchida = (parseInt(ln.unidades, 10) || 0) >= 1;
+      const faixa = preenchida ? faixasReais[posCalc++] : null;
+      mkLinha(
+        ln.unidades,
+        faixa,
+        idx,
+        (v, caret) => {
+          ln.unidades = v;
+          rerender(idx, caret);
+        },
+        totalLinhasVisiveis > 1
+          ? () => {
+              linhas.splice(idx, 1);
+              calculadas = calcularFaixasPavimento(linhas, total);
+              renderTabela();
+            }
+          : null,
+      );
     });
+
+    // Linha da sobra: pavimento das UCs que não completam um andar. Aparece já
+    // com o valor calculado. Ao FOCAR o campo (antes de digitar), ela se
+    // materializa em `linhas` como linha real — a partir daí a digitação é a de
+    // uma linha comum (sem push por-tecla, que embaralhava foco e valor). Uma
+    // vez materializada, ganha botão de remover e pode gerar uma nova sobra.
+    if (sobra) {
+      const idxSobra = linhas.length; // posição desta linha na tabela
+      let materializada = false;
+      mkLinha(
+        sobra.unidades,
+        sobra,
+        idxSobra,
+        () => {}, // input tratado após materializar (a linha vira real)
+        null,
+        () => {
+          if (materializada) return;
+          materializada = true;
+          // Vira linha real com o valor atual da sobra; re-renderiza e devolve
+          // o foco ao mesmo campo, com o conteúdo selecionado para digitar por
+          // cima (apagar e trocar por 1, por ex.).
+          linhas.push({ unidades: String(sobra.unidades) });
+          calculadas = calcularFaixasPavimento(linhas, total);
+          renderTabela();
+          const inputs = tabela.querySelectorAll(
+            ".cmg-pav-linha input[type=number]",
+          );
+          const alvo = inputs[idxSobra];
+          if (alvo) {
+            alvo.focus();
+            try {
+              alvo.select();
+            } catch (_) {}
+          }
+        },
+      );
+    }
 
     const rodapeTabela = document.createElement("div");
     rodapeTabela.className = "cmg-pav-adicionar-wrap";
@@ -1182,15 +1307,18 @@ function abrirComposicaoPavimento(faixasAtuais, onSalvar) {
     btnAdd.innerHTML =
       '<span class="cmg-pav-mais" aria-hidden="true">+</span> Adicionar pavimento';
     btnAdd.addEventListener("click", () => {
-      linhas.push({ ini: "", fim: "", unidades: "" });
+      linhas.push({ unidades: "" });
+      calculadas = calcularFaixasPavimento(linhas, total);
       renderTabela();
     });
     rodapeTabela.appendChild(btnAdd);
     tabela.appendChild(rodapeTabela);
+    // Resumo do cálculo (total de andares/pavimentos e UCs não alocadas).
+    resumo.textContent = _resumoPavimentos(calculadas, total);
   };
   renderTabela();
 
-  corpo.append(titulo, desc, tabela);
+  corpo.append(titulo, desc, tabela, resumo);
   dialog.append(btnX, corpo, rodape);
   overlay.appendChild(dialog);
   overlay.addEventListener("click", (e) => {
@@ -1234,6 +1362,10 @@ function _mkAgrupamentoCampos(grid, cfg) {
           inpAndar.value = v;
         }
         cfg.setAndar(v);
+        // Digitar aqui volta ao caso uniforme (mesmas unidades em todos os
+        // andares): as faixas do popup teriam precedência e fariam o valor
+        // digitado ser ignorado silenciosamente.
+        cfg.setFaixas(null);
         cfg.gerarComplementos();
       },
       { type: "number", placeholder: "Ex: 4" },
@@ -1249,10 +1381,20 @@ function _mkAgrupamentoCampos(grid, cfg) {
       '<img class="field-acao-icon" src="../imgs/edit.svg" alt="" aria-hidden="true" />Customizar';
     btnCustom.title = "Personalizar a quantidade de unidades por andar";
     btnCustom.addEventListener("click", () => {
-      abrirComposicaoPavimento(cfg.faixas(), (faixas) => {
-        cfg.setFaixas(faixas);
-        cfg.gerarComplementos();
-      });
+      abrirComposicaoPavimento(
+        cfg.faixas(),
+        (faixas) => {
+          cfg.setFaixas(faixas);
+          // As unidades do 1º pavimento passam a ser o padrão do campo
+          // "Quantidade de unidades por andar" (o popup é a fonte da verdade).
+          if (faixas && faixas.length) {
+            cfg.setAndar(String(faixas[0].unidades));
+            inpAndar.value = String(faixas[0].unidades);
+          }
+          cfg.gerarComplementos();
+        },
+        cfg.ucsLen(),
+      );
     });
     const fAndar = _campoComAcao(
       "Quantidade de unidades por andar",
@@ -1892,6 +2034,89 @@ function validacaoObrigatoriosColetivo() {
     faltando.push("Declaração de ciência da restrição ambiental");
   return { ok: faltando.length === 0, faltando };
 }
+// Painel de uma torre na prévia (múltiplas torres): cabeçalho "Torre X (n de N)",
+// os campos da torre (identificação, quantidades, complemento, demanda/disjuntor
+// do condomínio e da torre) e a tabela de UCs paginada. Os lápis levam de volta
+// às etapas de edição — dados da torre → PG.blocos, UCs → PG.unidades.
+function _mkPreviaTorre(b, bi) {
+  const painel = document.createElement("div");
+  painel.className = "previa-torre";
+  const ucs = b.ucs || [];
+  const cb = calcBlocoMultiTorres(b);
+  const demandaTorre = cb.demandaUcs + num(b.demandaIncendio);
+
+  // Cabeçalho: "Torre <nome>" + chip "bi+1 de N"
+  const head = document.createElement("div");
+  head.className = "previa-torre-head";
+  head.innerHTML =
+    `<span class="previa-torre-titulo">Torre ${b.nome || bi + 1}</span>` +
+    `<span class="previa-torre-chip">${bi + 1} de ${state.blocos.length}</span>`;
+  painel.appendChild(head);
+
+  // Campos da torre (mesma ordem da etapa de edição).
+  const grid = document.createElement("div");
+  grid.className = "previa-grid";
+  grid.innerHTML =
+    pvCampoBT("Identificação da torre", b.nome || String(bi + 1), PG.blocos) +
+    pvCampoBT("Quantidade de unidades na torre", String(b.qtdUCs || ucs.length || 0), PG.blocos) +
+    pvCampoBT("Quantidade de unidades por andar", b.aptosPorAndar, PG.blocos) +
+    pvCampoBT("Primeiro complemento", b.complInicial, PG.blocos) +
+    pvCampoBT("Demanda do condomínio", b.demandaIncendio ? fmt2(b.demandaIncendio) + " kVA" : "", PG.blocos) +
+    pvCampoBT("Disjuntor do condomínio", b.disjIncendio, PG.blocos) +
+    pvCampoBT("Demanda da torre", fmt2(demandaTorre) + " kVA", PG.blocos) +
+    pvCampoBT("Disjuntor da torre", b.disjGeral, PG.blocos);
+  painel.appendChild(grid);
+
+  // Tabela de UCs paginada.
+  const tabelaWrap = document.createElement("div");
+  tabelaWrap.className = "previa-tabela-wrap";
+  const pag = document.createElement("div");
+  const renderTabela = () => {
+    const totalPag = Math.max(1, Math.ceil(ucs.length / ITENS_POR_PAGINA));
+    let atual = _previaTorrePag[bi] || 0;
+    if (atual >= totalPag) atual = _previaTorrePag[bi] = totalPag - 1;
+    const ini = atual * ITENS_POR_PAGINA;
+    const linhas = ucs
+      .slice(ini, ini + ITENS_POR_PAGINA)
+      .map((u, k) => {
+        const idx = ini + k;
+        const area = u.atividade === "Residencial" ? (u.area || "—") : "—";
+        const carga =
+          u.cargaPrevista != null && String(u.cargaPrevista).trim() !== ""
+            ? fmt2(u.cargaPrevista)
+            : "—";
+        return (
+          `<tr>` +
+          `<td>${u.identificacao || `UC ${idx + 1}`}</td>` +
+          `<td>${u.complemento || "—"}</td>` +
+          `<td>${u.solicitacao || "—"}</td>` +
+          `<td>${u.atividade || "—"}</td>` +
+          `<td>${area}</td>` +
+          `<td>${carga}</td>` +
+          `<td class="previa-tabela-disj">${u.disjPara || "—"}` +
+          `<button type="button" class="previa-edit" title="Editar" aria-label="Editar UC ${idx + 1}" onclick="goTo(${PG.unidades}, true)"></button>` +
+          `</td>` +
+          `</tr>`
+        );
+      })
+      .join("");
+    tabelaWrap.innerHTML =
+      `<table class="previa-tabela"><thead><tr>` +
+      `<th>Unidade</th><th>Complemento</th><th>Solicitação</th><th>Atividade</th>` +
+      `<th>Área (m²)</th><th>Carga prevista (kW)</th><th>Disjuntor</th>` +
+      `</tr></thead><tbody>${linhas}</tbody></table>`;
+    pag.innerHTML = "";
+    pag.appendChild(
+      _mkPaginacao(totalPag, atual, (pp) => {
+        _previaTorrePag[bi] = pp;
+        renderTabela();
+      }),
+    );
+  };
+  renderTabela();
+  painel.append(tabelaWrap, pag);
+  return painel;
+}
 function renderPreviaColetivo() {
   const box = $("#previaConteudo");
   if (!box) return;
@@ -1908,25 +2133,30 @@ function renderPreviaColetivo() {
   const modalidadeTexto = MULTI
     ? `Múltiplas Torres · ${state.blocos.length} torre(s)`
     : "Coletivo — Agrupamento com Proteção Geral (APR Web)";
-  let html = `<div class="previa-secao"><h4 class="previa-secao-titulo">Dados do proprietário</h4><div class="previa-grid">`;
+  let html = `<div class="previa-secao"><h4 class="previa-secao-titulo">${MULTI ? "Dados para contato" : "Dados do proprietário"}</h4><div class="previa-grid">`;
   html += pvCampoBT("Nome", p.nome, PG.tipo, true);
   html += pvCampoBT("E-mail", p.email, PG.tipo);
   html += pvCampoBT("Celular", p.celular, PG.tipo);
-  html += pvCampoBT(pf ? "CPF" : "CNPJ", p.cpfCnpj, PG.empr);
-  if (pf) {
+  // No múltiplas torres, CPF/CNPJ é mostrado em "Dados do empreendimento".
+  if (!MULTI) html += pvCampoBT(pf ? "CPF" : "CNPJ", p.cpfCnpj, PG.empr);
+  if (!MULTI && pf) {
     html += pvCampoBT("Filiação", p.filiacao);
     html += pvCampoBT("RG", p.rg);
     html += pvCampoBT("Data de nascimento", p.nasc);
   }
   html += `</div></div><hr class="previa-divider" />`;
-  html += `<div class="previa-secao"><h4 class="previa-secao-titulo">Correspondência</h4><div class="previa-grid">`;
-  html += pvCampoBT("E-mail para receber a fatura", emailFatura, PG.corr);
-  html += pvCampoBT(
-    "Data de vencimento da fatura",
-    c.vencimento ? "Todo dia " + c.vencimento : "",
-    PG.corr,
-  );
-  html += `</div></div><hr class="previa-divider" />`;
+  // Correspondência: no múltiplas torres vai para o FIM da prévia (como na
+  // tela-alvo); nos demais fluxos permanece logo após os dados de contato.
+  const corrHtml =
+    `<div class="previa-secao"><h4 class="previa-secao-titulo">Correspondência</h4><div class="previa-grid">` +
+    pvCampoBT("E-mail para receber a fatura da torre/condomínio", emailFatura, PG.corr) +
+    pvCampoBT(
+      "Data de vencimento da fatura",
+      c.vencimento ? "Todo dia " + c.vencimento : "",
+      PG.corr,
+    ) +
+    `</div></div>`;
+  if (!MULTI) html += corrHtml + `<hr class="previa-divider" />`;
   // Resumo do atendimento
   const modalidadeCard =
     modalidadeTexto +
@@ -1936,7 +2166,7 @@ function renderPreviaColetivo() {
     (!MULTI && state.atend.disjuntorGeral
       ? ` · Disjuntor geral: ${state.atend.disjuntorGeral}`
       : "");
-  html += `<div class="previa-secao"><h4 class="previa-secao-titulo">Resumo do atendimento</h4><div class="previa-cards">`;
+  html += `<div class="previa-secao"><h4 class="previa-secao-titulo">${MULTI ? "Dados do empreendimento" : "Resumo do atendimento"}</h4><div class="previa-cards">`;
   html += pvCardBT("Modalidade", modalidadeCard);
   html += pvCardBT(
     "Unidades consumidoras",
@@ -1944,31 +2174,62 @@ function renderPreviaColetivo() {
   );
   html += pvCardBT("Demanda total", fmt2(demandaTotalGeralF()) + " kVA");
   html += `</div><div class="previa-grid">`;
-  html += pvCampoBT(
-    "Endereço",
-    `${o.endereco || "—"}, ${o.num || "s/n"}`,
-    PG.empr,
-  );
-  html += pvCampoBT(
-    "Cidade / UF",
-    `${o.cidade || "—"} / ${o.estado || "—"}`,
-    PG.empr,
-  );
-  html += pvCampoBT("Localização", o.localizacao, PG.empr);
-  html += pvCampoBT(
-    "Coordenada",
-    [o.lat, o.lng].filter(Boolean).join(", "),
-    PG.empr,
-  );
+  if (MULTI) {
+    // Múltiplas torres: campos do empreendimento como na prévia-alvo (razão
+    // social/CNPJ, ART, endereço completo, e as perguntas de rede/padrão).
+    html += pvCampoBT("Cliente / Razão Social do empreendimento", p.nome, PG.empr, true);
+    html += pvCampoBT(pf ? "CPF" : "CNPJ", p.cpfCnpj, PG.empr);
+    html += pvCampoBT("Nº ART/TRT do projeto", o.art, PG.empr);
+    html += pvCampoBT("Área do empreendimento", o.localizacao, PG.empr);
+    html += pvCampoBT("CEP", o.cep, PG.empr);
+    html += pvCampoBT("Endereço", o.endereco, PG.empr);
+    html += pvCampoBT("Número", o.num, PG.empr);
+    html += pvCampoBT("Bairro", o.bairro, PG.empr);
+    html += pvCampoBT("Cidade / Município", o.cidade, PG.empr);
+    html += pvCampoBT("Estado", o.estado, PG.empr);
+    html += pvCampoBT(
+      "Distância do padrão até a rede Cemig inferior a 30m?",
+      o.distMenor30,
+      PG.empr,
+    );
+    html += pvCampoBT(
+      "O padrão está pronto para ser ligado?",
+      o.prontoLigar,
+      PG.empr,
+    );
+    html += pvCampoBT("Tipo de rede BT que atende o local", o.tipoRede, PG.empr);
+  } else {
+    html += pvCampoBT(
+      "Endereço",
+      `${o.endereco || "—"}, ${o.num || "s/n"}`,
+      PG.empr,
+    );
+    html += pvCampoBT(
+      "Cidade / UF",
+      `${o.cidade || "—"} / ${o.estado || "—"}`,
+      PG.empr,
+    );
+    html += pvCampoBT("Localização", o.localizacao, PG.empr);
+    html += pvCampoBT(
+      "Coordenada",
+      [o.lat, o.lng].filter(Boolean).join(", "),
+      PG.empr,
+    );
+  }
   html += `</div></div>`;
   if (MULTI) {
-    html += `<hr class="previa-divider" /><div class="previa-secao"><h4 class="previa-secao-titulo">Torres / Blocos</h4>`;
-    state.blocos.forEach((b, bi) => {
-      const demanda =
-        calcBlocoMultiTorres(b).demandaUcs + num(b.demandaIncendio);
-      html += `<div class="preview-item" style="display:flex;justify-content:space-between"><span class="v">Torre ${b.nome || bi + 1} · ${b.qtdUCs || 0} UCs · Geral: ${b.disjGeral || "—"} · Incêndio: ${b.disjIncendio || "—"}</span><span style="color:var(--verde);font-weight:700">${fmt2(demanda)} kVA</span></div>`;
-    });
-    html += `</div>`;
+    // Seção "Dados das torres": card "Quantidade de torres" + um painel por
+    // torre (campos + tabela paginada de UCs). Montada como DOM depois de fixar
+    // o innerHTML, pois a tabela de cada torre pagina interativamente.
+    html += `<hr class="previa-divider" /><div class="previa-secao"><h4 class="previa-secao-titulo">Dados das torres</h4><div class="previa-grid">`;
+    html += pvCampoBT(
+      "Quantidade de torres",
+      String(state.blocos.length),
+      PG.blocos,
+    );
+    html += `</div><div id="previaTorresMount"></div></div>`;
+    // Correspondência ao fim (ordem da tela-alvo).
+    html += `<hr class="previa-divider" />` + corrHtml;
   } else {
     html += `<hr class="previa-divider" /><div class="previa-secao"><h4 class="previa-secao-titulo">Previsão de carga e UCs</h4>`;
     html += `<div class="preview-item"><span class="v">Total ${fmt2(prevTotalKwF())} kW · Demanda ${fmt2(demandaTotalGeralF())} kVA</span></div>`;
@@ -1978,6 +2239,32 @@ function renderPreviaColetivo() {
     html += `</div>`;
   }
   box.innerHTML = html;
+  // Painéis das torres (múltiplas torres): DUAS paginações — a externa troca a
+  // torre exibida (uma por vez); a interna (dentro do painel) pagina as UCs da
+  // torre em blocos de 10 (ver _mkPreviaTorre).
+  if (MULTI) {
+    const mount = $("#previaTorresMount");
+    if (mount) {
+      const nTorres = state.blocos.length;
+      const renderTorreExterna = () => {
+        if (_previaTorreExterna >= nTorres) _previaTorreExterna = nTorres - 1;
+        if (_previaTorreExterna < 0) _previaTorreExterna = 0;
+        const bi = _previaTorreExterna;
+        mount.innerHTML = "";
+        mount.appendChild(_mkPreviaTorre(state.blocos[bi], bi));
+        // Paginação externa (troca de torre) abaixo do painel.
+        const pagExt = document.createElement("div");
+        pagExt.appendChild(
+          _mkPaginacao(nTorres, bi, (p) => {
+            _previaTorreExterna = p;
+            renderTorreExterna();
+          }),
+        );
+        mount.appendChild(pagExt);
+      };
+      renderTorreExterna();
+    }
+  }
   // Documentos necessários
   const docsBox = $("#docsNecessarios");
   if (docsBox) {

@@ -253,6 +253,57 @@ function gerarComplementos(primeiro, total, aptosPorAndar, faixas) {
   return out;
 }
 
+// Deriva os andares de cada pavimento a partir SÓ das unidades por andar e do
+// total de UCs — o usuário não digita andar inicial/final.
+// Cada pavimento ocupa apenas andares CHEIOS (`unidades` UCs cada) enquanto
+// houver UCs restantes; o primeiro andar de um pavimento é o seguinte ao último
+// andar do pavimento anterior (encadeamento). As UCs que sobrarem (um resto
+// menor que as unidades do último pavimento) formam um pavimento próprio de um
+// andar — marcado com `sobra: true`. O popup materializa esse pavimento como
+// uma linha editável de verdade (ver materializarSobraPavimento), então todo
+// pavimento informado, inclusive coberturas adicionadas à mão, entra na conta.
+// Ex: 18 UCs, [4] → pav. andares 1..4 (4 un.) + pav. sobra no andar 5 (2 un.).
+//     18 UCs, [2, 2, 4] → duas coberturas (andares 1 e 2, 2 un.) + corpo nos
+//     andares 3..5 (4 un.); 18 = 2+2+14.
+// Entrada: [{ unidades }] (andar inicial/final ignorados) + total de UCs.
+// Saída: [{ ini, fim, unidades, ucs, andares, sobra }] dos pavimentos que
+// couberam; `ucs` é o total de UCs do pavimento e `andares` a sua qtd. de andares.
+function calcularFaixasPavimento(linhas, total) {
+  const restanteTotal = Math.max(0, parseInt(total) || 0);
+  if (!Array.isArray(linhas) || !restanteTotal) return [];
+  // Pavimentos com "unidades por andar" válido, na ordem em que o usuário criou.
+  const pavs = linhas
+    .map((l) => Math.max(0, parseInt(l && l.unidades, 10) || 0))
+    .filter((u) => u >= 1);
+  const out = [];
+  let restante = restanteTotal;
+  let andar = 1;
+  pavs.forEach((unidades) => {
+    if (restante <= 0) return;
+    // Só andares cheios: a sobra fica para o pavimento marcado abaixo.
+    const andares = Math.floor(restante / unidades);
+    if (andares <= 0) return;
+    const ucs = andares * unidades;
+    out.push({ ini: andar, fim: andar + andares - 1, unidades, ucs, andares });
+    andar += andares;
+    restante -= ucs;
+  });
+  // Sobra (inclui o caso de nenhum andar cheio caber, total < unidades): um
+  // pavimento próprio de um andar, materializado como linha editável no popup.
+  if (restante > 0 && pavs.length) {
+    out.push({
+      ini: andar,
+      fim: andar,
+      unidades: restante,
+      ucs: restante,
+      andares: 1,
+      sobra: true,
+    });
+  }
+  return out;
+}
+
+
 // Sanitiza a composição por pavimento vinda do popup: mantém só faixas com
 // ini/fim/unidades numéricos válidos (fim >= ini, unidades >= 1) e as ordena
 // por andar inicial. Retorna [] para entrada ausente/vazia/inválida.

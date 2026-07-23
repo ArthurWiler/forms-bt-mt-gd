@@ -293,6 +293,15 @@ function _campo(labelHtml, controle, cls) {
   const l = document.createElement("label");
   l.innerHTML = labelHtml;
   f.append(l, controle);
+  // Ícone de ajuda (i): quando presente no rótulo, é movido para fora do
+  // <label> e vira filho direto do .field. Assim ele fica ancorado ao campo
+  // (centralizado na vertical, via .field > .field-hint-icon no CSS) e NÃO
+  // acompanha o rótulo flutuante quando este sobe ao ser preenchido.
+  const hint = l.querySelector(".cmg-hint, .field-info");
+  if (hint) {
+    hint.classList.add("field-hint-icon");
+    f.appendChild(hint);
+  }
   return f;
 }
 function _selectDe(opcoes, valor, onchange, comVazio) {

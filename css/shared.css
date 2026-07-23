@@ -663,6 +663,81 @@ label.restricao-aceite input[type="checkbox"] {
   margin-top: var(--cmg-space-1);
 }
 
+/* ---- Prévia: painel de torre (múltiplas torres) ---- */
+.previa-torre {
+  border: 1px solid var(--cmg-neutral-200);
+  border-radius: var(--cmg-radius);
+  padding: var(--cmg-space-6);
+  margin-bottom: var(--cmg-space-4);
+  background: var(--cmg-surface);
+}
+.previa-torre-head {
+  display: flex;
+  align-items: center;
+  gap: var(--cmg-space-3);
+  margin-bottom: var(--cmg-space-5);
+}
+.previa-torre-titulo {
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-subtitle);
+  line-height: var(--cmg-lh-subtitle);
+  font-weight: var(--cmg-fw-bold, 700);
+  letter-spacing: 0.2px;
+  color: var(--cmg-text-strong);
+}
+.previa-torre-chip {
+  font-family: var(--cmg-font-family);
+  font-size: 12px;
+  font-weight: var(--cmg-fw-bold, 700);
+  line-height: 1;
+  letter-spacing: 0.2px;
+  color: var(--cmg-green-600);
+  background: var(--cmg-green-50);
+  border-radius: 12px;
+  padding: 5px 10px;
+}
+.previa-torre .previa-grid {
+  margin-bottom: var(--cmg-space-6);
+}
+/* Tabela de UCs da torre — rola horizontalmente em telas estreitas */
+.previa-tabela-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--cmg-neutral-200);
+  border-radius: var(--cmg-radius);
+}
+.previa-tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--cmg-font-family);
+  font-size: 14px;
+  line-height: 22px;
+}
+.previa-tabela th,
+.previa-tabela td {
+  padding: 12px 16px;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--cmg-divider);
+}
+.previa-tabela thead th {
+  font-weight: var(--cmg-fw-bold, 700);
+  color: var(--cmg-neutral-600);
+  background: var(--cmg-neutral-50);
+  letter-spacing: 0.2px;
+}
+.previa-tabela tbody tr:last-child td {
+  border-bottom: 0;
+}
+.previa-tabela td {
+  color: var(--cmg-text-strong);
+}
+.previa-tabela-disj {
+  display: flex;
+  align-items: center;
+  gap: var(--cmg-space-2);
+}
+
 /* ---- Accordion section ---- */
 .modalidade-screen .modalidade-secao {
   margin-bottom: 0;
@@ -1179,6 +1254,38 @@ label.restricao-aceite input[type="checkbox"] {
   background-repeat: no-repeat;
   background-position: right var(--cmg-space-4) center;
   background-size: 24px 24px;
+}
+/* ============================================================
+   Campo de data (input[type=date]): o ícone de calendário reusa o
+   MESMO padrão do (i) de ajuda — um <img class="field-hint-icon">
+   ancorado ao campo e sempre visível (ver bloco .field-hint-icon).
+   O <img> é decorativo (pointer-events:none); o indicador NATIVO fica
+   invisível por baixo dele, cobrindo a mesma área, para que o clique
+   ali ainda abra o seletor de data do sistema.
+   ============================================================ */
+.cemig-form input[type="date"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  right: 0;
+  width: 44px;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.cemig-form input[type="date"]::-webkit-inner-spin-button,
+.cemig-form input[type="date"]::-webkit-clear-button {
+  display: none;
+}
+/* Ícone de calendário: maior que o (i) padrão e apenas decorativo — cliques
+   atravessam (pointer-events:none) para o indicador nativo por baixo. */
+.cemig-form .field-cal-icon {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  object-fit: contain;
+  object-position: center;
+  pointer-events: none;
 }
 /* Enquanto o rótulo ocupa a célula, esconde o placeholder nativo do input
    e o texto da opção placeholder do select (evita duplicação). */
@@ -2790,6 +2897,33 @@ label.restricao-aceite input[type="checkbox"] {
   object-position: center;
   cursor: help;
 }
+/* Ícone de ajuda extraído do rótulo (ver _campo): ancorado ao .field, sempre
+   no centro vertical, à direita — não sobe com o rótulo flutuante. Fica acima
+   do input para receber o hover/foco (o rótulo é pointer-events:none). */
+.cemig-form .field > .field-hint-icon {
+  position: absolute;
+  top: 50%;
+  right: var(--cmg-space-4);
+  transform: translateY(-50%);
+  margin: 0;
+  z-index: 2;
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+}
+.cemig-form .field > .field-hint-icon .field-info,
+.cemig-form .field > img.field-hint-icon {
+  margin: 0;
+}
+/* Com o (i) ancorado ao campo, nem o rótulo nem o valor digitado podem passar
+   por baixo dele: reserva o espaço à direita em ambos. */
+.cemig-form .field:has(> .field-hint-icon) > label {
+  padding-right: 28px;
+}
+.cemig-form .field:has(> .field-hint-icon) > input,
+.cemig-form .field:has(> .field-hint-icon) > select {
+  padding-right: 40px;
+}
 /* Campo com ação: uma única caixa (borda/altura como um .field), rótulo+valor
    à esquerda e botão à direita. field--plain já tira o rótulo flutuante auto. */
 .cemig-form .field--com-acao {
@@ -2983,6 +3117,23 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .cmg-pav-cel input:focus {
   outline: none;
   border-color: var(--cmg-green-600, #0f6c58);
+}
+/* Andares calculados: apenas leitura (o usuário só informa unidades/andar) */
+.cemig-form .cmg-pav-cel input.cmg-pav-calculado {
+  background: var(--cmg-neutral-100, #e6e9e8);
+  border-color: var(--cmg-border, #d1d4d3);
+  color: var(--cmg-neutral-600, #364b46);
+  cursor: default;
+  text-align: center;
+}
+/* Resumo do cálculo (andares/pavimentos) abaixo da tabela */
+.cemig-form .cmg-pav-resumo {
+  margin: 12px 0 0;
+  font-family: var(--cmg-font-family);
+  font-size: 14px;
+  line-height: 24px;
+  letter-spacing: 0.2px;
+  color: var(--cmg-neutral-600, #364b46);
 }
 .cemig-form .cmg-pav-cel-acao {
   display: flex;
