@@ -875,14 +875,6 @@ function renderPreviaBT() {
     html += pvCampoBT("RG", p.rg, PG.prop);
     html += pvCampoBT("Data de nascimento", p.nasc, PG.prop);
   }
-  html += `</div></div><hr class="previa-divider" />`;
-  html += `<div class="previa-secao"><h4 class="previa-secao-titulo">Correspondência</h4><div class="previa-grid">`;
-  html += pvCampoBT("E-mail para receber a fatura", emailFatura, PG.corr);
-  html += pvCampoBT(
-    "Data de vencimento da fatura",
-    c.vencimento ? "Todo dia " + c.vencimento : "",
-    PG.corr,
-  );
   html += `</div></div>`;
   state.ucsDet.forEach((u, ui) => {
     const cg = u.cargas || {};
@@ -948,6 +940,15 @@ function renderPreviaBT() {
     );
     html += `</div></div>`;
   });
+  // Correspondência ao fim da prévia (ordem da tela-alvo).
+  html += `<hr class="previa-divider" /><div class="previa-secao"><h4 class="previa-secao-titulo">Correspondência</h4><div class="previa-grid">`;
+  html += pvCampoBT("E-mail para receber a fatura", emailFatura, PG.corr);
+  html += pvCampoBT(
+    "Data de vencimento da fatura",
+    c.vencimento ? "Todo dia " + c.vencimento : "",
+    PG.corr,
+  );
+  html += `</div></div>`;
   box.innerHTML = html;
   // Documentos necessários (derivados do preenchimento)
   const docsBox = $("#docsNecessarios");

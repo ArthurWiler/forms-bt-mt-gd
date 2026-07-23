@@ -2145,8 +2145,8 @@ function renderPreviaColetivo() {
     html += pvCampoBT("Data de nascimento", p.nasc);
   }
   html += `</div></div><hr class="previa-divider" />`;
-  // Correspondência: no múltiplas torres vai para o FIM da prévia (como na
-  // tela-alvo); nos demais fluxos permanece logo após os dados de contato.
+  // Correspondência vai para o FIM da prévia em todos os fluxos (ordem da
+  // tela-alvo); montada aqui e anexada ao final do html mais abaixo.
   const corrHtml =
     `<div class="previa-secao"><h4 class="previa-secao-titulo">Correspondência</h4><div class="previa-grid">` +
     pvCampoBT("E-mail para receber a fatura da torre/condomínio", emailFatura, PG.corr) +
@@ -2156,7 +2156,6 @@ function renderPreviaColetivo() {
       PG.corr,
     ) +
     `</div></div>`;
-  if (!MULTI) html += corrHtml + `<hr class="previa-divider" />`;
   // Resumo do atendimento
   const modalidadeCard =
     modalidadeTexto +
@@ -2237,6 +2236,8 @@ function renderPreviaColetivo() {
       html += `<div class="preview-item" style="display:flex;justify-content:space-between"><span class="v">${u.identificacao || `UC ${ui + 1}`} · ${u.atividade || "—"} · ${u.solicitacao} ${u.complemento ? "· " + u.complemento : ""}</span><span style="color:var(--verde);font-weight:700">${u.disjPara || "—"}</span></div>`;
     });
     html += `</div>`;
+    // Correspondência ao fim (ordem da tela-alvo).
+    html += `<hr class="previa-divider" />` + corrHtml;
   }
   box.innerHTML = html;
   // Painéis das torres (múltiplas torres): DUAS paginações — a externa troca a
