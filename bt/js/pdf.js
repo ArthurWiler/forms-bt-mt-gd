@@ -482,6 +482,39 @@ function gerarPdfDoc(S) {
       ]);
       cy += 2;
     });
+    // Dados do projeto: disponibilização da energia + hierarquia de proteção
+    // (disjuntores gerais do empreendimento/condomínio e prumadas). Só imprime
+    // os níveis efetivamente configurados (linhas vazias são filtradas por
+    // kvPairs; a tabela de prumadas só aparece quando "temPrumada" = Sim).
+    if (
+      atend.disponibilizacaoEnergia ||
+      atend.disjEmpreendimento ||
+      atend.disjCondominio ||
+      atend.temPrumada === "Sim"
+    ) {
+      sec("5.  DADOS DO PROJETO");
+      kvPairs([
+        ["Disponibilização da energia", atend.disponibilizacaoEnergia],
+        ["Disjuntor geral do empreendimento", atend.disjEmpreendimento],
+        ["Disjuntor geral do condomínio", atend.disjCondominio],
+        ["Possui disjuntor de prumada?", atend.temPrumada],
+      ]);
+      const prumadas = atend.temPrumada === "Sim" ? atend.prumadas || [] : [];
+      if (prumadas.length) {
+        cy += 1;
+        tabela(
+          ["Prumada", "Torre inicial", "Torre final", "Disjuntor"],
+          [40, 40, 40, 62],
+          prumadas.map((p, i) => [
+            `Prumada ${i + 1}`,
+            p.torreIni || "—",
+            p.torreFim || "—",
+            p.disj || "—",
+          ]),
+        );
+      }
+      cy += 2;
+    }
   } else if (coletivo) {
     sec("4.  UNIDADES CONSUMIDORAS");
     tabelaAuto(

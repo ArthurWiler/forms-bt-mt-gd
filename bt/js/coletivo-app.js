@@ -202,6 +202,65 @@ const demandaTotalGeralF = () =>
       )
     : demandaPrevTotalF();
 
+/* ===== derivados da etapa "Dados do projeto" (múltiplas torres) ===== */
+// Carga total de TODAS as torres (kW): soma da carga de cada torre.
+const cargaTotalEmpreendimentoF = () =>
+  state.blocos.reduce((s, b) => s + cargaTotalTorre(b), 0);
+// Maior corrente (A) entre os disjuntores das torres — piso do disjuntor de
+// prumada (ou, sem prumadas, do disjuntor geral do empreendimento).
+const maiorCorrenteTorresF = () => maiorCorrenteTorres(state.blocos, null);
+// Prumadas efetivas: só quando "temPrumada" = Sim (senão a hierarquia pula o
+// nível). Faixas incompletas/inválidas ainda entram na lista para validação.
+const prumadasAtivasF = () =>
+  state.atend.temPrumada === "Sim" ? state.atend.prumadas || [] : [];
+// Maior corrente (A) do disjuntor de prumada configurado — piso do disjuntor
+// geral do empreendimento quando há prumadas.
+const maiorCorrentePrumadaF = () =>
+  prumadasAtivasF().reduce((mx, p) => Math.max(mx, correnteDisj(p.disj)), 0);
+// Piso do disjuntor geral do empreendimento: maior prumada se houver, senão a
+// maior torre (a hierarquia ignora os níveis inexistentes).
+const pisoDisjEmpreendimentoF = () =>
+  state.atend.temPrumada === "Sim" && prumadasAtivasF().length
+    ? maiorCorrentePrumadaF()
+    : maiorCorrenteTorresF();
+// Opções sugeridas (menor válido primeiro) de cada disjuntor da hierarquia.
+const opcoesDisjEmpreendimentoF = () =>
+  disjEmpreendimentoAcima(pisoDisjEmpreendimentoF(), demandaTotalGeralF());
+const opcoesDisjCondominioF = () =>
+  disjEmpreendimentoAcima(
+    0,
+    state.blocos.reduce((s, b) => s + num(b.demandaIncendio), 0),
+  );
+const opcoesDisjPrumadaF = (p) =>
+  disjEmpreendimentoAcima(
+    maiorCorrenteTorres(state.blocos, torresDaPrumada(p, state.blocos.length)),
+    null,
+  );
+// Auto-seleção (menor disjuntor válido) da hierarquia do projeto: prumadas
+// primeiro (são o piso do geral), depois empreendimento e condomínio. Só
+// preenche o que está vazio ou fora das opções — não sobrescreve escolha válida.
+function autoSelecionarDisjProjeto() {
+  if (!MULTI) return;
+  if (state.atend.temPrumada === "Sim") {
+    (state.atend.prumadas || []).forEach((p) => {
+      const ops = opcoesDisjPrumadaF(p);
+      if (ops.length && !(p.disj && ops.includes(p.disj))) p.disj = ops[0];
+    });
+  }
+  const opsE = opcoesDisjEmpreendimentoF();
+  if (
+    opsE.length &&
+    !(state.atend.disjEmpreendimento && opsE.includes(state.atend.disjEmpreendimento))
+  )
+    state.atend.disjEmpreendimento = opsE[0];
+  const opsC = opcoesDisjCondominioF();
+  if (
+    opsC.length &&
+    !(state.atend.disjCondominio && opsC.includes(state.atend.disjCondominio))
+  )
+    state.atend.disjCondominio = opsC[0];
+}
+
 /* ===== efeitos React → chamadas explícitas pós-mutação ===== */
 // app.js:474-502 (ramo coletivo): ucBlocos acompanha atend.nUCs
 function sincronizarUcBlocos() {
@@ -414,6 +473,151 @@ function onEmprGate() {
   }
   CemigMarcadores.atualizarAvancar();
 }
+
+/* ============================================================
+   Travas de avanço das etapas de múltiplas torres
+   ------------------------------------------------------------
+   Os campos das torres e das UCs são ilhas dinâmicas dentro de
+   acordeões (colapsados = fora do DOM visível), então o gate por
+   [data-req] visível de form-marcadores.js não os alcança. Estes
+   gates leem o estado diretamente e travam o "Avançar" até que
+   TODOS os dados obrigatórios estejam preenchidos, independentemente
+   de a torre/UC estar aberta. Referenciados via data-gate no botão
+   das etapas 12-blocos.html e 15-unidades-torres.html. Só valem no
+   fluxo de múltiplas torres (MULTI); nos demais liberam sempre.
+   ============================================================ */
+const _preenchido = (v) => String(v == null ? "" : v).trim() !== "";
+// Etapa "Dados das torres": Identificação, Qtd de unidades, e — quando a torre
+// tem mais de uma UC — Qtd por andar e Primeiro complemento (mesma condição
+// ucsLen() > 1 do render). Demanda/Disjuntor do condomínio são opcionais.
+window.btBlocosOk = function () {
+  if (!MULTI) return true;
+  const blocos = state.blocos || [];
+  if (!blocos.length) return false;
+  return blocos.every((b) => {
+    if (!_preenchido(b.nome)) return false;
+    const nUcs = (b.ucs || []).length;
+    if (!(parseInt(b.qtdUCs) > 0) && !(nUcs > 0)) return false;
+    if (nUcs > 1) {
+      if (
+        !_preenchido(b.aptosPorAndar) &&
+        !(b.aptosPorAndarFaixas || []).length
+      )
+        return false;
+      if (!_preenchido(b.complInicial)) return false;
+    }
+    return true;
+  });
+};
+// Etapa "Dados das unidades": cada UC ativa da torre precisa de Complemento,
+// Atividade e Disjuntor; Área (residencial) ou Ramo (não residencial); e, no
+// método ND-5.2, Carga prevista (torre com 4+ UCs) ou Demanda não residencial.
+// Espelha exatamente as condições de visibilidade de _mkUnidadeCard.
+window.btUnidadesTorresOk = function () {
+  if (!MULTI) return true;
+  return (state.blocos || []).every((b) => {
+    const modoCalc = calcBlocoMultiTorres(b).modoCalculadora;
+    const ucs = b.ucs || [];
+    return ucs.every((u) => {
+      if (ucSemAlteracao(u)) return true;
+      if (ucs.length > 1 && !_preenchido(u.complemento)) return false;
+      if (!_preenchido(u.atividade)) return false;
+      if (u.atividade === "Residencial") {
+        if (!_preenchido(u.area)) return false;
+      } else {
+        if (!_preenchido(u.ramo)) return false;
+        // Método 5.2: demanda da UC não residencial informada individualmente.
+        if (!modoCalc && !_preenchido(u.demandaNaoResidencial)) return false;
+      }
+      // Carga prevista (kW): método 5.2 com torre de mais de 3 UCs.
+      if (!modoCalc && ucs.length > 3 && !_preenchido(u.cargaPrevista))
+        return false;
+      // Modo calculadora: a demanda calculada das cargas detalhadas.
+      if (modoCalc && !(num((u.cargas || {})._demanda) > 0)) return false;
+      if (!_preenchido(u.disjPara)) return false;
+      return true;
+    });
+  });
+};
+
+/* ============================================================
+   Etapa "Dados do projeto" (múltiplas torres) — hierarquia de
+   proteção UC → Torre → Prumada → Disjuntor geral do empreendimento.
+   Prumada e Disjuntor geral do empreendimento são OPCIONAIS; as
+   validações consideram apenas os níveis efetivamente configurados
+   e exigem que o disjuntor de cada nível superior tenha corrente
+   ESTRITAMENTE maior que a do maior disjuntor do nível inferior.
+   ============================================================ */
+// Lista de pendências da hierarquia (strings). Vazia = tudo consistente.
+// Cada regra roda só quando o nível envolvido está configurado.
+function validacaoHierarquiaProjeto() {
+  const erros = [];
+  if (!MULTI) return erros;
+  const nBlocos = state.blocos.length;
+  const usaPrumada = state.atend.temPrumada === "Sim";
+  const prumadas = usaPrumada ? state.atend.prumadas || [] : [];
+  const maiorTorre = maiorCorrenteTorresF();
+  // Prumadas: faixa válida + disjuntor > maior torre da faixa.
+  if (usaPrumada) {
+    const cobertas = {};
+    prumadas.forEach((p, i) => {
+      const rotulo = `Prumada ${i + 1}`;
+      const ini = parseInt(p.torreIni, 10);
+      const fim = parseInt(p.torreFim, 10);
+      if (!Number.isFinite(ini) || !Number.isFinite(fim)) {
+        erros.push(`${rotulo}: informe a torre inicial e a torre final.`);
+        return;
+      }
+      if (ini < 1 || fim < ini || fim > nBlocos) {
+        erros.push(
+          `${rotulo}: a faixa de torres (${ini} a ${fim}) é inválida — deve ficar entre 1 e ${nBlocos}, com a inicial menor ou igual à final.`,
+        );
+        return;
+      }
+      // Sobreposição com outra prumada (uma torre não pode ter duas prumadas).
+      for (let t = ini; t <= fim; t++) {
+        if (cobertas[t])
+          erros.push(
+            `${rotulo}: a torre ${t} já está atribuída à Prumada ${cobertas[t]}.`,
+          );
+        else cobertas[t] = i + 1;
+      }
+      if (!_preenchido(p.disj)) {
+        erros.push(`${rotulo}: selecione o disjuntor.`);
+        return;
+      }
+      const pisoFaixa = maiorCorrenteTorres(
+        state.blocos,
+        torresDaPrumada(p, nBlocos),
+      );
+      if (correnteDisj(p.disj) <= pisoFaixa)
+        erros.push(
+          `${rotulo}: o disjuntor (${p.disj}) deve ter corrente maior que o maior disjuntor das torres da prumada (${pisoFaixa} A).`,
+        );
+    });
+  }
+  // Disjuntor geral do empreendimento (opcional): > maior prumada (se houver)
+  // ou > maior torre (se não houver prumadas).
+  if (_preenchido(state.atend.disjEmpreendimento)) {
+    const piso = pisoDisjEmpreendimentoF();
+    const nivel =
+      usaPrumada && prumadas.length
+        ? "maior disjuntor de prumada"
+        : "maior disjuntor das torres";
+    if (correnteDisj(state.atend.disjEmpreendimento) <= piso)
+      erros.push(
+        `Disjuntor geral do empreendimento (${state.atend.disjEmpreendimento}): deve ter corrente maior que o ${nivel} (${piso} A).`,
+      );
+  }
+  return erros;
+}
+// Gate de avanço: a etapa é toda opcional, mas se algum disjuntor da hierarquia
+// estiver preenchido ele precisa respeitar a regra (estritamente maior). Faixas
+// de prumada incompletas/sobrepostas também travam. Nada preenchido = libera.
+window.btDadosProjetoOk = function () {
+  if (!MULTI) return true;
+  return validacaoHierarquiaProjeto().length === 0;
+};
 
 /* ============================================================
    Etapa UCs do coletivo (renderUcsColetivo — porte de
@@ -986,7 +1190,8 @@ function renderBlocos() {
   // Enquanto "Quantidade de torres" estiver em branco, não apresentar os cards
   // das torres — só uma orientação para o usuário informar o número primeiro.
   const nBlocosVazio =
-    String(state.atend.nBlocos == null ? "" : state.atend.nBlocos).trim() === "";
+    String(state.atend.nBlocos == null ? "" : state.atend.nBlocos).trim() ===
+    "";
   if (nBlocosVazio) {
     box.innerHTML =
       '<p class="field-hint">Informe a quantidade de torres para preencher os dados de cada torre.</p>';
@@ -1044,13 +1249,14 @@ function _campoComAcao(labelTxt, controle, botao) {
 }
 // Frase de resumo do cálculo do popup de pavimentos: quantos andares e
 // pavimentos as unidades por andar informadas produzem.
-function _resumoPavimentos(calculadas, total) {
-  if (!total) return "Informe a quantidade de unidades para calcular os andares.";
+/*function _resumoPavimentos(calculadas, total) {
+  if (!total)
+    return "Informe a quantidade de unidades para calcular os andares.";
   if (!calculadas.length) return `${total} unidades a distribuir.`;
   const andares = calculadas.reduce((s, f) => s + f.andares, 0);
   const p = (n, sing, plur) => `${n} ${n === 1 ? sing : plur}`;
   return `${total} unidades → ${p(andares, "andar", "andares")}, ${p(calculadas.length, "pavimento", "pavimentos")}.`;
-}
+}*/
 // ============================================================
 // Popup "Composição por pavimento" (botão Customizar)
 // O usuário informa SÓ as unidades por andar de cada pavimento; os andares
@@ -1173,7 +1379,9 @@ function abrirComposicaoPavimento(faixasAtuais, onSalvar, totalUCs) {
     const rerender = (posFoco, caret) => {
       calculadas = calcularFaixasPavimento(linhas, total);
       renderTabela();
-      const inputs = tabela.querySelectorAll(".cmg-pav-linha input[type=number]");
+      const inputs = tabela.querySelectorAll(
+        ".cmg-pav-linha input[type=number]",
+      );
       const alvo = inputs[posFoco];
       if (alvo) {
         alvo.focus();
@@ -1314,7 +1522,7 @@ function abrirComposicaoPavimento(faixasAtuais, onSalvar, totalUCs) {
     rodapeTabela.appendChild(btnAdd);
     tabela.appendChild(rodapeTabela);
     // Resumo do cálculo (total de andares/pavimentos e UCs não alocadas).
-    resumo.textContent = _resumoPavimentos(calculadas, total);
+    // resumo.textContent = _resumoPavimentos(calculadas, total);
   };
   renderTabela();
 
@@ -1342,7 +1550,10 @@ function _mkAgrupamentoCampos(grid, cfg) {
   {
     const f = _campo(
       cfg.qtdLabel || "Quantidade de unidades na torre",
-      _inp(cfg.qtd(), (v) => cfg.setQtd(v), { type: "number", placeholder: "0" }),
+      _inp(cfg.qtd(), (v) => cfg.setQtd(v), {
+        type: "number",
+        placeholder: "0",
+      }),
     );
     f.setAttribute("data-noopt", "");
     grid.appendChild(f);
@@ -1426,7 +1637,12 @@ function _mkAgrupamentoCampos(grid, cfg) {
     ),
   );
   {
-    const sel = _selectDe(cfg.disjOpts(), cfg.disj(), (v) => cfg.setDisj(v), true);
+    const sel = _selectDe(
+      cfg.disjOpts(),
+      cfg.disj(),
+      (v) => cfg.setDisj(v),
+      true,
+    );
     if (cfg.disjId) sel.id = cfg.disjId;
     grid.appendChild(_campo("Disjuntor do condomínio", sel, "field--float"));
   }
@@ -1586,7 +1802,8 @@ function renderUnidadesTorres() {
   // Só apresentar as unidades depois que a quantidade de torres for informada
   // (etapa "Dados das torres"); antes disso não há torres definidas.
   const nBlocosVazio =
-    String(state.atend.nBlocos == null ? "" : state.atend.nBlocos).trim() === "";
+    String(state.atend.nBlocos == null ? "" : state.atend.nBlocos).trim() ===
+    "";
   if (nBlocosVazio) {
     chips.innerHTML = "";
     ["unidadesTopo", "unidadesBox", "unidadesPag", "unidadesResultado"].forEach(
@@ -1852,16 +2069,15 @@ function renderUnidadesResultado() {
   const b = state.blocos[_uniTorre];
   if (!box || !b) return;
   const calcTorre = calcBlocoMultiTorres(b);
-  const demandaTorre = calcTorre.demandaUcs + num(b.demandaIncendio);
   box.innerHTML = "";
   // Método 5.2 com área média fora da tabela: avisa e mantém residencial 0.
-  if (!calcTorre.modoCalculadora && !calcTorre.nd52) {
+  /*if (!calcTorre.modoCalculadora && !calcTorre.nd52) {
     const aviso = document.createElement("div");
     aviso.className = "alert alert-warn";
     aviso.style.marginTop = "14px";
     aviso.textContent = `Método ND-5.2 (${calcTorre.qtdApart} apartamentos): informe a área de cada apartamento residencial da torre — a área média ponderada precisa ficar entre 1 e 1000 m² (atual: ${fmt2(calcTorre.areaMedia)} m²). A demanda residencial permanece zerada até lá.`;
     box.appendChild(aviso);
-  }
+  }*/
   const wrap = document.createElement("div");
   wrap.className = "resultado-cargas divider";
   const kpis = document.createElement("div");
@@ -1882,9 +2098,9 @@ function renderUnidadesResultado() {
       "A carga total é a soma da carga estimada para todos os apartamentos mais a carga necessária para as áreas de uso comum (como elevadores e iluminação externa).",
     ),
     mkKpi(
-      "Demanda total da torre",
-      `${fmt2(demandaTorre)} kVA`,
-      "O cálculo da demanda total da torre é feito cruzando o tamanho médio das moradias com o número total de unidades.",
+      "Demanda das UCs da torre",
+      `${fmt2(calcTorre.demandaUcs)} kVA`,
+      "Demanda das unidades consumidoras da torre (cruzando o tamanho médio das moradias com o número de unidades). É esta demanda que dimensiona o disjuntor da torre. O combate a incêndio/condomínio tem demanda e disjuntor próprios, informados na etapa das torres.",
     ),
   );
   wrap.appendChild(kpis);
@@ -1920,6 +2136,258 @@ function renderUnidadesResultado() {
 }
 
 /* ============================================================
+   Etapa "Dados do projeto" (múltiplas torres) — KPIs de carga/demanda
+   totais, ponto de disponibilização da energia, disjuntores gerais do
+   empreendimento e do condomínio, e a tabela de disjuntores de prumada
+   (faixa de torres → disjuntor). Toda a hierarquia é auto-sugerida
+   (menor disjuntor válido) e validada por validacaoHierarquiaProjeto.
+   ============================================================ */
+// Grupo de opções tipo radio (reaproveita .toggle-group/.toggle-btn). `onSel`
+// recebe o valor escolhido; re-render fica por conta de quem chama.
+function _radioGrupo(container, opcoes, valor, onSel) {
+  container.innerHTML = "";
+  opcoes.forEach((op) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.setAttribute("role", "radio");
+    b.setAttribute("aria-checked", valor === op ? "true" : "false");
+    b.className = "toggle-btn" + (valor === op ? " on" : "");
+    b.textContent = op;
+    b.addEventListener("click", () => onSel(op));
+    container.appendChild(b);
+  });
+}
+// Select de disjuntor da hierarquia: mostra as opções sugeridas; se o valor
+// salvo estiver fora delas (ex.: hierarquia mudou), acrescenta-o para não
+// sumir silenciosamente — a validação sinaliza a inconsistência.
+function _selectDisjHierarquia(opcoes, valor, onChange) {
+  const lista = opcoes.slice();
+  if (valor && !lista.includes(valor)) lista.push(valor);
+  return _selectDe(lista, valor, onChange, true);
+}
+function renderDadosProjeto() {
+  const box = $("#projetoPrumadasBox");
+  if (!box) return; // etapa não montada (fluxo coletivo)
+  autoSelecionarDisjTorres();
+  autoSelecionarDisjProjeto();
+
+  // KPIs: carga e demanda totais de todas as torres.
+  const kpis = $("#projetoKpis");
+  if (kpis) {
+    const mkKpi = (label, valor, titulo) =>
+      `<div class="resultado-card">` +
+      `<span class="resultado-card-info cmg-hint" tabindex="0" role="img" aria-label="${label}: ajuda" data-hint="${titulo}"><img class="field-info" src="../imgs/info.svg" alt="" aria-hidden="true" /></span>` +
+      `<div class="resultado-card-label">${label}</div>` +
+      `<div class="resultado-card-valor">${valor}</div></div>`;
+    kpis.innerHTML =
+      mkKpi(
+        "Carga total de todas as torres",
+        `${fmt2(cargaTotalEmpreendimentoF())} kW`,
+        "Soma da carga prevista de todas as torres do empreendimento.",
+      ) +
+      mkKpi(
+        "Demanda total de todas as torres",
+        `${fmt2(demandaTotalGeralF())} kVA`,
+        "Demanda total do empreendimento (soma da demanda das UCs e do condomínio de cada torre). É ela que dimensiona o disjuntor geral do empreendimento.",
+      );
+  }
+
+  // Onde a energia deverá ser disponibilizada (radio empilhado).
+  const disp = $("#projetoDisponibilizacao");
+  if (disp)
+    _radioGrupo(
+      disp,
+      [
+        "Na portaria e no interior do condomínio (alimentação das torres e áreas comuns)",
+        "Apenas na portaria do condomínio",
+      ],
+      state.atend.disponibilizacaoEnergia,
+      (v) => {
+        state.atend.disponibilizacaoEnergia = v;
+        renderDadosProjeto();
+      },
+    );
+
+  // Disjuntores gerais do empreendimento e do condomínio.
+  const gerais = $("#projetoDisjGerais");
+  if (gerais) {
+    gerais.innerHTML = "";
+    const fEmpr = _campo(
+      "Disjuntor geral do empreendimento",
+      _selectDisjHierarquia(
+        opcoesDisjEmpreendimentoF(),
+        state.atend.disjEmpreendimento,
+        (v) => {
+          state.atend.disjEmpreendimento = v;
+          renderDadosProjeto();
+        },
+      ),
+      "field--float",
+    );
+    fEmpr.setAttribute("data-noopt", "");
+    gerais.appendChild(fEmpr);
+    const fCond = _campo(
+      "Disjuntor geral do condomínio",
+      _selectDisjHierarquia(
+        opcoesDisjCondominioF(),
+        state.atend.disjCondominio,
+        (v) => {
+          state.atend.disjCondominio = v;
+        },
+      ),
+      "field--float",
+    );
+    fCond.setAttribute("data-noopt", "");
+    gerais.appendChild(fCond);
+  }
+
+  // O condomínio tem disjuntor de prumada? (Sim/Não)
+  const temP = $("#projetoTemPrumada");
+  if (temP)
+    _radioGrupo(temP, ["Sim", "Não"], state.atend.temPrumada, (v) => {
+      state.atend.temPrumada = v;
+      // Garante ao menos uma linha ao ligar; auto-sugere ao mudar o nível.
+      if (v === "Sim" && !(state.atend.prumadas || []).length)
+        state.atend.prumadas = [prumadaPadrao()];
+      autoSelecionarDisjProjeto();
+      renderDadosProjeto();
+    });
+
+  // Tabela de prumadas (só quando "Sim").
+  box.innerHTML = "";
+  if (state.atend.temPrumada === "Sim") {
+    const intro = document.createElement("p");
+    intro.className = "card-sub";
+    intro.style.marginTop = "12px";
+    intro.textContent =
+      "Descreva a distribuição dos disjuntores pelas torres (ex: disjuntor Tripolar 100A para as torres 1 a 5 e disjuntor Tripolar 150A para as torres 6 a 8).";
+    box.appendChild(intro);
+    box.appendChild(_mkPrumadasTabela());
+  }
+
+  // Avisos da hierarquia (faixas inválidas / disjuntores fora da regra).
+  const avisos = $("#projetoAvisos");
+  if (avisos) {
+    const erros = validacaoHierarquiaProjeto();
+    if (erros.length) {
+      avisos.style.display = "";
+      avisos.innerHTML =
+        `<strong>Reveja a hierarquia de proteção:</strong>` +
+        `<ul style="margin:6px 0 0;padding-left:18px">${erros
+          .map((e) => `<li>${e}</li>`)
+          .join("")}</ul>`;
+    } else {
+      avisos.style.display = "none";
+      avisos.innerHTML = "";
+    }
+  }
+  if (window.CemigMarcadores) {
+    CemigMarcadores.aplicar(box.closest(".card") || box);
+    CemigMarcadores.atualizarAvancar();
+  }
+}
+// Tabela "Torre inicial | Torre final | Disjuntor" + "Adicionar prumada".
+// Reaproveita o grid .cmg-pav-* das faixas de pavimento.
+function _mkPrumadasTabela() {
+  const nBlocos = state.blocos.length;
+  const tabela = document.createElement("div");
+  tabela.className = "cmg-pav-tabela";
+  tabela.style.marginTop = "12px";
+  const head = document.createElement("div");
+  head.className = "cmg-pav-linha cmg-pav-head";
+  ["Torre inicial", "Torre final", "Disjuntor"].forEach((t) => {
+    const c = document.createElement("div");
+    c.className = "cmg-pav-cel";
+    c.textContent = t;
+    head.appendChild(c);
+  });
+  head.appendChild(
+    Object.assign(document.createElement("div"), {
+      className: "cmg-pav-cel cmg-pav-cel-acao",
+    }),
+  );
+  tabela.appendChild(head);
+
+  const prumadas = state.atend.prumadas || (state.atend.prumadas = []);
+  // Campo numérico de torre (inicial/final): 1..nBlocos.
+  const campoTorre = (valor, onChange) => {
+    const cel = document.createElement("div");
+    cel.className = "cmg-pav-cel";
+    const inp = document.createElement("input");
+    inp.type = "number";
+    inp.min = "1";
+    if (nBlocos > 0) inp.max = String(nBlocos);
+    inp.placeholder = "1";
+    inp.value = valor == null ? "" : valor;
+    inp.addEventListener("input", () => onChange(inp.value));
+    cel.appendChild(inp);
+    return cel;
+  };
+  prumadas.forEach((p, i) => {
+    const linha = document.createElement("div");
+    linha.className = "cmg-pav-linha";
+    linha.appendChild(
+      campoTorre(p.torreIni, (v) => {
+        p.torreIni = v;
+        autoSelecionarDisjProjeto();
+        renderDadosProjeto();
+      }),
+    );
+    linha.appendChild(
+      campoTorre(p.torreFim, (v) => {
+        p.torreFim = v;
+        autoSelecionarDisjProjeto();
+        renderDadosProjeto();
+      }),
+    );
+    const celDisj = document.createElement("div");
+    celDisj.className = "cmg-pav-cel";
+    celDisj.appendChild(
+      _selectDisjHierarquia(opcoesDisjPrumadaF(p), p.disj, (v) => {
+        p.disj = v;
+        autoSelecionarDisjProjeto();
+        renderDadosProjeto();
+      }),
+    );
+    linha.appendChild(celDisj);
+    // Remover (só quando há mais de uma prumada — sempre resta ao menos uma).
+    const celAcao = document.createElement("div");
+    celAcao.className = "cmg-pav-cel cmg-pav-cel-acao";
+    if (prumadas.length > 1) {
+      const btnDel = document.createElement("button");
+      btnDel.type = "button";
+      btnDel.className = "cmg-pav-remover";
+      btnDel.setAttribute("aria-label", `Remover prumada ${i + 1}`);
+      btnDel.innerHTML =
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+      btnDel.addEventListener("click", () => {
+        prumadas.splice(i, 1);
+        renderDadosProjeto();
+      });
+      celAcao.appendChild(btnDel);
+    }
+    linha.appendChild(celAcao);
+    tabela.appendChild(linha);
+  });
+
+  const rodape = document.createElement("div");
+  rodape.className = "cmg-pav-adicionar-wrap";
+  const btnAdd = document.createElement("button");
+  btnAdd.type = "button";
+  btnAdd.className = "btn btn-ghost btn-outlined-acao cmg-pav-adicionar";
+  btnAdd.innerHTML =
+    '<span class="cmg-pav-mais" aria-hidden="true">+</span> Adicionar prumada';
+  btnAdd.addEventListener("click", () => {
+    prumadas.push(prumadaPadrao());
+    autoSelecionarDisjProjeto();
+    renderDadosProjeto();
+  });
+  rodape.appendChild(btnAdd);
+  tabela.appendChild(rodape);
+  return tabela;
+}
+
+/* ============================================================
    Prévia & PDF (porte dos ramos coletivo/multi de
    views/revisar.js + validacaoObrigatorios de app.js:750-823)
    ============================================================ */
@@ -1927,7 +2395,7 @@ function renderUnidadesResultado() {
 // têm 8 páginas — tipo=1, empr=2 e o miolo varia; corr fica antes de
 // Observações (penúltima antes de obs/prévia).
 const PG = MULTI
-  ? { tipo: 1, empr: 2, blocos: 3, unidades: 4, corr: 5 }
+  ? { tipo: 1, empr: 2, blocos: 3, unidades: 4, corr: 5, projeto: 6 }
   : { tipo: 1, empr: 2, ucs: 3, cargas: 4, corr: 5 };
 function validacaoObrigatoriosColetivo() {
   const faltando = [];
@@ -2032,6 +2500,13 @@ function validacaoObrigatoriosColetivo() {
     faltando.push("Pendências do atendimento híbrido");
   if (o.restricaoAmbiental === "Sim" && !o.restricaoAceite)
     faltando.push("Declaração de ciência da restrição ambiental");
+  // Hierarquia de proteção do empreendimento (etapa "Dados do projeto"): os
+  // níveis são opcionais, mas os configurados precisam respeitar a regra do
+  // disjuntor estritamente maior (ver validacaoHierarquiaProjeto).
+  if (MULTI)
+    validacaoHierarquiaProjeto().forEach((e) =>
+      faltando.push(`Dados do projeto — ${e}`),
+    );
   return { ok: faltando.length === 0, faltando };
 }
 // Painel de uma torre na prévia (múltiplas torres): cabeçalho "Torre X (n de N)",
@@ -2058,10 +2533,18 @@ function _mkPreviaTorre(b, bi) {
   grid.className = "previa-grid";
   grid.innerHTML =
     pvCampoBT("Identificação da torre", b.nome || String(bi + 1), PG.blocos) +
-    pvCampoBT("Quantidade de unidades na torre", String(b.qtdUCs || ucs.length || 0), PG.blocos) +
+    pvCampoBT(
+      "Quantidade de unidades na torre",
+      String(b.qtdUCs || ucs.length || 0),
+      PG.blocos,
+    ) +
     pvCampoBT("Quantidade de unidades por andar", b.aptosPorAndar, PG.blocos) +
     pvCampoBT("Primeiro complemento", b.complInicial, PG.blocos) +
-    pvCampoBT("Demanda do condomínio", b.demandaIncendio ? fmt2(b.demandaIncendio) + " kVA" : "", PG.blocos) +
+    pvCampoBT(
+      "Demanda do condomínio",
+      b.demandaIncendio ? fmt2(b.demandaIncendio) + " kVA" : "",
+      PG.blocos,
+    ) +
     pvCampoBT("Disjuntor do condomínio", b.disjIncendio, PG.blocos) +
     pvCampoBT("Demanda da torre", fmt2(demandaTorre) + " kVA", PG.blocos) +
     pvCampoBT("Disjuntor da torre", b.disjGeral, PG.blocos);
@@ -2071,6 +2554,7 @@ function _mkPreviaTorre(b, bi) {
   const tabelaWrap = document.createElement("div");
   tabelaWrap.className = "previa-tabela-wrap";
   const pag = document.createElement("div");
+  pag.className = "previa-tabela-pag";
   const renderTabela = () => {
     const totalPag = Math.max(1, Math.ceil(ucs.length / ITENS_POR_PAGINA));
     let atual = _previaTorrePag[bi] || 0;
@@ -2080,7 +2564,6 @@ function _mkPreviaTorre(b, bi) {
       .slice(ini, ini + ITENS_POR_PAGINA)
       .map((u, k) => {
         const idx = ini + k;
-        const area = u.atividade === "Residencial" ? (u.area || "—") : "—";
         const carga =
           u.cargaPrevista != null && String(u.cargaPrevista).trim() !== ""
             ? fmt2(u.cargaPrevista)
@@ -2091,7 +2574,6 @@ function _mkPreviaTorre(b, bi) {
           `<td>${u.complemento || "—"}</td>` +
           `<td>${u.solicitacao || "—"}</td>` +
           `<td>${u.atividade || "—"}</td>` +
-          `<td>${area}</td>` +
           `<td>${carga}</td>` +
           `<td class="previa-tabela-disj">${u.disjPara || "—"}` +
           `<button type="button" class="previa-edit" title="Editar" aria-label="Editar UC ${idx + 1}" onclick="goTo(${PG.unidades}, true)"></button>` +
@@ -2103,7 +2585,7 @@ function _mkPreviaTorre(b, bi) {
     tabelaWrap.innerHTML =
       `<table class="previa-tabela"><thead><tr>` +
       `<th>Unidade</th><th>Complemento</th><th>Solicitação</th><th>Atividade</th>` +
-      `<th>Área (m²)</th><th>Carga prevista (kW)</th><th>Disjuntor</th>` +
+      `<th>Carga prevista (kW)</th><th>Disjuntor</th>` +
       `</tr></thead><tbody>${linhas}</tbody></table>`;
     pag.innerHTML = "";
     pag.appendChild(
@@ -2149,7 +2631,11 @@ function renderPreviaColetivo() {
   // tela-alvo); montada aqui e anexada ao final do html mais abaixo.
   const corrHtml =
     `<div class="previa-secao"><h4 class="previa-secao-titulo">Correspondência</h4><div class="previa-grid">` +
-    pvCampoBT("E-mail para receber a fatura da torre/condomínio", emailFatura, PG.corr) +
+    pvCampoBT(
+      "E-mail para receber a fatura da torre/condomínio",
+      emailFatura,
+      PG.corr,
+    ) +
     pvCampoBT(
       "Data de vencimento da fatura",
       c.vencimento ? "Todo dia " + c.vencimento : "",
@@ -2176,7 +2662,12 @@ function renderPreviaColetivo() {
   if (MULTI) {
     // Múltiplas torres: campos do empreendimento como na prévia-alvo (razão
     // social/CNPJ, ART, endereço completo, e as perguntas de rede/padrão).
-    html += pvCampoBT("Cliente / Razão Social do empreendimento", p.nome, PG.empr, true);
+    html += pvCampoBT(
+      "Cliente / Razão Social do empreendimento",
+      p.nome,
+      PG.empr,
+      true,
+    );
     html += pvCampoBT(pf ? "CPF" : "CNPJ", p.cpfCnpj, PG.empr);
     html += pvCampoBT("Nº ART/TRT do projeto", o.art, PG.empr);
     html += pvCampoBT("Área do empreendimento", o.localizacao, PG.empr);
@@ -2196,7 +2687,11 @@ function renderPreviaColetivo() {
       o.prontoLigar,
       PG.empr,
     );
-    html += pvCampoBT("Tipo de rede BT que atende o local", o.tipoRede, PG.empr);
+    html += pvCampoBT(
+      "Tipo de rede BT que atende o local",
+      o.tipoRede,
+      PG.empr,
+    );
   } else {
     html += pvCampoBT(
       "Endereço",
@@ -2227,6 +2722,52 @@ function renderPreviaColetivo() {
       PG.blocos,
     );
     html += `</div><div id="previaTorresMount"></div></div>`;
+    // Seção "Dados do projeto": disponibilização da energia, disjuntores gerais
+    // e prumadas — só os níveis efetivamente configurados.
+    html += `<hr class="previa-divider" /><div class="previa-secao"><h4 class="previa-secao-titulo">Dados do projeto</h4><div class="previa-grid">`;
+    html += pvCampoBT(
+      "Onde a energia deverá ser disponibilizada",
+      state.atend.disponibilizacaoEnergia,
+      PG.projeto,
+      true,
+    );
+    html += pvCampoBT(
+      "Disjuntor geral do empreendimento",
+      state.atend.disjEmpreendimento,
+      PG.projeto,
+    );
+    html += pvCampoBT(
+      "Disjuntor geral do condomínio",
+      state.atend.disjCondominio,
+      PG.projeto,
+    );
+    html += pvCampoBT(
+      "Disjuntor de prumada?",
+      state.atend.temPrumada,
+      PG.projeto,
+    );
+    html += `</div>`;
+    if (state.atend.temPrumada === "Sim") {
+      const linhasPrumada = (state.atend.prumadas || [])
+        .map((p, i) => {
+          const faixa =
+            p.torreIni && p.torreFim
+              ? `Torres ${p.torreIni} a ${p.torreFim}`
+              : "—";
+          return (
+            `<tr><td>Prumada ${i + 1}</td><td>${faixa}</td>` +
+            `<td class="previa-tabela-disj">${p.disj || "—"}` +
+            `<button type="button" class="previa-edit" title="Editar" aria-label="Editar prumada ${i + 1}" onclick="goTo(${PG.projeto}, true)"></button>` +
+            `</td></tr>`
+          );
+        })
+        .join("");
+      html +=
+        `<div class="previa-tabela-wrap"><table class="previa-tabela"><thead><tr>` +
+        `<th>Prumada</th><th>Torres</th><th>Disjuntor</th>` +
+        `</tr></thead><tbody>${linhasPrumada}</tbody></table></div>`;
+    }
+    html += `</div>`;
     // Correspondência ao fim (ordem da tela-alvo).
     html += `<hr class="previa-divider" />` + corrHtml;
   } else {
@@ -2346,6 +2887,7 @@ window.onPaginaAtiva = function (sec) {
   if (sec.querySelector("#kpiDemandaAtendimento")) renderCargasColetivo();
   if (sec.querySelector("#blocosBox")) renderBlocos();
   if (sec.querySelector("#unidadesChips")) renderUnidadesTorres();
+  if (sec.querySelector("#projetoPrumadasBox")) renderDadosProjeto();
   if (sec.querySelector("#previaConteudo")) renderPreviaColetivo();
 };
 
@@ -2363,6 +2905,7 @@ window.initFormulario = function () {
   sincronizarUcBlocos();
   sincronizarBlocos();
   autoSelecionarDisjTorres();
+  autoSelecionarDisjProjeto();
   onReceberEmailBT();
   onProntoLigarBT();
   onEmprGate();

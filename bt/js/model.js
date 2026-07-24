@@ -93,6 +93,23 @@ const atendPadrao = () => ({
   demandaAtual: "",
   demandaNaoResidencial: "",
   nBlocos: 1,
+  // Etapa "Dados do projeto" (múltiplas torres). Todos os níveis são OPCIONAIS;
+  // as validações da hierarquia (UC → Torre → Prumada → Disjuntor geral do
+  // empreendimento) consideram só os níveis efetivamente configurados.
+  disponibilizacaoEnergia: "Apenas na portaria do condomínio", // radio "Onde a energia deverá ser disponibilizada"
+  disjEmpreendimento: "", // Disjuntor geral do empreendimento
+  disjCondominio: "", // Disjuntor geral do condomínio
+  temPrumada: "Não", // "O condomínio tem disjuntor de prumada?"
+  prumadas: [prumadaPadrao()], // faixas torreInicial→torreFinal com disjuntor
+});
+
+// Uma prumada da etapa "Dados do projeto": agrupa uma faixa contígua de torres
+// (torre inicial → torre final) sob um disjuntor. torreIni/torreFim são os
+// números (1-based) exibidos ao usuário na etapa "Dados das torres".
+const prumadaPadrao = () => ({
+  torreIni: "",
+  torreFim: "",
+  disj: "",
 });
 
 // Opções de "Solicitação" (Service Options) liberadas por família de

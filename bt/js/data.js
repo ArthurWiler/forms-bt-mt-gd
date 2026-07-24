@@ -460,6 +460,26 @@ const DISJ_GER = [
   { fx: "Tripolar 800 A", d: 304.0, tipo: "tri" },
 ];
 
+// Disjuntores de proteção do EMPREENDIMENTO (múltiplas torres): protegem níveis
+// que agregam várias torres/prumadas, então a faixa vai muito acima do geral de
+// agrupamento (DISJ_GER, que para em 800 A). Reaproveita todo o DISJ_GER e
+// estende com as correntes maiores; a capacidade (d, em kVA) segue a mesma
+// proporção dos tripolares do DISJ_GER (≈ 0,38 kVA/A). Usado no Disjuntor geral
+// do empreendimento, no Disjuntor geral do condomínio e nos Disjuntores de
+// prumada da etapa "Dados do projeto".
+const DISJ_EMPR = DISJ_GER.concat([
+  { fx: "Tripolar 900 A", d: 342.0, tipo: "tri" },
+  { fx: "Tripolar 1000 A", d: 380.0, tipo: "tri" },
+  { fx: "Tripolar 1200 A", d: 456.0, tipo: "tri" },
+  { fx: "Tripolar 1250 A", d: 475.0, tipo: "tri" },
+  { fx: "Tripolar 1350 A", d: 513.0, tipo: "tri" },
+  { fx: "Tripolar 1600 A", d: 608.0, tipo: "tri" },
+  { fx: "Tripolar 1800 A", d: 684.0, tipo: "tri" },
+  { fx: "Tripolar 2000 A", d: 760.0, tipo: "tri" },
+  { fx: "Tripolar 2500 A", d: 950.0, tipo: "tri" },
+  { fx: "Tripolar 3000 A", d: 1140.0, tipo: "tri" },
+]);
+
 // Catálogo de cargas
 const CAT = [
   { n: "Chuveiro Elétrico 127V", w: 4400, g: "b1" },

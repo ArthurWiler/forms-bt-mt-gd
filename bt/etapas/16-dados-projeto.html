@@ -1,0 +1,48 @@
+<!doctype html>
+
+<div class="card">
+  <div class="section-eyebrow">Etapa 6</div>
+  <h3 class="card-title">Dados do projeto</h3>
+  <p class="card-sub">Preencha os dados restantes do projeto.</p>
+
+  <!-- KPIs: carga e demanda totais de todas as torres -->
+  <div class="resultado-kpis" id="projetoKpis" style="margin-bottom: 20px"></div>
+
+  <!-- Onde a energia deverá ser disponibilizada -->
+  <div class="field field--plain" data-noopt style="margin-bottom: 18px">
+    <label>Onde a energia deverá ser disponibilizada no empreendimento?</label>
+    <div
+      id="projetoDisponibilizacao"
+      class="toggle-group toggle-group--opcoes toggle-group--stack"
+      role="radiogroup"
+    ></div>
+  </div>
+
+  <!-- Disjuntores gerais (empreendimento / condomínio) -->
+  <div class="grid grid-2" id="projetoDisjGerais" style="margin-bottom: 18px"></div>
+
+  <!-- O condomínio tem disjuntor de prumada? -->
+  <div class="field field--plain" data-noopt style="margin-bottom: 6px">
+    <label>O condomínio tem disjuntor de prumada?</label>
+    <div id="projetoTemPrumada" class="toggle-group" role="radiogroup"></div>
+  </div>
+
+  <!-- Tabela de prumadas (faixa de torres + disjuntor) -->
+  <div id="projetoPrumadasBox"></div>
+
+  <div
+    class="alert alert-warn"
+    id="projetoAvisos"
+    style="margin-top: 14px; display: none"
+  ></div>
+</div>
+<div class="nav-bottom no-print">
+  <button class="btn btn-ghost" data-nav="prev">← Voltar</button>
+  <button
+    class="btn btn-primary"
+    data-nav="next"
+    data-gate="btDadosProjetoOk"
+  >
+    Avançar →
+  </button>
+</div>

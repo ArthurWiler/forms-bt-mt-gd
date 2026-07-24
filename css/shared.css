@@ -663,79 +663,125 @@ label.restricao-aceite input[type="checkbox"] {
   margin-top: var(--cmg-space-1);
 }
 
-/* ---- Prévia: painel de torre (múltiplas torres) ---- */
+/* ---- Prévia: painel de torre (múltiplas torres) ----
+   Figma: surface neutra/50, padding 16, gap 24 entre título, campos e tabela. */
 .previa-torre {
-  border: 1px solid var(--cmg-neutral-200);
+  display: flex;
+  flex-direction: column;
+  gap: var(--cmg-space-6);
   border-radius: var(--cmg-radius);
-  padding: var(--cmg-space-6);
+  padding: var(--cmg-space-4);
   margin-bottom: var(--cmg-space-4);
-  background: var(--cmg-surface);
+  background: var(--cmg-neutral-50);
 }
 .previa-torre-head {
   display: flex;
   align-items: center;
-  gap: var(--cmg-space-3);
-  margin-bottom: var(--cmg-space-5);
+  gap: var(--cmg-space-2);
 }
+/* Figma: subtítulo em peso regular (400); o destaque fica no chip. */
 .previa-torre-titulo {
   font-family: var(--cmg-font-family);
   font-size: var(--cmg-fs-subtitle);
   line-height: var(--cmg-lh-subtitle);
-  font-weight: var(--cmg-fw-bold, 700);
-  letter-spacing: 0.2px;
+  font-weight: var(--cmg-fw-regular, 400);
+  letter-spacing: var(--cmg-ls-wide);
   color: var(--cmg-text-strong);
 }
 .previa-torre-chip {
   font-family: var(--cmg-font-family);
   font-size: 12px;
   font-weight: var(--cmg-fw-bold, 700);
-  line-height: 1;
+  line-height: 20px;
   letter-spacing: 0.2px;
-  color: var(--cmg-green-600);
-  background: var(--cmg-green-50);
-  border-radius: 12px;
-  padding: 5px 10px;
+  color: var(--cmg-text-strong);
+  background: var(--verde-on);
+  border-radius: var(--cmg-radius-pill);
+  padding: 0 var(--cmg-space-1);
 }
+/* O gap do painel já separa os campos da tabela — sem margem extra.
+   Figma: campos com gutter de linha 24 e de coluna 16. */
 .previa-torre .previa-grid {
-  margin-bottom: var(--cmg-space-6);
+  margin-bottom: 0;
+  gap: var(--cmg-space-6) var(--cmg-space-4);
 }
-/* Tabela de UCs da torre — rola horizontalmente em telas estreitas */
+/* Figma: rótulo em corpo/grande (16px) e valor em neutra/600 (mesma família
+   do rótulo, só o peso muda) — dentro do painel da torre. */
+.previa-torre .previa-campo-label {
+  font-size: var(--cmg-fs-body-lg);
+  line-height: var(--cmg-lh-body-lg);
+  color: var(--cmg-neutral-600);
+}
+.previa-torre .previa-campo-valor {
+  color: var(--cmg-neutral-600);
+}
+/* Tabela de UCs da torre — rola horizontalmente em telas estreitas.
+   Corpo branco sobre o painel neutra/50; o overflow-x recorta o cabeçalho
+   cinza dentro do raio arredondado. */
 .previa-tabela-wrap {
   width: 100%;
   overflow-x: auto;
   border: 1px solid var(--cmg-neutral-200);
   border-radius: var(--cmg-radius);
+  background: var(--cmg-surface);
 }
 .previa-tabela {
   width: 100%;
   border-collapse: collapse;
   font-family: var(--cmg-font-family);
-  font-size: 14px;
-  line-height: 22px;
+  font-size: var(--cmg-fs-body);
+  line-height: var(--cmg-lh-body);
 }
 .previa-tabela th,
 .previa-tabela td {
-  padding: 12px 16px;
+  padding: var(--cmg-space-3);
   text-align: left;
   white-space: nowrap;
-  border-bottom: 1px solid var(--cmg-divider);
+  border-bottom: 1px solid var(--cmg-neutral-200);
 }
+/* Figma: cabeçalho em cinza neutra/200, texto neutra/600 em negrito. */
 .previa-tabela thead th {
   font-weight: var(--cmg-fw-bold, 700);
   color: var(--cmg-neutral-600);
-  background: var(--cmg-neutral-50);
+  background: var(--cmg-neutral-200);
   letter-spacing: 0.2px;
 }
 .previa-tabela tbody tr:last-child td {
   border-bottom: 0;
 }
 .previa-tabela td {
-  color: var(--cmg-text-strong);
+  color: var(--cmg-neutral-600);
 }
 .previa-tabela-disj {
   display: flex;
   align-items: center;
   gap: var(--cmg-space-2);
+}
+/* Paginação específica da tabela de UCs da torre: compacta e junto à tabela.
+   O painel .previa-torre já dá gap de 24px entre a tabela e este bloco, então
+   a margem padrão da .paginacao é anulada e os controles ficam menores. Os
+   seletores levam .cemig-form para vencer os padrões .cemig-form .paginacao*. */
+.cemig-form .previa-tabela-pag {
+  margin-top: calc(var(--cmg-space-6) * -1 + var(--cmg-space-2));
+}
+.cemig-form .previa-tabela-pag .paginacao {
+  margin-top: 0;
+  justify-content: center;
+  gap: var(--cmg-space-1);
+}
+.cemig-form .previa-tabela-pag .paginacao-btn {
+  width: 28px;
+  height: 28px;
+  font-size: var(--cmg-fs-body-lg);
+  
+}
+.cemig-form .previa-tabela-pag .paginacao-input {
+  width: 44px;
+  height: 28px;
+  align-items: center;
+}
+.cemig-form .previa-tabela-pag .paginacao-total {
+  margin-right: var(--cmg-space-1);
 }
 
 /* ---- Accordion section ---- */
@@ -2033,6 +2079,14 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .toggle-btn-destaque.on::before {
   border-style: solid;
 }
+/* Variante empilhada (uma opção por linha) — usada em perguntas de escolha
+   única com rótulos longos, ex.: "Onde a energia deverá ser disponibilizada"
+   na etapa "Dados do projeto". Os binários Sim/Não seguem no padrão em linha. */
+.cemig-form .toggle-group--stack {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--cmg-space-3, 12px);
+}
 .cemig-form .subbox-title,
 .cemig-form .uc-block-title,
 .cemig-form .uc-mini-head {
@@ -3117,6 +3171,36 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .cmg-pav-cel input:focus {
   outline: none;
   border-color: var(--cmg-green-600, #0f6c58);
+}
+/* Célula com <select> (ex.: coluna "Disjuntor" das prumadas em "Dados do
+   projeto"): mesma caixa dos inputs, com a seta padrão do campo do formulário. */
+.cemig-form .cmg-pav-cel select {
+  width: 100%;
+  box-sizing: border-box;
+  height: 48px;
+  padding: 4px 40px 4px 16px;
+  border: 1px solid var(--cmg-neutral-400, #8c9895);
+  border-radius: 4px;
+  background-color: var(--cmg-surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M6 9l6 6 6-6' stroke='%23364b46' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  font-family: var(--cmg-font-family);
+  font-size: 16px;
+  color: var(--cmg-text);
+  cursor: pointer;
+}
+.cemig-form .cmg-pav-cel select:focus {
+  outline: none;
+  border-color: var(--cmg-green-600, #0f6c58);
+}
+/* Prumadas: rótulo/aviso sob a tabela (faixa de torres incompleta, sobreposta
+   ou hierarquia inválida) fica junto da própria caixa da tabela. */
+.cemig-form .cmg-pav-linha--invalida {
+  background: var(--cmg-danger-50, #fdecec);
 }
 /* Andares calculados: apenas leitura (o usuário só informa unidades/andar) */
 .cemig-form .cmg-pav-cel input.cmg-pav-calculado {

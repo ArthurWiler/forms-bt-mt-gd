@@ -205,18 +205,30 @@ function disjuntoresGeraisAcima(maiorCorrenteUC, demandaTotal) {
 }
 
 // Disjuntor Geral de uma torre/bloco (múltiplas torres): derivado da Demanda
-// das UCs da torre. Mesmo critério de dimensionamento mínimo dos demais campos
-// (ver selecionarDisjuntores): o MENOR tripolar que atende seletividade
-// (corrente > maior UC) E capacidade (suporta a demanda). O condomínio/combate
-// a incêndio tem disjuntor próprio (ver opcoesDisjIncendioTorre) e não entra aqui.
+// das UCs da torre (sem o combate a incêndio, que tem disjuntor próprio — ver
+// opcoesDisjIncendioTorre). O MENOR tripolar que atende dois critérios:
+//  1) Capacidade: (d) suporta a demanda das UCs da torre;
+//  2) Seletividade: corrente ESTRITAMENTE maior que o maior disjuntor das UCs
+//     da torre (a hierarquia UC → Torre exige o superior sempre maior, nunca
+//     igual). Sem esse piso o geral poderia empatar com uma UC.
+function maiorCorrenteUCTorre(b) {
+  return ((b && b.ucs) || []).reduce(
+    (mx, u) => Math.max(mx, correnteDisj(u && u.disjPara)),
+    0,
+  );
+}
 function opcoesDisjGeralTorre(b) {
   const demanda = calcBlocoMultiTorres(b).demandaUcs;
   if (demanda <= 0) return [];
-  const maiorCorrente = Math.max(
-    0,
-    ...((b && b.ucs) || []).map((u) => correnteDisj(u.disjPara)),
-  );
-  return disjuntoresGeraisAcima(maiorCorrente, demanda).slice(0, 1);
+  const pisoUC = maiorCorrenteUCTorre(b);
+  const cand = DISJ_GER.filter(
+    (d) => d.tipo === "tri" && d.d >= demanda && correnteDisj(d.fx) > pisoUC,
+  ).sort((a, b) => d_corr(a, b));
+  return cand.length ? [cand[0].fx] : [];
+}
+// Ordenação por corrente crescente (empate desfeito pela capacidade d).
+function d_corr(a, b) {
+  return correnteDisj(a.fx) - correnteDisj(b.fx) || a.d - b.d;
 }
 
 // Opções de disjuntor do Condomínio / Combate a Incêndio da torre: menores
@@ -226,6 +238,49 @@ function opcoesDisjIncendioTorre(b) {
   return selecionarDisjuntores(num(b && b.demandaIncendio), false).map(
     (d) => d.fx,
   );
+}
+
+/* ============================================================
+   HIERARQUIA DE PROTEÇÃO DO EMPREENDIMENTO (etapa "Dados do projeto")
+   UC → Torre → Prumada → Disjuntor geral do empreendimento.
+   Cada nível superior deve ter corrente nominal ESTRITAMENTE MAIOR
+   que o maior disjuntor do nível imediatamente inferior — os níveis
+   Prumada e Disjuntor geral são opcionais, então cada função recebe o
+   "piso" (maior corrente do nível de baixo) e sugere/valida a partir dele.
+   Todos usam DISJ_EMPR (catálogo estendido, até 3000 A).
+   ============================================================ */
+// Maior corrente (A) entre os disjuntores das torres cujo índice (0-based) está
+// em `indices`. Se `indices` for nulo, considera todas as torres.
+function maiorCorrenteTorres(blocos, indices) {
+  return (blocos || []).reduce((mx, b, i) => {
+    if (indices && indices.indexOf(i) === -1) return mx;
+    return Math.max(mx, correnteDisj(b && b.disjGeral));
+  }, 0);
+}
+// Disjuntores do empreendimento (prumada/geral) com corrente ESTRITAMENTE maior
+// que `pisoCorrente` e — quando informada — capacidade (d, kVA) para `demanda`.
+// Ordenado do menor para o maior; o primeiro é a sugestão automática.
+function disjEmpreendimentoAcima(pisoCorrente, demanda) {
+  return DISJ_EMPR.filter(
+    (d) =>
+      d.tipo === "tri" &&
+      correnteDisj(d.fx) > (pisoCorrente || 0) &&
+      (demanda == null || d.d >= demanda),
+  )
+    .sort((a, b) => correnteDisj(a.fx) - correnteDisj(b.fx))
+    .map((d) => d.fx);
+}
+// Índices (0-based) das torres cobertas por uma prumada (faixa torreIni→torreFim,
+// ambos 1-based e inclusivos). Retorna [] quando a faixa está incompleta/inválida.
+function torresDaPrumada(p, nBlocos) {
+  const ini = parseInt(p && p.torreIni, 10);
+  const fim = parseInt(p && p.torreFim, 10);
+  if (!Number.isFinite(ini) || !Number.isFinite(fim) || ini < 1 || fim < ini)
+    return [];
+  const ate = Math.min(fim, nBlocos);
+  const arr = [];
+  for (let t = ini; t <= ate; t++) arr.push(t - 1);
+  return arr;
 }
 
 /* ============================================================
