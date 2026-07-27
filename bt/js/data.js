@@ -452,33 +452,29 @@ const DISJ_GER = [
   { fx: "Tripolar 225 A", d: 86.0, tipo: "tri" },
   { fx: "Tripolar 250 A", d: 95.0, tipo: "tri" },
   { fx: "Tripolar 300/315/320 A", d: 114.0, tipo: "tri" },
-  { fx: "Tripolar 400 A", d: 152.0, tipo: "tri" },
-  { fx: "Tripolar 450 A", d: 171.0, tipo: "tri" },
-  { fx: "Tripolar 500 A", d: 188.0, tipo: "tri" },
-  { fx: "Tripolar 600/630 A", d: 228.0, tipo: "tri" },
-  { fx: "Tripolar 700 A", d: 266.0, tipo: "tri" },
-  { fx: "Tripolar 800 A", d: 304.0, tipo: "tri" },
+  { fx: "Tripolar 400 A", d: 152.0, a: 400, tipo: "tri" },
+  { fx: "Tripolar 2 x 200 A", d: 152.0, a: 400, tipo: "tri" },
+  { fx: "Tripolar 450 A", d: 171.0, a: 450, tipo: "tri" },
+  { fx: "Tripolar 2 x 225 A", d: 171.0, a: 450, tipo: "tri" },
+  { fx: "Tripolar 500 A", d: 188.0, a: 500, tipo: "tri" },
+  { fx: "Tripolar 2 x 250 A", d: 188.0, a: 500, tipo: "tri" },
+  { fx: "Tripolar 600/630 A", d: 228.0, a: 600, tipo: "tri" },
+  { fx: "Tripolar 2 x 300/2x315/2x320 A", d: 228.0, a: 600, tipo: "tri" },
+  { fx: "Tripolar 700 A", d: 266.0, a: 700, tipo: "tri" },
+  { fx: "Tripolar 3 x 225 A", d: 266.0, a: 700, tipo: "tri" },
+  { fx: "Tripolar 800 A", d: 304.0, a: 800, tipo: "tri" },
+  { fx: "Tripolar 3 x 250 A", d: 304.0, a: 800, tipo: "tri" },
+  { fx: "Tripolar 1000 A", d: 342.0, a: 1000, tipo: "tri" },
+  { fx: "Tripolar 3 x 300 A", d: 342.0, a: 1000, tipo: "tri" },
+  { fx: "Tripolar 1200 A", d: 456.0, a: 1200, tipo: "tri" },
+  { fx: "Tripolar 4 x 300 A", d: 456.0, a: 1200, tipo: "tri" },
+  { fx: "Tripolar 1500 A", d: 570.0, a: 1500, tipo: "tri" },
+  { fx: "Tripolar 5 x 300 A", d: 570.0, a: 1500, tipo: "tri" },
+  { fx: "Tripolar 1800 A", d: 685.0, a: 1800, tipo: "tri" },
+  { fx: "Tripolar 6 x 300 A", d: 685.0, a: 1800, tipo: "tri" },
+  { fx: "Tripolar 2100 A", d: 800.0, a: 2100, tipo: "tri" },
+  { fx: "Tripolar 7 x 300 A", d: 800.0, a: 2100, tipo: "tri" },
 ];
-
-// Disjuntores de proteção do EMPREENDIMENTO (múltiplas torres): protegem níveis
-// que agregam várias torres/prumadas, então a faixa vai muito acima do geral de
-// agrupamento (DISJ_GER, que para em 800 A). Reaproveita todo o DISJ_GER e
-// estende com as correntes maiores; a capacidade (d, em kVA) segue a mesma
-// proporção dos tripolares do DISJ_GER (≈ 0,38 kVA/A). Usado no Disjuntor geral
-// do empreendimento, no Disjuntor geral do condomínio e nos Disjuntores de
-// prumada da etapa "Dados do projeto".
-const DISJ_EMPR = DISJ_GER.concat([
-  { fx: "Tripolar 900 A", d: 342.0, tipo: "tri" },
-  { fx: "Tripolar 1000 A", d: 380.0, tipo: "tri" },
-  { fx: "Tripolar 1200 A", d: 456.0, tipo: "tri" },
-  { fx: "Tripolar 1250 A", d: 475.0, tipo: "tri" },
-  { fx: "Tripolar 1350 A", d: 513.0, tipo: "tri" },
-  { fx: "Tripolar 1600 A", d: 608.0, tipo: "tri" },
-  { fx: "Tripolar 1800 A", d: 684.0, tipo: "tri" },
-  { fx: "Tripolar 2000 A", d: 760.0, tipo: "tri" },
-  { fx: "Tripolar 2500 A", d: 950.0, tipo: "tri" },
-  { fx: "Tripolar 3000 A", d: 1140.0, tipo: "tri" },
-]);
 
 // Catálogo de cargas
 const CAT = [

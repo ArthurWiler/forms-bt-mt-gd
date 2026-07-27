@@ -309,9 +309,15 @@ function autoSelecionarDisjGeral() {
 function autoSelecionarDisjTorres() {
   if (!MULTI) return;
   state.blocos.forEach((b) => {
-    const ops = opcoesDisjGeralTorre(b);
-    if (ops.length && !(b.disjGeral && ops.includes(b.disjGeral)))
-      b.disjGeral = ops[0];
+    // Regra de disjuntor: torre que dispensa o disjuntor geral fica sem ele
+    // (não sugere nem mantém valor antigo).
+    if (!disjGeralTorreObrigatorio(b)) {
+      b.disjGeral = "";
+    } else {
+      const ops = opcoesDisjGeralTorre(b);
+      if (ops.length && !(b.disjGeral && ops.includes(b.disjGeral)))
+        b.disjGeral = ops[0];
+    }
     const opsI = opcoesDisjIncendioTorre(b);
     if (opsI.length && !(b.disjIncendio && opsI.includes(b.disjIncendio)))
       b.disjIncendio = opsI[0];
@@ -534,7 +540,10 @@ window.btUnidadesTorresOk = function () {
         return false;
       // Modo calculadora: a demanda calculada das cargas detalhadas.
       if (modoCalc && !(num((u.cargas || {})._demanda) > 0)) return false;
-      if (!_preenchido(u.disjPara)) return false;
+      // Disjuntor da UC: no modo calculadora ele é calculado pelas cargas
+      // (disjUCTorre resolve disjPara → cargas._disjuntores[0]); no método 5.2
+      // é escolhido manualmente (disjPara). Exige um disjuntor válido nos dois.
+      if (!_preenchido(disjUCTorre(u))) return false;
       return true;
     });
   });
@@ -2018,28 +2027,43 @@ function _mkUnidadeCard(bi, ui, modoCalc) {
     f.setAttribute("data-noopt", "");
     grid.appendChild(f);
   }
-  grid.appendChild(
-    _campo(
-      "Disjuntor da unidade",
-      _selectDe(
-        DISJ_CN.map((d) => d.fx),
-        u.disjPara,
-        (v) => {
-          u.disjPara = v;
-          atualizarUnidadesCalc();
-        },
-        true,
+  // Disjuntor da UC:
+  //  • Método ND-5.2 (torre com 4+ apartamentos): escolha manual limitada ao
+  //    Tripolar 250 A (não há cargas detalhadas para calcular).
+  //  • Modo calculadora (até 3 UCs): calculado a partir das cargas declaradas,
+  //    igual ao BT individual — radio com a lista adequada (cargas._disjuntores),
+  //    renderizado abaixo das cargas (ver disjBox).
+  if (!modoCalc || semAlt) {
+    grid.appendChild(
+      _campo(
+        "Disjuntor da unidade",
+        _selectDe(
+          DISJ_CN.filter((d) => correnteDisj(d.fx) <= 250).map((d) => d.fx),
+          u.disjPara,
+          (v) => {
+            u.disjPara = v;
+            atualizarUnidadesCalc();
+          },
+          true,
+        ),
+        "field--float",
       ),
-      "field--float",
-    ),
-  );
+    );
+  }
   corpo.appendChild(grid);
   // ND-5.2 não calcula → a UC detalha as cargas como no BT individual
-  // (mesma ilha montarCargasBT; demanda/carga da UC saem do cálculo).
+  // (mesma ilha montarCargasBT; demanda/carga da UC saem do cálculo). O
+  // disjuntor da UC também é calculado pelas cargas (disjBox abaixo).
   if (modoCalc && !semAlt) {
     const cargasBox = document.createElement("div");
     corpo.appendChild(cargasBox);
-    montarCargasBT(cargasBox, u, ui, () => atualizarUnidadesCalc());
+    const disjBox = document.createElement("div");
+    corpo.appendChild(disjBox);
+    montarCargasBT(cargasBox, u, ui, () => {
+      renderDisjUnidadeCalc(disjBox, u);
+      atualizarUnidadesCalc();
+    });
+    renderDisjUnidadeCalc(disjBox, u);
   }
   // Replicar UC 1 para as demais unidades da torre — dentro da própria UC 1.
   if (ui === 0 && b.ucs.length > 1) {
@@ -2055,6 +2079,44 @@ function _mkUnidadeCard(bi, ui, modoCalc) {
   }
   bloco.appendChild(corpo);
   return bloco;
+}
+// Disjuntor da UC no modo calculadora (até 3 UCs): calculado pelas cargas
+// declaradas, exatamente como no BT individual. Radio com a lista adequada
+// (u.cargas._disjuntores); a escolha vai para u.disjPara. Se o valor guardado
+// não estiver mais na lista (as cargas mudaram), volta ao menor adequado.
+function renderDisjUnidadeCalc(box, u) {
+  const lista = (u.cargas && u.cargas._disjuntores) || [];
+  if (!(u.disjPara && lista.includes(u.disjPara))) u.disjPara = lista[0] || "";
+  box.innerHTML = "";
+  const wrap = document.createElement("div");
+  wrap.className = "resultado-cargas divider";
+  const card = document.createElement("div");
+  card.className = "resultado-card resultado-disjuntor";
+  card.innerHTML = `<div class="resultado-card-label">Disjuntor da unidade adequado de acordo com a seleção</div>`;
+  if (lista.length) {
+    const tg = document.createElement("div");
+    tg.className = "toggle-group";
+    lista.forEach((dj) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "toggle-btn" + (u.disjPara === dj ? " on" : "");
+      btn.textContent = dj;
+      btn.addEventListener("click", () => {
+        u.disjPara = dj;
+        renderDisjUnidadeCalc(box, u);
+        atualizarUnidadesCalc();
+      });
+      tg.appendChild(btn);
+    });
+    card.appendChild(tg);
+  } else {
+    const hint = document.createElement("div");
+    hint.className = "field-hint";
+    hint.textContent = "Detalhe as cargas para ver o disjuntor adequado.";
+    card.appendChild(hint);
+  }
+  wrap.appendChild(card);
+  box.appendChild(wrap);
 }
 // Atualiza SÓ os derivados da torre selecionada (rodapé, KPIs, avisos) —
 // mudanças estruturais (solicitação/atividade/qtd) re-renderizam a torre.
@@ -2107,6 +2169,23 @@ function renderUnidadesResultado() {
   const card = document.createElement("div");
   card.className = "resultado-card resultado-disjuntor";
   card.innerHTML = `<div class="resultado-card-label">Disjuntor da torre adequado de acordo com a seleção</div>`;
+  const regra = disjGeralTorreRegra(b);
+  if (!regra.obrigatorio) {
+    // Regra de disjuntor: no modo calculadora, sem bipolar > 63 A e com no
+    // máximo uma UC tripolar, a torre dispensa o disjuntor geral (proteção
+    // coletiva). O disjuntor da torre fica em branco (b.disjGeral = "") e a
+    // etapa não o exige.
+    b.disjGeral = "";
+    const hint = document.createElement("div");
+    hint.className = "alert alert-info";
+    hint.style.marginBottom = "0";
+    hint.innerHTML =
+      "Esta torre <b>dispensa disjuntor geral</b>: pela regra de disjuntor, a combinação das unidades (sem bipolar acima de 63 A e no máximo uma unidade trifásica) não exige proteção geral coletiva.";
+    card.appendChild(hint);
+    wrap.appendChild(card);
+    box.appendChild(wrap);
+    return;
+  }
   const ops = opcoesDisjGeralTorre(b);
   if (ops.length) {
     const tg = document.createElement("div");
@@ -2392,10 +2471,11 @@ function _mkPrumadasTabela() {
    views/revisar.js + validacaoObrigatorios de app.js:750-823)
    ============================================================ */
 // Índices das etapas para os lápis (após o pruning): coletivo e condomínio
-// têm 8 páginas — tipo=1, empr=2 e o miolo varia; corr fica antes de
-// Observações (penúltima antes de obs/prévia).
+// têm 8 páginas — tipo=1, empr=2 e o miolo varia. No condomínio a etapa "Dados
+// do projeto" vem antes da Correspondência; no coletivo a Correspondência é a
+// penúltima antes de obs/prévia.
 const PG = MULTI
-  ? { tipo: 1, empr: 2, blocos: 3, unidades: 4, corr: 5, projeto: 6 }
+  ? { tipo: 1, empr: 2, blocos: 3, unidades: 4, projeto: 5, corr: 6 }
   : { tipo: 1, empr: 2, ucs: 3, cargas: 4, corr: 5 };
 function validacaoObrigatoriosColetivo() {
   const faltando = [];
@@ -2547,7 +2627,12 @@ function _mkPreviaTorre(b, bi) {
     ) +
     pvCampoBT("Disjuntor do condomínio", b.disjIncendio, PG.blocos) +
     pvCampoBT("Demanda da torre", fmt2(demandaTorre) + " kVA", PG.blocos) +
-    pvCampoBT("Disjuntor da torre", b.disjGeral, PG.blocos);
+    pvCampoBT(
+      "Disjuntor da torre",
+      // Regra de disjuntor: torre que dispensa o geral aparece como "Dispensado".
+      disjGeralTorreObrigatorio(b) ? b.disjGeral : "Dispensado",
+      PG.blocos,
+    );
   painel.appendChild(grid);
 
   // Tabela de UCs paginada.

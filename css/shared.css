@@ -1488,8 +1488,18 @@ label.restricao-aceite input[type="checkbox"] {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--cmg-space-4);
-  align-items: start;
+  /* stretch: o card do disjuntor acompanha a altura da coluna de KPIs
+     ao lado (Carga total + Demanda das UCs + o gap entre eles), em vez
+     de encolher conforme o nº de opções/dispensa/hint. */
+  align-items: stretch;
   margin-top: var(--cmg-space-3);
+}
+/* Quando o bloco tem só o card do disjuntor (sem a coluna de KPIs ao lado —
+   ex.: "Disjuntor da unidade" no coletivo, cujas cargas/demanda vêm do
+   formulário de cargas, não de KPIs), ele ocupa a largura toda, em vez de
+   ficar restrito à metade esquerda do grid de 2 colunas. */
+.cemig-form .resultado-cargas:not(:has(.resultado-kpis)) {
+  grid-template-columns: 1fr;
 }
 .cemig-form .resultado-kpis {
   display: flex;

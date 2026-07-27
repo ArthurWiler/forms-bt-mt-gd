@@ -158,6 +158,44 @@ function calcBlocoMultiTorres(b) {
   };
 }
 
+// Disjuntor efetivo escolhido para uma UC de torre no modo calculadora: o
+// valor selecionado (disjPara) ou, na ausência, o menor adequado calculado
+// pelas cargas declaradas (cargas._disjuntores[0]) — espelha o disjEscolhido
+// do fluxo individual.
+function disjUCTorre(u) {
+  return (
+    (u && u.disjPara) ||
+    (u && u.cargas && (u.cargas._disjuntores || [])[0]) ||
+    ""
+  );
+}
+// Regra de disjuntor da torre (modo calculadora, até 3 UCs): o disjuntor geral
+// (proteção coletiva da torre) só é OBRIGATÓRIO quando a combinação dos
+// disjuntores das UCs a exige — mesma regra do BT individual
+// (validacaoDisjuntoresBT):
+//   • alguma UC com bipolar acima de 63 A; ou
+//   • duas ou mais UCs tripolares.
+// Fora do modo calculadora (método ND-5.2, 4+ apartamentos) o geral é sempre
+// obrigatório. Retorna { obrigatorio, motivo }.
+function disjGeralTorreRegra(b) {
+  const calc = calcBlocoMultiTorres(b);
+  if (!calc.modoCalculadora) return { obrigatorio: true, motivo: "nd52" };
+  const ativos = ((b && b.ucs) || []).filter((u) => !ucSemAlteracao(u));
+  let tri = 0;
+  let acima63 = false;
+  ativos.forEach((u) => {
+    const esc = disjUCTorre(u);
+    if (/Tripolar/i.test(esc)) tri++;
+    if (/Bipolar/i.test(esc) && correnteDisj(esc) > 63) acima63 = true;
+  });
+  if (acima63) return { obrigatorio: true, motivo: "bipolar63" };
+  if (tri > 1) return { obrigatorio: true, motivo: "multitri" };
+  return { obrigatorio: false, motivo: "" };
+}
+function disjGeralTorreObrigatorio(b) {
+  return disjGeralTorreRegra(b).obrigatorio;
+}
+
 // Seleção de disjuntores conforme demanda e tipo de rede
 function selecionarDisjuntores(demanda, redeMono) {
   if (demanda <= 0) return [];
@@ -180,9 +218,34 @@ function selecionarDisjuntores(demanda, redeMono) {
   return result;
 }
 
-// Extrai a corrente (A) do rótulo do disjuntor (ex.: "Tripolar 63 A" -> 63)
+// Corrente nominal de FAIXA (A) declarada nos catálogos: mapeia o rótulo (fx)
+// para o campo `a` quando existe. É o que emparelha as duas alternativas da
+// norma — ex.: "Tripolar 700 A" e "Tripolar 3 x 225 A" têm ambos a = 700,
+// mesmo a soma real das parcelas (675) sendo menor. Montado uma vez a partir de
+// todos os catálogos de disjuntores disponíveis.
+const _CORRENTE_FAIXA = (function () {
+  const m = {};
+  [
+    typeof DISJ !== "undefined" ? DISJ : null,
+    typeof DISJ_CN !== "undefined" ? DISJ_CN : null,
+    typeof DISJ_GER !== "undefined" ? DISJ_GER : null,
+  ].forEach((cat) => {
+    (cat || []).forEach((dj) => {
+      if (dj && dj.fx && dj.a != null) m[dj.fx] = dj.a;
+    });
+  });
+  return m;
+})();
+
+// Corrente EFETIVA (A) do rótulo do disjuntor, usada em toda a seletividade.
+// Ordem de resolução:
+//   1) corrente de faixa declarada (`a`) — vale para as Alternativas 1 e 2 da
+//      proteção geral, que compartilham a corrente da linha da norma;
+//   2) "Tripolar 600/630 A"   -> 600  (usa o 1º valor da opção de norma);
+//   3) "Tripolar 400 A"       -> 400.
 function correnteDisj(fx) {
   if (!fx) return 0;
+  if (_CORRENTE_FAIXA[fx] != null) return _CORRENTE_FAIXA[fx];
   const m = String(fx).match(/(\d+)(?:\/\d+)*\s*A/);
   return m ? Number(m[1]) : 0;
 }
@@ -212,8 +275,11 @@ function disjuntoresGeraisAcima(maiorCorrenteUC, demandaTotal) {
 //     da torre (a hierarquia UC → Torre exige o superior sempre maior, nunca
 //     igual). Sem esse piso o geral poderia empatar com uma UC.
 function maiorCorrenteUCTorre(b) {
+  // No modo calculadora o disjuntor da UC pode vir do cálculo pelas cargas
+  // (disjUCTorre resolve disjPara → cargas._disjuntores[0]); no método 5.2 é
+  // sempre o disjPara escolhido — disjUCTorre cobre os dois casos.
   return ((b && b.ucs) || []).reduce(
-    (mx, u) => Math.max(mx, correnteDisj(u && u.disjPara)),
+    (mx, u) => Math.max(mx, correnteDisj(disjUCTorre(u))),
     0,
   );
 }
@@ -247,7 +313,7 @@ function opcoesDisjIncendioTorre(b) {
    que o maior disjuntor do nível imediatamente inferior — os níveis
    Prumada e Disjuntor geral são opcionais, então cada função recebe o
    "piso" (maior corrente do nível de baixo) e sugere/valida a partir dele.
-   Todos usam DISJ_EMPR (catálogo estendido, até 3000 A).
+   Todos usam DISJ_GER (catálogo estendido, até 3000 A).
    ============================================================ */
 // Maior corrente (A) entre os disjuntores das torres cujo índice (0-based) está
 // em `indices`. Se `indices` for nulo, considera todas as torres.
@@ -261,7 +327,7 @@ function maiorCorrenteTorres(blocos, indices) {
 // que `pisoCorrente` e — quando informada — capacidade (d, kVA) para `demanda`.
 // Ordenado do menor para o maior; o primeiro é a sugestão automática.
 function disjEmpreendimentoAcima(pisoCorrente, demanda) {
-  return DISJ_EMPR.filter(
+  return DISJ_GER.filter(
     (d) =>
       d.tipo === "tri" &&
       correnteDisj(d.fx) > (pisoCorrente || 0) &&

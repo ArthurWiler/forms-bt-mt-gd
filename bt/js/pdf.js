@@ -400,7 +400,8 @@ function gerarPdfDoc(S) {
       [16, 38, 28, 18, 46, 36],
       blocos.map((b) => [
         b.nome,
-        b.disjGeral,
+        // Regra de disjuntor: torre que dispensa o geral imprime "Dispensado".
+        disjGeralTorreObrigatorio(b) ? b.disjGeral || "—" : "Dispensado",
         fmt2(calcBlocoMultiTorres(b).demandaUcs),
         b.qtdUCs,
         b.disjIncendio,
