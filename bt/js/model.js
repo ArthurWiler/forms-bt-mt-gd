@@ -96,7 +96,8 @@ const atendPadrao = () => ({
   // Etapa "Dados do projeto" (múltiplas torres). Todos os níveis são OPCIONAIS;
   // as validações da hierarquia (UC → Torre → Prumada → Disjuntor geral do
   // empreendimento) consideram só os níveis efetivamente configurados.
-  disponibilizacaoEnergia: "Apenas na portaria do condomínio", // radio "Onde a energia deverá ser disponibilizada"
+  disponibilizacaoEnergia:
+    "Na portaria e no interior do condomínio (alimentação das torres e áreas comuns)", // radio "Onde a energia deverá ser disponibilizada"
   disjEmpreendimento: "", // Disjuntor geral do empreendimento
   disjCondominio: "", // Disjuntor geral do condomínio
   temPrumada: "Não", // "O condomínio tem disjuntor de prumada?"

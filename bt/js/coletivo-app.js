@@ -321,10 +321,24 @@ function autoSelecionarDisjTorres() {
       if (ops.length && !(b.disjGeral && ops.includes(b.disjGeral)))
         b.disjGeral = ops[0];
     }
-    const opsI = opcoesDisjIncendioTorre(b);
-    if (opsI.length && !(b.disjIncendio && opsI.includes(b.disjIncendio)))
-      b.disjIncendio = opsI[0];
+    autoSelecionarDisjCondominio(b);
   });
+}
+// Auto-seleção do Disjuntor do condomínio (incêndio) de um agrupamento a partir
+// da sua demanda: escolhe o MENOR disjuntor adequado. Mantém a escolha do
+// usuário se ela ainda constar nas opções. Sem demanda informada, o disjuntor
+// fica em branco (é sugerido só depois que a demanda existe). Usada por torre
+// (MULTI) e coletivo.
+function autoSelecionarDisjCondominio(ag) {
+  if (!ag) return;
+  if (!(num(ag.demandaIncendio) > 0)) {
+    ag.disjIncendio = "";
+    return;
+  }
+  const ops = opcoesDisjIncendioTorre(ag);
+  if (!ops.length) return;
+  if (!(ag.disjIncendio && ops.includes(ag.disjIncendio)))
+    ag.disjIncendio = ops[0];
 }
 
 /* ===== replicações (portes de app.js) ===== */
@@ -498,7 +512,7 @@ function onEmprGate() {
 const _preenchido = (v) => String(v == null ? "" : v).trim() !== "";
 // Etapa "Dados das torres": Identificação, Qtd de unidades, e — quando a torre
 // tem mais de uma UC — Qtd por andar e Primeiro complemento (mesma condição
-// ucsLen() > 1 do render). Demanda/Disjuntor do condomínio são opcionais.
+// ucsLen() > 1 do render). Demanda e Disjuntor do condomínio são obrigatórios.
 window.btBlocosOk = function () {
   if (!MULTI) return true;
   const blocos = state.blocos || [];
@@ -515,8 +529,20 @@ window.btBlocosOk = function () {
         return false;
       if (!_preenchido(b.complInicial)) return false;
     }
+    // Demanda e Disjuntor do condomínio da torre são obrigatórios.
+    if (!(num(b.demandaIncendio) > 0)) return false;
+    if (!_preenchido(b.disjIncendio)) return false;
     return true;
   });
+};
+// Etapa "Dados da torre" (coletivo, torre única): Demanda e Disjuntor do
+// condomínio são obrigatórios. Guardados em state.blocos[0] (ver _coletivoAgr).
+window.btAgrupamentoColetivoOk = function () {
+  if (MULTI || !coletivoF()) return true;
+  const ag = state.blocos[0] || {};
+  if (!(num(ag.demandaIncendio) > 0)) return false;
+  if (!_preenchido(ag.disjIncendio)) return false;
+  return true;
 };
 // Etapa "Dados das unidades": cada UC ativa da torre precisa de Complemento,
 // Atividade e Disjuntor; Área (residencial) ou Ramo (não residencial); e, no
@@ -576,16 +602,10 @@ function validacaoHierarquiaProjeto() {
       const rotulo = `Prumada ${i + 1}`;
       const ini = parseInt(p.torreIni, 10);
       const fim = parseInt(p.torreFim, 10);
-      if (!Number.isFinite(ini) || !Number.isFinite(fim)) {
-        erros.push(`${rotulo}: informe a torre inicial e a torre final.`);
-        return;
-      }
-      if (ini < 1 || fim < ini || fim > nBlocos) {
-        erros.push(
-          `${rotulo}: a faixa de torres (${ini} a ${fim}) é inválida — deve ficar entre 1 e ${nBlocos}, com a inicial menor ou igual à final.`,
-        );
-        return;
-      }
+      // Faixa não preenchida ou fora de ordem: com os dropdowns filtrados isso
+      // não deveria ocorrer, então apenas ignora esta linha (sem aviso).
+      if (!Number.isFinite(ini) || !Number.isFinite(fim)) return;
+      if (ini < 1 || fim < ini || fim > nBlocos) return;
       // Sobreposição com outra prumada (uma torre não pode ter duas prumadas).
       for (let t = ini; t <= fim; t++) {
         if (cobertas[t])
@@ -632,8 +652,9 @@ window.btDadosProjetoOk = function () {
 };
 
 /* ============================================================
-   Etapa UCs do coletivo (renderUcsColetivo — porte de
-   views/ucs-coletivo.js)
+   Etapa "Dados das unidades" do coletivo (renderUcsColetivo —
+   porte de views/ucs-coletivo.js). Divide a página com a
+   Demanda do atendimento (renderCargasColetivo).
    ============================================================ */
 function _inp(valor, oninput, props) {
   const i = document.createElement("input");
@@ -685,9 +706,6 @@ function renderUcsColetivo() {
   if (!box) return;
   sincronizarUcBlocos();
   renderHibridoAlertas();
-  const titulo = $("#ucsColetivoTitulo");
-  if (titulo)
-    titulo.textContent = `Unidades Consumidoras (${state.ucBlocos.length})`;
   const toolbar = $("#ucsColetivoToolbar");
   if (toolbar) {
     toolbar.style.display = state.ucBlocos.length > 1 ? "flex" : "none";
@@ -967,22 +985,19 @@ function renderUcsColetivo() {
 }
 
 /* ============================================================
-   Etapa Demanda do coletivo (a antiga tabela de previsão de
-   carga foi substituída pelo campo Carga prevista por UC na
-   etapa de Identificação das UCs).
+   Demanda do coletivo: divide a etapa "Dados das unidades" com
+   a lista de UCs (a antiga tabela de previsão de carga foi
+   substituída pelo campo Carga prevista por UC, na lista acima).
    ============================================================ */
 function renderCargasColetivo() {
   sincronizarUcBlocos();
   aplicarPresetResidencial();
   atualizarCargasColetivo();
 }
-// Atualiza SÓ o que é calculado (KPIs, alertas, disjuntor geral).
+// Atualiza SÓ o que é calculado (alertas ND-5.2, campo não residencial e o
+// rodapé com KPIs + disjuntor geral, montado por renderDisjGeralColetivo).
 function atualizarCargasColetivo() {
   const info = nd52InfoF();
-  const kKw = $("#kpiPrevKw");
-  if (kKw) kKw.textContent = fmt2(prevTotalKwF());
-  const kDem = $("#kpiDemandaAtendimento");
-  if (kDem) kDem.textContent = fmt2(demandaTotalGeralF());
   // Alertas ND-5.2 / modo calculadora
   const alertas = $("#nd52Alertas");
   if (alertas) {
@@ -996,7 +1011,7 @@ function atualizarCargasColetivo() {
         info.quantidadeApartamentos === 0
           ? "Não há UCs residenciais para o cálculo automático pelo ND-5.2"
           : `ND-5.2 exige no mínimo 4 apartamentos para o cálculo automático (atualmente ${info.quantidadeApartamentos})`;
-      html = `<div class="alert alert-info" style="margin-bottom:14px">${motivo}: a demanda do agrupamento é a soma das demandas calculadas pelas cargas detalhadas em cada UC (método ND-5.1), na etapa de Unidades Consumidoras.</div>`;
+      html = `<div class="alert alert-info" style="margin-bottom:14px">${motivo}: a demanda do agrupamento é a soma das demandas calculadas pelas cargas detalhadas em cada UC (método ND-5.1), acima.</div>`;
     }
     alertas.innerHTML = html;
   }
@@ -1007,12 +1022,12 @@ function atualizarCargasColetivo() {
   if (naoResBox)
     naoResBox.style.display =
       !modoCalculadoraF() && temUCNaoResidencialF() ? "" : "none";
-  const aviso = $("#aviso304Cargas");
-  if (aviso) aviso.style.display = demandaTotalGeralF() > 304 ? "" : "none";
   autoSelecionarDisjGeral();
   renderDisjGeralColetivo();
 }
-// Cards "Troca do Disjuntor Geral" e "Disjuntor Geral do Agrupamento"
+// Card "Troca do Disjuntor Geral" (alteração de carga) + rodapé da etapa
+// "Dados das unidades": KPIs (carga/demanda) e Disjuntor geral do agrupamento
+// em botões — padrão do rodapé do fluxo multi-torres (renderUnidadesResultado).
 function renderDisjGeralColetivo() {
   const troca = trocaDisjGeralF();
   const dem = demandaPrevTotalF();
@@ -1063,46 +1078,82 @@ function renderDisjGeralColetivo() {
       campos.appendChild(fFut);
     }
   }
+  // Rodapé da etapa "Dados das unidades": KPIs (carga/demanda) + Disjuntor
+  // geral do agrupamento em botões — mesmo padrão de renderUnidadesResultado
+  // (rodapé do fluxo multi-torres). Substitui o antigo card "Demanda do
+  // Atendimento" (KPIs em prev-total) e o card "Disjuntor Geral" (select).
   const geralBox = $("#disjGeralBox");
   if (!geralBox) return;
   const mostrar = coletivoF() && !troca;
   geralBox.style.display = mostrar ? "" : "none";
+  geralBox.innerHTML = "";
   if (!mostrar) return;
-  const sub = $("#disjGeralSub");
-  if (sub)
-    sub.textContent = `Sugestão automática conforme seletividade (faixa superior ao maior disjuntor das UCs, acima de ${maior || "—"} A) e capacidade para a demanda total (${fmt2(dem)} kVA).`;
-  const campos = $("#disjGeralCampos");
+
+  const wrap = document.createElement("div");
+  wrap.className = "resultado-cargas divider";
+  const kpis = document.createElement("div");
+  kpis.className = "resultado-kpis";
+  const mkKpi = (label, valor, titulo) => {
+    const card = document.createElement("div");
+    card.className = "resultado-card";
+    card.innerHTML =
+      `<span class="resultado-card-info cmg-hint" tabindex="0" role="img" aria-label="${label}: ajuda" data-hint="${titulo}"><img class="field-info" src="../imgs/info.svg" alt="" aria-hidden="true" /></span>` +
+      `<div class="resultado-card-label">${label}</div>` +
+      `<div class="resultado-card-valor">${valor}</div>`;
+    return card;
+  };
+  kpis.append(
+    mkKpi(
+      "Total Carga Instalada",
+      `${fmt2(prevTotalKwF())} kW`,
+      "Soma da carga prevista de todas as unidades consumidoras do agrupamento.",
+    ),
+    mkKpi(
+      "Demanda do atendimento",
+      `${fmt2(demandaTotalGeralF())} kVA`,
+      "Demanda total do agrupamento (parte residencial pelo ND-5.2 mais a demanda não residencial, ou a soma das demandas calculadas pelas UCs). É ela que dimensiona o disjuntor geral do agrupamento.",
+    ),
+  );
+  wrap.appendChild(kpis);
+
   const invalido =
     state.atend.disjuntorGeral && !opcoes.includes(state.atend.disjuntorGeral);
-  campos.parentElement.classList.toggle("geral-box--error", !!invalido);
-  campos.innerHTML = "";
-  const sel = _selectDe(
-    opcoes,
-    state.atend.disjuntorGeral,
-    (v) => {
-      state.atend.disjuntorGeral = v;
-      renderDisjGeralColetivo();
-    },
-    true,
-  );
-  const f = _campo("Disjuntor geral", sel, "field--float");
-  f.setAttribute("data-noopt", "");
-  campos.appendChild(f);
-  if (!opcoes.length) {
+  const card = document.createElement("div");
+  card.className =
+    "resultado-card resultado-disjuntor" + (invalido ? " resultado-card--error" : "");
+  card.innerHTML = `<div class="resultado-card-label">Disjuntor geral do agrupamento</div>`;
+  if (opcoes.length) {
+    const tg = document.createElement("div");
+    tg.className = "toggle-group";
+    opcoes.forEach((dj) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "toggle-btn" + (state.atend.disjuntorGeral === dj ? " on" : "");
+      btn.textContent = dj;
+      btn.addEventListener("click", () => {
+        state.atend.disjuntorGeral = dj;
+        renderDisjGeralColetivo();
+      });
+      tg.appendChild(btn);
+    });
+    card.appendChild(tg);
+  } else {
     const hint = document.createElement("div");
-    hint.className = "alert alert-info";
-    hint.style.marginTop = "10px";
+    hint.className = "field-hint";
     hint.textContent =
-      "Preencha os disjuntores das UCs acima para liberar as opções.";
-    campos.appendChild(hint);
+      "Preencha os disjuntores e a previsão de carga das unidades para ver o disjuntor adequado.";
+    card.appendChild(hint);
   }
   if (invalido) {
     const aviso = document.createElement("div");
     aviso.className = "cmg-aviso cmg-aviso--error";
     aviso.style.cssText = "margin-top:10px;margin-bottom:0";
     aviso.innerHTML = `<div class="cmg-aviso-icon" aria-hidden="true"></div><p class="cmg-aviso-texto"><span>Esse disjuntor não atende à seletividade (faixa superior ao maior disjuntor das UCs, ${maior} A) e/ou à capacidade para a demanda total (${fmt2(dem)} kVA).</span></p></div>`;
-    campos.appendChild(aviso);
+    card.appendChild(aviso);
   }
+  wrap.appendChild(card);
+  geralBox.appendChild(wrap);
+  if (window.CemigMarcadores) CemigMarcadores.aplicar(geralBox);
 }
 
 /* ============================================================
@@ -1603,6 +1654,10 @@ function _mkAgrupamentoCampos(grid, cfg) {
       }),
     );
     f.setAttribute("data-noopt", "");
+    // Sem "Identificação da torre" antes (fluxo coletivo), a Quantidade ocupa a
+    // linha inteira para os pares abaixo (Andar|Complemento, Demanda|Disjuntor)
+    // ficarem alinhados — mesmo layout do card do condomínio.
+    if (cfg.semIdentificacao) f.classList.add("col-span-2");
     grid.appendChild(f);
   }
   // Geração de complementos das unidades: ao preencher o primeiro complemento
@@ -1740,10 +1795,14 @@ function _cfgAgrupamentoTorre(b, bi) {
       autoSelecionarDisjTorres();
       _refreshDisjCondominio(bi);
       atualizarBlocosKpis();
+      if (window.CemigMarcadores) CemigMarcadores.atualizarAvancar();
     },
     disjOpts: () => opcoesDisjIncendioTorre(b),
     disj: () => b.disjIncendio,
-    setDisj: (v) => (b.disjIncendio = v),
+    setDisj: (v) => {
+      b.disjIncendio = v;
+      if (window.CemigMarcadores) CemigMarcadores.atualizarAvancar();
+    },
   };
 }
 // Adaptador do coletivo: "Quantidade de unidades" = nº de UCs (ucBlocos, via
@@ -1753,6 +1812,8 @@ function _cfgAgrupamentoTorre(b, bi) {
 function _cfgAgrupamentoColetivo() {
   const ag = _coletivoAgr();
   return {
+    // Coletivo não tem "Identificação da torre": Quantidade ocupa a linha toda.
+    semIdentificacao: true,
     disjId: "disjCondominio-coletivo",
     qtdLabel: "Quantidade de unidades",
     qtd: () => state.atend.nUCs,
@@ -1777,23 +1838,42 @@ function _cfgAgrupamentoColetivo() {
     setCompl: (v) => (ag.complInicial = v),
     gerarComplementos: () => autoGerarComplementosColetivo(),
     demanda: () => ag.demandaIncendio,
-    setDemanda: (v) => (ag.demandaIncendio = v),
+    setDemanda: (v) => {
+      ag.demandaIncendio = v;
+      autoSelecionarDisjCondominio(ag);
+      _refreshDisjCondominioSel("coletivo", ag);
+      if (window.CemigMarcadores) CemigMarcadores.atualizarAvancar();
+    },
     disjOpts: () => opcoesDisjIncendioTorre(ag),
     disj: () => ag.disjIncendio,
-    setDisj: (v) => (ag.disjIncendio = v),
+    setDisj: (v) => {
+      ag.disjIncendio = v;
+      if (window.CemigMarcadores) CemigMarcadores.atualizarAvancar();
+    },
   };
 }
-// Card de agrupamento do coletivo (topo da etapa "Unidades Consumidoras"):
-// mesmo card do condomínio, SEM "Identificação da torre".
+// Card de agrupamento do coletivo (etapa "Dados da torre"): mesmo card do
+// condomínio, SEM "Identificação da torre". O endereço da obra é reapresentado
+// no topo (readonly), como nos cards de torre do condomínio.
 function renderAgrupamentoColetivo() {
   const box = $("#agrupamentoColetivoBox");
   if (!box) return;
+  const endBox = $("#agrupamentoColetivoEndereco");
+  if (endBox) {
+    endBox.innerHTML = "";
+    endBox.appendChild(_blocoEndereco(""));
+  }
+  // Auto-sugere o Disjuntor do condomínio a partir da demanda já informada.
+  autoSelecionarDisjCondominio(_coletivoAgr());
   box.innerHTML = "";
   const grid = document.createElement("div");
   grid.className = "grid grid-2";
   _mkAgrupamentoCampos(grid, _cfgAgrupamentoColetivo());
   box.appendChild(grid);
-  if (window.CemigMarcadores) CemigMarcadores.aplicar(box);
+  if (window.CemigMarcadores) {
+    CemigMarcadores.aplicar(box);
+    CemigMarcadores.atualizarAvancar();
+  }
 }
 function _mkTorreCard(bi, total) {
   const b = state.blocos[bi];
@@ -1846,17 +1926,21 @@ function _mkTorreCard(bi, total) {
   return bloco;
 }
 // Reapresenta as opções do Disjuntor do condomínio quando a demanda muda
-// (sem re-render do card — mantém o foco no campo de demanda).
-function _refreshDisjCondominio(bi) {
-  const sel = $(`#disjCondominio-${bi}`);
-  const b = state.blocos[bi];
-  if (!sel || !b) return;
-  const ops = opcoesDisjIncendioTorre(b);
+// (sem re-render do card — mantém o foco no campo de demanda). Reflete o valor
+// já auto-selecionado (autoSelecionarDisjCondominio) no <select>. `sufixo` é a
+// parte após "disjCondominio-" no id (índice da torre, ou "coletivo").
+function _refreshDisjCondominioSel(sufixo, ag) {
+  const sel = $(`#disjCondominio-${sufixo}`);
+  if (!sel || !ag) return;
+  const ops = opcoesDisjIncendioTorre(ag);
   sel.innerHTML =
     '<option value=""></option>' +
     ops.map((o) => `<option value="${o}">${o}</option>`).join("");
   sel.value =
-    b.disjIncendio && ops.includes(b.disjIncendio) ? b.disjIncendio : "";
+    ag.disjIncendio && ops.includes(ag.disjIncendio) ? ag.disjIncendio : "";
+}
+function _refreshDisjCondominio(bi) {
+  _refreshDisjCondominioSel(bi, state.blocos[bi]);
 }
 
 /* ============================================================
@@ -2325,14 +2409,18 @@ function renderDadosProjeto() {
   }
 
   // Onde a energia deverá ser disponibilizada (radio empilhado).
+  const OPCS_DISP = [
+    "Na portaria e no interior do condomínio (alimentação das torres e áreas comuns)",
+    "Apenas na portaria do condomínio",
+  ];
+  // Default: primeira opção marcada.
+  if (!state.atend.disponibilizacaoEnergia)
+    state.atend.disponibilizacaoEnergia = OPCS_DISP[0];
   const disp = $("#projetoDisponibilizacao");
   if (disp)
     _radioGrupo(
       disp,
-      [
-        "Na portaria e no interior do condomínio (alimentação das torres e áreas comuns)",
-        "Apenas na portaria do condomínio",
-      ],
+      OPCS_DISP,
       state.atend.disponibilizacaoEnergia,
       (v) => {
         state.atend.disponibilizacaoEnergia = v;
@@ -2340,10 +2428,14 @@ function renderDadosProjeto() {
       },
     );
 
-  // Disjuntores gerais do empreendimento e do condomínio.
+  // Disjuntores gerais do empreendimento e do condomínio: só quando a energia
+  // é disponibilizada apenas na portaria do condomínio (segunda opção).
   const gerais = $("#projetoDisjGerais");
   if (gerais) {
     gerais.innerHTML = "";
+    const soPortaria = state.atend.disponibilizacaoEnergia === OPCS_DISP[1];
+    gerais.style.display = soPortaria ? "" : "none";
+    if (soPortaria) {
     const fEmpr = _campo(
       "Disjuntor geral do empreendimento",
       _selectDisjHierarquia(
@@ -2371,6 +2463,7 @@ function renderDadosProjeto() {
     );
     fCond.setAttribute("data-noopt", "");
     gerais.appendChild(fCond);
+    }
   }
 
   // O condomínio tem disjuntor de prumada? (Sim/Não)
@@ -2441,32 +2534,52 @@ function _mkPrumadasTabela() {
   tabela.appendChild(head);
 
   const prumadas = state.atend.prumadas || (state.atend.prumadas = []);
-  // Campo numérico de torre (inicial/final): 1..nBlocos.
-  const campoTorre = (valor, onChange) => {
+  // Torres já cobertas pelas prumadas ANTERIORES a `idx` (para não oferecer
+  // torres repetidas na inicial): a inicial só lista torres ainda livres.
+  const torresAntesDe = (idx) => {
+    const usadas = new Set();
+    for (let k = 0; k < idx; k++) {
+      const a = parseInt(prumadas[k].torreIni, 10);
+      const b = parseInt(prumadas[k].torreFim, 10);
+      if (Number.isFinite(a) && Number.isFinite(b))
+        for (let t = a; t <= b; t++) usadas.add(t);
+    }
+    return usadas;
+  };
+  // Dropdown de torre (inicial/final) com filtro automático: recebe a lista de
+  // números de torre permitidos e o valor atual.
+  const campoTorre = (permitidos, valor, onChange) => {
     const cel = document.createElement("div");
     cel.className = "cmg-pav-cel";
-    const inp = document.createElement("input");
-    inp.type = "number";
-    inp.min = "1";
-    if (nBlocos > 0) inp.max = String(nBlocos);
-    inp.placeholder = "1";
-    inp.value = valor == null ? "" : valor;
-    inp.addEventListener("input", () => onChange(inp.value));
-    cel.appendChild(inp);
+    const opcoes = permitidos.map(String);
+    cel.appendChild(_selectDe(opcoes, valor ? String(valor) : "", onChange, true));
     return cel;
   };
   prumadas.forEach((p, i) => {
     const linha = document.createElement("div");
     linha.className = "cmg-pav-linha";
+    // Torre inicial: torres 1..nBlocos que ainda não foram usadas por prumadas
+    // anteriores (mantém a atual, se já selecionada).
+    const usadasAntes = torresAntesDe(i);
+    const iniAtual = parseInt(p.torreIni, 10);
+    const permIni = [];
+    for (let t = 1; t <= nBlocos; t++)
+      if (!usadasAntes.has(t) || t === iniAtual) permIni.push(t);
+    // Torre final: de torreIni (se válida) até nBlocos.
+    const baseFim = Number.isFinite(iniAtual) ? iniAtual : 1;
+    const permFim = [];
+    for (let t = baseFim; t <= nBlocos; t++) permFim.push(t);
     linha.appendChild(
-      campoTorre(p.torreIni, (v) => {
+      campoTorre(permIni, p.torreIni, (v) => {
         p.torreIni = v;
+        // Se a final ficou menor que a inicial, realinha.
+        if (parseInt(p.torreFim, 10) < parseInt(v, 10)) p.torreFim = v;
         autoSelecionarDisjProjeto();
         renderDadosProjeto();
       }),
     );
     linha.appendChild(
-      campoTorre(p.torreFim, (v) => {
+      campoTorre(permFim, p.torreFim, (v) => {
         p.torreFim = v;
         autoSelecionarDisjProjeto();
         renderDadosProjeto();
@@ -2976,7 +3089,7 @@ function renderPreviaColetivo() {
     let html2 = "";
     if (hibridoF() && !validacaoHibridoF().ok)
       html2 +=
-        '<div class="alert alert-warn" style="margin-bottom:12px">Corrija as pendências do atendimento híbrido (aba Unidades Consumidoras) para liberar a exportação do PDF.</div>';
+        '<div class="alert alert-warn" style="margin-bottom:12px">Corrija as pendências do atendimento híbrido (aba Dados das unidades) para liberar a exportação do PDF.</div>';
     if (!v.ok)
       html2 += `<div class="alert alert-warn" style="margin-bottom:12px"><strong>Preencha os campos obrigatórios para liberar o PDF:</strong><ul style="margin:6px 0 0 18px">${v.faltando.map((f) => `<li>${f}</li>`).join("")}</ul></div>`;
     faltasBox.innerHTML = html2;
@@ -3022,7 +3135,7 @@ function exportarPdfBT() {
 window.onPaginaAtiva = function (sec) {
   if (sec.querySelector("#agrupamentoColetivoBox")) renderAgrupamentoColetivo();
   if (sec.querySelector("#ucsColetivoBox")) renderUcsColetivo();
-  if (sec.querySelector("#kpiDemandaAtendimento")) renderCargasColetivo();
+  if (sec.querySelector("#disjGeralBox")) renderCargasColetivo();
   if (sec.querySelector("#blocosBox")) renderBlocos();
   if (sec.querySelector("#unidadesChips")) renderUnidadesTorres();
   if (sec.querySelector("#projetoPrumadasBox")) renderDadosProjeto();

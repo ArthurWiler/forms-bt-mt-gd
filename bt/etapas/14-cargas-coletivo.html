@@ -1,20 +1,33 @@
 <!doctype html>
 
+<div id="hibridoAlertas"></div>
 <div class="card">
-  <div class="section-eyebrow">Etapa 6</div>
-  <h3 class="card-title">Demanda do Atendimento</h3>
+  <div class="section-eyebrow">Etapa 5</div>
+  <h3 class="card-title" id="ucsColetivoTitulo">Dados das unidades</h3>
   <p class="card-sub">
-    Quando o ND-5.2 calcula (4 ou mais apartamentos residenciais), a demanda
-    do agrupamento é a parte residencial pelo ND-5.2 mais a demanda geral não
-    residencial informada abaixo. Quando o ND-5.2 não se aplica, cada UC
-    detalha as próprias cargas na etapa de Unidades Consumidoras (método
-    ND-5.1) e a demanda é a soma das demandas calculadas.
+    Preencha os dados de identificação de cada UC. Campos com valor padrão já
+    vêm preenchidos. Em Conexão Nova não há disjuntor 'De' (a instalação ainda
+    não existe).
   </p>
-  <div id="nd52Alertas"></div>
+  <div
+    id="ucsColetivoToolbar"
+    style="display: none; justify-content: flex-end; margin-bottom: 12px"
+  >
+    <button
+      class="btn btn-ghost btn-outlined-acao"
+      type="button"
+      onclick="replicarUC1Coletivo()"
+    >
+      Replicar UC 1 para todas
+    </button>
+  </div>
+  <div id="ucsColetivoBox"></div>
+
+  <div id="nd52Alertas" style="margin-top: 14px"></div>
   <div
     class="grid grid-2"
     id="demandaNaoResBox"
-    style="display: none; margin-bottom: 14px"
+    style="display: none; margin-top: 14px"
   >
     <div class="field field--plain" data-noopt>
       <label>Demanda geral não residencial (kVA)</label>
@@ -31,26 +44,10 @@
       </span>
     </div>
   </div>
-  <div class="prev-total" style="margin-top: 14px">
-    <div class="kpi">
-      <div class="kpi-label">Total Carga Instalada</div>
-      <div class="kpi-value"><span id="kpiPrevKw">0,00</span> kW</div>
-    </div>
-    <div class="kpi dark">
-      <div class="kpi-label">Demanda do atendimento</div>
-      <div class="kpi-value" style="font-size: 18px">
-        <span id="kpiDemandaAtendimento">0,00</span> kVA
-      </div>
-    </div>
-  </div>
-  <div
-    class="alert alert-info"
-    id="aviso304Cargas"
-    style="margin-top: 14px; display: none"
-  >
-    Demanda total acima de 304 kVA: o atendimento fica condicionado à
-    apresentação do projeto elétrico com ART/TRT.
-  </div>
+
+  <!-- Rodapé: KPIs (carga/demanda) + Disjuntor geral do agrupamento em botões,
+       no mesmo padrão do rodapé de "Dados das unidades" do multi-torres. -->
+  <div id="disjGeralBox"></div>
 </div>
 
 <div class="card" id="trocaDisjBox" style="display: none">
@@ -62,13 +59,6 @@
     total do agrupamento.
   </p>
   <div class="grid grid-2" id="trocaDisjCampos"></div>
-</div>
-
-<div class="card" id="disjGeralBox" style="display: none">
-  <div class="section-eyebrow">Proteção geral</div>
-  <h3 class="card-title">Disjuntor Geral do Agrupamento</h3>
-  <p class="card-sub" id="disjGeralSub"></p>
-  <div class="geral-box" id="disjGeralCampos" style="margin-top: 0"></div>
 </div>
 
 <div class="nav-bottom no-print">

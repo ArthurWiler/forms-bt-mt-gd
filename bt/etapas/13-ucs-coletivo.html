@@ -1,37 +1,13 @@
 <!doctype html>
 
-<div id="hibridoAlertas"></div>
 <div class="card">
-  <div class="section-eyebrow">Etapa 5</div>
-  <h3 class="card-title">Dados do agrupamento</h3>
-  <p class="card-sub">
-    Informe a quantidade de unidades do agrupamento. As unidades por andar e o
-    primeiro complemento geram automaticamente os complementos de cada UC abaixo.
-  </p>
+  <div class="section-eyebrow">Etapa 4</div>
+  <h3 class="card-title">Dados da torre</h3>
+  <p class="card-sub">Preencha os dados da torre do empreendimento.</p>
+  <div id="agrupamentoColetivoEndereco"></div>
   <div id="agrupamentoColetivoBox"></div>
-</div>
-<div class="card">
-  <h3 class="card-title" id="ucsColetivoTitulo">Unidades Consumidoras</h3>
-  <p class="card-sub">
-    Preencha os dados de identificação de cada UC. Campos com valor padrão já
-    vêm preenchidos. Em Conexão Nova não há disjuntor 'De' (a instalação ainda
-    não existe).
-  </p>
-  <div
-    id="ucsColetivoToolbar"
-    style="display: none; justify-content: flex-end; margin-bottom: 12px"
-  >
-    <button
-      class="btn btn-ghost btn-outlined-acao"
-      type="button"
-      onclick="replicarUC1Coletivo()"
-    >
-      Replicar UC 1 para todas
-    </button>
-  </div>
-  <div id="ucsColetivoBox"></div>
 </div>
 <div class="nav-bottom no-print">
   <button class="btn btn-ghost" data-nav="prev">← Voltar</button>
-  <button class="btn btn-primary" data-nav="next">Avançar →</button>
+  <button class="btn btn-primary" data-nav="next" data-gate="btAgrupamentoColetivoOk">Avançar →</button>
 </div>
