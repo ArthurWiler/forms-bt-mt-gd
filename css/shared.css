@@ -406,6 +406,36 @@ html {
   flex-direction: column;
   gap: 14px;
 }
+/* Card só-leitura de faixa (Andar inicial/final/Unidades por andar) — spec
+   Figma: padding 20px, altura 77px, borda neutra/200, radius 8px; rótulo em
+   cima e valor embaixo. .field--plain já removeu o rótulo flutuante. */
+.faixa-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  min-height: 77px;
+  padding: 20px;
+  background: var(--cmg-surface);
+  border: 1px solid var(--cmg-neutral-200);
+  border-radius: 8px;
+}
+.faixa-card .faixa-card-label {
+  font-family: var(--cmg-font-family);
+  font-size: 12px;
+  line-height: 20px;
+  letter-spacing: 0.2px;
+  color: var(--cmg-neutral-500);
+}
+.faixa-card .faixa-card-valor {
+  font-family: var(--cmg-font-family);
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: 0.2px;
+  font-weight: 600;
+  color: var(--cmg-text-strong);
+}
 
 /* ============================================================
    Aviso — canonical informational banner (icon column + text).
@@ -1086,7 +1116,10 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .field input:disabled,
 .cemig-form .field select:disabled,
 .cemig-form .field textarea:disabled,
-.cemig-form .field input[readonly] {
+/* O input do campo com ação (ex.: "Customizado") é só-leitura por design — o
+   valor real vem das faixas e a edição é pelo botão "Customizar" —, então NÃO
+   recebe o visual acinzentado de desabilitado. */
+.cemig-form .field input[readonly]:not(.field-acao-input) {
   background: var(--cmg-surface-disabled);
   color: var(--cmg-text-muted);
   cursor: not-allowed;

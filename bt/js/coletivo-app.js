@@ -250,7 +250,10 @@ function autoSelecionarDisjProjeto() {
   const opsE = opcoesDisjEmpreendimentoF();
   if (
     opsE.length &&
-    !(state.atend.disjEmpreendimento && opsE.includes(state.atend.disjEmpreendimento))
+    !(
+      state.atend.disjEmpreendimento &&
+      opsE.includes(state.atend.disjEmpreendimento)
+    )
   )
     state.atend.disjEmpreendimento = opsE[0];
   const opsC = opcoesDisjCondominioF();
@@ -1547,14 +1550,21 @@ function abrirComposicaoPavimento(faixasAtuais, onSalvar, totalUCs) {
   const primeiro = tabela.querySelector("input");
   if (primeiro) primeiro.focus();
 }
-// Campo só-leitura de exibição (rótulo flutuante + valor), no mesmo visual dos
-// demais campos do form. Não recebe marca de opcional.
+// Card só-leitura de exibição (rótulo fixo em cima + valor embaixo). Card
+// estático (sem <input>), no visual da spec do Figma (.faixa-card): padding
+// 20px, borda neutra/200, radius 8px. field--plain sai do rótulo flutuante e
+// data-noopt tira a marca de opcional.
 function _campoLeitura(labelTxt, valor) {
-  const inp = _inp(valor, () => {}, { type: "text" });
-  inp.readOnly = true;
-  inp.tabIndex = -1;
-  const f = _campo(labelTxt, inp);
+  const f = document.createElement("div");
+  f.className = "field field--plain faixa-card";
   f.setAttribute("data-noopt", "");
+  const lbl = document.createElement("span");
+  lbl.className = "faixa-card-label";
+  lbl.textContent = labelTxt;
+  const val = document.createElement("span");
+  val.className = "faixa-card-valor";
+  val.textContent = valor;
+  f.append(lbl, val);
   return f;
 }
 // Composição por pavimento (só-leitura): uma linha por faixa customizada, cada
@@ -2087,7 +2097,7 @@ function _mkUnidadeCard(bi, ui, modoCalc) {
       _campo(
         "Disjuntor da unidade",
         _selectDe(
-          DISJ_CN.filter((d) => correnteDisj(d.fx) <= 250).map((d) => d.fx),
+          DISJ_COL.map((d) => d.fx),
           u.disjPara,
           (v) => {
             u.disjPara = v;

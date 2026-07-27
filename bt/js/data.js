@@ -438,6 +438,20 @@ const DISJ_CN = [
   { fx: "Tripolar 800 A", d: 304.0, tipo: "tri" },
 ];
 
+const DISJ_COL = [
+  { fx: "Monopolar 63 A", d: 7.6, tipo: "mono" },
+  { fx: "Bipolar 63 A", d: 15.1, tipo: "bi" },
+  { fx: "Tripolar 63 A", d: 24.0, tipo: "tri" },
+  { fx: "Tripolar 80 A", d: 30.5, tipo: "tri" },
+  { fx: "Tripolar 100 A", d: 38.1, tipo: "tri" },
+  { fx: "Tripolar 125 A", d: 47.6, tipo: "tri" },
+  { fx: "Tripolar 150 A", d: 57.1, tipo: "tri" },
+  { fx: "Tripolar 175 A", d: 66.0, tipo: "tri" },
+  { fx: "Tripolar 200 A", d: 75.0, tipo: "tri" },
+  { fx: "Tripolar 225 A", d: 86.0, tipo: "tri" },
+  { fx: "Tripolar 250 A", d: 95.0, tipo: "tri" },
+];
+
 const DISJ_GER = [
   { fx: "Bipolar 100 A", d: 24.0, tipo: "bi" },
   { fx: "Bipolar 125 A", d: 30.0, tipo: "bi" },
