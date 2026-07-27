@@ -1547,6 +1547,34 @@ function abrirComposicaoPavimento(faixasAtuais, onSalvar, totalUCs) {
   const primeiro = tabela.querySelector("input");
   if (primeiro) primeiro.focus();
 }
+// Campo só-leitura de exibição (rótulo flutuante + valor), no mesmo visual dos
+// demais campos do form. Não recebe marca de opcional.
+function _campoLeitura(labelTxt, valor) {
+  const inp = _inp(valor, () => {}, { type: "text" });
+  inp.readOnly = true;
+  inp.tabIndex = -1;
+  const f = _campo(labelTxt, inp);
+  f.setAttribute("data-noopt", "");
+  return f;
+}
+// Composição por pavimento (só-leitura): uma linha por faixa customizada, cada
+// uma com Andar inicial | Andar final | Unidades por andar. Ocupa a largura
+// toda do grid do card (col-span-2) e organiza os três campos em .grid-3.
+function _faixasComposicao(faixas) {
+  const box = document.createElement("div");
+  box.className = "col-span-2 faixas-composicao";
+  faixas.forEach((f) => {
+    const linha = document.createElement("div");
+    linha.className = "grid grid-3";
+    linha.append(
+      _campoLeitura("Andar inicial", String(f.ini)),
+      _campoLeitura("Andar final", String(f.fim)),
+      _campoLeitura("Unidades por andar", String(f.unidades)),
+    );
+    box.appendChild(linha);
+  });
+  return box;
+}
 // Campos do agrupamento compartilhados entre torre (condomínio) e coletivo. O
 // LAYOUT é o mesmo dos dois; a origem/destino de cada campo varia por fluxo e
 // vem no adaptador `cfg` (ver _cfgAgrupamentoTorre / _cfgAgrupamentoColetivo).
@@ -1572,8 +1600,13 @@ function _mkAgrupamentoCampos(grid, cfg) {
   // preenchidos automaticamente (ver cfg.gerarComplementos).
   if (cfg.ucsLen() > 1) {
     const maxAptos = cfg.ucsLen();
+    // Faixas customizadas (popup "Composição por pavimento"): quando existem, o
+    // campo "por andar" vira só-leitura "Customizado" e a composição aparece em
+    // cards abaixo (uma linha Andar inicial/final/Unidades por faixa).
+    const faixasCustom = normalizarFaixasPavimento(cfg.faixas());
+    const custom = faixasCustom.length > 0;
     const inpAndar = _inp(
-      cfg.andar(),
+      custom ? "Customizado" : cfg.andar(),
       (v) => {
         // Não faz sentido mais unidades por andar do que UCs; limita ao total.
         const n = parseInt(v);
@@ -1588,9 +1621,15 @@ function _mkAgrupamentoCampos(grid, cfg) {
         cfg.setFaixas(null);
         cfg.gerarComplementos();
       },
-      { type: "number", placeholder: "Ex: 4" },
+      custom ? { type: "text" } : { type: "number", placeholder: "Ex: 4" },
     );
-    inpAndar.max = String(maxAptos);
+    if (custom) {
+      // Só-leitura: o valor real está nas faixas (cards abaixo); editar é pelo
+      // botão "Customizar". Um clique no campo também abre o popup.
+      inpAndar.readOnly = true;
+    } else {
+      inpAndar.max = String(maxAptos);
+    }
     // Botão "Customizar" — abre o popup "Composição por pavimento" para
     // descrever faixas de andares com unidades distintas por andar.
     // Ícone: imagem imgs/edit.svg (lápis), sempre centralizada no botão.
@@ -1600,7 +1639,7 @@ function _mkAgrupamentoCampos(grid, cfg) {
     btnCustom.innerHTML =
       '<img class="field-acao-icon" src="../imgs/edit.svg" alt="" aria-hidden="true" />Customizar';
     btnCustom.title = "Personalizar a quantidade de unidades por andar";
-    btnCustom.addEventListener("click", () => {
+    const abrirCustom = () => {
       abrirComposicaoPavimento(
         cfg.faixas(),
         (faixas) => {
@@ -1609,13 +1648,17 @@ function _mkAgrupamentoCampos(grid, cfg) {
           // "Quantidade de unidades por andar" (o popup é a fonte da verdade).
           if (faixas && faixas.length) {
             cfg.setAndar(String(faixas[0].unidades));
-            inpAndar.value = String(faixas[0].unidades);
           }
           cfg.gerarComplementos();
+          // Re-render para (des)montar os cards das faixas e alternar o campo
+          // "por andar" entre editável e "Customizado".
+          if (cfg.rerender) cfg.rerender();
         },
         cfg.ucsLen(),
       );
-    });
+    };
+    btnCustom.addEventListener("click", abrirCustom);
+    if (custom) inpAndar.addEventListener("click", abrirCustom);
     const fAndar = _campoComAcao(
       "Quantidade de unidades por andar",
       inpAndar,
@@ -1635,6 +1678,10 @@ function _mkAgrupamentoCampos(grid, cfg) {
     );
     fCompl.setAttribute("data-noopt", "");
     grid.appendChild(fCompl);
+    // Composição por pavimento (só-leitura): uma linha por faixa, com os três
+    // valores calculados (Andar inicial | Andar final | Unidades por andar),
+    // no mesmo visual dos demais campos. Ocupa a largura toda do grid.
+    if (custom) grid.appendChild(_faixasComposicao(faixasCustom));
   }
   grid.appendChild(
     _campo(
@@ -1673,6 +1720,7 @@ function _cfgAgrupamentoTorre(b, bi) {
     setAndar: (v) => (b.aptosPorAndar = v),
     faixas: () => b.aptosPorAndarFaixas,
     setFaixas: (v) => (b.aptosPorAndarFaixas = v),
+    rerender: () => renderBlocos(),
     compl: () => b.complInicial,
     setCompl: (v) => (b.complInicial = v),
     gerarComplementos: () => autoGerarComplementosTorre(bi),
@@ -1714,6 +1762,7 @@ function _cfgAgrupamentoColetivo() {
     setAndar: (v) => (ag.aptosPorAndar = v),
     faixas: () => ag.aptosPorAndarFaixas,
     setFaixas: (v) => (ag.aptosPorAndarFaixas = v),
+    rerender: () => renderAgrupamentoColetivo(),
     compl: () => ag.complInicial,
     setCompl: (v) => (ag.complInicial = v),
     gerarComplementos: () => autoGerarComplementosColetivo(),
@@ -2166,26 +2215,20 @@ function renderUnidadesResultado() {
     ),
   );
   wrap.appendChild(kpis);
-  const card = document.createElement("div");
-  card.className = "resultado-card resultado-disjuntor";
-  card.innerHTML = `<div class="resultado-card-label">Disjuntor da torre adequado de acordo com a seleção</div>`;
   const regra = disjGeralTorreRegra(b);
   if (!regra.obrigatorio) {
     // Regra de disjuntor: no modo calculadora, sem bipolar > 63 A e com no
     // máximo uma UC tripolar, a torre dispensa o disjuntor geral (proteção
     // coletiva). O disjuntor da torre fica em branco (b.disjGeral = "") e a
-    // etapa não o exige.
+    // etapa não o exige. Sem disjuntor obrigatório, o card é apenas ocultado
+    // (nada de aviso) — restam só os KPIs.
     b.disjGeral = "";
-    const hint = document.createElement("div");
-    hint.className = "alert alert-info";
-    hint.style.marginBottom = "0";
-    hint.innerHTML =
-      "Esta torre <b>dispensa disjuntor geral</b>: pela regra de disjuntor, a combinação das unidades (sem bipolar acima de 63 A e no máximo uma unidade trifásica) não exige proteção geral coletiva.";
-    card.appendChild(hint);
-    wrap.appendChild(card);
     box.appendChild(wrap);
     return;
   }
+  const card = document.createElement("div");
+  card.className = "resultado-card resultado-disjuntor";
+  card.innerHTML = `<div class="resultado-card-label">Disjuntor da torre adequado de acordo com a seleção</div>`;
   const ops = opcoesDisjGeralTorre(b);
   if (ops.length) {
     const tg = document.createElement("div");

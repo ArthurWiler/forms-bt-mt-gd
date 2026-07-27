@@ -399,6 +399,13 @@ html {
     grid-column: span 1;
   }
 }
+/* Composição por pavimento (só-leitura, card das torres): as linhas de faixa
+   (cada uma um .grid-3) empilham com o mesmo respiro vertical do grid do card. */
+.faixas-composicao {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
 
 /* ============================================================
    Aviso — canonical informational banner (icon column + text).
@@ -1494,11 +1501,13 @@ label.restricao-aceite input[type="checkbox"] {
   align-items: stretch;
   margin-top: var(--cmg-space-3);
 }
-/* Quando o bloco tem só o card do disjuntor (sem a coluna de KPIs ao lado —
-   ex.: "Disjuntor da unidade" no coletivo, cujas cargas/demanda vêm do
-   formulário de cargas, não de KPIs), ele ocupa a largura toda, em vez de
-   ficar restrito à metade esquerda do grid de 2 colunas. */
-.cemig-form .resultado-cargas:not(:has(.resultado-kpis)) {
+/* As 2 colunas (KPIs à esquerda, disjuntor à direita) só valem quando os dois
+   estão presentes. Se faltar qualquer um — o "Disjuntor da unidade" no coletivo
+   (só o card, sem KPIs) ou uma torre que dispensa disjuntor geral (só os KPIs,
+   card oculto) — o conteúdo que resta ocupa a largura toda, sem sobrar meia
+   coluna vazia. */
+.cemig-form .resultado-cargas:not(:has(.resultado-kpis)),
+.cemig-form .resultado-cargas:not(:has(.resultado-disjuntor)) {
   grid-template-columns: 1fr;
 }
 .cemig-form .resultado-kpis {
