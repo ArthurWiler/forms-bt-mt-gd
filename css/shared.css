@@ -389,6 +389,14 @@ html {
 .col-span-3 {
   grid-column: span 3;
 }
+/* Campo sozinho na linha SEM esticar: ocupa só a 1ª coluna e empurra o próximo
+   item para a linha de baixo (col-span-* faria o campo ocupar a linha toda). */
+.row-solo {
+  grid-column: 1;
+}
+.row-solo + * {
+  grid-column: 1;
+}
 @media (max-width: 720px) {
   .grid-2,
   .grid-3 {
@@ -1535,10 +1543,9 @@ label.restricao-aceite input[type="checkbox"] {
   margin-top: var(--cmg-space-3);
 }
 /* As 2 colunas (KPIs à esquerda, disjuntor à direita) só valem quando os dois
-   estão presentes. Se faltar qualquer um — o "Disjuntor da unidade" no coletivo
-   (só o card, sem KPIs) ou uma torre que dispensa disjuntor geral (só os KPIs,
-   card oculto) — o conteúdo que resta ocupa a largura toda, sem sobrar meia
-   coluna vazia. */
+   estão presentes. Se faltar qualquer um — uma torre ou agrupamento que
+   dispensa o disjuntor geral (só os KPIs, card oculto) — o conteúdo que resta
+   ocupa a largura toda, sem sobrar meia coluna vazia. */
 .cemig-form .resultado-cargas:not(:has(.resultado-kpis)),
 .cemig-form .resultado-cargas:not(:has(.resultado-disjuntor)) {
   grid-template-columns: 1fr;

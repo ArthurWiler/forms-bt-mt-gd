@@ -189,6 +189,28 @@ const maiorCorrenteUCF = () =>
 // campos: só o MENOR disjuntor geral adequado (seletividade + capacidade).
 const opcoesDisjGeralF = () =>
   disjuntoresGeraisAcima(maiorCorrenteUCF(), demandaPrevTotalF()).slice(0, 1);
+// Disjuntor geral do agrupamento: OPCIONAL pela mesma regra do multi-torres
+// (disjGeralTorreRegra) e do BT individual (validacaoDisjuntoresBT) — só é
+// obrigatório quando a combinação dos disjuntores das UCs exige a proteção
+// coletiva: alguma UC bipolar acima de 63 A, ou duas ou mais UCs tripolares.
+// Fora do modo calculadora (método ND-5.2, 4+ apartamentos) é sempre exigido.
+function disjGeralColetivoObrigatorio() {
+  // Escopo "Alteração de Carga com alteração do disjuntor geral": o geral é o
+  // próprio objeto da solicitação, então nunca é dispensado.
+  if (trocaDisjGeralF()) return true;
+  if (!modoCalculadoraF()) return true;
+  const ativos = (state.ucBlocos || []).filter((u) => !ucSemAlteracao(u));
+  let tri = 0;
+  let acima63 = false;
+  ativos.forEach((u) => {
+    // Mesmo fallback do multi-torres: no modo calculadora o disjuntor da UC é
+    // o escolhido ou o menor adequado calculado pelas cargas declaradas.
+    const esc = disjUCTorre(u);
+    if (/Tripolar/i.test(esc)) tri++;
+    if (/Bipolar/i.test(esc) && correnteDisj(esc) > 63) acima63 = true;
+  });
+  return acima63 || tri > 1;
+}
 // app.js:698-701
 const totalUcsEmpreendimentoF = () =>
   state.blocos.reduce((s, b) => s + (parseInt(b.qtdUCs) || 0), 0);
@@ -302,6 +324,12 @@ function sincronizarBlocos() {
 // app.js:639-645: auto-seleção do disjuntor geral do agrupamento
 function autoSelecionarDisjGeral() {
   if (!coletivoF() || MULTI) return;
+  // Agrupamento que dispensa o disjuntor geral fica sem ele (o rodapé oculta
+  // o card) — não faz sentido pré-selecionar um valor que não será exibido.
+  if (!disjGeralColetivoObrigatorio()) {
+    state.atend.disjuntorGeral = "";
+    return;
+  }
   const ops = opcoesDisjGeralF();
   if (!ops.length) return;
   if (state.atend.disjuntorGeral && ops.includes(state.atend.disjuntorGeral))
@@ -706,10 +734,6 @@ function renderUcsColetivo() {
   if (!box) return;
   sincronizarUcBlocos();
   renderHibridoAlertas();
-  const toolbar = $("#ucsColetivoToolbar");
-  if (toolbar) {
-    toolbar.style.display = state.ucBlocos.length > 1 ? "flex" : "none";
-  }
   const hibrido = hibridoF();
   const modoCalc = modoCalculadoraF();
   box.innerHTML = "";
@@ -721,13 +745,10 @@ function renderUcsColetivo() {
     head.type = "button";
     head.className = "uc-colapsavel-head";
     head.setAttribute("aria-expanded", aberta ? "true" : "false");
-    const headHtml = () =>
-      `<span class="uc-head-info"><span class="uc-colapsavel-titulo">${u.identificacao || `UC ${ui + 1}`}</span>` +
-      (u.complemento
-        ? `<span class="uc-head-endereco-label">Complemento</span><span class="uc-head-endereco">${u.complemento}</span>`
-        : "") +
-      `</span><span class="carga-acc-chevron uc-colapsavel-chevron" aria-hidden="true"></span>`;
-    head.innerHTML = headHtml();
+    head.innerHTML =
+      `<span class="uc-head-info"><span class="uc-colapsavel-titulo">Unidade consumidora ` +
+      `<span class="carga-acc-badge">${ui + 1} de ${state.ucBlocos.length}</span></span></span>` +
+      `<span class="carga-acc-chevron uc-colapsavel-chevron" aria-hidden="true"></span>`;
     head.addEventListener("click", () => {
       btToggleExclusivo(_ucAberta, ui, !aberta);
       renderUcsColetivo();
@@ -736,8 +757,11 @@ function renderUcsColetivo() {
     if (aberta) {
       const corpo = document.createElement("div");
       corpo.className = "uc-colapsavel-corpo";
+      const endereco = _blocoEndereco(u.complemento);
+      corpo.appendChild(endereco);
       const grid = document.createElement("div");
-      grid.className = "grid grid-3";
+      grid.className = "grid grid-2";
+      if (modoCalc && !ucSemAlteracao(u)) grid.style.marginBottom = "24px";
       // Norma de atendimento (só híbrido)
       if (hibrido) {
         grid.appendChild(
@@ -751,17 +775,9 @@ function renderUcsColetivo() {
           ),
         );
       }
-      // Identificação (opcional)
-      grid.appendChild(
-        _campo(
-          "Identificação",
-          _inp(u.identificacao, (v) => {
-            u.identificacao = v;
-            head.innerHTML = headHtml();
-          }),
-        ),
-      );
-      // Nº Predial: editável só no híbrido ND 5.1; senão readonly (obra.num)
+      // Nº Predial: só aparece no híbrido ND 5.1, onde validacaoHibridoF()
+      // exige um número distinto por UC. Fora daí o predial é o da obra
+      // (obra.num) e o campo não é editável — por isso não é exibido.
       if (hibrido && u.nd === "5.1") {
         const f = _campo(
           "Nº Predial",
@@ -773,41 +789,28 @@ function renderUcsColetivo() {
         hint.textContent = "Distinto entre as UCs";
         f.appendChild(hint);
         grid.appendChild(f);
-      } else {
-        const ro = document.createElement("div");
-        ro.className = "readonly-val";
-        ro.textContent = state.obra.num || "—";
-        const f = _campo("Nº Predial", ro);
-        f.setAttribute("data-noopt", "");
-        grid.appendChild(f);
       }
       // Complemento (obrigatório com 2+ UCs — visual; não trava o avanço)
       {
         const f = _campo(
-          "Complemento do endereço",
+          "Complemento da unidade",
           _inp(
             u.complemento,
             (v) => {
               u.complemento = v;
-              head.innerHTML = headHtml();
+              endereco.querySelector(".uc-head-endereco").textContent =
+                enderecoObraTxt(v);
             },
-            { placeholder: "999" },
+            { placeholder: "Ex: 101" },
           ),
         );
         if (state.ucBlocos.length > 1) f.setAttribute("data-noopt", "");
         grid.appendChild(f);
       }
-      // Caixa (opcional)
-      grid.appendChild(
-        _campo(
-          "Caixa",
-          _inp(u.caixa, (v) => (u.caixa = v), { placeholder: "Apartamento" }),
-        ),
-      );
       // Solicitação (estrutural: campos aparecem/somem)
       {
         const f = _campo(
-          "Solicitação",
+          "Tipo de solicitação",
           _selectDe(
             [
               "Conexão Nova",
@@ -823,34 +826,6 @@ function renderUcsColetivo() {
           "field--float",
         );
         f.setAttribute("data-noopt", "");
-        grid.appendChild(f);
-      }
-      // Mudança de local (Alteração / Caixa Existente)
-      if (
-        u.solicitacao === "Alteração de Carga" ||
-        u.solicitacao === "Caixa Existente sem Alteração"
-      ) {
-        const f = document.createElement("div");
-        f.className = "field field--plain";
-        f.setAttribute("data-noopt", "");
-        const l = document.createElement("label");
-        l.textContent = "Mudança de local";
-        const tg = document.createElement("div");
-        tg.className = "toggle-group";
-        ["Sim", "Não"].forEach((v) => {
-          const b = document.createElement("button");
-          b.type = "button";
-          b.className = "toggle-btn" + (u.mudancaLocal === v ? " on" : "");
-          b.textContent = v;
-          b.addEventListener("click", () => {
-            u.mudancaLocal = v;
-            tg.querySelectorAll(".toggle-btn").forEach((x) =>
-              x.classList.toggle("on", x === b),
-            );
-          });
-          tg.appendChild(b);
-        });
-        f.append(l, tg);
         grid.appendChild(f);
       }
       // Atividade principal (estrutural: Ramo × Área)
@@ -881,7 +856,7 @@ function renderUcsColetivo() {
         grid.appendChild(f);
       } else {
         const f = _campo(
-          "Área (m²)",
+          "Área privativa (m²)",
           _inp(
             u.area,
             (v) => {
@@ -924,29 +899,12 @@ function renderUcsColetivo() {
           ),
         );
       }
-      grid.appendChild(
-        _campo(
-          "Disjuntor solicitado",
-          _selectDe(
-            DISJ_CN.map((d) => d.fx),
-            u.disjPara,
-            (v) => {
-              u.disjPara = v;
-              aplicarPresetResidencial();
-              autoSelecionarDisjGeral();
-              // Re-render para o campo Carga prevista refletir o preset
-              renderUcsColetivo();
-            },
-            true,
-          ),
-          "field--float",
-        ),
-      );
+      const semAlt = ucSemAlteracao(u);
       // Carga prevista (kW) — substitui a antiga tabela de previsão de carga;
       // aparece no método 5.2 quando o agrupamento tem mais de 3 UCs.
-      if (!modoCalc && state.ucBlocos.length > 3 && !ucSemAlteracao(u)) {
+      if (!modoCalc && state.ucBlocos.length > 3 && !semAlt) {
         const f = _campo(
-          "Carga prevista (kW)",
+          "Carga prevista da unidade (kW)",
           _inp(
             u.cargaPrevista,
             (v) => {
@@ -959,10 +917,38 @@ function renderUcsColetivo() {
         f.setAttribute("data-noopt", "");
         grid.appendChild(f);
       }
+      // Disjuntor da UC (mesma regra do multi-torres — ver _mkUnidadeCard):
+      //  • Método ND-5.2 (4+ UCs): escolha manual na lista DISJ_COL, já que
+      //    não há cargas detalhadas para calcular.
+      //  • Modo calculadora (até 3 UCs): calculado a partir das cargas
+      //    declaradas, igual ao BT individual — radio com a lista adequada
+      //    (cargas._disjuntores), renderizado abaixo das cargas (disjBox).
+      if (!modoCalc || semAlt) {
+        grid.appendChild(
+          _campo(
+            "Disjuntor da unidade",
+            _selectDe(
+              DISJ_COL.map((d) => d.fx),
+              u.disjPara,
+              (v) => {
+                u.disjPara = v;
+                // O preset de carga prevista depende do disjuntor escolhido —
+                // re-renderiza para o campo refletir o novo valor.
+                aplicarPresetResidencial();
+                renderUcsColetivo();
+                atualizarCargasColetivo();
+              },
+              true,
+            ),
+            "field--float",
+          ),
+        );
+      }
       corpo.appendChild(grid);
       // ND-5.2 não calcula → a UC detalha as cargas como no BT individual
-      // (mesma ilha montarCargasBT; demanda/carga da UC saem do cálculo).
-      if (modoCalc && !ucSemAlteracao(u)) {
+      // (mesma ilha montarCargasBT; demanda/carga da UC saem do cálculo). O
+      // disjuntor da UC também é calculado pelas cargas (disjBox abaixo).
+      if (modoCalc && !semAlt) {
         const divisor = document.createElement("div");
         divisor.className = "divider";
         const titulo = document.createElement("span");
@@ -972,7 +958,26 @@ function renderUcsColetivo() {
         corpo.appendChild(divisor);
         const cargasBox = document.createElement("div");
         corpo.appendChild(cargasBox);
-        montarCargasBT(cargasBox, u, ui, () => atualizarCargasColetivo());
+        const disjBox = document.createElement("div");
+        corpo.appendChild(disjBox);
+        // atualizarCargasColetivo() já reajusta o disjuntor geral.
+        montarCargasBT(cargasBox, u, ui, () => {
+          renderDisjUnidadeCalc(disjBox, u, atualizarCargasColetivo);
+          atualizarCargasColetivo();
+        });
+        renderDisjUnidadeCalc(disjBox, u, atualizarCargasColetivo);
+      }
+      // Replicar UC 1 para as demais — dentro da própria UC 1.
+      if (ui === 0 && state.ucBlocos.length > 1) {
+        const row = document.createElement("div");
+        row.className = "acao-central";
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "btn btn-ghost btn-outlined-acao";
+        btn.textContent = "Replicar dados para todas unidades";
+        btn.addEventListener("click", () => replicarUC1Coletivo());
+        row.appendChild(btn);
+        corpo.appendChild(row);
       }
       bloco.appendChild(corpo);
     }
@@ -998,23 +1003,17 @@ function renderCargasColetivo() {
 // rodapé com KPIs + disjuntor geral, montado por renderDisjGeralColetivo).
 function atualizarCargasColetivo() {
   const info = nd52InfoF();
-  // Alertas ND-5.2 / modo calculadora
+  // Alerta ND-5.2: só o resultado do cálculo automático. No modo calculadora
+  // (menos de 4 apartamentos) não há aviso — a demanda sai das cargas
+  // detalhadas em cada UC, o que a própria etapa já mostra.
+  // Sem área válida ainda (área média fora de 1..1000 m²) também não há aviso:
+  // o campo "Área privativa (m²)" de cada UC já sinaliza o que falta preencher.
   const alertas = $("#nd52Alertas");
-  if (alertas) {
-    let html = "";
-    if (!modoCalculadoraF()) {
-      html = info.nd52
+  if (alertas)
+    alertas.innerHTML =
+      !modoCalculadoraF() && info.nd52
         ? `<div class="alert alert-ok" style="margin-bottom:14px"><b>Demanda dos apartamentos residenciais (ND-5.2):</b> ${info.quantidadeApartamentos} apartamento(s) · área média ponderada ${fmt2(info.areaMediaPonderada)} m² · Fator F ${fmt2(info.nd52.fatorF)} · A ${fmt2(info.nd52.demandaAreaA)} → D = ${fmt2(info.nd52.demandaKVA)} kVA (incluída automaticamente na demanda total abaixo).</div>`
-        : `<div class="alert alert-warn" style="margin-bottom:14px"><b>Método ND-5.2 (${info.quantidadeApartamentos} apartamentos):</b> informe a área de cada apartamento residencial — a área média ponderada precisa ficar entre 1 e 1000 m² (atual: ${fmt2(info.areaMediaPonderada)} m²). A demanda residencial permanece zerada até lá.</div>`;
-    } else {
-      const motivo =
-        info.quantidadeApartamentos === 0
-          ? "Não há UCs residenciais para o cálculo automático pelo ND-5.2"
-          : `ND-5.2 exige no mínimo 4 apartamentos para o cálculo automático (atualmente ${info.quantidadeApartamentos})`;
-      html = `<div class="alert alert-info" style="margin-bottom:14px">${motivo}: a demanda do agrupamento é a soma das demandas calculadas pelas cargas detalhadas em cada UC (método ND-5.1), acima.</div>`;
-    }
-    alertas.innerHTML = html;
-  }
+        : "";
   // Demanda geral não residencial: só no método 5.2 (quando o ND-5.2 calcula
   // a parte residencial); no modo calculadora as UCs não residenciais também
   // detalham as próprias cargas.
@@ -1093,22 +1092,13 @@ function renderDisjGeralColetivo() {
   wrap.className = "resultado-cargas divider";
   const kpis = document.createElement("div");
   kpis.className = "resultado-kpis";
-  const mkKpi = (label, valor, titulo) => {
-    const card = document.createElement("div");
-    card.className = "resultado-card";
-    card.innerHTML =
-      `<span class="resultado-card-info cmg-hint" tabindex="0" role="img" aria-label="${label}: ajuda" data-hint="${titulo}"><img class="field-info" src="../imgs/info.svg" alt="" aria-hidden="true" /></span>` +
-      `<div class="resultado-card-label">${label}</div>` +
-      `<div class="resultado-card-valor">${valor}</div>`;
-    return card;
-  };
   kpis.append(
-    mkKpi(
+    _mkKpiCard(
       "Total Carga Instalada",
       `${fmt2(prevTotalKwF())} kW`,
       "Soma da carga prevista de todas as unidades consumidoras do agrupamento.",
     ),
-    mkKpi(
+    _mkKpiCard(
       "Demanda do atendimento",
       `${fmt2(demandaTotalGeralF())} kVA`,
       "Demanda total do agrupamento (parte residencial pelo ND-5.2 mais a demanda não residencial, ou a soma das demandas calculadas pelas UCs). É ela que dimensiona o disjuntor geral do agrupamento.",
@@ -1116,6 +1106,16 @@ function renderDisjGeralColetivo() {
   );
   wrap.appendChild(kpis);
 
+  if (!disjGeralColetivoObrigatorio()) {
+    // Igual ao multi-torres (renderUnidadesResultado): sem bipolar > 63 A e com
+    // no máximo uma UC tripolar, o agrupamento dispensa o disjuntor geral. O
+    // valor fica em branco e o card é apenas ocultado (sem aviso) — restam os
+    // KPIs, que passam a ocupar a largura toda (ver .resultado-cargas no CSS).
+    state.atend.disjuntorGeral = "";
+    geralBox.appendChild(wrap);
+    if (window.CemigMarcadores) CemigMarcadores.aplicar(geralBox);
+    return;
+  }
   const invalido =
     state.atend.disjuntorGeral && !opcoes.includes(state.atend.disjuntorGeral);
   const card = document.createElement("div");
@@ -1194,6 +1194,17 @@ function enderecoObraTxt(complemento) {
   const o = state.obra;
   const base = [o.endereco, o.num].filter(Boolean).join(", ");
   return (base || "—") + (complemento ? `, ${complemento}` : "");
+}
+// Card de KPI dos rodapés de resultado (carga/demanda da unidade, da torre e
+// do agrupamento) — rótulo, valor e o ícone de ajuda com o texto explicativo.
+function _mkKpiCard(label, valor, titulo) {
+  const card = document.createElement("div");
+  card.className = "resultado-card";
+  card.innerHTML =
+    `<span class="resultado-card-info cmg-hint" tabindex="0" role="img" aria-label="${label}: ajuda" data-hint="${titulo}"><img class="field-info" src="../imgs/info.svg" alt="" aria-hidden="true" /></span>` +
+    `<div class="resultado-card-label">${label}</div>` +
+    `<div class="resultado-card-valor">${valor}</div>`;
+  return card;
 }
 function _blocoEndereco(complemento) {
   const box = document.createElement("div");
@@ -1601,6 +1612,32 @@ function abrirComposicaoPavimento(faixasAtuais, onSalvar, totalUCs) {
   const primeiro = tabela.querySelector("input");
   if (primeiro) primeiro.focus();
 }
+// Executa um re-render que reconstrói o campo em foco (innerHTML = "") sem
+// tirar o cursor de onde o usuário está digitando: guarda o input ativo pelo
+// data-foco + posição do cursor e devolve o foco ao equivalente recriado.
+// Usado pelos campos cujo valor muda a ESTRUTURA do card (ex.: "Quantidade de
+// unidades", que monta/desmonta "por andar" e "Primeiro complemento").
+function _preservandoFoco(rerender) {
+  const ativo = document.activeElement;
+  const chave =
+    ativo && ativo.tagName === "INPUT" ? ativo.getAttribute("data-foco") : null;
+  if (!chave) return rerender();
+  // selectionStart/End não são acessíveis em input type="number" (lança em
+  // alguns navegadores): sem cursor, só o foco é restaurado.
+  let ini = null;
+  let fim = null;
+  try {
+    ini = ativo.selectionStart;
+    fim = ativo.selectionEnd;
+  } catch (e) {}
+  rerender();
+  const novo = document.querySelector(`input[data-foco="${chave}"]`);
+  if (!novo || novo === ativo) return;
+  novo.focus();
+  try {
+    if (ini != null) novo.setSelectionRange(ini, fim);
+  } catch (e) {}
+}
 // Card só-leitura de exibição (rótulo fixo em cima + valor embaixo). Card
 // estático (sem <input>), no visual da spec do Figma (.faixa-card): padding
 // 20px, borda neutra/200, radius 8px. field--plain sai do rótulo flutuante e
@@ -1639,25 +1676,26 @@ function _faixasComposicao(faixas) {
 // Campos do agrupamento compartilhados entre torre (condomínio) e coletivo. O
 // LAYOUT é o mesmo dos dois; a origem/destino de cada campo varia por fluxo e
 // vem no adaptador `cfg` (ver _cfgAgrupamentoTorre / _cfgAgrupamentoColetivo).
-// Ordem-alvo (imagem):
-//   Quantidade de unidades
+// Ordem-alvo (imagem) — todo campo tem a largura de uma coluna do grid-2:
+//   Quantidade de unidades            (sozinha na linha no fluxo coletivo)
 //   Unidades por andar (+ Customizar) | Primeiro complemento (i)
-//   Demanda do condomínio | Disjuntor do condomínio
+//   Demanda do condomínio             | Disjuntor do condomínio
 // A "Identificação da torre" (exclusiva do condomínio) é montada por quem chama.
 function _mkAgrupamentoCampos(grid, cfg) {
   {
-    const f = _campo(
-      cfg.qtdLabel || "Quantidade de unidades na torre",
-      _inp(cfg.qtd(), (v) => cfg.setQtd(v), {
-        type: "number",
-        placeholder: "0",
-      }),
-    );
+    const inpQtd = _inp(cfg.qtd(), (v) => cfg.setQtd(v), {
+      type: "number",
+      placeholder: "0",
+    });
+    // Identifica o campo entre re-renders do card (ver _preservandoFoco): mudar
+    // a quantidade monta/desmonta os campos vizinhos e refaz este input.
+    inpQtd.setAttribute("data-foco", cfg.focoQtdId || "qtd-agrupamento");
+    const f = _campo(cfg.qtdLabel || "Quantidade de unidades na torre", inpQtd);
     f.setAttribute("data-noopt", "");
-    // Sem "Identificação da torre" antes (fluxo coletivo), a Quantidade ocupa a
-    // linha inteira para os pares abaixo (Andar|Complemento, Demanda|Disjuntor)
-    // ficarem alinhados — mesmo layout do card do condomínio.
-    if (cfg.semIdentificacao) f.classList.add("col-span-2");
+    // Sem "Identificação da torre" ao lado (fluxo coletivo), a Quantidade fica
+    // sozinha na linha — com a largura de uma coluna, sem esticar — para os
+    // pares abaixo (Andar|Complemento, Demanda|Disjuntor) ficarem alinhados.
+    if (cfg.qtdSozinhaNaLinha) f.classList.add("row-solo");
     grid.appendChild(f);
   }
   // Geração de complementos das unidades: ao preencher o primeiro complemento
@@ -1772,13 +1810,14 @@ function _mkAgrupamentoCampos(grid, cfg) {
 function _cfgAgrupamentoTorre(b, bi) {
   return {
     disjId: `disjCondominio-${bi}`,
+    focoQtdId: `qtd-torre-${bi}`,
     qtd: () => b.qtdUCs,
     setQtd: (v) => {
       const antes = (b.ucs || []).length > 1;
       sincronizarUCsTorre(bi, v);
       // Re-renderiza só quando a visibilidade de "por andar"/complemento muda
-      // (não a cada tecla, para não perder o foco do campo de quantidade).
-      if ((b.ucs || []).length > 1 !== antes) renderBlocos();
+      // (não a cada tecla), preservando o foco/cursor do campo de quantidade.
+      if ((b.ucs || []).length > 1 !== antes) _preservandoFoco(renderBlocos);
     },
     ucsLen: () => (b.ucs || []).length,
     andar: () => b.aptosPorAndar,
@@ -1812,21 +1851,28 @@ function _cfgAgrupamentoTorre(b, bi) {
 function _cfgAgrupamentoColetivo() {
   const ag = _coletivoAgr();
   return {
-    // Coletivo não tem "Identificação da torre": Quantidade ocupa a linha toda.
-    semIdentificacao: true,
+    // Coletivo não tem "Identificação da torre": Quantidade fica só na linha.
+    qtdSozinhaNaLinha: true,
     disjId: "disjCondominio-coletivo",
     qtdLabel: "Quantidade de unidades",
+    focoQtdId: "qtd-coletivo",
     qtd: () => state.atend.nUCs,
     setQtd: (v) => {
       const antes = state.ucBlocos.length > 1;
       state.atend.nUCs = v;
+      // Campo vazio (apagou para redigitar) não redimensiona a lista: aceita o
+      // valor bruto e mantém as UCs preenchidas até vir um número válido —
+      // mesma regra de sincronizarBlocos.
+      if (String(v == null ? "" : v).trim() === "") return;
       sincronizarUcBlocos();
-      // A lista de UCs abaixo acompanha a quantidade (não contém o campo que
-      // dispara, então não há perda de foco). O card do topo só é refeito
-      // quando a visibilidade de "por andar"/complemento muda (0/1 ↔ 2+ UCs),
-      // para não perder o foco do próprio campo de quantidade a cada tecla.
+      // A lista de UCs fica em outra etapa (#ucsColetivoBox) — re-renderizar
+      // não afeta o foco daqui.
       renderUcsColetivo();
-      if (state.ucBlocos.length > 1 !== antes) renderAgrupamentoColetivo();
+      // O card do topo contém o próprio campo de quantidade, então só é refeito
+      // quando a visibilidade de "por andar"/complemento muda (0/1 ↔ 2+ UCs) —
+      // e mesmo aí o foco/cursor volta para o campo que o usuário está usando.
+      if (state.ucBlocos.length > 1 !== antes)
+        _preservandoFoco(renderAgrupamentoColetivo);
     },
     ucsLen: () => state.ucBlocos.length,
     andar: () => ag.aptosPorAndar,
@@ -2227,12 +2273,31 @@ function _mkUnidadeCard(bi, ui, modoCalc) {
 // declaradas, exatamente como no BT individual. Radio com a lista adequada
 // (u.cargas._disjuntores); a escolha vai para u.disjPara. Se o valor guardado
 // não estiver mais na lista (as cargas mudaram), volta ao menor adequado.
-function renderDisjUnidadeCalc(box, u) {
+// `aoMudar` é o recalculo do fluxo que chamou (multi-torres ou coletivo).
+function renderDisjUnidadeCalc(box, u, aoMudar) {
+  const atualizar = aoMudar || atualizarUnidadesCalc;
   const lista = (u.cargas && u.cargas._disjuntores) || [];
   if (!(u.disjPara && lista.includes(u.disjPara))) u.disjPara = lista[0] || "";
   box.innerHTML = "";
   const wrap = document.createElement("div");
   wrap.className = "resultado-cargas divider";
+  // Carga e demanda calculadas da própria UC, ao lado da escolha do disjuntor
+  // (mesmo par de KPIs do rodapé da torre/agrupamento, na escala da unidade).
+  const kpis = document.createElement("div");
+  kpis.className = "resultado-kpis";
+  kpis.append(
+    _mkKpiCard(
+      "Carga instalada da unidade",
+      `${fmt2(num((u.cargas || {})._cargaKw))} kW`,
+      "Soma da carga instalada declarada nas cargas desta unidade consumidora.",
+    ),
+    _mkKpiCard(
+      "Demanda da unidade",
+      `${fmt2(num((u.cargas || {})._demanda))} kVA`,
+      "Demanda calculada a partir das cargas detalhadas desta unidade consumidora. É ela que dimensiona o disjuntor da unidade.",
+    ),
+  );
+  wrap.appendChild(kpis);
   const card = document.createElement("div");
   card.className = "resultado-card resultado-disjuntor";
   card.innerHTML = `<div class="resultado-card-label">Disjuntor da unidade adequado de acordo com a seleção</div>`;
@@ -2246,8 +2311,8 @@ function renderDisjUnidadeCalc(box, u) {
       btn.textContent = dj;
       btn.addEventListener("click", () => {
         u.disjPara = dj;
-        renderDisjUnidadeCalc(box, u);
-        atualizarUnidadesCalc();
+        renderDisjUnidadeCalc(box, u, aoMudar);
+        atualizar();
       });
       tg.appendChild(btn);
     });
@@ -2275,34 +2340,17 @@ function renderUnidadesResultado() {
   if (!box || !b) return;
   const calcTorre = calcBlocoMultiTorres(b);
   box.innerHTML = "";
-  // Método 5.2 com área média fora da tabela: avisa e mantém residencial 0.
-  /*if (!calcTorre.modoCalculadora && !calcTorre.nd52) {
-    const aviso = document.createElement("div");
-    aviso.className = "alert alert-warn";
-    aviso.style.marginTop = "14px";
-    aviso.textContent = `Método ND-5.2 (${calcTorre.qtdApart} apartamentos): informe a área de cada apartamento residencial da torre — a área média ponderada precisa ficar entre 1 e 1000 m² (atual: ${fmt2(calcTorre.areaMedia)} m²). A demanda residencial permanece zerada até lá.`;
-    box.appendChild(aviso);
-  }*/
   const wrap = document.createElement("div");
   wrap.className = "resultado-cargas divider";
   const kpis = document.createElement("div");
   kpis.className = "resultado-kpis";
-  const mkKpi = (label, valor, titulo) => {
-    const card = document.createElement("div");
-    card.className = "resultado-card";
-    card.innerHTML =
-      `<span class="resultado-card-info cmg-hint" tabindex="0" role="img" aria-label="${label}: ajuda" data-hint="${titulo}"><img class="field-info" src="../imgs/info.svg" alt="" aria-hidden="true" /></span>` +
-      `<div class="resultado-card-label">${label}</div>` +
-      `<div class="resultado-card-valor">${valor}</div>`;
-    return card;
-  };
   kpis.append(
-    mkKpi(
+    _mkKpiCard(
       "Carga total da Torre",
       `${fmt2(cargaTotalTorre(b))} kW`,
       "A carga total é a soma da carga estimada para todos os apartamentos mais a carga necessária para as áreas de uso comum (como elevadores e iluminação externa).",
     ),
-    mkKpi(
+    _mkKpiCard(
       "Demanda das UCs da torre",
       `${fmt2(calcTorre.demandaUcs)} kVA`,
       "Demanda das unidades consumidoras da torre (cruzando o tamanho médio das moradias com o número de unidades). É esta demanda que dimensiona o disjuntor da torre. O combate a incêndio/condomínio tem demanda e disjuntor próprios, informados na etapa das torres.",
