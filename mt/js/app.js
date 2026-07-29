@@ -2634,6 +2634,10 @@ document.addEventListener("DOMContentLoaded", () => {
   bindInputs();
   inicializarCamposCards();
   onCorresp(); // sincroniza os blocos condicionais da correspondência
+  // Sincroniza os blocos de Subestação (trafos x cubículos) já no load: sem
+  // isto o estado inicial vinha só dos style="display" do HTML, que podiam
+  // divergir do valor restaurado em state.compartilhada.
+  onCompartilhada();
   addTrafo(); // começa com 1 linha de trafo
   aplicarAtividadeDaURL();
   // Normaliza rótulos/obrigatoriedade das coordenadas (opcional em zona

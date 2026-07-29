@@ -981,11 +981,6 @@
                   <option>Não</option>
                 </select>
               </div>
-              <h4 class="card-subtitle">Dados dos transformadores</h4>
-              <p class="card-sub">
-                Preencha os dados de todos os transformadores que serão usados
-                na sua propriedade.
-              </p>
               <div class="field" id="qtdCubiculosBox" style="display: none">
                 <label>Quantos cubículos?</label>
                 <input
@@ -1000,17 +995,21 @@
             <div id="compartilhadaAlert"></div>
 
             <div id="cubiculosBox" style="display: none">
-              <div class="subbox-title" style="margin-top: 24px">
-                Cubículos da Subestação Compartilhada
-              </div>
+              <h4 class="card-subtitle divider">
+                Cubículos da Subestação Compartilhada <span class="req">*</span>
+              </h4>
+              <p class="card-sub">
+                Preencha os dados dos transformadores de cada cubículo da
+                subestação compartilhada.
+              </p>
               <div id="cubiculosCards"></div>
             </div>
 
             <div id="blocoTecnicoIndividual">
               <div id="blocoTotaisConsolidados" style="display: none">
-                <div class="subbox-title" style="margin-top: 24px">
+                <h4 class="card-subtitle divider">
                   Totais Consolidados (Cubículos)
-                </div>
+                </h4>
                 <div class="grid grid-2" style="margin-top: 16px">
                   <div class="field">
                     <label>Soma dos transformadores (kVA)</label>
@@ -1033,9 +1032,13 @@
                 </div>
               </div>
               <div id="blocoTrafosIndividual">
-                <div class="subbox-title" style="margin-top: 24px">
-                  Transformador(es) <span class="req">*</span>
-                </div>
+                <h4 class="card-subtitle divider">
+                  Dados dos transformadores <span class="req">*</span>
+                </h4>
+                <p class="card-sub">
+                  Preencha os dados de todos os transformadores que serão usados
+                  na sua propriedade.
+                </p>
                 <div class="tbl-scroll" style="margin-top: 16px">
                   <table class="tbl" id="trafoTbl">
                     <thead>
@@ -1064,10 +1067,10 @@
               </div>
 
               <div id="blocoMotoresIndividual">
-                <div class="subbox-title" style="margin-top: 24px">
+                <h4 class="card-subtitle divider">
                   Motores / Cargas Especiais
                   <span class="opt">(preencha se houver)</span>
-                </div>
+                </h4>
                 <div
                   id="motoresCardsContainer"
                   class="motores-cards-grid"
