@@ -72,6 +72,10 @@
   --cmg-lh-display: 46px;
   --cmg-fs-title: 28px; /* título/pequeno  */
   --cmg-lh-title: 38px;
+  --cmg-fs-subtitle-lg: 26px; /* subtítulo/grande */
+  --cmg-lh-subtitle-lg: 38px;
+  --cmg-fs-subtitle-md: 22px; /* subtítulo/médio */
+  --cmg-lh-subtitle-md: 32px;
   --cmg-fs-subtitle: 18px; /* subtítulo       */
   --cmg-lh-subtitle: 26px;
   --cmg-fs-body-lg: 16px; /* corpo/grande    */

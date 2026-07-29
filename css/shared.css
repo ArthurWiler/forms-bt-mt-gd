@@ -2715,7 +2715,20 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .card-title {
   font-family: var(--cmg-font-family);
   font-size: var(--cmg-fs-subtitle-lg, 26px);
-  line-height: 38px;
+  line-height: var(--cmg-lh-subtitle-lg, 38px);
+  font-weight: var(--cmg-fw-regular);
+  letter-spacing: var(--cmg-ls-wide);
+  color: var(--cmg-text-strong);
+  margin-bottom: var(--cmg-space-2);
+}
+/* Cabeçalho SECUNDÁRIO dentro do card (Figma "subtítulo/médio", 22/32):
+   um degrau abaixo do .card-title (26/38), para blocos como "Dados do
+   Proprietário" / "Dados do Responsável Técnico" que dividem uma mesma
+   etapa. Combine com .divider para a linha separadora acima. */
+.cemig-form .card-subtitle {
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-subtitle-md, 22px);
+  line-height: var(--cmg-lh-subtitle-md, 32px);
   font-weight: var(--cmg-fw-regular);
   letter-spacing: var(--cmg-ls-wide);
   color: var(--cmg-text-strong);

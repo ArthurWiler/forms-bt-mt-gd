@@ -63,14 +63,22 @@
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">5</span>
-          <span class="vstep-label">Dados Técnicos</span>
+          <span class="vstep-label">Subestação</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">6</span>
-          <span class="vstep-label">Correspondência</span>
+          <span class="vstep-label">Ramal e Geração</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">7</span>
+          <span class="vstep-label">Correspondência</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">8</span>
+          <span class="vstep-label">Observações</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">9</span>
           <span class="vstep-label">Prévia &amp; PDF</span>
         </button>
       </aside>
@@ -151,7 +159,8 @@
         <section class="page" id="page-1">
           <div class="card">
             <div class="section-eyebrow">Etapa 2</div>
-            <h3 class="card-title">Dados do Proprietário</h3>
+            <h3 class="card-title">Dados para contato</h3>
+            <h4 class="card-subtitle">Dados do proprietário</h4>
             <p class="card-sub">
               Preencha os dados do titular da conta de energia ou do
               proprietário do imóvel.
@@ -195,7 +204,7 @@
                   type="text"
                   id="f_cpfcnpj"
                   data-k="cpfCnpj"
-                  placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                  placeholder=" "
                   oninput="onCpfCnpj()"
                 />
                 <span class="field-hint" id="cpfMsg"></span>
@@ -222,9 +231,9 @@
                 <label>Data de Nascimento <span class="req">*</span></label>
                 <input type="date" data-k="nasc" />
               </div>
-              <div class="field field--plain pf-campo" style="display: none">
+              <div class="field pf-campo" style="display: none">
                 <label
-                  >Possui laudo médico (equipamentos essenciais)?
+                  >Possui equipamentos essenciais?
                   <span class="req">*</span></label
                 >
                 <select data-k="laudoMedico">
@@ -233,7 +242,7 @@
                   <option>Não</option>
                 </select>
               </div>
-              <div class="field field--plain pf-campo" style="display: none">
+              <div class="field pf-campo" style="display: none">
                 <label
                   >Possui NIS para Tarifa Social?
                   <span class="req">*</span></label
@@ -257,7 +266,7 @@
                 />
               </div>
             </div>
-            <h3 class="card-title divider">Dados do Responsável Técnico</h3>
+            <h4 class="card-subtitle divider">Dados do responsável técnico</h4>
             <p class="card-sub">
               Preencha os dados do responsável técnico pelo empreendimento, se
               houver.
@@ -301,9 +310,9 @@
           </div>
         </section>
 
-        <section class="page" id="page-5">
+        <section class="page" id="page-6">
           <div class="card">
-            <div class="section-eyebrow">Etapa 6</div>
+            <div class="section-eyebrow">Etapa 7</div>
             <h3 class="card-title">Correspondência e Fatura</h3>
             <p class="card-sub">
               Escolha como e quando você deseja receber a conta de energia.
@@ -468,8 +477,8 @@
             </div>
           </div>
           <div class="nav-bottom no-print">
-            <button class="btn btn-ghost" onclick="goTo(4)">← Voltar</button>
-            <button class="btn btn-primary" onclick="goTo(6)">Avançar →</button>
+            <button class="btn btn-ghost" onclick="goTo(5)">← Voltar</button>
+            <button class="btn btn-primary" onclick="goTo(7)">Avançar →</button>
           </div>
         </section>
 
@@ -771,15 +780,30 @@
                     </div>
                     <div class="field col-span-2">
                       <label>Endereço <span class="req">*</span></label>
-                      <input type="text" data-k="nv_endereco" placeholder=" " />
+                      <input
+                        type="text"
+                        data-k="nv_endereco"
+                        placeholder=" "
+                        onblur="onEnderecoNovoMT()"
+                      />
                     </div>
                     <div class="field">
                       <label>Nº <span class="req">*</span></label>
-                      <input type="text" data-k="nv_num" placeholder=" " />
+                      <input
+                        type="text"
+                        data-k="nv_num"
+                        placeholder=" "
+                        onblur="onEnderecoNovoMT()"
+                      />
                     </div>
                     <div class="field">
                       <label>Bairro <span class="req">*</span></label>
-                      <input type="text" data-k="nv_bairro" placeholder=" " />
+                      <input
+                        type="text"
+                        data-k="nv_bairro"
+                        placeholder=" "
+                        onblur="onEnderecoNovoMT()"
+                      />
                     </div>
                     <div class="field">
                       <label>Município <span class="req">*</span></label>
@@ -787,6 +811,7 @@
                         type="text"
                         data-k="nv_municipio"
                         placeholder=" "
+                        onblur="onEnderecoNovoMT()"
                       />
                     </div>
                     <div class="field">
@@ -920,20 +945,23 @@
         <section class="page" id="page-4">
           <div class="card">
             <div class="section-eyebrow">Etapa 5</div>
-            <h3 class="card-title">Dados Técnicos</h3>
-
-            <div class="grid grid-2" style="margin-top: 16px">
-              <div class="field field--plain">
+            <h3 class="card-title">
+              Dados técnicos da subestação e cargas especiais
+            </h3>
+            <p class="card-sub">
+              Preencha os dados técnicos da subestação e suas cargas especiais,
+              se houver..
+            </p>
+            <h4 class="card-subtitle">Subestação</h4>
+            <div class="grid grid-2">
+              <div class="field row">
                 <label
                   >Nível de tensão da rede MT <span class="req">*</span></label
                 >
-                <div id="cardsTensaoMT"></div>
                 <select
                   id="f_tensaoMT"
                   data-k="tensaoMT"
                   onchange="recalcTecnico()"
-                  style="display: none"
-                  aria-hidden="true"
                 >
                   <option value=""></option>
                   <option value="13.8">13,8 kV</option>
@@ -953,6 +981,11 @@
                   <option>Não</option>
                 </select>
               </div>
+              <h4 class="card-subtitle">Dados dos transformadores</h4>
+              <p class="card-sub">
+                Preencha os dados de todos os transformadores que serão usados
+                na sua propriedade.
+              </p>
               <div class="field" id="qtdCubiculosBox" style="display: none">
                 <label>Quantos cubículos?</label>
                 <input
@@ -1386,7 +1419,20 @@
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+          <div class="nav-bottom no-print">
+            <button class="btn btn-ghost" onclick="goTo(3)">← Voltar</button>
+            <button class="btn btn-primary" onclick="goTo(5)">Avançar →</button>
+          </div>
+        </section>
 
+        <section class="page" id="page-5">
+          <div class="card">
+            <div class="section-eyebrow">Etapa 6</div>
+            <h3 class="card-title">Ramal e Geração</h3>
+
+            <div id="blocoGeracaoBT">
               <div class="subbox-title" style="margin-top: 24px">
                 Geração e Baixa Tensão
               </div>
@@ -1468,24 +1514,34 @@
               Preencha o nível de tensão, a localização, o tipo de subestação e
               a finalidade para visualizar os ramais elegíveis.
             </div>
+          </div>
+          <div class="nav-bottom no-print">
+            <button class="btn btn-ghost" onclick="goTo(4)">← Voltar</button>
+            <button class="btn btn-primary" onclick="goTo(6)">Avançar →</button>
+          </div>
+        </section>
 
-            <div class="field" style="margin-top: 24px">
-              <label>Observações</label>
+        <section class="page" id="page-7">
+          <div class="card">
+            <div class="section-eyebrow">Etapa 8</div>
+            <h3 class="card-title">Observações</h3>
+            <div class="field">
               <textarea
                 data-k="observacoes"
+                rows="6"
                 placeholder="Inclua informações relevantes: justificativa de disjuntor, atendimento híbrido, geração já conectada, etc."
               ></textarea>
             </div>
           </div>
           <div class="nav-bottom no-print">
-            <button class="btn btn-ghost" onclick="goTo(3)">← Voltar</button>
-            <button class="btn btn-primary" onclick="goTo(5)">Avançar →</button>
+            <button class="btn btn-ghost" onclick="goTo(6)">← Voltar</button>
+            <button class="btn btn-primary" onclick="goTo(8)">Avançar →</button>
           </div>
         </section>
 
-        <section class="page" id="page-6">
+        <section class="page" id="page-8">
           <div class="card">
-            <div class="section-eyebrow">Etapa 7</div>
+            <div class="section-eyebrow">Etapa 9</div>
             <h3 class="card-title">Prévia do Formulário</h3>
             <p class="card-sub no-print">
               Confira os dados abaixo. Se algo estiver incorreto, volte às
@@ -1507,7 +1563,7 @@
             </div>
           </div>
           <div class="nav-bottom no-print">
-            <button class="btn btn-ghost" onclick="goTo(5)">
+            <button class="btn btn-ghost" onclick="goTo(7)">
               ← Voltar e editar
             </button>
             <span class="nav-step-info" id="exportProgressMini"

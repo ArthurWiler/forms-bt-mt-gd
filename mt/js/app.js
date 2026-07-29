@@ -38,16 +38,9 @@ const CAMPOS_CARDS_CONFIG = {
         { valor: "Rural", texto: "Rural" },
       ],
     },
-    {
-      chave: "tensaoMT",
-      gridId: "cardsTensaoMT",
-      valorPadrao: "13.8",
-      opcoes: [
-        { valor: "13.8", texto: "13,8 kV" },
-        { valor: "22", texto: "22 kV" },
-        { valor: "34.5", texto: "34,5 kV" },
-      ],
-    },
+    // "tensaoMT" não entra aqui: o nível de tensão da rede MT é um <select>
+    // nativo (dropdown), não cards — as três opções não têm o mesmo peso de
+    // escolha rápida dos demais campos e o rótulo flutuante já basta.
     {
       chave: "modalidade",
       gridId: "cardsModalidade",
@@ -277,7 +270,7 @@ function goTo(n, livre) {
     initMapaNovo();
     if (mapaNovo) setTimeout(() => mapaNovo.invalidateSize(), 50);
   }
-  if (n === 6) renderPreview();
+  if (n === 8) renderPreview();
   // Recalcula o estado (habilitado/desabilitado) do botão Avançar da nova etapa.
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
@@ -316,7 +309,7 @@ function bindInputs() {
 }
 
 /* ===== Etapa "Tipo de atendimento": finalidade =====
-   O select vive na etapa 4, mas controla blocos da etapa 5 (Dados Técnicos):
+   O select vive na etapa 4, mas controla blocos da etapa 5 (Subestação):
    #instalBox, #blocoConexaoNova e #blocoAlteracao. */
 function onFinalidade() {
   const v = $("#f_finalidade").value;
@@ -811,8 +804,7 @@ function updateCoordHint() {
   // em Conexão Nova não há local anterior. Enquanto a finalidade não é
   // escolhida, a pergunta fica oculta.
   const boxMud = $("#mudancaLocalBox");
-  if (boxMud)
-    boxMud.style.display = state.finalidade && !ehNova ? "" : "none";
+  if (boxMud) boxMud.style.display = state.finalidade && !ehNova ? "" : "none";
   const mudanca = _mudancaLocalAtiva();
   // O antigo #coordHint foi removido do HTML: a orientação sobre as
   // coordenadas agora é dada pela .mapa-hint acima do mapa.
@@ -871,6 +863,9 @@ function onMudancaLocal() {
       mapaNovo.removeLayer(_refPinoNovo.pino);
       _refPinoNovo.pino = null;
     }
+    // Endereço zerado ⇒ zera também o cache anti-repetição da geocodificação,
+    // senão reativar a mudança com o MESMO endereço não recriaria o pino.
+    _mtLastGeoNovoKey = "";
     const al = $("#coordNovaAlert");
     if (al) al.innerHTML = "";
     const st = $("#cep-status-nv");
@@ -1019,50 +1014,105 @@ let _mtGeoDebounce = null,
   _mtLastGeoKey = "",
   _mtLastRestrKey = "",
   _mtRestrDebounce = null;
+let _mtGeoNovoDebounce = null,
+  _mtLastGeoNovoKey = "";
 const _nDig = (s) => (String(s || "").match(/\d/g) || []).length;
-async function geocodificarEnderecoMT() {
+/* Núcleo compartilhado da geocodificação por endereço. `campos` diz de quais
+   chaves do state ler o endereço e a coordenada já existente; `aplicar` grava
+   o resultado (é o mesmo _aplicarCoord*DoMapa usado pelo clique no mapa, então
+   o pino e as validações seguem o mesmo caminho). Devolve a chave do endereço
+   geocodificado (para o cache anti-repetição) ou "". */
+async function _geocodificarBloco(campos, ultimaKey, aplicar) {
+  const { endereco, num, bairro, municipio, estado, cep, lat, lon } = campos;
   // Só geocodifica em zona urbana e quando ainda não há coordenada definida
   // manualmente (preserva coordenada digitada/clicada pelo usuário).
-  if (state.localizacao !== "Urbana") return;
-  if (_nDig(state.latitude) >= 5 && _nDig(state.longitude) >= 5) return;
+  if (state.localizacao !== "Urbana") return "";
+  if (_nDig(state[lat]) >= 5 && _nDig(state[lon]) >= 5) return "";
   // Exige pelo menos logradouro + número + município para buscar
   if (
-    !String(state.urb_endereco || "").trim() ||
-    !String(state.urb_num || "").trim() ||
-    !String(state.uc_municipio || "").trim()
+    !String(state[endereco] || "").trim() ||
+    !String(state[num] || "").trim() ||
+    !String(state[municipio] || "").trim()
   )
-    return;
+    return "";
   const key = [
-    state.urb_endereco,
-    state.urb_num,
-    state.urb_bairro,
-    state.uc_municipio,
-    state.uc_cep,
+    state[endereco],
+    state[num],
+    state[bairro],
+    state[municipio],
+    state[cep],
   ]
     .join("|")
     .toLowerCase();
-  if (_mtLastGeoKey === key) return;
+  if (ultimaKey === key) return "";
   // Geocodificação ESTRUTURADA compartilhada (shared/js/geo.js): resolve o
   // NÚMERO do endereço — a antiga busca em texto livre ignorava o número e
   // posicionava o pin longe do local real.
   const r = await geocodificarEnderecoBR({
-    logradouro: state.urb_endereco,
-    numero: state.urb_num,
-    bairro: state.urb_bairro,
-    cidade: state.uc_municipio,
-    uf: state.uc_estado,
-    cep: state.uc_cep,
+    logradouro: state[endereco],
+    numero: state[num],
+    bairro: state[bairro],
+    cidade: state[municipio],
+    uf: state[estado],
+    cep: state[cep],
   });
-  if (!r) return;
-  _mtLastGeoKey = key;
+  if (!r) return "";
+  aplicar(r.lat, r.lon);
+  return key;
+}
+async function geocodificarEnderecoMT() {
   // _aplicarCoordDoMapa → onCoord dispara o reposicionamento do alfinete e a
   // validação ambiental automática (exatamente como no BT).
-  _aplicarCoordDoMapa(r.lat, r.lon);
+  const key = await _geocodificarBloco(
+    {
+      endereco: "urb_endereco",
+      num: "urb_num",
+      bairro: "urb_bairro",
+      municipio: "uc_municipio",
+      estado: "uc_estado",
+      cep: "uc_cep",
+      lat: "latitude",
+      lon: "longitude",
+    },
+    _mtLastGeoKey,
+    _aplicarCoordDoMapa,
+  );
+  if (key) _mtLastGeoKey = key;
 }
 // Disparado no blur dos campos de endereço urbano (debounce de 800 ms).
 function onEnderecoUrbanoMT() {
   clearTimeout(_mtGeoDebounce);
   _mtGeoDebounce = setTimeout(geocodificarEnderecoMT, 800);
+}
+/* Mesma geocodificação para o endereço do NOVO local da subestação (etapa
+   "Tipo de atendimento"), que só existe quando há alteração de carga
+   (finalidade ≠ Conexão Nova) com mudança de local. Sem isto o pin do
+   #mapNovo só se movia por clique/arraste. */
+async function geocodificarEnderecoNovoMT() {
+  if (!_mudancaLocalAtiva()) return;
+  // O mapa do novo local é criado sob demanda (goTo); se o usuário preencher o
+  // endereço antes disso, garante a instância para o pino ter onde aparecer.
+  initMapaNovo();
+  const key = await _geocodificarBloco(
+    {
+      endereco: "nv_endereco",
+      num: "nv_num",
+      bairro: "nv_bairro",
+      municipio: "nv_municipio",
+      estado: "nv_estado",
+      cep: "nv_cep",
+      lat: "latitudeNova",
+      lon: "longitudeNova",
+    },
+    _mtLastGeoNovoKey,
+    _aplicarCoordNovaDoMapa,
+  );
+  if (key) _mtLastGeoNovoKey = key;
+}
+// Disparado no blur dos campos de endereço do novo local (debounce de 800 ms).
+function onEnderecoNovoMT() {
+  clearTimeout(_mtGeoNovoDebounce);
+  _mtGeoNovoDebounce = setTimeout(geocodificarEnderecoNovoMT, 800);
 }
 // Bloco "Unidade consumidora em área de restrição ambiental?" — espelha
 // exatamente os três estados do BT (bt/js/views/obra.js): orientação inicial,
@@ -1363,7 +1413,7 @@ function onTel(k) {
   );
 }
 
-/* ===== Etapa 4: compartilhada, trafos, motores ===== */
+/* ===== Etapa 5 (Subestação): compartilhada, trafos, motores ===== */
 function onCompartilhada() {
   state.compartilhada = $("#f_compartilhada").value;
   const compart = state.compartilhada === "Sim";
@@ -1779,7 +1829,7 @@ function abrirAnaliseMotores() {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 function voltarDaAnalise() {
-  goTo(6);
+  goTo(8);
 }
 
 function exportarPDFPartida() {
@@ -2363,7 +2413,10 @@ function pvCampoModelo(c) {
     if (!c.rows || !c.rows.length) return "";
     const th = c.headers.map((h) => `<th>${h}</th>`).join("");
     const tb = c.rows
-      .map((r) => "<tr>" + r.map((v) => `<td>${_pvVal(v)}</td>`).join("") + "</tr>")
+      .map(
+        (r) =>
+          "<tr>" + r.map((v) => `<td>${_pvVal(v)}</td>`).join("") + "</tr>",
+      )
       .join("");
     const tf = c.rodape
       ? "<tfoot><tr>" +
@@ -2532,12 +2585,14 @@ async function onCEP(prefixo) {
     // já estiver preenchido, refina imediatamente.
     onEnderecoUrbanoMT();
   } else if (prefixo === "nv") {
-    // Endereço do NOVO local: preenche só os campos nv_*. Não mexe no pin do
-    // #mapNovo — a coordenada nova é definida pelo clique/arraste no mapa.
+    // Endereço do NOVO local: preenche os campos nv_*. O CEP sozinho NÃO define
+    // a coordenada (centroide impreciso, igual ao bloco da UC) — o pin vem da
+    // geocodificação estruturada, que refina assim que o número está informado.
     _setField("nv_endereco", d.logradouro);
     _setField("nv_bairro", d.bairro);
     _setField("nv_municipio", d.cidade);
     _setField("nv_estado", d.uf);
+    onEnderecoNovoMT();
   } else {
     _setField("ec_rua", d.logradouro);
     _setField("ec_bairro", d.bairro);
@@ -2552,7 +2607,7 @@ async function onCEP(prefixo) {
    dispara no momento certo (o afterprint não distinguia salvar de cancelar). */
 function exportarPDF() {
   if (atualizarGateExportacao().length) {
-    goTo(6);
+    goTo(8);
     return;
   }
   gerarPdfFormularioMT();

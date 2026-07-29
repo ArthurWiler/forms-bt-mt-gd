@@ -71,29 +71,29 @@ function conteudoFormularioMT() {
     ],
   });
 
-  /* --- Correspondência (etapa 5) --- */
+  /* --- Correspondência (etapa 7) --- */
   const cor = [
-    _c("Como deseja receber a fatura?", state.formaCorresp, { step: 5 }),
+    _c("Como deseja receber a fatura?", state.formaCorresp, { step: 6 }),
     _c(
       "Vencimento escolhido",
       state.desejaVenc === "Sim"
         ? "Sim — dia " + (state.diaVenc || "—")
         : state.desejaVenc,
-      { step: 5 },
+      { step: 6 },
     ),
   ];
   if (state.formaCorresp === "E-mail informado")
     cor.push(
       _c("E-mail para envio da fatura", state.emailCliente, {
         full: true,
-        step: 5,
+        step: 6,
       }),
     );
   else if (state.formaCorresp === "Outro e-mail")
     cor.push(
       _c("E-mail para envio da fatura", state.emailCorresp, {
         full: true,
-        step: 5,
+        step: 6,
       }),
     );
   else if (state.formaCorresp === "Endereço da obra")
@@ -109,7 +109,7 @@ function conteudoFormularioMT() {
             state.uc_estado,
             state.uc_cep,
           ]),
-        { full: true, step: 5 },
+        { full: true, step: 6 },
       ),
     );
   else if (
@@ -127,11 +127,11 @@ function conteudoFormularioMT() {
           state.ec_estado,
           state.ec_cep,
         ]),
-        { full: true, step: 5 },
+        { full: true, step: 6 },
       ),
     );
   else if (state.formaCorresp === "Conta globalizada")
-    cor.push(_c("Conta globalizada", state.contaGlobalizada, { step: 5 }));
+    cor.push(_c("Conta globalizada", state.contaGlobalizada, { step: 6 }));
   secoes.push({ titulo: "Correspondência", campos: cor });
 
   /* --- Unidade Consumidora (etapa 2) --- */
@@ -234,7 +234,7 @@ function conteudoFormularioMT() {
   uc.push(_c("Subestação pronta?", state.subPronta, { step: 3 }));
   secoes.push({ titulo: "Unidade Consumidora", campos: uc });
 
-  /* --- Dados Técnicos (etapa 4) --- */
+  /* --- Subestação (etapa 5): trafos, motores, tarifação e demanda --- */
   const tec = [
     _c("Opção de Atendimento", state.opcaoAtend, { step: 3 }),
     _c("Finalidade", state.finalidade, { step: 3 }),
@@ -289,7 +289,16 @@ function conteudoFormularioMT() {
           "Motores",
           // "Rend." em vez de "η": a Helvetica padrão do jsPDF não tem o
           // glifo grego e imprimia um caractere trocado.
-          ["Tipo", "CV", "FP", "Rend.", "V", "Ip/In", "I nom (A)", "I part (A)"],
+          [
+            "Tipo",
+            "CV",
+            "FP",
+            "Rend.",
+            "V",
+            "Ip/In",
+            "I nom (A)",
+            "I part (A)",
+          ],
           [38, 16, 16, 20, 18, 18, 27, 29],
           motores.map((m) => {
             const c = CalculoMT.calcularMotor(
@@ -333,9 +342,7 @@ function conteudoFormularioMT() {
         _c("Demanda Ponta Atual (kW)", state.dem_ponta_atual, { step: 4 }),
       );
       if (ehAlt)
-        tec.push(
-          _c("Ponta Futura (kW)", state.dem_ponta_futura, { step: 4 }),
-        );
+        tec.push(_c("Ponta Futura (kW)", state.dem_ponta_futura, { step: 4 }));
       tec.push(
         _c("Fora de Ponta Atual (kW)", state.dem_foraponta_atual, { step: 4 }),
       );
@@ -373,7 +380,7 @@ function conteudoFormularioMT() {
             ),
       );
   }
-  secoes.push({ titulo: "Dados Técnicos", campos: tec });
+  secoes.push({ titulo: "Subestação", campos: tec });
 
   /* --- Cubículos da subestação compartilhada --- */
   if (cubiculos.length) {
@@ -407,16 +414,16 @@ function conteudoFormularioMT() {
 
   /* --- Geração e Baixa Tensão --- */
   const ger = [
-    _c("Geração paralelismo momentâneo", state.gerMomentaneo, { step: 4 }),
-    _c("GRID ZERO", state.gridZero, { step: 4 }),
-    _c("BT na mesma propriedade", state.btMesmaProp, { step: 4 }),
+    _c("Geração paralelismo momentâneo", state.gerMomentaneo, { step: 5 }),
+    _c("GRID ZERO", state.gridZero, { step: 5 }),
+    _c("BT na mesma propriedade", state.btMesmaProp, { step: 5 }),
   ];
   if (state.gerMomentaneo === "Sim")
     ger.push(
-      _c("Potência ger. momentânea (kVA)", state.gerMomentaneoPot, { step: 4 }),
+      _c("Potência ger. momentânea (kVA)", state.gerMomentaneoPot, { step: 5 }),
     );
   if (state.gridZero === "Sim")
-    ger.push(_c("Potência GRID ZERO (kVA)", state.gridZeroPot, { step: 4 }));
+    ger.push(_c("Potência GRID ZERO (kVA)", state.gridZeroPot, { step: 5 }));
   secoes.push({ titulo: "Geração e Baixa Tensão", campos: ger });
 
   /* --- Ramal de Entrada (com o desenho do ramal escolhido) --- */
@@ -430,9 +437,9 @@ function conteudoFormularioMT() {
             src: RAMAL_IMGS[state.ramalIndice],
             valor: CalculoMT.textoRamal(state.ramalIndice),
             full: true,
-            step: 4,
+            step: 5,
           }
-        : _c("Ramal de Entrada", "(não selecionado)", { full: true, step: 4 }),
+        : _c("Ramal de Entrada", "(não selecionado)", { full: true, step: 5 }),
     ],
   });
 
@@ -440,7 +447,7 @@ function conteudoFormularioMT() {
   if (state.observacoes)
     secoes.push({
       titulo: "Observações",
-      campos: [_c("Observações", state.observacoes, { full: true, step: 4 })],
+      campos: [_c("Observações", state.observacoes, { full: true, step: 7 })],
     });
 
   return secoes;
@@ -538,8 +545,7 @@ function conteudoAnalisePartida() {
           campos: [_c("Dispositivo", dispositivo)],
         },
         {
-          titulo:
-            "ORDEM DE PARTIDA DO MOTOR (CASOS DE DOIS OU MAIS MOTORES)",
+          titulo: "ORDEM DE PARTIDA DO MOTOR (CASOS DE DOIS OU MAIS MOTORES)",
           campos: [_c("Ordem de partida", ap.ordemPartida)],
         },
         {
@@ -569,8 +575,14 @@ function conteudoAnalisePartida() {
         {
           titulo: "TRANSFORMADOR DO CONSUMIDOR",
           campos: [
-            _c("Potência do transformador", un(fmt(state.potTotalTrafos), "kVA")),
-            _c("Impedância percentual do transformador", un(ap.impedanciaZ, "%")),
+            _c(
+              "Potência do transformador",
+              un(fmt(state.potTotalTrafos), "kVA"),
+            ),
+            _c(
+              "Impedância percentual do transformador",
+              un(ap.impedanciaZ, "%"),
+            ),
           ],
         },
       ],
@@ -625,9 +637,7 @@ function conteudoIrrigante() {
     },
     {
       titulo: "CARGAS DESTINADAS À IRRIGAÇÃO",
-      campos: [
-        _tab("", ["Tipo", "Fases", "Potência"], [60, 50, 72], rows),
-      ],
+      campos: [_tab("", ["Tipo", "Fases", "Potência"], [60, 50, 72], rows)],
     },
   ];
 }
