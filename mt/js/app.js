@@ -110,10 +110,15 @@ let motores = []; // {tipo, cv, fp, rend, volts, ipIn, tempo, dispositivo}
 let cubiculos = []; // Anexo I — cubículos adicionais da subestação compartilhada
 // {instalacao, trafos:[{potencia,quantidade,relacao}], modalidade, demanda, demandaPonta, demandaForaPonta}
 let ramalSelecionado = null;
-let mapaObra = null; // instância Leaflet (lazy, criada ao entrar na Etapa 3)
-let marcadorObra = null; // pino arrastável sincronizado com state.latitude/longitude
+let mapaObra = null; // instância Leaflet da UC (lazy, etapa "Empreendimento")
+// Pinos arrastáveis, em caixas para que _sincronizarPino() possa criá-los.
+const _refPinoObra = { pino: null }; // sincronizado com state.latitude/longitude
 let restricaoLayer = null; // contorno das reservas ambientais desenhado no mapa
 let _mapaObraDebounce = null;
+// Mapa do NOVO local da subestação (só com mudancaLocal === "Sim").
+let mapaNovo = null;
+const _refPinoNovo = { pino: null }; // state.latitudeNova/longitudeNova
+let _mapaNovoDebounce = null;
 
 /* ATIVIDADES e DISPOSITIVOS agora em dados.js */
 
@@ -266,7 +271,13 @@ function goTo(n, livre) {
     renderRestricaoAmbiental();
     if (mapaObra) setTimeout(() => mapaObra.invalidateSize(), 50);
   }
-  if (n === 5) renderPreview();
+  // Mapa do novo local: mesma detecção por container, mas só quando o bloco
+  // condicional está de fato aberto (mudança de local = "Sim").
+  if ($("#page-" + n).querySelector("#mapNovo") && _mudancaLocalAtiva()) {
+    initMapaNovo();
+    if (mapaNovo) setTimeout(() => mapaNovo.invalidateSize(), 50);
+  }
+  if (n === 6) renderPreview();
   // Recalcula o estado (habilitado/desabilitado) do botão Avançar da nova etapa.
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
@@ -304,37 +315,32 @@ function bindInputs() {
   });
 }
 
-/* ===== Etapa 1: finalidade ===== */
+/* ===== Etapa "Tipo de atendimento": finalidade =====
+   O select vive na etapa 4, mas controla blocos da etapa 5 (Dados Técnicos):
+   #instalBox, #blocoConexaoNova e #blocoAlteracao. */
 function onFinalidade() {
   const v = $("#f_finalidade").value;
   state.finalidade = v;
-  const box = $("#instalBox"),
-    lbl = $("#instalLabel");
+  const box = $("#instalBox");
   if (v && v !== "Conexão Nova") {
     // "" (não "block"): #instalBox agora é um .field padrão dentro do grid —
     // restaura o display da folha de estilo.
     box.style.display = "";
-    const map = {
-      "Aumento de Demanda":
-        "Para Aumento de Demanda, informe o número da Instalação / UC / Medidor",
-      "Redução de Demanda":
-        "Para Redução de Demanda, informe o número da Instalação / UC / Medidor",
-      "Adequação de Subestação":
-        "Para Adequação de Subestação, informe o número da Instalação / UC / Medidor",
-      "Aderir a Tarifa Monômia":
-        "Para Aderir a Tarifa Monômia, informe o número da Instalação / UC / Medidor",
-      "Religação de Subestação":
-        "Para Religação de Subestação, informe o número da Instalação / UC / Medidor",
-      "Desconexão para encerramento contratual":
-        "Para Desconexão, informe o número da Instalação / UC / Medidor",
-      "Alteração da tensão de fornecimento BT→MT":
-        "Para Alteração da tensão, informe o número da Instalação / UC / Medidor",
-    };
-    lbl.innerHTML =
-      (map[v] ||
-        "Para Migração Mercado livre, informe o número da Instalação / UC / Medidor") +
-      ' <span class="req">*</span>';
-  } else box.style.display = "none";
+    _setReq(["numInstalacao"], true);
+  } else {
+    box.style.display = "none";
+    // Conexão Nova (ou finalidade em branco) não tem instalação anterior:
+    // além de esconder, descarta o valor para não vazar no PDF/prévia.
+    _setReq(["numInstalacao"], false);
+    const inst = $("[data-k=numInstalacao]");
+    if (inst) inst.value = "";
+    state.numInstalacao = "";
+    // Sem finalidade "de alteração" não existe pergunta de mudança de local:
+    // zera a resposta para que updateCoordHint() feche o bloco do novo local.
+    const selMud = $("#f_mudancaLocal");
+    if (selMud) selMud.value = "";
+    state.mudancaLocal = "";
+  }
   // mostra bloco conexão nova ou alteração na etapa técnica
   const ehNova = v === "Conexão Nova";
   $("#blocoConexaoNova").style.display = ehNova ? "block" : "none";
@@ -343,6 +349,7 @@ function onFinalidade() {
   updateDemandaLabels();
   recalcTecnico();
   if (state.compartilhada === "Sim") renderCubiculos();
+  if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
 
 /* ===== Etapa 2: CPF/CNPJ, vencimento, correspondência ===== */
@@ -706,10 +713,14 @@ function onLocalizacao() {
   recalcRamal();
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
-// Marca/desmarca a obrigatoriedade real (data-req) de Latitude/Longitude — o
-// aplicar() dos marcadores nunca REMOVE data-req, então o toggle é feito aqui.
-function _setCoordReq(req) {
-  ["latitude", "longitude"].forEach((k) => {
+// Marca/desmarca a obrigatoriedade real (data-req) de um conjunto de campos —
+// o aplicar() dos marcadores nunca REMOVE data-req, então o toggle é aqui.
+// O rótulo também é sincronizado: o aplicar() roda no load, quando um bloco
+// condicional ainda está oculto, e carimba "(opcional)" de forma permanente —
+// sem esta limpeza um campo que vira obrigatório continuaria exibindo o
+// sufixo errado (e o inverso deixaria o campo opcional sem sufixo nenhum).
+function _setReq(chaves, req) {
+  chaves.forEach((k) => {
     const el = $(`[data-k=${k}]`);
     if (!el) return;
     if (req) el.setAttribute("data-req", "");
@@ -717,17 +728,94 @@ function _setCoordReq(req) {
       el.removeAttribute("data-req");
       el.classList.remove("is-invalid");
     }
+    const campo = el.closest(".field");
+    const label = campo && campo.querySelector(":scope > label");
+    if (!label) return;
+    const opt = label.querySelector(".opt");
+    if (req) {
+      if (opt) opt.remove();
+    } else if (!opt) {
+      const s = document.createElement("span");
+      s.className = "opt";
+      s.textContent = "(opcional)";
+      label.append(" ", s);
+    }
   });
 }
+function _setCoordReq(req) {
+  _setReq(["latitude", "longitude"], req);
+}
+// Regra do bloco "novo local": ele só existe quando a finalidade NÃO é
+// Conexão Nova (subestação já existente) E o usuário respondeu "Sim" em
+// "Haverá mudança do local da subestação?".
+function _mudancaLocalAtiva() {
+  return (
+    !!state.finalidade &&
+    state.finalidade !== "Conexão Nova" &&
+    state.mudancaLocal === "Sim"
+  );
+}
+/* Endereço do NOVO local (etapa "Tipo de atendimento") — a zona é HERDADA da
+   etapa 3 ("Localização"): a subestação se move dentro do mesmo imóvel, então
+   não se pergunta a zona duas vezes. Só o bloco da zona escolhida aparece, e
+   seus campos só são obrigatórios enquanto estão visíveis.
+   Chamado por updateCoordHint() (mudança de local / finalidade) e por
+   onLocalizacao() (troca de zona na etapa 3). */
+const _REQ_URB_NOVO = [
+  "nv_cep",
+  "nv_endereco",
+  "nv_num",
+  "nv_bairro",
+  "nv_municipio",
+  "nv_estado",
+];
+const _REQ_RUR_NOVO = ["nv_municipio_rur", "nv_estado_rur"];
+function sincronizarZonaNovoLocal() {
+  const box = $("#blocoUrbanoNovo"),
+    boxR = $("#blocoRuralNovo");
+  if (!box || !boxR) return;
+  // A etapa 3 já nasce com "Urbana" pré-selecionada, então a zona nunca fica
+  // vazia na prática; ainda assim o `mudanca &&` mantém os dois blocos
+  // fechados enquanto não há mudança de local declarada.
+  const mudanca = _mudancaLocalAtiva();
+  const zona = mudanca ? state.localizacao : "";
+  box.style.display = zona === "Urbana" ? "block" : "none";
+  boxR.style.display = zona === "Rural" ? "block" : "none";
+  _setReq(_REQ_URB_NOVO, zona === "Urbana");
+  _setReq(_REQ_RUR_NOVO, zona === "Rural");
+}
+
+/* Gate do botão "Avançar" da etapa "Tipo de atendimento"
+   (data-gate="localNovoOk"). O data-req já cobre "coordenada nova em
+   branco"; aqui entram as regras que ele não expressa: coordenada fora de
+   faixa e novo local idêntico ao atual. */
+window.localNovoOk = function () {
+  if (!_mudancaLocalAtiva()) return true;
+  // Sem zona definida na etapa 3 não há bloco de endereço para preencher —
+  // o data-req não pega esse caso (os dois blocos ficam ocultos).
+  if (!state.localizacao) return false;
+  const lt = String(state.latitudeNova || "").trim(),
+    lg = String(state.longitudeNova || "").trim();
+  if (!lt || !lg) return false;
+  if (CalculoMT.validarCoordenadas(lt, lg).nivel === "erro") return false;
+  // Novo local igual ao atual: provável cópia acidental — não é mudança.
+  return !(
+    parseFloat(lt) === parseFloat(state.latitude) &&
+    parseFloat(lg) === parseFloat(state.longitude)
+  );
+};
+
 function updateCoordHint() {
   const ehNova = state.finalidade === "Conexão Nova";
-  $("#mudancaLocalBox").style.display =
-    state.finalidade && !ehNova ? "" : "none";
-  const mudanca = !ehNova && !!state.finalidade && state.mudancaLocal === "Sim";
-  $("#coordHint").textContent =
-    !ehNova && state.finalidade
-      ? "Informe as coordenadas do local de atendimento atual. Caso haja mudança de local, informe também as novas coordenadas."
-      : "Informe as coordenadas do local de atendimento.";
+  // "Haverá mudança do local?" só faz sentido para instalação existente —
+  // em Conexão Nova não há local anterior. Enquanto a finalidade não é
+  // escolhida, a pergunta fica oculta.
+  const boxMud = $("#mudancaLocalBox");
+  if (boxMud)
+    boxMud.style.display = state.finalidade && !ehNova ? "" : "none";
+  const mudanca = _mudancaLocalAtiva();
+  // O antigo #coordHint foi removido do HTML: a orientação sobre as
+  // coordenadas agora é dada pela .mapa-hint acima do mapa.
   // Obrigatoriedade igual ao BT: coordenada obrigatória em zona Rural. No MT
   // ela também é exigida quando há mudança do local da subestação (par
   // "atual"/"nova"); nos demais casos é opcional.
@@ -737,13 +825,63 @@ function updateCoordHint() {
   $("#latLabel").innerHTML = "Latitude" + sufixo + star;
   $("#lonLabel").innerHTML = "Longitude" + sufixo + star;
   _setCoordReq(req);
-  $("#coordNovaBox").style.display = mudanca ? "grid" : "none";
+  // Bloco do novo local (mapa + coordenadas novas): visível só com mudança.
+  // As coordenadas novas são obrigatórias apenas enquanto ele está visível —
+  // o validar() ignora campos ocultos, mas o data-req é removido mesmo assim
+  // para que um bloco reaberto não herde .is-invalid de uma tentativa antiga.
+  const box = $("#localNovoBox");
+  if (box) box.style.display = mudanca ? "" : "none";
+  _setReq(["latitudeNova", "longitudeNova"], mudanca);
+  // Endereço do novo local: herda a zona da etapa 3.
+  sincronizarZonaNovoLocal();
+  if (mudanca) {
+    initMapaNovo();
+    // O container acabou de sair do display:none — o Leaflet precisa remedir.
+    if (mapaNovo) setTimeout(() => mapaNovo.invalidateSize(), 60);
+  }
   reaplicarMarcadores();
 }
 function onMudancaLocal() {
   state.mudancaLocal = $("#f_mudancaLocal")?.value || "";
+  // Trocar para "Não" descarta as coordenadas novas: mantê-las em state
+  // faria o PDF/prévia exibirem um local novo que o usuário já desistiu de
+  // informar (mesma lógica de limpeza de zona em onLocalizacao).
+  if (!_mudancaLocalAtiva()) {
+    // Coordenadas + endereço do novo local são descartados juntos: o bloco
+    // inteiro deixou de existir para este pedido.
+    [
+      "latitudeNova",
+      "longitudeNova",
+      "utmNova",
+      ..._REQ_URB_NOVO,
+      ..._REQ_RUR_NOVO,
+      "nv_compl",
+      "nv_distrito",
+      "nv_propriedade",
+      "nv_pontoReferencia",
+      "nv_instalVizinho",
+    ].forEach((k) => {
+      const el = $(`[data-k=${k}]`);
+      // "MG" é o default do Estado no HTML — restaura em vez de esvaziar.
+      const padrao = k === "nv_estado" || k === "nv_estado_rur" ? "MG" : "";
+      if (el) el.value = padrao;
+      state[k] = padrao;
+    });
+    if (mapaNovo && _refPinoNovo.pino) {
+      mapaNovo.removeLayer(_refPinoNovo.pino);
+      _refPinoNovo.pino = null;
+    }
+    const al = $("#coordNovaAlert");
+    if (al) al.innerHTML = "";
+    const st = $("#cep-status-nv");
+    if (st) {
+      st.textContent = "";
+      st.className = "field-hint";
+    }
+  }
   updateCoordHint();
   onCoord();
+  if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
 function _utmBandLetter(lat) {
   const B = "CDEFGHJKLMNPQRSTUVWXX";
@@ -821,23 +959,41 @@ function onCoord(imediato) {
     );
   }
   sincronizarMapaComCoordenadas(lat, lon, imediato);
-  let erros = [];
-  if (r.nivel === "erro") erros.push(r.msg);
-  if ($("#coordNovaBox").style.display !== "none") {
+
+  // Coordenadas NOVAS (etapa "Tipo de atendimento"): validadas e exibidas em
+  // alerta próprio (#coordNovaAlert), pois vivem em outra etapa — misturá-las
+  // no #coordAlert mostraria o erro numa página onde o campo nem aparece.
+  const latN = parseFloat(state.latitudeNova),
+    lonN = parseFloat(state.longitudeNova);
+  let errosNova = [];
+  if (_mudancaLocalAtiva()) {
     const rNova = CalculoMT.validarCoordenadas(
       state.latitudeNova,
       state.longitudeNova,
     );
-    if (rNova.nivel === "erro") erros.push(rNova.msg);
-    const latN = parseFloat(state.latitudeNova),
-      lonN = parseFloat(state.longitudeNova);
+    if (rNova.nivel === "erro") errosNova.push(rNova.msg);
     if (!isNaN(latN) && !isNaN(lonN)) {
       const uN = latLonParaUTM(latN, lonN);
       const utmNovaEl = $("[data-k=utmNova]");
       if (utmNovaEl)
         utmNovaEl.value = `${uN.zona}${_utmBandLetter(latN)} E:${uN.easting} N:${uN.northing}`;
+      // Novo local igual ao atual não é uma "mudança de local" — provável
+      // cópia acidental das coordenadas atuais.
+      if (!isNaN(lat) && !isNaN(lon) && latN === lat && lonN === lon)
+        errosNova.push(
+          "As coordenadas do novo local são idênticas às do local atual. Ajuste o pin no mapa para o novo ponto da subestação.",
+        );
+      sincronizarMapaNovoComCoordenadas(latN, lonN, imediato);
     }
-  }
+  } else if ($("[data-k=utmNova]")) $("[data-k=utmNova]").value = "";
+  const alNova = $("#coordNovaAlert");
+  if (alNova)
+    alNova.innerHTML = errosNova.length
+      ? alertHTML("err", errosNova.join(" "))
+      : "";
+
+  let erros = [];
+  if (r.nivel === "erro") erros.push(r.msg);
   // Alerta do BT: em zona rural a coordenada é obrigatória — aviso enquanto
   // latitude/longitude não estiverem preenchidas.
   const ruralSemCoord =
@@ -1010,7 +1166,7 @@ async function consultarRestricaoAmbientalMT(lat, lon) {
       );
   }
 }
-/* ===== Mapa interativo de localização (Etapa 3) =====
+/* ===== Mapa interativo de localização (Etapa 3 — Unidade Consumidora) =====
    Adaptado de bt/js/map.js (LocalizacaoObra) para o estado plano do
    MT: lê/escreve diretamente state.latitude/state.longitude (em vez
    do sub-objeto obra.lat/obra.lng usado em BT), via onCoord(). */
@@ -1021,10 +1177,13 @@ function _aplicarCoordDoMapa(lat, lon) {
   if (lonEl) lonEl.value = lon;
   onCoord(true); // clique/arraste no mapa é intencional: aplica na hora, sem debounce
 }
-function initMapaObra() {
-  const div = $("#map");
-  if (!div || !window.L || mapaObra) return;
-  mapaObra = window.L.map(div).setView([-19.9167, -43.9345], 12);
+/* Criação genérica de um mapa Leaflet ligado a um par de coordenadas.
+   `aoMover(lat, lon)` é chamado no clique no mapa e no arraste do pino.
+   Devolve a instância ou null (container ausente / Leaflet não carregado). */
+function _criarMapa(seletor, aoMover) {
+  const div = $(seletor);
+  if (!div || !window.L) return null;
+  const mapa = window.L.map(div).setView([-19.9167, -43.9345], 12);
   // Camadas base alternáveis: Ruas (OSM, padrão) e Satélite (Esri World
   // Imagery — mesma fonte usada pelo Sisema). Esri não usa subdomínio {s}
   // e a ordem dos eixos é {z}/{y}/{x}.
@@ -1042,12 +1201,52 @@ function initMapaObra() {
       attribution: "",
     },
   );
-  satelite.addTo(mapaObra);
-  window.L.control.layers({ Satélite: satelite, Ruas: ruas }).addTo(mapaObra);
-  mapaObra.on("click", (e) => {
-    _aplicarCoordDoMapa(e.latlng.lat, e.latlng.lng);
-  });
-  setTimeout(() => mapaObra.invalidateSize(), 200);
+  satelite.addTo(mapa);
+  window.L.control.layers({ Satélite: satelite, Ruas: ruas }).addTo(mapa);
+  mapa.on("click", (e) => aoMover(e.latlng.lat, e.latlng.lng));
+  setTimeout(() => mapa.invalidateSize(), 200);
+  // O Leaflet mede o container na criação. Se a etapa ainda estiver oculta
+  // (display:none) nesse instante, o mapa nasce com 0x0 e fica cinza/vazio
+  // até um invalidateSize() posterior. O ResizeObserver cobre TODOS os casos
+  // em que o container ganha tamanho depois (troca de etapa, resize da
+  // janela, colapso de bloco condicional) sem depender do goTo().
+  if (window.ResizeObserver) {
+    new ResizeObserver(() => {
+      if (div.clientWidth > 0) mapa.invalidateSize();
+    }).observe(div);
+  }
+  return mapa;
+}
+
+/* Posiciona/cria o pino arrastável de `mapa` em (lat, lon). `refPino` é um
+   objeto-caixa { pino } para que a referência criada aqui persista no
+   chamador (_refPinoObra / _refPinoNovo). */
+function _sincronizarPino(mapa, refPino, lat, lon, aoMover) {
+  if (!mapa || isNaN(lat) || isNaN(lon)) return;
+  const ll = window.L.latLng(lat, lon);
+  if (refPino.pino) {
+    refPino.pino.setLatLng([lat, lon]);
+    if (!mapa.getBounds().contains(ll))
+      mapa.setView(ll, Math.max(mapa.getZoom(), 17));
+  } else {
+    refPino.pino = window.L.marker([lat, lon], { draggable: true }).addTo(mapa);
+    refPino.pino.on("dragend", (e) => {
+      const p = e.target.getLatLng();
+      aoMover(p.lat, p.lng);
+    });
+    // Primeira aparição do pino (geocodificação, clique, coordenada
+    // digitada): centraliza no ZOOM MÁXIMO dos tiles. Depois disso o
+    // enquadramento só muda se o pino sair da vista (bloco acima).
+    const zMax = Number.isFinite(mapa.getMaxZoom()) ? mapa.getMaxZoom() : 19;
+    mapa.setView(ll, zMax);
+  }
+  setTimeout(() => mapa.invalidateSize(), 100);
+}
+
+function initMapaObra() {
+  if (mapaObra) return;
+  mapaObra = _criarMapa("#map", _aplicarCoordDoMapa);
+  if (!mapaObra) return;
   // Caso já existam coordenadas preenchidas (ex.: voltando de outra etapa)
   const lat = parseFloat(state.latitude),
     lon = parseFloat(state.longitude);
@@ -1056,33 +1255,46 @@ function initMapaObra() {
 function sincronizarMapaComCoordenadas(lat, lon, imediato) {
   if (isNaN(lat) || isNaN(lon)) return;
   clearTimeout(_mapaObraDebounce);
-  const atualizar = () => {
-    if (!mapaObra) return;
-    const ll = window.L.latLng(lat, lon);
-    if (marcadorObra) {
-      marcadorObra.setLatLng([lat, lon]);
-      if (!mapaObra.getBounds().contains(ll))
-        mapaObra.setView(ll, Math.max(mapaObra.getZoom(), 17));
-    } else {
-      marcadorObra = window.L.marker([lat, lon], { draggable: true }).addTo(
-        mapaObra,
-      );
-      marcadorObra.on("dragend", (e) => {
-        const p = e.target.getLatLng();
-        _aplicarCoordDoMapa(p.lat, p.lng);
-      });
-      // Primeira aparição do pino (geocodificação, clique, coordenada
-      // digitada): centraliza no ZOOM MÁXIMO dos tiles. Depois disso o
-      // enquadramento só muda se o pino sair da vista (bloco acima).
-      const zMax = Number.isFinite(mapaObra.getMaxZoom())
-        ? mapaObra.getMaxZoom()
-        : 19;
-      mapaObra.setView(ll, zMax);
-    }
-    setTimeout(() => mapaObra.invalidateSize(), 100);
-  };
+  const atualizar = () =>
+    _sincronizarPino(mapaObra, _refPinoObra, lat, lon, _aplicarCoordDoMapa);
   if (imediato) atualizar();
   else _mapaObraDebounce = setTimeout(atualizar, 600);
+}
+
+/* ===== Mapa do NOVO local da subestação (etapa "Tipo de atendimento") =====
+   Só existe quando "Haverá mudança do local da subestação? = Sim". Espelha o
+   mapa da UC, mas escreve em state.latitudeNova/longitudeNova. */
+function _aplicarCoordNovaDoMapa(lat, lon) {
+  const latEl = $("[data-k=latitudeNova]"),
+    lonEl = $("[data-k=longitudeNova]");
+  if (latEl) latEl.value = lat;
+  if (lonEl) lonEl.value = lon;
+  onCoord(true); // clique/arraste é intencional: aplica na hora, sem debounce
+  if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
+}
+function initMapaNovo() {
+  if (mapaNovo) return;
+  mapaNovo = _criarMapa("#mapNovo", _aplicarCoordNovaDoMapa);
+  if (!mapaNovo) return;
+  const lat = parseFloat(state.latitudeNova),
+    lon = parseFloat(state.longitudeNova);
+  if (!isNaN(lat) && !isNaN(lon))
+    sincronizarMapaNovoComCoordenadas(lat, lon, true);
+  else {
+    // Sem coordenada nova ainda: parte do local ATUAL da UC, que é o ponto
+    // de referência natural para escolher o novo local da subestação.
+    const latA = parseFloat(state.latitude),
+      lonA = parseFloat(state.longitude);
+    if (!isNaN(latA) && !isNaN(lonA)) mapaNovo.setView([latA, lonA], 16);
+  }
+}
+function sincronizarMapaNovoComCoordenadas(lat, lon, imediato) {
+  if (isNaN(lat) || isNaN(lon)) return;
+  clearTimeout(_mapaNovoDebounce);
+  const atualizar = () =>
+    _sincronizarPino(mapaNovo, _refPinoNovo, lat, lon, _aplicarCoordNovaDoMapa);
+  if (imediato) atualizar();
+  else _mapaNovoDebounce = setTimeout(atualizar, 600);
 }
 function onSubPronta() {
   state.subPronta = event.target.value;
@@ -1567,7 +1779,7 @@ function abrirAnaliseMotores() {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 function voltarDaAnalise() {
-  goTo(5);
+  goTo(6);
 }
 
 function exportarPDFPartida() {
@@ -2059,6 +2271,22 @@ function camposObrigatoriosFaltando() {
   if (state.ramalIndice == null) faltando.push("Ramal de Entrada");
   if (state.restricaoAmbiental === "Sim" && !state.restricaoAceite)
     faltando.push("Declaração de ciência da restrição ambiental");
+  // Mudança do local da subestação: além de preenchidas (data-req acima), as
+  // coordenadas novas precisam ser válidas e diferentes das atuais.
+  if (_mudancaLocalAtiva()) {
+    const rNova = CalculoMT.validarCoordenadas(
+      state.latitudeNova,
+      state.longitudeNova,
+    );
+    if (rNova.nivel === "erro")
+      faltando.push("Coordenadas válidas do novo local da subestação");
+    else if (
+      String(state.latitudeNova || "").trim() &&
+      parseFloat(state.latitudeNova) === parseFloat(state.latitude) &&
+      parseFloat(state.longitudeNova) === parseFloat(state.longitude)
+    )
+      faltando.push("Novo local da subestação diferente do local atual");
+  }
   return [...new Set(faltando)];
 }
 function atualizarGateExportacao() {
@@ -2245,6 +2473,26 @@ function onCepUcInput(el) {
     }
   }
 }
+// CEP do endereço do NOVO local (etapa "Tipo de atendimento").
+let _cepNovoBuscado = "";
+function onCepNovoInput(el) {
+  el.value = mascararCEP(el.value);
+  state.nv_cep = el.value;
+  const d = CalculoMT.soDigitos(el.value);
+  if (d.length === 8) {
+    if (_cepNovoBuscado !== d) {
+      _cepNovoBuscado = d;
+      onCEP("nv");
+    }
+  } else {
+    _cepNovoBuscado = "";
+    const st = $("#cep-status-nv");
+    if (st) {
+      st.textContent = "";
+      st.className = "field-hint";
+    }
+  }
+}
 function _setField(k, v) {
   const el = $(`[data-k="${k}"]`);
   if (!el || v == null) return;
@@ -2257,7 +2505,8 @@ async function onCEP(prefixo) {
     st.textContent = "buscando…";
     st.className = "field-hint";
   }
-  const cepEl = $(`[data-k="${prefixo === "uc" ? "uc_cep" : "ec_cep"}"]`);
+  const CEP_K = { uc: "uc_cep", ec: "ec_cep", nv: "nv_cep" };
+  const cepEl = $(`[data-k="${CEP_K[prefixo] || "ec_cep"}"]`);
   const d = await buscarCEP(cepEl?.value || "");
   if (!d) {
     if (st) {
@@ -2282,6 +2531,13 @@ async function onCEP(prefixo) {
     // O pin vem da geocodificação estruturada por endereço+número; se o número
     // já estiver preenchido, refina imediatamente.
     onEnderecoUrbanoMT();
+  } else if (prefixo === "nv") {
+    // Endereço do NOVO local: preenche só os campos nv_*. Não mexe no pin do
+    // #mapNovo — a coordenada nova é definida pelo clique/arraste no mapa.
+    _setField("nv_endereco", d.logradouro);
+    _setField("nv_bairro", d.bairro);
+    _setField("nv_municipio", d.cidade);
+    _setField("nv_estado", d.uf);
   } else {
     _setField("ec_rua", d.logradouro);
     _setField("ec_bairro", d.bairro);
@@ -2296,7 +2552,7 @@ async function onCEP(prefixo) {
    dispara no momento certo (o afterprint não distinguia salvar de cancelar). */
 function exportarPDF() {
   if (atualizarGateExportacao().length) {
-    goTo(5);
+    goTo(6);
     return;
   }
   gerarPdfFormularioMT();
@@ -2337,4 +2593,10 @@ document.addEventListener("DOMContentLoaded", () => {
     window.CemigMarcadores.aplicar();
     window.CemigMarcadores.montarNavReativa();
   }
+  // Mapa: cria a instância já no load, sem esperar o goTo() chegar à etapa.
+  // O goTo() continua chamando initMapaObra() (idempotente pelo guard
+  // `mapaObra`), mas a criação aqui garante que o mapa exista mesmo se o
+  // gate de obrigatórios impedir o avanço — o ResizeObserver de
+  // initMapaObra() faz o invalidateSize() quando a etapa ficar visível.
+  initMapaObra();
 });

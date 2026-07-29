@@ -389,6 +389,13 @@ html {
 .col-span-3 {
   grid-column: span 3;
 }
+/* Contêiner de aviso vazio dentro do grid: sem isto ele continua sendo um item
+   do grid e reserva uma linha, somando o `gap` acima E abaixo (~28px de vão
+   entre os campos vizinhos) mesmo sem aviso nenhum na tela. */
+.grid > .col-span-2:empty,
+.grid > .col-span-3:empty {
+  display: none;
+}
 /* Campo sozinho na linha SEM esticar: ocupa só a 1ª coluna e empurra o próximo
    item para a linha de baixo (col-span-* faria o campo ocupar a linha toda). */
 .row-solo {

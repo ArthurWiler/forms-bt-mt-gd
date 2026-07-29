@@ -5,7 +5,7 @@
    ============================================================ */
 function gerarCartaMonomia() {
   if (typeof atualizarGateExportacao === "function" && atualizarGateExportacao().length) {
-    goTo(5);
+    goTo(6);
     return;
   }
   if (!window.jspdf) {

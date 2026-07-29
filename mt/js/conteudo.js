@@ -50,7 +50,6 @@ function conteudoFormularioMT() {
     _c("Nome / Razão Social", state.nome, { full: true, step: 1 }),
     _c("E-mail do cliente", state.emailCliente, { step: 1 }),
     _c("Telefone do cliente", state.telCliente, { step: 1 }),
-    _c("Telefone do solicitante", state.telSolicitante, { step: 1 }),
     _c("CPF/CNPJ", state.cpfCnpj, { step: 1 }),
     _c("Filiação", state.filiacao, { step: 1 }),
     _c("RG / RNE / RANI", state.rg, { step: 1 }),
@@ -60,40 +59,41 @@ function conteudoFormularioMT() {
   ];
   if (state.nis === "Sim")
     prop.push(_c("Número do NIS", state.numNis, { step: 1 }));
-  prop.push(
-    _c("E-mail do solicitante", state.emailSolicitante, {
-      full: true,
-      step: 1,
-    }),
-    _c("Tel. RT (cel/fixo)", _junta([state.rtCelular, state.rtFixo], " / "), {
-      step: 1,
-    }),
-  );
   secoes.push({ titulo: "Dados do Proprietário", campos: prop });
 
-  /* --- Correspondência (etapa 4) --- */
+  /* --- Responsável Técnico (etapa 1) --- */
+  secoes.push({
+    titulo: "Dados do Responsável Técnico",
+    campos: [
+      _c("Nome", state.rtNome, { full: true, step: 1 }),
+      _c("E-mail", state.rtEmail, { full: true, step: 1 }),
+      _c("Celular", state.rtCelular, { step: 1 }),
+    ],
+  });
+
+  /* --- Correspondência (etapa 5) --- */
   const cor = [
-    _c("Como deseja receber a fatura?", state.formaCorresp, { step: 4 }),
+    _c("Como deseja receber a fatura?", state.formaCorresp, { step: 5 }),
     _c(
       "Vencimento escolhido",
       state.desejaVenc === "Sim"
         ? "Sim — dia " + (state.diaVenc || "—")
         : state.desejaVenc,
-      { step: 4 },
+      { step: 5 },
     ),
   ];
   if (state.formaCorresp === "E-mail informado")
     cor.push(
       _c("E-mail para envio da fatura", state.emailCliente, {
         full: true,
-        step: 4,
+        step: 5,
       }),
     );
   else if (state.formaCorresp === "Outro e-mail")
     cor.push(
       _c("E-mail para envio da fatura", state.emailCorresp, {
         full: true,
-        step: 4,
+        step: 5,
       }),
     );
   else if (state.formaCorresp === "Endereço da obra")
@@ -109,7 +109,7 @@ function conteudoFormularioMT() {
             state.uc_estado,
             state.uc_cep,
           ]),
-        { full: true, step: 4 },
+        { full: true, step: 5 },
       ),
     );
   else if (
@@ -127,11 +127,11 @@ function conteudoFormularioMT() {
           state.ec_estado,
           state.ec_cep,
         ]),
-        { full: true, step: 4 },
+        { full: true, step: 5 },
       ),
     );
   else if (state.formaCorresp === "Conta globalizada")
-    cor.push(_c("Conta globalizada", state.contaGlobalizada, { step: 4 }));
+    cor.push(_c("Conta globalizada", state.contaGlobalizada, { step: 5 }));
   secoes.push({ titulo: "Correspondência", campos: cor });
 
   /* --- Unidade Consumidora (etapa 2) --- */
@@ -150,13 +150,56 @@ function conteudoFormularioMT() {
     }),
     _c("Coordenada UTM", state.utm, { step: 2 }),
   ];
-  if (state.finalidade && state.finalidade !== "Conexão Nova")
+  // Só há "coordenadas novas" quando o usuário declarou mudança do local da
+  // subestação — fora disso os campos nem aparecem no formulário.
+  if (
+    state.finalidade &&
+    state.finalidade !== "Conexão Nova" &&
+    state.mudancaLocal === "Sim"
+  )
     uc.push(
+      _c("Mudança do local da subestação", state.mudancaLocal, { step: 3 }),
+      // Endereço do novo local: a zona é a mesma da UC (herdada da etapa 3).
       _c(
-        "Coordenadas novas",
-        _junta([state.latitudeNova, state.longitudeNova], " , "),
-        { step: 2 },
+        "Endereço do novo local",
+        state.localizacao === "Rural"
+          ? _junta([
+              state.nv_distrito,
+              state.nv_propriedade,
+              state.nv_municipio_rur,
+              state.nv_estado_rur,
+            ])
+          : _junta([
+              state.nv_endereco,
+              state.nv_num,
+              state.nv_bairro,
+              state.nv_compl,
+              state.nv_municipio,
+              state.nv_estado,
+              state.nv_cep,
+            ]),
+        { full: true, step: 3 },
       ),
+      _c(
+        "Coordenadas do novo local",
+        _junta([state.latitudeNova, state.longitudeNova], " , "),
+        { step: 3 },
+      ),
+      _c("Coordenada UTM (novo local)", state.utmNova, { step: 3 }),
+    );
+  if (
+    state.finalidade &&
+    state.finalidade !== "Conexão Nova" &&
+    state.mudancaLocal === "Sim" &&
+    state.localizacao === "Rural"
+  )
+    uc.push(
+      _c("Ponto de referência (novo local)", state.nv_pontoReferencia, {
+        step: 3,
+      }),
+      _c("Instalação do vizinho (novo local)", state.nv_instalVizinho, {
+        step: 3,
+      }),
     );
   if (state.localizacao === "Urbana")
     uc.push(
@@ -188,33 +231,33 @@ function conteudoFormularioMT() {
         destaque: true,
       }),
     );
-  uc.push(_c("Subestação pronta?", state.subPronta, { step: 2 }));
+  uc.push(_c("Subestação pronta?", state.subPronta, { step: 3 }));
   secoes.push({ titulo: "Unidade Consumidora", campos: uc });
 
-  /* --- Dados Técnicos (etapa 3) --- */
+  /* --- Dados Técnicos (etapa 4) --- */
   const tec = [
     _c("Opção de Atendimento", state.opcaoAtend, { step: 3 }),
     _c("Finalidade", state.finalidade, { step: 3 }),
   ];
   if (state.finalidade && state.finalidade !== "Conexão Nova")
-    tec.push(_c("Instalação / UC / Medidor", state.numInstalacao, { step: 3 }));
+    tec.push(_c("Instalação / UC / Medidor", state.numInstalacao, { step: 4 }));
   tec.push(
     _c(
       "Nível de tensão MT",
       state.tensaoMT ? state.tensaoMT.replace(".", ",") + " kV" : "",
-      { step: 3 },
+      { step: 4 },
     ),
-    _c("Compartilhada?", state.compartilhada, { step: 3 }),
+    _c("Compartilhada?", state.compartilhada, { step: 4 }),
   );
   if (state.compartilhada === "Sim") {
     tec.push(
       _c("Soma dos transformadores (kVA)", fmt(state.potTotalTrafos), {
-        step: 3,
+        step: 4,
       }),
       _c("Soma das demandas (kW)", fmt(state.demandaTotalCubiculos), {
-        step: 3,
+        step: 4,
       }),
-      _c("Tipo de Subestação", tipoSE, { step: 3 }),
+      _c("Tipo de Subestação", tipoSE, { step: 4 }),
     );
   } else {
     if (trafos.length)
@@ -230,7 +273,7 @@ function conteudoFormularioMT() {
             t.relacao,
           ]),
           {
-            step: 3,
+            step: 4,
             rodape: [
               "Total",
               fmt(state.potTotalTrafos),
@@ -270,16 +313,16 @@ function conteudoFormularioMT() {
               fmt(c.iPartida),
             ];
           }),
-          { step: 3 },
+          { step: 4 },
         ),
       );
-    tec.push(_c("Tipo de Subestação", tipoSE, { step: 3 }));
+    tec.push(_c("Tipo de Subestação", tipoSE, { step: 4 }));
     if (state.finalidade !== "Conexão Nova")
-      tec.push(_c("Troca de Subestação?", state.alt_troca, { step: 3 }));
+      tec.push(_c("Troca de Subestação?", state.alt_troca, { step: 4 }));
     tec.push(
-      _c("Tarifa monômia?", state.monomia, { step: 3 }),
-      _c("Modalidade tarifária", state.modalidade, { step: 3 }),
-      _c("Demanda escalonada?", state.escalonada, { step: 3 }),
+      _c("Tarifa monômia?", state.monomia, { step: 4 }),
+      _c("Modalidade tarifária", state.modalidade, { step: 4 }),
+      _c("Demanda escalonada?", state.escalonada, { step: 4 }),
     );
     const azul = state.modalidade === "Azul";
     const ehAlt =
@@ -287,29 +330,29 @@ function conteudoFormularioMT() {
       state.finalidade === "Redução de Demanda";
     if (azul) {
       tec.push(
-        _c("Demanda Ponta Atual (kW)", state.dem_ponta_atual, { step: 3 }),
+        _c("Demanda Ponta Atual (kW)", state.dem_ponta_atual, { step: 4 }),
       );
       if (ehAlt)
         tec.push(
-          _c("Ponta Futura (kW)", state.dem_ponta_futura, { step: 3 }),
+          _c("Ponta Futura (kW)", state.dem_ponta_futura, { step: 4 }),
         );
       tec.push(
-        _c("Fora de Ponta Atual (kW)", state.dem_foraponta_atual, { step: 3 }),
+        _c("Fora de Ponta Atual (kW)", state.dem_foraponta_atual, { step: 4 }),
       );
       if (ehAlt)
         tec.push(
           _c("Fora de Ponta Futura (kW)", state.dem_foraponta_futura, {
-            step: 3,
+            step: 4,
           }),
         );
     } else {
       tec.push(
         _c(ehAlt ? "Demanda Atual (kW)" : "Demanda (kW)", state.dem_atual, {
-          step: 3,
+          step: 4,
         }),
       );
       if (ehAlt)
-        tec.push(_c("Demanda Futura (kW)", state.dem_futura, { step: 3 }));
+        tec.push(_c("Demanda Futura (kW)", state.dem_futura, { step: 4 }));
     }
     if (escalonada.length)
       tec.push(
@@ -319,14 +362,14 @@ function conteudoFormularioMT() {
               ["Ponta (kW)", "Fora-ponta (kW)", "Início de Uso"],
               [60, 60, 62],
               escalonada.map((e) => [e.ponta, e.foraponta, e.inicio]),
-              { step: 3 },
+              { step: 4 },
             )
           : _tab(
               "Demanda Escalonada",
               ["Demanda Futura (kW)", "Início de Uso"],
               [91, 91],
               escalonada.map((e) => [e.demanda, e.inicio]),
-              { step: 3 },
+              { step: 4 },
             ),
       );
   }
@@ -339,22 +382,22 @@ function conteudoFormularioMT() {
       const rt = CalculoMT.calcularTrafos(c.trafos);
       const n = `Cubículo ${i + 1} — `;
       cub.push(
-        _c(n + "Nº Instalação", c.instalacao, { step: 3 }),
+        _c(n + "Nº Instalação", c.instalacao, { step: 4 }),
         _c(
           n + "Transformadores",
           `${fmt(rt.potenciaTotal)} kVA / ${rt.quantidadeTotal} un.`,
-          { step: 3 },
+          { step: 4 },
         ),
-        _c(n + "Modalidade tarifária", c.modalidade, { step: 3 }),
+        _c(n + "Modalidade tarifária", c.modalidade, { step: 4 }),
       );
       if (c.modalidade === "Azul")
         cub.push(
-          _c(n + "Demanda Ponta (kW)", c.demandaPonta, { step: 3 }),
+          _c(n + "Demanda Ponta (kW)", c.demandaPonta, { step: 4 }),
           _c(n + "Demanda Fora de Ponta (kW)", c.demandaForaPonta, {
-            step: 3,
+            step: 4,
           }),
         );
-      else cub.push(_c(n + "Demanda (kW)", c.demanda, { step: 3 }));
+      else cub.push(_c(n + "Demanda (kW)", c.demanda, { step: 4 }));
     });
     secoes.push({
       titulo: "Cubículos da Subestação Compartilhada",
@@ -364,16 +407,16 @@ function conteudoFormularioMT() {
 
   /* --- Geração e Baixa Tensão --- */
   const ger = [
-    _c("Geração paralelismo momentâneo", state.gerMomentaneo, { step: 3 }),
-    _c("GRID ZERO", state.gridZero, { step: 3 }),
-    _c("BT na mesma propriedade", state.btMesmaProp, { step: 3 }),
+    _c("Geração paralelismo momentâneo", state.gerMomentaneo, { step: 4 }),
+    _c("GRID ZERO", state.gridZero, { step: 4 }),
+    _c("BT na mesma propriedade", state.btMesmaProp, { step: 4 }),
   ];
   if (state.gerMomentaneo === "Sim")
     ger.push(
-      _c("Potência ger. momentânea (kVA)", state.gerMomentaneoPot, { step: 3 }),
+      _c("Potência ger. momentânea (kVA)", state.gerMomentaneoPot, { step: 4 }),
     );
   if (state.gridZero === "Sim")
-    ger.push(_c("Potência GRID ZERO (kVA)", state.gridZeroPot, { step: 3 }));
+    ger.push(_c("Potência GRID ZERO (kVA)", state.gridZeroPot, { step: 4 }));
   secoes.push({ titulo: "Geração e Baixa Tensão", campos: ger });
 
   /* --- Ramal de Entrada (com o desenho do ramal escolhido) --- */
@@ -387,9 +430,9 @@ function conteudoFormularioMT() {
             src: RAMAL_IMGS[state.ramalIndice],
             valor: CalculoMT.textoRamal(state.ramalIndice),
             full: true,
-            step: 3,
+            step: 4,
           }
-        : _c("Ramal de Entrada", "(não selecionado)", { full: true, step: 3 }),
+        : _c("Ramal de Entrada", "(não selecionado)", { full: true, step: 4 }),
     ],
   });
 
@@ -397,7 +440,7 @@ function conteudoFormularioMT() {
   if (state.observacoes)
     secoes.push({
       titulo: "Observações",
-      campos: [_c("Observações", state.observacoes, { full: true, step: 3 })],
+      campos: [_c("Observações", state.observacoes, { full: true, step: 4 })],
     });
 
   return secoes;

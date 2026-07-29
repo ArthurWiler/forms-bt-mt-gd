@@ -140,6 +140,22 @@
     sp.textContent = msg;
   }
 
+  // Um controle conta como "visível" quando ele próprio está no layout OU
+  // quando foi ocultado por ter sido SUBSTITUÍDO por um grupo de cards
+  // (toggle-cards.js / CAMPOS_CARDS_CONFIG): nesses casos o <select> vira
+  // apenas a fonte da verdade — quem aparece é o .toggle-group irmão. Sem
+  // esta regra, o offsetParent===null desses selects os tirava da validação
+  // e o "Avançar" liberava com o campo em branco.
+  // O ancestral é consultado para não reativar um campo cuja ETAPA ou bloco
+  // condicional está fechado (aí o container de cards também está oculto).
+  function _visivel(el) {
+    if (el.offsetParent !== null) return true;
+    const campo = el.closest && el.closest(".field");
+    if (!campo) return false;
+    const cards = campo.querySelector(".toggle-group");
+    return !!cards && cards.offsetParent !== null;
+  }
+
   // Valida os obrigatórios VISÍVEIS dentro de `scope`. Marca faltas com
   // `.is-invalid`. Retorna { ok, primeiro } (primeiro campo inválido).
   function validar(scope) {
@@ -148,10 +164,9 @@
     let primeiro = null;
     scope.querySelectorAll("[data-req]").forEach(function (el) {
       el.classList.remove("is-invalid");
-      // offsetParent === null quando algum ancestral está display:none
-      // (etapas inativas, blocos condicionais) → não conta.
-      const visivel = el.offsetParent !== null;
-      if (visivel && String(el.value || "").trim() === "") {
+      // Oculto (etapa inativa, bloco condicional fechado) → não conta.
+      // Ver _visivel() para o caso do <select> substituído por cards.
+      if (_visivel(el) && String(el.value || "").trim() === "") {
         el.classList.add("is-invalid");
         if (!primeiro) primeiro = el;
         ok = false;
@@ -160,7 +175,7 @@
     // Formato inválido também reprova (mesmo em campo não obrigatório: se foi
     // preenchido, precisa estar certo).
     scope.querySelectorAll("[data-fmt]").forEach(function (el) {
-      if (el.offsetParent === null) return;
+      if (!_visivel(el)) return;
       const msg = _fmtErro(el);
       _mostrarErroFmt(el, msg);
       if (msg) {
@@ -224,13 +239,12 @@
   function _reqOk(scope) {
     let ok = true;
     scope.querySelectorAll("[data-req]").forEach(function (el) {
-      if (el.offsetParent !== null && String(el.value || "").trim() === "")
-        ok = false;
+      if (_visivel(el) && String(el.value || "").trim() === "") ok = false;
     });
     // Formato inválido trava o "Avançar" do mesmo jeito que um obrigatório
     // em branco (sem marcar .is-invalid — isso só ao tentar avançar).
     scope.querySelectorAll("[data-fmt]").forEach(function (el) {
-      if (el.offsetParent !== null && _fmtErro(el)) ok = false;
+      if (_visivel(el) && _fmtErro(el)) ok = false;
     });
     return ok;
   }
@@ -273,7 +287,7 @@
     montarNavReativa();
   });
 
-  // Gate do aceite das Orientações: o botão "Iniciar preenchimento" só libera
+  // Gate do aceite das Orientações: o botão "Avançar" só libera
   // com o checkbox "#aceiteOrient" marcado. Referenciado via
   // data-gate="aceiteOrientacoesOk" no botão.
   window.aceiteOrientacoesOk = function () {

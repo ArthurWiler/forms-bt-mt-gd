@@ -51,22 +51,26 @@
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">2</span>
-          <span class="vstep-label">Dados do Proprietário </span>
+          <span class="vstep-label">Dados para contato </span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">3</span>
-          <span class="vstep-label">Unidade Consumidora</span>
+          <span class="vstep-label">Empreendimento</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">4</span>
-          <span class="vstep-label">Dados Técnicos</span>
+          <span class="vstep-label">Tipo de atendimento</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">5</span>
-          <span class="vstep-label">Correspondência</span>
+          <span class="vstep-label">Dados Técnicos</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">6</span>
+          <span class="vstep-label">Correspondência</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">7</span>
           <span class="vstep-label">Prévia &amp; PDF</span>
         </button>
       </aside>
@@ -139,7 +143,7 @@
               data-gate="aceiteOrientacoesOk"
               onclick="goTo(1)"
             >
-              Iniciar preenchimento →
+              Avançar →
             </button>
           </div>
         </section>
@@ -175,7 +179,7 @@
                 <span id="status-emailCliente" class="field-hint"></span>
               </div>
               <div class="field">
-                <label>Telefone do cliente <span class="req">*</span></label>
+                <label>Celular <span class="req">*</span></label>
                 <input
                   type="tel"
                   data-k="telCliente"
@@ -184,17 +188,6 @@
                   onblur="onTel('telCliente')"
                 />
                 <span id="status-telCliente" class="field-hint"></span>
-              </div>
-              <div class="field">
-                <label>Telefone do solicitante</label>
-                <input
-                  type="tel"
-                  data-k="telSolicitante"
-                  placeholder="(31) 90000-0000"
-                  oninput="onTelInput(this)"
-                  onblur="onTel('telSolicitante')"
-                />
-                <span id="status-telSolicitante" class="field-hint"></span>
               </div>
               <div class="field">
                 <label>CPF / CNPJ <span class="req">*</span></label>
@@ -264,25 +257,33 @@
                 />
               </div>
             </div>
-
-            <p class="card-sub divider">
+            <h3 class="card-title divider">Dados do Responsável Técnico</h3>
+            <p class="card-sub">
               Preencha os dados do responsável técnico pelo empreendimento, se
               houver.
             </p>
             <div class="grid grid-2">
-              <div class="field col-span-2">
-                <label>E-mail do solicitante</label>
+              <div class="field">
+                <label>Nome</label>
                 <input
-                  type="email"
-                  data-k="emailSolicitante"
-                  placeholder="email@exemplo.com"
-                  onblur="onEmail('emailSolicitante')"
+                  type="text"
+                  data-k="rtNome"
+                  placeholder="Nome do responsável técnico"
                 />
-                <span id="status-emailSolicitante" class="field-hint"></span>
               </div>
 
               <div class="field">
-                <label>Telefone do RT — Celular</label>
+                <label>E-mail</label>
+                <input
+                  type="email"
+                  data-k="rtEmail"
+                  placeholder="email@exemplo.com"
+                  onblur="onEmail('rtEmail')"
+                />
+                <span id="status-rtEmail" class="field-hint"></span>
+              </div>
+              <div class="field">
+                <label>Celular</label>
                 <input
                   type="tel"
                   data-k="rtCelular"
@@ -292,17 +293,6 @@
                 />
                 <span id="status-rtCelular" class="field-hint"></span>
               </div>
-              <div class="field">
-                <label>Telefone do RT — Fixo</label>
-                <input
-                  type="tel"
-                  data-k="rtFixo"
-                  placeholder="(31) 0000-0000"
-                  oninput="onTelInput(this, 'fixo')"
-                  onblur="onTel('rtFixo')"
-                />
-                <span id="status-rtFixo" class="field-hint"></span>
-              </div>
             </div>
           </div>
           <div class="nav-bottom no-print">
@@ -311,9 +301,9 @@
           </div>
         </section>
 
-        <section class="page" id="page-4">
+        <section class="page" id="page-5">
           <div class="card">
-            <div class="section-eyebrow">Etapa 5</div>
+            <div class="section-eyebrow">Etapa 6</div>
             <h3 class="card-title">Correspondência e Fatura</h3>
             <p class="card-sub">
               Escolha como e quando você deseja receber a conta de energia.
@@ -478,8 +468,8 @@
             </div>
           </div>
           <div class="nav-bottom no-print">
-            <button class="btn btn-ghost" onclick="goTo(3)">← Voltar</button>
-            <button class="btn btn-primary" onclick="goTo(5)">Avançar →</button>
+            <button class="btn btn-ghost" onclick="goTo(4)">← Voltar</button>
+            <button class="btn btn-primary" onclick="goTo(6)">Avançar →</button>
           </div>
         </section>
 
@@ -621,98 +611,7 @@
                 </div>
               </div>
             </div>
-          </div>
-          <div class="nav-bottom no-print">
-            <button class="btn btn-ghost" onclick="goTo(1)">← Voltar</button>
-            <button class="btn btn-primary" onclick="goTo(3)">Avançar →</button>
-          </div>
-        </section>
 
-        <section class="page" id="page-3">
-          <div class="card">
-            <div class="section-eyebrow">Etapa 4</div>
-            <h3 class="card-title">Dados Técnicos</h3>
-
-            <div class="grid grid-2">
-              <div class="field">
-                <label>Finalidade <span class="req">*</span></label>
-                <select
-                  id="f_finalidade"
-                  data-k="finalidade"
-                  onchange="onFinalidade()"
-                >
-                  <option value=""></option>
-                  <option>Conexão Nova</option>
-                  <option>Aumento de Demanda</option>
-                  <option>Redução de Demanda</option>
-                  <option>Adequação de Subestação</option>
-                  <option>Aderir a Tarifa Monômia</option>
-                  <option>Religação de Subestação</option>
-                  <option>Desconexão para encerramento contratual</option>
-                  <option>Alteração da tensão de fornecimento BT→MT</option>
-                  <option>Migração Mercado livre sem Aumento de Carga</option>
-                  <option>Migração Mercado livre com Aumento de Carga</option>
-                  <option>Migração Mercado livre com Redução de Carga</option>
-                </select>
-              </div>
-
-              <div class="field" id="instalBox" style="display: none">
-                <label id="instalLabel"
-                  >Informe o número da Instalação / UC / Medidor
-                  <span class="req">*</span></label
-                >
-                <input
-                  type="text"
-                  data-k="numInstalacao"
-                  data-fmt="fmtInstalacaoUC"
-                  placeholder="Nº da instalação, UC ou medidor"
-                />
-              </div>
-            </div>
-            <p class="field-hint" id="coordHint" style="margin-bottom: 12px">
-              Informe as coordenadas do local de atendimento.
-            </p>
-
-            <div class="grid grid-3">
-              <div class="field field--plain">
-                <label>Opção de Atendimento <span class="req">*</span></label>
-                <select id="f_opcaoAtend" data-k="opcaoAtend">
-                  <option value=""></option>
-                  <option>Cativo</option>
-                  <option>Livre</option>
-                </select>
-              </div>
-              <div
-                class="field field--plain"
-                id="mudancaLocalBox"
-                style="display: none; margin-bottom: 12px"
-              >
-                <label
-                  >Haverá mudança do local da subestação?
-                  <span class="req">*</span></label
-                >
-                <select
-                  id="f_mudancaLocal"
-                  data-k="mudancaLocal"
-                  onchange="onMudancaLocal()"
-                >
-                  <option value=""></option>
-                  <option>Sim</option>
-                  <option>Não</option>
-                </select>
-              </div>
-              <div class="field field--plain" style="margin-bottom: 12px">
-                <label
-                  >A subestação está pronta para ser ligada?
-                  <span class="req">*</span></label
-                >
-                <select data-k="subPronta" onchange="onSubPronta()">
-                  <option value=""></option>
-                  <option>Sim</option>
-                  <option>Não</option>
-                </select>
-              </div>
-            </div>
             <div class="mapa-obra divider">
               <p class="mapa-hint">
                 Confirme a localização da unidade no mapa. Se o pin estiver
@@ -759,42 +658,6 @@
                 />
               </div>
             </div>
-            <div
-              class="grid grid-3"
-              id="coordNovaBox"
-              style="display: none; margin-top: 24px"
-            >
-              <div class="field">
-                <label>Latitude nova <span class="req">*</span></label>
-                <input
-                  type="number"
-                  step="any"
-                  data-k="latitudeNova"
-                  placeholder="-19.92"
-                  oninput="onCoord()"
-                />
-              </div>
-              <div class="field">
-                <label>Longitude nova <span class="req">*</span></label>
-                <input
-                  type="number"
-                  step="any"
-                  data-k="longitudeNova"
-                  placeholder="-43.94"
-                  oninput="onCoord()"
-                />
-              </div>
-              <div class="field">
-                <label>UTM (novo)</label>
-                <input
-                  type="text"
-                  data-k="utmNova"
-                  readonly
-                  disabled
-                  placeholder=" "
-                />
-              </div>
-            </div>
 
             <div id="coordAlert"></div>
 
@@ -805,8 +668,261 @@
             >
               <div id="restricaoAmbientalConteudo"></div>
             </div>
-            <div id="subProntaAlert"></div>
-            <div class="grid grid-3" style="margin-top: 16px">
+          </div>
+          <div class="nav-bottom no-print">
+            <button class="btn btn-ghost" onclick="goTo(1)">← Voltar</button>
+            <button class="btn btn-primary" onclick="goTo(3)">Avançar →</button>
+          </div>
+        </section>
+
+        <section class="page" id="page-3">
+          <div class="card">
+            <div class="section-eyebrow">Etapa 4</div>
+            <h3 class="card-title">Tipo de atendimento</h3>
+            <p class="card-sub">Escolha o tipo de atendimento.</p>
+            <div class="grid grid-2">
+              <div class="field row-solo">
+                <label>Finalidade <span class="req">*</span></label>
+                <select
+                  id="f_finalidade"
+                  data-k="finalidade"
+                  onchange="onFinalidade()"
+                >
+                  <option value=""></option>
+                  <option>Conexão Nova</option>
+                  <option>Aumento de Demanda</option>
+                  <option>Redução de Demanda</option>
+                  <option>Adequação de Subestação</option>
+                  <option>Aderir a Tarifa Monômia</option>
+                  <option>Religação de Subestação</option>
+                  <option>Desconexão para encerramento contratual</option>
+                  <option>Alteração da tensão de fornecimento BT→MT</option>
+                  <option>Migração Mercado livre sem Aumento de Carga</option>
+                  <option>Migração Mercado livre com Aumento de Carga</option>
+                  <option>Migração Mercado livre com Redução de Carga</option>
+                </select>
+              </div>
+
+              <div class="field row-solo" id="instalBox" style="display: none">
+                <label
+                  >Informe o número da Instalação / UC / Medidor
+                  <span class="req">*</span></label
+                >
+                <input
+                  type="text"
+                  data-k="numInstalacao"
+                  data-fmt="fmtInstalacaoUC"
+                  placeholder=" "
+                />
+              </div>
+
+              <div class="field field--plain">
+                <label>Opção de Atendimento <span class="req">*</span></label>
+                <select id="f_opcaoAtend" data-k="opcaoAtend">
+                  <option value=""></option>
+                  <option>Cativo</option>
+                  <option>Livre</option>
+                </select>
+              </div>
+              <div class="field field--plain">
+                <label
+                  >A subestação está pronta para ser ligada?
+                  <span class="req">*</span></label
+                >
+                <select data-k="subPronta" onchange="onSubPronta()">
+                  <option value=""></option>
+                  <option>Sim</option>
+                  <option>Não</option>
+                </select>
+              </div>
+              <div class="col-span-2" id="subProntaAlert"></div>
+              <div
+                class="field field--plain"
+                id="mudancaLocalBox"
+                style="display: none"
+              >
+                <label
+                  >Haverá mudança do local da subestação?
+                  <span class="req">*</span></label
+                >
+                <select
+                  id="f_mudancaLocal"
+                  data-k="mudancaLocal"
+                  onchange="onMudancaLocal()"
+                >
+                  <option value=""></option>
+                  <option>Sim</option>
+                  <option>Não</option>
+                </select>
+              </div>
+
+              <div id="localNovoBox" class="col-span-2">
+                <div id="blocoUrbanoNovo" style="display: none">
+                  <div class="grid grid-2" id="gridUrbanoNovo">
+                    <div class="field">
+                      <label>CEP <span class="req">*</span></label>
+                      <input
+                        type="text"
+                        data-k="nv_cep"
+                        placeholder=" "
+                        oninput="onCepNovoInput(this)"
+                      />
+                      <span id="cep-status-nv" class="field-hint"></span>
+                    </div>
+                    <div class="field col-span-2">
+                      <label>Endereço <span class="req">*</span></label>
+                      <input type="text" data-k="nv_endereco" placeholder=" " />
+                    </div>
+                    <div class="field">
+                      <label>Nº <span class="req">*</span></label>
+                      <input type="text" data-k="nv_num" placeholder=" " />
+                    </div>
+                    <div class="field">
+                      <label>Bairro <span class="req">*</span></label>
+                      <input type="text" data-k="nv_bairro" placeholder=" " />
+                    </div>
+                    <div class="field">
+                      <label>Município <span class="req">*</span></label>
+                      <input
+                        type="text"
+                        data-k="nv_municipio"
+                        placeholder=" "
+                      />
+                    </div>
+                    <div class="field">
+                      <label>Estado <span class="req">*</span></label>
+                      <input
+                        type="text"
+                        data-k="nv_estado"
+                        value="MG"
+                        placeholder=" "
+                      />
+                    </div>
+                    <div class="field col-span-2">
+                      <label>Complemento do endereço</label>
+                      <input type="text" data-k="nv_compl" placeholder=" " />
+                    </div>
+                  </div>
+                </div>
+
+                <div id="blocoRuralNovo" style="display: none">
+                  <div class="grid grid-2" id="gridRuralNovo">
+                    <div class="field">
+                      <label>Município <span class="req">*</span></label>
+                      <input
+                        type="text"
+                        data-k="nv_municipio_rur"
+                        placeholder=" "
+                      />
+                    </div>
+                    <div class="field">
+                      <label>Estado <span class="req">*</span></label>
+                      <input
+                        type="text"
+                        data-k="nv_estado_rur"
+                        value="MG"
+                        placeholder=" "
+                      />
+                    </div>
+                    <div class="field">
+                      <label>Distrito / Comunidade / Região</label>
+                      <input type="text" data-k="nv_distrito" placeholder=" " />
+                    </div>
+                    <div class="field">
+                      <label>Nome da Propriedade</label>
+                      <input
+                        type="text"
+                        data-k="nv_propriedade"
+                        placeholder=" "
+                      />
+                    </div>
+                    <div class="field">
+                      <label>Ponto de Referência</label>
+                      <input
+                        type="text"
+                        data-k="nv_pontoReferencia"
+                        placeholder=" "
+                      />
+                    </div>
+                    <div class="field">
+                      <label>Nº Instalação / UC / Medidor do Vizinho</label>
+                      <input
+                        type="text"
+                        data-k="nv_instalVizinho"
+                        data-fmt="fmtInstalacaoUC"
+                        placeholder=" "
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mapa-obra divider">
+                  <p class="mapa-hint">
+                    Confirme a localização da unidade no mapa. Se o pin estiver
+                    incorreto, você pode clicar e arrastá-lo para ajustar.
+                  </p>
+                  <div
+                    id="mapNovo"
+                    style="height: 350px; width: 100%; border-radius: 8px"
+                  ></div>
+                </div>
+
+                <div class="grid grid-3">
+                  <div class="field">
+                    <label>Latitude nova <span class="req">*</span></label>
+                    <input
+                      type="number"
+                      step="any"
+                      data-k="latitudeNova"
+                      placeholder="-19.92"
+                      oninput="onCoord()"
+                    />
+                  </div>
+                  <div class="field">
+                    <label>Longitude nova <span class="req">*</span></label>
+                    <input
+                      type="number"
+                      step="any"
+                      data-k="longitudeNova"
+                      placeholder="-43.94"
+                      oninput="onCoord()"
+                    />
+                  </div>
+                  <div class="field">
+                    <label>UTM (novo)</label>
+                    <input
+                      type="text"
+                      data-k="utmNova"
+                      readonly
+                      disabled
+                      placeholder=" "
+                    />
+                  </div>
+                </div>
+
+                <div id="coordNovaAlert"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="nav-bottom no-print">
+            <button class="btn btn-ghost" onclick="goTo(2)">← Voltar</button>
+            <button
+              class="btn btn-primary"
+              data-gate="localNovoOk"
+              onclick="goTo(4)"
+            >
+              Avançar →
+            </button>
+          </div>
+        </section>
+
+        <section class="page" id="page-4">
+          <div class="card">
+            <div class="section-eyebrow">Etapa 5</div>
+            <h3 class="card-title">Dados Técnicos</h3>
+
+            <div class="grid grid-2" style="margin-top: 16px">
               <div class="field field--plain">
                 <label
                   >Nível de tensão da rede MT <span class="req">*</span></label
@@ -1362,14 +1478,14 @@
             </div>
           </div>
           <div class="nav-bottom no-print">
-            <button class="btn btn-ghost" onclick="goTo(2)">← Voltar</button>
-            <button class="btn btn-primary" onclick="goTo(4)">Avançar →</button>
+            <button class="btn btn-ghost" onclick="goTo(3)">← Voltar</button>
+            <button class="btn btn-primary" onclick="goTo(5)">Avançar →</button>
           </div>
         </section>
 
-        <section class="page" id="page-5">
+        <section class="page" id="page-6">
           <div class="card">
-            <div class="section-eyebrow">Etapa 6</div>
+            <div class="section-eyebrow">Etapa 7</div>
             <h3 class="card-title">Prévia do Formulário</h3>
             <p class="card-sub no-print">
               Confira os dados abaixo. Se algo estiver incorreto, volte às
@@ -1391,7 +1507,7 @@
             </div>
           </div>
           <div class="nav-bottom no-print">
-            <button class="btn btn-ghost" onclick="goTo(4)">
+            <button class="btn btn-ghost" onclick="goTo(5)">
               ← Voltar e editar
             </button>
             <span class="nav-step-info" id="exportProgressMini"

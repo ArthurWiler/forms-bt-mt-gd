@@ -71,19 +71,57 @@ const SIM_NAO = [
   { valor: "Sim", texto: "Sim" },
 ];
 const CARDS_GD = [
-  { chave: "fastTrack", gridId: "cardsFastTrack", opcoes: SIM_NAO, travado: true },
-  { chave: "gridZero", gridId: "cardsGridZero", opcoes: SIM_NAO, travado: true },
+  {
+    chave: "fastTrack",
+    gridId: "cardsFastTrack",
+    opcoes: SIM_NAO,
+    travado: true,
+  },
+  {
+    chave: "gridZero",
+    gridId: "cardsGridZero",
+    opcoes: SIM_NAO,
+    travado: true,
+  },
   { chave: "laudoMedico", gridId: "cardsLaudoMedico", opcoes: SIM_NAO },
   { chave: "nis", gridId: "cardsNis", opcoes: SIM_NAO },
-  { chave: "geradorEmergencia", gridId: "cardsGeradorEmergencia", opcoes: SIM_NAO },
+  {
+    chave: "geradorEmergencia",
+    gridId: "cardsGeradorEmergencia",
+    opcoes: SIM_NAO,
+  },
   { chave: "mudancaLocal", gridId: "cardsMudancaLocal", opcoes: SIM_NAO },
   { chave: "distMenor30", gridId: "cardsDistMenor30", opcoes: SIM_NAO },
-  { chave: "telhadoArrendado", gridId: "cardsTelhadoArrendado", opcoes: SIM_NAO },
-  { chave: "duasInstalacoesDUB", gridId: "cardsDuasInstalacoesDUB", opcoes: SIM_NAO },
-  { chave: "possuiArmazenamento", gridId: "cardsPossuiArmazenamento", opcoes: SIM_NAO },
-  { chave: "armOperacaoIlhada", gridId: "cardsArmOperacaoIlhada", opcoes: SIM_NAO },
-  { chave: "armChaveDesconexao", gridId: "cardsArmChaveDesconexao", opcoes: SIM_NAO },
-  { chave: "armReconexaoAuto", gridId: "cardsArmReconexaoAuto", opcoes: SIM_NAO },
+  {
+    chave: "telhadoArrendado",
+    gridId: "cardsTelhadoArrendado",
+    opcoes: SIM_NAO,
+  },
+  {
+    chave: "duasInstalacoesDUB",
+    gridId: "cardsDuasInstalacoesDUB",
+    opcoes: SIM_NAO,
+  },
+  {
+    chave: "possuiArmazenamento",
+    gridId: "cardsPossuiArmazenamento",
+    opcoes: SIM_NAO,
+  },
+  {
+    chave: "armOperacaoIlhada",
+    gridId: "cardsArmOperacaoIlhada",
+    opcoes: SIM_NAO,
+  },
+  {
+    chave: "armChaveDesconexao",
+    gridId: "cardsArmChaveDesconexao",
+    opcoes: SIM_NAO,
+  },
+  {
+    chave: "armReconexaoAuto",
+    gridId: "cardsArmReconexaoAuto",
+    opcoes: SIM_NAO,
+  },
   { chave: "decl81", gridId: "cardsDecl81", opcoes: SIM_NAO },
   {
     chave: "vencimento",
@@ -161,7 +199,8 @@ function goTo(n, livre) {
   });
   window.scrollTo({ top: 0, behavior: "smooth" });
   // Conteúdo dinâmico detectado por presença (lição do MT), não por índice:
-  if (alvo.querySelector("#calcDemandaBox") && ilhaCargas) ilhaCargas.atualizar();
+  if (alvo.querySelector("#calcDemandaBox") && ilhaCargas)
+    ilhaCargas.atualizar();
   if (alvo.querySelector("#previewContent")) renderPreviewGD();
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
@@ -255,8 +294,7 @@ function onNisGD() {
   _sync("nis");
   const box = $("#numNisBox");
   const pfVisivel = gdEhCpfValido();
-  if (box)
-    box.style.display = pfVisivel && state.nis === "Sim" ? "" : "none";
+  if (box) box.style.display = pfVisivel && state.nis === "Sim" ? "" : "none";
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
 let _cnpjBuscado = "";
@@ -343,8 +381,7 @@ function onCoordGD(el) {
     state.utmN = "";
   }
   const disp = $("#gd_utm");
-  if (disp)
-    disp.value = u ? `${u.fuso}${u.banda} E:${u.utmE} N:${u.utmN}` : "";
+  if (disp) disp.value = u ? `${u.fuso}${u.banda} E:${u.utmE} N:${u.utmN}` : "";
   const utm = gdValidarUTM(state.fuso, state.utmE, state.utmN);
   setHint("utmHint", state.fuso && !utm.ok ? utm.msg : "");
 }
@@ -358,8 +395,7 @@ function onGeradorEmergencia() {
 function onTelhadoArrendado() {
   _sync("telhadoArrendado");
   const box = $("#dubBox");
-  if (box)
-    box.style.display = state.telhadoArrendado === "Sim" ? "" : "none";
+  if (box) box.style.display = state.telhadoArrendado === "Sim" ? "" : "none";
 }
 
 /* --- Subestação (Grupo A / migração BT→MT) --- */
@@ -486,9 +522,7 @@ function onSolicitacao() {
   _sync("solicitacao");
   const aviso = $("#avisoFormCarga");
   if (aviso)
-    aviso.style.display = GD_SOLICITACOES_FORM_CARGA.includes(
-      state.solicitacao,
-    )
+    aviso.style.display = GD_SOLICITACOES_FORM_CARGA.includes(state.solicitacao)
       ? ""
       : "none";
   const nova = _ehLigacaoNova();
@@ -1069,7 +1103,7 @@ window.initFormulario = function () {
     });
   const selTensao = $(`select[data-k="tensaoAtendimento"]`);
   if (selTensao) selTensao.addEventListener("change", atualizarSE);
-  // Aceite das Orientações reavalia o botão "Iniciar preenchimento".
+  // Aceite das Orientações reavalia o botão "Avançar".
   const aceite = $("#aceiteOrient");
   if (aceite)
     aceite.addEventListener("change", () => {
