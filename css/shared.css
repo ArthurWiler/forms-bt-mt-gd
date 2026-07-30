@@ -2926,7 +2926,11 @@ label.restricao-aceite input[type="checkbox"] {
   letter-spacing: var(--cmg-ls-tight);
   color: var(--cmg-text);
 }
-.cemig-form .orient-item a {
+/* Link inline em texto corrido (orientações e subtítulos de card): verde
+   institucional em negrito, sem sublinhado — o parágrafo em volta mantém
+   o peso 400 de corpo/grande. */
+.cemig-form .orient-item a,
+.cemig-form .card-sub a {
   color: var(--cmg-green-600);
   font-weight: var(--cmg-fw-bold);
 }

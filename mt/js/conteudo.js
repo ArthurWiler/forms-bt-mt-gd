@@ -264,20 +264,29 @@ function conteudoFormularioMT() {
       tec.push(
         _tab(
           "Transformadores",
-          ["Trafo", "Pot (kVA)", "Qtde", "Rel. Imag/In"],
-          [42, 45, 40, 55],
-          trafos.map((t, i) => [
-            "TRF" + String(i + 1).padStart(2, "0"),
-            t.potencia,
-            t.quantidade,
-            t.relacao,
-          ]),
+          ["Trafo", "Situação", "Demanda (kVA)", "Pot (kVA)", "Inrush (%)"],
+          // Somam 182 = largura útil da página (A4 210mm − 2×14 de margem).
+          [32, 40, 42, 34, 34],
+          // Um trafo substituído ocupa duas linhas: a do equipamento atual e
+          // a do que entra no lugar. O total do rodapé conta só as novas.
+          trafos.flatMap((t, i) => {
+            const id = "TRF" + String(i + 1).padStart(2, "0");
+            const troca = state.finalidade && state.finalidade !== "Conexão Nova";
+            if (!troca) return [[id, "", t.demanda, t.potencia, t.relacao]];
+            if (!t.substituir)
+              return [[id, "Novo", t.demanda, t.potencia, t.relacao]];
+            return [
+              [id, "Atual", t.demanda, t.potencia, t.relacao],
+              [id, "Substituto", t.novaDemanda, t.novaPotencia, t.novaRelacao],
+            ];
+          }),
           {
             step: 4,
             rodape: [
               "Total",
+              "",
+              "",
               fmt(state.potTotalTrafos),
-              String(state.qtdTotalTrafos || 0),
               "",
             ],
           },
@@ -397,14 +406,38 @@ function conteudoFormularioMT() {
         ),
         _c(n + "Modalidade tarifária", c.modalidade, { step: 4 }),
       );
-      if (c.modalidade === "Azul")
+      cub.push(_c(n + "Demanda escalonada?", c.escalonada, { step: 4 }));
+      // Demanda simples e escalonada são exclusivas na tela; a prévia/PDF
+      // segue a mesma regra para não imprimir campo que não foi preenchido.
+      const etapas = c.etapasEscalonada || [];
+      if (c.escalonada !== "Sim") {
+        if (c.modalidade === "Azul")
+          cub.push(
+            _c(n + "Demanda Ponta (kW)", c.demandaPonta, { step: 4 }),
+            _c(n + "Demanda Fora de Ponta (kW)", c.demandaForaPonta, {
+              step: 4,
+            }),
+          );
+        else cub.push(_c(n + "Demanda (kW)", c.demanda, { step: 4 }));
+      }
+      if (c.escalonada === "Sim" && etapas.length)
         cub.push(
-          _c(n + "Demanda Ponta (kW)", c.demandaPonta, { step: 4 }),
-          _c(n + "Demanda Fora de Ponta (kW)", c.demandaForaPonta, {
-            step: 4,
-          }),
+          c.modalidade === "Azul"
+            ? _tab(
+                n + "Demanda Escalonada",
+                ["Ponta (kW)", "Fora-ponta (kW)", "Início de Uso"],
+                [60, 60, 62],
+                etapas.map((e) => [e.ponta, e.foraponta, e.inicio]),
+                { step: 4 },
+              )
+            : _tab(
+                n + "Demanda Escalonada",
+                ["Demanda (kW)", "Início de Uso"],
+                [91, 91],
+                etapas.map((e) => [e.demanda, e.inicio]),
+                { step: 4 },
+              ),
         );
-      else cub.push(_c(n + "Demanda (kW)", c.demanda, { step: 4 }));
     });
     secoes.push({
       titulo: "Cubículos da Subestação Compartilhada",

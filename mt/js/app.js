@@ -98,8 +98,10 @@ const CAMPOS_CARDS_CONFIG = {
 
 /* ===== Estado global ===== */
 const state = {};
-let trafos = []; // {potencia, quantidade, relacao}
+let trafos = []; // {potencia, quantidade, relacao, demanda} — 1 card = 1 trafo
+let trafosAbertos = new Set([0]); // índices dos cards expandidos (acordeão)
 let motores = []; // {tipo, cv, fp, rend, volts, ipIn, tempo, dispositivo}
+let motoresAbertos = new Set([0]); // índices dos cards expandidos (acordeão)
 let cubiculos = []; // Anexo I — cubículos adicionais da subestação compartilhada
 // {instalacao, trafos:[{potencia,quantidade,relacao}], modalidade, demanda, demandaPonta, demandaForaPonta}
 let ramalSelecionado = null;
@@ -338,6 +340,21 @@ function onFinalidade() {
   const ehNova = v === "Conexão Nova";
   $("#blocoConexaoNova").style.display = ehNova ? "block" : "none";
   $("#blocoAlteracao").style.display = v && !ehNova ? "block" : "none";
+  // Em Conexão Nova não existe trafo a substituir: descarta a marcação e os
+  // valores novos para que não vazem no cálculo nem no PDF.
+  if (ehNova) {
+    const limpar = (t) => {
+      t.substituir = false;
+      t.novaPotencia = "";
+      t.novaDemanda = "";
+    };
+    trafos.forEach(limpar);
+    cubiculos.forEach((c) => {
+      c.existente = false;
+      c.trafos.forEach(limpar);
+    });
+  }
+  renderTrafos(); // os radios de troca aparecem/somem conforme a finalidade
   updateCoordHint();
   updateDemandaLabels();
   recalcTecnico();
@@ -1417,11 +1434,10 @@ function onTel(k) {
 function onCompartilhada() {
   state.compartilhada = $("#f_compartilhada").value;
   const compart = state.compartilhada === "Sim";
-  $("#qtdCubiculosBox").style.display = compart ? "" : "none";
+  // A seção alterna: ou os transformadores da UC, ou os cubículos da
+  // subestação compartilhada (o campo de quantidade vive dentro do bloco).
   $("#cubiculosBox").style.display = compart ? "block" : "none";
   $("#blocoTrafosIndividual").style.display = compart ? "none" : "block";
-  $("#blocoMotoresIndividual").style.display = compart ? "none" : "block";
-  $("#blocoTarifacaoDemanda").style.display = compart ? "none" : "block";
   $("#blocoTotaisConsolidados").style.display = compart ? "block" : "none";
   $("#compartilhadaAlert").innerHTML = compart
     ? alertHTML(
@@ -1433,48 +1449,328 @@ function onCompartilhada() {
   recalcTecnico();
 }
 
-/* --- Transformadores --- */
-function addTrafo() {
-  trafos.push({ potencia: "", quantidade: "", relacao: "8" });
-  renderTrafos();
+/* --- Transformadores ---
+   Cada card representa UM transformador (quantidade fixa = 1); o total de
+   transformadores vem do campo "Quantidade de transformadores". Os cards são
+   um acordeão: só o primeiro nasce aberto. */
+const HINT_INRUSH =
+  "É o pico de corrente que ocorre no instante da energização do " +
+  "transformadores. O valor em % indica o quanto esse pico excede a " +
+  "corrente nominal de operação.";
+function novoTrafo() {
+  return {
+    potencia: "",
+    quantidade: "1",
+    relacao: "8",
+    demanda: "",
+    // Substituição (só em finalidade ≠ Conexão Nova): quando `substituir` é
+    // true, o trafo já existe e será trocado — os campos acima descrevem o
+    // equipamento ATUAL e os `nova*` descrevem o que entra no lugar.
+    substituir: false,
+    novaPotencia: "",
+    novaDemanda: "",
+    novaRelacao: "8",
+  };
 }
-function delTrafo(i) {
-  trafos.splice(i, 1);
+/* A troca de transformador só existe quando há instalação anterior; em
+   Conexão Nova todo trafo é, por definição, novo. */
+function permiteTrocaTrafo() {
+  return !!state.finalidade && state.finalidade !== "Conexão Nova";
+}
+/* Potência/demanda que valem para o futuro da instalação: num trafo
+   substituído são os valores novos; nos demais, os próprios campos. */
+function potenciaFuturaTrafo(t) {
+  return t.substituir ? t.novaPotencia : t.potencia;
+}
+function demandaFuturaTrafo(t) {
+  return t.substituir ? t.novaDemanda : t.demanda;
+}
+/* Projeta uma lista de trafos no que ela será DEPOIS da obra — é essa lista
+   que dimensiona a instalação (o equipamento substituído sai). */
+function trafosFuturos(lista) {
+  return lista.map((t) => ({
+    potencia: potenciaFuturaTrafo(t),
+    quantidade: t.quantidade,
+  }));
+}
+function setTrafoSubstituir(i, valor) {
+  const t = trafos[i];
+  if (!t) return;
+  t.substituir = valor;
+  // Ao marcar a troca pela primeira vez, semeia os campos novos com os
+  // atuais — o usuário costuma alterar só a potência.
+  if (valor && t.novaPotencia === "" && t.novaDemanda === "") {
+    t.novaPotencia = t.potencia;
+    t.novaDemanda = t.demanda;
+  }
   renderTrafos();
   recalcTecnico();
 }
+function addTrafo() {
+  trafos.push(novoTrafo());
+  sincronizarCampoQtdTrafos();
+  renderTrafos();
+  recalcTecnico();
+}
+function delTrafo(i) {
+  trafos.splice(i, 1);
+  trafosAbertos.delete(i);
+  // reindexa o conjunto de cards abertos após a remoção
+  trafosAbertos = new Set(
+    [...trafosAbertos].map((k) => (k > i ? k - 1 : k)).filter((k) => k >= 0),
+  );
+  if (!trafosAbertos.size && trafos.length) trafosAbertos.add(0);
+  sincronizarCampoQtdTrafos();
+  renderTrafos();
+  recalcTecnico();
+}
+/* Mantém o input "Quantidade de transformadores" em sincronia com os cards. */
+function sincronizarCampoQtdTrafos() {
+  const el = $('[data-k="qtdTransformador"]');
+  if (el) el.value = trafos.length || "";
+  state.qtdTransformador = trafos.length;
+}
+/* Cria/remove cards para bater com o valor digitado no campo de quantidade. */
+function sincronizarTrafos() {
+  const el = $('[data-k="qtdTransformador"]');
+  const bruto = parseInt(el?.value, 10);
+  if (el && el.value !== "" && (isNaN(bruto) || bruto < 1)) return; // aguarda valor válido
+  const n = Math.min(Math.max(bruto || 0, 0), 99); // teto igual ao max do input
+  while (trafos.length < n) trafos.push(novoTrafo());
+  trafos.length = n;
+  state.qtdTransformador = n;
+  if (!trafosAbertos.size && n) trafosAbertos.add(0);
+  renderTrafos();
+  recalcTecnico();
+}
+function toggleTrafo(i) {
+  trafosAbertos.has(i) ? trafosAbertos.delete(i) : trafosAbertos.add(i);
+  renderTrafos();
+}
 function renderTrafos() {
-  const tb = $("#trafoBody");
-  tb.innerHTML = "";
-  trafos.forEach((t, i) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td>TRF${String(i + 1).padStart(2, "0")}</td>
-      <td><input type="number" step="any" value="${t.potencia}" placeholder="Ex.: 300" oninput="trafos[${i}].potencia=this.value;recalcTecnico()"></td>
-      <td><input type="number" value="${t.quantidade}" placeholder="Ex.: 1" oninput="trafos[${i}].quantidade=this.value;recalcTecnico()"></td>
-      <td><input type="number" step="any" value="${t.relacao}" placeholder="Ex.: 8" oninput="trafos[${i}].relacao=this.value"></td>
-      <td><button class="btn-del" onclick="delTrafo(${i})">×</button></td>`;
-    tb.appendChild(tr);
-  });
+  const box = $("#trafoCards");
+  if (!box) return;
+  const total = trafos.length;
+  box.innerHTML = trafos
+    .map((t, i) => {
+      const aberto = trafosAbertos.has(i);
+      const troca = permiteTrocaTrafo();
+      const subst = troca && t.substituir;
+      // Em Conexão Nova não há badge de status: todo trafo é novo.
+      const status = !troca
+        ? ""
+        : `<span class="trafo-status${subst ? " is-substituido" : " is-novo"}">${subst ? "Substituído" : "Novo"}</span>`;
+      const radios = !troca
+        ? ""
+        : `<div class="trafo-troca" role="radiogroup" aria-label="Situação do transformador ${i + 1}">
+          ${[
+            { v: true, label: "Trocar este transformador" },
+            { v: false, label: "Novo transformador" },
+          ]
+            .map(
+              (o) =>
+                `<button type="button" role="radio" class="trafo-troca-opt${t.substituir === o.v ? " is-active" : ""}"
+                       aria-checked="${t.substituir === o.v}"
+                       onclick="setTrafoSubstituir(${i},${o.v})"><span class="trafo-troca-dot" aria-hidden="true"></span>${o.label}</button>`,
+            )
+            .join("")}
+        </div>`;
+      // Num trafo substituído a primeira linha descreve o equipamento atual;
+      // a segunda, o que entra no lugar.
+      const linhaNova = !subst
+        ? ""
+        : `<div class="trafo-card-grid">
+          <div class="field">
+            <label for="trafoNovaDemanda${i}">Nova demanda (kVA)</label>
+            <input id="trafoNovaDemanda${i}" type="number" step="any" value="${t.novaDemanda ?? ""}" placeholder=" "
+                   oninput="trafos[${i}].novaDemanda=this.value;recalcTecnico()">
+          </div>
+          <div class="field">
+            <label for="trafoNovaPotencia${i}">Nova potência (kVA)</label>
+            <input id="trafoNovaPotencia${i}" type="number" step="any" value="${t.novaPotencia ?? ""}" placeholder=" "
+                   oninput="trafos[${i}].novaPotencia=this.value;recalcTecnico()">
+          </div>
+          <div class="field">
+            <label for="trafoNovaRelacao${i}">Corrente de Inrush (%)</label>
+            <input id="trafoNovaRelacao${i}" type="number" step="any" value="${t.novaRelacao ?? ""}" placeholder=" "
+                   oninput="trafos[${i}].novaRelacao=this.value">
+            <span class="cmg-hint field-hint-icon" tabindex="0" role="img" aria-label="Ajuda: corrente de inrush" data-hint="${HINT_INRUSH}"><img class="field-info" src="../imgs/info.svg" alt="" aria-hidden="true" /></span>
+          </div>
+        </div>`;
+      return `<div class="trafo-card${aberto ? " is-open" : ""}">
+      <button type="button" class="trafo-card-head" onclick="toggleTrafo(${i})"
+              aria-expanded="${aberto}" aria-controls="trafoCardBody${i}">
+        <span class="trafo-titulo">Transformador</span>
+        <span class="trafo-badge">${i + 1} de ${total}</span>
+        ${status}
+        <span class="trafo-chevron" aria-hidden="true"></span>
+      </button>
+      <div class="trafo-card-body" id="trafoCardBody${i}"${aberto ? "" : " hidden"}>
+        ${radios}
+        <div class="trafo-card-grid">
+          <div class="field">
+            <label for="trafoDemanda${i}">Demanda (kVA)</label>
+            <input id="trafoDemanda${i}" type="number" step="any" value="${t.demanda ?? ""}" placeholder=" "
+                   oninput="trafos[${i}].demanda=this.value;recalcTecnico()">
+          </div>
+          <div class="field">
+            <label for="trafoPotencia${i}">Potência (kVA)</label>
+            <input id="trafoPotencia${i}" type="number" step="any" value="${t.potencia}" placeholder=" "
+                   oninput="trafos[${i}].potencia=this.value;recalcTecnico()">
+          </div>
+          <div class="field">
+            <label for="trafoRelacao${i}">Corrente de Inrush (%)</label>
+            <input id="trafoRelacao${i}" type="number" step="any" value="${t.relacao}" placeholder=" "
+                   oninput="trafos[${i}].relacao=this.value">
+            <span class="cmg-hint field-hint-icon" tabindex="0" role="img" aria-label="Ajuda: corrente de inrush" data-hint="${HINT_INRUSH}"><img class="field-info" src="../imgs/info.svg" alt="" aria-hidden="true" /></span>
+          </div>
+        </div>
+        ${linhaNova}
+      </div>
+    </div>`;
+    })
+    .join("");
 }
 
 /* --- Cubículos adicionais (Anexo I) --- */
+let cubiculosAbertos = new Set([0]); // índices dos cards expandidos (acordeão)
+function novoCubiculo() {
+  return {
+    instalacao: "",
+    trafos: [novoTrafo()],
+    modalidade: "",
+    demanda: "",
+    demandaPonta: "",
+    demandaForaPonta: "",
+    // Demanda escalonada do cubículo: "Sim" abre a tabela de etapas abaixo.
+    // Cada etapa segue a modalidade do próprio cubículo (Azul = ponta/fora
+    // de ponta; Verde = demanda única).
+    escalonada: "",
+    etapasEscalonada: [],
+    // Cubículo já existente (será alterado) x novo (será acrescentado).
+    // Só relevante em finalidade ≠ Conexão Nova — ver permiteTrocaTrafo().
+    existente: false,
+  };
+}
+/* --- Demanda escalonada por cubículo ---
+   Espelha a tabela global que existia em "Tarifação e Demanda", agora vivendo
+   dentro do card de cada cubículo. */
+function setCubiculoEscalonada(i, valor) {
+  const c = cubiculos[i];
+  if (!c) return;
+  c.escalonada = valor;
+  // A primeira etapa nasce junto para o usuário já ter onde digitar.
+  if (valor === "Sim" && !c.etapasEscalonada.length) addEtapaEscalonadaCub(i);
+  else renderCubiculos();
+}
+function novaEtapaEscalonada() {
+  return { demanda: "", ponta: "", foraponta: "", inicio: "" };
+}
+function addEtapaEscalonadaCub(i) {
+  cubiculos[i]?.etapasEscalonada.push(novaEtapaEscalonada());
+  renderCubiculos();
+}
+function delEtapaEscalonadaCub(i, k) {
+  cubiculos[i]?.etapasEscalonada.splice(k, 1);
+  renderCubiculos();
+}
+function _cubiculoEscalonadaCardsHTML(i, atual) {
+  const cls = CAMPOS_CARDS_CONFIG.classes;
+  return (
+    `<div class="${cls.grid} toggle-group--opcoes" role="radiogroup" aria-label="Haverá demanda escalonada no cubículo ${i + 1}?">` +
+    ["Sim", "Não"]
+      .map(
+        (v) =>
+          `<button type="button" role="radio" aria-checked="${atual === v}" class="${cls.card}${atual === v ? " " + cls.active : ""}" onclick="setCubiculoEscalonada(${i},'${v}')">${v}</button>`,
+      )
+      .join("") +
+    `</div>`
+  );
+}
+/* Tabela de etapas — colunas conforme a modalidade do cubículo. */
+function _cubiculoEscalonadaTabelaHTML(i, c) {
+  if (c.escalonada !== "Sim") return "";
+  const azul = c.modalidade === "Azul";
+  const head = azul
+    ? `<tr><th>Ponta (kW)</th><th>Fora de Ponta (kW)</th><th>Início de Uso</th><th></th></tr>`
+    : `<tr><th>Demanda (kW)</th><th>Início de Uso</th><th></th></tr>`;
+  const ref = `cubiculos[${i}].etapasEscalonada`;
+  const linhas = c.etapasEscalonada
+    .map((e, k) =>
+      // As etapas passam a ser a demanda do cubículo quando há escalonamento,
+      // então cada digitação realimenta totais e validação (mesmo par de
+      // chamadas dos campos de demanda simples).
+      azul
+        ? `<tr><td><input type="number" step="any" value="${e.ponta}" placeholder="kW" oninput="${ref}[${k}].ponta=this.value;recalcTecnico();validarDemandaCubiculo(${i})"></td>
+             <td><input type="number" step="any" value="${e.foraponta}" placeholder="kW" oninput="${ref}[${k}].foraponta=this.value;recalcTecnico();validarDemandaCubiculo(${i})"></td>
+             <td><input type="month" value="${e.inicio}" oninput="${ref}[${k}].inicio=this.value"></td>
+             <td><button class="btn-del" onclick="delEtapaEscalonadaCub(${i},${k})">×</button></td></tr>`
+        : `<tr><td><input type="number" step="any" value="${e.demanda}" placeholder="kW" oninput="${ref}[${k}].demanda=this.value;recalcTecnico();validarDemandaCubiculo(${i})"></td>
+             <td><input type="month" value="${e.inicio}" oninput="${ref}[${k}].inicio=this.value"></td>
+             <td><button class="btn-del" onclick="delEtapaEscalonadaCub(${i},${k})">×</button></td></tr>`,
+    )
+    .join("");
+  return `<div class="cub-escalonada-box">
+      <div class="tbl-scroll">
+        <table class="tbl"><thead>${head}</thead><tbody>${linhas}</tbody></table>
+      </div>
+      <button class="btn-add" onclick="addEtapaEscalonadaCub(${i})">+ Adicionar etapa de demanda</button>
+    </div>`;
+}
+/* Radio "Sobre a subestação" — nova x já existente. Numa subestação que já
+   existe só se informa o cubículo novo a ser adicionado. */
+function _subestacaoExistenteCardsHTML() {
+  const cls = CAMPOS_CARDS_CONFIG.classes;
+  const atual = state.subestacaoExistente || "Nova subestação";
+  return (
+    `<div class="${cls.grid} toggle-group--opcoes" role="radiogroup" aria-label="Sobre a subestação">` +
+    ["Nova subestação", "Subestação já existente"]
+      .map(
+        (v) =>
+          `<button type="button" role="radio" aria-checked="${atual === v}" class="${cls.card}${atual === v ? " " + cls.active : ""}" onclick="setSubestacaoExistente('${v}')">${v}</button>`,
+      )
+      .join("") +
+    `</div>`
+  );
+}
+function setSubestacaoExistente(valor) {
+  state.subestacaoExistente = valor;
+  renderSubestacaoExistente();
+  recalcTecnico();
+}
+function renderSubestacaoExistente() {
+  const box = $("#cardsSubestacaoExistente");
+  if (box) box.innerHTML = _subestacaoExistenteCardsHTML();
+}
 function sincronizarCubiculos() {
   const qtd = parseInt($('[data-k="qtdCubiculos"]')?.value) || 0;
   const n = state.compartilhada === "Sim" ? Math.max(1, qtd) : 0;
-  while (cubiculos.length < n)
-    cubiculos.push({
-      instalacao: "",
-      trafos: [{ potencia: "", quantidade: "", relacao: "8" }],
-      modalidade: "",
-      demanda: "",
-      demandaPonta: "",
-      demandaForaPonta: "",
-    });
+  while (cubiculos.length < n) cubiculos.push(novoCubiculo());
   cubiculos.length = n;
+  if (!cubiculosAbertos.size && n) cubiculosAbertos.add(0);
+  renderSubestacaoExistente();
   renderCubiculos();
 }
+function toggleCubiculo(i) {
+  cubiculosAbertos.has(i)
+    ? cubiculosAbertos.delete(i)
+    : cubiculosAbertos.add(i);
+  renderCubiculos();
+}
+/* Cria/remove transformadores do cubículo conforme o campo de quantidade. */
+function sincronizarTrafosCub(i) {
+  const el = $(`#qtdTrafoCub${i}`);
+  const bruto = parseInt(el?.value, 10);
+  if (el && el.value !== "" && (isNaN(bruto) || bruto < 1)) return;
+  const n = Math.min(Math.max(bruto || 0, 0), 99);
+  const c = cubiculos[i];
+  while (c.trafos.length < n) c.trafos.push(novoTrafo());
+  c.trafos.length = n;
+  renderCubiculos();
+  recalcCubiculo(i);
+}
 function addTrafoCub(i) {
-  cubiculos[i].trafos.push({ potencia: "", quantidade: "", relacao: "8" });
+  cubiculos[i].trafos.push(novoTrafo());
   renderCubiculos();
 }
 function delTrafoCub(i, j) {
@@ -1482,16 +1778,25 @@ function delTrafoCub(i, j) {
   renderCubiculos();
 }
 function recalcCubiculo(i) {
-  const rt = CalculoMT.calcularTrafos(cubiculos[i].trafos);
-  const elPot = $("#cubTrafoPot" + i),
-    elQtd = $("#cubTrafoQtd" + i);
-  if (elPot) elPot.textContent = fmt(rt.potenciaTotal);
-  if (elQtd) elQtd.textContent = rt.quantidadeTotal;
+  // O rodapé de totais por cubículo saiu do layout (os totais consolidados
+  // continuam em #blocoTotaisConsolidados, via recalcTecnico).
   validarDemandaCubiculo(i);
   recalcTecnico();
 }
 function demandaRepresentativaCubiculo(c) {
-  if (c.modalidade === "Azul") {
+  const azul = c.modalidade === "Azul";
+  // Com demanda escalonada os campos simples não são exibidos: o que
+  // dimensiona o cubículo é a MAIOR etapa informada (o patamar final
+  // contratado), lida com o mesmo critério ponta/fora-ponta da modalidade.
+  if (c.escalonada === "Sim") {
+    return (c.etapasEscalonada || []).reduce((maior, e) => {
+      const v = azul
+        ? Math.max(parseFloat(e.ponta) || 0, parseFloat(e.foraponta) || 0)
+        : parseFloat(e.demanda) || 0;
+      return Math.max(maior, v);
+    }, 0);
+  }
+  if (azul) {
     const p = parseFloat(c.demandaPonta) || 0,
       f = parseFloat(c.demandaForaPonta) || 0;
     return Math.max(p, f);
@@ -1503,7 +1808,7 @@ function validarDemandaCubiculo(i) {
   if (!c) return;
   const el = $("#cubDemandaAlert" + i);
   if (!el) return;
-  const potCub = CalculoMT.calcularTrafos(c.trafos).potenciaTotal;
+  const potCub = CalculoMT.calcularTrafos(trafosFuturos(c.trafos)).potenciaTotal;
   const demCub = demandaRepresentativaCubiculo(c);
   el.innerHTML =
     demCub > 0 && potCub > 0 && demCub > potCub
@@ -1518,7 +1823,7 @@ function totaisCubiculos() {
     quantidadeTotal = 0,
     demandaTotal = 0;
   cubiculos.forEach((c) => {
-    const rt = CalculoMT.calcularTrafos(c.trafos);
+    const rt = CalculoMT.calcularTrafos(trafosFuturos(c.trafos));
     potenciaTotal += rt.potenciaTotal;
     quantidadeTotal += rt.quantidadeTotal;
     demandaTotal += demandaRepresentativaCubiculo(c);
@@ -1544,44 +1849,144 @@ function setCubiculoModalidade(i, valor) {
   cubiculos[i].modalidade = valor;
   renderCubiculos();
 }
+/* Mesma regra dos trafos individuais, aplicada ao trafo de um cubículo. */
+function setTrafoCubSubstituir(i, j, valor) {
+  const t = cubiculos[i]?.trafos[j];
+  if (!t) return;
+  t.substituir = valor;
+  if (valor && t.novaPotencia === "" && t.novaDemanda === "") {
+    t.novaPotencia = t.potencia;
+    t.novaDemanda = t.demanda;
+  }
+  renderCubiculos();
+  recalcCubiculo(i);
+}
+/* Radio "Cubículo já existente / novo" — um cubículo existente é alterado;
+   um novo é acrescentado à subestação compartilhada. */
+function setCubiculoExistente(i, valor) {
+  const c = cubiculos[i];
+  if (!c) return;
+  c.existente = valor;
+  // Cubículo novo não tem trafo a substituir: limpa a marcação dos seus trafos.
+  if (!valor)
+    c.trafos.forEach((t) => {
+      t.substituir = false;
+      t.novaPotencia = "";
+      t.novaDemanda = "";
+    });
+  renderCubiculos();
+  recalcCubiculo(i);
+}
+function _cubiculoExistenteCardsHTML(i, existente) {
+  return (
+    `<div class="trafo-troca" role="radiogroup" aria-label="Situação do cubículo ${i + 1}">` +
+    [
+      { v: true, label: "Cubículo já existente" },
+      { v: false, label: "Cubículo novo" },
+    ]
+      .map(
+        (o) =>
+          `<button type="button" role="radio" class="trafo-troca-opt${existente === o.v ? " is-active" : ""}"
+             aria-checked="${existente === o.v}"
+             onclick="setCubiculoExistente(${i},${o.v})"><span class="trafo-troca-dot" aria-hidden="true"></span>${o.label}</button>`,
+      )
+      .join("") +
+    `</div>`
+  );
+}
 function renderCubiculos() {
   const box = $("#cubiculosCards");
   if (!box) return;
+  const total = cubiculos.length;
   box.innerHTML = cubiculos
     .map((c, i) => {
-      const rt = CalculoMT.calcularTrafos(c.trafos);
-      const trafoRows = c.trafos
-        .map(
-          (t, j) => `<tr>
-      <td>TRF${String(j + 1).padStart(2, "0")}</td>
-      <td><input type="number" step="any" value="${t.potencia}" placeholder="Ex.: 300" oninput="cubiculos[${i}].trafos[${j}].potencia=this.value;recalcCubiculo(${i})"></td>
-      <td><input type="number" value="${t.quantidade}" placeholder="Ex.: 1" oninput="cubiculos[${i}].trafos[${j}].quantidade=this.value;recalcCubiculo(${i})"></td>
-      <td><input type="number" step="any" value="${t.relacao}" placeholder="Ex.: 8" oninput="cubiculos[${i}].trafos[${j}].relacao=this.value"></td>
-      <td><button class="btn-del" onclick="delTrafoCub(${i},${j})">×</button></td>
-    </tr>`,
-        )
+      const aberto = cubiculosAbertos.has(i);
+      // Um bloco de campos por transformador do cubículo (mesmo trio dos
+      // cards de transformador individual).
+      const trocaCub = permiteTrocaTrafo();
+      const trafoBlocos = c.trafos
+        .map((t, j) => {
+          const subst = trocaCub && t.substituir;
+          const status = !trocaCub
+            ? ""
+            : `<span class="trafo-status${subst ? " is-substituido" : " is-novo"}">${subst ? "Substituído" : "Novo"}</span>`;
+          const radios = !trocaCub
+            ? ""
+            : `<div class="trafo-troca" role="radiogroup" aria-label="Situação do transformador ${j + 1} do cubículo ${i + 1}">
+          ${[
+            { v: true, label: "Trocar este transformador" },
+            { v: false, label: "Novo transformador" },
+          ]
+            .map(
+              (o) =>
+                `<button type="button" role="radio" class="trafo-troca-opt${t.substituir === o.v ? " is-active" : ""}"
+                       aria-checked="${t.substituir === o.v}"
+                       onclick="setTrafoCubSubstituir(${i},${j},${o.v})"><span class="trafo-troca-dot" aria-hidden="true"></span>${o.label}</button>`,
+            )
+            .join("")}
+        </div>`;
+          const linhaNova = !subst
+            ? ""
+            : `<div class="trafo-card-grid">
+          <div class="field"><label for="cubTrafoNovaDem${i}_${j}">Nova demanda (kVA)</label><input id="cubTrafoNovaDem${i}_${j}" type="number" step="any" value="${t.novaDemanda ?? ""}" placeholder=" " oninput="cubiculos[${i}].trafos[${j}].novaDemanda=this.value;recalcCubiculo(${i})"></div>
+          <div class="field"><label for="cubTrafoNovaPot${i}_${j}">Nova potência (kVA)</label><input id="cubTrafoNovaPot${i}_${j}" type="number" step="any" value="${t.novaPotencia ?? ""}" placeholder=" " oninput="cubiculos[${i}].trafos[${j}].novaPotencia=this.value;recalcCubiculo(${i})"></div>
+          <div class="field"><label for="cubTrafoNovaRel${i}_${j}">Corrente de Inrush (%)</label><input id="cubTrafoNovaRel${i}_${j}" type="number" step="any" value="${t.novaRelacao ?? ""}" placeholder=" " oninput="cubiculos[${i}].trafos[${j}].novaRelacao=this.value"><span class="cmg-hint field-hint-icon" tabindex="0" role="img" aria-label="Ajuda: corrente de inrush" data-hint="${HINT_INRUSH}"><img class="field-info" src="../imgs/info.svg" alt="" aria-hidden="true" /></span></div>
+        </div>`;
+          return `<div class="cub-trafo-bloco">
+        <div class="cub-trafo-titulo">Transformador ${j + 1}${status}</div>
+        ${radios}
+        <div class="trafo-card-grid">
+          <div class="field"><label for="cubTrafoDem${i}_${j}">Demanda (kVA)</label><input id="cubTrafoDem${i}_${j}" type="number" step="any" value="${t.demanda ?? ""}" placeholder=" " oninput="cubiculos[${i}].trafos[${j}].demanda=this.value;recalcCubiculo(${i})"></div>
+          <div class="field"><label for="cubTrafoPot${i}_${j}">Potência (kVA)</label><input id="cubTrafoPot${i}_${j}" type="number" step="any" value="${t.potencia}" placeholder=" " oninput="cubiculos[${i}].trafos[${j}].potencia=this.value;recalcCubiculo(${i})"></div>
+          <div class="field"><label for="cubTrafoRel${i}_${j}">Corrente de Inrush (%)</label><input id="cubTrafoRel${i}_${j}" type="number" step="any" value="${t.relacao}" placeholder=" " oninput="cubiculos[${i}].trafos[${j}].relacao=this.value"><span class="cmg-hint field-hint-icon" tabindex="0" role="img" aria-label="Ajuda: corrente de inrush" data-hint="${HINT_INRUSH}"><img class="field-info" src="../imgs/info.svg" alt="" aria-hidden="true" /></span></div>
+        </div>
+        ${linhaNova}
+      </div>`;
+        })
         .join("");
       const azul = c.modalidade === "Azul";
-      const demandaFields = azul
-        ? `<div class="field"><label>Demanda Ponta (kW)</label><input type="number" step="any" value="${c.demandaPonta}" placeholder=" " oninput="cubiculos[${i}].demandaPonta=this.value;recalcTecnico();validarDemandaCubiculo(${i})"></div>
+      // Demanda simples e demanda escalonada são exclusivas: quando há
+      // escalonamento, a tabela de etapas passa a ser a única entrada de
+      // demanda do cubículo (com as mesmas colunas que estes campos teriam).
+      const temEscalonada = c.escalonada === "Sim";
+      const demandaFields = temEscalonada
+        ? ""
+        : azul
+          ? `<div class="field"><label>Demanda Ponta (kW)</label><input type="number" step="any" value="${c.demandaPonta}" placeholder=" " oninput="cubiculos[${i}].demandaPonta=this.value;recalcTecnico();validarDemandaCubiculo(${i})"></div>
          <div class="field"><label>Demanda Fora de Ponta (kW)</label><input type="number" step="any" value="${c.demandaForaPonta}" placeholder=" " oninput="cubiculos[${i}].demandaForaPonta=this.value;recalcTecnico();validarDemandaCubiculo(${i})"></div>`
-        : `<div class="field"><label>Demanda (kW)</label><input type="number" step="any" value="${c.demanda}" placeholder=" " oninput="cubiculos[${i}].demanda=this.value;recalcTecnico();validarDemandaCubiculo(${i})"></div>`;
-      return `<div class="conditional" style="margin-top:14px">
-      <div class="conditional-tag">Cubículo ${i + 1}</div>
-      ${state.finalidade !== "Conexão Nova" ? `<div class="field" style="margin-bottom:14px"><label>N° Instalação</label><input type="text" value="${c.instalacao}" placeholder="Nº da instalação" oninput="cubiculos[${i}].instalacao=this.value"></div>` : ""}
-      <div class="tbl-scroll">
-        <table class="tbl">
-          <thead><tr><th style="width:70px">Trafo</th><th>Potência (kVA)</th><th>Qtde</th><th>Relação I mag / I nominal</th><th style="width:46px"></th></tr></thead>
-          <tbody>${trafoRows}</tbody>
-          <tfoot><tr><td>Σ</td><td class="calc" id="cubTrafoPot${i}">${fmt(rt.potenciaTotal)}</td><td class="calc" id="cubTrafoQtd${i}">${rt.quantidadeTotal}</td><td colspan="2"></td></tr></tfoot>
-        </table>
+          : `<div class="field"><label>Demanda contratada (kVA)</label><input type="number" step="any" value="${c.demanda}" placeholder=" " oninput="cubiculos[${i}].demanda=this.value;recalcTecnico();validarDemandaCubiculo(${i})"></div>`;
+      return `<div class="trafo-card cub-card${aberto ? " is-open" : ""}">
+      <button type="button" class="trafo-card-head" onclick="toggleCubiculo(${i})"
+              aria-expanded="${aberto}" aria-controls="cubCardBody${i}">
+        <span class="trafo-titulo">Cubículo</span>
+        <span class="trafo-badge">${i + 1} de ${total}</span>
+        ${
+          trocaCub
+            ? `<span class="trafo-status${c.existente ? " is-existente" : " is-novo"}">${c.existente ? "Já existente" : "Novo"}</span>`
+            : ""
+        }
+        <span class="trafo-chevron" aria-hidden="true"></span>
+      </button>
+      <div class="trafo-card-body" id="cubCardBody${i}"${aberto ? "" : " hidden"}>
+        <p class="cub-card-sub">Preencha os dados de cada transformador deste cubículo.${
+          trocaCub
+            ? " Informe a <strong>quantidade total de transformadores</strong> considerando os <strong>que serão alterados + novos</strong> a serem adicionados."
+            : ""
+        }</p>
+        ${trocaCub ? _cubiculoExistenteCardsHTML(i, c.existente) : ""}
+        <div class="grid grid-2">
+          <div class="field"><label for="cubInstal${i}">Número da unidade consumidora / instalação</label><input id="cubInstal${i}" type="text" value="${c.instalacao}" placeholder=" " oninput="cubiculos[${i}].instalacao=this.value"></div>
+          <div class="field"><label for="qtdTrafoCub${i}">Quantidade de transformadores</label><input id="qtdTrafoCub${i}" type="number" min="1" max="99" step="1" value="${c.trafos.length || ""}" placeholder=" " oninput="sincronizarTrafosCub(${i})"></div>
+        </div>
+        ${trafoBlocos}
+        <div class="cub-trafo-bloco">
+          <div class="field field--plain"><label>Modalidade tarifária horária</label>${_cubiculoModalidadeCardsHTML(i, c.modalidade)}</div>
+          ${demandaFields ? `<div class="grid grid-2 cub-demanda-grid">${demandaFields}</div>` : ""}
+          <div class="field field--plain bloco-sub-gap"><label>Haverá demanda escalonada?</label>${_cubiculoEscalonadaCardsHTML(i, c.escalonada)}</div>
+          ${_cubiculoEscalonadaTabelaHTML(i, c)}
+        </div>
+        <div id="cubDemandaAlert${i}"></div>
       </div>
-      <button class="btn-add" onclick="addTrafoCub(${i})">+ Adicionar transformador</button>
-      <div class="grid grid-2" style="margin-top:14px">
-        <div class="field field--plain"><label>Modalidade tarifária horária</label>${_cubiculoModalidadeCardsHTML(i, c.modalidade)}</div>
-        ${demandaFields}
-      </div>
-      <div id="cubDemandaAlert${i}"></div>
     </div>`;
     })
     .join("");
@@ -1589,9 +1994,11 @@ function renderCubiculos() {
   recalcTecnico();
 }
 
-/* --- Motores --- */
-function addMotor() {
-  motores.push({
+/* --- Motores ---
+   Um card por motor, em acordeão (só o primeiro nasce aberto); a quantidade
+   vem do campo "Quantidade de motores". */
+function novoMotor() {
+  return {
     tipo: "Motor",
     fases: "Trifásico",
     cv: "",
@@ -1602,11 +2009,45 @@ function addMotor() {
     tempo: "",
     dispositivo: "",
     tap: "",
-  });
+  };
+}
+function addMotor() {
+  motores.push(novoMotor());
+  sincronizarCampoQtdMotores();
   renderMotores();
 }
 function delMotor(i) {
   motores.splice(i, 1);
+  motoresAbertos.delete(i);
+  // reindexa o conjunto de cards abertos após a remoção
+  motoresAbertos = new Set(
+    [...motoresAbertos].map((k) => (k > i ? k - 1 : k)).filter((k) => k >= 0),
+  );
+  if (!motoresAbertos.size && motores.length) motoresAbertos.add(0);
+  sincronizarCampoQtdMotores();
+  renderMotores();
+}
+/* Mantém o input "Quantidade de motores" em sincronia com os cards. */
+function sincronizarCampoQtdMotores() {
+  const el = $('[data-k="qtdMotores"]');
+  if (el) el.value = motores.length || "";
+  state.qtdMotores = motores.length;
+}
+/* Cria/remove cards para bater com o valor digitado no campo de quantidade. */
+function sincronizarMotores() {
+  const el = $('[data-k="qtdMotores"]');
+  const bruto = parseInt(el?.value, 10);
+  if (el && el.value !== "" && (isNaN(bruto) || bruto < 0)) return; // aguarda valor válido
+  const n = Math.min(Math.max(bruto || 0, 0), 99); // teto igual ao max do input
+  while (motores.length < n) motores.push(novoMotor());
+  motores.length = n;
+  state.qtdMotores = n;
+  if (!motoresAbertos.size && n) motoresAbertos.add(0);
+  renderMotores();
+  recalcRamal();
+}
+function toggleMotor(i) {
+  motoresAbertos.has(i) ? motoresAbertos.delete(i) : motoresAbertos.add(i);
   renderMotores();
 }
 // Faixa de resultados calculados, no rodapé do card — sumário leve, não
@@ -1620,11 +2061,34 @@ function _motorCardCalcHTML(c) {
     <div class="item"><span class="lbl">Ip prim (A)</span><span class="val" data-campo="ipPrimario">${c.ipPrimario == null ? "—" : fmt(c.ipPrimario)}</span></div>
   </div>`;
 }
+/* Campos exigidos só de motor pesado (>50 CV trifásico / >15 CV monofásico).
+   Gravam em m.analisePartida — a página "Análise de Partida" lê os MESMOS
+   dados, sem duplicar entrada. Não vão para o PDF comum, só para o de
+   Análise de Partida. */
+function _motorCamposPesadoHTML(i, m, ap) {
+  const ref = `motores[${i}].analisePartida`;
+  return `<div class="motor-card-grid" style="margin-top:12px">
+    <div class="field"><label>Número de partidas</label><input type="number" value="${ap.numPartidas}" placeholder=" " oninput="${ref}.numPartidas=this.value"></div>
+    <div class="field"><label>Ordem de partida</label><input type="number" value="${ap.ordemPartida}" placeholder=" " oninput="${ref}.ordemPartida=this.value"></div>
+    <div class="field"><label>Carga operando (kVA)</label><input type="number" step="any" value="${ap.cargaOperanteKVA}" placeholder=" " oninput="${ref}.cargaOperanteKVA=this.value"></div>
+    <div class="field"><label>Carga operando (FP)</label><input type="number" step="any" value="${ap.cargaOperanteFP}" placeholder=" " oninput="${ref}.cargaOperanteFP=this.value"></div>
+    <div class="field"><label>Tipo de carga sensível</label><input type="text" value="${ap.cargaSensivelTipo}" placeholder=" " oninput="${ref}.cargaSensivelTipo=this.value"></div>
+    <div class="field"><label>% admissível da carga sensível</label><input type="number" step="any" value="${ap.cargaSensivelPercentual}" placeholder=" " oninput="${ref}.cargaSensivelPercentual=this.value"></div>
+    <div class="field"><label>Simultaneidade</label><select onchange="${ref}.simultaneidade=this.value"><option value=""></option><option ${ap.simultaneidade === "Sim" ? "selected" : ""}>Sim</option><option ${ap.simultaneidade === "Não" ? "selected" : ""}>Não</option></select></div>
+    <div class="field"><label>Impedância do transformador (%Z)</label><input type="number" step="any" value="${ap.impedanciaZ}" placeholder=" " oninput="${ref}.impedanciaZ=this.value"></div>
+    <div class="field"><label>Rendimento</label><input type="number" step="any" value="${m.rend}" placeholder=" " oninput="motores[${i}].rend=this.value" onchange="atualizarCalculosMotor(this)"></div>
+    <div class="field"><label>FP</label><input type="number" step="any" value="${m.fp}" placeholder=" " oninput="motores[${i}].fp=this.value" onchange="atualizarCalculosMotor(this)"></div>
+    <div class="field"><label>Tensão (V)</label><input type="number" step="any" value="${m.volts}" placeholder=" " oninput="motores[${i}].volts=this.value" onchange="atualizarCalculosMotor(this)"></div>
+    <div class="field"><label>IP/IN</label><input type="number" step="any" value="${m.ipIn}" placeholder=" " oninput="motores[${i}].ipIn=this.value" onchange="atualizarCalculosMotor(this)"></div>
+    <div class="field"><label>Tempo IP (s)</label><input type="number" step="any" value="${m.tempo}" placeholder=" " oninput="motores[${i}].tempo=this.value"></div>
+  </div>`;
+}
 function renderMotores() {
   const box = $("#motoresCardsContainer");
   if (!box) return;
   box.innerHTML = "";
   const tMT = parseFloat(state.tensaoMT);
+  const total = motores.length;
   motores.forEach((m, i) => {
     const c = CalculoMT.calcularMotor(
       {
@@ -1640,28 +2104,33 @@ function renderMotores() {
       (d) => `<option ${m.dispositivo === d ? "selected" : ""}>${d}</option>`,
     ).join("");
     const compensadora = m.dispositivo === "Chave Compensadora";
+    // Motor pesado (trifásico > 50 CV ou monofásico > 15 CV) exige o conjunto
+    // completo de dados de partida, exibido no próprio card.
+    const pesado = motorPesado(m);
+    const ap = pesado ? ensureAnalisePartida(m) : null;
+    const aberto = motoresAbertos.has(i);
     const card = document.createElement("div");
-    card.className = "motor-card";
+    card.className = "motor-card" + (aberto ? " is-open" : "");
     card.dataset.motorRow = i;
+    card.dataset.pesado = pesado ? "1" : "0";
     card.innerHTML = `
-      <div class="motor-card-head">
-        <span class="motor-titulo">Motor #${String(i + 1).padStart(2, "0")}</span>
-        <button type="button" class="motor-del" onclick="delMotor(${i})" title="Remover motor">×</button>
-      </div>
-      <div class="motor-card-grid">
-        <div class="field field--plain"><label>Tipo</label><input type="text" value="${m.tipo}" placeholder="Ex.: Motor" oninput="motores[${i}].tipo=this.value"></div>
-        <div class="field field--plain"><label>Fases</label><select onchange="motores[${i}].fases=this.value"><option ${m.fases === "Monofásico" ? "selected" : ""}>Monofásico</option><option ${m.fases !== "Monofásico" ? "selected" : ""}>Trifásico</option></select></div>
-        <div class="field field--plain"><label>CV</label><input type="number" step="any" value="${m.cv}" placeholder="150" oninput="motores[${i}].cv=this.value" onchange="atualizarCalculosMotor(this)"></div>
-        <div class="field field--plain"><label>FP</label><input type="number" step="any" value="${m.fp}" placeholder="0,88" oninput="motores[${i}].fp=this.value" onchange="atualizarCalculosMotor(this)"></div>
-        <div class="field field--plain"><label>Rendimento</label><input type="number" step="any" value="${m.rend}" placeholder="0,92" oninput="motores[${i}].rend=this.value" onchange="atualizarCalculosMotor(this)"></div>
-        <div class="field field--plain"><label>Tensao(V)</label><input type="number" step="any" value="${m.volts}" placeholder="380" oninput="motores[${i}].volts=this.value" onchange="atualizarCalculosMotor(this)"></div>
-        <div class="field field--plain"><label>Ip/In</label><input type="number" step="any" value="${m.ipIn}" placeholder="6" oninput="motores[${i}].ipIn=this.value" onchange="atualizarCalculosMotor(this)"></div>
-        <div class="field field--plain"><label>Tempo Ip (s)</label><input type="number" step="any" value="${m.tempo}" placeholder="10" oninput="motores[${i}].tempo=this.value"></div>
-        <div class="field field--plain"><label>Disp. partida</label><select onchange="onDispositivoMotorChange(this,${i})"><option value="">—</option>${dispOpts}</select></div>
-        <div class="field field--plain motor-tap-field" style="display:${compensadora ? "" : "none"}"><label>Tap (%)</label><input type="number" step="any" value="${m.tap || ""}" placeholder="65" oninput="motores[${i}].tap=this.value"></div>
-      </div>
-      ${ehAtividadeIrrigacao() ? `<label class="motor-irrigacao-check"><input type="checkbox" ${m.destinadoIrrigacao ? "checked" : ""} onchange="motores[${i}].destinadoIrrigacao=this.checked"> Destinado à Irrigação</label>` : ""}
-      ${_motorCardCalcHTML(c)}`;
+      <button type="button" class="motor-card-head" onclick="toggleMotor(${i})"
+              aria-expanded="${aberto}" aria-controls="motorCardBody${i}">
+        <span class="motor-titulo">Motor</span>
+        <span class="motor-badge">${i + 1} de ${total}</span>
+        <span class="motor-chevron" aria-hidden="true"></span>
+      </button>
+      <div class="motor-card-body" id="motorCardBody${i}"${aberto ? "" : " hidden"}>
+        <div class="motor-card-grid">
+          <div class="field"><label>Fases</label><select onchange="motores[${i}].fases=this.value;renderMotores()"><option ${m.fases === "Monofásico" ? "selected" : ""}>Monofásico</option><option ${m.fases !== "Monofásico" ? "selected" : ""}>Trifásico</option></select></div>
+          <div class="field"><label>CV</label><input type="number" step="any" value="${m.cv}" placeholder=" " oninput="motores[${i}].cv=this.value;atualizarCalculosMotor(this)" onchange="atualizarCalculosMotor(this)"></div>
+          <div class="field"><label>Disp. Partida</label><select onchange="onDispositivoMotorChange(this,${i})"><option value=""></option>${dispOpts}</select></div>
+          <div class="field motor-tap-field" style="display:${compensadora ? "" : "none"}"><label>Tap (%)</label><input type="number" step="any" value="${m.tap || ""}" placeholder=" " oninput="motores[${i}].tap=this.value"></div>
+        </div>
+        ${pesado ? _motorCamposPesadoHTML(i, m, ap) : ""}
+        ${ehAtividadeIrrigacao() ? `<label class="motor-irrigacao-check"><input type="checkbox" ${m.destinadoIrrigacao ? "checked" : ""} onchange="motores[${i}].destinadoIrrigacao=this.checked"> Destinado à Irrigação</label>` : ""}
+        ${_motorCardCalcHTML(c)}
+      </div>`;
     box.appendChild(card);
   });
 }
@@ -1673,6 +2142,14 @@ function atualizarCalculosMotor(inputEl) {
   const card = inputEl.closest(".motor-card");
   if (!card) return;
   const i = parseInt(card.dataset.motorRow, 10);
+  // Se o motor cruzou o limite de "pesado" (>50 CV trifásico / >15 CV
+  // monofásico), o card ganha/perde os campos de partida: aí sim vale
+  // reconstruir. Fora isso, só os valores calculados são atualizados.
+  const eraPesado = card.dataset.pesado === "1";
+  if (motores[i] && motorPesado(motores[i]) !== eraPesado) {
+    renderMotores();
+    return;
+  }
   const m = motores[i];
   if (!m) return;
   const tMT = parseFloat(state.tensaoMT);
@@ -1785,6 +2262,7 @@ function renderAnaliseMotores() {
         },
         tMT,
       );
+      const v = (x) => (String(x ?? "").trim() === "" ? "—" : x);
       return `<div class="conditional motor-pesado-card" style="margin-top:14px">
       <div class="conditional-tag">Motor ${i + 1} — ${m.tipo || "Motor"} (${m.fases || "Trifásico"}, ${m.cv || "—"} CV)</div>
       <div class="grid grid-3">
@@ -1801,22 +2279,20 @@ function renderAnaliseMotores() {
       </div>`
           : ""
       }
-      <div class="grid grid-2" style="margin-top:16px">
-        <div class="field"><label>Número de partidas</label><input type="number" value="${ap.numPartidas}" placeholder=" " oninput="motores[${i}].analisePartida.numPartidas=this.value"></div>
-        <div class="field"><label>Ordem de partida</label><input type="number" value="${ap.ordemPartida}" placeholder=" " oninput="motores[${i}].analisePartida.ordemPartida=this.value"></div>
-        <div class="field"><label>Carga operando (kVA)</label><input type="number" step="any" value="${ap.cargaOperanteKVA}" placeholder=" " oninput="motores[${i}].analisePartida.cargaOperanteKVA=this.value"></div>
-        <div class="field"><label>Carga operando (FP)</label><input type="number" step="any" value="${ap.cargaOperanteFP}" placeholder=" " oninput="motores[${i}].analisePartida.cargaOperanteFP=this.value"></div>
+      <!-- Dados abaixo vêm do card do motor (Etapa 5) — leitura apenas, para
+           não haver dois pontos de entrada do mesmo dado. -->
+      <div class="subbox-title" style="margin-top:16px">
+        Dados de partida <span class="opt">(preenchidos no card do motor)</span>
       </div>
-      <div class="grid grid-2" style="margin-top:16px">
-        <div class="field"><label>Carga sensível — Tipo</label><input type="text" value="${ap.cargaSensivelTipo}" placeholder="Ex.: CLP, iluminação" oninput="motores[${i}].analisePartida.cargaSensivelTipo=this.value"></div>
-        <div class="field"><label>Carga sensível — % admissível</label><input type="number" step="any" value="${ap.cargaSensivelPercentual}" placeholder=" " oninput="motores[${i}].analisePartida.cargaSensivelPercentual=this.value"></div>
-        <div class="field"><label>Simultaneidade</label>
-          <select onchange="motores[${i}].analisePartida.simultaneidade=this.value">
-            <option value=""></option>
-            <option ${ap.simultaneidade === "Sim" ? "selected" : ""}>Sim</option>
-            <option ${ap.simultaneidade === "Não" ? "selected" : ""}>Não</option>
-          </select></div>
-        <div class="field"><label>Impedância do transformador — %Z</label><input type="number" step="any" value="${ap.impedanciaZ}" placeholder=" " oninput="motores[${i}].analisePartida.impedanciaZ=this.value"></div>
+      <div class="motor-card-calc" style="margin-top:12px">
+        <div class="item"><span class="lbl">Número de partidas</span><span class="val">${v(ap.numPartidas)}</span></div>
+        <div class="item"><span class="lbl">Ordem de partida</span><span class="val">${v(ap.ordemPartida)}</span></div>
+        <div class="item"><span class="lbl">Carga operando (kVA)</span><span class="val">${v(ap.cargaOperanteKVA)}</span></div>
+        <div class="item"><span class="lbl">Carga operando (FP)</span><span class="val">${v(ap.cargaOperanteFP)}</span></div>
+        <div class="item"><span class="lbl">Tipo de carga sensível</span><span class="val">${v(ap.cargaSensivelTipo)}</span></div>
+        <div class="item"><span class="lbl">% admissível</span><span class="val">${v(ap.cargaSensivelPercentual)}</span></div>
+        <div class="item"><span class="lbl">Simultaneidade</span><span class="val">${v(ap.simultaneidade)}</span></div>
+        <div class="item"><span class="lbl">Impedância (%Z)</span><span class="val">${v(ap.impedanciaZ)}</span></div>
       </div>
     </div>`;
     })
@@ -1847,16 +2323,18 @@ function recalcTecnico() {
   const rt =
     state.compartilhada === "Sim"
       ? totaisCubiculos()
-      : CalculoMT.calcularTrafos(
-          trafos.map((t) => ({
-            potencia: t.potencia,
-            quantidade: t.quantidade,
-          })),
-        );
+      // Num trafo marcado para troca o que dimensiona a instalação é a
+      // potência NOVA — a atual sai junto com o equipamento antigo.
+      : CalculoMT.calcularTrafos(trafosFuturos(trafos));
+  // Os totais alimentam state (tipo de SE, tarifa monômia, conexão nova…);
+  // a faixa de resumo dos transformadores foi removida da tela, por isso a
+  // escrita nos elementos é condicional.
   state.potTotalTrafos = rt.potenciaTotal;
   state.qtdTotalTrafos = rt.quantidadeTotal;
-  $("#trafoPotTotal").textContent = fmt(rt.potenciaTotal);
-  $("#trafoQtdTotal").textContent = rt.quantidadeTotal;
+  if ($("#trafoPotTotal"))
+    $("#trafoPotTotal").textContent = fmt(rt.potenciaTotal);
+  if ($("#trafoQtdTotal"))
+    $("#trafoQtdTotal").textContent = rt.quantidadeTotal;
   // conexão nova: replica pot/qtde
   if ($("#cn_pot")) {
     $("#cn_pot").value = fmt(rt.potenciaTotal);
@@ -2266,6 +2744,9 @@ function elementoRelevante(el) {
   let node = el;
   while (node && !(node.classList && node.classList.contains("page"))) {
     if (node.style && node.style.display === "none") return false;
+    // Blocos desativados via atributo `hidden` (ex.: #blocoTarifacaoDemanda,
+    // mantido no DOM só como fonte de estado) também saem da validação.
+    if (node.hasAttribute && node.hasAttribute("hidden")) return false;
     node = node.parentElement;
   }
   return true;
@@ -2296,8 +2777,7 @@ function camposObrigatoriosFaltando() {
       trafos.length > 0 &&
       trafos.every(
         (t) =>
-          String(t.potencia).trim() !== "" &&
-          String(t.quantidade).trim() !== "",
+          String(t.potencia).trim() !== "" && String(t.demanda ?? "").trim() !== "",
       );
     if (!ok) faltando.push("Transformador(es)");
   }
@@ -2310,7 +2790,7 @@ function camposObrigatoriosFaltando() {
           c.trafos.every(
             (t) =>
               String(t.potencia).trim() !== "" &&
-              String(t.quantidade).trim() !== "",
+              String(t.demanda ?? "").trim() !== "",
           ),
       );
     if (!ok)

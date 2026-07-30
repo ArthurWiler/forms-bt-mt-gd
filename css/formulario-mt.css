@@ -161,111 +161,72 @@
   color: var(--cmg-neutral-0);
 }
 
-/* ---- MOTORES / CARGAS ESPECIAIS — cards verticais ----
-   (portado de shared.css, antes no escopo legado .cemig-mt; os campos
-   internos usam .field--plain para ficar fora do rótulo flutuante). */
-.cemig-mtform .motores-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
-  gap: 16px;
-  margin-top: 16px;
-}
-.cemig-mtform .motor-card {
-  background: var(--cmg-surface);
-  border: 1px solid var(--cmg-neutral-200);
-  border-radius: var(--cmg-radius);
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.cemig-mtform .motor-card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.cemig-mtform .motor-card-head .motor-titulo {
-  font-size: 12px;
-  font-weight: var(--cmg-fw-bold);
-  color: var(--cmg-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-.cemig-mtform .motor-card-head .motor-del {
-  background: none;
-  border: none;
-  color: var(--cmg-text-muted);
-  font-size: 17px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 2px 7px;
-  border-radius: 6px;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-.cemig-mtform .motor-card-head .motor-del:hover {
-  background: var(--cmg-danger-50, #fbedec);
-  color: var(--cmg-danger-500);
+/* ---- MOTORES / CARGAS ESPECIAIS — cards em acordeão ----
+   Mesmo componente visual dos cards de TRANSFORMADOR (ver bloco adiante):
+   cabeçalho clicável com badge "n de N" e chevron, campos com rótulo
+   flutuante (padrão do formulário). */
+.cemig-mtform .motor-card-body {
+  padding: 0 18px 18px;
 }
 .cemig-mtform .motor-card-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px 8px;
+  grid-template-columns: repeat(2, 1fr);
+  /* mesmo passo do .grid global e do .trafo-card-grid */
+  gap: 14px;
 }
+/* Rótulo flutuante (Padrão B): a caixa visível é o .field, então o fundo
+   branco vem do contêiner para destacar do cinza do card. */
 .cemig-mtform .motor-card-grid .field {
-  gap: 3px;
-}
-.cemig-mtform .motor-card-grid .field label {
-  font-size: 10px;
-  color: var(--cmg-text-muted);
-  font-weight: 600;
-  min-height: 0;
-  margin-bottom: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-.cemig-mtform .motor-card-grid .field input,
-.cemig-mtform .motor-card-grid .field select {
-  width: 100%;
-  box-sizing: border-box;
-  min-height: 32px;
-  height: 32px;
-  padding: 5px 8px;
-  font-size: 12.5px;
-  border: 1px solid var(--cmg-neutral-400);
-  border-radius: 4px;
-}
-.cemig-mtform .motor-card-grid .field input:focus,
-.cemig-mtform .motor-card-grid .field select:focus {
-  outline: none;
-  border-color: var(--cmg-green-600);
-  box-shadow: none;
+  background: var(--cmg-surface);
 }
 .cemig-mtform .motor-tap-field {
   transition: opacity 0.15s;
 }
+/* ---- Faixa de RESUMO do card do motor ----
+   Spec Figma: linha flex com space-between, padding 16px, gap 24px, fundo
+   neutra/100 e radius 8px. Cada "dado" é uma coluna rótulo + valor, ambos
+   corpo/médio 14px/0.2px em neutra/600 — muda só o peso (400 → 700).
+   As larguras fixas do Figma (60px, 56px…) são só o texto medido lá; aqui
+   cada coluna se dimensiona pelo próprio conteúdo. */
 .cemig-mtform .motor-card-calc {
   display: flex;
-  gap: 16px;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--cmg-space-4);
+  gap: var(--cmg-space-6);
   flex-wrap: wrap;
-  background: var(--cmg-surface-accent);
-  border-radius: 8px;
-  padding: 9px 12px;
+  background: var(--cmg-neutral-100); /* #E6E9E8 */
+  border-radius: var(--cmg-radius);
+  margin-top: 14px;
 }
+/* Altura: o frame tem 68px com padding 16px, logo 36px de conteúdo para as
+   duas linhas — 18px cada. O `gap:16px` e o `height:10px` do Figma são
+   medidas de CAP HEIGHT (texto sem leading), não caixas de linha CSS; usá-los
+   ao pé da letra com line-height 24 daria 80px. Mantemos a tipografia do
+   spec (14px) e comprimimos só a caixa da linha para fechar os 68px. */
 .cemig-mtform .motor-card-calc .item {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  align-items: flex-start;
+  padding: 0;
+  gap: 0;
+}
+.cemig-mtform .motor-card-calc .item .lbl,
+.cemig-mtform .motor-card-calc .item .val {
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-body); /* 14px */
+  line-height: 18px; /* ver nota de altura acima */
+  letter-spacing: var(--cmg-ls-tight); /* 0.2px */
+  color: var(--cmg-text); /* neutra/600 #364B46 */
+  text-transform: none;
+  white-space: nowrap;
 }
 .cemig-mtform .motor-card-calc .item .lbl {
-  font-size: 9px;
-  color: var(--cmg-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
+  font-weight: var(--cmg-fw-regular); /* 400 */
 }
 .cemig-mtform .motor-card-calc .item .val {
-  font-size: 12.5px;
-  font-weight: var(--cmg-fw-bold);
-  color: var(--cmg-green-600);
+  font-weight: var(--cmg-fw-bold); /* 700 */
   font-variant-numeric: tabular-nums;
 }
 /* Forma do checkbox: regra canônica `.cemig-form input[type="checkbox"]`
@@ -280,7 +241,278 @@
 }
 @media (max-width: 560px) {
   .cemig-mtform .motor-card-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- Cards de TRANSFORMADOR e MOTOR (acordeão) ----
+   Um card por item. O cabeçalho é o botão de recolher; o badge "n de N"
+   usa o Verde On da marca. */
+.cemig-mtform .motor-card,
+.cemig-mtform .trafo-card {
+  background: var(--cmg-neutral-50);
+  border-radius: var(--cmg-radius);
+  /* mesmo passo do .grid global — os cards respiram como os campos */
+  margin-top: 14px;
+  overflow: hidden;
+}
+.cemig-mtform .motor-card-head,
+.cemig-mtform .trafo-card-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+.cemig-mtform .motor-card-head:focus-visible,
+.cemig-mtform .trafo-card-head:focus-visible {
+  outline: 2px solid var(--cmg-green-600);
+  outline-offset: -2px;
+}
+.cemig-mtform .motor-card-head .motor-titulo,
+.cemig-mtform .trafo-card-head .trafo-titulo {
+  font-size: var(--cmg-fs-subtitle);
+  color: var(--cmg-text-strong);
+  /* anula o estilo compacto anterior (maiúsculas/12px) */
+  font-weight: var(--cmg-fw-regular);
+  text-transform: none;
+  letter-spacing: normal;
+}
+.cemig-mtform .motor-card-head .motor-badge,
+.cemig-mtform .trafo-card-head .trafo-badge {
+  background: var(--verde-on);
+  color: var(--cmg-neutral-700);
+  font-size: 11px;
+  font-weight: var(--cmg-fw-bold);
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: var(--cmg-radius-pill);
+  white-space: nowrap;
+}
+/* Status do transformador (só em finalidade ≠ Conexão Nova): distingue o
+   equipamento que entra novo daquele que substitui um existente. */
+.cemig-mtform .trafo-card-head .trafo-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: var(--cmg-fw-bold);
+  line-height: 1;
+  padding: 4px 9px;
+  border-radius: var(--cmg-radius-pill);
+  white-space: nowrap;
+}
+.cemig-mtform .trafo-card-head .trafo-status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.cemig-mtform .trafo-card-head .trafo-status.is-novo {
+  background: #e6f4ec;
+  color: #12784a;
+}
+.cemig-mtform .trafo-card-head .trafo-status.is-substituido {
+  background: #fdf3d8;
+  color: #96690a;
+}
+/* Cubículo já existente — neutro: não é "novo" nem uma troca de equipamento. */
+.cemig-mtform .trafo-card-head .trafo-status.is-existente {
+  background: var(--cmg-neutral-200);
+  color: var(--cmg-neutral-700);
+}
+/* Badge de status ao lado do título "Transformador N" dentro do cubículo. */
+.cemig-mtform .cub-trafo-titulo .trafo-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 10px;
+  font-size: 11px;
+  font-weight: var(--cmg-fw-bold);
+  line-height: 1;
+  padding: 4px 9px;
+  border-radius: var(--cmg-radius-pill);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.cemig-mtform .cub-trafo-titulo .trafo-status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.cemig-mtform .cub-trafo-titulo .trafo-status.is-novo {
+  background: #e6f4ec;
+  color: #12784a;
+}
+.cemig-mtform .cub-trafo-titulo .trafo-status.is-substituido {
+  background: #fdf3d8;
+  color: #96690a;
+}
+/* Radios "Trocar este transformador / Novo transformador" — botões com
+   aparência de radio nativo, no padrão dos demais cards de opção. */
+.cemig-mtform .trafo-troca {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 28px;
+  /* mesmo passo do grid de campos, acima e abaixo */
+  margin: 0 0 14px;
+}
+.cemig-mtform .trafo-troca-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  background: none;
+  border: 0;
+  padding: 4px 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--cmg-fs-body);
+  color: var(--cmg-text-strong);
+  text-align: left;
+}
+.cemig-mtform .trafo-troca-opt .trafo-troca-dot {
+  flex: none;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  border: 2px solid var(--cmg-neutral-500);
+  background: var(--cmg-surface);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.cemig-mtform .trafo-troca-opt.is-active .trafo-troca-dot {
+  border-color: var(--cmg-green-600);
+  /* miolo preenchido sem elemento extra */
+  box-shadow: inset 0 0 0 3.5px var(--cmg-surface),
+    inset 0 0 0 10px var(--cmg-green-600);
+}
+.cemig-mtform .trafo-troca-opt:focus-visible {
+  outline: 2px solid var(--cmg-green-600);
+  outline-offset: 2px;
+  border-radius: var(--cmg-radius-sm, 4px);
+}
+/* Chevron desenhado em CSS — aponta para baixo e gira ao expandir. */
+.cemig-mtform .motor-card-head .motor-chevron,
+.cemig-mtform .trafo-card-head .trafo-chevron {
+  margin-left: auto;
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid var(--cmg-neutral-600);
+  border-bottom: 2px solid var(--cmg-neutral-600);
+  transform: rotate(45deg) translate(-2px, -2px);
+  transition: transform 0.18s ease;
+}
+.cemig-mtform .motor-card.is-open .motor-card-head .motor-chevron,
+.cemig-mtform .trafo-card.is-open .trafo-card-head .trafo-chevron {
+  transform: rotate(225deg) translate(-2px, -2px);
+}
+.cemig-mtform .trafo-card-body {
+  padding: 0 18px 18px;
+}
+.cemig-mtform .trafo-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  /* mesmo passo do .grid global (shared.css) — os campos do card e os do
+     restante do formulário ficam no mesmo ritmo vertical/horizontal. */
+  gap: 14px;
+}
+/* Rótulo flutuante (Padrão B, shared.css): a caixa visível é o .field — daí o
+   fundo branco vir do contêiner, para destacar do cinza do card. O ícone de
+   ajuda usa .field-hint-icon (shared.css), que já o ancora à direita sem
+   subir junto com o rótulo. */
+.cemig-mtform .trafo-card-grid .field {
+  background: var(--cmg-surface);
+}
+/* Rodapé de totais — substitui o <tfoot> da antiga tabela. */
+/* ---- Card de CUBÍCULO (subestação compartilhada) ----
+   Reusa o acordeão do card de transformador (.trafo-card) e agrupa, dentro,
+   um bloco de campos por transformador do cubículo. */
+.cemig-mtform .cub-card .cub-card-sub {
+  font-size: var(--cmg-fs-body);
+  line-height: var(--cmg-lh-body);
+  letter-spacing: var(--cmg-ls-tight);
+  color: var(--cmg-text);
+  margin: 0 0 16px;
+}
+/* Cada bloco (Transformador N / modalidade) é separado por um filete, como
+   no layout — sem virar um card dentro do card. */
+.cemig-mtform .cub-trafo-bloco {
+  border-top: 1px solid var(--cmg-neutral-200);
+  margin-top: 16px;
+  padding-top: 16px;
+}
+.cemig-mtform .cub-trafo-titulo {
+  font-size: var(--cmg-fs-body-lg);
+  line-height: var(--cmg-lh-body-lg);
+  color: var(--cmg-text-strong);
+  margin-bottom: 14px;
+}
+/* Substitui o antigo style="margin-top:16px" inline: o vão entre a
+   modalidade tarifária e os campos de demanda usa o mesmo passo dos demais. */
+.cemig-mtform .cub-demanda-grid {
+  margin-top: 14px;
+}
+/* Tabela de demanda escalonada dentro do card do cubículo — segue o mesmo
+   passo vertical dos demais blocos e mantém o botão "+ Adicionar" colado
+   logo abaixo da tabela. */
+.cemig-mtform .cub-escalonada-box {
+  margin-top: 14px;
+}
+.cemig-mtform .cub-escalonada-box .btn-add {
+  margin-top: 12px;
+}
+/* Utilitário do bloco de subestação: substitui os style="margin-top:16px"
+   repetidos no HTML. Quando vem logo depois de um .card-sub / .card-subtitle,
+   o texto acima JÁ traz margin-bottom de --cmg-space-6 (24px) — somar outra
+   margem aqui era o que abria um vão maior que o do restante do formulário. */
+.cemig-mtform .card-sub + .bloco-sub-gap,
+.cemig-mtform .card-subtitle + .bloco-sub-gap {
+  margin-top: 0;
+}
+/* Fora desse caso (ex.: "Sobre a subestação", que vem depois de outro campo)
+   o bloco precisa do passo vertical normal da etapa. */
+.cemig-mtform .bloco-sub-gap {
+  margin-top: var(--cmg-space-8);
+}
+/* Vão entre o campo "Quantidade de …" (ou o bloco acima) e a lista de cards.
+   O .grid não tem margin-bottom — o gap só vale ENTRE os filhos —, então sem
+   isto o único respiro era o margin-top de 14px do primeiro card, bem menor
+   que o passo vertical de 32px (--cmg-space-8) desta etapa. Aplica-se ao
+   PRIMEIRO card de cada lista; os seguintes mantêm o passo de 14px entre si. */
+.cemig-mtform #trafoCards > .trafo-card:first-child,
+.cemig-mtform #cubiculosCards > .trafo-card:first-child,
+.cemig-mtform #motoresCardsContainer > .motor-card:first-child {
+  margin-top: var(--cmg-space-8);
+}
+/* Duas .trafo-card-grid empilhadas (linha atual + linha "Nova …") precisam do
+   mesmo vão vertical que separa os campos dentro de cada grid. */
+.cemig-mtform .trafo-card-grid + .trafo-card-grid {
+  margin-top: 14px;
+}
+/* O alerta de demanda do cubículo só ocupa espaço quando tem conteúdo. */
+.cemig-mtform .cub-card [id^="cubDemandaAlert"]:not(:empty) {
+  margin-top: 14px;
+}
+/* Os campos do cubículo ficam sobre o cinza do card: fundo branco como nos
+   demais campos de rótulo flutuante. */
+.cemig-mtform .cub-card .field {
+  background: var(--cmg-surface);
+}
+.cemig-mtform .cub-card .field--plain {
+  background: none;
+}
+@media (max-width: 560px) {
+  .cemig-mtform .trafo-card-grid {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -970,7 +970,11 @@
                 </select>
               </div>
               <div class="field field--plain">
-                <label>Subestação compartilhada (multimedição)?</label>
+                <label
+                  >Subestação compartilhada (multimedição)?<span class="req"
+                    >*</span
+                  ></label
+                >
                 <select
                   id="f_compartilhada"
                   data-k="compartilhada"
@@ -981,27 +985,41 @@
                   <option>Não</option>
                 </select>
               </div>
-              <div class="field" id="qtdCubiculosBox" style="display: none">
-                <label>Quantos cubículos?</label>
-                <input
-                  type="number"
-                  min="1"
-                  data-k="qtdCubiculos"
-                  placeholder="Ex.: 2"
-                  oninput="sincronizarCubiculos()"
-                />
-              </div>
             </div>
             <div id="compartilhadaAlert"></div>
 
             <div id="cubiculosBox" style="display: none">
               <h4 class="card-subtitle divider">
-                Cubículos da Subestação Compartilhada <span class="req">*</span>
+                Dados da subestação compartilhada <span class="req">*</span>
               </h4>
               <p class="card-sub">
-                Preencha os dados dos transformadores de cada cubículo da
-                subestação compartilhada.
+                Preencha os dados dos cubículos na sua propriedade. Para
+                <strong>novas subestações</strong>, informe os
+                <strong>dados de todos os cubículos</strong>. Se a
+                <strong>subestação já existir</strong>, preencha apenas as
+                <strong>informações do novo cubículo</strong> a ser adicionado.
               </p>
+
+              <div class="grid grid-2 bloco-sub-gap">
+                <div class="field row-solo" id="qtdCubiculosBox">
+                  <label>Quantidade de cubículos</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="99"
+                    step="1"
+                    data-k="qtdCubiculos"
+                    placeholder=" "
+                    oninput="sincronizarCubiculos()"
+                  />
+                </div>
+              </div>
+
+              <div class="field field--plain bloco-sub-gap">
+                <label>Sobre a subestação</label>
+                <div id="cardsSubestacaoExistente"></div>
+              </div>
+
               <div id="cubiculosCards"></div>
             </div>
 
@@ -1010,7 +1028,7 @@
                 <h4 class="card-subtitle divider">
                   Totais Consolidados (Cubículos)
                 </h4>
-                <div class="grid grid-2" style="margin-top: 16px">
+                <div class="grid grid-2 bloco-sub-gap">
                   <div class="field">
                     <label>Soma dos transformadores (kVA)</label>
                     <input
@@ -1039,45 +1057,59 @@
                   Preencha os dados de todos os transformadores que serão usados
                   na sua propriedade.
                 </p>
-                <div class="tbl-scroll" style="margin-top: 16px">
-                  <table class="tbl" id="trafoTbl">
-                    <thead>
-                      <tr>
-                        <th style="width: 70px">Trafo</th>
-                        <th>Potência (kVA)</th>
-                        <th>Qtde</th>
-                        <th>Relação I mag / I nominal</th>
-                        <th style="width: 46px"></th>
-                      </tr>
-                    </thead>
-                    <tbody id="trafoBody"></tbody>
-                    <tfoot>
-                      <tr>
-                        <td>Σ</td>
-                        <td class="calc" id="trafoPotTotal">0</td>
-                        <td class="calc" id="trafoQtdTotal">0</td>
-                        <td colspan="2"></td>
-                      </tr>
-                    </tfoot>
-                  </table>
+
+                <div class="grid grid-2 bloco-sub-gap">
+                  <div class="field row-solo" id="qtdTransformadorBox">
+                    <label
+                      >Quantidade de transformadores<span class="req"
+                        >*</span
+                      ></label
+                    >
+                    <input
+                      type="number"
+                      min="1"
+                      max="99"
+                      step="1"
+                      data-k="qtdTransformador"
+                      placeholder=" "
+                      oninput="sincronizarTrafos()"
+                    />
+                  </div>
                 </div>
-                <button class="btn-add" onclick="addTrafo()">
-                  + Adicionar transformador
-                </button>
+
+                <div id="trafoCards"></div>
               </div>
 
               <div id="blocoMotoresIndividual">
                 <h4 class="card-subtitle divider">
-                  Motores / Cargas Especiais
-                  <span class="opt">(preencha se houver)</span>
+                  Motores e cargas especiais
+                  <span class="opt">(opcional)</span>
                 </h4>
-                <div
-                  id="motoresCardsContainer"
-                  class="motores-cards-grid"
-                ></div>
-                <button class="btn-add" onclick="addMotor()">
-                  + Adicionar motor
-                </button>
+                <p class="card-sub">
+                  Preencha os dados técnicos de todos os motores com cargas
+                  especiais, caso existam, da sua propriedade. Utilize a
+                  <a href="#" onclick="abrirAnexoII(); return false"
+                    >tabela de conversão de potências</a
+                  >
+                  para consultar se os dados estão corretos.
+                </p>
+
+                <div class="grid grid-2 bloco-sub-gap">
+                  <div class="field row-solo" id="qtdMotoresBox">
+                    <label>Quantidade de motores</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="99"
+                      step="1"
+                      data-k="qtdMotores"
+                      placeholder=" "
+                      oninput="sincronizarMotores()"
+                    />
+                  </div>
+                </div>
+
+                <div id="motoresCardsContainer"></div>
               </div>
 
               <div id="blocoCargaOperante" style="display: none">
@@ -1267,59 +1299,35 @@
                 </div>
               </div>
 
-              <div id="blocoTarifacaoDemanda">
-                <div class="subbox-title" style="margin-top: 24px">
-                  Tarifação e Demanda
+              <div id="blocoTarifacaoDemanda" hidden>
+                <select id="f_monomia" data-k="monomia" onchange="onMonomia()">
+                  <option value=""></option>
+                  <option>Sim</option>
+                  <option>Não</option>
+                </select>
+                <div id="boxModalidade">
+                  <div id="cardsModalidade"></div>
+                  <select
+                    id="f_modalidade"
+                    data-k="modalidade"
+                    onchange="onModalidade()"
+                    aria-hidden="true"
+                  >
+                    <option value=""></option>
+                    <option>Verde</option>
+                    <option>Azul</option>
+                  </select>
                 </div>
-                <div class="grid grid-3" style="margin-top: 16px">
-                  <div class="field field--plain">
-                    <label
-                      >Faturada por tarifa monômia?
-                      <span class="req">*</span></label
-                    >
-                    <select
-                      id="f_monomia"
-                      data-k="monomia"
-                      onchange="onMonomia()"
-                    >
-                      <option value=""></option>
-                      <option>Sim</option>
-                      <option>Não</option>
-                    </select>
-                  </div>
-                  <div class="field field--plain" id="boxModalidade">
-                    <label
-                      >Modalidade tarifária horária
-                      <span class="req">*</span></label
-                    >
-                    <div id="cardsModalidade"></div>
-                    <select
-                      id="f_modalidade"
-                      data-k="modalidade"
-                      onchange="onModalidade()"
-                      style="display: none"
-                      aria-hidden="true"
-                    >
-                      <option value=""></option>
-                      <option>Verde</option>
-                      <option>Azul</option>
-                    </select>
-                  </div>
-                  <div class="field field--plain" id="boxEscalonada">
-                    <label
-                      >Haverá demanda escalonada?
-                      <span class="req">*</span></label
-                    >
-                    <select
-                      id="f_escalonada"
-                      data-k="escalonada"
-                      onchange="onEscalonada()"
-                    >
-                      <option value=""></option>
-                      <option>Sim</option>
-                      <option>Não</option>
-                    </select>
-                  </div>
+                <div id="boxEscalonada">
+                  <select
+                    id="f_escalonada"
+                    data-k="escalonada"
+                    onchange="onEscalonada()"
+                  >
+                    <option value=""></option>
+                    <option>Sim</option>
+                    <option>Não</option>
+                  </select>
                 </div>
                 <div id="monomiaAlert"></div>
 
