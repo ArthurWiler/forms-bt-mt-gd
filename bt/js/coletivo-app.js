@@ -69,6 +69,10 @@ if (MULTI) state.atend.nBlocos = "";
 const _ucAberta = {};
 const _torreAberta = {};
 const _uniAberta = {}; // unidades da etapa Dados das unidades ("bi:ui")
+// Marcam a abertura automática do primeiro card (torre 1 / unidade 1 da torre
+// 1), feita uma única vez — depois a abertura é só por clique do usuário.
+let _torreAbertaInicial = false;
+let _uniAbertaInicial = false;
 // Paginação e torre selecionada das etapas do condomínio (UI apenas)
 const ITENS_POR_PAGINA = 10;
 let _torrePagina = 0; // página da lista de torres (etapa Dados das torres)
@@ -389,12 +393,14 @@ function replicarUC1Coletivo() {
   );
   renderUcsColetivo();
 }
-// app.js:365-376
-function replicarPrimeiro() {
-  const base = state.blocos[0];
+// app.js:365-376 — replica os dados da torre `origem` (o card onde o botão foi
+// clicado; todo card de torre tem o seu) para todas as demais.
+function replicarPrimeiro(origem) {
+  const oi = Number.isFinite(origem) ? origem : 0;
+  const base = state.blocos[oi];
   if (!base) return;
   state.blocos = state.blocos.map((b, i) =>
-    i === 0
+    i === oi
       ? b
       : Object.assign({}, base, {
           nome: `${i + 1}`,
@@ -406,7 +412,7 @@ function replicarPrimeiro() {
           ),
         }),
   );
-  // Replicar a torre 1 copia o primeiro complemento/aptos por andar; reaplica a
+  // Replicar a torre copia o primeiro complemento/aptos por andar; reaplica a
   // geração de complementos em cada torre para que as UCs fiquem numeradas.
   state.blocos.forEach((_, i) => autoGerarComplementosTorre(i));
   autoSelecionarDisjTorres();
@@ -484,14 +490,38 @@ function replicarUC1Torre(bi) {
   autoSelecionarDisjTorres();
   renderUnidadesTorreAtual();
 }
+// Replica os dados da unidade `ui` da torre `bi` para TODAS as unidades de
+// TODAS as torres (botão "Replicar dados para todas as unidades de todas as
+// torres"). Cada unidade preserva a própria identidade — complemento, nº de
+// instalação e identificação não são sobrescritos.
+function replicarUCTodasTorres(bi, ui) {
+  const origem = ((state.blocos[bi] || {}).ucs || [])[ui];
+  if (!origem) return;
+  state.blocos.forEach((b, k) => {
+    b.ucs = (b.ucs || []).map((u, j) =>
+      k === bi && j === ui
+        ? u
+        : Object.assign({}, origem, {
+            cargas: JSON.parse(JSON.stringify(origem.cargas || {})),
+            _acc: {},
+            identificacao: u.identificacao || `UC ${j + 1}`,
+            complemento: u.complemento,
+            instalacao: u.instalacao,
+            nPredial: u.nPredial,
+          }),
+    );
+  });
+  autoSelecionarDisjTorres();
+  renderUnidadesTorreAtual();
+}
 
 /* ===== Gate da etapa Empreendimento ===== */
-// Campos próprios (nome + doc válido + ART) liberam os detalhes; o avanço
-// exige também o endereço urbano completo (_reqEnderecoObra do React com
-// s.coletivo: art, cep, endereco, num, bairro, cidade, estado).
+// Campos próprios (cliente + doc válido + ART) e o endereço urbano completo
+// (_reqEnderecoObra do React com s.coletivo: art, cep, endereco, num, bairro,
+// cidade, estado) liberam o avanço.
 function _emprCompleto() {
   return (
-    !!String(state.prop.nome || "").trim() &&
+    !!String(state.prop.cliente || "").trim() &&
     docInfo().valido === true &&
     !!String(state.obra.art || "").trim()
   );
@@ -509,13 +539,14 @@ window.btEmprOk = () => {
     ok(o.estado)
   );
 };
+// Os campos de endereço/mapa ficam SEMPRE visíveis (antes só apareciam depois
+// de cliente + documento válido + ART, e a etapa parecia não ter endereço).
 let _emprRevelado = false;
 function onEmprGate() {
   const det = $("#emprDetalhes");
   if (!det) return;
-  const mostrar = _emprCompleto();
-  det.style.display = mostrar ? "" : "none";
-  if (mostrar && !_emprRevelado) {
+  det.style.display = "";
+  if (!_emprRevelado) {
     _emprRevelado = true;
     CemigMarcadores.aplicar(det);
     initMapaObra();
@@ -538,6 +569,16 @@ function onEmprGate() {
    fluxo de múltiplas torres (MULTI); nos demais liberam sempre.
    ============================================================ */
 const _preenchido = (v) => String(v == null ? "" : v).trim() !== "";
+// Unidade de área comum do condomínio (complemento tipo "Portaria", "Academia"…):
+// o formulário não pergunta a atividade principal dela — assume Comercial e usa o
+// próprio complemento como ramo. Idempotente; chamado tanto ao montar o card
+// quanto na validação (unidades ainda fechadas também precisam ficar coerentes).
+function normalizarAreaComumUC(u) {
+  if (!u || !ehAreaComum(u.complemento)) return false;
+  if (u.atividade !== "Comercial") u.atividade = "Comercial";
+  if (!_preenchido(u.ramo)) u.ramo = u.complemento;
+  return true;
+}
 // Etapa "Dados das torres": Identificação, Qtd de unidades, e — quando a torre
 // tem mais de uma UC — Qtd por andar e Primeiro complemento (mesma condição
 // ucsLen() > 1 do render). Demanda e Disjuntor do condomínio são obrigatórios.
@@ -556,6 +597,9 @@ window.btBlocosOk = function () {
       )
         return false;
       if (!_preenchido(b.complInicial)) return false;
+    } else if (nUcs === 1) {
+      // Torre de uma unidade: no lugar do primeiro complemento, o tipo dela.
+      if (!_preenchido(b.tipoComplemento)) return false;
     }
     // Demanda e Disjuntor do condomínio da torre são obrigatórios.
     if (!(num(b.demandaIncendio) > 0)) return false;
@@ -584,6 +628,9 @@ window.btUnidadesTorresOk = function () {
     return ucs.every((u) => {
       if (ucSemAlteracao(u)) return true;
       if (ucs.length > 1 && !_preenchido(u.complemento)) return false;
+      // Área comum (portaria, academia…): o card não pergunta a atividade —
+      // normaliza aqui para valer também nas unidades ainda não abertas.
+      normalizarAreaComumUC(u);
       if (!_preenchido(u.atividade)) return false;
       if (u.atividade === "Residencial") {
         if (!_preenchido(u.area)) return false;
@@ -1262,13 +1309,14 @@ function renderBlocos() {
   const box = $("#blocosBox");
   if (!box) return;
   // Enquanto "Quantidade de torres" estiver em branco, não apresentar os cards
-  // das torres — só uma orientação para o usuário informar o número primeiro.
+  // das torres.
   const nBlocosVazio =
     String(state.atend.nBlocos == null ? "" : state.atend.nBlocos).trim() ===
     "";
   if (nBlocosVazio) {
-    box.innerHTML =
-      '<p class="field-hint">Informe a quantidade de torres para preencher os dados de cada torre.</p>';
+    // Sem quantidade informada não há cards de torre — e nenhum texto de apoio
+    // abaixo do campo (a orientação já está na descrição da etapa).
+    box.innerHTML = "";
     const pagVazio = $("#blocosPag");
     if (pagVazio) pagVazio.innerHTML = "";
     atualizarBlocosKpis();
@@ -1277,6 +1325,13 @@ function renderBlocos() {
   }
   sincronizarBlocos();
   autoSelecionarDisjTorres();
+  // Informada a quantidade, a Torre 1 já nasce ABERTA e as demais fechadas —
+  // o usuário começa a preencher sem um clique extra. Só na primeira montagem
+  // dos cards: depois disso quem manda é o clique no acordeão.
+  if (!_torreAbertaInicial) {
+    _torreAbertaInicial = true;
+    btToggleExclusivo(_torreAberta, 0, true);
+  }
   const total = state.blocos.length;
   const totalPag = Math.max(1, Math.ceil(total / ITENS_POR_PAGINA));
   if (_torrePagina >= totalPag) _torrePagina = totalPag - 1;
@@ -1321,35 +1376,25 @@ function _campoComAcao(labelTxt, controle, botao) {
   f.append(corpo, botao);
   return f;
 }
-// Frase de resumo do cálculo do popup de pavimentos: quantos andares e
-// pavimentos as unidades por andar informadas produzem.
-/*function _resumoPavimentos(calculadas, total) {
-  if (!total)
-    return "Informe a quantidade de unidades para calcular os andares.";
-  if (!calculadas.length) return `${total} unidades a distribuir.`;
-  const andares = calculadas.reduce((s, f) => s + f.andares, 0);
-  const p = (n, sing, plur) => `${n} ${n === 1 ? sing : plur}`;
-  return `${total} unidades → ${p(andares, "andar", "andares")}, ${p(calculadas.length, "pavimento", "pavimentos")}.`;
-}*/
 // ============================================================
 // Popup "Composição por pavimento" (botão Customizar)
-// O usuário informa SÓ as unidades por andar de cada pavimento; os andares
-// (inicial/final) são calculados a partir do total de UCs e ficam bloqueados —
-// o primeiro andar de um pavimento é o seguinte ao último do anterior
-// (ver calcularFaixasPavimento). Ao salvar, chama onSalvar(faixas) com as
-// faixas calculadas (ou null quando não há pavimento válido). Overlay +
-// diálogo montados no <body>, fechados por Cancelar/X/Esc/clique no overlay.
+// O usuário informa andar INICIAL, andar FINAL e unidades por andar de cada
+// pavimento — os três campos são editáveis e nenhum é bloqueado (não sabemos
+// quantos andares o prédio tem). A única conveniência é a ÚLTIMA linha: suas
+// unidades por andar são sugeridas para fechar o total de UCs da torre
+// (sugerirUnidadesUltimoPavimento) — e mesmo ela continua editável.
+// Ao salvar, chama onSalvar(faixas) com as faixas preenchidas (ou null quando
+// não há pavimento válido). Overlay + diálogo montados no <body>, fechados por
+// Cancelar/X/Esc/clique no overlay.
 // ============================================================
 function abrirComposicaoPavimento(faixasAtuais, onSalvar, totalUCs) {
   const total = Math.max(0, parseInt(totalUCs) || 0);
-  // Cópia de trabalho: só as unidades por andar de cada pavimento (os andares
-  // vêm do cálculo). Sem faixas salvas, começa com um pavimento em branco.
+  // Cópia de trabalho: andar inicial, andar final e unidades por andar de cada
+  // pavimento. Sem faixas salvas, começa com um pavimento em branco.
   const base = normalizarFaixasPavimento(faixasAtuais);
   const linhas = base.length
-    ? base.map((f) => ({ unidades: f.unidades }))
-    : [{ unidades: "" }];
-  // Faixas calculadas da vez — recalculadas a cada digitação.
-  let calculadas = calcularFaixasPavimento(linhas, total);
+    ? base.map((f) => ({ ini: f.ini, fim: f.fim, unidades: f.unidades }))
+    : [{ ini: "", fim: "", unidades: "" }];
 
   const overlay = document.createElement("div");
   overlay.className = "cmg-modal-overlay";
@@ -1385,7 +1430,7 @@ function abrirComposicaoPavimento(faixasAtuais, onSalvar, totalUCs) {
   const desc = document.createElement("p");
   desc.className = "cmg-modal-desc";
   desc.textContent =
-    "Informe apenas quantas unidades há por andar em cada pavimento — os andares são calculados automaticamente a partir da quantidade de unidades. Cada pavimento adicionado ocupa um andar (ex: uma ou duas coberturas); o último da lista é o corpo da torre e recebe as unidades restantes.";
+    "Informe o andar inicial, o andar final e quantas unidades há por andar em cada pavimento. As unidades por andar do último pavimento são sugeridas para fechar o total de unidades da torre, mas você pode editar qualquer campo.";
 
   // Tabela de faixas
   const tabela = document.createElement("div");
@@ -1410,7 +1455,9 @@ function abrirComposicaoPavimento(faixasAtuais, onSalvar, totalUCs) {
   btnSalvar.className = "btn btn-primary";
   btnSalvar.textContent = "Salvar";
   btnSalvar.addEventListener("click", () => {
-    const validas = normalizarFaixasPavimento(calculadas);
+    // Salva o que o usuário efetivamente preencheu (linhas incompletas são
+    // descartadas por normalizarFaixasPavimento).
+    const validas = normalizarFaixasPavimento(linhas);
     onSalvar(validas.length ? validas : null);
     fechar();
   });
@@ -1435,151 +1482,59 @@ function abrirComposicaoPavimento(faixasAtuais, onSalvar, totalUCs) {
     );
     tabela.appendChild(head);
 
-    // Célula só-leitura de andar (inicial/final), calculada.
-    const campoCalculado = (valor) => {
+    // Um campo numérico editável da linha. `campo` é a chave em `linhas[idx]`
+    // ("ini" | "fim" | "unidades"). Nenhum campo é bloqueado: o valor digitado
+    // vai direto para o estado, sem re-render (o foco/cursor não se perde).
+    // Só o resumo abaixo da tabela é atualizado a cada tecla.
+    const celCampo = (ln, idx, campo, placeholder) => {
       const cel = document.createElement("div");
       cel.className = "cmg-pav-cel";
       const inp = document.createElement("input");
-      inp.type = "text";
-      inp.readOnly = true;
-      inp.tabIndex = -1;
-      inp.className = "cmg-pav-calculado";
-      inp.value = valor == null ? "—" : String(valor);
+      inp.type = "number";
+      inp.min = "1";
+      inp.placeholder = placeholder;
+      inp.value = ln[campo] == null ? "" : String(ln[campo]);
+      inp.setAttribute("aria-label", `${placeholder} do pavimento ${idx + 1}`);
+      inp.addEventListener("input", () => {
+        ln[campo] = inp.value;
+        // Editar um pavimento anterior muda quantas UCs sobram para o último:
+        // reaplica a sugestão nele (sem tocar na linha que está em edição).
+        aplicarSugestaoUltimo(idx);
+        atualizarResumo();
+      });
       cel.appendChild(inp);
       return cel;
     };
-    // Re-renderiza recalculando, devolvendo o foco/caret ao input de unidades
-    // da linha `posFoco` (índice na tabela renderizada).
-    const rerender = (posFoco, caret) => {
-      calculadas = calcularFaixasPavimento(linhas, total);
-      renderTabela();
-      const inputs = tabela.querySelectorAll(
-        ".cmg-pav-linha input[type=number]",
-      );
-      const alvo = inputs[posFoco];
-      if (alvo) {
-        alvo.focus();
-        try {
-          if (caret != null) alvo.setSelectionRange(caret, caret);
-        } catch (_) {}
-      }
-    };
-    // Monta uma linha de pavimento. `valor` é a unidade exibida; `faixa` traz
-    // ini/fim calculados. `onInput(v)` recebe o valor digitado; `onRemover`,
-    // quando presente, mostra o botão de remover; `onFocus`, quando presente,
-    // roda ao focar o campo (usado para materializar a linha da sobra ANTES de
-    // qualquer digitação, evitando push por-tecla). `posFoco` é o índice desta
-    // linha entre as linhas renderizadas (para devolver o foco no rerender).
-    const mkLinha = (valor, faixa, posFoco, onInput, onRemover, onFocus) => {
+    // Monta uma linha de pavimento com os três campos editáveis + remover.
+    const mkLinha = (ln, idx, podeRemover) => {
       const linha = document.createElement("div");
       linha.className = "cmg-pav-linha";
-      const celUnidades = document.createElement("div");
-      celUnidades.className = "cmg-pav-cel";
-      const inp = document.createElement("input");
-      inp.type = "number";
-      inp.min = "1";
-      // Não faz sentido mais unidades por andar do que o total de UCs da torre.
-      if (total > 0) inp.max = String(total);
-      inp.placeholder = "4";
-      inp.value = valor == null ? "" : valor;
-      if (onFocus) inp.addEventListener("focus", onFocus);
-      inp.addEventListener("input", () => {
-        // Limita ao total de UCs (igual ao campo principal "por andar").
-        const n = parseInt(inp.value, 10);
-        if (total > 0 && Number.isFinite(n) && n > total) {
-          inp.value = String(total);
-        }
-        const caret = inp.selectionStart;
-        onInput(inp.value, caret);
-      });
-      celUnidades.appendChild(inp);
       linha.append(
-        campoCalculado(faixa ? faixa.ini : null),
-        campoCalculado(faixa ? faixa.fim : null),
-        celUnidades,
+        celCampo(ln, idx, "ini", "Andar inicial"),
+        celCampo(ln, idx, "fim", "Andar final"),
+        celCampo(ln, idx, "unidades", "Unidades por andar"),
       );
       const celAcao = document.createElement("div");
       celAcao.className = "cmg-pav-cel cmg-pav-cel-acao";
-      if (onRemover) {
+      if (podeRemover) {
         const btnDel = document.createElement("button");
         btnDel.type = "button";
         btnDel.className = "cmg-pav-remover";
-        btnDel.setAttribute("aria-label", "Remover faixa");
+        btnDel.setAttribute("aria-label", `Remover pavimento ${idx + 1}`);
         btnDel.innerHTML =
           '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
-        btnDel.addEventListener("click", onRemover);
+        btnDel.addEventListener("click", () => {
+          linhas.splice(idx, 1);
+          aplicarSugestaoUltimo();
+          renderTabela();
+        });
         celAcao.appendChild(btnDel);
       }
       linha.appendChild(celAcao);
       tabela.appendChild(linha);
     };
 
-    // Faixa calculada de cada linha real: a i-ésima entre os pavimentos com
-    // "unidades" preenchido (os em branco não entram no cálculo).
-    const faixasReais = calculadas.filter((f) => !f.sobra);
-    let posCalc = 0;
-    const sobra = calculadas.find((f) => f.sobra);
-    // As linhas reais só ganham remover quando há mais de um pavimento visível
-    // (real + sobra), garantindo que sempre reste ao menos um pavimento.
-    const totalLinhasVisiveis = linhas.length + (sobra ? 1 : 0);
-
-    linhas.forEach((ln, idx) => {
-      const preenchida = (parseInt(ln.unidades, 10) || 0) >= 1;
-      const faixa = preenchida ? faixasReais[posCalc++] : null;
-      mkLinha(
-        ln.unidades,
-        faixa,
-        idx,
-        (v, caret) => {
-          ln.unidades = v;
-          rerender(idx, caret);
-        },
-        totalLinhasVisiveis > 1
-          ? () => {
-              linhas.splice(idx, 1);
-              calculadas = calcularFaixasPavimento(linhas, total);
-              renderTabela();
-            }
-          : null,
-      );
-    });
-
-    // Linha da sobra: pavimento das UCs que não completam um andar. Aparece já
-    // com o valor calculado. Ao FOCAR o campo (antes de digitar), ela se
-    // materializa em `linhas` como linha real — a partir daí a digitação é a de
-    // uma linha comum (sem push por-tecla, que embaralhava foco e valor). Uma
-    // vez materializada, ganha botão de remover e pode gerar uma nova sobra.
-    if (sobra) {
-      const idxSobra = linhas.length; // posição desta linha na tabela
-      let materializada = false;
-      mkLinha(
-        sobra.unidades,
-        sobra,
-        idxSobra,
-        () => {}, // input tratado após materializar (a linha vira real)
-        null,
-        () => {
-          if (materializada) return;
-          materializada = true;
-          // Vira linha real com o valor atual da sobra; re-renderiza e devolve
-          // o foco ao mesmo campo, com o conteúdo selecionado para digitar por
-          // cima (apagar e trocar por 1, por ex.).
-          linhas.push({ unidades: String(sobra.unidades) });
-          calculadas = calcularFaixasPavimento(linhas, total);
-          renderTabela();
-          const inputs = tabela.querySelectorAll(
-            ".cmg-pav-linha input[type=number]",
-          );
-          const alvo = inputs[idxSobra];
-          if (alvo) {
-            alvo.focus();
-            try {
-              alvo.select();
-            } catch (_) {}
-          }
-        },
-      );
-    }
+    linhas.forEach((ln, idx) => mkLinha(ln, idx, linhas.length > 1));
 
     const rodapeTabela = document.createElement("div");
     rodapeTabela.className = "cmg-pav-adicionar-wrap";
@@ -1589,15 +1544,52 @@ function abrirComposicaoPavimento(faixasAtuais, onSalvar, totalUCs) {
     btnAdd.innerHTML =
       '<span class="cmg-pav-mais" aria-hidden="true">+</span> Adicionar pavimento';
     btnAdd.addEventListener("click", () => {
-      linhas.push({ unidades: "" });
-      calculadas = calcularFaixasPavimento(linhas, total);
+      // Novo pavimento já começa no andar seguinte ao último preenchido —
+      // sugestão de partida, editável como qualquer outro campo.
+      const ultima = linhas[linhas.length - 1];
+      const fimAnterior = parseInt(ultima && ultima.fim, 10);
+      linhas.push({
+        ini: Number.isFinite(fimAnterior) ? String(fimAnterior + 1) : "",
+        fim: "",
+        unidades: "",
+      });
       renderTabela();
     });
     rodapeTabela.appendChild(btnAdd);
     tabela.appendChild(rodapeTabela);
-    // Resumo do cálculo (total de andares/pavimentos e UCs não alocadas).
-    // resumo.textContent = _resumoPavimentos(calculadas, total);
+    atualizarResumo();
   };
+  // Preenche as "unidades por andar" do ÚLTIMO pavimento com o valor que fecha
+  // o total de UCs da torre. Não roda quando a própria última linha é a que
+  // está em edição (`editando`) — senão sobrescreveria o que o usuário digita.
+  // O campo continua editável: isto é sugestão, não trava.
+  function aplicarSugestaoUltimo(editando) {
+    const idx = linhas.length - 1;
+    if (idx < 0 || editando === idx) return;
+    const sug = sugerirUnidadesUltimoPavimento(linhas, total);
+    if (sug == null) return;
+    linhas[idx].unidades = String(sug);
+    const inputs = tabela.querySelectorAll(".cmg-pav-linha input[type=number]");
+    // 3 campos por linha: o de "unidades" da última linha é o 3º da última.
+    const alvo = inputs[idx * 3 + 2];
+    if (alvo && alvo !== document.activeElement) alvo.value = String(sug);
+  }
+  // Resumo abaixo da tabela: quantas UCs os pavimentos informados somam frente
+  // ao total da torre — o usuário enxerga na hora se falta ou sobra unidade.
+  function atualizarResumo() {
+    if (!total) {
+      resumo.textContent = "";
+      return;
+    }
+    const somadas = ucsAlocadasPavimento(linhas);
+    const dif = total - somadas;
+    resumo.textContent =
+      dif === 0
+        ? `Os pavimentos somam as ${total} unidades da torre.`
+        : dif > 0
+          ? `Os pavimentos somam ${somadas} de ${total} unidades — faltam ${dif}.`
+          : `Os pavimentos somam ${somadas} unidades — ${-dif} a mais que as ${total} da torre.`;
+  }
   renderTabela();
 
   corpo.append(titulo, desc, tabela, resumo);
@@ -1696,6 +1688,22 @@ function _mkAgrupamentoCampos(grid, cfg) {
     // sozinha na linha — com a largura de uma coluna, sem esticar — para os
     // pares abaixo (Andar|Complemento, Demanda|Disjuntor) ficarem alinhados.
     if (cfg.qtdSozinhaNaLinha) f.classList.add("row-solo");
+    grid.appendChild(f);
+  }
+  // Torre com UMA unidade: não há sequência de complementos a gerar, mas o
+  // usuário ainda precisa dizer QUE tipo de complemento é aquela unidade
+  // (Apartamento, Casa, Loja, Portaria…) — o valor vira o complemento da UC.
+  if (cfg.ucsLen() === 1) {
+    const sel = _selectDe(
+      TIPOS_COMPLEMENTO,
+      cfg.tipoCompl ? cfg.tipoCompl() : "",
+      (v) => {
+        if (cfg.setTipoCompl) cfg.setTipoCompl(v);
+      },
+      true,
+    );
+    const f = _campo("Tipo de complemento", sel, "field--float");
+    f.setAttribute("data-noopt", "");
     grid.appendChild(f);
   }
   // Geração de complementos das unidades: ao preencher o primeiro complemento
@@ -1827,6 +1835,17 @@ function _cfgAgrupamentoTorre(b, bi) {
     rerender: () => renderBlocos(),
     compl: () => b.complInicial,
     setCompl: (v) => (b.complInicial = v),
+    // Torre de uma unidade: o tipo escolhido vira o complemento daquela UC.
+    tipoCompl: () => b.tipoComplemento,
+    setTipoCompl: (v) => {
+      b.tipoComplemento = v;
+      const uc = (b.ucs || [])[0];
+      if (uc) {
+        uc.complemento = v;
+        normalizarAreaComumUC(uc);
+      }
+      renderBlocos();
+    },
     gerarComplementos: () => autoGerarComplementosTorre(bi),
     demanda: () => b.demandaIncendio,
     setDemanda: (v) => {
@@ -1882,6 +1901,17 @@ function _cfgAgrupamentoColetivo() {
     rerender: () => renderAgrupamentoColetivo(),
     compl: () => ag.complInicial,
     setCompl: (v) => (ag.complInicial = v),
+    tipoCompl: () => ag.tipoComplemento,
+    setTipoCompl: (v) => {
+      ag.tipoComplemento = v;
+      const uc = state.ucBlocos[0];
+      if (uc) {
+        uc.complemento = v;
+        normalizarAreaComumUC(uc);
+      }
+      renderAgrupamentoColetivo();
+      renderUcsColetivo();
+    },
     gerarComplementos: () => autoGerarComplementosColetivo(),
     demanda: () => ag.demandaIncendio,
     setDemanda: (v) => {
@@ -1957,14 +1987,16 @@ function _mkTorreCard(bi, total) {
   );
   _mkAgrupamentoCampos(grid, _cfgAgrupamentoTorre(b, bi));
   corpo.appendChild(grid);
-  if (bi === 0 && total > 1) {
+  // Botão de replicar em TODOS os cards de torre (não só no da torre 1): cada
+  // um replica os dados da sua própria torre para as demais.
+  if (total > 1) {
     const row = document.createElement("div");
     row.className = "acao-central";
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "btn btn-ghost btn-outlined-acao";
     btn.textContent = "Replicar dados para todas as torres";
-    btn.addEventListener("click", replicarPrimeiro);
+    btn.addEventListener("click", () => replicarPrimeiro(bi));
     row.appendChild(btn);
     corpo.appendChild(row);
   }
@@ -2042,6 +2074,12 @@ function renderUnidadesTorreAtual() {
   if (!box || !b) return;
   const ucs = b.ucs || [];
   const modoCalc = calcBlocoMultiTorres(b).modoCalculadora;
+  // A unidade 1 da torre 1 já nasce ABERTA e as demais fechadas — uma única vez,
+  // na primeira montagem; depois quem manda é o clique no acordeão.
+  if (!_uniAbertaInicial && ucs.length) {
+    _uniAbertaInicial = true;
+    btToggleExclusivo(_uniAberta, `${bi}:0`, true);
+  }
   renderUnidadesTopo(bi);
   const totalPag = Math.max(1, Math.ceil(ucs.length / ITENS_POR_PAGINA));
   let pagAtual = _uniPagina[bi] || 0;
@@ -2107,19 +2145,27 @@ function _mkUnidadeCard(bi, ui, modoCalc) {
   const grid = document.createElement("div");
   grid.className = "grid grid-2";
   if (modoCalc && !ucSemAlteracao(u)) grid.style.marginBottom = "24px";
+  // Área comum do condomínio (academia, portaria, salão…), decidida pelo
+  // complemento: "atividade principal" não se aplica e o campo não é montado.
+  const areaComumNoRender = ehAreaComum(u.complemento);
   {
-    const f = _campo(
-      "Complemento da unidade",
-      _inp(
-        u.complemento,
-        (v) => {
-          u.complemento = v;
-          endereco.querySelector(".uc-head-endereco").textContent =
-            enderecoObraTxt(v);
-        },
-        { placeholder: "Ex: 101" },
-      ),
+    const inpCompl = _inp(
+      u.complemento,
+      (v) => {
+        u.complemento = v;
+        endereco.querySelector(".uc-head-endereco").textContent =
+          enderecoObraTxt(v);
+      },
+      { placeholder: "Ex: 101" },
     );
+    // O complemento decide se a unidade é área comum (e some o campo
+    // "Atividade principal"): re-renderiza ao SAIR do campo, não a cada tecla —
+    // digitar "Portaria" não pode remontar o card no meio da palavra.
+    inpCompl.addEventListener("blur", () => {
+      if (ehAreaComum(u.complemento) !== areaComumNoRender)
+        renderUnidadesTorreAtual();
+    });
+    const f = _campo("Complemento da unidade", inpCompl);
     if (b.ucs.length > 1) f.setAttribute("data-noopt", "");
     grid.appendChild(f);
   }
@@ -2132,7 +2178,9 @@ function _mkUnidadeCard(bi, ui, modoCalc) {
     f.setAttribute("data-noopt", "");
     grid.appendChild(f);
   }
-  {
+  if (areaComumNoRender) {
+    normalizarAreaComumUC(u);
+  } else {
     const f = _campo(
       "Atividade principal",
       _selectDe(
@@ -2254,15 +2302,16 @@ function _mkUnidadeCard(bi, ui, modoCalc) {
     });
     renderDisjUnidadeCalc(disjBox, u);
   }
-  // Replicar UC 1 para as demais unidades da torre — dentro da própria UC 1.
-  if (ui === 0 && b.ucs.length > 1) {
+  // Replicar esta unidade para todas as unidades de TODAS as torres — o
+  // condomínio costuma repetir o mesmo padrão de unidade prédio afora.
+  if (totalUcsEmpreendimentoF() > 1) {
     const row = document.createElement("div");
     row.className = "acao-central";
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "btn btn-ghost btn-outlined-acao";
-    btn.textContent = "Replicar UC 1 para todas";
-    btn.addEventListener("click", () => replicarUC1Torre(bi));
+    btn.textContent = "Replicar dados para todas as unidades de todas as torres";
+    btn.addEventListener("click", () => replicarUCTodasTorres(bi, ui));
     row.appendChild(btn);
     corpo.appendChild(row);
   }
@@ -2452,7 +2501,7 @@ function renderDadosProjeto() {
       mkKpi(
         "Demanda total de todas as torres",
         `${fmt2(demandaTotalGeralF())} kVA`,
-        "Demanda total do empreendimento (soma da demanda das UCs e do condomínio de cada torre). É ela que dimensiona o disjuntor geral do empreendimento.",
+        "O cálculo da demanda total da torre é feito cruzando o tamanho médio das moradias com o número total de unidades.",
       );
   }
 
@@ -2701,8 +2750,10 @@ function validacaoObrigatoriosColetivo() {
     o = state.obra;
   req(
     p.nome,
-    pessoaFisica() ? "Nome completo do proprietário" : "Razão social",
+    pessoaFisica() ? "Nome completo do proprietário" : "Nome para contato",
   );
+  // Condomínio de torres: a razão social do empreendimento é campo próprio.
+  if (MULTI) req(p.cliente, "Cliente / Razão Social do empreendimento");
   req(p.cpfCnpj, "CPF/CNPJ");
   req(p.email, "E-mail");
   req(p.celular, "Celular");
@@ -2821,6 +2872,16 @@ function _mkPreviaTorre(b, bi) {
     `<span class="previa-torre-titulo">Torre ${b.nome || bi + 1}</span>` +
     `<span class="previa-torre-chip">${bi + 1} de ${state.blocos.length}</span>`;
   painel.appendChild(head);
+
+  // Cards de resumo da torre (mesmo trio da seção "Dados do empreendimento"):
+  // Modalidade, Unidades consumidoras e Demanda total.
+  const cards = document.createElement("div");
+  cards.className = "previa-cards";
+  cards.innerHTML =
+    pvCardBT("Modalidade", `Torre · ${ucs.length} unidade(s)`) +
+    pvCardBT("Unidades consumidoras", String(ucs.length)) +
+    pvCardBT("Demanda total", fmt2(demandaTorre) + " kVA");
+  painel.appendChild(cards);
 
   // Campos da torre (mesma ordem da etapa de edição).
   const grid = document.createElement("div");
@@ -2963,7 +3024,7 @@ function renderPreviaColetivo() {
     // social/CNPJ, ART, endereço completo, e as perguntas de rede/padrão).
     html += pvCampoBT(
       "Cliente / Razão Social do empreendimento",
-      p.nome,
+      p.cliente,
       PG.empr,
       true,
     );

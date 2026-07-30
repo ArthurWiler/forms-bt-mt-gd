@@ -186,6 +186,40 @@ const ucDetalhadaPadrao = () => ({
   gerador: { possui: "Não", potencia: "", fonte: "", descricao: "" },
 });
 
+// Tipos de complemento de uma unidade. Os primeiros são moradias/pontos
+// comerciais (têm atividade principal própria); os de ÁREA COMUM do condomínio
+// (academia, portaria, salão…) não têm — ver TIPOS_COMPLEMENTO_AREA_COMUM, que
+// esconde o campo "Atividade principal" da unidade.
+const TIPOS_COMPLEMENTO = [
+  "Apartamento",
+  "Casa",
+  "Loja",
+  "Sala comercial",
+  "Academia",
+  "Portaria",
+  "Salão de festas",
+  "Área comum",
+];
+// Complementos de área comum do condomínio: a "atividade principal" não se
+// aplica (não é moradia nem ponto comercial) — o formulário assume Comercial
+// internamente e não pergunta.
+const TIPOS_COMPLEMENTO_AREA_COMUM = [
+  "Academia",
+  "Portaria",
+  "Salão de festas",
+  "Área comum",
+];
+// Uma unidade é de área comum quando seu complemento é (ou começa por) um dos
+// tipos acima — cobre tanto o "Tipo de complemento" da torre de 1 unidade
+// quanto o complemento digitado à mão na etapa das unidades ("Portaria 1").
+function ehAreaComum(complemento) {
+  const v = String(complemento || "")
+    .trim()
+    .toLowerCase();
+  if (!v) return false;
+  return TIPOS_COMPLEMENTO_AREA_COMUM.some((t) => v.startsWith(t.toLowerCase()));
+}
+
 // UC de torre/bloco (modo múltiplas torres) — identificação por unidade
 const ucTorrePadrao = (i) => ({
   identificacao: `UC ${i + 1}`,
@@ -217,6 +251,9 @@ const blocoPadrao = (i) => ({
   // tem precedência sobre aptosPorAndar na geração de complementos numéricos.
   aptosPorAndarFaixas: null,
   complInicial: "", // primeiro complemento da torre (ex: "101", "Apto 01")
+  // Torre de UMA unidade: em vez do primeiro complemento (que gera a sequência),
+  // o usuário escolhe o TIPO daquele complemento único — ver TIPOS_COMPLEMENTO.
+  tipoComplemento: "",
   disjIncendio: "",
   demandaIncendio: "",
   ucs: [ucTorrePadrao(0)],
@@ -271,54 +308,45 @@ function gerarComplementos(primeiro, total, aptosPorAndar, faixas) {
   return out;
 }
 
-// Deriva os andares de cada pavimento a partir SÓ das unidades por andar e do
-// total de UCs — o usuário não digita andar inicial/final.
-// Cada pavimento ocupa apenas andares CHEIOS (`unidades` UCs cada) enquanto
-// houver UCs restantes; o primeiro andar de um pavimento é o seguinte ao último
-// andar do pavimento anterior (encadeamento). As UCs que sobrarem (um resto
-// menor que as unidades do último pavimento) formam um pavimento próprio de um
-// andar — marcado com `sobra: true`. O popup materializa esse pavimento como
-// uma linha editável de verdade (ver materializarSobraPavimento), então todo
-// pavimento informado, inclusive coberturas adicionadas à mão, entra na conta.
-// Ex: 18 UCs, [4] → pav. andares 1..4 (4 un.) + pav. sobra no andar 5 (2 un.).
-//     18 UCs, [2, 2, 4] → duas coberturas (andares 1 e 2, 2 un.) + corpo nos
-//     andares 3..5 (4 un.); 18 = 2+2+14.
-// Entrada: [{ unidades }] (andar inicial/final ignorados) + total de UCs.
-// Saída: [{ ini, fim, unidades, ucs, andares, sobra }] dos pavimentos que
-// couberam; `ucs` é o total de UCs do pavimento e `andares` a sua qtd. de andares.
-function calcularFaixasPavimento(linhas, total) {
-  const restanteTotal = Math.max(0, parseInt(total) || 0);
-  if (!Array.isArray(linhas) || !restanteTotal) return [];
-  // Pavimentos com "unidades por andar" válido, na ordem em que o usuário criou.
-  const pavs = linhas
-    .map((l) => Math.max(0, parseInt(l && l.unidades, 10) || 0))
-    .filter((u) => u >= 1);
-  const out = [];
-  let restante = restanteTotal;
-  let andar = 1;
-  pavs.forEach((unidades) => {
-    if (restante <= 0) return;
-    // Só andares cheios: a sobra fica para o pavimento marcado abaixo.
-    const andares = Math.floor(restante / unidades);
-    if (andares <= 0) return;
-    const ucs = andares * unidades;
-    out.push({ ini: andar, fim: andar + andares - 1, unidades, ucs, andares });
-    andar += andares;
-    restante -= ucs;
-  });
-  // Sobra (inclui o caso de nenhum andar cheio caber, total < unidades): um
-  // pavimento próprio de um andar, materializado como linha editável no popup.
-  if (restante > 0 && pavs.length) {
-    out.push({
-      ini: andar,
-      fim: andar,
-      unidades: restante,
-      ucs: restante,
-      andares: 1,
-      sobra: true,
-    });
-  }
-  return out;
+// Quantas UCs uma linha de pavimento representa: (fim - ini + 1) andares ×
+// unidades por andar. Linha incompleta (qualquer campo em branco/inválido) vale
+// 0 — ainda está sendo preenchida.
+function ucsDaFaixaPavimento(linha) {
+  const ini = parseInt(linha && linha.ini, 10);
+  const fim = parseInt(linha && linha.fim, 10);
+  const un = parseInt(linha && linha.unidades, 10);
+  if (!Number.isFinite(ini) || !Number.isFinite(fim) || !Number.isFinite(un))
+    return 0;
+  if (fim < ini || un < 1) return 0;
+  return (fim - ini + 1) * un;
+}
+// Soma das UCs de todas as linhas, exceto a de índice `ignorar`.
+function ucsAlocadasPavimento(linhas, ignorar) {
+  if (!Array.isArray(linhas)) return 0;
+  return linhas.reduce(
+    (s, l, i) => (i === ignorar ? s : s + ucsDaFaixaPavimento(l)),
+    0,
+  );
+}
+// Sugestão de "unidades por andar" da ÚLTIMA linha para que a soma bata com o
+// total de UCs da torre. Só sugere quando a divisão é exata e positiva; nos
+// demais casos devolve null e a linha fica como o usuário deixou (o campo é
+// editável de qualquer forma — a sugestão é só uma conveniência).
+// Ex.: 25 UCs, andares 1–3 com 4 un. e 4–7 com 3 un. → restam 1 UC para a
+// última linha; com andar 8–8, sugere 1 unidade por andar.
+function sugerirUnidadesUltimoPavimento(linhas, total) {
+  if (!Array.isArray(linhas) || !linhas.length) return null;
+  const totalUCs = Math.max(0, parseInt(total) || 0);
+  if (!totalUCs) return null;
+  const idx = linhas.length - 1;
+  const ultima = linhas[idx];
+  const ini = parseInt(ultima && ultima.ini, 10);
+  const fim = parseInt(ultima && ultima.fim, 10);
+  if (!Number.isFinite(ini) || !Number.isFinite(fim) || fim < ini) return null;
+  const restante = totalUCs - ucsAlocadasPavimento(linhas, idx);
+  const andares = fim - ini + 1;
+  if (restante <= 0 || restante % andares !== 0) return null;
+  return restante / andares;
 }
 
 

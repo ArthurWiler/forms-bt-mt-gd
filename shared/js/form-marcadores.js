@@ -31,19 +31,24 @@
   // (yyyy-mm-dd), idêntico ao input date nativo, então o bind por data-k
   // (listeners input/change no mesmo elemento) não é afetado.
   function _prepararDatas(root) {
-    // Pega os que ainda são type=date (estáticos ou recém-injetados). Os já
-    // convertidos numa passada anterior carregam a flag data-cmg-date e são
-    // ignorados pelo guard de idempotência abaixo.
-    root.querySelectorAll('input[type="date"]').forEach(_ativarData);
+    // Pega os que ainda são type=date/month (estáticos ou recém-injetados). Os
+    // já convertidos numa passada anterior carregam a flag data-cmg-date e são
+    // ignorados pelo guard de idempotência abaixo. O type=month (mês/ano) segue
+    // a mesma regra: seu placeholder nativo "mm/aaaa" também precisa sumir.
+    root
+      .querySelectorAll('input[type="date"], input[type="month"]')
+      .forEach(_ativarData);
   }
   function _ativarData(el) {
     if (el.hasAttribute("data-cmg-date")) return; // handlers já ligados
-    el.setAttribute("data-cmg-date", ""); // marca/idempotência
+    // Guarda o type original para restaurá-lo no foco (date ou month).
+    el.setAttribute("data-cmg-date", el.type); // marca/idempotência
     if (!el.value) _paraTextoVazio(el); // vazio → esconde o dd/mm/aaaa nativo
     el.addEventListener("focus", function () {
-      if (el.type !== "date") {
-        el.type = "date";
-        el.removeAttribute("placeholder"); // date ignora placeholder
+      const tipo = el.getAttribute("data-cmg-date") || "date";
+      if (el.type !== tipo) {
+        el.type = tipo;
+        el.removeAttribute("placeholder"); // date/month ignoram placeholder
       }
       if (typeof el.showPicker === "function") {
         try {
@@ -265,9 +270,43 @@
           gateOk = true;
         }
       }
-      btn.disabled = !(_reqOk(page) && gateOk);
+      // O botão fica com a APARÊNCIA de desabilitado, mas continua clicável:
+      // um <button disabled> não dispara click, e o usuário que clica nele
+      // precisa ser levado até o campo que falta (ver o handler de clique
+      // abaixo). A navegação em si é barrada por aria-disabled nos handlers.
+      const bloquear = !(_reqOk(page) && gateOk);
+      btn.disabled = false;
+      btn.setAttribute("aria-disabled", bloquear ? "true" : "false");
+      btn.classList.toggle("is-disabled", bloquear);
     });
   }
+  // Clique no "Avançar" bloqueado: marca os campos que faltam (.is-invalid +
+  // mensagem) e rola até o primeiro deles, em vez de não fazer nada.
+  document.addEventListener(
+    "click",
+    function (e) {
+      const btn = e.target.closest ? e.target.closest("button.btn") : null;
+      if (!btn || btn.getAttribute("aria-disabled") !== "true") return;
+      e.preventDefault();
+      e.stopPropagation();
+      const page = btn.closest(".page") || document;
+      const r = validar(page);
+      const alvo = r.primeiro;
+      if (alvo) {
+        alvo.scrollIntoView({ behavior: "smooth", block: "center" });
+        // O foco reforça a mensagem para leitores de tela; após a rolagem para
+        // não competir com ela.
+        setTimeout(function () {
+          try {
+            alvo.focus({ preventScroll: true });
+          } catch (_) {
+            alvo.focus();
+          }
+        }, 400);
+      }
+    },
+    true,
+  );
 
   // Liga a reatividade: recalcula os botões a cada digitação/alteração e uma
   // vez ao montar. Idempotente.

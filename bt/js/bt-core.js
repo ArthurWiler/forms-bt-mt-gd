@@ -68,6 +68,9 @@ function btResolverCard(formTypesAceitos) {
 function propPadrao() {
   return {
     nome: "",
+    // Cliente / Razão Social do empreendimento (condomínio de torres). Separado
+    // de `nome`, que é a pessoa de contato da Etapa 2.
+    cliente: "",
     filiacao: "",
     email: "",
     rg: "",
@@ -194,7 +197,9 @@ function goTo(n, livre) {
 // da etapa (a mesma etapa aparece em posições diferentes por fluxo).
 document.addEventListener("click", (e) => {
   const b = e.target.closest ? e.target.closest("[data-nav]") : null;
-  if (!b || b.disabled) return;
+  // aria-disabled: o botão "Avançar" bloqueado continua clicável (para rolar
+  // até o campo que falta — ver form-marcadores), mas não navega.
+  if (!b || b.disabled || b.getAttribute("aria-disabled") === "true") return;
   goTo(pagina + (b.dataset.nav === "next" ? 1 : -1));
 });
 // Renumera os eyebrows "Etapa N" pela posição real da seção no DOM (os
@@ -342,6 +347,15 @@ function onCpfCnpjBT(el) {
   _setPath("prop.cpfCnpj", el.value);
   const info = docInfo();
   el.classList.toggle("is-invalid", info.valido === false);
+  // Mensagem do documento inválido como supporting-text ABAIXO do campo
+  // (#cnpjStatus é um .field-hint irmão do input). Enquanto o usuário digita,
+  // ainda incompleto, não acusa nada.
+  if (info.valido === false)
+    setStatus(
+      "cnpjStatus",
+      `<span class="cnpj-status-err">${info.tipo || "Documento"} inválido</span>`,
+    );
+  else if (info.valido === true && info.tipo !== "CNPJ") setStatus("cnpjStatus", "");
   if (info.tipo === "CNPJ") {
     // PF → PJ: limpa campos exclusivos de pessoa física (como o React)
     Object.assign(window.state.prop, {
@@ -376,11 +390,18 @@ async function buscarCNPJ(doc) {
     if (!r.ok) throw new Error();
     const dd = await r.json();
     const p = window.state.prop;
-    p.nome = dd.razao_social || dd.nome_fantasia || p.nome;
+    const razao = dd.razao_social || dd.nome_fantasia || "";
+    // Onde existe o campo "Cliente / Razão Social do empreendimento"
+    // (condomínio de torres), a razão social vai para ELE — o nome de contato
+    // da Etapa 2 é de outra pessoa e não deve ser sobrescrito. Nos fluxos sem
+    // esse campo, o titular continua sendo prop.nome.
+    const temCliente = !!$('[data-k="prop.cliente"]');
+    if (temCliente) p.cliente = razao || p.cliente;
+    else p.nome = razao || p.nome;
     p.email = dd.email || p.email;
     if (dd.ddd_telefone_1 && !p.fixo)
       p.fixo = mascararTelefone(dd.ddd_telefone_1);
-    ["prop.nome", "prop.email", "prop.fixo"].forEach((k) => {
+    ["prop.cliente", "prop.nome", "prop.email", "prop.fixo"].forEach((k) => {
       const el = $(`[data-k="${k}"]`);
       if (el) el.value = _get(window.state, k) || "";
     });
@@ -389,7 +410,7 @@ async function buscarCNPJ(doc) {
   } catch (e) {
     setStatus(
       "cnpjStatus",
-      '<span style="color:var(--vermelho);font-size:12px">CNPJ não encontrado</span>',
+      '<span class="cnpj-status-err">CNPJ não encontrado</span>',
     );
   }
 }

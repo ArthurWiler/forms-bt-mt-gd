@@ -92,7 +92,10 @@
           <div class="card">
             <div class="section-eyebrow">Etapa 1</div>
             <h3 class="card-title">Orientações</h3>
-            <p class="card-sub">Preencha os dados gerais do empreendimento.</p>
+            <p class="card-sub">
+              Leia as orientações antes de iniciar o preenchimento do
+              formulário.
+            </p>
 
             <div
               style="
@@ -181,7 +184,8 @@
                 <input
                   data-k="email"
                   placeholder="nome@exemplo.com"
-                  oninput="onEmail('email')"
+                  oninput="limparErroCampo(this, 'status-email')"
+                  onblur="onEmail('email')"
                 />
                 <span id="status-email" class="field-hint"></span>
               </div>
@@ -195,8 +199,9 @@
                   placeholder="(31) 99999-9999"
                   oninput="
                     maskCelular(this);
-                    onTel('celular');
+                    limparErroCampo(this, 'status-celular');
                   "
+                  onblur="onTel('celular')"
                 />
                 <span id="status-celular" class="field-hint"></span>
               </div>
@@ -222,22 +227,6 @@
                 <input data-k="cliente" placeholder=" " />
               </div>
               <div class="field">
-                <label>Município <span class="req">*</span></label>
-                <input type="text" data-k="municipio" placeholder=" " />
-              </div>
-              <div class="field">
-                <label>Área do empreendimento <span class="req">*</span></label>
-
-                <select data-k="area">
-                  <option selected>Urbano</option>
-                  <option>Rural</option>
-                </select>
-              </div>
-              <div class="field">
-                <label>Estado <span class="req">*</span></label>
-                <input type="text" data-k="estado" value="MG" placeholder=" " />
-              </div>
-              <div class="field">
                 <label>Tipo de solicitante <span class="req">*</span></label>
                 <select data-k="tipoSolicitante" onchange="onSolicitante()">
                   <option value=""></option>
@@ -260,7 +249,23 @@
               </div>
               <div class="field">
                 <label>Data de entrada de carga ou inauguração</label>
-                <input type="date" data-k="dataEntrada" />
+                <input type="month" data-k="dataEntrada" />
+              </div>
+              <div class="field">
+                <label>Área do empreendimento <span class="req">*</span></label>
+
+                <select data-k="area">
+                  <option selected>Urbano</option>
+                  <option>Rural</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Município <span class="req">*</span></label>
+                <input type="text" data-k="municipio" placeholder=" " />
+              </div>
+              <div class="field">
+                <label>Estado <span class="req">*</span></label>
+                <input type="text" data-k="estado" value="MG" placeholder=" " />
               </div>
             </div>
 

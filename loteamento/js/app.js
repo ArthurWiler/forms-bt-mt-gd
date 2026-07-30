@@ -389,6 +389,17 @@ function _feedbackCampo(el, spanId, valido, msgErr) {
     sp.style.color = "var(--cmg-danger-500)";
   }
 }
+/* A mensagem de erro só aparece no blur (quando a pessoa sai do campo). Enquanto
+   ela digita, qualquer erro já exibido é apagado — evita acusar "e-mail
+   inválido" no meio da digitação. */
+function limparErroCampo(el, spanId) {
+  el.classList.remove("is-invalid");
+  const sp = $("#" + spanId);
+  if (sp) {
+    sp.textContent = "";
+    sp.style.color = "";
+  }
+}
 function onEmail(k) {
   const el = $(`[data-k="${k}"]`);
   _feedbackCampo(el, `status-${k}`, _validarEmail(el.value), "e-mail inválido");
@@ -477,10 +488,14 @@ function pvSecao(titulo, campos) {
   );
 }
 const PV_DIVISOR = '<hr class="previa-divider"/>';
+// Aceita tanto ISO completo (yyyy-mm-dd) quanto o mês/ano do input[type=month]
+// (yyyy-mm), usado na "Data de entrada de carga ou inauguração".
 function fmtData(iso) {
   if (!iso) return "";
   const [a, m, d] = String(iso).split("-");
-  return a && m && d ? `${d}/${m}/${a}` : iso;
+  if (a && m && d) return `${d}/${m}/${a}`;
+  if (a && m) return `${m}/${a}`;
+  return iso;
 }
 function renderPreview() {
   const totalLotes =
@@ -496,20 +511,21 @@ function renderPreview() {
     ),
     pvSecao(
       "Dados do Empreendimento",
+      // Mesma ordem dos campos na Etapa 3.
       pvCampo("Cliente / Razão Social do empreendimento", state.cliente, {
         full: true,
         step: 2,
       }) +
-        pvCampo("Município", state.municipio, { step: 2 }) +
-        pvCampo("Estado", state.estado, { step: 2 }) +
-        pvCampo("Área do empreendimento", state.area, { step: 2 }) +
         pvCampo("Tipo de solicitante", state.tipoSolicitante, { step: 2 }) +
         pvCampo("Tipo de empreendimento", state.tipo, { step: 2 }) +
         pvCampo(
           "Data de entrada de carga ou inauguração",
           fmtData(state.dataEntrada),
           { step: 2 },
-        ),
+        ) +
+        pvCampo("Área do empreendimento", state.area, { step: 2 }) +
+        pvCampo("Município", state.municipio, { step: 2 }) +
+        pvCampo("Estado", state.estado, { step: 2 }),
     ),
     pvSecao(
       "Localização",
@@ -532,11 +548,15 @@ function renderPreview() {
         step: 4,
       }),
     ),
-    pvSecao(
-      "Observações",
-      pvCampo("Observações", state.observacoes, { full: true, step: 5 }),
-    ),
   ];
+  // Observações é campo opcional: sem texto, a seção nem aparece na prévia.
+  if (String(state.observacoes || "").trim())
+    secoes.push(
+      pvSecao(
+        "Observações",
+        pvCampo("Observações", state.observacoes, { full: true, step: 5 }),
+      ),
+    );
   $("#previewContent").innerHTML = secoes.join(PV_DIVISOR);
 }
 function exportarPDF() {

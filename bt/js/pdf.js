@@ -277,13 +277,20 @@ function gerarPdfDoc(S) {
   cy += 2;
 
   sec("1.  DADOS DO PROPRIETÁRIO");
-  const propPairs = [
-    [pessoaFisica ? "Nome Completo" : "Razão Social", prop.nome],
+  // Condomínio de torres: o nome de contato e a razão social do empreendimento
+  // são campos distintos (prop.nome × prop.cliente) e ambos vão para o PDF.
+  const propPairs = multiTorres
+    ? [
+        ["Nome para contato", prop.nome],
+        ["Cliente / Razão Social", prop.cliente],
+      ]
+    : [[pessoaFisica ? "Nome Completo" : "Razão Social", prop.nome]];
+  propPairs.push(
     ["CPF/CNPJ", prop.cpfCnpj],
     ["E-mail", prop.email],
     ["Celular", prop.celular],
     ["Telefone Fixo", prop.fixo],
-  ];
+  );
   if (pessoaFisica) {
     propPairs.push(
       ["RG/RNE/RANI", prop.rg],
@@ -751,7 +758,7 @@ function gerarPdfDoc(S) {
     { align: "center" },
   );
   footer();
-  const nomeArq = (prop.nome || "formulario")
+  const nomeArq = ((multiTorres && prop.cliente) || prop.nome || "formulario")
     .replace(/[^a-zA-Z0-9]/g, "_")
     .slice(0, 30);
   doc.save(
