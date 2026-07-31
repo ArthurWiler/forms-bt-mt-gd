@@ -1219,6 +1219,12 @@ label.restricao-aceite input[type="checkbox"] {
   color: var(--cmg-text-muted);
   margin-top: var(--cmg-space-1);
 }
+/* Hint VAZIO (ex.: #cep-status-*, preenchido só depois da consulta de CEP)
+   não pode ocupar espaço: com o margin-top ele empurrava o campo e desalinhava
+   a linha em relação aos vizinhos sem hint. Mesma ideia do .col-span-2:empty. */
+.cemig-form .field-hint:empty {
+  display: none;
+}
 /* ============================================================
    Campo com rótulo FLUTUANTE (Padrão B) — PADRÃO dos campos de texto.
    Comportamento: com o campo VAZIO e sem foco, o rótulo OCUPA a célula

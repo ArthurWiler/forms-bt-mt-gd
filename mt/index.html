@@ -1078,6 +1078,9 @@
                 </div>
 
                 <div id="trafoCards"></div>
+                <!-- Tarifação e demanda da instalação (uma para todos os
+                     transformadores) — montada por renderTarifacaoInstalacao. -->
+                <div id="trafoTarifacao" class="trafo-tarifacao-bloco"></div>
               </div>
 
               <div id="blocoMotoresIndividual">
@@ -1088,7 +1091,12 @@
                 <p class="card-sub">
                   Preencha os dados técnicos de todos os motores com cargas
                   especiais, caso existam, da sua propriedade. Utilize a
-                  <a href="#" onclick="abrirAnexoII(); return false"
+                  <a
+                    href="#"
+                    onclick="
+                      abrirAnexoII();
+                      return false;
+                    "
                     >tabela de conversão de potências</a
                   >
                   para consultar se os dados estão corretos.
@@ -1148,294 +1156,82 @@
                 </div>
               </div>
 
-              <div id="blocoConexaoNova" style="display: none">
-                <div class="subbox-title" style="margin-top: 24px">
-                  Para Conexão Nova
-                </div>
-                <div class="grid grid-3" style="margin-top: 16px">
-                  <div class="field">
-                    <label
-                      >Potência (Transformadores)
-                      <span class="req">*</span></label
-                    >
-                    <input
-                      type="text"
-                      id="cn_pot"
-                      data-k="cn_pot"
-                      readonly
-                      placeholder=" "
-                    />
-                  </div>
-                  <div class="field">
-                    <label
-                      >Quantidade (Transformadores)
-                      <span class="req">*</span></label
-                    >
-                    <input
-                      type="text"
-                      id="cn_qtd"
-                      data-k="cn_qtd"
-                      readonly
-                      placeholder=" "
-                    />
-                  </div>
-                  <div class="field">
-                    <label>Tipo de Subestação <span class="req">*</span></label>
-                    <select
-                      id="cn_tipoSE"
-                      data-k="cn_tipoSE"
-                      onchange="recalcRamal()"
-                    >
-                      <option value=""></option>
-                    </select>
-                  </div>
-                  <div class="field field--plain col-span-3">
-                    <div class="se-gallery" id="seGallery_nova"></div>
-                  </div>
-                </div>
-              </div>
-              <div id="blocoAlteracao" style="display: none">
-                <div class="subbox-title" style="margin-top: 24px">
-                  Para Alteração de Demanda
-                </div>
-                <div class="grid grid-3" style="margin-top: 16px">
-                  <div class="field">
-                    <label
-                      >Potência total (Trafos) atual
-                      <span class="req">*</span></label
-                    >
-                    <input
-                      type="number"
-                      step="any"
-                      data-k="alt_potAtual"
-                      placeholder=" "
-                      oninput="recalcTecnico()"
-                    />
-                  </div>
-                  <div class="field">
-                    <label>Qtde atual <span class="req">*</span></label>
-                    <input
-                      type="number"
-                      data-k="alt_qtdAtual"
-                      placeholder=" "
-                    />
-                  </div>
-                  <div class="field"></div>
-                  <div class="field">
-                    <label
-                      >Potência total (Trafos) futura
-                      <span class="req">*</span></label
-                    >
-                    <input
-                      type="text"
-                      id="alt_potFutura"
-                      data-k="alt_potFutura"
-                      readonly
-                      placeholder=" "
-                    />
-                  </div>
-                  <div class="field">
-                    <label>Qtde futura <span class="req">*</span></label>
-                    <input
-                      type="text"
-                      id="alt_qtdFutura"
-                      data-k="alt_qtdFutura"
-                      readonly
-                      placeholder=" "
-                    />
-                  </div>
-                  <div class="field"></div>
-                  <div class="field field--plain">
-                    <label
-                      >Haverá troca do tipo de subestação?
-                      <span class="req">*</span></label
-                    >
-                    <select
-                      id="alt_troca"
-                      data-k="alt_troca"
-                      onchange="onTrocaSE()"
-                    >
-                      <option value=""></option>
-                      <option>Sim</option>
-                      <option>Não</option>
-                    </select>
-                  </div>
-                  <div class="field" id="alt_tipoAtualBox">
-                    <label id="alt_tipoAtualLbl"
-                      >Tipo de Subestação atual
-                      <span class="req">*</span></label
-                    >
-                    <select
-                      id="alt_tipoAtual"
-                      data-k="alt_tipoAtual"
-                      onchange="recalcRamal()"
-                    >
-                      <option value=""></option>
-                    </select>
-                  </div>
-                  <div class="field field--plain col-span-3">
-                    <div class="se-gallery" id="seGallery_atual"></div>
-                  </div>
-                  <div class="field" id="alt_tipoParaBox" style="display: none">
-                    <label
-                      >Tipo de Subestação (Para)
-                      <span class="req">*</span></label
-                    >
-                    <select
-                      id="alt_tipoPara"
-                      data-k="alt_tipoPara"
-                      onchange="recalcRamal()"
-                    >
-                      <option value=""></option>
-                    </select>
-                  </div>
-                  <div
-                    class="field field--plain col-span-3"
-                    id="seGalleryBox_para"
-                    style="display: none"
-                  >
-                    <div class="se-gallery" id="seGallery_para"></div>
-                  </div>
-                </div>
+              <!-- Tipo de subestação — a seleção é feita pela galeria visual
+                   (renderGaleriaSE); os <select> ficam como fonte de estado
+                   e são espelhados pelos cards. Potência/quantidade não
+                   aparecem mais aqui: vêm da tabela de transformadores. -->
+              <div id="blocoSubestacaoNova" style="display: none">
+                <h4 class="card-subtitle divider">
+                  Subestação para conexão nova
+                </h4>
+                <p class="card-sub">
+                  <strong>Selecione o tipo de subestação</strong> que será
+                  instalado na sua propriedade.
+                </p>
+                <select
+                  id="cn_tipoSE"
+                  data-k="cn_tipoSE"
+                  onchange="recalcRamal()"
+                  hidden
+                  aria-hidden="true"
+                >
+                  <option value=""></option>
+                </select>
+                <div class="se-gallery" id="seGallery_nova"></div>
               </div>
 
-              <div id="blocoTarifacaoDemanda" hidden>
-                <select id="f_monomia" data-k="monomia" onchange="onMonomia()">
+              <div id="blocoSubestacaoAlteracao" style="display: none">
+                <h4 class="card-subtitle divider">
+                  Subestação para alteração de carga
+                </h4>
+                <p class="card-sub">
+                  Selecione o <strong>modelo atual</strong> da sua subestação.
+                </p>
+                <select
+                  id="alt_tipoAtual"
+                  data-k="alt_tipoAtual"
+                  onchange="recalcRamal()"
+                  hidden
+                  aria-hidden="true"
+                >
                   <option value=""></option>
-                  <option>Sim</option>
-                  <option>Não</option>
                 </select>
-                <div id="boxModalidade">
-                  <div id="cardsModalidade"></div>
-                  <select
-                    id="f_modalidade"
-                    data-k="modalidade"
-                    onchange="onModalidade()"
-                    aria-hidden="true"
+                <div class="se-gallery" id="seGallery_atual"></div>
+
+                <div class="field field--plain bloco-sub-gap">
+                  <label
+                    >Haverá troca do tipo de subestação?
+                    <span class="req">*</span></label
                   >
-                    <option value=""></option>
-                    <option>Verde</option>
-                    <option>Azul</option>
-                  </select>
-                </div>
-                <div id="boxEscalonada">
                   <select
-                    id="f_escalonada"
-                    data-k="escalonada"
-                    onchange="onEscalonada()"
+                    id="alt_troca"
+                    data-k="alt_troca"
+                    onchange="onTrocaSE()"
                   >
                     <option value=""></option>
                     <option>Sim</option>
                     <option>Não</option>
                   </select>
                 </div>
-                <div id="monomiaAlert"></div>
 
-                <div
-                  class="grid grid-2"
-                  id="demandaBox"
-                  style="margin-top: 16px"
-                >
-                  <div class="field" id="box_dem_atual" style="display: none">
-                    <label id="lbl_dem_atual"></label>
-                    <input
-                      type="number"
-                      step="any"
-                      data-k="dem_atual"
-                      placeholder=" "
-                      oninput="recalcTecnico()"
-                    />
-                  </div>
-                  <div class="field" id="box_dem_futura" style="display: none">
-                    <label id="lbl_dem_futura"></label>
-                    <input
-                      type="number"
-                      step="any"
-                      data-k="dem_futura"
-                      placeholder=" "
-                      oninput="recalcTecnico()"
-                    />
-                  </div>
-                  <div
-                    class="field"
-                    id="box_dem_ponta_atual"
-                    style="display: none"
+                <div id="seGalleryBox_para" style="display: none">
+                  <p class="card-sub">
+                    Indique o <strong>novo modelo</strong> que será instalado em
+                    sua propriedade.
+                  </p>
+                  <select
+                    id="alt_tipoPara"
+                    data-k="alt_tipoPara"
+                    onchange="recalcRamal()"
+                    hidden
+                    aria-hidden="true"
                   >
-                    <label id="lbl_dem_ponta_atual"></label>
-                    <input
-                      type="number"
-                      step="any"
-                      data-k="dem_ponta_atual"
-                      placeholder=" "
-                      oninput="recalcTecnico()"
-                    />
-                  </div>
-                  <div
-                    class="field"
-                    id="box_dem_ponta_futura"
-                    style="display: none"
-                  >
-                    <label id="lbl_dem_ponta_futura"></label>
-                    <input
-                      type="number"
-                      step="any"
-                      data-k="dem_ponta_futura"
-                      placeholder=" "
-                      oninput="recalcTecnico()"
-                    />
-                  </div>
-                  <div
-                    class="field"
-                    id="box_dem_foraponta_atual"
-                    style="display: none"
-                  >
-                    <label id="lbl_dem_foraponta_atual"></label>
-                    <input
-                      type="number"
-                      step="any"
-                      data-k="dem_foraponta_atual"
-                      placeholder=" "
-                      oninput="recalcTecnico()"
-                    />
-                  </div>
-                  <div
-                    class="field"
-                    id="box_dem_foraponta_futura"
-                    style="display: none"
-                  >
-                    <label id="lbl_dem_foraponta_futura"></label>
-                    <input
-                      type="number"
-                      step="any"
-                      data-k="dem_foraponta_futura"
-                      placeholder=" "
-                      oninput="recalcTecnico()"
-                    />
-                  </div>
-                </div>
-                <div id="demandaAlert"></div>
-
-                <div id="escalonadaBox" style="display: none">
-                  <div class="subbox-title" style="margin-top: 24px">
-                    Demanda Escalonada
-                  </div>
-                  <div class="tbl-scroll" style="margin-top: 16px">
-                    <table class="tbl" id="escalonadaTbl">
-                      <thead id="escalonadaHead"></thead>
-                      <tbody id="escalonadaBody"></tbody>
-                    </table>
-                  </div>
-                  <div class="motores-add">
-                    <button
-                      type="button"
-                      class="btn btn-ghost motores-add-btn"
-                      onclick="addEscalonada()"
-                    >
-                      + Adicionar etapa de demanda
-                    </button>
-                  </div>
+                    <option value=""></option>
+                  </select>
+                  <div class="se-gallery" id="seGallery_para"></div>
                 </div>
               </div>
+
             </div>
           </div>
           <div class="nav-bottom no-print">

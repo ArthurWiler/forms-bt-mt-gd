@@ -491,6 +491,17 @@
   color: var(--cmg-text-strong);
   margin-bottom: 14px;
 }
+/* Tarifação/demanda da INSTALAÇÃO (não-compartilhada): uma única seção para
+   todos os transformadores, FORA dos cards e depois deles, sobre o fundo
+   branco da etapa. Sem filete e sem fundo próprio nos campos — vale o visual
+   padrão dos campos do formulário. */
+.cemig-mtform .trafo-tarifacao-bloco {
+  margin-top: var(--cmg-space-8);
+}
+/* Vazia (antes de existir transformador) não deve abrir espaço nenhum. */
+.cemig-mtform .trafo-tarifacao-bloco:empty {
+  margin-top: 0;
+}
 /* Substitui o antigo style="margin-top:16px" inline: o vão entre a
    modalidade tarifária e os campos de demanda usa o mesmo passo dos demais. */
 .cemig-mtform .cub-demanda-grid {
@@ -624,10 +635,13 @@
 }
 
 /* ---- Galeria TIPOS DE SUBESTAÇÃO ---- */
+/* Galeria de tipos de subestação: cards largos o bastante para a foto ser
+   legível (spec: 2 por linha na largura do formulário). `auto-fit` + minmax
+   colapsa para 1 coluna em telas estreitas sem media query. */
 .cemig-mtform .se-gallery {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  gap: 16px;
   margin-top: 10px;
 }
 .cemig-mtform .se-card {

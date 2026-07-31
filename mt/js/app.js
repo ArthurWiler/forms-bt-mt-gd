@@ -41,15 +41,9 @@ const CAMPOS_CARDS_CONFIG = {
     // "tensaoMT" não entra aqui: o nível de tensão da rede MT é um <select>
     // nativo (dropdown), não cards — as três opções não têm o mesmo peso de
     // escolha rápida dos demais campos e o rótulo flutuante já basta.
-    {
-      chave: "modalidade",
-      gridId: "cardsModalidade",
-      valorPadrao: "Verde",
-      opcoes: [
-        { valor: "Verde", texto: "Verde" },
-        { valor: "Azul", texto: "Azul" },
-      ],
-    },
+    // "modalidade" saiu daqui: os cards passaram a ser montados em JS —
+    // _instalacaoModalidadeCardsHTML (não-compartilhada, uma para toda a
+    // instalação) e _cubiculoModalidadeCardsHTML (um por cubículo).
   ],
   // Campo especial "Dia do vencimento": substitui a antiga pergunta
   // "Deseja escolher data de vencimento?" — escolher um dia define
@@ -312,7 +306,7 @@ function bindInputs() {
 
 /* ===== Etapa "Tipo de atendimento": finalidade =====
    O select vive na etapa 4, mas controla blocos da etapa 5 (Subestação):
-   #instalBox, #blocoConexaoNova e #blocoAlteracao. */
+   #instalBox, #blocoSubestacaoNova e #blocoSubestacaoAlteracao. */
 function onFinalidade() {
   const v = $("#f_finalidade").value;
   state.finalidade = v;
@@ -336,10 +330,10 @@ function onFinalidade() {
     if (selMud) selMud.value = "";
     state.mudancaLocal = "";
   }
-  // mostra bloco conexão nova ou alteração na etapa técnica
+  // mostra a galeria de subestação da conexão nova ou a da alteração
   const ehNova = v === "Conexão Nova";
-  $("#blocoConexaoNova").style.display = ehNova ? "block" : "none";
-  $("#blocoAlteracao").style.display = v && !ehNova ? "block" : "none";
+  $("#blocoSubestacaoNova").style.display = ehNova ? "block" : "none";
+  $("#blocoSubestacaoAlteracao").style.display = v && !ehNova ? "block" : "none";
   // Em Conexão Nova não existe trafo a substituir: descarta a marcação e os
   // valores novos para que não vazem no cálculo nem no PDF.
   if (ehNova) {
@@ -357,7 +351,6 @@ function onFinalidade() {
   }
   renderTrafos(); // os radios de troca aparecem/somem conforme a finalidade
   updateCoordHint();
-  updateDemandaLabels();
   recalcTecnico();
   if (state.compartilhada === "Sim") renderCubiculos();
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
@@ -1534,6 +1527,7 @@ function setTrafoSituacao(i, valor) {
   renderTrafos();
   recalcTecnico();
 }
+
 function addTrafo() {
   trafos.push(novoTrafo());
   sincronizarCampoQtdTrafos();
@@ -1657,8 +1651,127 @@ function renderTrafos() {
     </div>`;
     })
     .join("");
+  // Tarifação/demanda é ÚNICA para a instalação (não-compartilhada): fica
+  // depois de todos os cards, fora deles.
+  renderTarifacaoInstalacao();
+  // A tabela de etapas traz campos "Início de uso" (input[type=month]): sem
+  // reaplicar, ficam com o "mm/aaaa" nativo e sem os handlers de foco/blur.
+  reaplicarMarcadores();
 }
 
+/* --- Tarifação e demanda da INSTALAÇÃO (não-compartilhada) ---
+   UMA seção para todos os transformadores: modalidade tarifária, demanda
+   contratada e demanda escalonada valem para a instalação inteira. (Na
+   compartilhada o equivalente é declarado por cubículo.) O estado vive em
+   `state` e em `escalonadaInstalacao`, e a seção é renderizada depois dos
+   cards, em #trafoTarifacao. */
+let escalonadaInstalacao = [];
+function setInstalacaoModalidade(valor) {
+  state.modalidade = valor;
+  renderTarifacaoInstalacao();
+  recalcTecnico();
+}
+function setInstalacaoEscalonada(valor) {
+  state.escalonada = valor;
+  // A primeira etapa nasce junto para o usuário já ter onde digitar.
+  if (valor === "Sim" && !escalonadaInstalacao.length)
+    addEtapaEscalonadaInstalacao();
+  else {
+    renderTarifacaoInstalacao();
+    recalcTecnico();
+  }
+}
+function addEtapaEscalonadaInstalacao() {
+  escalonadaInstalacao.push(novaEtapaEscalonada());
+  renderTarifacaoInstalacao();
+  recalcTecnico();
+}
+function delEtapaEscalonadaInstalacao(k) {
+  escalonadaInstalacao.splice(k, 1);
+  renderTarifacaoInstalacao();
+  recalcTecnico();
+}
+function _instalacaoModalidadeCardsHTML(atual) {
+  const cls = CAMPOS_CARDS_CONFIG.classes;
+  return (
+    `<div class="${cls.grid}" role="radiogroup" aria-label="Modalidade tarifária horária">` +
+    ["Verde", "Azul"]
+      .map(
+        (v) =>
+          `<button type="button" role="radio" aria-checked="${atual === v}" class="${cls.card}${atual === v ? " " + cls.active : ""}" onclick="setInstalacaoModalidade('${v}')">${v}</button>`,
+      )
+      .join("") +
+    `</div>`
+  );
+}
+function _instalacaoEscalonadaCardsHTML(atual) {
+  const cls = CAMPOS_CARDS_CONFIG.classes;
+  return (
+    `<div class="${cls.grid} toggle-group--opcoes" role="radiogroup" aria-label="Haverá demanda escalonada?">` +
+    ["Sim", "Não"]
+      .map(
+        (v) =>
+          `<button type="button" role="radio" aria-checked="${atual === v}" class="${cls.card}${atual === v ? " " + cls.active : ""}" onclick="setInstalacaoEscalonada('${v}')">${v}</button>`,
+      )
+      .join("") +
+    `</div>`
+  );
+}
+/* Tabela de etapas da instalação — colunas conforme a modalidade. */
+function _instalacaoEscalonadaTabelaHTML() {
+  if (state.escalonada !== "Sim") return "";
+  const azul = state.modalidade === "Azul";
+  const head = azul
+    ? `<tr><th>Demanda ponta (kW)</th><th>Demanda fora ponta (kW)</th><th>Início de uso</th><th></th></tr>`
+    : `<tr><th>Demanda (kW)</th><th>Início de uso</th><th></th></tr>`;
+  const ref = "escalonadaInstalacao";
+  const linhas = escalonadaInstalacao
+    .map((e, k) =>
+      azul
+        ? `<tr><td><input type="number" step="any" value="${e.ponta}" placeholder="kW" oninput="${ref}[${k}].ponta=this.value;recalcTecnico()"></td>
+             <td><input type="number" step="any" value="${e.foraponta}" placeholder="kW" oninput="${ref}[${k}].foraponta=this.value;recalcTecnico()"></td>
+             <td>${_inicioUsoHTML(`${ref}[${k}].inicio`, e.inicio)}</td>
+             <td><button class="btn-del" onclick="delEtapaEscalonadaInstalacao(${k})">×</button></td></tr>`
+        : `<tr><td><input type="number" step="any" value="${e.demanda}" placeholder="kW" oninput="${ref}[${k}].demanda=this.value;recalcTecnico()"></td>
+             <td>${_inicioUsoHTML(`${ref}[${k}].inicio`, e.inicio)}</td>
+             <td><button class="btn-del" onclick="delEtapaEscalonadaInstalacao(${k})">×</button></td></tr>`,
+    )
+    .join("");
+  return `<div class="cub-escalonada-box">
+      <p class="card-sub">Preencha a evolução da sua necessidade de carga ao longo do tempo. Para cada etapa, informe os valores de demanda${azul ? " de Ponta e Fora Ponta" : ""} (em kW) e a data (mês/ano) prevista para o início do consumo de cada fase.</p>
+      <div class="tbl-scroll">
+        <table class="tbl"><thead>${head}</thead><tbody>${linhas}</tbody></table>
+      </div>
+      <div class="motores-add"><button type="button" class="btn btn-ghost motores-add-btn" onclick="addEtapaEscalonadaInstalacao()">+ Adicionar etapa de demanda</button></div>
+    </div>`;
+}
+/* Demanda simples e escalonada são exclusivas: com escalonamento, a tabela de
+   etapas passa a ser a única entrada de demanda. */
+function _instalacaoDemandaFieldsHTML() {
+  if (state.escalonada === "Sim") return "";
+  return state.modalidade === "Azul"
+    ? `<div class="field"><label>Demanda ponta contratada (kVA)</label><input type="number" step="any" data-k="demandaPontaContratada" value="${state.demandaPontaContratada ?? ""}" placeholder=" " oninput="state.demandaPontaContratada=this.value;recalcTecnico()"></div>
+       <div class="field"><label>Demanda fora ponta contratada (kVA)</label><input type="number" step="any" data-k="demandaForaPontaContratada" value="${state.demandaForaPontaContratada ?? ""}" placeholder=" " oninput="state.demandaForaPontaContratada=this.value;recalcTecnico()"></div>`
+    : `<div class="field"><label>Demanda contratada (kVA)</label><input type="number" step="any" data-k="demandaContratada" value="${state.demandaContratada ?? ""}" placeholder=" " oninput="state.demandaContratada=this.value;recalcTecnico()"></div>`;
+}
+function renderTarifacaoInstalacao() {
+  const box = $("#trafoTarifacao");
+  if (!box) return;
+  const demandaFields = _instalacaoDemandaFieldsHTML();
+  box.innerHTML = `
+      <div class="field field--plain"><label>Modalidade tarifária horária</label>${_instalacaoModalidadeCardsHTML(state.modalidade)}</div>
+      ${demandaFields ? `<div class="grid grid-2 cub-demanda-grid">${demandaFields}</div>` : ""}
+      <div class="field field--plain bloco-sub-gap"><label>Haverá demanda escalonada?</label>${_instalacaoEscalonadaCardsHTML(state.escalonada)}</div>
+      ${_instalacaoEscalonadaTabelaHTML()}`;
+}
+/* Campo "Início de Uso" das tabelas de demanda escalonada. Reusa o padrão do
+   campo de data do BT (Data de Nascimento): ícone de calendário decorativo
+   sempre visível sobre o indicador nativo invisível (CSS em
+   formulario-mt.css / shared.css). `alvo` é a expressão de destino do valor
+   (ex.: "trafos[0].etapasEscalonada[1].inicio"), interpolada no oninput. */
+function _inicioUsoHTML(alvo, valor) {
+  return `<span class="tbl-cal"><input type="month" value="${valor}" oninput="${alvo}=this.value"><img class="field-cal-icon" src="../imgs/calendar.svg" alt="" aria-hidden="true"></span>`;
+}
 /* --- Cubículos adicionais (Anexo I) --- */
 let cubiculosAbertos = new Set([0]); // índices dos cards expandidos (acordeão)
 function novoCubiculo() {
@@ -1713,14 +1826,6 @@ function _cubiculoEscalonadaCardsHTML(i, atual) {
       .join("") +
     `</div>`
   );
-}
-/* Campo "Início de Uso" das tabelas de demanda escalonada. Reusa o padrão do
-   campo de data do BT (Data de Nascimento): ícone de calendário decorativo
-   sempre visível sobre o indicador nativo invisível (CSS em
-   formulario-mt.css / shared.css). `alvo` é a expressão de destino do valor
-   (ex.: "escalonada[0].inicio"), interpolada direto no oninput como antes. */
-function _inicioUsoHTML(alvo, valor) {
-  return `<span class="tbl-cal"><input type="month" value="${valor}" oninput="${alvo}=this.value"><img class="field-cal-icon" src="../imgs/calendar.svg" alt="" aria-hidden="true"></span>`;
 }
 /* Tabela de etapas — colunas conforme a modalidade do cubículo. */
 function _cubiculoEscalonadaTabelaHTML(i, c) {
@@ -2025,7 +2130,7 @@ function renderCubiculos() {
     .join("");
   cubiculos.forEach((c, i) => validarDemandaCubiculo(i));
   recalcTecnico();
-  // Idem renderEscalonada: a tabela de etapas do cubículo traz os campos
+  // Idem renderTrafos: a tabela de etapas do cubículo traz os campos
   // "Início de Uso" (input[type=month]) e precisa da convenção de datas.
   reaplicarMarcadores();
 }
@@ -2371,23 +2476,9 @@ function recalcTecnico() {
     $("#trafoPotTotal").textContent = fmt(rt.potenciaTotal);
   if ($("#trafoQtdTotal"))
     $("#trafoQtdTotal").textContent = rt.quantidadeTotal;
-  // conexão nova: replica pot/qtde
-  if ($("#cn_pot")) {
-    $("#cn_pot").value = fmt(rt.potenciaTotal);
-    state.cn_pot = rt.potenciaTotal;
-  }
-  if ($("#cn_qtd")) {
-    $("#cn_qtd").value = rt.quantidadeTotal;
-    state.cn_qtd = rt.quantidadeTotal;
-  }
-  if ($("#alt_potFutura")) {
-    $("#alt_potFutura").value = fmt(rt.potenciaTotal);
-    state.alt_potFutura = rt.potenciaTotal;
-  }
-  if ($("#alt_qtdFutura")) {
-    $("#alt_qtdFutura").value = rt.quantidadeTotal;
-    state.alt_qtdFutura = rt.quantidadeTotal;
-  }
+  // Os campos readonly que replicavam pot/qtde (cn_pot, cn_qtd, alt_potFutura,
+  // alt_qtdFutura) saíram da tela junto com os blocos de Conexão Nova e
+  // Alteração: a tabela de transformadores já é a fonte desses totais.
   if (state.compartilhada === "Sim") {
     state.demandaTotalCubiculos = rt.demandaTotal;
     if ($("#totConsolidadoTrafos"))
@@ -2398,25 +2489,26 @@ function recalcTecnico() {
   renderMotores();
   // tipo de subestação automático
   preencherTiposSE();
-  // tarifa monômia
-  const rm = CalculoMT.validarTarifaMonomia(
-    $("#f_monomia")?.value,
-    rt.potenciaTotal,
-  );
-  $("#monomiaAlert").innerHTML =
-    rm.nivel === "erro" ? alertHTML("err", rm.msg) : "";
-  // demanda
-  validarDemandas();
+  // A validação de tarifa monômia e de demanda era feita sobre os campos
+  // globais, que não existem mais — a demanda agora é declarada por
+  // transformador/cubículo e validada no próprio card.
   recalcRamal();
 }
 
 function preencherTiposSE() {
-  const ehNova = state.finalidade === "Conexão Nova";
-  const potBase = ehNova ? state.potTotalTrafos : state.potTotalTrafos; // futura = soma trafos
+  // A demanda contratada é quem responde pelos tetos de 300 kW dos modelos;
+  // a potência instalada entra como piso de existência. Na compartilhada a
+  // demanda é a soma dos cubículos.
+  const demanda =
+    state.compartilhada === "Sim"
+      ? state.demandaTotalCubiculos
+      : demandaRepresentativaInstalacao();
   const lista = CalculoMT.tiposSubestacaoPermitidos({
+    finalidade: state.finalidade,
     tensaoMTkV: state.tensaoMT,
     compartilhada: state.compartilhada,
-    potencia: potBase,
+    potencia: state.potTotalTrafos,
+    demanda,
   });
   // popula dropdown da conexão nova
   const selNova = $("#cn_tipoSE");
@@ -2432,19 +2524,12 @@ function preencherTiposSE() {
       state.cn_tipoSE = lista[0];
     }
   }
-  // popula dropdown "Tipo de Subestação atual" da alteração
+  // "Tipo de Subestação atual": o modelo JÁ instalado não é escolhido pelas
+  // regras de aceitação (ele existe), só pelo teto de demanda de cada modelo.
   const selAtual = $("#alt_tipoAtual");
   if (selAtual) {
-    const baseAtual = [
-      "Subestação Nº 1",
-      "Subestação Nº 2",
-      "Subestação Nº 4",
-      "Subestação Nº 5",
-      "Subestação Nº 6",
-      "Subestação Nº 8",
-    ];
-    const potAtual = parseFloat($("[data-k=alt_potAtual]")?.value) || 0;
-    const listaAtual = CalculoMT.filtrarTiposPorPotencia(baseAtual, potAtual);
+    const baseAtual = CalculoMT.tiposSubestacao();
+    const listaAtual = CalculoMT.filtrarTiposPorPotencia(baseAtual, demanda);
     const atual = selAtual.value;
     const manter = listaAtual.includes(atual);
     selAtual.innerHTML =
@@ -2460,17 +2545,13 @@ function preencherTiposSE() {
       state.alt_tipoAtual = "";
     }
   }
-  // popula dropdown "Para" da alteração
+  // "Para": o novo modelo segue as mesmas regras de aceitação da lista acima.
   const selPara = $("#alt_tipoPara");
   if (selPara) {
     const atual = selPara.value;
-    const listaPara = CalculoMT.filtrarTiposPorPotencia(
-      lista,
-      state.potTotalTrafos,
-    );
     selPara.innerHTML =
       '<option value=""></option>' +
-      listaPara
+      lista
         .map((s) => `<option ${atual === s ? "selected" : ""}>${s}</option>`)
         .join("");
   }
@@ -2512,167 +2593,58 @@ function selecionarSE(selectId, value) {
   renderGaleriaSE(SE_GALLERY_MAP[selectId], selectId);
 }
 
-function onMonomia() {
-  state.monomia = $("#f_monomia").value;
-  const isMonomia = state.monomia === "Sim";
-  const boxModalidade = $("#boxModalidade"),
-    boxEscalonada = $("#boxEscalonada"),
-    demandaBox = $("#demandaBox");
-  if (boxModalidade) boxModalidade.style.display = isMonomia ? "none" : "";
-  if (boxEscalonada) boxEscalonada.style.display = isMonomia ? "none" : "";
-  if (demandaBox) demandaBox.style.display = isMonomia ? "none" : "";
-  if (isMonomia) {
-    const escBox = $("#escalonadaBox");
-    if (escBox) escBox.style.display = "none";
-    $("#demandaAlert").innerHTML = "";
-  }
-  recalcTecnico();
-}
-function onModalidade() {
-  state.modalidade = $("#f_modalidade").value;
-  updateDemandaLabels();
-  validarDemandas();
-}
-function onEscalonada() {
-  state.escalonada = $("#f_escalonada").value;
-  $("#escalonadaBox").style.display =
-    state.escalonada === "Sim" ? "block" : "none";
-  if (state.escalonada === "Sim") renderEscalonada();
-}
-function updateDemandaLabels() {
-  const azul = state.modalidade === "Azul";
-  const ehAlteracao =
-    state.finalidade === "Aumento de Demanda" ||
-    state.finalidade === "Redução de Demanda";
-  [
-    "dem_atual",
-    "dem_futura",
-    "dem_ponta_atual",
-    "dem_ponta_futura",
-    "dem_foraponta_atual",
-    "dem_foraponta_futura",
-  ].forEach((k) => {
-    const b = $(`#box_${k}`);
-    if (b) b.style.display = "none";
-  });
-  function show(k, lbl) {
-    const b = $(`#box_${k}`);
-    const l = $(`#lbl_${k}`);
-    if (b) b.style.display = "";
-    if (l && lbl) l.innerHTML = lbl;
-  }
-  if (ehAlteracao && !azul) {
-    show("dem_atual", 'Demanda Atual (kW) <span class="req">*</span>');
-    show("dem_futura", 'Demanda Futura (kW) <span class="req">*</span>');
-  } else if (ehAlteracao && azul) {
-    show(
-      "dem_ponta_atual",
-      'Demanda Ponta Atual (kW) <span class="req">*</span>',
-    );
-    show("dem_ponta_futura", 'Ponta Futura (kW) <span class="req">*</span>');
-    show(
-      "dem_foraponta_atual",
-      'Fora de Ponta Atual (kW) <span class="req">*</span>',
-    );
-    show(
-      "dem_foraponta_futura",
-      'Fora de Ponta Futura (kW) <span class="req">*</span>',
-    );
-  } else if (!ehAlteracao && !azul) {
-    show("dem_atual", 'Informar demanda em kW <span class="req">*</span>');
-  } else {
-    show("dem_ponta_atual", 'Demanda Ponta (kW) <span class="req">*</span>');
-    show(
-      "dem_foraponta_atual",
-      'Demanda Fora de Ponta (kW) <span class="req">*</span>',
-    );
-  }
-  reaplicarMarcadores();
-}
-function validarDemandas() {
-  if (state.monomia === "Sim") {
-    $("#demandaAlert").innerHTML = "";
-    return [];
-  }
-  const azul = state.modalidade === "Azul";
-  const ehAlteracao =
-    state.finalidade === "Aumento de Demanda" ||
-    state.finalidade === "Redução de Demanda";
-  const out = [];
-  let dAtual, dFutura;
-  if (azul) {
-    const pa = parseFloat($("[data-k=dem_ponta_atual]")?.value) || 0;
-    const fa = parseFloat($("[data-k=dem_foraponta_atual]")?.value) || 0;
-    const pf = parseFloat($("[data-k=dem_ponta_futura]")?.value) || 0;
-    const ff = parseFloat($("[data-k=dem_foraponta_futura]")?.value) || 0;
-    dAtual = pa || fa ? String(pa + fa) : "";
-    dFutura = pf || ff ? String(pf + ff) : "";
-  } else {
-    dAtual = $("[data-k=dem_atual]")?.value || "";
-    dFutura = $("[data-k=dem_futura]")?.value || "";
-  }
-  if (!ehAlteracao) {
-    const rNova = CalculoMT.validarDemandaConexaoNova(dAtual, state.finalidade);
-    if (rNova.nivel) out.push(rNova);
-  }
-  const rPot = CalculoMT.validarDemandaVsPotencia(dAtual, state.potTotalTrafos);
-  if (rPot.nivel) out.push(rPot);
-  if (ehAlteracao && dFutura) {
-    const rPotFut = CalculoMT.validarDemandaVsPotencia(
-      dFutura,
-      state.potTotalTrafos,
-    );
-    if (rPotFut.nivel) out.push(rPotFut);
-  }
-  if (ehAlteracao && dAtual && dFutura) {
-    const rFut = CalculoMT.validarDemandaFuturaVsAtual(
-      state.finalidade,
-      dAtual,
-      dFutura,
-    );
-    if (rFut.nivel) out.push(rFut);
-  }
-  $("#demandaAlert").innerHTML = out
-    .map((r) => alertHTML("err", r.msg))
-    .join("");
-  return out;
-}
+/* A tarifação (monômia/modalidade) e a demanda deixaram de ser globais: cada
+   transformador (não-compartilhada) e cada cubículo (compartilhada) declara a
+   sua própria modalidade, demanda contratada e demanda escalonada nos
+   respectivos cards. As funções onMonomia/onModalidade/onEscalonada,
+   updateDemandaLabels, validarDemandas e a tabela global de demanda
+   escalonada foram removidas junto com o #blocoTarifacaoDemanda. */
 
-/* ===== Demanda Escalonada ===== */
-let escalonada = [];
-function addEscalonada() {
-  escalonada.push({ demanda: "", ponta: "", foraponta: "", inicio: "" });
-  renderEscalonada();
-}
-function delEscalonada(i) {
-  escalonada.splice(i, 1);
-  renderEscalonada();
-}
-function renderEscalonada() {
+/* Demanda representativa da INSTALAÇÃO (não-compartilhada) — espelha
+   demandaRepresentativaCubiculo: com escalonamento vale a maior etapa; sem
+   ele, a demanda contratada (soma ponta + fora ponta na modalidade Azul). */
+function demandaRepresentativaInstalacao() {
   const azul = state.modalidade === "Azul";
-  const head = $("#escalonadaHead"),
-    body = $("#escalonadaBody");
-  if (!head || !body) return;
-  head.innerHTML = azul
-    ? '<tr><th>Ponta (kW)</th><th>Fora de Ponta (kW)</th><th>Início de Uso</th><th style="width:46px"></th></tr>'
-    : '<tr><th>Demanda Futura (kW)</th><th>Início de Uso</th><th style="width:46px"></th></tr>';
-  body.innerHTML = "";
-  escalonada.forEach((e, i) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = azul
-      ? `<td><input type="number" step="any" value="${e.ponta}" placeholder="kW" oninput="escalonada[${i}].ponta=this.value"></td>
-         <td><input type="number" step="any" value="${e.foraponta}" placeholder="kW" oninput="escalonada[${i}].foraponta=this.value"></td>
-         <td>${_inicioUsoHTML(`escalonada[${i}].inicio`, e.inicio)}</td>
-         <td><button class="btn-del" onclick="delEscalonada(${i})">×</button></td>`
-      : `<td><input type="number" step="any" value="${e.demanda}" placeholder="kW" oninput="escalonada[${i}].demanda=this.value"></td>
-         <td>${_inicioUsoHTML(`escalonada[${i}].inicio`, e.inicio)}</td>
-         <td><button class="btn-del" onclick="delEscalonada(${i})">×</button></td>`;
-    body.appendChild(tr);
-  });
-  // Os campos "Início de Uso" nascem aqui: sem reaplicar, o input[type=month]
-  // recém-injetado mantém o "mm/aaaa" nativo (convenção do projeto é mostrar
-  // só o rótulo enquanto vazio) e não recebe os handlers de foco/blur.
-  reaplicarMarcadores();
+  if (state.escalonada === "Sim") {
+    return escalonadaInstalacao.reduce((maior, e) => {
+      const v = azul
+        ? (parseFloat(e.ponta) || 0) + (parseFloat(e.foraponta) || 0)
+        : parseFloat(e.demanda) || 0;
+      return Math.max(maior, v);
+    }, 0);
+  }
+  return azul
+    ? (parseFloat(state.demandaPontaContratada) || 0) +
+        (parseFloat(state.demandaForaPontaContratada) || 0)
+    : parseFloat(state.demandaContratada) || 0;
+}
+/* Regra 3 (gate de exportação): a demanda declarada não pode superar a
+   potência instalada. Na compartilhada vale por cubículo; na não-compartilhada
+   a demanda é única e é comparada com a soma dos transformadores. Devolve a
+   lista de erros no mesmo formato que validarDemandas devolvia. */
+function validarDemandasTodas() {
+  const out = [];
+  if (state.compartilhada === "Sim") {
+    cubiculos.forEach((c, i) => {
+      const pot = CalculoMT.calcularTrafos(trafosFuturos(c.trafos))
+        .potenciaTotal;
+      const dem = demandaRepresentativaCubiculo(c);
+      if (dem > 0 && pot > 0 && dem > pot)
+        out.push({
+          nivel: "erro",
+          msg: `Cubículo ${i + 1}: a demanda não pode ser superior à potência total dos seus transformadores (${fmt(pot)} kVA).`,
+        });
+    });
+  } else {
+    const pot = parseFloat(state.potTotalTrafos) || 0;
+    const dem = demandaRepresentativaInstalacao();
+    if (dem > 0 && pot > 0 && dem > pot)
+      out.push({
+        nivel: "erro",
+        msg: `A demanda contratada não pode ser superior à potência total dos transformadores (${fmt(pot)} kVA).`,
+      });
+  }
+  return out;
 }
 
 /* ===== Alteração: troca de SE ===== */
@@ -2864,7 +2836,7 @@ function atualizarGateExportacao() {
   // Regra 3: validações bloqueantes (ex.: demanda contratada/futura > potência
   // total instalada dos transformadores) impedem a geração do PDF e o envio do
   // formulário — não apenas exibem alerta na etapa de dados.
-  const errosValidacao = (validarDemandas() || []).filter(
+  const errosValidacao = validarDemandasTodas().filter(
     (r) => r.nivel === "erro",
   );
   const box = $("#exportAlert");
@@ -2967,9 +2939,15 @@ function renderPreview() {
     .map((s) => pvSecao(s.titulo, s.campos.map(pvCampoModelo).join("")))
     .join(PV_DIVISOR);
 
+  // A pergunta "Tarifa monômia?" saiu do formulário junto com a seção global
+  // de tarifação. A carta passa a ser oferecida por ELEGIBILIDADE: REN
+  // 1.000/2021, Art. 292, I — soma das potências ≤ 112,5 kVA (MONOMIA_MAX).
   const btnMonomia = $("#btnCartaMonomia");
-  if (btnMonomia)
-    btnMonomia.style.display = state.monomia === "Sim" ? "" : "none";
+  if (btnMonomia) {
+    const pot = parseFloat(state.potTotalTrafos) || 0;
+    const elegivel = pot > 0 && pot <= CalculoMT.limites.MONOMIA_MAX;
+    btnMonomia.style.display = elegivel ? "" : "none";
+  }
   renderIrrigacaoOpcionalCard();
   const alertaMotores = $("#alertaMotoresPesados");
   if (alertaMotores) {

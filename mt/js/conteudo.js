@@ -341,54 +341,46 @@ function conteudoFormularioMT() {
     tec.push(_c("Tipo de Subestação", tipoSE, { step: 4 }));
     if (state.finalidade !== "Conexão Nova")
       tec.push(_c("Troca de Subestação?", state.alt_troca, { step: 4 }));
+    // Tarifação e demanda valem para a INSTALAÇÃO inteira (uma única seção,
+    // fora dos cards). Na compartilhada o equivalente é declarado por cubículo.
+    const azul = state.modalidade === "Azul";
     tec.push(
-      _c("Tarifa monômia?", state.monomia, { step: 4 }),
       _c("Modalidade tarifária", state.modalidade, { step: 4 }),
       _c("Demanda escalonada?", state.escalonada, { step: 4 }),
     );
-    const azul = state.modalidade === "Azul";
-    const ehAlt =
-      state.finalidade === "Aumento de Demanda" ||
-      state.finalidade === "Redução de Demanda";
-    if (azul) {
-      tec.push(
-        _c("Demanda Ponta Atual (kW)", state.dem_ponta_atual, { step: 4 }),
-      );
-      if (ehAlt)
-        tec.push(_c("Ponta Futura (kW)", state.dem_ponta_futura, { step: 4 }));
-      tec.push(
-        _c("Fora de Ponta Atual (kW)", state.dem_foraponta_atual, { step: 4 }),
-      );
-      if (ehAlt)
+    // Demanda simples e escalonada são exclusivas na tela; a prévia/PDF segue
+    // a mesma regra para não imprimir campo que não foi preenchido.
+    if (state.escalonada !== "Sim") {
+      if (azul)
         tec.push(
-          _c("Fora de Ponta Futura (kW)", state.dem_foraponta_futura, {
+          _c("Demanda ponta contratada (kVA)", state.demandaPontaContratada, {
             step: 4,
           }),
+          _c(
+            "Demanda fora ponta contratada (kVA)",
+            state.demandaForaPontaContratada,
+            { step: 4 },
+          ),
         );
-    } else {
-      tec.push(
-        _c(ehAlt ? "Demanda Atual (kW)" : "Demanda (kW)", state.dem_atual, {
-          step: 4,
-        }),
-      );
-      if (ehAlt)
-        tec.push(_c("Demanda Futura (kW)", state.dem_futura, { step: 4 }));
-    }
-    if (escalonada.length)
+      else
+        tec.push(
+          _c("Demanda contratada (kVA)", state.demandaContratada, { step: 4 }),
+        );
+    } else if (escalonadaInstalacao.length)
       tec.push(
         azul
           ? _tab(
               "Demanda Escalonada",
-              ["Ponta (kW)", "Fora-ponta (kW)", "Início de Uso"],
+              ["Ponta (kW)", "Fora-ponta (kW)", "Início de uso"],
               [60, 60, 62],
-              escalonada.map((e) => [e.ponta, e.foraponta, e.inicio]),
+              escalonadaInstalacao.map((e) => [e.ponta, e.foraponta, e.inicio]),
               { step: 4 },
             )
           : _tab(
               "Demanda Escalonada",
-              ["Demanda Futura (kW)", "Início de Uso"],
+              ["Demanda (kW)", "Início de uso"],
               [91, 91],
-              escalonada.map((e) => [e.demanda, e.inicio]),
+              escalonadaInstalacao.map((e) => [e.demanda, e.inicio]),
               { step: 4 },
             ),
       );

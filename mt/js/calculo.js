@@ -162,40 +162,80 @@ const CalculoMT = (function () {
      ======================================================================= */
 
   const SE = {
-    N2: 'Subestação Nº 2', N4: 'Subestação Nº 4',
-    N5: 'Subestação Nº 5', N8: 'Subestação Nº 8',
+    N1: 'Subestação Nº 1', N2: 'Subestação Nº 2', N3: 'Subestação Nº 3',
+    N4: 'Subestação Nº 4', N5: 'Subestação Nº 5', N6: 'Subestação Nº 6',
+    N8: 'Subestação Nº 8',
   };
-  // Listas nomeadas (valores extraídos da planilha)
-  const SENOVA300KW        = [SE.N4, SE.N5, SE.N8];
-  const SE_NOVA_MAIOR300KW = [SE.N2, SE.N4];
-  const SECOMP             = [SE.N2, SE.N4];
-  const SENAB30022         = [SE.N2, SE.N4, SE.N5, SE.N8];
 
-  function tiposSubestacaoPermitidos({ tensaoMTkV, compartilhada, potencia }) {
+  /* Critério das SEs de Média Tensão (norma Cemig). Cada entrada declara,
+     por modelo, o que é aceito — daí a lista ser derivada da regra em vez de
+     listas fixas por cenário:
+       novaOk / aumentoOk : aceita em conexão nova / aumento de carga;
+       maxKW              : teto de demanda (kW) quando houver;
+       tensoes            : níveis de tensão aceitos (ausente = todos);
+       compartilhada      : aceita em subestação compartilhada;
+       tensoesComp        : níveis aceitos quando compartilhada.
+     SE Nº 1  — não aceita em nova; aumento até 300 kW.
+     SE Nº 2  — nova só em 22/34,5 kV; compartilhada só em 22/34,5 kV.
+     SE Nº 3  — não aceita em nova; aumento até 300 kW.
+     SE Nº 4  — aceita em nova e aumento (sem teto).
+     SE Nº 5  — nova e aumento até 300 kW.
+     SE Nº 6  — não aceita em nova; aumento até 300 kW.
+     SE Nº 8  — nova e aumento até 300 kW. */
+  const SE_CRITERIOS = [
+    { tipo: SE.N1, novaOk: false, aumentoOk: true,  maxKW: 300 },
+    { tipo: SE.N2, novaOk: true,  aumentoOk: true,  tensoes: [22, 34.5],
+      compartilhada: true, tensoesComp: [22, 34.5] },
+    { tipo: SE.N3, novaOk: false, aumentoOk: true,  maxKW: 300 },
+    { tipo: SE.N4, novaOk: true,  aumentoOk: true,  compartilhada: true },
+    { tipo: SE.N5, novaOk: true,  aumentoOk: true,  maxKW: 300 },
+    { tipo: SE.N6, novaOk: false, aumentoOk: true,  maxKW: 300 },
+    { tipo: SE.N8, novaOk: true,  aumentoOk: true,  maxKW: 300 },
+  ];
+
+  /* Lista os tipos de subestação aceitos no cenário informado.
+       finalidade   : "Conexão Nova" | "Aumento de Demanda" | ...
+       tensaoMTkV   : 13.8 | 22 | 34.5
+       compartilhada: "Sim" | "Não" | ""
+       potencia     : kVA instalada (usada como piso de existência: > 29)
+       demanda      : kW contratada — é ela que responde pelos tetos de 300 kW */
+  function tiposSubestacaoPermitidos({ finalidade, tensaoMTkV, compartilhada, potencia, demanda }) {
     const v = parseFloat(tensaoMTkV);
     const p = parseFloat(potencia) || 0;
-    const comp = compartilhada;                 // "Sim" / "Não" / ""
-    const naoComp = (comp === 'Não' || comp === '' || comp == null);
-    const simComp = (comp === 'Sim' || comp === '' || comp == null);
-    const is138 = (v === 13.8);
-    const is22ou345 = (v === 22 || v === 34.5);
+    // O teto das SEs é de DEMANDA (kW). Sem demanda declarada ainda, cai-se na
+    // potência instalada para não liberar modelo que o valor real excluiria.
+    const d = parseFloat(demanda) || p;
+    const ehNova = (finalidade === 'Conexão Nova');
+    const simComp = (compartilhada === 'Sim');
+    if (!v || p <= 29) return []; // sem tensão/potência não há definição
 
-    // Ordem idêntica à fórmula AN3/AL3 (primeira condição satisfeita vence)
-    if (naoComp && is138 && p > 29 && p < 301) return [...SENOVA300KW];
-    if (naoComp && is138 && p > 300)            return [SE.N4];
-    if (naoComp && is22ou345 && p > 29 && p < 301) return [...SENAB30022];
-    if (naoComp && is22ou345 && p > 300)        return [...SE_NOVA_MAIOR300KW];
-    if (simComp && is22ou345 && p > 29)         return [...SECOMP];
-    if (simComp && is138 && p > 29)             return [SE.N4];
-    return []; // cenário sem definição (ex.: potência ≤ 29 kVA ou campos vazios)
+    return SE_CRITERIOS.filter(c => {
+      if (simComp) {
+        // Na compartilhada valem os modelos marcados e suas tensões próprias.
+        if (!c.compartilhada) return false;
+        if (c.tensoesComp && !c.tensoesComp.includes(v)) return false;
+      } else if (c.tensoes && !c.tensoes.includes(v)) return false;
+      if (ehNova && !c.novaOk) return false;
+      if (!ehNova && !c.aumentoOk) return false;
+      if (c.maxKW && d > c.maxKW) return false;
+      return true;
+    }).map(c => c.tipo);
   }
 
-  // Subestações Nº 1, 5, 6 e 8 só existem para potências até 300 kVA
-  const SE_LIMITADAS_300KVA = ['Subestação Nº 1', SE.N5, 'Subestação Nº 6', SE.N8];
+  /* Todos os modelos existentes, na ordem da norma. */
+  function tiposSubestacao() {
+    return SE_CRITERIOS.map(c => c.tipo);
+  }
+
+  /* Filtra uma lista já montada pelo teto de demanda de cada modelo (usado no
+     dropdown "Tipo de Subestação atual", que parte da lista completa). */
   function filtrarTiposPorPotencia(tipos, potencia) {
     const p = parseFloat(potencia) || 0;
-    if (p > 300) return tipos.filter(t => !SE_LIMITADAS_300KVA.includes(t));
-    return [...tipos];
+    if (!p) return [...tipos];
+    return tipos.filter(t => {
+      const c = SE_CRITERIOS.find(x => x.tipo === t);
+      return !c || !c.maxKW || p <= c.maxKW;
+    });
   }
 
   /* =======================================================================
@@ -401,7 +441,8 @@ const CalculoMT = (function () {
     // bloco 3
     calcularMotor, calcularMotores,
     // bloco 5
-    tiposSubestacaoPermitidos, filtrarTiposPorPotencia, SE,
+    tiposSubestacaoPermitidos, filtrarTiposPorPotencia, tiposSubestacao, SE,
+    SE_CRITERIOS,
     // bloco 6
     grupoRamal, textoRamal, imagemRamal, RAMAIS,
     // bloco 7
