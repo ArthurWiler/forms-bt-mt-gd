@@ -2,7 +2,7 @@
 <div class="card">
   <div class="section-eyebrow">Etapa 3</div>
   <h3 class="card-title">Dados da Unidade Consumidora</h3>
-  <div class="grid grid-3">
+  <div class="grid grid-2">
     <div class="field">
       <label>Latitude <span class="req">*</span></label>
       <input
@@ -57,7 +57,7 @@
         oninput="onNumDec(this)"
       />
     </div>
-    <div class="field field--plain col-span-3" id="seBox" style="display: none">
+    <div class="field field--plain col-span-2" id="seBox" style="display: none">
       <label>Tipo de Subestação (Conforme ND 5.3)</label>
       <div class="se-gallery" id="seGalleryGD"></div>
       <span id="seBloqueioMsg" class="field-hint"></span>
@@ -88,13 +88,13 @@
     </table>
   </div>
 
-  <div class="grid grid-3" style="margin-top: 12px">
-    <div class="field col-span-3">
+  <div class="grid grid-2" style="margin-top: 12px">
+    <div class="field col-span-2">
       <label>Tipo de Solicitação <span class="req">*</span></label>
       <select data-k="solicitacao" onchange="onSolicitacao()"></select>
     </div>
 
-    <div class="field col-span-3" id="avisoFormCarga" style="display: none">
+    <div class="field col-span-2" id="avisoFormCarga" style="display: none">
       <div class="cmg-aviso no-print">
         <div class="cmg-aviso-icon" aria-hidden="true"></div>
         <p class="cmg-aviso-texto">
@@ -103,7 +103,7 @@
         </p>
       </div>
     </div>
-    <div class="field col-span-3">
+    <div class="field col-span-2">
       <label>Tipo de edificação <span class="req">*</span></label>
       <select data-k="edificacao"></select>
     </div>
@@ -154,7 +154,7 @@
         <option>Sim</option>
       </select>
     </div>
-    <div class="field field--plain col-span-3" data-noopt>
+    <div class="field field--plain col-span-2" data-noopt>
       <label>O padrão a ser ligado está a menos de 30 m do poste da CEMIG?</label>
       <div id="cardsDistMenor30"></div>
       <select data-k="distMenor30" style="display: none" aria-hidden="true">
@@ -163,7 +163,7 @@
         <option>Sim</option>
       </select>
     </div>
-    <div class="field field--plain col-span-3" data-noopt>
+    <div class="field field--plain col-span-2" data-noopt>
       <label>
         O telhado será arrendado para pessoa/empresa diferente do
         proprietário?
@@ -180,7 +180,7 @@
       </select>
     </div>
     <div
-      class="field field--plain col-span-3"
+      class="field field--plain col-span-2"
       id="dubBox"
       style="display: none"
       data-noopt
@@ -216,7 +216,7 @@
       <label>A instalação existente é atendida em BT ou MT?</label>
       <select data-k="instExistenteBTMT" onchange="onInstExistenteBTMT()"></select>
     </div>
-    <div class="field col-span-3" id="novaProtecaoBox" style="display: none">
+    <div class="field col-span-2" id="novaProtecaoBox" style="display: none">
       <label>Nova Proteção <span class="req">*</span></label>
       <input type="text" data-k="novaProtecao" placeholder=" " />
       <span class="field-hint">

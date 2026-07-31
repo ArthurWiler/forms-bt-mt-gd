@@ -2,7 +2,7 @@
 <div class="card">
   <div class="section-eyebrow">Etapa 6</div>
   <h3 class="card-title">Dados da Geração</h3>
-  <div class="grid grid-3">
+  <div class="grid grid-2">
     <div class="field">
       <label>Tipo de Fonte Primária <span class="req">*</span></label>
       <select data-k="fontePrimaria" data-sem-vazio onchange="onFonte()"></select>
@@ -32,7 +32,7 @@
         Usina já conectada — informe a potência atualmente instalada.
       </span>
     </div>
-    <div class="field col-span-3" id="fastExcedeAviso" style="display: none">
+    <div class="field col-span-2" id="fastExcedeAviso" style="display: none">
       <div class="cmg-aviso cmg-aviso--warn no-print">
         <div class="cmg-aviso-icon" aria-hidden="true"></div>
         <p class="cmg-aviso-texto">
@@ -55,7 +55,7 @@
       <select data-k="modalidade"></select>
       <span id="modalidadeHint" class="field-hint"></span>
     </div>
-    <div class="field col-span-3" id="fastBanner" style="display: none">
+    <div class="field col-span-2" id="fastBanner" style="display: none">
       <div class="gd-modo-banner">
         <strong>Modalidade definida automaticamente: Autoconsumo local</strong>
         <span>
@@ -78,7 +78,7 @@
 
   <div id="fvBlocos">
     <div class="gd-subhead">Central Geradora Fotovoltaica — Módulos</div>
-    <div class="grid grid-3">
+    <div class="grid grid-2">
       <div class="field">
         <label>Modelo dos Módulos</label>
         <input type="text" data-k="modeloModulos" placeholder=" " />
@@ -121,7 +121,7 @@
       </div>
     </div>
     <div class="gd-subhead">Central Geradora Fotovoltaica — Inversores</div>
-    <div class="grid grid-3">
+    <div class="grid grid-2">
       <div class="field">
         <label>Modelo dos Inversores</label>
         <input type="text" data-k="modeloInversores" placeholder=" " />
@@ -167,7 +167,7 @@
   </div>
 
   <div class="gd-subhead">Outorga ou Registro (preencher somente se aplicável)</div>
-  <div class="grid grid-3">
+  <div class="grid grid-2">
     <div class="field col-span-2">
       <label>CEG do empreendimento</label>
       <input type="text" data-k="ceg" placeholder=" " />
@@ -189,7 +189,7 @@
         oninput="onSoDigitos(this)"
       />
     </div>
-    <div class="field col-span-3">
+    <div class="field col-span-2">
       <label>Tipo do Ato de Outorga ou Registro</label>
       <input type="text" data-k="tipoAtoOutorga" placeholder=" " />
     </div>

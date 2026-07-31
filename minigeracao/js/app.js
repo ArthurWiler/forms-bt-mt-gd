@@ -632,7 +632,7 @@ function renderFontes() {
     const bloco = document.createElement("div");
     bloco.innerHTML = `
       <div class="gd-subhead">4.${i + 1} — Dados da Fonte de Geração ${i + 1}</div>
-      <div class="grid grid-3">
+      <div class="grid grid-2">
         <div class="field">
           <label>Tipo de Fonte Primária <span class="req">*</span></label>
           <select data-f="fontePrimaria" data-sem-vazio>
@@ -653,7 +653,7 @@ function renderFontes() {
         </div>
         ${
           f.tipoGeracao === "Outra (especificar):"
-            ? `<div class="field col-span-3">
+            ? `<div class="field col-span-2">
           <label>Especificar</label>
           <input type="text" data-f="tipoGeracaoOutro" placeholder=" " value="${f.tipoGeracaoOutro}" />
         </div>`
@@ -662,7 +662,7 @@ function renderFontes() {
       </div>
       ${
         ehFV
-          ? `<div class="grid grid-3" style="margin-top: 12px">
+          ? `<div class="grid grid-2" style="margin-top: 12px">
         <div class="field">
           <label>Potência Total Módulos (kW)</label>
           <input type="text" data-f="potTotalModulos" data-num placeholder=" " value="${f.potTotalModulos}" />
@@ -703,7 +703,7 @@ function renderFontes() {
       </div>`
           : ""
       }
-      <div class="grid grid-3" style="margin-top: 12px">
+      <div class="grid grid-2" style="margin-top: 12px">
         <div class="field col-span-2">
           <label>CEG do empreendimento (se houver outorga)</label>
           <input type="text" data-f="ceg" placeholder=" " value="${f.ceg}" />
@@ -720,7 +720,7 @@ function renderFontes() {
           <label>Ano do Ato</label>
           <input type="text" data-f="anoAtoOutorga" data-int placeholder=" " value="${f.anoAtoOutorga}" />
         </div>
-        <div class="field col-span-3">
+        <div class="field col-span-2">
           <label>Tipo do Ato de Outorga/Registro</label>
           <input type="text" data-f="tipoAtoOutorga" placeholder=" " value="${f.tipoAtoOutorga}" />
         </div>

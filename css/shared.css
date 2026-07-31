@@ -2665,15 +2665,19 @@ label.restricao-aceite input[type="checkbox"] {
   font-weight: 600;
   color: var(--cmg-text);
 }
-/* Loteamento/MT/Desistência ONLY (páginas vanilla): their step numbers are
-   static HTML and are never rewritten to a check by JS (the React forms swap
-   the text directly). So the "done" check is rendered via CSS here. Justified
-   exception — it is a delivery mechanism for the same visual, not a
-   duplicated style. */
-:is(.cemig-lote, .cemig-mtform, .cemig-desist) .vstep.done .vstep-num {
+/* Loteamento/MT/Desistência/Micro/Minigeração ONLY (páginas vanilla): their
+   step numbers are static HTML and are never rewritten to a check by JS (the
+   React forms swap the text directly). So the "done" check is rendered via CSS
+   here. Justified exception — it is a delivery mechanism for the same visual,
+   not a duplicated style. */
+:is(.cemig-lote, .cemig-mtform, .cemig-desist, .cemig-microgd, .cemig-minigd)
+  .vstep.done
+  .vstep-num {
   font-size: 0;
 }
-:is(.cemig-lote, .cemig-mtform, .cemig-desist) .vstep.done .vstep-num::after {
+:is(.cemig-lote, .cemig-mtform, .cemig-desist, .cemig-microgd, .cemig-minigd)
+  .vstep.done
+  .vstep-num::after {
   content: "✓";
   font-size: 11px;
 }
