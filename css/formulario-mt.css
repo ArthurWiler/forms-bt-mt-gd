@@ -271,7 +271,10 @@
   border-radius: var(--cmg-radius);
   /* mesmo passo do .grid global — os cards respiram como os campos */
   margin-top: 14px;
-  overflow: hidden;
+  /* SEM overflow:hidden — o balão da dica (i) (.cmg-hint::after, shared.css)
+     é absoluto e sobe acima do campo; recortá-lo aqui o deixava cortado.
+     O arredondamento que o overflow garantia é feito pelo próprio cabeçalho
+     (border-radius herdado abaixo); o corpo não tem fundo próprio. */
 }
 .cemig-mtform .motor-card-head,
 .cemig-mtform .trafo-card-head {
@@ -282,9 +285,18 @@
   padding: 14px 18px;
   background: none;
   border: none;
+  /* Acompanha os cantos do card (antes vinha do overflow:hidden do pai) —
+     relevante no realce de foco e em qualquer fundo do cabeçalho. */
+  border-radius: var(--cmg-radius) var(--cmg-radius) 0 0;
   cursor: pointer;
   text-align: left;
   font-family: inherit;
+}
+/* Card fechado: o cabeçalho é o único conteúdo visível (o corpo usa [hidden]),
+   então ele arredonda os quatro cantos. */
+.cemig-mtform .motor-card:not(.is-open) .motor-card-head,
+.cemig-mtform .trafo-card:not(.is-open) .trafo-card-head {
+  border-radius: var(--cmg-radius);
 }
 .cemig-mtform .motor-card-head:focus-visible,
 .cemig-mtform .trafo-card-head:focus-visible {
