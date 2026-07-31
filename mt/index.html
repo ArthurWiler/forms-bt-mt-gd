@@ -985,8 +985,8 @@
                   <option>Não</option>
                 </select>
               </div>
+              <div class="col-span-2" id="compartilhadaAlert"></div>
             </div>
-            <div id="compartilhadaAlert"></div>
 
             <div id="cubiculosBox" style="display: none">
               <h4 class="card-subtitle divider">
@@ -1425,9 +1425,15 @@
                       <tbody id="escalonadaBody"></tbody>
                     </table>
                   </div>
-                  <button class="btn-add" onclick="addEscalonada()">
-                    + Adicionar etapa de demanda
-                  </button>
+                  <div class="motores-add">
+                    <button
+                      type="button"
+                      class="btn btn-ghost motores-add-btn"
+                      onclick="addEscalonada()"
+                    >
+                      + Adicionar etapa de demanda
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

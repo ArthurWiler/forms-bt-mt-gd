@@ -111,6 +111,39 @@
   color: var(--cmg-neutral-600);
 }
 /* .tbl-scroll (caixa externa com borda/raio) vem de shared.css. */
+/* ---- "Início de Uso" (input[type=month] em célula de tabela) ----
+   Mesmo padrão do campo de data do BT (Data de Nascimento): ícone de
+   calendário decorativo sempre visível, com o indicador NATIVO invisível
+   por baixo cobrindo a mesma área (regras em shared.css, já valendo para
+   [type=month]). Aqui o ancoramento é no .tbl-cal — a célula não é um
+   .field, então não há como reusar `.field > .field-hint-icon`. */
+.cemig-mtform .tbl td .tbl-cal {
+  position: relative;
+  display: block;
+}
+.cemig-mtform .tbl td .tbl-cal .field-cal-icon {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  pointer-events: none;
+}
+/* Texto do campo no padrão canônico do valor de campo (Figma / shared.css:
+   16px, +0.2px, neutra/700) — igual ao "Data de Nascimento" do BT, em vez
+   dos 13/14px genéricos das células da tabela. O padding-right reserva o
+   espaço do ícone. Sem filtrar por [type=month]: form-marcadores.js troca
+   o campo vazio para type=text (esconde o "mm/aaaa" nativo) e devolve o
+   month no foco. */
+.cemig-mtform .tbl td .tbl-cal input {
+  padding-right: 32px;
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: 0.2px;
+  color: var(--cmg-text-strong);
+}
 /* Sem spinner nos campos numéricos (mesmo ajuste do BT). */
 .cemig-mtform input[type="number"]::-webkit-inner-spin-button,
 .cemig-mtform input[type="number"]::-webkit-outer-spin-button {
@@ -122,26 +155,10 @@
   appearance: textfield;
 }
 
-/* ---- Botões de linha dinâmica (adicionar/remover) ---- */
-.cemig-mtform .btn-add {
-  margin-top: 12px;
-  background: var(--cmg-surface);
-  color: var(--cmg-green-600);
-  border: 1.5px dashed var(--cmg-green-600);
-  border-radius: 8px;
-  padding: 10px 16px;
-  font-family: var(--cmg-font-family);
-  font-weight: var(--cmg-fw-bold);
-  font-size: 13px;
-  cursor: pointer;
-  transition: background 0.15s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-}
-.cemig-mtform .btn-add:hover {
-  background: var(--cmg-surface-accent);
-}
+/* ---- Botões de linha dinâmica (adicionar/remover) ----
+   O "+ Adicionar" (antigo .btn-add, pílula tracejada só do MT) passou a usar
+   o padrão canônico do BT: `.motores-add` + `.btn.btn-ghost.motores-add-btn`
+   (shared.css). A regra local foi removida por ficar sem uso. */
 .cemig-mtform .btn-del {
   background: transparent;
   color: var(--cmg-danger-500);
@@ -356,6 +373,12 @@
   background: #fdf3d8;
   color: #96690a;
 }
+/* "Sem alteração" (3ª opção, só nos trafos de cubículo): neutro, como o
+   badge de cubículo já existente — o equipamento permanece como está. */
+.cemig-mtform .cub-trafo-titulo .trafo-status.is-existente {
+  background: var(--cmg-neutral-200);
+  color: var(--cmg-neutral-700);
+}
 /* Radios "Trocar este transformador / Novo transformador" — botões com
    aparência de radio nativo, no padrão dos demais cards de opção. */
 .cemig-mtform .trafo-troca {
@@ -462,13 +485,12 @@
   margin-top: 14px;
 }
 /* Tabela de demanda escalonada dentro do card do cubículo — segue o mesmo
-   passo vertical dos demais blocos e mantém o botão "+ Adicionar" colado
-   logo abaixo da tabela. */
+   passo vertical dos demais blocos. O botão "+ Adicionar etapa de demanda"
+   usa o padrão canônico do BT (.motores-add + .btn.btn-ghost, shared.css),
+   cujo wrapper já traz o próprio espaçamento — daí não haver regra de
+   margem para ele aqui. */
 .cemig-mtform .cub-escalonada-box {
   margin-top: 14px;
-}
-.cemig-mtform .cub-escalonada-box .btn-add {
-  margin-top: 12px;
 }
 /* Utilitário do bloco de subestação: substitui os style="margin-top:16px"
    repetidos no HTML. Quando vem logo depois de um .card-sub / .card-subtitle,

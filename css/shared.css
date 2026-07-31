@@ -1073,7 +1073,7 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .field {
   display: flex;
   flex-direction: column;
-  gap: var(--cmg-space-1);
+  /*gap: var(--cmg-space-1);*/
 }
 .cemig-form .field label {
   font-family: var(--cmg-font-family);
@@ -1082,7 +1082,7 @@ label.restricao-aceite input[type="checkbox"] {
   font-weight: var(--cmg-fw-regular);
   letter-spacing: var(--cmg-ls-tight);
   color: var(--cmg-text-muted);
-  margin-bottom: var(--cmg-space-1);
+  /*margin-bottom: var(--cmg-space-1);*/
 }
 .cemig-form .field .req {
   color: var(--cmg-danger-500);

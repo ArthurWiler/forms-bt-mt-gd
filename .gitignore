@@ -1,1 +1,5 @@
 .claude/
+
+# Skills de agente instaladas localmente (npx skills add)
+.agents/
+skills-lock.json

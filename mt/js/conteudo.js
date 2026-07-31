@@ -273,8 +273,12 @@ function conteudoFormularioMT() {
             const id = "TRF" + String(i + 1).padStart(2, "0");
             const troca = state.finalidade && state.finalidade !== "Conexão Nova";
             if (!troca) return [[id, "", t.demanda, t.potencia, t.relacao]];
-            if (!t.substituir)
-              return [[id, "Novo", t.demanda, t.potencia, t.relacao]];
+            if (!t.substituir) {
+              // Declara-se todo o parque existente, alterado ou não: um trafo
+              // marcado como "sem" permanece: não pode sair como "Novo".
+              const sit = t.situacao === "sem" ? "Sem alteração" : "Novo";
+              return [[id, sit, t.demanda, t.potencia, t.relacao]];
+            }
             return [
               [id, "Atual", t.demanda, t.potencia, t.relacao],
               [id, "Substituto", t.novaDemanda, t.novaPotencia, t.novaRelacao],

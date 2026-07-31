@@ -345,6 +345,7 @@ function onFinalidade() {
   if (ehNova) {
     const limpar = (t) => {
       t.substituir = false;
+      t.situacao = "novo"; // idem nos trafos de cubículo (3 situações)
       t.novaPotencia = "";
       t.novaDemanda = "";
     };
@@ -1467,6 +1468,9 @@ function novoTrafo() {
     // true, o trafo já existe e será trocado — os campos acima descrevem o
     // equipamento ATUAL e os `nova*` descrevem o que entra no lugar.
     substituir: false,
+    // Situação declarada pelo usuário: "troca" | "novo" | "sem" (inalterado).
+    // Ver TRAFO_SITUACOES / situacaoTrafo — `substituir` é derivado dela.
+    situacao: "novo",
     novaPotencia: "",
     novaDemanda: "",
     novaRelacao: "8",
@@ -1493,16 +1497,40 @@ function trafosFuturos(lista) {
     quantidade: t.quantidade,
   }));
 }
-function setTrafoSubstituir(i, valor) {
-  const t = trafos[i];
-  if (!t) return;
-  t.substituir = valor;
+/* Situação de um transformador em finalidade ≠ Conexão Nova. Vale tanto para
+   o trafo individual quanto para o de cubículo: em ambos os casos declara-se
+   TODO o parque existente, alterado ou não —
+     "troca" → o equipamento atual sai e outro entra (campos nova*);
+     "novo"  → equipamento acrescentado à instalação;
+     "sem"   → já existe e permanece inalterado.
+   `substituir` (booleano) segue derivado daqui — só "troca" o liga — porque é
+   o que potenciaFuturaTrafo/demandaFuturaTrafo e o PDF já leem. */
+const TRAFO_SITUACOES = [
+  { v: "troca", label: "Trocar este transformador" },
+  { v: "novo", label: "Novo transformador" },
+  { v: "sem", label: "Sem alteração" },
+];
+/* Tolerante a estado anterior à 3ª opção (quando só havia `substituir`). */
+function situacaoTrafo(t) {
+  return t.situacao || (t.substituir ? "troca" : "novo");
+}
+/* Aplica a situação a um trafo qualquer (individual ou de cubículo). */
+function _aplicarSituacaoTrafo(t, valor) {
+  t.situacao = valor;
+  // Só a troca usa os campos nova*; nas demais o equipamento é o dos campos
+  // principais, então `substituir` fica falso (é o que o cálculo/PDF leem).
+  t.substituir = valor === "troca";
   // Ao marcar a troca pela primeira vez, semeia os campos novos com os
   // atuais — o usuário costuma alterar só a potência.
-  if (valor && t.novaPotencia === "" && t.novaDemanda === "") {
+  if (t.substituir && t.novaPotencia === "" && t.novaDemanda === "") {
     t.novaPotencia = t.potencia;
     t.novaDemanda = t.demanda;
   }
+}
+function setTrafoSituacao(i, valor) {
+  const t = trafos[i];
+  if (!t) return;
+  _aplicarSituacaoTrafo(t, valor);
   renderTrafos();
   recalcTecnico();
 }
@@ -1555,25 +1583,24 @@ function renderTrafos() {
     .map((t, i) => {
       const aberto = trafosAbertos.has(i);
       const troca = permiteTrocaTrafo();
-      const subst = troca && t.substituir;
+      const situacao = situacaoTrafo(t);
+      const subst = troca && situacao === "troca";
+      // "Sem alteração" é neutro (.is-existente): o equipamento já existe e
+      // permanece — não é novo nem uma substituição.
+      const semAlt = troca && situacao === "sem";
       // Em Conexão Nova não há badge de status: todo trafo é novo.
       const status = !troca
         ? ""
-        : `<span class="trafo-status${subst ? " is-substituido" : " is-novo"}">${subst ? "Substituído" : "Novo"}</span>`;
+        : `<span class="trafo-status${subst ? " is-substituido" : semAlt ? " is-existente" : " is-novo"}">${subst ? "Substituído" : semAlt ? "Sem alteração" : "Novo"}</span>`;
       const radios = !troca
         ? ""
         : `<div class="trafo-troca" role="radiogroup" aria-label="Situação do transformador ${i + 1}">
-          ${[
-            { v: true, label: "Trocar este transformador" },
-            { v: false, label: "Novo transformador" },
-          ]
-            .map(
-              (o) =>
-                `<button type="button" role="radio" class="trafo-troca-opt${t.substituir === o.v ? " is-active" : ""}"
-                       aria-checked="${t.substituir === o.v}"
-                       onclick="setTrafoSubstituir(${i},${o.v})"><span class="trafo-troca-dot" aria-hidden="true"></span>${o.label}</button>`,
-            )
-            .join("")}
+          ${TRAFO_SITUACOES.map(
+            (o) =>
+              `<button type="button" role="radio" class="trafo-troca-opt${situacao === o.v ? " is-active" : ""}"
+                       aria-checked="${situacao === o.v}"
+                       onclick="setTrafoSituacao(${i},'${o.v}')"><span class="trafo-troca-dot" aria-hidden="true"></span>${o.label}</button>`,
+          ).join("")}
         </div>`;
       // Num trafo substituído a primeira linha descreve o equipamento atual;
       // a segunda, o que entra no lugar.
@@ -1687,6 +1714,14 @@ function _cubiculoEscalonadaCardsHTML(i, atual) {
     `</div>`
   );
 }
+/* Campo "Início de Uso" das tabelas de demanda escalonada. Reusa o padrão do
+   campo de data do BT (Data de Nascimento): ícone de calendário decorativo
+   sempre visível sobre o indicador nativo invisível (CSS em
+   formulario-mt.css / shared.css). `alvo` é a expressão de destino do valor
+   (ex.: "escalonada[0].inicio"), interpolada direto no oninput como antes. */
+function _inicioUsoHTML(alvo, valor) {
+  return `<span class="tbl-cal"><input type="month" value="${valor}" oninput="${alvo}=this.value"><img class="field-cal-icon" src="../imgs/calendar.svg" alt="" aria-hidden="true"></span>`;
+}
 /* Tabela de etapas — colunas conforme a modalidade do cubículo. */
 function _cubiculoEscalonadaTabelaHTML(i, c) {
   if (c.escalonada !== "Sim") return "";
@@ -1703,10 +1738,10 @@ function _cubiculoEscalonadaTabelaHTML(i, c) {
       azul
         ? `<tr><td><input type="number" step="any" value="${e.ponta}" placeholder="kW" oninput="${ref}[${k}].ponta=this.value;recalcTecnico();validarDemandaCubiculo(${i})"></td>
              <td><input type="number" step="any" value="${e.foraponta}" placeholder="kW" oninput="${ref}[${k}].foraponta=this.value;recalcTecnico();validarDemandaCubiculo(${i})"></td>
-             <td><input type="month" value="${e.inicio}" oninput="${ref}[${k}].inicio=this.value"></td>
+             <td>${_inicioUsoHTML(`${ref}[${k}].inicio`, e.inicio)}</td>
              <td><button class="btn-del" onclick="delEtapaEscalonadaCub(${i},${k})">×</button></td></tr>`
         : `<tr><td><input type="number" step="any" value="${e.demanda}" placeholder="kW" oninput="${ref}[${k}].demanda=this.value;recalcTecnico();validarDemandaCubiculo(${i})"></td>
-             <td><input type="month" value="${e.inicio}" oninput="${ref}[${k}].inicio=this.value"></td>
+             <td>${_inicioUsoHTML(`${ref}[${k}].inicio`, e.inicio)}</td>
              <td><button class="btn-del" onclick="delEtapaEscalonadaCub(${i},${k})">×</button></td></tr>`,
     )
     .join("");
@@ -1714,7 +1749,7 @@ function _cubiculoEscalonadaTabelaHTML(i, c) {
       <div class="tbl-scroll">
         <table class="tbl"><thead>${head}</thead><tbody>${linhas}</tbody></table>
       </div>
-      <button class="btn-add" onclick="addEtapaEscalonadaCub(${i})">+ Adicionar etapa de demanda</button>
+      <div class="motores-add"><button type="button" class="btn btn-ghost motores-add-btn" onclick="addEtapaEscalonadaCub(${i})">+ Adicionar etapa de demanda</button></div>
     </div>`;
 }
 /* Radio "Sobre a subestação" — nova x já existente. Numa subestação que já
@@ -1849,15 +1884,12 @@ function setCubiculoModalidade(i, valor) {
   cubiculos[i].modalidade = valor;
   renderCubiculos();
 }
-/* Mesma regra dos trafos individuais, aplicada ao trafo de um cubículo. */
-function setTrafoCubSubstituir(i, j, valor) {
+/* Mesmas três situações do trafo individual (TRAFO_SITUACOES), aplicadas ao
+   trafo de um cubículo. */
+function setTrafoCubSituacao(i, j, valor) {
   const t = cubiculos[i]?.trafos[j];
   if (!t) return;
-  t.substituir = valor;
-  if (valor && t.novaPotencia === "" && t.novaDemanda === "") {
-    t.novaPotencia = t.potencia;
-    t.novaDemanda = t.demanda;
-  }
+  _aplicarSituacaoTrafo(t, valor);
   renderCubiculos();
   recalcCubiculo(i);
 }
@@ -1867,10 +1899,12 @@ function setCubiculoExistente(i, valor) {
   const c = cubiculos[i];
   if (!c) return;
   c.existente = valor;
-  // Cubículo novo não tem trafo a substituir: limpa a marcação dos seus trafos.
+  // Cubículo novo não tem trafo a substituir nem a manter: limpa a marcação
+  // dos seus trafos (todos passam a ser "novo").
   if (!valor)
     c.trafos.forEach((t) => {
       t.substituir = false;
+      t.situacao = "novo";
       t.novaPotencia = "";
       t.novaDemanda = "";
     });
@@ -1906,24 +1940,23 @@ function renderCubiculos() {
       const trocaCub = permiteTrocaTrafo();
       const trafoBlocos = c.trafos
         .map((t, j) => {
-          const subst = trocaCub && t.substituir;
+          const situacao = situacaoTrafo(t);
+          const subst = trocaCub && situacao === "troca";
+          // Badge: "Sem alteração" é neutro (.is-existente) — não é um
+          // equipamento novo nem uma substituição.
+          const semAlt = trocaCub && situacao === "sem";
           const status = !trocaCub
             ? ""
-            : `<span class="trafo-status${subst ? " is-substituido" : " is-novo"}">${subst ? "Substituído" : "Novo"}</span>`;
+            : `<span class="trafo-status${subst ? " is-substituido" : semAlt ? " is-existente" : " is-novo"}">${subst ? "Substituído" : semAlt ? "Sem alteração" : "Novo"}</span>`;
           const radios = !trocaCub
             ? ""
             : `<div class="trafo-troca" role="radiogroup" aria-label="Situação do transformador ${j + 1} do cubículo ${i + 1}">
-          ${[
-            { v: true, label: "Trocar este transformador" },
-            { v: false, label: "Novo transformador" },
-          ]
-            .map(
-              (o) =>
-                `<button type="button" role="radio" class="trafo-troca-opt${t.substituir === o.v ? " is-active" : ""}"
-                       aria-checked="${t.substituir === o.v}"
-                       onclick="setTrafoCubSubstituir(${i},${j},${o.v})"><span class="trafo-troca-dot" aria-hidden="true"></span>${o.label}</button>`,
-            )
-            .join("")}
+          ${TRAFO_SITUACOES.map(
+            (o) =>
+              `<button type="button" role="radio" class="trafo-troca-opt${situacao === o.v ? " is-active" : ""}"
+                       aria-checked="${situacao === o.v}"
+                       onclick="setTrafoCubSituacao(${i},${j},'${o.v}')"><span class="trafo-troca-dot" aria-hidden="true"></span>${o.label}</button>`,
+          ).join("")}
         </div>`;
           const linhaNova = !subst
             ? ""
@@ -1992,6 +2025,9 @@ function renderCubiculos() {
     .join("");
   cubiculos.forEach((c, i) => validarDemandaCubiculo(i));
   recalcTecnico();
+  // Idem renderEscalonada: a tabela de etapas do cubículo traz os campos
+  // "Início de Uso" (input[type=month]) e precisa da convenção de datas.
+  reaplicarMarcadores();
 }
 
 /* --- Motores ---
@@ -2626,13 +2662,17 @@ function renderEscalonada() {
     tr.innerHTML = azul
       ? `<td><input type="number" step="any" value="${e.ponta}" placeholder="kW" oninput="escalonada[${i}].ponta=this.value"></td>
          <td><input type="number" step="any" value="${e.foraponta}" placeholder="kW" oninput="escalonada[${i}].foraponta=this.value"></td>
-         <td><input type="month" value="${e.inicio}" oninput="escalonada[${i}].inicio=this.value"></td>
+         <td>${_inicioUsoHTML(`escalonada[${i}].inicio`, e.inicio)}</td>
          <td><button class="btn-del" onclick="delEscalonada(${i})">×</button></td>`
       : `<td><input type="number" step="any" value="${e.demanda}" placeholder="kW" oninput="escalonada[${i}].demanda=this.value"></td>
-         <td><input type="month" value="${e.inicio}" oninput="escalonada[${i}].inicio=this.value"></td>
+         <td>${_inicioUsoHTML(`escalonada[${i}].inicio`, e.inicio)}</td>
          <td><button class="btn-del" onclick="delEscalonada(${i})">×</button></td>`;
     body.appendChild(tr);
   });
+  // Os campos "Início de Uso" nascem aqui: sem reaplicar, o input[type=month]
+  // recém-injetado mantém o "mm/aaaa" nativo (convenção do projeto é mostrar
+  // só o rótulo enquanto vazio) e não recebe os handlers de foco/blur.
+  reaplicarMarcadores();
 }
 
 /* ===== Alteração: troca de SE ===== */
