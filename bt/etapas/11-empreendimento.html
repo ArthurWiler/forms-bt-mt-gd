@@ -45,71 +45,69 @@
         oninput="onEmprGate()"
       />
     </div>
+    <!-- Endereço da obra no MESMO grid dos campos acima, para o espaçamento
+         (gap) ficar uniforme entre todas as linhas da etapa. Por isso não pode
+         haver um wrapper próprio em volta: a revelação (só depois de cliente +
+         documento válido + ART) é feita campo a campo pela classe
+         .empr-detalhe — ver onEmprGate em js/coletivo-app.js. -->
+    <div class="field empr-detalhe">
+      <label>CEP <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="obra.cep"
+        placeholder="00000-000"
+        oninput="onCepBT(this, 'obra')"
+      />
+      <span id="cepStatusObra" class="field-hint"></span>
+    </div>
+    <div class="field col-span-2 empr-detalhe">
+      <label>Endereço <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="obra.endereco"
+        placeholder=" "
+        onblur="onEnderecoUrbanoBT()"
+      />
+    </div>
+    <div class="field empr-detalhe">
+      <label>Nº <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="obra.num"
+        placeholder=" "
+        onblur="onEnderecoUrbanoBT()"
+      />
+    </div>
+    <div class="field empr-detalhe">
+      <label>Bairro <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="obra.bairro"
+        placeholder=" "
+        onblur="onEnderecoUrbanoBT()"
+      />
+    </div>
+    <div class="field empr-detalhe">
+      <label>Cidade / Município <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="obra.cidade"
+        placeholder=" "
+        onblur="onEnderecoUrbanoBT()"
+      />
+    </div>
+    <div class="field empr-detalhe">
+      <label>Estado <span class="req">*</span></label>
+      <input type="text" data-k="obra.estado" placeholder=" " />
+    </div>
   </div>
 
-  <div id="emprDetalhes">
-    <div class="grid grid-2" style="margin-top: 14px">
-      <div class="field">
-        <label>CEP <span class="req">*</span></label>
-        <div style="display: flex; gap: 8px; align-items: center">
-          <div style="max-width: 180px">
-            <input
-              type="text"
-              data-k="obra.cep"
-              placeholder="00000-000"
-              oninput="onCepBT(this, 'obra')"
-            />
-          </div>
-          <span id="cepStatusObra"></span>
-        </div>
-      </div>
-      <div class="field col-span-2">
-        <label>Endereço <span class="req">*</span></label>
-        <input
-          type="text"
-          data-k="obra.endereco"
-          placeholder=" "
-          onblur="onEnderecoUrbanoBT()"
-        />
-      </div>
-      <div class="field">
-        <label>Nº <span class="req">*</span></label>
-        <input
-          type="text"
-          data-k="obra.num"
-          placeholder=" "
-          onblur="onEnderecoUrbanoBT()"
-        />
-      </div>
-      <div class="field">
-        <label>Bairro <span class="req">*</span></label>
-        <input
-          type="text"
-          data-k="obra.bairro"
-          placeholder=" "
-          onblur="onEnderecoUrbanoBT()"
-        />
-      </div>
-      <div class="field">
-        <label>Cidade / Município <span class="req">*</span></label>
-        <input
-          type="text"
-          data-k="obra.cidade"
-          placeholder=" "
-          onblur="onEnderecoUrbanoBT()"
-        />
-      </div>
-      <div class="field">
-        <label>Estado <span class="req">*</span></label>
-        <input type="text" data-k="obra.estado" placeholder=" " />
-      </div>
-    </div>
+  <!-- As perguntas de distância/padrão pronto e os campos de rede BT e
+       transformador vivem na etapa "Dados das unidades" (fluxo condomínio,
+       etapas/15-unidades-torres.html): são características do atendimento de
+       cada unidade, não do cadastro do empreendimento. -->
 
-    <!-- As perguntas de distância/padrão pronto e os campos de rede BT e
-         transformador vivem na etapa "Dados das unidades" (fluxo condomínio,
-         etapas/15-unidades-torres.html): são características do atendimento de
-         cada unidade, não do cadastro do empreendimento. -->
-
+  <div id="emprDetalhes" style="display: none">
     <div class="mapa-obra divider">
       <p class="mapa-hint">
         Confirme a localização da unidade no mapa. Se o pin estiver incorreto,

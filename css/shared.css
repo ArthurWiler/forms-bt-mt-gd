@@ -1479,6 +1479,14 @@ label.restricao-aceite input[type="checkbox"] {
   bottom: -20px;
   margin: 0;
 }
+/* Campos revelados por etapa (.empr-detalhe): o endereço da obra divide o grid
+   com os campos de identificação do empreendimento (para o gap ficar uniforme),
+   mas só aparece depois de cliente + documento + ART. Nascem ocultos aqui para
+   não haver flash antes do onEmprGate; o JS mostra/esconde por style inline,
+   que vence esta regra. */
+.cemig-form .field.empr-detalhe {
+  display: none;
+}
 /* Campo somente-leitura (.readonly-val) no MESMO visual do Padrão B: como
    não há <input>/<select>, a heurística :has(input,select) não o alcança —
    aqui replicamos a caixa flutuante para um valor fixo (ex.: "Nº Predial"
@@ -3390,6 +3398,168 @@ label.restricao-aceite input[type="checkbox"] {
   .cemig-form .cmg-modal-rodape .btn {
     width: 100%;
     min-width: 0;
+  }
+}
+
+/* ------------------------------------------------------------
+   Modal "Replicar dados" — gerenciador de replicações entre torres
+   Variante do .cmg-modal com duas telas (lista das regras e o
+   formulário origem/destinos). Montado por
+   abrirGerenciadorReplicacao() em bt/js/coletivo-app.js.
+   ------------------------------------------------------------ */
+.cemig-form .cmg-modal-replic {
+  max-width: 620px;
+}
+/* Lista das replicações já configuradas — mesma caixa da tabela de faixas. */
+.cemig-form .cmg-replic-lista {
+  width: 100%;
+  border: 1px solid var(--cmg-border, #d1d4d3);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.cemig-form .cmg-replic-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  font-family: var(--cmg-font-family);
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--cmg-text-strong, #041e18);
+}
+.cemig-form .cmg-replic-linha + .cmg-replic-linha {
+  border-top: 1px solid var(--cmg-border, #d1d4d3);
+}
+.cemig-form .cmg-replic-rotulo {
+  min-width: 0;
+}
+/* Replicação de UNIDADES: a regra ocupa duas linhas — a UC modelo e, abaixo,
+   o que ela faz (completar a torre de origem + torres de destino). */
+.cemig-form .cmg-replic-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.cemig-form .cmg-replic-alvos {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--cmg-neutral-600, #364b46);
+}
+.cemig-form .cmg-replic-acoes {
+  display: flex;
+  flex: none;
+  gap: 4px;
+}
+/* Editar / Excluir: links de ação compactos, sem a caixa do .btn. */
+.cemig-form .cmg-replic-acao {
+  min-width: 0;
+  min-height: 0;
+  padding: 4px 8px;
+  font-size: 14px;
+  line-height: 24px;
+  text-decoration: underline;
+}
+.cemig-form .cmg-replic-vazio {
+  margin: 0;
+  padding: 16px;
+  text-align: center;
+  font-family: var(--cmg-font-family);
+  font-size: 14px;
+  line-height: 24px;
+  color: var(--cmg-neutral-600, #364b46);
+}
+/* Formulário de adicionar/editar: Origem (select) + Destinos (checkboxes) */
+.cemig-form .cmg-replic-campo {
+  width: 100%;
+}
+.cemig-form .cmg-replic-campo + .cmg-replic-campo {
+  margin-top: var(--cmg-space-4, 16px);
+}
+.cemig-form .cmg-replic-label {
+  display: block;
+  margin-bottom: 8px;
+  font-family: var(--cmg-font-family);
+  font-weight: var(--cmg-fw-bold, 700);
+  font-size: 14px;
+  line-height: 24px;
+  letter-spacing: 0.2px;
+  color: var(--cmg-neutral-600, #364b46);
+}
+.cemig-form .cmg-replic-campo select {
+  width: 100%;
+  box-sizing: border-box;
+  height: 48px;
+  padding: 4px 40px 4px 16px;
+  border: 1px solid var(--cmg-neutral-400, #8c9895);
+  border-radius: 4px;
+  background-color: var(--cmg-surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M6 9l6 6 6-6' stroke='%23364b46' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  font-family: var(--cmg-font-family);
+  font-size: 16px;
+  color: var(--cmg-text);
+  cursor: pointer;
+}
+.cemig-form .cmg-replic-campo select:focus {
+  outline: none;
+  border-color: var(--cmg-green-600, #0f6c58);
+}
+/* Destinos: grade de checkboxes rolável (empreendimentos com muitas torres). */
+.cemig-form .cmg-replic-destinos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 4px 16px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 12px 16px;
+  border: 1px solid var(--cmg-border, #d1d4d3);
+  border-radius: 8px;
+}
+.cemig-form .cmg-replic-destino {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  cursor: pointer;
+  font-family: var(--cmg-font-family);
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--cmg-text-strong, #041e18);
+}
+/* Torre que já é destino de outra replicação: marcação bloqueada. */
+.cemig-form .cmg-replic-destino.is-ocupada {
+  cursor: not-allowed;
+  color: var(--cmg-neutral-500, #5b6b67);
+}
+.cemig-form .cmg-replic-destino.is-ocupada input[type="checkbox"] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+/* Conflito de destino / regra sem destino, acima do rodapé. */
+.cemig-form .cmg-replic-erro {
+  margin: 0;
+  width: 100%;
+  min-height: 24px;
+  font-family: var(--cmg-font-family);
+  font-size: 14px;
+  line-height: 24px;
+  letter-spacing: 0.2px;
+  color: var(--cmg-danger-500, #c0392b);
+}
+@media (max-width: 640px) {
+  .cemig-form .cmg-replic-linha {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .cemig-form .cmg-replic-acoes {
+    margin-left: -8px;
   }
 }
 
