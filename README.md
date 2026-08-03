@@ -13,7 +13,7 @@ css/
 ├── variables.css              Tokens de design (cores, tipografia, espaçamento, …)
 ├── shared.css                 Identidade Cemig compartilhada (header, footer, botões,
 │                              campos, cards, tabelas, stepper) — escopada por raiz
-│                              de superfície (.cemig-portal / .cemig-form / .cemig-mt)
+│                              de superfície (.cemig-portal / .cemig-form)
 ├── homepage.css               Estilos exclusivos da homepage (portal)
 ├── formulario-bt.css          Estilos exclusivos do formulário BT
 ├── formulario-mt.css          Estilos exclusivos do MT

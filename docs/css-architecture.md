@@ -53,41 +53,91 @@
    pertence ao `shared.css`.** Na dúvida (o elemento aparece em mais de um
    formulário?), ela pertence ao shared.
 
-## Como o shared alcança os dois shells (`.cemig-form` e `.cemig-mt`)
+## Regra de markup — HTML primeiro, JS por exceção
 
-Existem **duas raízes de superfície** distintas:
+**A regra é escrever markup em `.html`.** Gerar HTML por JavaScript
+(`innerHTML`, template strings, `createElement`) é a **exceção**, permitida
+apenas quando fazer em `.html` for **impossível** ou exigir **esforço
+desproporcional / solução complicada**.
 
-- **`.cemig-form`** — shell React de BT / Microgeração / Minigeração.
-- **`.cemig-mt`** — shell estático de MT / Loteamento / Desistência.
+Por que isso é uma regra de arquitetura de CSS, e não só de estilo de código:
+markup gerado em JS é **invisível** para varredura estática de classes. É o que
+torna a poda de CSS morto arriscada (as classes não aparecem em busca ingênua) e
+o que faz o estilo derivar sem ninguém perceber — ver
+[`css-saneamento-prompt.md`](css-saneamento-prompt.md).
 
-Os formulários MT **não** ficam sob `.cemig-form`. Por isso, um componente
-compartilhado que precise valer nos dois shells é definido **uma única vez**, no
-`shared.css`, com **seletores agrupados** cobrindo as duas raízes — e não
-duplicado:
+**Fica em `.html`:**
+
+- Estrutura de etapa/card, campos e rótulos, textos fixos.
+- Blocos condicionais cuja alternância é só de visibilidade: escreva os dois
+  estados no HTML e alterne com classe/atributo (é o padrão dos avisos
+  `#prontoSimAviso` / `#prontoNaoAviso`), em vez de montar o bloco no JS.
+
+**Pode ficar em `.js` (exceção justificada, sempre com comentário dizendo por
+quê):**
+
+- Listas de tamanho dinâmico, dirigidas por dado que só existe em runtime
+  (cards de torre/unidade, paginação, opções de `<select>` calculadas).
+- Diálogos montados sob demanda no `<body>` (padrão `.cmg-modal`).
+- Estados que dependem de cálculo (resultados, KPIs, mensagens de validação).
+
+Quando o JS for inevitável, **use as classes canônicas do `shared.css`** — não
+invente nome novo nem escreva estilo inline no elemento criado. E prefira
+`document.createElement` + `textContent` a template strings com `class="…"`
+concatenado: além de ser mais seguro contra injeção quando o valor vem do
+usuário, mantém os nomes de classe rastreáveis em busca textual.
+
+## `.cemig-form` é o shell ÚNICO — o shared alcança só ele
+
+Existe **uma única raiz de superfície de formulário**: **`.cemig-form`**. Todos
+os formulários — BT, Microgeração, Minigeração, MT, Loteamento e Desistência —
+ficam sob ela. O antigo shell `.cemig-mt` foi **removido** na migração; nenhum
+formulário usa mais esse escopo.
+
+Cada formulário adiciona um **modificador de página** ao lado do shell, e nunca
+uma segunda raiz:
+
+```html
+<body class="cemig-form cemig-mtform">   <!-- MT -->
+<body class="cemig-form cemig-lote">     <!-- Loteamento -->
+<body class="cemig-form cemig-desist">   <!-- Desistência -->
+<body class="cemig-form cemig-microgd">  <!-- Microgeração -->
+<body class="cemig-form cemig-minigd">   <!-- Minigeração -->
+<body class="cemig-form">                <!-- BT -->
+```
+
+Portanto, no `shared.css` **um componente compartilhado é escrito uma única vez,
+escopado em `.cemig-form`** — sem seletores agrupados por shell, porque não há
+segundo shell a alcançar:
 
 ```css
-/* CERTO — uma definição, dois shells */
-.cemig-form .vstep-num,
-.cemig-mt   .vstep-num {
+/* CERTO — uma definição, um shell */
+.cemig-form .vstep-num {
   /* … */
 }
 ```
 
 ```css
+/* ERRADO — raiz que não existe mais */
+.cemig-form .vstep-num,
+.cemig-mt   .vstep-num { /* … */ }
+
 /* ERRADO — duplicação que vai derivar com o tempo */
-/* shared.css */      .cemig-form .vstep-num { /* … */ }
-/* formulario-mt.css */ .step .num            { /* … */ }
+/* shared.css */        .cemig-form .vstep-num { /* … */ }
+/* formulario-mt.css */ .step .num             { /* … */ }
 ```
 
-Não adicione `.cemig-form` ao `<body class="cemig-mt">` para "alcançar" a regra:
-isso importaria toda a camada do shell de formulário (§ `.cemig-form` do
-`shared.css`) sobre o MT e colidiria com a camada `.cemig-mt`.
+**Não crie novas raízes de superfície.** Se um formulário precisar de algo
+próprio, use o modificador de página (`.cemig-form.cemig-mtform …`) ou o
+`formulario-*.css` daquela página — nunca um shell paralelo.
+
+> `.cmg-container` e `.cmg-aviso` são as exceções conhecidas: são **globais (sem
+> escopo de raiz)** de propósito, porque valem também na home
+> (`.cemig-portal` / `.modalidade-screen`), que não é um formulário.
 
 ### Exceções legítimas (documente sempre)
 
-Diferenças de **mecanismo** (não de estilo) são aceitáveis e ficam escopadas à
-sua raiz, com comentário justificando. Exemplo real: o "concluído" (✓) do passo.
-Nos forms React (`.cemig-form`) o texto do número é trocado por `✓` via JS; no
-MT (`.cemig-mt`), como o número é HTML estático, o `✓` é renderizado por CSS
-(`.cemig-mt .vstep.done .vstep-num::after`). O **visual é idêntico**; só a
-entrega difere.
+Diferenças de **mecanismo** (não de estilo) são aceitáveis, ficam escopadas ao
+modificador da página e levam comentário justificando. O **visual tem de ser
+idêntico**; só a entrega difere. Quando a diferença for só "aqui o valor vem do
+JS e ali é estático", prefira alinhar o markup a criar uma exceção.
