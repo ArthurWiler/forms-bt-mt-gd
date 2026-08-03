@@ -306,21 +306,6 @@ html {
   letter-spacing: var(--cmg-ls-tight);
   text-align: center;
 }
-.cemig-portal .portal-footer-note,
-.cemig-form .portal-footer-note {
-  margin: 0;
-  max-width: 720px;
-  color: var(--cmg-neutral-300);
-  font-family: var(--cmg-font-family);
-  font-size: var(--cmg-fs-caption);
-  line-height: var(--cmg-lh-caption);
-  letter-spacing: var(--cmg-ls-tight);
-  text-align: center;
-}
-.cemig-portal .portal-footer-note a,
-.cemig-form .portal-footer-note a {
-  color: var(--cmg-neutral-0);
-}
 
 /* ============================================================
    4. Portal — modality selector cards & accordion
@@ -927,17 +912,6 @@ label.restricao-aceite input[type="checkbox"] {
   color: var(--cmg-text-muted);
 }
 
-/* ---- Availability tag ---- */
-.modalidade-screen .modalidade-tag {
-  border-radius: var(--cmg-radius-pill);
-  letter-spacing: var(--cmg-ls-wide);
-}
-.modalidade-screen .modalidade-tag.avail {
-  background: var(--cmg-green-600);
-  color: #fff;
-  border-color: transparent;
-}
-
 /* ============================================================
    5. Portal — desktop layout (scoped to `.modalidade-screen`)
    ============================================================ */
@@ -1033,14 +1007,6 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .btn-outlined-acao {
   height: 40px;
   padding: 10px 24px;
-}
-.cemig-form .btn-danger-ghost {
-  background: transparent;
-  color: var(--cmg-danger-500);
-  border-color: var(--cmg-danger-500);
-}
-.cemig-form .btn-danger-ghost:hover:not(:disabled) {
-  background: #fdecea;
 }
 /* Navigation buttons (Avançar / Voltar): fixed Figma 250px width, scoped to
    the nav row only (direct children) so action buttons elsewhere keep their
@@ -2619,21 +2585,6 @@ label.restricao-aceite input[type="checkbox"] {
   letter-spacing: var(--cmg-ls-tight);
   color: var(--cmg-text);
 }
-.cemig-form .flow-badge {
-  align-self: flex-start;
-  margin-top: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--cmg-space-1);
-  background: var(--cmg-surface-accent);
-  color: var(--cmg-green-600);
-  border-radius: var(--cmg-radius-pill);
-  padding: var(--cmg-space-1) var(--cmg-space-3);
-  font-size: var(--cmg-fs-caption);
-  line-height: var(--cmg-lh-caption);
-  font-weight: var(--cmg-fw-bold);
-  letter-spacing: var(--cmg-ls-tight);
-}
 .cemig-form .card {
   background: var(--cmg-surface);
   border: 1px solid var(--cmg-neutral-200);
@@ -3218,11 +3169,6 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .cmg-pav-cel select:focus {
   outline: none;
   border-color: var(--cmg-green-600, #0f6c58);
-}
-/* Prumadas: rótulo/aviso sob a tabela (faixa de torres incompleta, sobreposta
-   ou hierarquia inválida) fica junto da própria caixa da tabela. */
-.cemig-form .cmg-pav-linha--invalida {
-  background: var(--cmg-danger-50, #fdecec);
 }
 /* Resumo do preenchimento (UCs somadas × total da torre) abaixo da tabela */
 .cemig-form .cmg-pav-resumo {

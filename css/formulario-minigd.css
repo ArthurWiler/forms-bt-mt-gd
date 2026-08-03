@@ -44,8 +44,8 @@ body {
 .topbar-left { display: flex; align-items: center; gap: 14px; }
 
 /* ---------- CABEÇALHO DO FORMULÁRIO ----------
-   .form-header (+ h1/p) e .flow-badge: fonte única em css/shared.css
-   (`.cemig-form .form-header*` / `.flow-badge`). Cópias locais removidas —
+   .form-header (+ h1/p): fonte única em css/shared.css
+   (`.cemig-form .form-header*`). Cópias locais removidas —
    dead code sobreposto pela maior especificidade do shared. */
 
 /* ---------- LAYOUT DUAS COLUNAS (sidebar vertical) ---------- */
@@ -165,7 +165,7 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
 .gd-modo-banner strong { color: var(--verde-escuro); }
 
 /* ---------- BOTÕES ----------
-   .btn / .btn-primary / .btn-dark / .btn-ghost / .btn-danger-ghost:
+   .btn / .btn-primary / .btn-dark / .btn-ghost:
    fonte única em shared.css (`.cemig-form .btn …`). Dupes locais removidos. */
 
 /* ---------- NAV INFERIOR ----------
