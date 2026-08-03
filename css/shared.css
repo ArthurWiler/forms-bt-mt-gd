@@ -318,21 +318,10 @@ html {
   flex-direction: column;
   gap: var(--cmg-space-8);
 }
-.modalidade-screen .modalidade-head h1 {
-  font-size: var(--cmg-fs-title);
-  line-height: var(--cmg-lh-title);
-  font-weight: var(--cmg-fw-regular);
-  letter-spacing: var(--cmg-ls-wide);
-  color: var(--cmg-text-strong);
-}
-.modalidade-screen .modalidade-head p {
-  max-width: none;
-  margin: 0;
-  font-size: var(--cmg-fs-body-lg);
-  line-height: var(--cmg-lh-body-lg);
-  letter-spacing: var(--cmg-ls-tight);
-  color: var(--cmg-text);
-}
+/* O título/subtítulo do topo de página é o MESMO componente da home e dos
+   formulários: `.modalidade-head` (home) e `.form-header` (formulário) são
+   dois nomes para a mesma coisa. A definição única está junto do
+   `.form-header`, na seção do cabeçalho de formulário. */
 
 /* ============================================================
    Grid utilities — canonical field grid for ALL forms (BT vocabulary:
@@ -672,7 +661,7 @@ label.restricao-aceite input[type="checkbox"] {
   font-family: var(--cmg-font-family);
   font-size: var(--cmg-fs-subtitle);
   line-height: 26px;
-  font-weight: var(--cmg-fw-bold, 700);
+  font-weight: var(--cmg-fw-bold);
   letter-spacing: 0.2px;
   color: var(--cmg-text-strong);
   margin-top: var(--cmg-space-1);
@@ -2564,6 +2553,11 @@ label.restricao-aceite input[type="checkbox"] {
   flex-direction: column;
   gap: var(--cmg-space-4);
 }
+/* Título/subtítulo do topo de página — fonte ÚNICA para os dois nomes do
+   mesmo componente: `.modalidade-head` (home) e `.form-header` (formulário).
+   O `font-family` é explícito nos dois: a home herdava a família do `body` e
+   só coincidia por acaso com a do formulário. */
+.modalidade-screen .modalidade-head h1,
 .cemig-form .form-header h1 {
   font-family: var(--cmg-font-family);
   font-size: var(--cmg-fs-title);
@@ -2572,6 +2566,7 @@ label.restricao-aceite input[type="checkbox"] {
   letter-spacing: var(--cmg-ls-wide);
   color: var(--cmg-text-strong);
 }
+.modalidade-screen .modalidade-head p,
 .cemig-form .form-header p {
   margin: 0;
   max-width: none;
