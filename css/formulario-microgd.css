@@ -175,15 +175,7 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
 /* ---------- ORIENTAÇÕES ----------
    Estilo centralizado em css/shared.css (`.cemig-form .orient-*`).
    As definições locais foram removidas para evitar duplicação. */
-.callout {
-  background: var(--verde-claro);
-  border-radius: var(--raio-sm);
-  padding: 14px 16px;
-  font-size: 13px;
-  color: var(--verde-escuro);
-  line-height: 1.55;
-  margin-top: 14px;
-}
+
 .legend {
   display: flex;
   gap: 18px;
@@ -484,28 +476,13 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
   border-bottom: 1px solid var(--borda);
 }
 
-/* ===== GD — textarea ===== */
-/* A antiga .gd-info-box foi substituída pelo banner `.cmg-aviso` (GdAviso). */
-textarea.ta {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--borda);
-  border-radius: 10px;
-  font: inherit;
-  resize: vertical;
-}
+/* ===== GD — textarea =====
+   A antiga .gd-info-box foi substituída pelo banner `.cmg-aviso` (GdAviso);
+   `textarea.ta` foi removida por ficar sem uso (os textareas usam .field). */
 
-/* ===== GD — Revisão ===== */
-.rev-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 7px 2px;
-  border-bottom: 1px solid var(--borda);
-  font-size: 13px;
-}
-.rev-label { color: var(--texto-suave); flex-shrink: 0; }
-.rev-val { font-weight: 600; color: var(--texto); text-align: right; }
+/* ===== GD — Revisão =====
+   .rev-row/.rev-label/.rev-val foram removidas por ficarem sem uso; a revisão
+   usa .previa-* (shared.css). Só a lista de pendências segue local. */
 .rev-faltas {
   background: #fff4f4;
   border: 1px solid #f3c0c0;
