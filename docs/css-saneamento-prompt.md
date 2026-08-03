@@ -3,6 +3,10 @@
 > Cole o conteúdo da seção "PROMPT" abaixo numa sessão nova do Claude Code,
 > na raiz do repositório. As seções seguintes são contexto de apoio: o
 > levantamento que motivou o trabalho e o critério de aceite de cada etapa.
+>
+> **Recomendado:** rode uma etapa por sessão. Os textos prontos para colar,
+> um por chat, estão em
+> [`css-saneamento-handoffs.md`](css-saneamento-handoffs.md).
 
 ---
 
@@ -27,9 +31,10 @@ e por quê.
 
 - Levante o CSS não utilizado. Não confie numa fonte só: cruze uma análise
   estática (varrer os `.html` **e os `.js`** por nomes de classe) com a
-  cobertura em runtime. Atenção: há ~292 ocorrências de `class="` dentro de
-  template strings em JS e ~318 manipulações de `classList`/`className` —
-  classes montadas dinamicamente não aparecem em varredura ingênua.
+  cobertura em runtime. Atenção: há **460** ocorrências de `class="` dentro de
+  template strings em JS e **385** manipulações de `classList`/`className`
+  (contagem de 2026-08-03) — classes montadas dinamicamente não aparecem em
+  varredura ingênua. Só `mt/js/app.js` concentra 167 delas.
 - Me apresente a lista de candidatos a remoção **antes de remover**,
   separada em: (a) alta confiança, (b) duvidosos, com o motivo da dúvida.
 - Preste atenção especial aos tokens legados descritos no cabeçalho de
@@ -189,8 +194,10 @@ Outros fatos relevantes:
   São lógica, não decoração.
 - **39 blocos `@media`**, dos quais **5 são `@media print`** — os
   formulários geram PDF/impressão.
-- **~292 `class="` dentro de JS** e **~318 `classList`/`className`**: boa
-  parte do markup é gerada por template string.
+- **460 `class="` dentro de JS** e **385 `classList`/`className`**
+  (recontagem de 2026-08-03; a auditoria original media ~292/~318 — o markup
+  gerado por template string cresceu). Concentração: `mt/js/app.js` 167,
+  `bt/js/coletivo-app.js` 52, `minigeracao/js/app.js` 40.
 - Estados dinâmicos observados em `shared.css`: `.is-ativo`, `.is-collapsed`,
   `.is-invalid`, `.is-locked`, `.is-open`, `.is-toggle`, `.active`.
 
@@ -200,6 +207,28 @@ Registro da decisão, para não reabrir a discussão sem fato novo. Migrar para
 Tailwind exigiria build step onde hoje não há nenhum; quebraria silenciosamente
 nas classes montadas dinamicamente em JS; não expressa os 113 `:has()`
 estruturais sem empurrar essa lógica para o JavaScript; e, como o markup está
-duplicado em 44 HTMLs em vez de componentizado, duplicaria o estilo junto em
+duplicado em 43 HTMLs em vez de componentizado, duplicaria o estilo junto em
 vez de centralizá-lo — invalidando a convenção de fonte única já documentada
 em `docs/css-architecture.md`.
+
+**Reverificação de 2026-08-03** (após a remoção da etapa de regressão visual e
+a inclusão da etapa de deduplicação interna): a decisão **se mantém**, e os
+fundamentos ficaram mais fortes, não mais fracos.
+
+- *Build step*: sem `package.json`/CI — e agora sem nem a suíte visual que a
+  antiga Etapa 1 traria. Uma migração massiva ficaria sem rede de segurança.
+- *Classes em JS*: passou de ~292 para **460** `class="` e de ~318 para **385**
+  `classList`/`className`. O problema cresceu.
+- *`:has()` estruturais*: **113** confirmados (78 em `shared.css` + 35 nos
+  demais arquivos de `css/`). Número inalterado.
+- *Markup duplicado*: 43 HTMLs. O caso micro/mini é o mais eloquente — os dois
+  `formulario-*.css` de 909 linhas diferem em **2 linhas, ambas comentários**
+  (CSS idêntico na prática), enquanto **8 dos 10 fragmentos HTML divergem**
+  (203 e 212 linhas em `03-dados-uc` e `06-geracao`). Ou seja: a duplicação
+  real está no CSS, onde a consolidação é barata (Etapa 4); o markup, que é
+  onde Tailwind moveria o estilo, já diverge entre formulários irmãos.
+
+A duplicação interna que motivou a Etapa 3 **não** é argumento pró-Tailwind: o
+drift encontrado é de *valores divergentes* entre regras irmãs
+(`.previa-card-valor`, `.modalidade-head h1`), e duas listas de utilitários
+divergem tão silenciosamente quanto duas regras CSS.
