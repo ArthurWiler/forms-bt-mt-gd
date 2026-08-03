@@ -456,45 +456,10 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
   font-size: 10px;
 }
 
-/* ===== Consulta de restrição ambiental (IDE-Sisema) ===== */
-.restricao-amb {
-  margin-top: 14px;
-}
-.restricao-result {
-  margin-top: 8px;
-}
-.restricao-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.restricao-chips .chip {
-  font-size: 12px;
-  font-weight: 600;
-  padding: 5px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--borda);
-  background: var(--input-bg);
-  color: var(--texto-suave);
-}
-.restricao-chips .chip-on {
-  background: var(--vermelho-bg);
-  border-color: var(--vermelho);
-  color: var(--vermelho);
-}
-.restricao-chips .chip-off {
-  background: var(--verde-claro);
-  border-color: var(--verde-acento);
-  color: var(--verde-cemig);
-}
-.restricao-chips .chip-err {
-  background: var(--amarelo-bg);
-  border-color: var(--amarelo-bd);
-  color: #8a6d1a;
-}
-
-/* .restricao-destaque foi movida para shared.css (padrão único do banner
-   .cmg-aviso, sem duplicação entre os formulários). */
+/* ===== Consulta de restrição ambiental (IDE-Sisema) =====
+   .restricao-destaque foi movida para shared.css (padrão único do banner
+   .cmg-aviso, sem duplicação entre os formulários). Os chips de resultado
+   (.restricao-chips/.chip*) foram removidos por ficarem sem uso. */
 /* ===== Motores — tabela de preenchimento ===== */
 .motores-box { margin-top: 14px; }
 .motores-head {
