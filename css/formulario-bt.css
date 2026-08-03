@@ -47,31 +47,9 @@ body {
   order: 0;
   flex-grow: 0;
 }
-.logo-cemig {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-}
-.logo-cemig svg { height: 34px; width: auto; }
-.logo-cemig .logo-img { height: 34px; width: auto; display: block; }
 /* .app-title styling (incl. responsive 36/32/26 sizing) lives in shared.css
    (`.cemig-form .app-title`); the local rule was fully overridden. */
 .topbar-left { display: flex; align-items: center; gap: 14px; }
-.topbar-home {
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  color: #fff;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  padding: 7px 14px;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: all 0.15s;
-  letter-spacing: 0.3px;
-}
-.topbar-home:hover { background: #fff; color: var(--verde-escuro); border-color: #fff; }
 
 /* ---------- CABEÇALHO DO FORMULÁRIO ----------
    .form-header (+ h1/p) e .flow-badge: fonte única em css/shared.css
@@ -132,14 +110,6 @@ body {
   .vstep-label { font-size: 12px; }
   .main-col { padding: 8px 16px 40px; width: 100%; }
 }
-
-/* ---------- CONTEÚDO ---------- */
-.content {
-  max-width: 1080px;
-  margin: 8px auto 60px;
-  padding: 20px;
-}
-.fade-in { animation: fadeIn 0.25s ease; }
 
 /* ---------- CARD ---------- */
 .card {
@@ -234,7 +204,6 @@ select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
   background: var(--verde-claro);
   color: var(--verde-escuro);
 }
-.badge-lime { background: #e6f9d5; color: #3d6b00; }
 
 /* ---------- RESUMO / KPIs ---------- */
 .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
@@ -321,29 +290,10 @@ select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
   margin-bottom: 10px;
 }
 .subbox-title { font-size: 12px; font-weight: 700; color: var(--verde-escuro); }
-.motor-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
-.motor-row select, .motor-row input { background: var(--card); padding: 6px; font-size: 12px; width: auto; }
-
-.dashed-box {
-  background: var(--bg);
-  border: 1px dashed var(--borda);
-  border-radius: var(--raio-sm);
-  padding: 14px;
-}
 .divider { border-top: 1px dashed var(--borda); margin-top: 14px; padding-top: 14px; }
 
 /* ---------- PRÉVIA ---------- */
-.preview-block { margin-bottom: 18px; }
-.preview-block h4 {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--verde-acento);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 8px;
-}
-.preview-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 18px; }
-@media (max-width: 720px) { .preview-grid { grid-template-columns: 1fr; } }
+
 .preview-item { font-size: 13px; padding: 5px 0; border-bottom: 1px solid var(--borda); }
 .preview-item .k { color: var(--texto-suave); font-size: 11px; display: block; }
 .preview-item .v { color: var(--texto); font-weight: 600; }
@@ -361,70 +311,14 @@ select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
   max-height: 85vh; overflow-y: auto;
   padding: 24px;
 }
-.modal-close { float: right; cursor: pointer; border: none; background: none; font-size: 22px; color: var(--texto-suave); }
 
 /* ---------- FOOTER ---------- */
-.footer {
-  background: var(--verde-escuro);
-  color: #a9e6bf;
-  text-align: center;
-  padding: 18px;
-  font-size: 12px;
-}
-.footer a { color: #fff; }
+
 .spinner {
   display: inline-block; width: 14px; height: 14px;
   border: 2px solid var(--borda); border-top-color: var(--verde);
   border-radius: 50%; animation: spin 0.6s linear infinite;
 }
-
-.disj-pair { display: flex; gap: 8px; }
-.disj-pair > div { flex: 1; }
-
-/* destaque do disjuntor geral */
-.geral-box {
-  background: #fff;
-  border: 2px solid var(--verde);
-  border-radius: var(--raio-sm);
-  padding: 14px;
-  margin-top: 14px;
-}
-/* borda em erro/500 quando o disjuntor escolhido não atende à
-   seletividade/capacidade (aviso .cmg-aviso--error visível no box) */
-.geral-box--error {
-  border-color: var(--cmg-error-500);
-}
-/* ---------- DEMANDA PREVISTA (kVA) — campo destacado ---------- */
-.kpi.kpi-demanda {
-  background: var(--verde-claro);
-  border: 1.5px solid var(--verde);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 6px;
-}
-.kpi.kpi-demanda .kpi-label {
-  color: var(--verde-escuro);
-  font-weight: 700;
-}
-.kpi.kpi-demanda input {
-  width: 100%;
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--verde-escuro);
-  background: #fff;
-  border: 1px solid var(--verde);
-  border-radius: var(--raio-sm);
-  padding: 8px 10px;
-  text-align: right;
-}
-.kpi.kpi-demanda input:focus {
-  outline: none;
-  border-color: var(--verde-escuro);
-  box-shadow: 0 0 0 3px rgba(1, 136, 55, 0.15);
-}
-
-/* ===== Previsão de carga por UC (coletivo) ===== */
 
 /* Valor somente-leitura (ex.: demanda futura calculada) */
 .readonly-val {

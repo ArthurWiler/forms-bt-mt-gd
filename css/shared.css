@@ -230,18 +230,6 @@ html {
   display: inline-flex;
   align-items: center;
 }
-.cemig-portal .topbar .logo-cemig,
-.cemig-form .topbar .logo-cemig {
-  order: 1;
-  flex: none;
-}
-.cemig-portal .topbar .logo-cemig svg,
-.cemig-form .topbar .logo-cemig svg,
-.cemig-portal .topbar .logo-cemig .logo-img,
-.cemig-form .topbar .logo-cemig .logo-img {
-  height: 28px;
-  width: auto;
-}
 .cemig-portal .app-title,
 .cemig-form .app-title {
   order: 3;
@@ -305,11 +293,6 @@ html {
 }
 .cemig-portal .portal-footer .logo-img,
 .cemig-form .portal-footer .logo-img {
-  width: 144px;
-  height: auto;
-}
-.cemig-portal .portal-footer .logo-cemig svg,
-.cemig-form .portal-footer .logo-cemig svg {
   width: 144px;
   height: auto;
 }
@@ -2203,19 +2186,9 @@ label.restricao-aceite input[type="checkbox"] {
   margin-top: var(--cmg-space-8);
   padding-top: var(--cmg-space-8);
 }
-.cemig-form .subbox,
-.cemig-form .dashed-box {
+.cemig-form .subbox {
   background: var(--cmg-surface);
   border: 1px solid var(--cmg-divider);
-  border-radius: var(--cmg-radius);
-}
-.cemig-form .dashed-box {
-  border-style: dashed;
-  border-color: var(--cmg-border);
-}
-.cemig-form .geral-box {
-  background: var(--cmg-surface);
-  border: 2px solid var(--cmg-green-600);
   border-radius: var(--cmg-radius);
 }
 .cemig-form .badge,
@@ -2737,9 +2710,6 @@ label.restricao-aceite input[type="checkbox"] {
   font-size: var(--cmg-fs-body);
   line-height: var(--cmg-lh-body);
   color: var(--cmg-text-muted);
-}
-.cemig-form .fade-in {
-  animation: fadeIn 0.25s ease;
 }
 /* ---- Troca de etapas (.page/.page.show) — shells vanilla ----
    Cada .page reproduz o fluxo do main-col (cards + nav-bottom em coluna),

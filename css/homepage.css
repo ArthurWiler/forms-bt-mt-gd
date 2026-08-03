@@ -42,14 +42,6 @@ body {
   justify-content: space-between;
   gap: 16px;
 }
-.logo-cemig {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-}
-.logo-cemig svg { height: 34px; width: auto; }
-.logo-cemig .logo-img { height: 34px; width: auto; display: block; }
 .app-title {
   font-family: "Open Sans", system-ui, -apple-system, sans-serif;
   font-style: normal;
