@@ -3079,55 +3079,31 @@ label.restricao-aceite input[type="checkbox"] {
   letter-spacing: 0.2px;
   color: var(--cmg-neutral-600, #364b46);
 }
-/* Tabela de faixas */
-.cemig-form .cmg-pav-tabela {
+/* ------------------------------------------------------------
+   Internos canônicos dos modais (.cmg-modal-*)
+   Os modais "Composição por pavimento" e "Replicar dados" compartilham a
+   casca .cmg-modal* e repetiam os internos verbatim. Estas três classes são
+   a fonte única desses internos; cada modal só acrescenta o que é seu.
+   ------------------------------------------------------------ */
+/* Moldura arredondada que embrulha uma lista/tabela dentro do modal. */
+.cemig-form .cmg-modal-caixa {
   width: 100%;
   border: 1px solid var(--cmg-border, #d1d4d3);
   border-radius: 8px;
   overflow: hidden;
 }
-.cemig-form .cmg-pav-linha {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr 44px;
-  gap: 12px;
-  align-items: center;
-  padding: 12px;
-  border-bottom: 1px solid var(--cmg-border, #d1d4d3);
-}
-.cemig-form .cmg-pav-head {
-  background: var(--cmg-neutral-200, #d1d4d3);
-  padding: 16px 12px;
-}
-.cemig-form .cmg-pav-head .cmg-pav-cel {
+/* Rótulo 14/24 bold neutra/600 (cabeçalho de coluna e rótulo de campo). */
+.cemig-form .cmg-modal-rotulo {
   font-family: var(--cmg-font-family);
-  font-weight: var(--cmg-fw-bold, 700);
+  font-weight: var(--cmg-fw-bold);
   font-size: 14px;
   line-height: 24px;
   letter-spacing: 0.2px;
   color: var(--cmg-neutral-600, #364b46);
 }
-.cemig-form .cmg-pav-cel {
-  min-width: 0;
-}
-.cemig-form .cmg-pav-cel input {
-  width: 100%;
-  box-sizing: border-box;
-  height: 48px;
-  padding: 4px 16px;
-  border: 1px solid var(--cmg-neutral-400, #8c9895);
-  border-radius: 4px;
-  background: var(--cmg-surface);
-  font-family: var(--cmg-font-family);
-  font-size: 16px;
-  color: var(--cmg-text);
-}
-.cemig-form .cmg-pav-cel input:focus {
-  outline: none;
-  border-color: var(--cmg-green-600, #0f6c58);
-}
-/* Célula com <select> (ex.: coluna "Disjuntor" das prumadas em "Dados do
-   projeto"): mesma caixa dos inputs, com a seta padrão do campo do formulário. */
-.cemig-form .cmg-pav-cel select {
+/* <select> do modal: mesma caixa dos inputs, com a seta padrão do campo.
+   O SVG da seta em data: URI vive AQUI e em nenhum outro lugar. */
+.cemig-form .cmg-modal-select {
   width: 100%;
   box-sizing: border-box;
   height: 48px;
@@ -3146,10 +3122,43 @@ label.restricao-aceite input[type="checkbox"] {
   color: var(--cmg-text);
   cursor: pointer;
 }
-.cemig-form .cmg-pav-cel select:focus {
+/* Anel de foco comum aos campos do modal (input e select). */
+.cemig-form .cmg-modal-select:focus,
+.cemig-form .cmg-pav-cel input:focus {
   outline: none;
   border-color: var(--cmg-green-600, #0f6c58);
 }
+
+/* Tabela de faixas — a moldura vem de .cmg-modal-caixa. */
+.cemig-form .cmg-pav-linha {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 44px;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border-bottom: 1px solid var(--cmg-border, #d1d4d3);
+}
+.cemig-form .cmg-pav-head {
+  background: var(--cmg-neutral-200, #d1d4d3);
+  padding: 16px 12px;
+}
+.cemig-form .cmg-pav-cel {
+  min-width: 0;
+}
+.cemig-form .cmg-pav-cel input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 48px;
+  padding: 4px 16px;
+  border: 1px solid var(--cmg-neutral-400, #8c9895);
+  border-radius: 4px;
+  background: var(--cmg-surface);
+  font-family: var(--cmg-font-family);
+  font-size: 16px;
+  color: var(--cmg-text);
+}
+/* A célula com <select> (coluna "Disjuntor" das prumadas em "Dados do
+   projeto") usa .cmg-modal-select; o foco vem de lá. */
 /* Resumo do preenchimento (UCs somadas × total da torre) abaixo da tabela */
 .cemig-form .cmg-pav-resumo {
   margin: 12px 0 0;
@@ -3223,13 +3232,7 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .cmg-modal-replic {
   max-width: 620px;
 }
-/* Lista das replicações já configuradas — mesma caixa da tabela de faixas. */
-.cemig-form .cmg-replic-lista {
-  width: 100%;
-  border: 1px solid var(--cmg-border, #d1d4d3);
-  border-radius: 8px;
-  overflow: hidden;
-}
+/* A lista das replicações já configuradas usa .cmg-modal-caixa. */
 .cemig-form .cmg-replic-linha {
   display: flex;
   align-items: center;
@@ -3290,39 +3293,12 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .cmg-replic-campo + .cmg-replic-campo {
   margin-top: var(--cmg-space-4, 16px);
 }
+/* Tipografia vem de .cmg-modal-rotulo; aqui só o que é do rótulo de campo. */
 .cemig-form .cmg-replic-label {
   display: block;
   margin-bottom: 8px;
-  font-family: var(--cmg-font-family);
-  font-weight: var(--cmg-fw-bold, 700);
-  font-size: 14px;
-  line-height: 24px;
-  letter-spacing: 0.2px;
-  color: var(--cmg-neutral-600, #364b46);
 }
-.cemig-form .cmg-replic-campo select {
-  width: 100%;
-  box-sizing: border-box;
-  height: 48px;
-  padding: 4px 40px 4px 16px;
-  border: 1px solid var(--cmg-neutral-400, #8c9895);
-  border-radius: 4px;
-  background-color: var(--cmg-surface);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M6 9l6 6 6-6' stroke='%23364b46' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  font-family: var(--cmg-font-family);
-  font-size: 16px;
-  color: var(--cmg-text);
-  cursor: pointer;
-}
-.cemig-form .cmg-replic-campo select:focus {
-  outline: none;
-  border-color: var(--cmg-green-600, #0f6c58);
-}
+/* O <select> de origem usa .cmg-modal-select; o foco vem de lá. */
 /* Destinos: grade de checkboxes rolável (empreendimentos com muitas torres). */
 .cemig-form .cmg-replic-destinos {
   display: grid;

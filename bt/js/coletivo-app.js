@@ -1589,7 +1589,7 @@ function abrirComposicaoPavimento(faixasAtuais, onSalvar, totalUCs) {
 
   // Tabela de faixas
   const tabela = document.createElement("div");
-  tabela.className = "cmg-pav-tabela";
+  tabela.className = "cmg-modal-caixa";
 
   // Resumo do cálculo, abaixo da tabela (preenchido por renderTabela).
   const resumo = document.createElement("p");
@@ -1625,7 +1625,7 @@ function abrirComposicaoPavimento(faixasAtuais, onSalvar, totalUCs) {
     head.className = "cmg-pav-linha cmg-pav-head";
     ["Andar inicial", "Andar final", "Unidades por andar"].forEach((t) => {
       const c = document.createElement("div");
-      c.className = "cmg-pav-cel";
+      c.className = "cmg-pav-cel cmg-modal-rotulo";
       c.textContent = t;
       head.appendChild(c);
     });
@@ -1826,7 +1826,7 @@ function abrirGerenciadorReplicacao() {
       "Defina de qual torre os dados serão copiados e para quais torres. Todas as replicações são aplicadas quando você confirmar.";
 
     const lista = document.createElement("div");
-    lista.className = "cmg-replic-lista";
+    lista.className = "cmg-modal-caixa";
     if (!regras.length) {
       const vazio = document.createElement("p");
       vazio.className = "cmg-replic-vazio";
@@ -1921,6 +1921,7 @@ function abrirGerenciadorReplicacao() {
 
     // Origem: dropdown com todas as torres do empreendimento.
     const selOrigem = document.createElement("select");
+    selOrigem.className = "cmg-modal-select";
     selOrigem.innerHTML = state.blocos
       .map((_, i) => `<option value="${i}">${nomeTorre(i)}</option>`)
       .join("");
@@ -1928,7 +1929,7 @@ function abrirGerenciadorReplicacao() {
     const campoOrigem = document.createElement("div");
     campoOrigem.className = "cmg-replic-campo";
     const lblOrigem = document.createElement("label");
-    lblOrigem.className = "cmg-replic-label";
+    lblOrigem.className = "cmg-replic-label cmg-modal-rotulo";
     lblOrigem.textContent = "Origem";
     campoOrigem.append(lblOrigem, selOrigem);
 
@@ -1941,7 +1942,7 @@ function abrirGerenciadorReplicacao() {
     const campoDest = document.createElement("div");
     campoDest.className = "cmg-replic-campo";
     const lblDest = document.createElement("label");
-    lblDest.className = "cmg-replic-label";
+    lblDest.className = "cmg-replic-label cmg-modal-rotulo";
     lblDest.textContent = "Destinos";
     campoDest.append(lblDest, boxDest);
 
@@ -2085,7 +2086,7 @@ function abrirGerenciadorReplicacaoUC() {
       "A UC selecionada será utilizada para completar a torre de origem e preencher todas as UCs das torres de destino.";
 
     const lista = document.createElement("div");
-    lista.className = "cmg-replic-lista";
+    lista.className = "cmg-modal-caixa";
     if (!regras.length) {
       const vazio = document.createElement("p");
       vazio.className = "cmg-replic-vazio";
@@ -2189,6 +2190,7 @@ function abrirGerenciadorReplicacaoUC() {
 
     // Torre origem: dropdown com todas as torres.
     const selTorre = document.createElement("select");
+    selTorre.className = "cmg-modal-select";
     selTorre.innerHTML = state.blocos
       .map((_, i) => `<option value="${i}">${nomeTorre(i)}</option>`)
       .join("");
@@ -2196,17 +2198,18 @@ function abrirGerenciadorReplicacaoUC() {
     const campoTorre = document.createElement("div");
     campoTorre.className = "cmg-replic-campo";
     const lblTorre = document.createElement("label");
-    lblTorre.className = "cmg-replic-label";
+    lblTorre.className = "cmg-replic-label cmg-modal-rotulo";
     lblTorre.textContent = "Torre origem";
     campoTorre.append(lblTorre, selTorre);
 
     // UC origem: dropdown com as UCs da torre selecionada (refeito a cada
     // troca de torre — a quantidade de unidades varia entre torres).
     const selUC = document.createElement("select");
+    selUC.className = "cmg-modal-select";
     const campoUC = document.createElement("div");
     campoUC.className = "cmg-replic-campo";
     const lblUC = document.createElement("label");
-    lblUC.className = "cmg-replic-label";
+    lblUC.className = "cmg-replic-label cmg-modal-rotulo";
     lblUC.textContent = "UC origem";
     campoUC.append(lblUC, selUC);
     const renderUCs = () => {
@@ -2234,7 +2237,7 @@ function abrirGerenciadorReplicacaoUC() {
     const campoDest = document.createElement("div");
     campoDest.className = "cmg-replic-campo";
     const lblDest = document.createElement("label");
-    lblDest.className = "cmg-replic-label";
+    lblDest.className = "cmg-replic-label cmg-modal-rotulo";
     lblDest.textContent = "Torres de destino";
     campoDest.append(lblDest, boxDest);
 
@@ -3310,13 +3313,13 @@ function renderDadosProjeto() {
 function _mkPrumadasTabela() {
   const nBlocos = state.blocos.length;
   const tabela = document.createElement("div");
-  tabela.className = "cmg-pav-tabela";
+  tabela.className = "cmg-modal-caixa";
   tabela.style.marginTop = "12px";
   const head = document.createElement("div");
   head.className = "cmg-pav-linha cmg-pav-head";
   ["Torre inicial", "Torre final", "Disjuntor"].forEach((t) => {
     const c = document.createElement("div");
-    c.className = "cmg-pav-cel";
+    c.className = "cmg-pav-cel cmg-modal-rotulo";
     c.textContent = t;
     head.appendChild(c);
   });
@@ -3346,7 +3349,9 @@ function _mkPrumadasTabela() {
     const cel = document.createElement("div");
     cel.className = "cmg-pav-cel";
     const opcoes = permitidos.map(String);
-    cel.appendChild(_selectDe(opcoes, valor ? String(valor) : "", onChange, true));
+    const sel = _selectDe(opcoes, valor ? String(valor) : "", onChange, true);
+    sel.className = "cmg-modal-select";
+    cel.appendChild(sel);
     return cel;
   };
   prumadas.forEach((p, i) => {
@@ -3381,13 +3386,13 @@ function _mkPrumadasTabela() {
     );
     const celDisj = document.createElement("div");
     celDisj.className = "cmg-pav-cel";
-    celDisj.appendChild(
-      _selectDisjHierarquia(opcoesDisjPrumadaF(p), p.disj, (v) => {
-        p.disj = v;
-        autoSelecionarDisjProjeto();
-        renderDadosProjeto();
-      }),
-    );
+    const selDisj = _selectDisjHierarquia(opcoesDisjPrumadaF(p), p.disj, (v) => {
+      p.disj = v;
+      autoSelecionarDisjProjeto();
+      renderDadosProjeto();
+    });
+    selDisj.className = "cmg-modal-select";
+    celDisj.appendChild(selDisj);
     linha.appendChild(celDisj);
     // Remover (só quando há mais de uma prumada — sempre resta ao menos uma).
     const celAcao = document.createElement("div");
