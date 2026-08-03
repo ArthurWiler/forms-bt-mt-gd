@@ -2311,12 +2311,10 @@ label.restricao-aceite input[type="checkbox"] {
 /* ============================================================
    8. Tables — data/entry (migrated form roots `.cemig-form`)
    ============================================================ */
-.cemig-form .prev-table-wrap,
 .cemig-form .carga-box {
   border: 1px solid var(--cmg-divider);
   border-radius: var(--cmg-radius);
 }
-.cemig-form .prev-table,
 .cemig-form .motores-table {
   font-family: var(--cmg-font-family);
 }
@@ -2337,10 +2335,8 @@ label.restricao-aceite input[type="checkbox"] {
 /* ---- Cabeçalho canônico de tabela (spec Figma "tabela cabeçalho") ----
    Faixa neutra/200 de 44px REAIS (10px de padding vertical + linha de
    24px), texto 14/24 bold neutra/600. Fonte única para as tabelas
-   técnicas (.tbl do Loteamento e do MT) e para a previsão de carga do
-   coletivo/múltiplas torres (.prev-table). */
-.cemig-form .tbl th,
-.cemig-form .prev-table th {
+   técnicas (.tbl do Loteamento e do MT). */
+.cemig-form .tbl th {
   background: var(--cmg-neutral-200);
   color: var(--cmg-neutral-600);
   font-weight: var(--cmg-fw-bold);
@@ -2363,7 +2359,6 @@ label.restricao-aceite input[type="checkbox"] {
   font-weight: var(--cmg-fw-bold);
   letter-spacing: var(--cmg-ls-tight);
 }
-.cemig-form .prev-table td,
 .cemig-form .motores-table tbody td,
 .cemig-form .carga-row {
   border-top: 1px solid var(--cmg-divider);
@@ -2372,16 +2367,11 @@ label.restricao-aceite input[type="checkbox"] {
   border-top: none;
   border-bottom: 1px solid var(--cmg-divider);
 }
-.cemig-form .prev-table tbody tr:nth-child(even) {
-  background: var(--cmg-surface);
-}
 /* No coletivo/múltiplas torres a ilha de cargas (montarCargasBT) é injetada
    dentro de um td da tabela de UCs (.motores-table); os
    inputs da busca (.carga-busca, lupa com padding-left próprio) e dos
    contadores (.qtd-ctrl) mantêm o próprio visual — por isso os :not()
    abaixo. A .motores-table interna da ilha (motores) segue valendo. */
-.cemig-form .prev-table input,
-.cemig-form .prev-table select,
 .cemig-form .motores-table input:not(.carga-busca input, .qtd-ctrl input),
 .cemig-form .motores-table select,
 .cemig-form .qtd-ctrl input {
@@ -2391,30 +2381,11 @@ label.restricao-aceite input[type="checkbox"] {
   font-family: var(--cmg-font-family);
   color: var(--cmg-text-strong);
 }
-.cemig-form .prev-table input:focus,
-.cemig-form .prev-table select:focus,
 .cemig-form .motores-table input:focus:not(.carga-busca input, .qtd-ctrl input),
 .cemig-form .motores-table select:focus {
   outline: none;
   border-color: var(--cmg-green-600);
   box-shadow: 0 0 0 2px var(--cmg-focus-ring);
-}
-.cemig-form .prev-table .col-demanda {
-  background: var(--cmg-surface-accent);
-  border-left: 2px solid var(--cmg-green-600);
-}
-.cemig-form .prev-table input.demanda-prev {
-  border-color: var(--cmg-green-600);
-  font-weight: var(--cmg-fw-bold);
-  color: var(--cmg-green-600);
-}
-.cemig-form .prev-table tfoot td {
-  border-top: 2px solid var(--cmg-green-600);
-  font-weight: var(--cmg-fw-bold);
-  background: var(--cmg-surface-accent);
-}
-.cemig-form .prev-table tfoot .total-dem {
-  color: var(--cmg-green-600);
 }
 /* Motores e cargas especiais — células brancas com borda #8C9895, valores
    escuros à esquerda, total à direita (valor em negrito) e botão "Adicionar
