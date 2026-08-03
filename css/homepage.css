@@ -119,14 +119,12 @@ body {
   outline: 2px solid var(--verde-escuro);
   outline-offset: 2px;
 }
-.modalidade-secao-evron ch{
-  flex: none;
-  font-size: 20px;
-  line-height: 1;
-}
-.modalidade-secao.is-collapsed .modalidade-secao-chevron {
-  transform: rotate(-90deg);
-}
+/* Chevron da seção: fonte única em shared.css
+   (`.modalidade-screen .modalidade-secao-chevron` + os dois estados de
+   rotação). As regras locais foram removidas — eram dead code, sobrepostas
+   pela maior especificidade do shared, e uma delas estava corrompida
+   (`.modalidade-secao-evron ch`, que não casava com nada). */
+
 /* Corpo colapsável: anima via grid-template-rows (1fr -> 0fr). */
 .modalidade-secao-corpo {
   display: grid;
