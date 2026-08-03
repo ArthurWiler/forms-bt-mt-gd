@@ -324,9 +324,6 @@ select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
 .motor-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
 .motor-row select, .motor-row input { background: var(--card); padding: 6px; font-size: 12px; width: auto; }
 
-/* ---------- UC CARD ---------- */
-.uc-card { padding: 18px; }
-.uc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .dashed-box {
   background: var(--bg);
   border: 1px dashed var(--borda);
@@ -398,21 +395,6 @@ select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
 }
 .prev-total .kpi { flex: 1; min-width: 140px; }
 
-/* ---------- BLOCO DE UC (coletivo) ---------- */
-.uc-block {
-  border: 1px solid var(--borda);
-  border-radius: var(--raio-sm);
-  padding: 14px;
-  margin-bottom: 12px;
-  background: var(--input-bg);
-}
-.uc-block-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-.uc-block-title { font-weight: 700; color: var(--verde-escuro); font-size: 14px; }
 .disj-pair { display: flex; gap: 8px; }
 .disj-pair > div { flex: 1; }
 
@@ -457,43 +439,6 @@ select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
   outline: none;
   border-color: var(--verde-escuro);
   box-shadow: 0 0 0 3px rgba(1, 136, 55, 0.15);
-}
-
-/* ---------- UCs por TORRE/BLOCO (múltiplas torres) ---------- */
-.uc-torre-wrap {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px dashed var(--borda);
-}
-.uc-mini {
-  border: 1px solid var(--borda);
-  border-radius: var(--raio-sm);
-  padding: 12px;
-  margin-bottom: 10px;
-  background: #fff;
-}
-.uc-mini-head {
-  font-weight: 700;
-  font-size: 13px;
-  color: var(--verde-escuro);
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.uc-mini-tag {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--verde-acento);
-  background: var(--verde-claro);
-  border-radius: 999px;
-  padding: 2px 8px;
-}
-
-/* Bloco de endereço da UC (segue Dados da Obra) */
-.uc-endereco {
-  border-top: 1px solid var(--borda);
-  padding-top: 12px;
 }
 
 /* ===== Previsão de carga por UC (coletivo) ===== */
@@ -692,7 +637,7 @@ select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
   white-space: nowrap;
 }
 /* :not() — a ilha de cargas (busca com lupa + contadores .qtd-ctrl) vive
-   dentro da tabela de UCs (.motores-table.uc-ident-table) no coletivo/
+   dentro da tabela de UCs (.motores-table) no coletivo/
    torres e mantém o próprio visual (ver shared.css, bloco .motores-table). */
 .motores-table select,
 .motores-table input:not(.carga-busca input, .qtd-ctrl input) {
@@ -718,33 +663,6 @@ select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
   font-size: 13px;
   font-weight: 700;
   color: var(--verde-cemig);
-}
-/* Identificação das UCs (múltiplas torres) — variante da tabela de motores
-   em duas linhas por UC, com rótulo dentro da célula: dispensa thead e a
-   barra de rolagem horizontal (4 colunas fixas que cabem no card). */
-.uc-ident-table {
-  table-layout: fixed;
-}
-.uc-ident-table td {
-  vertical-align: top;
-}
-.uc-ident-table .cell-label {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--texto-suave);
-  margin-bottom: 4px;
-}
-/* 1ª linha não fecha o grupo — o separador fica só na 2ª linha da UC. */
-.uc-ident-table tr.uc-linha-1 td {
-  border-bottom: none;
-  padding-bottom: 2px;
-}
-.uc-ident-table tr.uc-linha-2 td {
-  padding-top: 2px;
-  padding-bottom: 12px;
 }
 @media (max-width: 560px) {
   .motores-table thead { display: none; }

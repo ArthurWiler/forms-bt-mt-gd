@@ -1866,15 +1866,6 @@ label.restricao-aceite input[type="checkbox"] {
   justify-content: center;
   margin-top: var(--cmg-space-6);
 }
-/* Ferramentas da torre acima da lista de unidades (gerar complementos,
-   replicar UC 1) */
-.cemig-form .unidades-toolbar {
-  display: flex;
-  gap: 10px;
-  align-items: flex-end;
-  flex-wrap: wrap;
-  margin-bottom: var(--cmg-space-4);
-}
 /* ============================================================
    Chips de torre (etapa "Dados das unidades" — múltiplas torres):
    pílulas horizontais roláveis; a ativa fica verde sólida.
@@ -2201,44 +2192,11 @@ label.restricao-aceite input[type="checkbox"] {
   align-items: flex-start;
   gap: var(--cmg-space-3, 12px);
 }
-.cemig-form .subbox-title,
-.cemig-form .uc-block-title,
-.cemig-form .uc-mini-head {
+.cemig-form .subbox-title {
   font-family: var(--cmg-font-family);
   font-weight: var(--cmg-fw-bold);
   letter-spacing: var(--cmg-ls-wide);
   color: var(--cmg-text);
-}
-/* Múltiplas UCs (Individual): cabeçalho colapsável + ações (remover/indicador)
-   e botão "+ Adicionar unidade". */
-.cemig-form .uc-block-head.is-toggle {
-  cursor: pointer;
-  user-select: none;
-}
-.cemig-form .uc-block-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--cmg-space-2);
-}
-.cemig-form .uc-remove {
-  border: none;
-  background: transparent;
-  color: var(--cmg-danger-500);
-  cursor: pointer;
-  font-size: 14px;
-  line-height: 1;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-.cemig-form .uc-remove:hover {
-  background: #fdecea;
-}
-.cemig-form .uc-collapse-ind {
-  color: var(--cmg-text-muted);
-  font-size: 12px;
-}
-.cemig-form .uc-add {
-  margin-top: var(--cmg-space-1);
 }
 .cemig-form .divider {
   border-top: 1px solid var(--cmg-divider);
@@ -2246,8 +2204,6 @@ label.restricao-aceite input[type="checkbox"] {
   padding-top: var(--cmg-space-8);
 }
 .cemig-form .subbox,
-.cemig-form .uc-block,
-.cemig-form .uc-mini,
 .cemig-form .dashed-box {
   background: var(--cmg-surface);
   border: 1px solid var(--cmg-divider);
@@ -2263,7 +2219,6 @@ label.restricao-aceite input[type="checkbox"] {
   border-radius: var(--cmg-radius);
 }
 .cemig-form .badge,
-.cemig-form .uc-mini-tag,
 .cemig-form .carga-resumo-chip {
   background: var(--cmg-surface-accent);
   color: var(--cmg-green-600);
@@ -2383,9 +2338,7 @@ label.restricao-aceite input[type="checkbox"] {
    Faixa neutra/200 de 44px REAIS (10px de padding vertical + linha de
    24px), texto 14/24 bold neutra/600. Fonte única para as tabelas
    técnicas (.tbl do Loteamento e do MT) e para a previsão de carga do
-   coletivo/múltiplas torres (.prev-table). A identificação das UCs
-   (.uc-ident-table) não tem linha de cabeçalho — os rótulos vivem
-   dentro das células. */
+   coletivo/múltiplas torres (.prev-table). */
 .cemig-form .tbl th,
 .cemig-form .prev-table th {
   background: var(--cmg-neutral-200);
@@ -2423,7 +2376,7 @@ label.restricao-aceite input[type="checkbox"] {
   background: var(--cmg-surface);
 }
 /* No coletivo/múltiplas torres a ilha de cargas (montarCargasBT) é injetada
-   dentro de um td da tabela de UCs (.motores-table.uc-ident-table); os
+   dentro de um td da tabela de UCs (.motores-table); os
    inputs da busca (.carga-busca, lupa com padding-left próprio) e dos
    contadores (.qtd-ctrl) mantêm o próprio visual — por isso os :not()
    abaixo. A .motores-table interna da ilha (motores) segue valendo. */
@@ -2512,13 +2465,6 @@ label.restricao-aceite input[type="checkbox"] {
 }
 .cemig-form .motor-del:hover {
   background: rgba(192, 57, 43, 0.08);
-}
-/* Identificação das UCs (múltiplas torres) — rótulo dentro da célula no
-   skin Figma: mesma tipografia dos títulos de coluna das tabelas. */
-.cemig-form .uc-ident-table .cell-label {
-  font-family: var(--cmg-font-family);
-  color: var(--cmg-text-muted);
-  letter-spacing: var(--cmg-ls-tight);
 }
 /* MOTORES / CARGAS ESPECIAIS — os cards verticais são exclusivos do MT e
    vivem em css/formulario-mt.css (escopo .cemig-mtform, tokens --cmg-*).

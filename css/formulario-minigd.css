@@ -323,9 +323,6 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
 .motor-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
 .motor-row select, .motor-row input { background: var(--card); padding: 6px; font-size: 12px; width: auto; }
 
-/* ---------- UC CARD ---------- */
-.uc-card { padding: 18px; }
-.uc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .dashed-box {
   background: var(--bg);
   border: 1px dashed var(--borda);
@@ -397,21 +394,6 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
 }
 .prev-total .kpi { flex: 1; min-width: 140px; }
 
-/* ---------- BLOCO DE UC (coletivo) ---------- */
-.uc-block {
-  border: 1px solid var(--borda);
-  border-radius: var(--raio-sm);
-  padding: 14px;
-  margin-bottom: 12px;
-  background: var(--input-bg);
-}
-.uc-block-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-.uc-block-title { font-weight: 700; color: var(--verde-escuro); font-size: 14px; }
 .disj-pair { display: flex; gap: 8px; }
 .disj-pair > div { flex: 1; }
 
@@ -451,43 +433,6 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
   outline: none;
   border-color: var(--verde-escuro);
   box-shadow: 0 0 0 3px rgba(1, 136, 55, 0.15);
-}
-
-/* ---------- UCs por TORRE/BLOCO (múltiplas torres) ---------- */
-.uc-torre-wrap {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px dashed var(--borda);
-}
-.uc-mini {
-  border: 1px solid var(--borda);
-  border-radius: var(--raio-sm);
-  padding: 12px;
-  margin-bottom: 10px;
-  background: #fff;
-}
-.uc-mini-head {
-  font-weight: 700;
-  font-size: 13px;
-  color: var(--verde-escuro);
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.uc-mini-tag {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--verde-acento);
-  background: var(--verde-claro);
-  border-radius: 999px;
-  padding: 2px 8px;
-}
-
-/* Bloco de endereço da UC (segue Dados da Obra) */
-.uc-endereco {
-  border-top: 1px solid var(--borda);
-  padding-top: 12px;
 }
 
 /* ===== Previsão de carga por UC (coletivo) ===== */
