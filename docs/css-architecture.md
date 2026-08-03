@@ -87,6 +87,49 @@ invente nome novo nem escreva estilo inline no elemento criado. E prefira
 concatenado: além de ser mais seguro contra injeção quando o valor vem do
 usuário, mantém os nomes de classe rastreáveis em busca textual.
 
+## Regra de nomenclatura — nada de nome genérico
+
+**É PROIBIDO criar classe com nome genérico**, isto é, um nome curto e comum o
+bastante para colidir com palavra qualquer de código ou de texto. O nome de
+classe tem de ser **buscável**: procurar por ele no repositório precisa
+retornar os usos daquela classe, e não centenas de coincidências.
+
+Por que isso é regra de arquitetura, e não preferência de estilo: a poda de CSS
+morto depende de cruzar o CSS com `.html` e `.js`, e **classe montada em JS só é
+rastreável por busca textual do nome**. Com nome genérico a busca é inútil nos
+dois sentidos — não dá para provar que a classe está viva (o nome aparece em
+todo lugar por acidente) nem que está morta (o uso real some no ruído). Na
+prática isso congela a classe: ninguém consegue removê-la com segurança.
+
+Casos reais medidos neste repositório (2026-08-03, varrendo `.js` + `.html`):
+
+| Nome | Ocorrências do token | Problema |
+|---|---:|---|
+| `.on` | 9.499 | colide com `on`/`onclick`/`json` e com o estado booleano |
+| `.ta` | 6.839 | colide com "ta" dentro de `data`, `meta`, `consulta`, `etapa` |
+| `.k` | 5.944 | colide com `kW`, `kVA`, chaves de objeto, variável `k` de laço |
+| `.num` | 438 | colide com `numero`, `num` de laço |
+
+`.on` e `.k` continuam vivas e por isso continuam sem poder ser auditadas —
+é exatamente o custo que esta regra existe para não repetir. `.ta`, `.chip`,
+`.content`, `.footer` e `.avail` eram genéricas **e** mortas: só foi possível
+removê-las (Etapa 1) cruzando a busca textual com a análise de bloco, não pela
+busca sozinha.
+
+**Como nomear:**
+
+- Use **prefixo de componente**: `.cmg-aviso-texto`, `.previa-card-valor`,
+  `.cmg-pav-cel` — o prefixo é o que torna o nome único na busca.
+- Um nome com **duas partes ou mais** (`.carga-resumo-chip`, não `.chip`).
+- Estados seguem o padrão já vigente `is-*` (`.is-invalid`, `.is-collapsed`) —
+  e mesmo aí prefira o estado escopado ao componente quando o nome for curto.
+- Na dúvida, aplique o teste: **busque o nome no repositório**. Se o resultado
+  tiver ruído, o nome é genérico — troque antes de escrever o CSS.
+
+Isto vale para classe nova. Os nomes genéricos que ainda existem são dívida
+conhecida: não crie mais nenhum e, ao mexer num deles, renomeie para a forma
+prefixada.
+
 ## `.cemig-form` é o shell ÚNICO — o shared alcança só ele
 
 Existe **uma única raiz de superfície de formulário**: **`.cemig-form`**. Todos
