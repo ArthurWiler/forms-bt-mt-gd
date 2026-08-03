@@ -630,9 +630,9 @@ label.restricao-aceite input[type="checkbox"] {
   border-top: 1px solid var(--cmg-divider);
   margin: var(--cmg-space-6) 0;
 }
-/* Cartões-resumo (Modalidade / Demanda total / Disjuntor adequado) —
-   reutilizam o visual do .resultado-card via classe própria para
-   funcionarem também fora do .cemig-form. */
+/* Cartões-resumo da prévia (Modalidade / Demanda total / Disjuntor adequado).
+   O card em si (.previa-card, -label, -valor) é o MESMO do .resultado-card e
+   está definido junto dele; aqui fica só a grade que os dispõe. */
 .previa-cards {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -643,28 +643,6 @@ label.restricao-aceite input[type="checkbox"] {
   .previa-cards {
     grid-template-columns: 1fr;
   }
-}
-.previa-card {
-  background: var(--cmg-surface);
-  border: 1px solid var(--cmg-neutral-200);
-  border-radius: var(--cmg-radius);
-  padding: var(--cmg-space-4) var(--cmg-space-6);
-}
-.previa-card-label {
-  font-family: var(--cmg-font-family);
-  font-size: var(--cmg-fs-body);
-  line-height: var(--cmg-lh-body);
-  letter-spacing: 0.2px;
-  color: var(--cmg-text-strong);
-}
-.previa-card-valor {
-  font-family: var(--cmg-font-family);
-  font-size: var(--cmg-fs-subtitle);
-  line-height: 26px;
-  font-weight: var(--cmg-fw-bold);
-  letter-spacing: 0.2px;
-  color: var(--cmg-text-strong);
-  margin-top: var(--cmg-space-1);
 }
 
 /* ---- Prévia: painel de torre (múltiplas torres) ----
@@ -678,6 +656,9 @@ label.restricao-aceite input[type="checkbox"] {
   margin-bottom: var(--cmg-space-4);
   background: var(--cmg-neutral-50);
 }
+/* Coincide em corpo com .previa-tabela-disj e .mapa-legenda-item (flex +
+   align-items + gap). NÃO agrupar: é o idioma "itens numa linha", não um
+   componente — os três podem divergir de propósito. */
 .previa-torre-head {
   display: flex;
   align-items: center;
@@ -1527,7 +1508,14 @@ label.restricao-aceite input[type="checkbox"] {
   flex: 1 1 0;
   min-width: 220px;
 }
-.cemig-form .resultado-card {
+/* Card de resultado/KPI — fonte ÚNICA para os dois nomes do mesmo card:
+   `.resultado-card` (KPIs das etapas) e `.previa-card` (cartões-resumo da
+   prévia, dispostos por .previa-cards). O `.previa-*` é global (sem escopo de
+   raiz) por herança de quando se pretendia usá-lo fora do formulário; hoje só
+   é montado sob `.cemig-form` (bt-core.js, coletivo-app.js, individual-app.js).
+   Reescopar é assunto da auditoria dos formulario-*.css, não desta passada. */
+.cemig-form .resultado-card,
+.previa-card {
   background: var(--cmg-surface);
   border: 1px solid var(--cmg-neutral-200);
   border-radius: var(--cmg-radius);
@@ -1542,14 +1530,16 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .resultado-card--warn {
   border-color: var(--cmg-warning-500);
 }
-.cemig-form .resultado-card-label {
+.cemig-form .resultado-card-label,
+.previa-card-label {
   font-family: var(--cmg-font-family);
   font-size: var(--cmg-fs-body);
   line-height: var(--cmg-lh-body);
   letter-spacing: 0.2px;
   color: var(--cmg-text-strong);
 }
-.cemig-form .resultado-card-valor {
+.cemig-form .resultado-card-valor,
+.previa-card-valor {
   font-family: var(--cmg-font-family);
   font-size: var(--cmg-fs-subtitle);
   line-height: 26px;
