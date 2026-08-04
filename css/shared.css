@@ -2594,6 +2594,9 @@ label.restricao-aceite input[type="checkbox"] {
   border-radius: var(--cmg-radius-pill);
   font-family: var(--cmg-font-family);
   transition: background 0.15s ease;
+  /* Promove a linha a camada própria: sem isso, animar o fundo re-rasteriza o
+     label a cada frame (texto "tremendo" durante os 150ms da transição). */
+  will-change: background;
 }
 .cemig-form .vstep + .vstep {
   margin-top: 0;
@@ -2632,6 +2635,9 @@ label.restricao-aceite input[type="checkbox"] {
   color: #fff;
 }
 .cemig-form .vstep-label {
+  display: flex;
+  align-items: center;
+  height: 20px;
   font-family: "Open Sans", system-ui, sans-serif;
   font-size: 12px;
   font-style: normal;
@@ -2639,8 +2645,17 @@ label.restricao-aceite input[type="checkbox"] {
   line-height: 20px;
   letter-spacing: 0.5px;
   text-align: center;
-  color: var(--cmg-success-700, #0b5445);
+  /* Estado "futuro" (nem active nem done) — cinza-esverdeado do Figma. */
+  color: #576864;
   flex: none;
+
+  /* Anti-"tremor" entre estados: o peso já é fixo (600 em futuro/active/done),
+     mas só a linha .active ganha fundo (--cmg-step-active-bg). Texto sobre
+     fundo transparente vs. pintado é rasterizado por caminhos diferentes, e o
+     glifo muda de espessura ao trocar de passo. Antialiasing em escala de cinza
+     tira o subpixel da equação, deixando o desenho idêntico nos três estados. */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 .cemig-form .vstep.active {
   background: var(--cmg-step-active-bg);
@@ -2676,8 +2691,9 @@ label.restricao-aceite input[type="checkbox"] {
     center / 14px 14px no-repeat;
 }
 .cemig-form .vstep.done .vstep-label {
+  /* Mesma tipografia do estado futuro; muda só a cor (verde concluído). */
   font-weight: 600;
-  color: var(--cmg-text);
+  color: #0f6c58;
 }
 /* Loteamento/MT/Desistência/Micro/Minigeração ONLY (páginas vanilla): their
    step numbers are static HTML and are never rewritten to a check by JS (the
