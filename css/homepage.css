@@ -143,10 +143,19 @@ body {
   outline: 2px solid var(--verde-escuro);
   outline-offset: 2px;
 }
-.modalidade-secao-evron ch{
+.modalidade-secao-chevron {
   flex: none;
-  font-size: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
   line-height: 1;
+}
+.modalidade-secao-chevron svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 .modalidade-secao.is-collapsed .modalidade-secao-chevron {
   transform: rotate(-90deg);

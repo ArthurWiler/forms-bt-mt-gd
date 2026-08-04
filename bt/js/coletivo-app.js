@@ -403,22 +403,131 @@ function replicarUC1Coletivo() {
   );
   renderUcsColetivo();
 }
-// app.js:365-376 — copia os dados da torre `oi` para a torre `di`. Cada torre
-// de destino preserva a própria identificação (o nome do card); todo o resto
-// (unidades, cargas, demanda, disjuntor) vem da origem.
+/* ===== vínculo entre torres (replicação contínua) =====
+   Uma regra de replicação não é um copiar/colar de uma vez só: enquanto ela
+   existir, a torre de origem é a fonte de verdade e cada campo de DADOS DA
+   TORRE preenchido nela propaga para os destinos ao sair do campo (blur).
+   Os dados das UNIDADES não entram aqui — têm o gerenciador próprio
+   (abrirGerenciadorReplicacaoUC).
+   Exceção: um campo editado à mão num destino "trava" e para de receber a
+   propagação; os demais campos daquela torre seguem vinculados. O registro
+   desses campos travados fica em b._travados (Set de chaves). */
+const CAMPOS_TORRE = [
+  "qtdUCs",
+  "aptosPorAndar",
+  "aptosPorAndarFaixas",
+  "complInicial",
+  "tipoComplemento",
+  "demandaIncendio",
+  "disjIncendio",
+];
+// A identificação da torre (b.nome) NÃO propaga: é o que distingue um card do
+// outro, e _copiarTorre sempre a preservou.
+
+// Regra cuja origem é `bi`, se houver (uma torre é origem de no máximo uma).
+function _regraDaOrigem(bi) {
+  return (state.replicacoes || []).find(
+    (r) => r.origem === bi && (r.destinos || []).length,
+  );
+}
+// Marca `campo` da torre `bi` como editado à mão — para de receber propagação.
+function _travarCampo(bi, campo) {
+  const b = state.blocos[bi];
+  if (!b) return;
+  if (!b._travados) b._travados = [];
+  if (!b._travados.includes(campo)) b._travados.push(campo);
+}
+function _campoTravado(bi, campo) {
+  const b = state.blocos[bi];
+  return !!(b && b._travados && b._travados.includes(campo));
+}
+// Propaga UM campo da torre de origem para os destinos da sua regra. Chamado no
+// blur do campo, e não a cada tecla, para não reescrever o destino no meio da
+// digitação. Retorna true se algo mudou (o chamador decide re-renderizar).
+function propagarCampoTorre(bi, campo) {
+  const regra = _regraDaOrigem(bi);
+  if (!regra || !CAMPOS_TORRE.includes(campo)) return false;
+  const base = state.blocos[bi];
+  if (!base) return false;
+  const valor = base[campo];
+  let mudou = false;
+  regra.destinos.forEach((di) => {
+    const d = state.blocos[di];
+    // Um campo travado no destino foi digitado à mão: preservar.
+    if (!d || _campoTravado(di, campo)) return;
+    if (d[campo] === valor) return;
+    d[campo] = typeof valor === "object" && valor !== null
+      ? JSON.parse(JSON.stringify(valor))
+      : valor;
+    // Quantidade de unidades muda a lista de UCs da torre de destino.
+    if (campo === "qtdUCs") sincronizarUCsTorre(di, valor);
+    mudou = true;
+  });
+  if (mudou) {
+    regra.destinos.forEach((di) => autoGerarComplementosTorre(di));
+    autoSelecionarDisjTorres();
+  }
+  return mudou;
+}
+// Rótulos dos campos de torre, para avisar o usuário em português.
+const ROTULO_CAMPO_TORRE = {
+  qtdUCs: "quantidade de unidades",
+  aptosPorAndar: "unidades por andar",
+  aptosPorAndarFaixas: "composição por pavimento",
+  complInicial: "primeiro complemento",
+  tipoComplemento: "tipo de complemento",
+  demandaIncendio: "demanda do condomínio",
+  disjIncendio: "disjuntor do condomínio",
+};
+function _vazio(v) {
+  if (v == null) return true;
+  if (Array.isArray(v)) return v.length === 0;
+  return String(v).trim() === "";
+}
+// Torres de destino que perderiam dados ao aplicar as regras: campo preenchido
+// e diferente do valor da origem. Usado para confirmar antes de sobrescrever.
+function _conflitosReplicacao(regras) {
+  const out = [];
+  (regras || []).forEach((r) => {
+    const origem = state.blocos[r.origem];
+    if (!origem) return;
+    (r.destinos || []).forEach((di) => {
+      const d = state.blocos[di];
+      if (!d) return;
+      const campos = CAMPOS_TORRE.filter(
+        (c) =>
+          !_vazio(d[c]) && JSON.stringify(d[c]) !== JSON.stringify(origem[c]),
+      ).map((c) => ROTULO_CAMPO_TORRE[c] || c);
+      if (campos.length) out.push({ torre: di, campos: campos });
+    });
+  });
+  return out;
+}
+// Propaga TODOS os campos de torre da origem `bi` de uma vez.
+function propagarTorre(bi) {
+  let mudou = false;
+  CAMPOS_TORRE.forEach((c) => {
+    if (propagarCampoTorre(bi, c)) mudou = true;
+  });
+  return mudou;
+}
+// Copia os DADOS DA TORRE de `oi` para `di` (os campos de CAMPOS_TORRE). A
+// identificação (nome) é do destino, e o conteúdo das UNIDADES não vem junto —
+// as UCs têm o gerenciador próprio (abrirGerenciadorReplicacaoUC). A lista de
+// UCs do destino é apenas redimensionada para a quantidade da origem.
 function _copiarTorre(oi, di) {
   const base = state.blocos[oi];
   const destino = state.blocos[di];
   if (!base || !destino) return;
-  state.blocos[di] = Object.assign({}, base, {
-    nome: destino.nome,
-    ucs: (base.ucs || []).map((u) =>
-      Object.assign({}, u, {
-        cargas: JSON.parse(JSON.stringify(u.cargas || {})),
-        _acc: {},
-      }),
-    ),
+  CAMPOS_TORRE.forEach((c) => {
+    const v = base[c];
+    destino[c] =
+      typeof v === "object" && v !== null ? JSON.parse(JSON.stringify(v)) : v;
   });
+  // Aplicar a regra é uma decisão explícita: a torre volta a acompanhar a
+  // origem em todos os campos.
+  destino._travados = [];
+  sincronizarUCsTorre(di, base.qtdUCs);
 }
 // Aplica TODAS as regras de replicação de uma vez (botão "Aplicar" do modal).
 // As origens são lidas antes de qualquer escrita — assim uma torre que seja
@@ -1446,6 +1555,24 @@ function _mkPaginacao(totalPaginas, atual, aoIr) {
   );
   return nav;
 }
+// Botão "Replicar dados para todas as torres", ao lado de "Quantidade de
+// torres". Fica SEMPRE visível (para o usuário saber que a ação existe) e
+// desabilitado enquanto não houver mais de uma torre para replicar — ou seja,
+// com a quantidade em branco/0/1. `disabled` já traz o estilo de .btn:disabled.
+function renderBotaoReplicarTorres(habilitado) {
+  const slot = $("#blocosReplicarAcao");
+  if (!slot) return;
+  slot.innerHTML = "";
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "btn btn-ghost btn-outlined-acao";
+  btn.textContent = "Replicar dados para todas as torres";
+  btn.disabled = !habilitado;
+  if (!habilitado)
+    btn.title = "Informe a quantidade de torres (2 ou mais) para replicar.";
+  btn.addEventListener("click", () => abrirGerenciadorReplicacao());
+  slot.appendChild(btn);
+}
 function renderBlocos() {
   const box = $("#blocosBox");
   if (!box) return;
@@ -1460,6 +1587,9 @@ function renderBlocos() {
     box.innerHTML = "";
     const pagVazio = $("#blocosPag");
     if (pagVazio) pagVazio.innerHTML = "";
+    // Sem quantidade informada não há o que replicar: o botão continua visível,
+    // porém desabilitado.
+    renderBotaoReplicarTorres(false);
     atualizarBlocosKpis();
     if (window.CemigMarcadores) CemigMarcadores.atualizarAvancar();
     return;
@@ -1481,20 +1611,11 @@ function renderBlocos() {
   state.blocos.slice(ini, ini + ITENS_POR_PAGINA).forEach((b, k) => {
     box.appendChild(_mkTorreCard(ini + k, total));
   });
-  // "Replicar dados" abre o gerenciador de replicações entre torres — as regras
-  // valem para o empreendimento inteiro, por isso o botão fica abaixo da lista
-  // (e não dentro de cada card, como na versão anterior).
-  if (total > 1) {
-    const row = document.createElement("div");
-    row.className = "acao-central";
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "btn btn-ghost btn-outlined-acao";
-    btn.textContent = "Replicar dados";
-    btn.addEventListener("click", () => abrirGerenciadorReplicacao());
-    row.appendChild(btn);
-    box.appendChild(row);
-  }
+  // Abre o gerenciador de replicações entre torres — as regras valem para o
+  // empreendimento inteiro, por isso o botão fica ao lado de "Quantidade de
+  // torres" (slot #blocosReplicarAcao), e não dentro de cada card. Só há o que
+  // replicar com 2+ torres; com 1 o botão aparece desabilitado.
+  renderBotaoReplicarTorres(total > 1);
   const pag = $("#blocosPag");
   if (pag) {
     pag.innerHTML = "";
@@ -1810,7 +1931,54 @@ function abrirGerenciadorReplicacao() {
 
   const nomeTorre = (i) => `Torre ${(state.blocos[i] || {}).nome || i + 1}`;
 
-  // ---- Tela 1: lista das replicações configuradas ----
+  // Resumo dos destinos no campo fechado: "Torres 2 a 7" quando a seleção é uma
+  // faixa contínua, senão a lista ("Torres 2, 5 e 9"). Vazio → placeholder.
+  const resumoDestinos = (destinos) => {
+    const d = (destinos || []).slice().sort((a, b) => a - b);
+    if (!d.length) return "";
+    if (d.length === 1) return nomeTorre(d[0]);
+    const continua = d.every((v, k) => k === 0 || v === d[k - 1] + 1);
+    if (continua)
+      return `Torres ${d[0] + 1} a ${d[d.length - 1] + 1}`;
+    const nums = d.map((i) => i + 1);
+    return `Torres ${nums.slice(0, -1).join(", ")} e ${nums[nums.length - 1]}`;
+  };
+
+  // Torres que a linha `idx` pode oferecer como destino: exclui a própria
+  // origem e as que já são destino de OUTRA regra (cada torre pertence a uma
+  // única replicação, então o conflito é impossível por construção).
+  const destinosDisponiveis = (idx) => {
+    const r = regras[idx];
+    const ocupadas = new Set();
+    regras.forEach((o, k) => {
+      if (k !== idx) (o.destinos || []).forEach((d) => ocupadas.add(d));
+    });
+    const livres = [];
+    state.blocos.forEach((_, i) => {
+      if (i === r.origem) return;
+      if (ocupadas.has(i)) return;
+      livres.push(i);
+    });
+    return livres;
+  };
+
+  // Origens que a linha `idx` pode assumir: qualquer torre que não seja destino
+  // de outra regra (nem origem de outra), para não haver duas regras na mesma.
+  const origensDisponiveis = (idx) => {
+    const usadas = new Set();
+    regras.forEach((o, k) => {
+      if (k === idx) return;
+      usadas.add(o.origem);
+      (o.destinos || []).forEach((d) => usadas.add(d));
+    });
+    const livres = [];
+    state.blocos.forEach((_, i) => {
+      if (!usadas.has(i)) livres.push(i);
+    });
+    return livres;
+  };
+
+  // ---- Tela única: tabela com uma linha por replicação ----
   const renderLista = () => {
     corpo.innerHTML = "";
     rodape.innerHTML = "";
@@ -1818,196 +1986,270 @@ function abrirGerenciadorReplicacao() {
     const titulo = document.createElement("h2");
     titulo.className = "cmg-modal-titulo";
     titulo.id = "cmg-modal-titulo";
-    titulo.textContent = "Replicações";
+    titulo.textContent = "Replicar dados para todas as torres";
 
     const desc = document.createElement("p");
     desc.className = "cmg-modal-desc";
     desc.textContent =
-      "Defina de qual torre os dados serão copiados e para quais torres. Todas as replicações são aplicadas quando você confirmar.";
+      "Esta ferramenta permite a replicação de dados entre as torres. Informe a torre de origem e selecione as torres de destino para colar as informações correspondentes. Caso o condomínio tenha mais de um conjunto de torres com dados distintos, adicione quantas replicações forem necessárias.";
 
-    const lista = document.createElement("div");
-    lista.className = "cmg-replic-lista";
-    if (!regras.length) {
+    // Tabela: cabeçalho + uma linha por regra + linha do "Adicionar replicação".
+    // Sem nenhuma regra os rótulos não têm o que rotular: no lugar do cabeçalho
+    // entra o mesmo aviso de lista vazia usado no gerenciador de unidades.
+    const tabela = document.createElement("div");
+    tabela.className = "cmg-replic-tabela";
+
+    if (regras.length) {
+      const cab = document.createElement("div");
+      cab.className = "cmg-replic-cab";
+      const cabOrigem = document.createElement("span");
+      cabOrigem.className = "cmg-replic-cab-rotulo";
+      cabOrigem.textContent = "Torre de origem";
+      const cabDest = document.createElement("span");
+      cabDest.className = "cmg-replic-cab-rotulo";
+      cabDest.textContent = "Torres de destino";
+      cab.append(cabOrigem, cabDest);
+      tabela.appendChild(cab);
+    } else {
       const vazio = document.createElement("p");
       vazio.className = "cmg-replic-vazio";
       vazio.textContent = "Nenhuma replicação configurada.";
-      lista.appendChild(vazio);
+      tabela.appendChild(vazio);
     }
+
     regras.forEach((r, idx) => {
       const linha = document.createElement("div");
       linha.className = "cmg-replic-linha";
-      const rotulo = document.createElement("span");
-      rotulo.className = "cmg-replic-rotulo";
-      rotulo.textContent = _rotuloReplicacao(r);
-      const acoes = document.createElement("div");
-      acoes.className = "cmg-replic-acoes";
-      const btnEditar = document.createElement("button");
-      btnEditar.type = "button";
-      btnEditar.className = "btn btn-ghost cmg-replic-acao";
-      btnEditar.textContent = "Editar";
-      btnEditar.addEventListener("click", () => renderForm(idx));
-      const btnExcluir = document.createElement("button");
-      btnExcluir.type = "button";
-      btnExcluir.className = "btn btn-ghost cmg-replic-acao";
-      btnExcluir.textContent = "Excluir";
-      btnExcluir.addEventListener("click", () => {
+
+      // --- Célula 1: origem (select nativo) ---
+      const celOrigem = document.createElement("div");
+      celOrigem.className = "cmg-replic-cel cmg-replic-cel--origem";
+      const selOrigem = document.createElement("select");
+      selOrigem.className = "cmg-replic-select";
+      selOrigem.setAttribute("aria-label", "Torre de origem");
+      const opcoesOrigem = origensDisponiveis(idx);
+      if (!opcoesOrigem.includes(r.origem)) opcoesOrigem.push(r.origem);
+      opcoesOrigem
+        .sort((a, b) => a - b)
+        .forEach((i) => {
+          const o = document.createElement("option");
+          o.value = String(i);
+          o.textContent = nomeTorre(i);
+          selOrigem.appendChild(o);
+        });
+      selOrigem.value = String(r.origem);
+      selOrigem.addEventListener("change", () => {
+        r.origem = parseInt(selOrigem.value, 10) || 0;
+        // A nova origem não pode continuar como destino dela mesma.
+        r.destinos = (r.destinos || []).filter((d) => d !== r.origem);
+        renderLista();
+      });
+      celOrigem.appendChild(selOrigem);
+
+      // --- Célula 2: seta ---
+      const celSeta = document.createElement("div");
+      celSeta.className = "cmg-replic-cel cmg-replic-cel--seta";
+      celSeta.innerHTML =
+        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12h15m0 0l-6-6m6 6l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+      // --- Célula 3: destinos (multiselect com checkboxes) ---
+      const celDest = document.createElement("div");
+      celDest.className = "cmg-replic-cel cmg-replic-cel--destinos";
+      celDest.appendChild(mkMultiDestinos(idx, r));
+
+      // --- Célula 4: excluir ---
+      const celAcao = document.createElement("div");
+      celAcao.className = "cmg-replic-cel cmg-replic-cel--acao";
+      const btnDel = document.createElement("button");
+      btnDel.type = "button";
+      btnDel.className = "cmg-replic-excluir";
+      btnDel.setAttribute("aria-label", `Excluir replicação ${idx + 1}`);
+      btnDel.innerHTML =
+        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      btnDel.addEventListener("click", () => {
         regras.splice(idx, 1);
         renderLista();
       });
-      acoes.append(btnEditar, btnExcluir);
-      linha.append(rotulo, acoes);
-      lista.appendChild(linha);
+      celAcao.appendChild(btnDel);
+
+      linha.append(celOrigem, celSeta, celDest, celAcao);
+      tabela.appendChild(linha);
     });
 
+    // Linha final: adicionar replicação. Desabilita quando não há mais torre
+    // livre para servir de origem (todas já pertencem a alguma regra).
     const addWrap = document.createElement("div");
-    addWrap.className = "cmg-pav-adicionar-wrap";
+    addWrap.className = "cmg-replic-add-linha";
     const btnAdd = document.createElement("button");
     btnAdd.type = "button";
     btnAdd.className = "btn btn-ghost btn-outlined-acao cmg-pav-adicionar";
     btnAdd.innerHTML =
       '<span class="cmg-pav-mais" aria-hidden="true">+</span> Adicionar replicação';
-    btnAdd.addEventListener("click", () => renderForm(-1));
+    const livresParaNova = origensDisponiveis(-1);
+    btnAdd.disabled = livresParaNova.length < 2;
+    if (btnAdd.disabled)
+      btnAdd.title = "Não há torres livres suficientes para uma nova replicação.";
+    btnAdd.addEventListener("click", () => {
+      regras.push({ origem: livresParaNova[0], destinos: [] });
+      renderLista();
+    });
     addWrap.appendChild(btnAdd);
+    tabela.appendChild(addWrap);
 
-    corpo.append(titulo, desc, lista, addWrap);
+    corpo.append(titulo, desc, tabela);
 
     const btnCancelar = document.createElement("button");
     btnCancelar.type = "button";
     btnCancelar.className = "btn btn-ghost";
     btnCancelar.textContent = "Cancelar";
     btnCancelar.addEventListener("click", fechar);
-    const btnAplicar = document.createElement("button");
-    btnAplicar.type = "button";
-    btnAplicar.className = "btn btn-primary";
-    btnAplicar.textContent = "Aplicar";
-    btnAplicar.disabled = !regras.length;
-    btnAplicar.addEventListener("click", () => {
-      state.replicacoes = regras;
-      aplicarReplicacoes(regras);
-      fechar();
-    });
-    rodape.append(btnCancelar, btnAplicar);
-  };
-
-  // ---- Tela 2: adicionar / editar uma replicação ----
-  // `idx` é a posição da regra em `regras` (-1 para uma nova).
-  const renderForm = (idx) => {
-    const novo = idx < 0;
-    // Nova regra parte da primeira torre que ainda não é destino de ninguém.
-    const jaDestino = (i) =>
-      regras.some((r, k) => k !== idx && (r.destinos || []).includes(i));
-    const inicial = novo
-      ? { origem: 0, destinos: [] }
-      : { origem: regras[idx].origem, destinos: regras[idx].destinos.slice() };
-    const edicao = { origem: inicial.origem, destinos: inicial.destinos };
-
-    corpo.innerHTML = "";
-    rodape.innerHTML = "";
-
-    const titulo = document.createElement("h2");
-    titulo.className = "cmg-modal-titulo";
-    titulo.id = "cmg-modal-titulo";
-    titulo.textContent = novo ? "Adicionar replicação" : "Editar replicação";
-
-    const desc = document.createElement("p");
-    desc.className = "cmg-modal-desc";
-    desc.textContent =
-      "Escolha a torre de origem e marque as torres que receberão esses dados.";
-
-    // Mensagem de conflito/validação, acima do rodapé.
-    const erro = document.createElement("p");
-    erro.className = "cmg-replic-erro";
-    erro.setAttribute("role", "alert");
-
-    // Origem: dropdown com todas as torres do empreendimento.
-    const selOrigem = document.createElement("select");
-    selOrigem.innerHTML = state.blocos
-      .map((_, i) => `<option value="${i}">${nomeTorre(i)}</option>`)
-      .join("");
-    selOrigem.value = String(edicao.origem);
-    const campoOrigem = document.createElement("div");
-    campoOrigem.className = "cmg-replic-campo";
-    const lblOrigem = document.createElement("label");
-    lblOrigem.className = "cmg-replic-label";
-    lblOrigem.textContent = "Origem";
-    campoOrigem.append(lblOrigem, selOrigem);
-
-    // Destinos: checkbox por torre. A torre de origem some da lista (não pode
-    // ser destino de si mesma) e as que já pertencem a outra regra aparecem
-    // desabilitadas, com o motivo ao lado — o conflito fica visível antes de
-    // tentar salvar.
-    const boxDest = document.createElement("div");
-    boxDest.className = "cmg-replic-destinos";
-    const campoDest = document.createElement("div");
-    campoDest.className = "cmg-replic-campo";
-    const lblDest = document.createElement("label");
-    lblDest.className = "cmg-replic-label";
-    lblDest.textContent = "Destinos";
-    campoDest.append(lblDest, boxDest);
-
-    const renderDestinos = () => {
-      boxDest.innerHTML = "";
-      state.blocos.forEach((_, i) => {
-        if (i === edicao.origem) return;
-        const item = document.createElement("label");
-        item.className = "cmg-replic-destino";
-        const chk = document.createElement("input");
-        chk.type = "checkbox";
-        chk.checked = edicao.destinos.includes(i);
-        const ocupada = jaDestino(i);
-        if (ocupada && !chk.checked) {
-          chk.disabled = true;
-          item.classList.add("is-ocupada");
-          item.title = `A ${nomeTorre(i)} já é destino de outra replicação.`;
-        }
-        chk.addEventListener("change", () => {
-          if (chk.checked) edicao.destinos.push(i);
-          else edicao.destinos = edicao.destinos.filter((d) => d !== i);
-          erro.textContent = "";
-        });
-        const txt = document.createElement("span");
-        txt.textContent = nomeTorre(i);
-        item.append(chk, txt);
-        boxDest.appendChild(item);
-      });
-    };
-    renderDestinos();
-
-    selOrigem.addEventListener("change", () => {
-      edicao.origem = parseInt(selOrigem.value, 10) || 0;
-      // A nova origem não pode continuar marcada como destino dela mesma.
-      edicao.destinos = edicao.destinos.filter((d) => d !== edicao.origem);
-      erro.textContent = "";
-      renderDestinos();
-    });
-
-    corpo.append(titulo, desc, campoOrigem, campoDest, erro);
-
-    const btnVoltar = document.createElement("button");
-    btnVoltar.type = "button";
-    btnVoltar.className = "btn btn-ghost";
-    btnVoltar.textContent = "Cancelar";
-    btnVoltar.addEventListener("click", renderLista);
     const btnSalvar = document.createElement("button");
     btnSalvar.type = "button";
     btnSalvar.className = "btn btn-primary";
     btnSalvar.textContent = "Salvar";
     btnSalvar.addEventListener("click", () => {
-      const msg = _validarReplicacao(edicao, regras, idx);
-      if (msg) {
-        erro.textContent = msg;
-        return;
+      // Regras sem destino são descartadas em silêncio (linha só começada).
+      const validas = regras.filter((r) => (r.destinos || []).length);
+      // Só avisa quando a replicação vai REALMENTE apagar algo: destino com
+      // campo preenchido e diferente da origem. Destino em branco é o caso
+      // comum e passa direto.
+      const conflitos = _conflitosReplicacao(validas);
+      if (conflitos.length) {
+        const lista = conflitos
+          .map((c) => `Torre ${c.torre + 1} (${c.campos.join(", ")})`)
+          .join("; ");
+        const ok = window.confirm(
+          `Estas torres já têm dados preenchidos que serão substituídos pelos da torre de origem: ${lista}.\n\nDeseja substituir?`,
+        );
+        if (!ok) return;
+        // Substituir é a decisão do usuário: destrava os campos para que a
+        // origem volte a mandar neles.
+        conflitos.forEach((c) => {
+          const d = state.blocos[c.torre];
+          if (d) d._travados = [];
+        });
       }
-      const salva = {
-        origem: edicao.origem,
-        destinos: edicao.destinos.slice().sort((a, b) => a - b),
-      };
-      if (novo) regras.push(salva);
-      else regras[idx] = salva;
-      renderLista();
+      state.replicacoes = validas;
+      aplicarReplicacoes(validas);
+      fechar();
     });
-    rodape.append(btnVoltar, btnSalvar);
+    rodape.append(btnCancelar, btnSalvar);
   };
+
+  // Multiselect de destinos: campo fechado com o resumo + painel de checkboxes
+  // (Selecionar todas + uma por torre livre). Fecha ao clicar fora ou com Esc.
+  function mkMultiDestinos(idx, regra) {
+    const wrap = document.createElement("div");
+    wrap.className = "cmg-multi";
+
+    const campo = document.createElement("button");
+    campo.type = "button";
+    campo.className = "cmg-multi-campo";
+    campo.setAttribute("aria-haspopup", "true");
+    campo.setAttribute("aria-expanded", "false");
+    const texto = document.createElement("span");
+    texto.className = "cmg-multi-texto";
+    const pintarTexto = () => {
+      const resumo = resumoDestinos(regra.destinos);
+      texto.textContent = resumo || "Selecione as torres";
+      texto.classList.toggle("is-placeholder", !resumo);
+    };
+    pintarTexto();
+    const seta = document.createElement("span");
+    seta.className = "cmg-multi-seta";
+    seta.setAttribute("aria-hidden", "true");
+    seta.innerHTML =
+      '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    campo.append(texto, seta);
+
+    const painel = document.createElement("div");
+    painel.className = "cmg-multi-painel";
+    painel.hidden = true;
+
+    const opcoes = destinosDisponiveis(idx);
+
+    const mkItem = (rotuloTxt, marcada, onToggle, classe) => {
+      const item = document.createElement("label");
+      item.className = "cmg-multi-item" + (classe ? " " + classe : "");
+      const chk = document.createElement("input");
+      chk.type = "checkbox";
+      chk.className = "cmg-multi-chk";
+      chk.checked = marcada;
+      chk.addEventListener("change", () => onToggle(chk.checked));
+      const txt = document.createElement("span");
+      txt.textContent = rotuloTxt;
+      item.append(chk, txt);
+      return item;
+    };
+
+    const repintar = () => {
+      painel.innerHTML = "";
+      const todas =
+        opcoes.length > 0 && opcoes.every((i) => regra.destinos.includes(i));
+      painel.appendChild(
+        mkItem(
+          "Selecionar todas",
+          todas,
+          (marcar) => {
+            regra.destinos = marcar ? opcoes.slice() : [];
+            repintar();
+            pintarTexto();
+          },
+          "cmg-multi-item--todas",
+        ),
+      );
+      const grade = document.createElement("div");
+      grade.className = "cmg-multi-grade";
+      opcoes.forEach((i) => {
+        grade.appendChild(
+          mkItem(nomeTorre(i), regra.destinos.includes(i), (marcar) => {
+            if (marcar) regra.destinos.push(i);
+            else regra.destinos = regra.destinos.filter((d) => d !== i);
+            repintar();
+            pintarTexto();
+          }),
+        );
+      });
+      painel.appendChild(grade);
+      if (!opcoes.length) {
+        const vazio = document.createElement("p");
+        vazio.className = "cmg-multi-vazio";
+        vazio.textContent = "Nenhuma torre disponível.";
+        painel.appendChild(vazio);
+      }
+    };
+    repintar();
+
+    const fecharPainel = () => {
+      painel.hidden = true;
+      campo.setAttribute("aria-expanded", "false");
+      wrap.classList.remove("is-aberto");
+    };
+    const foraClique = (e) => {
+      if (!wrap.contains(e.target)) fecharPainel();
+    };
+    campo.addEventListener("click", () => {
+      const abrir = painel.hidden;
+      // Só um painel aberto por vez dentro do modal.
+      dialog
+        .querySelectorAll(".cmg-multi.is-aberto")
+        .forEach((o) => o !== wrap && o.querySelector(".cmg-multi-campo").click());
+      painel.hidden = !abrir;
+      campo.setAttribute("aria-expanded", abrir ? "true" : "false");
+      wrap.classList.toggle("is-aberto", abrir);
+      if (abrir) document.addEventListener("mousedown", foraClique);
+      else document.removeEventListener("mousedown", foraClique);
+    });
+    wrap.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !painel.hidden) {
+        e.stopPropagation();
+        fecharPainel();
+      }
+    });
+
+    wrap.append(campo, painel);
+    return wrap;
+  }
 
   renderLista();
   dialog.append(btnX, corpo, rodape);
@@ -2699,6 +2941,33 @@ function _mkTorreCard(bi, total) {
   );
   _mkAgrupamentoCampos(grid, _cfgAgrupamentoTorre(b, bi));
   corpo.appendChild(grid);
+  // Vínculo de replicação: ao sair de qualquer campo do card, a torre de origem
+  // propaga os dados para os seus destinos; num destino, o campo mexido à mão
+  // trava e deixa de acompanhar a origem. Um único listener no card (fase de
+  // captura, porque blur não borbulha) evita tocar nos construtores de campo,
+  // que são compartilhados com o fluxo individual.
+  corpo.addEventListener(
+    "blur",
+    () => {
+      if (_regraDaOrigem(bi)) {
+        if (propagarTorre(bi)) _preservandoFoco(renderBlocos);
+        return;
+      }
+      const dono = (state.replicacoes || []).find((r) =>
+        (r.destinos || []).includes(bi),
+      );
+      if (!dono) return;
+      // Destino: trava os campos que já divergem da origem — foram digitados
+      // aqui, e a origem não deve mais sobrescrevê-los.
+      const origem = state.blocos[dono.origem];
+      if (!origem) return;
+      CAMPOS_TORRE.forEach((c) => {
+        if (JSON.stringify(b[c]) !== JSON.stringify(origem[c]))
+          _travarCampo(bi, c);
+      });
+    },
+    true,
+  );
   bloco.appendChild(corpo);
   return bloco;
 }
