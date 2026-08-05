@@ -10,41 +10,23 @@
    O PDF (js/pdf.js) recebe o MESMO objeto de estado plano.
    ============================================================ */
 
-/* ===== Modo de entrada (Fast Track / Grid Zero via ?modo=) ===== */
-function gdModoDaURL() {
-  let modo = "";
-  try {
-    modo = new URLSearchParams(location.search).get("modo") || "";
-  } catch (e) {}
-  // Regra 1/2: Fast Track e Grid Zero são definidos pela porta de entrada
-  // (modo) e ficam SEMPRE travados. Sem modo, ambos travados em "Não".
-  if (modo === "fasttrack")
-    return {
-      modo,
-      label: "Fast Track",
-      descricao:
-        "Enquadramento no inciso III do art. 73-A — campo definido pela modalidade e bloqueado.",
-      overrides: { fastTrack: "Sim", gridZero: "Não" },
-    };
-  if (modo === "gridzero")
-    return {
-      modo,
-      label: "Grid Zero",
-      descricao:
-        "Empreendimento sem injeção de energia na rede — campo definido pela modalidade e bloqueado.",
-      overrides: { gridZero: "Sim", fastTrack: "Não" },
-    };
-  return {
-    modo: "",
-    label: "",
-    descricao: "",
-    overrides: { fastTrack: "Não", gridZero: "Não" },
-  };
-}
-const GD_MODO = gdModoDaURL();
+/* ============================================================
+   Regra 1/2 — Fast Track (art. 73-A) e Grid Zero
+   ------------------------------------------------------------
+   Antes eram portas de entrada (cards próprios na homepage +
+   ?modo=fasttrack|gridzero) que pré-definiam e TRAVAVAM os campos.
+   Agora são campos livres da etapa 2, independentes entre si, e
+   as regras derivam do preenchimento:
+     - fastTrack="Sim"  → exige a regra de enquadramento (8.5.x),
+       trava a modalidade em Autoconsumo local e limita a potência
+       da usina a GD_FAST_LIMITE_USINA_KW (7,5 kW).
+     - gridZero="Sim"   → informativo (consta no PDF); não deriva
+       trava alguma, pois o enquadramento correspondente é
+       declarado pelo próprio campo 8.5.1.
+   ============================================================ */
 
 /* ===== Estado global ===== */
-const state = Object.assign(gdEstadoInicial(), GD_MODO.overrides);
+const state = gdEstadoInicial();
 window.state = state; // visível p/ depuração e harnesses (const não vaza p/ window)
 let ilhaCargas = null; // ilha do Formulário de Carga (shared/js/calc-demanda.js)
 
@@ -71,18 +53,8 @@ const SIM_NAO = [
   { valor: "Sim", texto: "Sim" },
 ];
 const CARDS_GD = [
-  {
-    chave: "fastTrack",
-    gridId: "cardsFastTrack",
-    opcoes: SIM_NAO,
-    travado: true,
-  },
-  {
-    chave: "gridZero",
-    gridId: "cardsGridZero",
-    opcoes: SIM_NAO,
-    travado: true,
-  },
+  { chave: "fastTrack", gridId: "cardsFastTrack", opcoes: SIM_NAO },
+  { chave: "gridZero", gridId: "cardsGridZero", opcoes: SIM_NAO },
   { chave: "laudoMedico", gridId: "cardsLaudoMedico", opcoes: SIM_NAO },
   { chave: "nis", gridId: "cardsNis", opcoes: SIM_NAO },
   {
@@ -295,6 +267,25 @@ function onNisGD() {
   const box = $("#numNisBox");
   const pfVisivel = gdEhCpfValido();
   if (box) box.style.display = pfVisivel && state.nis === "Sim" ? "" : "none";
+  if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
+}
+// Regra 1: Fast Track = "Sim" revela e exige a regra de enquadramento (8.5.x)
+// e propaga as travas da etapa 6 (modalidade + limite de potência da usina).
+function onFastTrack() {
+  _sync("fastTrack");
+  const sim = state.fastTrack === "Sim";
+  const box = $("#fastRegraBox");
+  if (box) box.style.display = sim ? "" : "none";
+  const sel = $(`select[data-k="fastRegra"]`);
+  if (sel) {
+    if (sim) sel.setAttribute("data-req", "");
+    else {
+      sel.removeAttribute("data-req");
+      sel.classList.remove("is-invalid");
+      sel.value = state.fastRegra = "";
+    }
+  }
+  recalcGeracao(); // reavalia trava de modalidade e limite de 7,5 kW
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
 let _cnpjBuscado = "";
@@ -791,7 +782,7 @@ function recalcGeracao() {
       ? "Calculado automaticamente: menor valor entre a potência total de módulos e a de inversores." +
           (excede ? " Valor acima do limite Fast Track." : "")
       : fast
-        ? `Fast Track: máximo de ${GD_FAST_LIMITE_kW} kW (${GD_FAST_LIMITE_USINA_KW} kW).` +
+        ? `Fast Track: máximo de ${GD_FAST_LIMITE_USINA_KW} kW.` +
           (excede ? " Valor acima do limite permitido." : "")
         : "",
   );
@@ -894,7 +885,7 @@ function validarExportacao() {
     (parseFloat(d.potAtivaInstalada) || 0) > GD_FAST_LIMITE_USINA_KW
   )
     faltas.push(
-      `Potência da usina acima do limite Fast Track (${GD_FAST_LIMITE_kW} kW)`,
+      `Potência da usina acima do limite Fast Track (${GD_FAST_LIMITE_USINA_KW} kW)`,
     );
   if (!d.decl84) faltas.push("Declaração 8.4 (obrigatória)");
   if (!d.decl86) faltas.push("Declaração 8.6 (obrigatória)");
@@ -1069,10 +1060,6 @@ window.aceiteOrientacoesOk = function () {
 
 /* ===== Init (chamado pelo etapas-loader com o DOM completo) ===== */
 window.initFormulario = function () {
-  // Banner do modo (Fast Track / Grid Zero)
-  const banner = $("#modoBanner");
-  if (banner && GD_MODO.modo)
-    banner.innerHTML = `<div class="gd-modo-banner"><strong>Modalidade: ${GD_MODO.label}</strong>${GD_MODO.descricao ? `<span>${GD_MODO.descricao}</span>` : ""}</div>`;
   preencherSelects();
   bindInputs();
   inicializarCards();
@@ -1090,10 +1077,14 @@ window.initFormulario = function () {
   onArmazenamento();
   onCorrAlternativa();
   onCoordGD();
+  onFastTrack();
   mostrarCamposPF(gdEhCpfValido());
   // nis: nº do NIS condicionado (o card dispara change no select oculto)
   const selNis = $(`select[data-k="nis"]`);
   if (selNis) selNis.addEventListener("change", onNisGD);
+  // fastTrack: regra de enquadramento condicionada (card dispara change)
+  const selFast = $(`select[data-k="fastTrack"]`);
+  if (selFast) selFast.addEventListener("change", onFastTrack);
   const selGrupo = $(`select[data-k="grupo"]`);
   if (selGrupo) selGrupo.addEventListener("change", onGrupo);
   const selClasse = $(`select[data-k="classe"]`);

@@ -657,21 +657,12 @@ const SEC_MT = {
     },
   ],
 };
-const SEC_GD_MINI = {
-  titulo: "Geração Distribuída - Minigeração",
-  cards: [
-    {
-      id: "gd-mini",
-      nome: "Minigeração",
-      sub: "Média Tensão (MT)",
-      img: "imgs/mod-gd-mini.webp",
-      status: "link",
-      href: "minigeracao/",
-    },
-  ],
-};
-const SEC_GD_MICRO = {
-  titulo: "Geração Distribuída - Microgeração",
+// Seção única de Geração Distribuída: Microgeração e Minigeração. Fast Track e
+// Grid Zero deixaram de ser cards/portas de entrada — são campos do próprio
+// formulário de microgeração (etapa 2), com as regras aplicadas conforme o
+// preenchimento (ver microgeracao/js/app.js).
+const SEC_GD = {
+  titulo: "Geração Distribuída",
   cards: [
     {
       id: "gd-micro",
@@ -682,20 +673,12 @@ const SEC_GD_MICRO = {
       href: "microgeracao/",
     },
     {
-      id: "gd-micro-fast",
-      nome: "Fast Track",
-      sub: "Art. 73-A (REN 1.000/2021)",
-      img: "imgs/mod-gd-micro.webp",
+      id: "gd-mini",
+      nome: "Minigeração",
+      sub: "Média Tensão (MT)",
+      img: "imgs/mod-gd-mini.webp",
       status: "link",
-      href: "microgeracao/?modo=fasttrack",
-    },
-    {
-      id: "gd-micro-gridzero",
-      nome: "Grid Zero",
-      sub: "Sem injeção na rede",
-      img: "imgs/mod-gd-micro.webp",
-      status: "link",
-      href: "microgeracao/?modo=gridzero",
+      href: "minigeracao/",
     },
   ],
 };
@@ -704,6 +687,5 @@ const MODALIDADES_SECOES = [
   SEC_BT_EMPREENDIMENTOS,
   SEC_BT_ESPECIAIS,
   SEC_MT,
-  SEC_GD_MICRO,
-  SEC_GD_MINI,
+  SEC_GD,
 ];

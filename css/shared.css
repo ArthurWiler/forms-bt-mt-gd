@@ -1866,6 +1866,21 @@ label.restricao-aceite input[type="checkbox"] {
   justify-content: center;
   margin-top: var(--cmg-space-6);
 }
+/* "Replicar dados para todas unidades de todas as torres" (etapa "Dados das
+   unidades"): alinhado à ESQUERDA logo abaixo dos chips de torre. A ação abre a
+   etapa e vale para o empreendimento inteiro — não é uma ação de fim de card
+   como as de .acao-central, daí não ser centrada. */
+.cemig-form .unidades-replicar-acao {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: var(--cmg-space-6);
+}
+@media (max-width: 720px) {
+  /* Estreito: o rótulo é longo e o botão passa a ocupar a linha inteira. */
+  .cemig-form .unidades-replicar-acao > .btn {
+    width: 100%;
+  }
+}
 /* Ação ao lado de um campo do grid ("Replicar dados para todas as torres" ao
    lado de "Quantidade de torres"). O campo permanece na 1ª coluna com a largura
    padrão dos demais fields (1fr do .grid-2); esta é a 2ª célula. A célula ocupa
@@ -3562,6 +3577,44 @@ label.restricao-aceite input[type="checkbox"] {
   width: 48px;
   justify-content: center;
 }
+/* ---- Variante de UNIDADES (.cmg-replic-tabela--uc) ----
+   Mesma tabela do gerenciador de torres com uma coluna a mais entre a origem e
+   a seta: "Unidade de origem". A regra parte de UMA unidade — por isso a torre
+   sozinha não basta para identificá-la. A coluna repete a largura da origem
+   (163px) para as duas caixas ficarem iguais, como no spec. */
+.cemig-form .cmg-replic-cel--uc {
+  flex: none;
+  width: 163px;
+}
+/* Rótulos do cabeçalho alinhados às células: origem (163) + gap (12) = 175px
+   até a unidade, e unidade (163) + gap (12) + seta (24) + gap (12) = 211px até
+   os destinos. O 3º rótulo ocupa o resto (flex padrão). */
+.cemig-form .cmg-replic-tabela--uc .cmg-replic-cab-rotulo:first-child {
+  width: 175px;
+}
+.cemig-form .cmg-replic-tabela--uc .cmg-replic-cab-rotulo:nth-child(2) {
+  flex: none;
+  width: 211px;
+}
+/* A coluna de destinos aqui é ~130px mais estreita que a do gerenciador de
+   torres (a coluna "Unidade de origem" comeu esse espaço). As 3 colunas do
+   painel de checkboxes não cabem mais: "Torre 1" quebraria em duas linhas e a
+   3ª coluna ficaria cortada, com barra horizontal. Duas colunas cabem inteiras,
+   e o painel continua com a LARGURA DO CAMPO (left/right herdados do bloco
+   base) — dropdown mais largo que o próprio campo lê como outro elemento. */
+.cemig-form .cmg-replic-tabela--uc .cmg-multi-grade {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+/* Sem quebrar "Torre 14" em duas linhas dentro da coluna estreita. */
+.cemig-form .cmg-replic-tabela--uc .cmg-multi-item {
+  white-space: nowrap;
+}
+/* O padding de 16px do painel base tira largura útil das 2 colunas; 12px dá o
+   espaço que os rótulos precisam sem alargar o painel além do campo. */
+.cemig-form .cmg-replic-tabela--uc .cmg-multi-painel {
+  padding: 12px;
+}
 /* Select da origem: mesma caixa de 48px do campo padrão, sem rótulo flutuante. */
 .cemig-form .cmg-replic-select {
   width: 100%;
@@ -3711,7 +3764,15 @@ label.restricao-aceite input[type="checkbox"] {
   }
   /* Os 163px do spec são de desktop: aqui a origem divide a primeira faixa
      com a seta e o excluir em vez de forçar a largura fixa. */
-  .cemig-form .cmg-replic-cel--origem {
+  .cemig-form .cmg-replic-cel--origem,
+  .cemig-form .cmg-replic-cel--uc {
+    flex: 1 1 auto;
+    width: auto;
+  }
+  /* Com a linha quebrada em blocos, os rótulos fixos do cabeçalho da variante
+     de unidades deixam de corresponder às células — voltam a ser fluidos. */
+  .cemig-form .cmg-replic-tabela--uc .cmg-replic-cab-rotulo:first-child,
+  .cemig-form .cmg-replic-tabela--uc .cmg-replic-cab-rotulo:nth-child(2) {
     flex: 1 1 auto;
     width: auto;
   }

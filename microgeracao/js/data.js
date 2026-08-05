@@ -60,9 +60,10 @@ const GD_MODALIDADES = [
   "Múltiplas Unidades Consumidoras",
 ];
 const GD_MODALIDADE_AUTOCONSUMO_LOCAL = "Autoconsumo local";
-// Fast Track: potência máxima da usina (REN 1.000/2021) — 7,5 kW = 7500 kW.
-const GD_FAST_LIMITE_kW = 7.5;
-const GD_FAST_LIMITE_USINA_KW = 7500;
+// Fast Track: potência máxima da usina (art. 73-A, III da REN 1.000/2021) —
+// 7,5 kW, equivalentes a 7500 W. A comparação é feita contra
+// potAtivaInstalada, que é informada EM kW — portanto o limite é 7.5.
+const GD_FAST_LIMITE_USINA_KW = 7.5;
 // Solicitações que correspondem a Aumento de Potência (exigem nova proteção).
 const GD_SOLICITACOES_AUMENTO_POTENCIA = [
   "Conexão de GD em Unidade Consumidora Existente COM Alteração de Potência Disponibilizada",
@@ -196,7 +197,6 @@ const GD_UTM_LIMITES = {
 };
 const GD_FUSOS = [22, 23, 24];
 const GD_BT_MT = ["BT - Baixa Tensão", "MT - Média Tensão"];
-const GD_FAST_LIMITE_KW = 7.5;
 const GD_FAST_REGRAS = [
   "8.5.1 - não injeção na rede de distribuição (“Grid Zero”)",
   "8.5.2 - enquadramento nos critérios de gratuidade da REN 1.000/2021 e potência compatível com o consumo no horário de geração",

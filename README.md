@@ -45,21 +45,18 @@ Cada módulo é uma SPA independente (próprio `index.html`, CSS e JS), mas vár
 A homepage (`index.html`) renderiza o portal reutilizando `MODALIDADES_SECOES` (`bt/js/model.js`) e os componentes de `bt/js/components.js`. Apresenta cards agrupados por seção, nesta ordem:
 
 - **Média Tensão**: indústria, outros estabelecimentos e irrigante — todos `status: "link"` para `mt/` (com `?atividade=` quando aplicável).
-- **Geração Distribuída — Minigeração**: minigeração (`minigeracao/`) — `status: "link"`.
-- **Geração Distribuída — Microgeração**: microgeração (`microgeracao/`), **Fast Track** (`microgeracao/?modo=fasttrack`) e **Grid Zero** (`microgeracao/?modo=gridzero`) — todos `status: "link"`. Fast Track e Grid Zero abrem o mesmo formulário de microgeração com o campo correspondente pré-preenchido e bloqueado (ver abaixo).
+- **Geração Distribuída**: microgeração (`microgeracao/`) e minigeração (`minigeracao/`) — ambos `status: "link"`.
 - **Residencial · Comercial · Rural — Baixa Tensão**: casa até 50 m², casa até 100 m², casa > 100 m², comércio, indústria BT, rural — entram no fluxo BT interno, já pré-preenchido conforme o card escolhido (`prefill`).
 - **Empreendimentos — Baixa Tensão**: loteamento (`status: "link"` → `loteamento/`), condomínio de torres e atendimento coletivo (fluxo BT interno).
 
 Cards com `status: "ok"` aplicam o pré-preenchimento do card na inicialização: os de `formType: "individual"` abrem o formulário vanilla `bt/individual.html?mod=<id>` (`bt/js/individual-app.js`); os de coletivo/condomínio abrem a SPA React `bt/?mod=<id>` (`bt/js/app.js`). Cards com `status: "link"` navegam para a subpasta do módulo correspondente.
 
-### Modalidades pré-definidas de Microgeração (`?modo=`)
+### Fast Track (art. 73-A) e Grid Zero
 
-O app de microgeração (`microgeracao/js/app.js`) lê o parâmetro de query `modo` na inicialização:
+Fast Track e Grid Zero **não são modalidades de entrada**: são campos livres e independentes da etapa 2 (Identificação) do formulário de microgeração, e as regras derivam do preenchimento (`microgeracao/js/app.js`):
 
-- `?modo=fasttrack` — define e bloqueia o campo *Fast Track (art. 73-A)* como "Sim".
-- `?modo=gridzero` — define e bloqueia o campo *Grid Zero* como "Sim".
-
-O campo bloqueado fica desabilitado (overrides de `gdModoDaURL()` em `microgeracao/js/app.js`) e um banner indica a modalidade ativa. Sem o parâmetro, o formulário abre normalmente, com todos os campos editáveis.
+- **Fast Track = "Sim"** (`onFastTrack()`): revela e torna obrigatória a *Regra de enquadramento* (8.5.1/8.5.2/8.5.3, lista `GD_FAST_REGRAS`); trava a *Modalidade de compensação* em "Autoconsumo local"; e limita a potência ativa instalada da usina a `GD_FAST_LIMITE_USINA_KW` = **7,5 kW** (7500 W). Acima do limite, o aviso `#fastExcedeAviso` aparece e `validarExportacao()` bloqueia o PDF. Ao voltar para "Não", a regra é limpa e a modalidade destravada.
+- **Grid Zero = "Sim"**: informativo — consta no PDF e corresponde ao inciso 8.5.1, declarado no campo 8.5 da etapa 8. Não deriva trava alguma.
 
 ## Baixa Tensão (`bt/`)
 
