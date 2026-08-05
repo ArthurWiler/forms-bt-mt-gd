@@ -441,36 +441,40 @@ function conteudoFormularioMT() {
     });
   }
 
-  /* --- Geração e Baixa Tensão --- */
-  const ger = [
-    _c("Geração paralelismo momentâneo", state.gerMomentaneo, { step: 5 }),
-    _c("GRID ZERO", state.gridZero, { step: 5 }),
-    _c("BT na mesma propriedade", state.btMesmaProp, { step: 5 }),
-  ];
-  if (state.gerMomentaneo === "Sim")
-    ger.push(
-      _c("Potência ger. momentânea (kVA)", state.gerMomentaneoPot, { step: 5 }),
-    );
-  if (state.gridZero === "Sim")
-    ger.push(_c("Potência GRID ZERO (kVA)", state.gridZeroPot, { step: 5 }));
-  secoes.push({ titulo: "Geração e Baixa Tensão", campos: ger });
-
-  /* --- Ramal de Entrada (com o desenho do ramal escolhido) --- */
+  /* --- Ramal de entrada (com o desenho do ramal escolhido) ---
+     Vem ANTES da geração, na mesma ordem da etapa 6. */
   secoes.push({
-    titulo: "Ramal de Entrada",
+    titulo: "Ramal de entrada",
     campos: [
       state.ramalIndice != null
         ? {
             tipo: "imagem",
-            label: "Ramal de Entrada selecionado",
+            label: "Ramal de entrada selecionado",
             src: RAMAL_IMGS[state.ramalIndice],
             valor: CalculoMT.textoRamal(state.ramalIndice),
             full: true,
             step: 5,
           }
-        : _c("Ramal de Entrada", "(não selecionado)", { full: true, step: 5 }),
+        : _c("Ramal de entrada", "(não selecionado)", { full: true, step: 5 }),
     ],
   });
+
+  /* --- Geração e baixa tensão ---
+     A ordem espelha a da tela (etapa 6): cada pergunta é seguida
+     imediatamente pela sua potência condicional, e "BT na mesma
+     propriedade" fecha o bloco. */
+  const ger = [
+    _c("Geração paralelismo momentâneo", state.gerMomentaneo, { step: 5 }),
+  ];
+  if (state.gerMomentaneo === "Sim")
+    ger.push(
+      _c("Potência ger. momentânea (kVA)", state.gerMomentaneoPot, { step: 5 }),
+    );
+  ger.push(_c("GRID ZERO", state.gridZero, { step: 5 }));
+  if (state.gridZero === "Sim")
+    ger.push(_c("Potência GRID ZERO (kVA)", state.gridZeroPot, { step: 5 }));
+  ger.push(_c("BT na mesma propriedade", state.btMesmaProp, { step: 5 }));
+  secoes.push({ titulo: "Geração e baixa tensão", campos: ger });
 
   /* --- Observações --- */
   if (state.observacoes)
