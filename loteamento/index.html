@@ -295,8 +295,11 @@
                 <label>Coordenada UTM</label>
                 <input data-k="utm" readonly disabled placeholder=" " />
               </div>
+
+              <!-- Dentro do grid: .cmg-aviso tem margin:0 e depende do `gap`
+                   para não encostar nos campos; o :empty colapsa a linha. -->
+              <div class="col-span-3" id="coordAlert"></div>
             </div>
-            <div id="coordAlert"></div>
           </div>
           <div class="nav-bottom no-print">
             <button class="btn btn-ghost" onclick="goTo(1)">← Voltar</button>

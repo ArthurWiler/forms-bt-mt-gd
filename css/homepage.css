@@ -282,6 +282,15 @@ body {
 .modalidade-card.soon .modalidade-card-body strong {
   color: var(--texto-suave);
 }
+/* O card é um <button>, que herda text-align:center do UA. O align-items dos
+   flex containers acima só posiciona as linhas como itens flex — não alinha o
+   texto DENTRO de uma linha que quebra. Por isso títulos de uma linha só
+   pareciam corretos e o de Média Tensão ("Indústria, comércio, irrigação e
+   outros"), único que quebra em duas linhas, saía centralizado. */
+.modalidade-card {
+  text-align: left;
+}
+
 /* The responsive column counts live in shared.css
    (`.modalidade-screen .modalidade-grid`, an auto-fill grid that wins on
    specificity over the single-class rules here). The former 900px/560px

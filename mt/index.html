@@ -509,10 +509,10 @@
                   placeholder="Ramo da atividade"
                 />
               </div>
+              <div class="col-span-2" id="irrigacaoAlert"></div>
             </div>
-            <div id="irrigacaoAlert"></div>
 
-            <div class="grid grid-2" style="margin-top: 16px">
+            <div class="grid grid-2" style="margin-top: 16px" id="blocoZona">
               <div class="field field--plain">
                 <label>Localização <span class="req">*</span></label>
                 <div id="cardsLocalizacao"></div>
@@ -621,54 +621,65 @@
               </div>
             </div>
 
-            <div class="mapa-obra divider">
-              <p class="mapa-hint">
-                Confirme a localização da unidade no mapa. Se o pin estiver
-                incorreto, você pode clicar e arrastá-lo para ajustar.
-              </p>
-              <div
-                id="map"
-                style="height: 350px; width: 100%; border-radius: 8px"
-              ></div>
+            <!-- Mapa + coordenadas seguem a mesma cascata do endereço: só
+                 aparecem depois de atividade, ramo e zona preenchidos. -->
+            <div id="blocoMapaCoord" style="display: none">
+              <div class="mapa-obra divider">
+                <p class="mapa-hint">
+                  Confirme a localização da unidade no mapa. Se o pin estiver
+                  incorreto, você pode clicar e arrastá-lo para ajustar.
+                </p>
+                <div
+                  id="map"
+                  style="height: 350px; width: 100%; border-radius: 8px"
+                ></div>
+              </div>
+
+              <div class="grid grid-3">
+                <div class="field">
+                  <label id="latLabel"
+                    >Latitude <span class="req">*</span></label
+                  >
+                  <input
+                    type="number"
+                    step="any"
+                    data-k="latitude"
+                    placeholder=" "
+                    oninput="onCoord()"
+                  />
+                </div>
+                <div class="field">
+                  <label id="lonLabel"
+                    >Longitude <span class="req">*</span></label
+                  >
+                  <input
+                    type="number"
+                    step="any"
+                    data-k="longitude"
+                    placeholder=" "
+                    oninput="onCoord()"
+                  />
+                </div>
+
+                <div class="field">
+                  <label>Coordenada em UTM</label>
+                  <input
+                    type="text"
+                    data-k="utm"
+                    readonly
+                    disabled
+                    placeholder=" "
+                  />
+                </div>
+
+                <!-- Dentro do grid das coordenadas: o .cmg-aviso tem margin:0
+                     e depende do `gap` do grid para respirar — solto fora dele
+                     o aviso encostava nos campos. O col-span-3 ocupa a linha
+                     inteira e o :empty colapsa a linha quando não há aviso. -->
+                <div class="col-span-3" id="coordAlert"></div>
+              </div>
             </div>
-
-            <div class="grid grid-3">
-              <div class="field">
-                <label id="latLabel">Latitude <span class="req">*</span></label>
-                <input
-                  type="number"
-                  step="any"
-                  data-k="latitude"
-                  placeholder=" "
-                  oninput="onCoord()"
-                />
-              </div>
-              <div class="field">
-                <label id="lonLabel"
-                  >Longitude <span class="req">*</span></label
-                >
-                <input
-                  type="number"
-                  step="any"
-                  data-k="longitude"
-                  placeholder=" "
-                  oninput="onCoord()"
-                />
-              </div>
-
-              <div class="field">
-                <label>Coordenada em UTM</label>
-                <input
-                  type="text"
-                  data-k="utm"
-                  readonly
-                  disabled
-                  placeholder=" "
-                />
-              </div>
-            </div>
-
-            <div id="coordAlert"></div>
+            <!-- /blocoMapaCoord -->
 
             <div
               class="field field--plain"
@@ -923,9 +934,11 @@
                       placeholder=" "
                     />
                   </div>
-                </div>
 
-                <div id="coordNovaAlert"></div>
+                  <!-- Mesmo motivo do #coordAlert: .cmg-aviso tem margin:0 e
+                       precisa do `gap` do grid para não encostar nos campos. -->
+                  <div class="col-span-3" id="coordNovaAlert"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -1231,7 +1244,6 @@
                   <div class="se-gallery" id="seGallery_para"></div>
                 </div>
               </div>
-
             </div>
           </div>
           <div class="nav-bottom no-print">
