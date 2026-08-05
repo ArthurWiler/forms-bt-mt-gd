@@ -628,32 +628,24 @@ const SEC_BT_ESPECIAIS = {
     },
   ],
 };
+// Card único de Média Tensão. Indústria, Outros estabelecimentos e Irrigante
+// deixaram de ser cards/portas de entrada: os três apontavam para o mesmo
+// formulário e diferiam apenas no `?atividade=` da URL, que só pré-preenchia o
+// campo "Atividade desenvolvida na unidade" (etapa 3). As regras que dependem
+// da atividade — alerta de outorga/licença ambiental, checkbox "Destinado à
+// Irrigação" por motor e o card de desconto para irrigante/aquicultor — já
+// derivam do preenchimento desse campo, não do card de origem (ver mt/js/app.js
+// e mt/js/calculo.js). O deep-link `mt/?atividade=<valor>` continua funcionando.
 const SEC_MT = {
   titulo: "Média Tensão",
   cards: [
     {
-      id: "mt-industria",
-      nome: "Indústria",
-      sub: "Média Tensão (MT)",
-      img: "imgs/img_industria_mt.webp",
-      status: "link",
-      href: "mt/?atividade=Industrial",
-    },
-    {
       id: "mt-outros",
-      nome: "Outros estabelecimentos",
+      nome: "Indústria, comércio, irrigação e outros",
       sub: "Média Tensão (MT)",
       img: "imgs/img_outros_mt.webp",
       status: "link",
       href: "mt/",
-    },
-    {
-      id: "mt-irrigante",
-      nome: "Irrigante",
-      sub: "Média Tensão (MT)",
-      img: "imgs/img_irrigante.webp",
-      status: "link",
-      href: "mt/?atividade=Irrigação",
     },
   ],
 };
