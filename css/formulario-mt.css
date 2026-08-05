@@ -111,38 +111,121 @@
   color: var(--cmg-neutral-600);
 }
 /* .tbl-scroll (caixa externa com borda/raio) vem de shared.css. */
-/* ---- "Início de Uso" (input[type=month] em célula de tabela) ----
-   Mesmo padrão do campo de data do BT (Data de Nascimento): ícone de
-   calendário decorativo sempre visível, com o indicador NATIVO invisível
-   por baixo cobrindo a mesma área (regras em shared.css, já valendo para
-   [type=month]). Aqui o ancoramento é no .tbl-cal — a célula não é um
-   .field, então não há como reusar `.field > .field-hint-icon`. */
-.cemig-mtform .tbl td .tbl-cal {
-  position: relative;
-  display: block;
-}
-.cemig-mtform .tbl td .tbl-cal .field-cal-icon {
-  position: absolute;
-  top: 50%;
-  right: 4px;
-  transform: translateY(-50%);
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
-  pointer-events: none;
-}
-/* Texto do campo no padrão canônico do valor de campo (Figma / shared.css:
-   16px, +0.2px, neutra/700) — igual ao "Data de Nascimento" do BT, em vez
-   dos 13/14px genéricos das células da tabela. O padding-right reserva o
-   espaço do ícone. Sem filtrar por [type=month]: form-marcadores.js troca
-   o campo vazio para type=text (esconde o "mm/aaaa" nativo) e devolve o
-   month no foco. */
-.cemig-mtform .tbl td .tbl-cal input {
-  padding-right: 32px;
+/* ---- "Início de Uso" (campo mês/ano com seletor próprio) ----
+   Campo único e fechado, com o ícone de calendário à direita: mostra "Mês/Ano"
+   enquanto vazio e "Março/2028" depois de escolhido. Substitui o
+   input[type=month] nativo — ver _inicioUsoHTML (mt/js/app.js) para o porquê
+   (placeholder nativo impossível de remover e seletor que só abria pelo
+   indicador). É um <button>, então herda a métrica do campo de tabela
+   (40px/borda/raio) explicitamente, e não de `.tbl td input`. */
+.cemig-mtform .tbl td .mesano-campo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  height: 40px;
+  padding: 6px 12px;
+  background: var(--cmg-surface);
+  border: 1px solid var(--cmg-neutral-400);
+  border-radius: 4px;
+  font-family: var(--cmg-font-family);
   font-size: 16px;
   line-height: 24px;
   letter-spacing: 0.2px;
   color: var(--cmg-text-strong);
+  text-align: left;
+  cursor: pointer;
+}
+.cemig-mtform .tbl td .mesano-campo:focus-visible {
+  outline: none;
+  border-color: var(--cmg-green-600);
+  box-shadow: 0 0 0 2px var(--cmg-focus-ring);
+}
+/* Sem valor o rótulo é placeholder: mesma cor dos demais placeholders. */
+.cemig-mtform .tbl td .mesano-campo-txt.is-vazio {
+  color: var(--cmg-text-muted);
+}
+.cemig-mtform .tbl td .mesano-campo-icone {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  object-fit: contain;
+}
+/* ---- Painel do seletor ----
+   Fica no <body> (position:fixed) porque .tbl-scroll usa overflow-x:auto e
+   recortaria um painel ancorado dentro da célula. z-index abaixo da topbar
+   sticky (100) não serve — o painel precisa cobrir o conteúdo ao redor —,
+   então usa 90, acima das tabelas e abaixo de modais. */
+.cemig-mtform .mesano-painel,
+.mesano-painel {
+  position: fixed;
+  z-index: 90;
+  width: 232px;
+  padding: 8px;
+  background: var(--cmg-surface);
+  border: 1px solid var(--cmg-neutral-200);
+  border-radius: var(--cmg-radius);
+  box-shadow: var(--cmg-shadow-elevated);
+}
+.mesano-painel[hidden] {
+  display: none;
+}
+.mesano-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.mesano-nav-ano {
+  font-size: 14px;
+  font-weight: var(--cmg-fw-bold);
+  color: var(--cmg-neutral-600);
+}
+.mesano-nav-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--cmg-neutral-600);
+  cursor: pointer;
+}
+.mesano-nav-btn:hover:not(:disabled) {
+  background: var(--cmg-surface-accent);
+}
+.mesano-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+/* 12 meses em 3 colunas (abreviados: Jan, Fev, …). */
+.mesano-grade {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+.mesano-mes {
+  height: 34px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-family: var(--cmg-font-family);
+  font-size: 13px;
+  color: var(--cmg-neutral-600);
+  cursor: pointer;
+}
+.mesano-mes:hover {
+  background: var(--cmg-surface-accent);
+}
+.mesano-mes.is-sel {
+  background: var(--cmg-green-600);
+  color: var(--cmg-neutral-0);
 }
 /* Sem spinner nos campos numéricos (mesmo ajuste do BT). */
 .cemig-mtform input[type="number"]::-webkit-inner-spin-button,
@@ -678,49 +761,25 @@
   font-weight: var(--cmg-fw-bold);
   color: var(--cmg-text);
 }
-.cemig-mtform .se-info {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--cmg-neutral-600);
-  color: var(--cmg-neutral-0);
-  font-size: 12px;
-  font-weight: 700;
-  font-style: italic;
-  font-family: Georgia, serif;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2;
-  cursor: help;
+/* .se-info / .se-tooltip removidos junto com o badge (i) da galeria de tipos
+   de subestação — ver renderGaleriaSE em mt/js/app.js. Os formulários de GD
+   (micro/mini) têm cópias próprias dessas regras e seguem com o tooltip. */
+
+/* ---- Resumo dos dados (KPIs acima da escolha da subestação) ----
+   Os cards reusam o padrão canônico .resultado-kpis--linha / .resultado-card
+   (shared.css), inclusive o gap de --cmg-space-4 ENTRE eles. Aqui só se
+   corrige o vão do TÍTULO para a linha de cards: .card-subtitle traz apenas
+   --cmg-space-2 abaixo, apertado para uma faixa de cards. O respiro acima e
+   abaixo do bloco inteiro vem do .divider do próprio título, igual aos demais
+   blocos da etapa — sem margem extra aqui, que somaria duas vezes. */
+.cemig-mtform #blocoResumoSE .resultado-kpis {
+  margin-top: var(--cmg-space-4);
 }
-.cemig-mtform .se-tooltip {
-  position: absolute;
-  bottom: calc(100% + 10px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: 240px;
-  background: var(--cmg-neutral-600);
-  color: var(--cmg-neutral-0);
-  font-style: normal;
-  font-weight: 400;
-  font-size: 11.5px;
-  line-height: 1.5;
-  text-align: left;
-  padding: 10px 12px;
-  border-radius: 8px;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.18s, visibility 0.18s;
-  z-index: 30;
-  pointer-events: none;
-}
-.cemig-mtform .se-card:hover .se-tooltip {
-  opacity: 1;
-  visibility: visible;
+/* Os cards da faixa têm altura própria (rótulo de 1 ou 2 linhas): stretch faz
+   todos acompanharem o mais alto, senão o de rótulo curto ("Cubículos") fica
+   visivelmente mais baixo que os vizinhos. */
+.cemig-mtform #blocoResumoSE .resultado-kpis--linha {
+  align-items: stretch;
 }
 
 /* ---- FAB + modal Anexo II (Conversão de Potências) ---- */

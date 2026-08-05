@@ -1169,6 +1169,17 @@
                 </div>
               </div>
 
+              <!-- Resumo dos dados (KPIs) — montado por renderResumoSE(), logo
+                   acima da escolha do tipo de subestação: são os totais que
+                   determinam quais modelos são permitidos. -->
+              <div id="blocoResumoSE" style="display: none">
+                <h4 class="card-subtitle divider">Resumo dos dados</h4>
+                <div
+                  class="resultado-kpis resultado-kpis--linha"
+                  id="resumoSEKpis"
+                ></div>
+              </div>
+
               <!-- Tipo de subestação — a seleção é feita pela galeria visual
                    (renderGaleriaSE); os <select> ficam como fonte de estado
                    e são espelhados pelos cards. Potência/quantidade não
@@ -1211,24 +1222,12 @@
                 </select>
                 <div class="se-gallery" id="seGallery_atual"></div>
 
-                <div class="field field--plain bloco-sub-gap">
-                  <label
-                    >Haverá troca do tipo de subestação?
-                    <span class="req">*</span></label
-                  >
-                  <select
-                    id="alt_troca"
-                    data-k="alt_troca"
-                    onchange="onTrocaSE()"
-                  >
-                    <option value=""></option>
-                    <option>Sim</option>
-                    <option>Não</option>
-                  </select>
-                </div>
-
-                <div id="seGalleryBox_para" style="display: none">
-                  <p class="card-sub">
+                <!-- A pergunta "Haverá troca do tipo de subestação?" saiu: a
+                     galeria do novo modelo é sempre exibida (fora Conexão Nova)
+                     e a troca passa a ser DEDUZIDA — há troca quando o modelo
+                     escolhido aqui difere do atual. Ver _trocaSEDeduzida(). -->
+                <div id="seGalleryBox_para">
+                  <p class="card-sub bloco-sub-gap">
                     Indique o <strong>novo modelo</strong> que será instalado em
                     sua propriedade.
                   </p>

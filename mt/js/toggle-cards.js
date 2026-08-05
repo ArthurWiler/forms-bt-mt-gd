@@ -30,11 +30,13 @@ const TOGGLE_CARDS_CONFIG = {
   },
   // "desejaVenc" não entra aqui: esse campo é controlado pelos cards de
   // "Dia do vencimento" (CAMPOS_CARDS_CONFIG.diaVencimento em app.js).
+  // "alt_troca" saiu: a pergunta "Haverá troca do tipo de subestação?" não
+  // existe mais na tela — o valor é deduzido da comparação entre a galeria do
+  // modelo atual e a do novo (_trocaSEDeduzida em app.js).
   camposSimNao: [
     "mudancaLocal",
     "subPronta",
     "compartilhada",
-    "alt_troca",
     "monomia",
     "escalonada",
     "gerMomentaneo",

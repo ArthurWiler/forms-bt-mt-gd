@@ -333,8 +333,7 @@ function onFinalidade() {
   }
   // mostra a galeria de subestação da conexão nova ou a da alteração
   const ehNova = v === "Conexão Nova";
-  $("#blocoSubestacaoNova").style.display = ehNova ? "block" : "none";
-  $("#blocoSubestacaoAlteracao").style.display = v && !ehNova ? "block" : "none";
+  atualizarVisibilidadeSE();
   // Em Conexão Nova não existe trafo a substituir: descarta a marcação e os
   // valores novos para que não vazem no cálculo nem no PDF.
   if (ehNova) {
@@ -603,8 +602,10 @@ function ehAtividadeIrrigacao() {
 // card de Localização fica oculto; enquanto a zona não for escolhida, nenhum
 // bloco de endereço aparece (blocoUrbano/blocoRural seguem sob onLocalizacao).
 function _ucIdentificada() {
-  return !!String(state.atividade || "").trim() &&
-    !!String(state.ramoAtividade || "").trim();
+  return (
+    !!String(state.atividade || "").trim() &&
+    !!String(state.ramoAtividade || "").trim()
+  );
 }
 function atualizarCascataUC() {
   const pronto = _ucIdentificada();
@@ -1754,7 +1755,9 @@ function _instalacaoEscalonadaCardsHTML(atual) {
 }
 /* Tabela de etapas da instalação — colunas conforme a modalidade. */
 function _instalacaoEscalonadaTabelaHTML() {
-  if (state.escalonada !== "Sim") return "";
+  // As colunas saem da modalidade (Azul = ponta/fora ponta): sem ela a tabela
+  // não tem como nascer com o cabeçalho certo.
+  if (state.escalonada !== "Sim" || !state.modalidade) return "";
   const azul = state.modalidade === "Azul";
   const head = azul
     ? `<tr><th>Demanda ponta (kW)</th><th>Demanda fora ponta (kW)</th><th>Início de uso</th><th></th></tr>`
@@ -1781,8 +1784,12 @@ function _instalacaoEscalonadaTabelaHTML() {
     </div>`;
 }
 /* Demanda simples e escalonada são exclusivas: com escalonamento, a tabela de
-   etapas passa a ser a única entrada de demanda. */
+   etapas passa a ser a única entrada de demanda.
+   Os campos dependem das DUAS perguntas (modalidade define ponta/fora ponta x
+   demanda única; escalonada define se existem): enquanto uma delas estiver em
+   branco não há o que renderizar sem chutar. */
 function _instalacaoDemandaFieldsHTML() {
+  if (!state.modalidade || !state.escalonada) return "";
   if (state.escalonada === "Sim") return "";
   return state.modalidade === "Azul"
     ? `<div class="field"><label>Demanda ponta contratada (kVA)</label><input type="number" step="any" data-k="demandaPontaContratada" value="${state.demandaPontaContratada ?? ""}" placeholder=" " oninput="state.demandaPontaContratada=this.value;recalcTecnico()"></div>
@@ -1793,19 +1800,161 @@ function renderTarifacaoInstalacao() {
   const box = $("#trafoTarifacao");
   if (!box) return;
   const demandaFields = _instalacaoDemandaFieldsHTML();
+  // As duas perguntas dividem a linha: são a entrada da seção e juntas definem
+  // quais campos de demanda existem abaixo. Em <=720px o .grid-2 já colapsa.
   box.innerHTML = `
-      <div class="field field--plain"><label>Modalidade tarifária horária</label>${_instalacaoModalidadeCardsHTML(state.modalidade)}</div>
+      <div class="grid grid-2">
+        <div class="field field--plain"><label>Modalidade tarifária horária</label>${_instalacaoModalidadeCardsHTML(state.modalidade)}</div>
+        <div class="field field--plain"><label>Haverá demanda escalonada?</label>${_instalacaoEscalonadaCardsHTML(state.escalonada)}</div>
+      </div>
       ${demandaFields ? `<div class="grid grid-2 cub-demanda-grid">${demandaFields}</div>` : ""}
-      <div class="field field--plain bloco-sub-gap"><label>Haverá demanda escalonada?</label>${_instalacaoEscalonadaCardsHTML(state.escalonada)}</div>
       ${_instalacaoEscalonadaTabelaHTML()}`;
+  // O innerHTML acima recria os "Início de uso" (input[type=month]) crus: sem
+  // reaplicar, ficam com o placeholder nativo ("--------- de ----") e sem os
+  // handlers de foco/blur que o escondem. Vale para todos os caminhos que
+  // chamam esta função (add/remover etapa, trocar modalidade/escalonada).
+  reaplicarMarcadores();
 }
-/* Campo "Início de Uso" das tabelas de demanda escalonada. Reusa o padrão do
-   campo de data do BT (Data de Nascimento): ícone de calendário decorativo
-   sempre visível sobre o indicador nativo invisível (CSS em
-   formulario-mt.css / shared.css). `alvo` é a expressão de destino do valor
-   (ex.: "trafos[0].etapasEscalonada[1].inicio"), interpolada no oninput. */
+/* ---- Campo "Início de Uso" (mês/ano) ----
+   Um campo ÚNICO e fechado, com o ícone de calendário: mostra "Mês/Ano"
+   enquanto vazio e "Março/2028" depois de escolhido. O clique em qualquer
+   ponto abre um seletor próprio (painel de 12 meses + navegação de ano).
+
+   Por que não input[type=month]: um month VAZIO sempre desenha o placeholder
+   nativo do browser ("--------- de ----" em pt-BR), que nenhum atributo ou CSS
+   remove, e o seletor nativo só abre pelo indicador, não pelo campo todo.
+   Com um widget próprio o texto e o comportamento são 100% nossos.
+
+   O valor continua sendo gravado no MESMO formato ISO "YYYY-MM" do month, então
+   nada muda para quem consome (state, PDF em conteudo.js, rascunho salvo).
+   Só o ano corrente em diante é ofertado — a etapa é previsão de início de uso.
+   `alvo` é a expressão de destino (ex.: "trafos[0].etapasEscalonada[1].inicio"),
+   avaliada na escolha. */
+const INICIO_USO_MESES = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
+const INICIO_USO_ANOS = 15; // ano corrente + 14
+/* "2028-03" → "Março/2028" (rótulo do campo). Vazio/inválido → "". */
+function _inicioUsoRotulo(valor) {
+  const m = /^(\d{4})-(\d{2})$/.exec(valor || "");
+  if (!m) return "";
+  const mes = INICIO_USO_MESES[Number(m[2]) - 1];
+  return mes ? `${mes}/${m[1]}` : "";
+}
 function _inicioUsoHTML(alvo, valor) {
-  return `<span class="tbl-cal"><input type="month" value="${valor}" oninput="${alvo}=this.value"><img class="field-cal-icon" src="../imgs/calendar.svg" alt="" aria-hidden="true"></span>`;
+  const rot = _inicioUsoRotulo(valor);
+  // O alvo vai no data-* e só é avaliado na escolha (eval no _inicioUsoEscolher).
+  // Botão, não input: nada de teclado nativo nem placeholder do browser.
+  return `<button type="button" class="mesano-campo" data-alvo="${alvo}" data-valor="${valor || ""}" onclick="_inicioUsoAbrir(this)" aria-haspopup="dialog">
+      <span class="mesano-campo-txt${rot ? "" : " is-vazio"}">${rot || "Mês/Ano"}</span>
+      <img class="mesano-campo-icone" src="../imgs/calendar.svg" alt="" aria-hidden="true">
+    </button>`;
+}
+/* Painel único reaproveitado por todos os campos (só um fica aberto por vez).
+   Vive no <body> porque .tbl-scroll tem overflow-x:auto e recortaria um
+   painel posicionado dentro da célula. */
+let _mesanoPainel = null;
+let _mesanoCampo = null; // botão que abriu o painel
+let _mesanoAno = 0; // ano exibido na navegação
+function _inicioUsoAbrir(botao) {
+  if (_mesanoCampo === botao) return _inicioUsoFechar(); // clique no mesmo = alterna
+  _mesanoCampo = botao;
+  const m = /^(\d{4})-(\d{2})$/.exec(botao.dataset.valor || "");
+  _mesanoAno = m ? Number(m[1]) : new Date().getFullYear();
+  if (!_mesanoPainel) {
+    _mesanoPainel = document.createElement("div");
+    _mesanoPainel.className = "mesano-painel";
+    _mesanoPainel.setAttribute("role", "dialog");
+    _mesanoPainel.setAttribute("aria-label", "Escolha o mês e o ano");
+    document.body.appendChild(_mesanoPainel);
+    // Fecha ao clicar fora, no ESC, ou quando a página rola/redimensiona (o
+    // painel é position:fixed e descolaria do campo).
+    document.addEventListener("mousedown", (e) => {
+      if (
+        _mesanoCampo &&
+        !_mesanoPainel.contains(e.target) &&
+        !e.target.closest(".mesano-campo")
+      )
+        _inicioUsoFechar();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") _inicioUsoFechar();
+    });
+    window.addEventListener("scroll", () => _mesanoCampo && _inicioUsoFechar(), true);
+    window.addEventListener("resize", () => _mesanoCampo && _inicioUsoFechar());
+  }
+  _inicioUsoPintar();
+  _mesanoPainel.hidden = false;
+  _inicioUsoPosicionar();
+}
+function _inicioUsoFechar() {
+  if (_mesanoPainel) _mesanoPainel.hidden = true;
+  _mesanoCampo = null;
+}
+/* Desenha o painel para o ano corrente da navegação. Meses fora da faixa
+   permitida (antes do ano atual, além do teto) ficam desabilitados. */
+function _inicioUsoPintar() {
+  const anoMin = new Date().getFullYear();
+  const anoMax = anoMin + INICIO_USO_ANOS - 1;
+  const sel = /^(\d{4})-(\d{2})$/.exec(_mesanoCampo.dataset.valor || "");
+  const selAno = sel ? Number(sel[1]) : 0;
+  const selMes = sel ? Number(sel[2]) : 0;
+  const grade = INICIO_USO_MESES.map((nome, i) => {
+    const mm = i + 1;
+    const ativo = selAno === _mesanoAno && selMes === mm;
+    return `<button type="button" class="mesano-mes${ativo ? " is-sel" : ""}" onclick="_inicioUsoEscolher(${mm})">${nome.slice(0, 3)}</button>`;
+  }).join("");
+  _mesanoPainel.innerHTML = `
+      <div class="mesano-nav">
+        <button type="button" class="mesano-nav-btn" onclick="_inicioUsoAno(-1)" ${_mesanoAno <= anoMin ? "disabled" : ""} aria-label="Ano anterior">‹</button>
+        <span class="mesano-nav-ano">${_mesanoAno}</span>
+        <button type="button" class="mesano-nav-btn" onclick="_inicioUsoAno(1)" ${_mesanoAno >= anoMax ? "disabled" : ""} aria-label="Próximo ano">›</button>
+      </div>
+      <div class="mesano-grade">${grade}</div>`;
+}
+function _inicioUsoAno(d) {
+  _mesanoAno += d;
+  _inicioUsoPintar();
+  _inicioUsoPosicionar();
+}
+/* Grava no state (via o alvo do data-*) e atualiza o rótulo do campo. */
+function _inicioUsoEscolher(mes) {
+  const iso = `${_mesanoAno}-${String(mes).padStart(2, "0")}`;
+  const botao = _mesanoCampo;
+  botao.dataset.valor = iso;
+  const txt = botao.querySelector(".mesano-campo-txt");
+  txt.textContent = _inicioUsoRotulo(iso);
+  txt.classList.remove("is-vazio");
+  // eslint-disable-next-line no-eval -- mesmo contrato dos oninput inline das
+  // tabelas: o alvo é uma expressão de caminho gerada aqui, não entrada do usuário.
+  eval(`${botao.dataset.alvo}=iso`);
+  _inicioUsoFechar();
+  recalcTecnico();
+}
+/* position:fixed ancorado ao campo; vira para cima se não couber embaixo. */
+function _inicioUsoPosicionar() {
+  const r = _mesanoCampo.getBoundingClientRect();
+  const p = _mesanoPainel;
+  p.style.visibility = "hidden";
+  p.hidden = false;
+  const alt = p.offsetHeight;
+  const larg = p.offsetWidth;
+  const cabeEmbaixo = r.bottom + 4 + alt <= window.innerHeight;
+  p.style.top = `${cabeEmbaixo ? r.bottom + 4 : Math.max(4, r.top - 4 - alt)}px`;
+  // Alinha pela esquerda do campo, sem vazar da janela.
+  p.style.left = `${Math.max(4, Math.min(r.left, window.innerWidth - larg - 4))}px`;
+  p.style.visibility = "";
 }
 /* --- Cubículos adicionais (Anexo I) --- */
 let cubiculosAbertos = new Set([0]); // índices dos cards expandidos (acordeão)
@@ -1983,7 +2132,9 @@ function validarDemandaCubiculo(i) {
   if (!c) return;
   const el = $("#cubDemandaAlert" + i);
   if (!el) return;
-  const potCub = CalculoMT.calcularTrafos(trafosFuturos(c.trafos)).potenciaTotal;
+  const potCub = CalculoMT.calcularTrafos(
+    trafosFuturos(c.trafos),
+  ).potenciaTotal;
   const demCub = demandaRepresentativaCubiculo(c);
   el.innerHTML =
     demCub > 0 && potCub > 0 && demCub > potCub
@@ -2499,9 +2650,9 @@ function recalcTecnico() {
   const rt =
     state.compartilhada === "Sim"
       ? totaisCubiculos()
-      // Num trafo marcado para troca o que dimensiona a instalação é a
-      // potência NOVA — a atual sai junto com o equipamento antigo.
-      : CalculoMT.calcularTrafos(trafosFuturos(trafos));
+      : // Num trafo marcado para troca o que dimensiona a instalação é a
+        // potência NOVA — a atual sai junto com o equipamento antigo.
+        CalculoMT.calcularTrafos(trafosFuturos(trafos));
   // Os totais alimentam state (tipo de SE, tarifa monômia, conexão nova…);
   // a faixa de resumo dos transformadores foi removida da tela, por isso a
   // escrita nos elementos é condicional.
@@ -2509,8 +2660,7 @@ function recalcTecnico() {
   state.qtdTotalTrafos = rt.quantidadeTotal;
   if ($("#trafoPotTotal"))
     $("#trafoPotTotal").textContent = fmt(rt.potenciaTotal);
-  if ($("#trafoQtdTotal"))
-    $("#trafoQtdTotal").textContent = rt.quantidadeTotal;
+  if ($("#trafoQtdTotal")) $("#trafoQtdTotal").textContent = rt.quantidadeTotal;
   // Os campos readonly que replicavam pot/qtde (cn_pot, cn_qtd, alt_potFutura,
   // alt_qtdFutura) saíram da tela junto com os blocos de Conexão Nova e
   // Alteração: a tabela de transformadores já é a fonte desses totais.
@@ -2522,6 +2672,9 @@ function recalcTecnico() {
       $("#totConsolidadoDemanda").value = fmt(rt.demandaTotal);
   }
   renderMotores();
+  // KPIs + visibilidade da escolha de subestação: dependem dos totais recém
+  // calculados acima, então vêm antes de popular as listas de tipos.
+  atualizarVisibilidadeSE();
   // tipo de subestação automático
   preencherTiposSE();
   // A validação de tarifa monômia e de demanda era feita sobre os campos
@@ -2530,6 +2683,74 @@ function recalcTecnico() {
   recalcRamal();
 }
 
+/* ===== Resumo dos dados (KPIs) + visibilidade da escolha de subestação =====
+   Os KPIs mostram os totais que DETERMINAM quais modelos de subestação são
+   permitidos (demanda e potência respondem pelos tetos de cada modelo), por
+   isso ficam imediatamente acima da galeria.
+
+   A seção só aparece quando há dados suficientes para os totais fazerem
+   sentido — do contrário o usuário veria "0 kVA" e uma lista de modelos
+   calculada sobre o vazio. O critério é o mesmo que alimenta
+   tiposSubestacaoPermitidos(): nível de tensão, o tipo de instalação
+   (compartilhada ou não) e potência/demanda já lançadas. */
+function _resumoSEPronto() {
+  if (!state.tensaoMT || !state.compartilhada) return false;
+  // Sem potência declarada não há como dimensionar: os cards de transformador
+  // (ou de cubículo) ainda não foram preenchidos.
+  if (!(state.potTotalTrafos > 0)) return false;
+  const demanda =
+    state.compartilhada === "Sim"
+      ? state.demandaTotalCubiculos
+      : demandaRepresentativaInstalacao();
+  return demanda > 0;
+}
+function renderResumoSE() {
+  const box = $("#blocoResumoSE");
+  const grade = $("#resumoSEKpis");
+  if (!box || !grade) return false;
+  const pronto = _resumoSEPronto();
+  box.style.display = pronto ? "block" : "none";
+  if (!pronto) {
+    grade.innerHTML = "";
+    return false;
+  }
+  const compart = state.compartilhada === "Sim";
+  const demanda = compart
+    ? state.demandaTotalCubiculos
+    : demandaRepresentativaInstalacao();
+  // "Cubículos" só existe na compartilhada; nas demais o primeiro KPI não faz
+  // sentido e a linha fica com 3 cards.
+  const kpis = [
+    ...(compart ? [["Cubículos", String(cubiculos.length)]] : []),
+    ["Demanda total dos transformadores", `${fmt(demanda)} kVA`],
+    ["Potência total dos transformadores", `${fmt(state.potTotalTrafos)} kVA`],
+    ["Quantidade total de transformadores", String(state.qtdTotalTrafos ?? 0)],
+  ];
+  grade.innerHTML = kpis
+    .map(
+      ([rot, val]) =>
+        `<div class="resultado-card">
+          <div class="resultado-card-label">${rot}</div>
+          <div class="resultado-card-valor">${val}</div>
+        </div>`,
+    )
+    .join("");
+  return true;
+}
+/* Exibe a escolha do tipo de subestação (nova ou alteração) só quando a
+   finalidade está definida E os totais já existem — os mesmos totais dos KPIs,
+   que são o que filtra os modelos permitidos. Fonte única da visibilidade:
+   chamada tanto por onFinalidade() quanto por recalcTecnico(), para que o
+   critério não divirja entre os dois caminhos. */
+function atualizarVisibilidadeSE() {
+  const v = state.finalidade;
+  const ehNova = v === "Conexão Nova";
+  const pronto = renderResumoSE();
+  const boxNova = $("#blocoSubestacaoNova");
+  const boxAlt = $("#blocoSubestacaoAlteracao");
+  if (boxNova) boxNova.style.display = ehNova && pronto ? "block" : "none";
+  if (boxAlt) boxAlt.style.display = v && !ehNova && pronto ? "block" : "none";
+}
 function preencherTiposSE() {
   // A demanda contratada é quem responde pelos tetos de 300 kW dos modelos;
   // a potência instalada entra como piso de existência. Na compartilhada a
@@ -2610,10 +2831,8 @@ function renderGaleriaSE(containerId, selectId) {
     .map((o) => {
       const m = o.value.match(/(\d+)/);
       const img = m && SUBESTACAO_IMGS[m[1]];
-      const info = m && SUBESTACAO_INFO[m[1]];
       const sel_ = o.value === sel.value ? "selected" : "";
       return `<div class="se-card ${sel_}" onclick="selecionarSE('${selectId}','${o.value}')">
-      ${info ? `<span class="se-info">i<span class="se-tooltip">${info}</span></span>` : ""}
       ${img ? `<img src="${img}" alt="${o.value}">` : ""}
       <div class="lbl">${o.value}</div>
     </div>`;
@@ -2661,8 +2880,9 @@ function validarDemandasTodas() {
   const out = [];
   if (state.compartilhada === "Sim") {
     cubiculos.forEach((c, i) => {
-      const pot = CalculoMT.calcularTrafos(trafosFuturos(c.trafos))
-        .potenciaTotal;
+      const pot = CalculoMT.calcularTrafos(
+        trafosFuturos(c.trafos),
+      ).potenciaTotal;
       const dem = demandaRepresentativaCubiculo(c);
       if (dem > 0 && pot > 0 && dem > pot)
         out.push({
@@ -2682,18 +2902,21 @@ function validarDemandasTodas() {
   return out;
 }
 
-/* ===== Alteração: troca de SE ===== */
-function onTrocaSE() {
-  state.alt_troca = $("#alt_troca").value;
-  $("#alt_tipoParaBox").style.display = state.alt_troca === "Sim" ? "" : "none";
-  $("#seGalleryBox_para").style.display =
-    state.alt_troca === "Sim" ? "block" : "none";
-  $("#alt_tipoAtualLbl").innerHTML =
-    state.alt_troca === "Sim"
-      ? 'Tipo de Subestação (De) <span class="req">*</span>'
-      : 'Tipo de Subestação atual <span class="req">*</span>';
-  reaplicarMarcadores();
-  recalcRamal();
+/* ===== Alteração: troca de SE (deduzida) =====
+   A pergunta "Haverá troca do tipo de subestação?" saiu da tela: as duas
+   galerias (modelo atual e novo modelo) são sempre exibidas fora de Conexão
+   Nova, e a troca é DEDUZIDA da comparação entre elas.
+
+   Há troca quando o novo modelo foi escolhido e difere do atual. Enquanto o
+   usuário não escolher o novo modelo, vale "Não" — é o mesmo default de antes
+   (campo vazio), e grupoRamal() já trata "" como sem troca. Isso preserva os
+   grupos RAMAL4/RAMAL5, que só existem no caminho sem troca. */
+function _trocaSEDeduzida() {
+  if (state.finalidade === "Conexão Nova") return "";
+  const atual = $("#alt_tipoAtual")?.value || "";
+  const novo = $("#alt_tipoPara")?.value || "";
+  if (!novo) return "Não";
+  return novo === atual ? "Não" : "Sim";
 }
 
 /* ===== Geração ===== */
@@ -2742,6 +2965,9 @@ function tipoSEefetivo() {
 }
 function recalcRamal() {
   state.cn_tipoSE = $("#cn_tipoSE")?.value || state.cn_tipoSE;
+  // A troca deixou de ser perguntada: recalcula a partir das duas galerias
+  // ANTES de tipoSEefetivo(), que depende dela para saber qual modelo vale.
+  state.alt_troca = _trocaSEDeduzida();
   const tipoSE = tipoSEefetivo();
   const g = CalculoMT.grupoRamal({
     finalidade: state.finalidade,
@@ -2824,7 +3050,8 @@ function camposObrigatoriosFaltando() {
       trafos.length > 0 &&
       trafos.every(
         (t) =>
-          String(t.potencia).trim() !== "" && String(t.demanda ?? "").trim() !== "",
+          String(t.potencia).trim() !== "" &&
+          String(t.demanda ?? "").trim() !== "",
       );
     if (!ok) faltando.push("Transformador(es)");
   }
