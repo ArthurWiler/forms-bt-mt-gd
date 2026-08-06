@@ -74,11 +74,11 @@ function conteudoFormularioMT() {
   /* --- Correspondência (etapa 7) --- */
   const cor = [
     _c("Como deseja receber a fatura?", state.formaCorresp, { step: 6 }),
+    // Campo opcional: sem dia escolhido, a prévia mostra o vazio padrão em
+    // vez de um "Não" — o usuário não recusou nada, apenas não informou.
     _c(
       "Vencimento escolhido",
-      state.desejaVenc === "Sim"
-        ? "Sim — dia " + (state.diaVenc || "—")
-        : state.desejaVenc,
+      state.desejaVenc === "Sim" && state.diaVenc ? "Dia " + state.diaVenc : "",
       { step: 6 },
     ),
   ];

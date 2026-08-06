@@ -19,8 +19,9 @@ function gdEstadoInicial() {
     filiacao: "",
     rg: "",
     nasc: "",
-    laudoMedico: "Não",
-    nis: "Não",
+    // Selects com opção vazia "—" na etapa 2 (padrão MT): começam sem escolha.
+    laudoMedico: "",
+    nis: "",
     numNis: "",
     logradouro: "",
     numero: "",
@@ -32,7 +33,27 @@ function gdEstadoInicial() {
     telefone: "",
     celular: "",
     email: "",
+    // Responsável técnico (bloco espelhado da etapa "Dados para contato" do MT)
+    rtNome: "",
+    rtEmail: "",
+    rtCelular: "",
     // 2 - Dados da UC
+    // Bloco espelhado da etapa "Dados da unidade consumidora" do BT:
+    // a zona alterna o endereço entre urbano (CEP/logradouro) e rural
+    // (distrito/propriedade/ponto de referência).
+    localizacao: "Urbana",
+    distritoComunidade: "",
+    nomePropriedade: "",
+    pontoRef: "",
+    instProxima: "",
+    prontoLigar: "",
+    tipoRede: "Trifásica",
+    transformador: "",
+    // Restrição ambiental: derivada da consulta do mapa (shared/js/geo.js).
+    restricaoAmbiental: "",
+    restricaoAceite: false,
+    restricoesTexto: "",
+    restricoesDetalhe: [],
     // Coordenadas: o usuário informa Latitude/Longitude; fuso/utmE/utmN são
     // derivados automaticamente (latLonParaUTM) — mantidos p/ validação e PDF.
     latitude: "",
@@ -54,7 +75,21 @@ function gdEstadoInicial() {
     qteDisjGeral: "",
     tensaoAtendimento: "",
     mudancaLocal: "Não",
-    distMenor30: "",
+    // Novo local do padrão de entrada (etapa 5, só com mudancaLocal="Sim").
+    // Endereço PRÓPRIO, independente do endereço da unidade da etapa 3: o
+    // padrão pode mudar de local sem que a unidade mude de endereço.
+    mudCep: "",
+    mudLogradouro: "",
+    mudNumero: "",
+    mudComplemento: "",
+    mudBairro: "",
+    mudMunicipio: "",
+    mudEstado: "MG",
+    mudLatitude: "",
+    mudLongitude: "",
+    mudFuso: "",
+    mudUtmE: "",
+    mudUtmN: "",
     telhadoArrendado: "Não",
     duasInstalacoesDUB: "Não",
     instExistente: "",
@@ -69,8 +104,16 @@ function gdEstadoInicial() {
     cargas: { qtds: [], tipoA: "", catA: 0, mots: [], extras: [] },
     cargaDisjEscolhido: "",
     // 4 - Dados da geração
-    fontePrimaria: "Solar",
-    tipoGeracao: "Empregando conversor eletrônico/inversor",
+    // Modalidade de operação do sistema solar: card único que substitui os
+    // campos separados fastTrack/gridZero (mantidos derivados por
+    // onModoOperacaoGD para não quebrar PDF, prévia e regras do art. 73-A).
+    modoOperacao: "",
+    producaoMensal: "",
+    // Sem padrão: a fonte é escolha explícita do solicitante (o select abre
+    // vazio). Os blocos FV/modalidade de operação só aparecem após "Solar".
+    fontePrimaria: "",
+    // Sem padrão: tecnologia é escolha explícita (o select abre vazio).
+    tipoGeracao: "",
     tipoGeracaoOutro: "",
     modalidade: "",
     qtdInstalacoesCredito: "",
@@ -132,5 +175,7 @@ function gdEstadoInicial() {
     corrMunicipio: "",
     corrEstado: "MG",
     contaGlobal: "",
+    // Observações (etapa própria, espelhando o BT)
+    obs: "",
   };
 }

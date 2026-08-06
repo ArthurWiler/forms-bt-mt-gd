@@ -1,0 +1,231 @@
+<!--
+  ============================================================
+  CAMPOS NÃO ALOCADOS — área de espera (oculta na tela)
+  ------------------------------------------------------------
+  Etapas definitivas do microGD (8): Orientações, Dados do
+  proprietário, Dados da unidade, Tipo de atendimento, Cargas
+  das UCs, Correspondência, Observações, Prévia & PDF.
+
+  Os campos abaixo pertenciam a etapas que deixaram de existir
+  e ainda não têm destino definido. Ficam AQUI, fora da tela,
+  para que:
+    - o estado (data-k) continue bindado e o PDF não perca dado;
+    - os handlers de initFormulario() sigam encontrando os
+      elementos que consultam (nada quebra no boot);
+    - cada campo seja localizável pela marcação data-alocar,
+      que nomeia a etapa de origem.
+
+  Para realocar: mova o bloco .campo-nao-alocado para o
+  fragmento da etapa de destino e remova o atributo data-alocar.
+  Busca rápida: grep -rn "data-alocar" microgeracao/etapas/
+  <!-- ===== origem: Dados técnicos da UC ===== -->
+<div class="grid grid-2">
+  <div
+    class="field field--plain campo-nao-alocado"
+    data-alocar="dados-uc"
+    data-noopt
+  >
+    <label>
+      Possui Grupo Motor Gerador de Emergência em Paralelo com a Cemig
+      (Diesel/Gás)?
+    </label>
+    <div id="cardsGeradorEmergencia"></div>
+    <select
+      data-k="geradorEmergencia"
+      onchange="onGeradorEmergencia()"
+      style="display: none"
+      aria-hidden="true"
+    >
+      <option>Não</option>
+      <option>Sim</option>
+    </select>
+  </div>
+  <div
+    class="field campo-nao-alocado"
+    data-alocar="dados-uc"
+    id="geradorPotBox"
+    style="display: none"
+  >
+    <label>Potência (kVA)</label>
+    <input
+      type="text"
+      data-k="geradorPotencia"
+      placeholder=" "
+      oninput="onNumDec(this)"
+    />
+  </div>
+  <div
+    class="field field--plain campo-nao-alocado"
+    data-alocar="dados-uc"
+    id="seBox"
+    style="display: none"
+  >
+    <label>Tipo de Subestação (Conforme ND 5.3)</label>
+    <div class="se-gallery" id="seGalleryGD"></div>
+    <span id="seBloqueioMsg" class="field-hint"></span>
+  </div>
+  <div class="field campo-nao-alocado col-span-2" data-alocar="dados-uc">
+    <label>Tipo de Solicitação</label>
+    <select data-k="solicitacao" onchange="onSolicitacao()"></select>
+  </div>
+  <div
+    class="field campo-nao-alocado col-span-2"
+    data-alocar="dados-uc"
+    id="avisoFormCarga"
+    style="display: none"
+  >
+    <div class="cmg-aviso no-print">
+      <div class="cmg-aviso-icon" aria-hidden="true"></div>
+      <p class="cmg-aviso-texto">
+        Para este tipo de solicitação é obrigatório declarar todas as cargas
+        elétricas da unidade na etapa Cargas das UCs.
+      </p>
+    </div>
+  </div>
+  <div class="field campo-nao-alocado col-span-2" data-alocar="dados-uc">
+    <label>Tipo de edificação</label>
+    <select data-k="edificacao"></select>
+  </div>
+  <div class="field campo-nao-alocado" data-alocar="dados-uc">
+    <label>Tipo de Padrão de Entrada</label>
+    <select data-k="edifTipo"></select>
+  </div>
+  <div class="field campo-nao-alocado" data-alocar="dados-uc">
+    <label>Tipo de Ramal</label>
+    <select data-k="ramal" data-sem-vazio></select>
+  </div>
+  <!-- disjAtualA e disjGeralA foram para a etapa 5 (Tipo de atendimento),
+         onde aparecem conforme o tipo de edificação. Aqui resta a FASE do
+         disjuntor geral, que alimenta a lista de correntes (onDisjFase) e o
+         limite de injeção — na etapa 5 ela é derivada do tipo de rede. -->
+  <div class="field campo-nao-alocado" data-alocar="dados-uc">
+    <label>Disjuntor Geral — Fase</label>
+    <select data-k="disjGeralFase" onchange="onDisjFase()"></select>
+  </div>
+  <div class="field campo-nao-alocado" data-alocar="dados-uc">
+    <label>Qte Disjuntor Geral</label>
+    <input
+      type="text"
+      data-k="qteDisjGeral"
+      placeholder=" "
+      oninput="onSoDigitos(this)"
+    />
+  </div>
+  <div
+    class="field campo-nao-alocado"
+    data-alocar="dados-uc"
+    id="instExistenteBTMTBox"
+  >
+    <label>A instalação existente é atendida em BT ou MT?</label>
+    <select
+      data-k="instExistenteBTMT"
+      onchange="onInstExistenteBTMT()"
+    ></select>
+  </div>
+  <div
+    class="field campo-nao-alocado col-span-2"
+    data-alocar="dados-uc"
+    id="novaProtecaoBox"
+    style="display: none"
+  >
+    <label>Nova Proteção</label>
+    <input type="text" data-k="novaProtecao" placeholder=" " />
+  </div>
+  <div class="field campo-nao-alocado" data-alocar="dados-uc">
+    <label id="demandaConsumoLbl">Demanda contratada de consumo (kW)</label>
+    <input
+      type="text"
+      data-k="demandaConsumo"
+      placeholder=" "
+      oninput="onNumDec(this)"
+    />
+    <span id="demandaConsumoHint" class="field-hint" style="display: none">
+      Potência em relação ao consumo da UC (não incluir
+      trafos/inversores/placas)
+    </span>
+  </div>
+  <div
+    class="field campo-nao-alocado"
+    data-alocar="dados-uc"
+    id="demandaGeracaoBox"
+    style="display: none"
+  >
+    <label>Demanda contratada de geração (kW)</label>
+    <input
+      type="text"
+      data-k="demandaGeracao"
+      placeholder=" "
+      oninput="onNumDec(this)"
+    />
+  </div>
+</div>
+
+<!-- ===== origem: Transformadores (ilha dinâmica) ===== -->
+<div
+  class="subbox campo-nao-alocado"
+  data-alocar="dados-uc"
+  id="trafosBox"
+  style="display: none"
+>
+  <div class="motores-head">
+    <span class="subbox-title">Transformadores (Qte × Potência)</span>
+    <button
+      type="button"
+      class="btn btn-primary"
+      style="padding: 5px 12px; font-size: 12px"
+      onclick="addTrafoGD()"
+    >
+      + Trafo
+    </button>
+  </div>
+  <table class="motores-table">
+    <thead>
+      <tr>
+        <th>Qte</th>
+        <th>Potência (kVA)</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="trafoGdBody"></tbody>
+  </table>
+</div>
+
+<!-- ===== origem: Dados da geração (fora do escopo da etapa 4) ===== -->
+<div class="grid grid-2 campo-nao-alocado" data-alocar="geracao-outorga">
+  <div class="field col-span-2">
+    <label>CEG do empreendimento</label>
+    <input type="text" data-k="ceg" placeholder=" " />
+  </div>
+  <div class="field">
+    <label>Número do Ato de Outorga ou Registro</label>
+    <input type="text" data-k="numAtoOutorga" placeholder=" " />
+  </div>
+  <div class="field col-span-2">
+    <label>Nome da Usina</label>
+    <input type="text" data-k="nomeUsina" placeholder=" " />
+  </div>
+  <div class="field">
+    <label>Ano do Ato de Outorga ou Registro</label>
+    <input
+      type="text"
+      data-k="anoAtoOutorga"
+      placeholder=" "
+      oninput="onSoDigitos(this)"
+    />
+  </div>
+  <div class="field col-span-2">
+    <label>Tipo do Ato de Outorga ou Registro</label>
+    <input type="text" data-k="tipoAtoOutorga" placeholder=" " />
+  </div>
+  <!-- armProducaoMensal: a etapa 4 tem "Produção mensal (kWh)" da geração
+         (producaoMensal); este é o campo específico do armazenamento. -->
+  <div class="field campo-nao-alocado" data-alocar="armazenamento">
+    <label>Produção mensal da central geradora (kWh)</label>
+    <input
+      type="text"
+      data-k="armProducaoMensal"
+      placeholder=" "
+      oninput="onNumDec(this)"
+    />
+  </div>
+</div>

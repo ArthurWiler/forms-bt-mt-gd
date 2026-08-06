@@ -396,13 +396,38 @@ html {
 .grid > .col-span-3:empty {
   display: none;
 }
-/* Campo sozinho na linha SEM esticar: ocupa só a 1ª coluna e empurra o próximo
-   item para a linha de baixo (col-span-* faria o campo ocupar a linha toda). */
-.row-solo {
-  grid-column: 1;
+/* Campo sozinho na linha SEM esticar: reserva a linha inteira mas continua
+   com a largura de 1 coluna.
+   O item se coloca em `1 / -1` (ocupa a linha toda, então nada sobe para o
+   lado) e devolve a largura visual com `max-width`, calculado a partir do
+   gap real do grid (--grid-col-gap, redefinido por quem troca o gap — ver
+   `.cemig-form .grid`).
+   Regra de irmão (`.row-solo + *`) NÃO serve aqui: `+` casa com o vizinho no
+   DOM mesmo que ele esteja com display:none — e um item oculto não é
+   posicionado, então quem realmente sobe para o lado é o item seguinte, que
+   a regra nunca alcança. Era o caso da fonte primária na etapa 4 da
+   microgeração, cujo vizinho (modalidade de operação) some fora de Solar. */
+.grid {
+  --grid-col-gap: 14px;
 }
-.row-solo + * {
-  grid-column: 1;
+.grid-2 > .row-solo {
+  grid-column: 1 / -1;
+  max-width: calc((100% - var(--grid-col-gap)) / 2);
+}
+.grid-3 > .row-solo {
+  grid-column: 1 / -1;
+  max-width: calc((100% - 2 * var(--grid-col-gap)) / 3);
+}
+/* Subgrupo condicional DENTRO de um .grid: um wrapper só existe para o JS
+   poder mostrar/esconder vários campos de uma vez, mas ele não deve virar um
+   item de grid — senão os campos que ele embrulha perdem as colunas do grid
+   de cima e o vão entre wrapper e vizinhos deixa de ser o `gap`.
+   `display: contents` faz o wrapper sumir da caixa e promove os filhos a
+   itens do grid pai. O JS continua alternando `style.display` entre "" e
+   "none": com "" a regra abaixo volta a valer (a declaração inline some),
+   com "none" o subgrupo inteiro desaparece, como antes. */
+.grid > .grid-subgrupo {
+  display: contents;
 }
 @media (max-width: 720px) {
   .grid-2,
@@ -412,6 +437,12 @@ html {
   .col-span-2,
   .col-span-3 {
     grid-column: span 1;
+  }
+  /* Coluna única: sozinho na linha já é o padrão, e o recorte de largura
+     sairia estreito demais — o campo ocupa a linha como os demais. */
+  .grid-2 > .row-solo,
+  .grid-3 > .row-solo {
+    max-width: none;
   }
 }
 /* Composição por pavimento (só-leitura, card das torres): as linhas de faixa
@@ -2855,6 +2886,9 @@ label.restricao-aceite input[type="checkbox"] {
 }
 .cemig-form .grid {
   gap: var(--cmg-space-8) var(--cmg-space-4);
+  /* Gap de coluna desta casca (16px) — mantém o recorte do .row-solo com a
+     largura exata de 1 track. */
+  --grid-col-gap: var(--cmg-space-4);
   /* Cada campo mantém a própria altura (56px no padrão flutuante): sem isso,
      um .field--float na mesma linha de um vizinho alto (toggle, campo com
      hint) estica e fica visivelmente maior que os demais. */
@@ -2966,6 +3000,54 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form input[type="checkbox"]:checked:focus-visible {
   box-shadow: 0 0 0 7px rgba(15, 108, 88, 0.14);
 }
+/* ---- Rádio canônico (spec Figma do "botão de opção") ----
+   Spec: área de toque 32×32 (radius 100px) com ícone 24×24 recuado
+   8.33% → forma de 20×20, borda 2px neutra/500 (#576864). O 32×32 é o
+   anel de estado (hover/foco), desenhado com box-shadow para não ocupar
+   caixa — assim o gap de 4px até o rótulo mede a partir da forma, como
+   no Figma. Marcado → anel verde com ponto central.
+   min-height/padding zerados para vencer o controle genérico
+   `.cemig-form .field input` (width:100%, min-height:48px, padding), que
+   sem isto transforma o rádio num oval ocupando a linha inteira. */
+.cemig-form input[type="radio"] {
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 2px solid #576864;
+  border-radius: 50%;
+  background: transparent no-repeat center;
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+/* anel de estado 32×32 ao redor da forma de 20×20 → spread de 6px. */
+.cemig-form input[type="radio"]:hover,
+.cemig-form input[type="radio"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 6px rgba(87, 104, 100, 0.12);
+}
+/* marcado: anel verde + ponto central de 10px (radial-gradient evita SVG). */
+.cemig-form input[type="radio"]:checked {
+  border-color: var(--cmg-green-600, #0f6c58);
+  background-image: radial-gradient(
+    circle,
+    var(--cmg-green-600, #0f6c58) 0 5px,
+    transparent 6px
+  );
+}
+.cemig-form input[type="radio"]:checked:hover,
+.cemig-form input[type="radio"]:checked:focus-visible {
+  box-shadow: 0 0 0 6px rgba(15, 108, 88, 0.14);
+}
+
 /* Aceite das Orientações ("Declaro que li…") — layout do rótulo. */
 .cemig-form .aceite-orient {
   display: flex;

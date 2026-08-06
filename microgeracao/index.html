@@ -11,6 +11,10 @@
     <link rel="stylesheet" href="../css/variables.css" />
     <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/formulario-microgd.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
   </head>
 
   <body class="cemig-form cemig-microgd">
@@ -44,38 +48,34 @@
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">2</span>
-          <span class="vstep-label">Identificação</span>
+          <span class="vstep-label">Dados do proprietário</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">3</span>
-          <span class="vstep-label">Dados da UC</span>
+          <span class="vstep-label">Dados da unidade</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">4</span>
-          <span class="vstep-label">Documentação</span>
+          <span class="vstep-label">Dados da geração</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">5</span>
-          <span class="vstep-label">Formulário de Carga</span>
+          <span class="vstep-label">Tipo de atendimento</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">6</span>
-          <span class="vstep-label">Dados da Geração</span>
+          <span class="vstep-label">Cargas das UCs</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">7</span>
-          <span class="vstep-label">Armazenamento</span>
-        </button>
-        <button type="button" class="vstep">
-          <span class="vstep-num">8</span>
-          <span class="vstep-label">Declarações</span>
-        </button>
-        <button type="button" class="vstep">
-          <span class="vstep-num">9</span>
           <span class="vstep-label">Correspondência</span>
         </button>
         <button type="button" class="vstep">
-          <span class="vstep-num">10</span>
+          <span class="vstep-num">8</span>
+          <span class="vstep-label">Observações</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">9</span>
           <span class="vstep-label">Prévia &amp; PDF</span>
         </button>
       </aside>
@@ -93,14 +93,23 @@
 
         <section class="page show" id="page-0" data-src="etapas/01-orientacoes.html"></section>
         <section class="page" id="page-1" data-src="etapas/02-identificacao.html"></section>
-        <section class="page" id="page-2" data-src="etapas/03-dados-uc.html"></section>
-        <section class="page" id="page-3" data-src="etapas/04-documentacao.html"></section>
-        <section class="page" id="page-4" data-src="etapas/05-carga.html"></section>
-        <section class="page" id="page-5" data-src="etapas/06-geracao.html"></section>
-        <section class="page" id="page-6" data-src="etapas/07-armazenamento.html"></section>
-        <section class="page" id="page-7" data-src="etapas/08-declaracoes.html"></section>
-        <section class="page" id="page-8" data-src="etapas/09-correspondencia.html"></section>
-        <section class="page" id="page-9" data-src="etapas/10-previa.html"></section>
+        <section class="page" id="page-2" data-src="etapas/03-dados-unidade.html"></section>
+        <section class="page" id="page-3" data-src="etapas/04-geracao.html"></section>
+        <section class="page" id="page-4" data-src="etapas/04-atendimento.html"></section>
+        <section class="page" id="page-5" data-src="etapas/05-carga.html"></section>
+        <section class="page" id="page-6" data-src="etapas/09-correspondencia.html"></section>
+        <section class="page" id="page-7" data-src="etapas/07-observacoes.html"></section>
+        <section class="page" id="page-8" data-src="etapas/10-previa.html"></section>
+        <!-- Área de espera: campos ainda sem etapa definida. Fica FORA do
+             stepper (sem .vstep correspondente) e oculta na tela; existe para
+             preservar o estado e os handlers até a alocação. -->
+        <section
+          class="page page--oculta"
+          id="page-nao-alocados"
+          data-src="etapas/99-nao-alocados.html"
+          style="display: none"
+          aria-hidden="true"
+        ></section>
       </main>
     </div>
 
@@ -118,6 +127,11 @@
     </footer>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Mapa da etapa 3 (cópia do BT): Leaflet + Turf + geo.js (consulta de
+         restrição ambiental e geocodificação do endereço). -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+    <script src="../shared/js/geo.js"></script>
     <script src="js/data.js"></script>
     <script src="../mt/js/subestacoes-b64.js"></script>
     <script src="../shared/js/load-form-data.js"></script>

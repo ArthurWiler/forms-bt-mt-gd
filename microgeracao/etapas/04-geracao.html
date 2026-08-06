@@ -1,0 +1,366 @@
+
+<div class="card">
+  <div class="section-eyebrow">Etapa 4</div>
+  <h3 class="card-title">Dados da geração</h3>
+  <p class="card-sub">
+    Preencha os dados relacionados à geração distribuída instalada em sua
+    propriedade.
+  </p>
+
+  <!-- Fonte primária e modalidade de operação vivem no MESMO grid: o gap:14px
+       do .grid é o único responsável pelo respiro entre eles. Com margin-top
+       inline no box, ocultá-lo (fonte != Solar) deixava um espaçamento
+       diferente do caso Solar.
+       Fonte primária ocupa 1 coluna e fica sozinha na linha via .row-solo.
+       Aqui NÃO dá para contar com o truque de CEP + Endereço (etapa 3), em
+       que o vizinho col-span-2 se desloca sozinho por não caber: o box de
+       rádios logo abaixo some com display:none fora de Solar, e item oculto
+       não é posicionado — sem .row-solo, "Produção mensal" subiria para o
+       lado da fonte. Sem data-sem-vazio: o select abre vazio e exige escolha
+       explícita, nada de "Solar" pré-marcado. -->
+  <div class="grid grid-2">
+    <div class="field row-solo">
+      <label>Fonte primária <span class="req">*</span></label>
+      <select data-k="fontePrimaria" onchange="onFonte()"></select>
+    </div>
+
+    <!-- Modalidade de operação: só faz sentido para sistemas solares; substitui
+         os antigos campos separados Fast Track / Grid Zero. -->
+    <div
+      class="field field--plain col-span-2"
+      id="modoOperacaoBox"
+      data-noopt
+    >
+      <label>Qual a modalidade de operação do sistema solar? <span class="req">*</span></label>
+      <div class="doc-list" id="modoOperacaoOpcoes">
+      <label class="doc-item">
+        <input
+          type="radio"
+          name="modoOperacao"
+          value="Padrão"
+          onchange="onModoOperacaoGD(this)"
+        />
+        <span class="doc-text">
+          Padrão com injeção de créditos (sem restrições de uso)
+          <span class="doc-sub">
+            Gera créditos para a própria unidade e permite enviar excedentes
+            para outros endereços
+          </span>
+        </span>
+      </label>
+      <label class="doc-item">
+        <input
+          type="radio"
+          name="modoOperacao"
+          value="Fast Track"
+          onchange="onModoOperacaoGD(this)"
+        />
+        <span class="doc-text">
+          Fast Track - Conexão simplificada (até 7,5kW)
+          <span class="doc-sub">
+            Para sistemas de até 7,5 kW com uso exclusivo de créditos no
+            próprio local (sem transferência para outros endereços).
+          </span>
+        </span>
+      </label>
+      <label class="doc-item">
+        <input
+          type="radio"
+          name="modoOperacao"
+          value="Grid Zero"
+          onchange="onModoOperacaoGD(this)"
+        />
+        <span class="doc-text">
+          Grid Zero (sem injeção na rede)
+          <span class="doc-sub">
+            O sistema não injeta energia na rede e possui tecnologia/medidor
+            para limitação de exportação.
+          </span>
+        </span>
+      </label>
+      </div>
+    </div>
+    <div class="field">
+      <label>Produção mensal (kWh) <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="producaoMensal"
+        placeholder=" "
+        oninput="onNumDec(this)"
+      />
+    </div>
+    <div class="field">
+      <label>Potência já conectada</label>
+      <input
+        type="text"
+        data-k="potGeracaoExistente"
+        placeholder=" "
+        oninput="onNumDec(this)"
+      />
+    </div>
+    <div class="field">
+      <label>Tecnologia de geração <span class="req">*</span></label>
+      <select data-k="tipoGeracao" onchange="onTipoGeracao()"></select>
+    </div>
+    <div class="field">
+      <label>Modalidade de compensação <span class="req">*</span></label>
+      <select data-k="modalidade"></select>
+    </div>
+    <div class="field" id="tipoGeracaoOutroBox" style="display: none">
+      <label>Especificar <span class="req">*</span></label>
+      <input type="text" data-k="tipoGeracaoOutro" placeholder=" " />
+    </div>
+    <div class="field">
+      <label>Qtde. de UCs beneficiadas <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="qtdInstalacoesCredito"
+        placeholder=" "
+        oninput="onSoDigitos(this)"
+      />
+    </div>
+    <!-- Potência ativa instalada: em FV é calculada (menor entre módulos e
+         inversores) e o campo fica travado; nas demais fontes é digitada. -->
+    <div class="field col-span-2" id="potAtivaBox">
+      <label>Potência ativa instalada total da usina (kW) <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="potAtivaInstalada"
+        placeholder=" "
+        oninput="onPotAtivaInput(this)"
+      />
+      <span id="potAtivaHint" class="field-hint"></span>
+    </div>
+    <div class="field col-span-2" id="fastExcedeAviso" style="display: none">
+      <div class="cmg-aviso cmg-aviso--warn no-print">
+        <div class="cmg-aviso-icon" aria-hidden="true"></div>
+        <p class="cmg-aviso-texto">
+          <strong>Limite do Fast Track excedido. </strong>
+          No enquadramento Fast Track, a potência da usina não pode ser
+          superior a 7,5 kW (7500 W).
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div id="fvBlocos">
+    <h4 class="card-subtitle divider">
+      Módulos da central geradora fotovoltaica
+    </h4>
+    <div class="grid grid-2">
+      <div class="field">
+        <label>Modelo <span class="req">*</span></label>
+        <input type="text" data-k="modeloModulos" placeholder=" " />
+      </div>
+      <div class="field">
+        <label>Fabricante <span class="req">*</span></label>
+        <input type="text" data-k="fabricanteModulos" placeholder=" " />
+      </div>
+      <div class="field">
+        <label>Potência nominal (kW) <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="potNominalModulo"
+          placeholder=" "
+          oninput="onNumDec(this); recalcGeracao()"
+        />
+      </div>
+      <div class="field">
+        <label>Quantidade <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="qtdModulos"
+          placeholder=" "
+          oninput="onSoDigitos(this); recalcGeracao()"
+        />
+      </div>
+      <div class="field">
+        <label>Área ocupada (m²) <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="areaArranjos"
+          placeholder=" "
+          oninput="onNumDec(this)"
+        />
+      </div>
+      <div class="field field--plain gd-calc">
+        <span class="gd-calc-label">Potência total calculada</span>
+        <span class="gd-calc-valor" id="gd_potTotalModulos">—</span>
+        <span
+          class="gd-calc-info cmg-hint"
+          tabindex="0"
+          role="img"
+          aria-label="Ajuda: potência total dos módulos"
+          data-hint="Calculado: quantidade × potência nominal (kW)"
+          ><img
+            class="field-info"
+            src="../imgs/info.svg"
+            alt=""
+            aria-hidden="true"
+        /></span>
+      </div>
+    </div>
+
+    <h4 class="card-subtitle divider">
+      Inversores da central geradora fotovoltaica
+    </h4>
+    <div class="grid grid-2">
+      <div class="field">
+        <label>Modelo <span class="req">*</span></label>
+        <input type="text" data-k="modeloInversores" placeholder=" " />
+        <span
+          class="field-hint-icon cmg-hint"
+          tabindex="0"
+          role="img"
+          aria-label="Ajuda: modelo dos inversores"
+          data-hint="Para mais de 1 modelo, separar com barra (/)"
+          ><img
+            class="field-info"
+            src="../imgs/info.svg"
+            alt=""
+            aria-hidden="true"
+        /></span>
+      </div>
+      <div class="field">
+        <label>Fabricante <span class="req">*</span></label>
+        <input type="text" data-k="fabricanteInversores" placeholder=" " />
+      </div>
+      <div class="field">
+        <label>Potência nominal (kW) <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="potNominalInversor"
+          placeholder=" "
+          oninput="onNumDec(this); recalcGeracao()"
+        />
+      </div>
+      <div class="field">
+        <label>Quantidade <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="qtdInversores"
+          placeholder=" "
+          oninput="onSoDigitos(this); recalcGeracao()"
+        />
+      </div>
+      <div class="field">
+        <label>Tensão de conexão (V) <span class="req">*</span></label>
+        <!-- opções de GD_TENSOES_INVERSOR via preencherSelect() -->
+        <select data-k="tensaoConexaoInversor"></select>
+      </div>
+      <div class="field field--plain gd-calc">
+        <span class="gd-calc-label">Potência total calculada</span>
+        <span class="gd-calc-valor" id="gd_potTotalInversores">—</span>
+        <span
+          class="gd-calc-info cmg-hint"
+          tabindex="0"
+          role="img"
+          aria-label="Ajuda: potência total dos inversores"
+          data-hint="Calculado: quantidade × potência nominal (kW)"
+          ><img
+            class="field-info"
+            src="../imgs/info.svg"
+            alt=""
+            aria-hidden="true"
+        /></span>
+      </div>
+    </div>
+  </div>
+
+  <h4 class="card-subtitle divider">Armazenamento e banco de baterias</h4>
+  <!-- Um único .grid governa TODA a seção: a 1ª pergunta (sempre visível) e o
+       #armBloco condicional são itens do mesmo grid, então o respiro entre
+       elas é o gap — campo solto no card não tem margem própria e encostava
+       no bloco de baixo.
+       #armBloco é `display:contents` quando visível (ver .grid-subgrupo em
+       shared.css): ele não vira um item de grid, seus filhos é que entram
+       diretamente nas colunas do grid de cima, mantendo o mesmo alinhamento
+       e um gap único em toda a seção. -->
+  <div class="grid grid-2">
+    <div class="field field--plain col-span-2" data-noopt>
+      <label>Possui sistema de armazenamento de energia? <span class="req">*</span></label>
+      <div data-toggle="possuiArmazenamento" data-toggle-onchange="onArmazenamento"></div>
+      <select data-k="possuiArmazenamento" style="display: none" aria-hidden="true">
+        <option>Sim</option>
+        <option>Não</option>
+      </select>
+    </div>
+    <div id="armBloco" class="grid-subgrupo" style="display: none">
+    <div class="field field--plain col-span-2" data-noopt>
+      <label>Sistema com possibilidade de operação ilhada? <span class="req">*</span></label>
+      <div data-toggle="armOperacaoIlhada" data-toggle-onchange="onArmazenamento"></div>
+      <select data-k="armOperacaoIlhada" style="display: none" aria-hidden="true">
+        <option>Sim</option>
+        <option>Não</option>
+      </select>
+    </div>
+      <div class="field field--plain" id="armChaveBox" style="display: none" data-noopt>
+        <label>Chave de desconexão física <span class="req">*</span></label>
+        <div data-toggle="armChaveDesconexao"></div>
+        <select data-k="armChaveDesconexao" style="display: none" aria-hidden="true">
+          <option>Sim</option>
+          <option>Não</option>
+        </select>
+      </div>
+      <div class="field field--plain" id="armReconexaoBox" style="display: none" data-noopt>
+        <label>Reconexão automática? <span class="req">*</span></label>
+        <div data-toggle="armReconexaoAuto"></div>
+        <select data-k="armReconexaoAuto" style="display: none" aria-hidden="true">
+          <option>Sim</option>
+          <option>Não</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Capacidade total (kW) <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="armCapacidadeKwh"
+          placeholder=" "
+          oninput="onNumDec(this)"
+        />
+      </div>
+      <div class="field">
+        <label>Potência total (kW) <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="armPotenciaKw"
+          placeholder=" "
+          oninput="onNumDec(this)"
+        />
+      </div>
+      <div class="field">
+        <label>Capacidade nominal (Ah) <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="armCapacidadeAh"
+          placeholder=" "
+          oninput="onNumDec(this)"
+        />
+      </div>
+      <div class="field">
+        <label>Tensão em CC (V) <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="armTensaoCC"
+          placeholder=" "
+          oninput="onNumDec(this)"
+        />
+      </div>
+      <div class="field">
+        <label>Profundidade de descarga (%) <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="armProfundidadeDescarga"
+          placeholder=" "
+          oninput="onNumDec(this)"
+        />
+      </div>
+    </div>
+  </div>
+</div>
+<div class="nav-bottom no-print">
+  <button class="btn btn-ghost" onclick="goTo(2)">← Voltar</button>
+  <button class="btn btn-primary" data-gate="gdModoOperacaoOk" onclick="goTo(4)">
+    Avançar →
+  </button>
+</div>

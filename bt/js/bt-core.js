@@ -141,12 +141,12 @@ const ruralBT = () => window.state.obra.localizacao === "Rural";
 /* ===== Gates de avanço (form-marcadores data-gate) ===== */
 // Proprietário: exige CPF/CNPJ COMPLETO e VÁLIDO (docValido do React).
 window.btPropDocOk = () => docInfo().valido === true;
-// Correspondência: vencimento + condicionais (CAMPOS_OBRIGATORIOS.corr do
-// React) — toggles usam select oculto (invisível p/ marcadores), daí o gate.
+// Correspondência: condicionais (CAMPOS_OBRIGATORIOS.corr do React) — toggles
+// usam select oculto (invisível p/ marcadores), daí o gate. A data de
+// vencimento NÃO entra: informá-la é opcional.
 window.btCorrOk = () => {
   const c = window.state.corr;
   const ok = (v) => String(v == null ? "" : v).trim() !== "";
-  if (!ok(c.vencimento)) return false;
   if (c.alternativa === "Outro e-mail" && !ok(c.outroEmail)) return false;
   if (
     c.alternativa === "Endereço novo" &&

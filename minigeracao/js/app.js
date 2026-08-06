@@ -52,6 +52,7 @@ const CARDS_GD = [
       valor: d,
       texto: d,
     })),
+    desmarcavel: true, // informar a data de vencimento é opcional
   },
 ];
 function _cardDispatch(select, valor) {
@@ -79,7 +80,10 @@ function _cardsMontar(campo) {
       btn.className = "toggle-btn" + (ativo ? " on" : "");
       btn.textContent = op.texto;
       btn.addEventListener("click", () => {
-        _cardDispatch(select, op.valor);
+        // `desmarcavel`: campo opcional — clicar no card já ativo limpa a
+        // escolha (é o único caminho para desfazer, já que não há card de
+        // recusa do tipo "Não informar").
+        _cardDispatch(select, campo.desmarcavel && ativo ? "" : op.valor);
         render();
       });
       grid.appendChild(btn);
@@ -893,7 +897,7 @@ function validarExportacao() {
   if (d.gridZero === "Sim" && !d.decl95)
     faltas.push("Declaração 9.5 (obrigatória para Grid Zero)");
   if (!d.decl86) faltas.push("Declaração 9.6 (obrigatória)");
-  req(d.vencimento, "Data de vencimento da fatura");
+  // Data de vencimento da fatura: opcional (não entra em `req`).
   if (d.corrAlternativa === "Outro e-mail")
     req(d.corrOutroEmail, "E-mail alternativo da fatura");
   else if (d.corrAlternativa === "Endereço novo") {

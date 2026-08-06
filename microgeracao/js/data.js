@@ -12,11 +12,31 @@ const GD_CLASSES = [
   "Iluminação Pública",
   "Serviço Público",
 ];
+// Tipos de solicitação. O `valor` é o texto NORMATIVO (usado pelas regras —
+// GD_SOLICITACOES_FORM_CARGA, GD_SOLICITACOES_AUMENTO_POTENCIA, gdSEDisponivel
+// — e impresso no PDF); o `texto` é o rótulo curto que aparece na tela,
+// conforme o Figma da etapa "Tipo de atendimento".
 const GD_SOLICITACOES = [
-  "Ligação de Nova Unidade Consumidora COM Geração Distribuída",
-  "Conexão de GD em Unidade Consumidora Existente SEM Alteração de Potência Disponibilizada",
-  "Conexão de GD em Unidade Consumidora Existente COM Alteração de Potência Disponibilizada",
-  "GD Existente COM Alteração de Potência Ativa Instalada Total",
+  {
+    valor: "Ligação de Nova Unidade Consumidora COM Geração Distribuída",
+    texto: "Ligar nova unidade com Geração Distribuída",
+  },
+  {
+    valor:
+      "Conexão de GD em Unidade Consumidora Existente SEM Alteração de Potência Disponibilizada",
+    texto:
+      "Instalar geração distribuída em unidade existente (sem alteração de potência)",
+  },
+  {
+    valor:
+      "Conexão de GD em Unidade Consumidora Existente COM Alteração de Potência Disponibilizada",
+    texto:
+      "Instalar geração distribuída em unidade existente (com alteração de potência)",
+  },
+  {
+    valor: "GD Existente COM Alteração de Potência Ativa Instalada Total",
+    texto: "Alterar potência de geração já existente",
+  },
 ];
 const GD_EDIFICACOES = [
   "Edificação Individual",
@@ -24,9 +44,14 @@ const GD_EDIFICACOES = [
   "Edificação de Uso Coletivo (telhado independente e privativo)",
   "Agrupamento",
 ];
+// Tipo de edificação da etapa "Tipo de atendimento": rótulo curto do Figma
+// (Individual / Coletivo-Agrupamento) sobre o valor normativo já usado no PDF.
 const GD_EDIF_TIPO = [
-  "Edificação Individual",
-  "Edificação Coletiva ou Agrupamento",
+  { valor: "Edificação Individual", texto: "Individual" },
+  {
+    valor: "Edificação Coletiva ou Agrupamento",
+    texto: "Coletivo/Agrupamento",
+  },
 ];
 const GD_TENSAO_A = ["13800", "22000", "34500"];
 const GD_TENSAO_B = ["127/220", "120/240"];
@@ -48,11 +73,14 @@ const GD_FONTES = [
   "Eólica",
 ];
 const GD_TIPO_GERACAO = [
-  "Empregando máquina síncrona sem conversor",
-  "Empregando conversor eletrônico/inversor",
+  "Máquina síncrona sem conversor",
+  "Conversor eletrônico/inversor",
   "Mista",
   "Outra (especificar):",
 ];
+// Tensão de conexão do inversor (V) — as duas tensões de BT em que os
+// inversores se conectam. Valor gravado = rótulo (entra assim no PDF).
+const GD_TENSOES_INVERSOR = ["120/240", "127/220"];
 const GD_MODALIDADES = [
   "Autoconsumo local",
   "Autoconsumo remoto",
@@ -197,6 +225,12 @@ const GD_UTM_LIMITES = {
 };
 const GD_FUSOS = [22, 23, 24];
 const GD_BT_MT = ["BT - Baixa Tensão", "MT - Média Tensão"];
+// UFs — usado no select "Estado" do novo local do padrão (etapa 5).
+const GD_UFS = [
+  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS",
+  "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC",
+  "SP", "SE", "TO",
+];
 const GD_FAST_REGRAS = [
   "8.5.1 - não injeção na rede de distribuição (“Grid Zero”)",
   "8.5.2 - enquadramento nos critérios de gratuidade da REN 1.000/2021 e potência compatível com o consumo no horário de geração",

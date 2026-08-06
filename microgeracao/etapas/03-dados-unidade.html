@@ -1,0 +1,186 @@
+
+<div class="card">
+  <div class="section-eyebrow">Etapa 3</div>
+  <h3 class="card-title">Dados da unidade consumidora</h3>
+  <p class="card-sub">
+    Preencha os dados de identificação das unidades consumidoras.
+  </p>
+
+  <!-- Grupo identifica a UC, então abre a etapa logo abaixo do subtítulo.
+       Fica no MESMO .grid da zona de localização — um grid único governa o
+       bloco inteiro e o respiro entre as linhas é o gap; um segundo .grid
+       exigiria margin-top próprio e criaria um vão diferente do resto da
+       etapa. Grupo ocupa uma linha só para ele, com a largura de UMA coluna
+       (sem col-span): a zona, logo abaixo, usa cards e toma a linha inteira,
+       então nada sobe para o lado do Grupo. -->
+  <div class="grid grid-2">
+    <div class="field">
+      <label>Grupo <span class="req">*</span></label>
+      <select data-k="grupo" data-sem-vazio></select>
+    </div>
+    <div class="field field--plain col-span-2" data-noopt>
+      <label>Zona de localização <span class="req">*</span></label>
+      <div data-toggle="localizacao" data-toggle-onchange="onZonaGD"></div>
+      <select
+        data-k="localizacao"
+        style="display: none"
+        aria-hidden="true"
+      >
+        <option>Urbana</option>
+        <option>Rural</option>
+      </select>
+      <span id="zonaHint" class="field-hint" style="display: none">
+        Modalidade rural: zona fixada em Rural.
+      </span>
+    </div>
+  </div>
+
+  <div class="grid grid-2" id="endUrbanoBox" style="margin-top: 14px">
+    <div class="field">
+      <label>CEP <span class="req">*</span></label>
+      <div style="display: flex; gap: 8px; align-items: center">
+        <div style="max-width: 180px">
+          <input
+            type="text"
+            data-k="cep"
+            placeholder="00000-000"
+            oninput="onCepGD(this)"
+          />
+        </div>
+        <span id="status-cep"></span>
+      </div>
+    </div>
+    <div class="field col-span-2">
+      <label>Endereço <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="logradouro"
+        placeholder=" "
+        onblur="onEnderecoUrbanoGD()"
+      />
+    </div>
+    <div class="field">
+      <label>Nº <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="numero"
+        placeholder=" "
+        onblur="onEnderecoUrbanoGD()"
+      />
+    </div>
+    <div class="field">
+      <label>Bairro <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="bairro"
+        placeholder=" "
+        onblur="onEnderecoUrbanoGD()"
+      />
+    </div>
+    <div class="field">
+      <label>Cidade / Município <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="municipio"
+        placeholder=" "
+        onblur="onEnderecoUrbanoGD()"
+      />
+    </div>
+    <div class="field">
+      <label>Estado <span class="req">*</span></label>
+      <input type="text" data-k="estado" placeholder=" " />
+    </div>
+  </div>
+
+  <div
+    class="grid grid-2"
+    id="endRuralBox"
+    style="margin-top: 14px; display: none"
+  >
+    <div class="field">
+      <label>Município <span class="req">*</span></label>
+      <input type="text" data-k="municipio" data-k-espelho placeholder=" " />
+    </div>
+    <div class="field">
+      <label>Estado <span class="req">*</span></label>
+      <input type="text" data-k="estado" data-k-espelho placeholder=" " />
+    </div>
+    <div class="field">
+      <label>Distrito / Comunidade / Região <span class="req">*</span></label>
+      <input type="text" data-k="distritoComunidade" placeholder=" " />
+    </div>
+    <div class="field">
+      <label>Nome da propriedade <span class="req">*</span></label>
+      <input type="text" data-k="nomePropriedade" placeholder=" " />
+    </div>
+    <div class="field">
+      <label>Ponto de referência <span class="req">*</span></label>
+      <input type="text" data-k="pontoRef" placeholder=" " />
+    </div>
+    <div class="field">
+      <label>Nº instalação / UC / medidor mais próxima <span class="req">*</span></label>
+      <input type="text" data-k="instProxima" placeholder=" " />
+    </div>
+  </div>
+
+  <div
+    class="cmg-aviso cmg-aviso--warn no-print"
+    id="coordRuralAviso"
+    style="margin-top: 8px; display: none"
+  >
+    <div class="cmg-aviso-icon" aria-hidden="true"></div>
+    <p class="cmg-aviso-texto">
+      Em área rural, a coordenada é obrigatória para localização da propriedade.
+    </p>
+  </div>
+
+  <div class="mapa-obra divider">
+    <p class="mapa-hint">
+      Confirme a localização da unidade no mapa. Se o pin estiver incorreto,
+      você pode clicar e arrastá-lo para ajustar.
+    </p>
+    <div class="mapa-actions">
+      <span class="field-hint" id="mapaStatus"></span>
+    </div>
+    <div id="map" class="mapa-canvas"></div>
+  </div>
+
+  <div class="grid grid-3">
+    <div class="field">
+      <label id="latLabel">Latitude <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="latitude"
+        placeholder=" "
+        oninput="onCoordGD(this)"
+      />
+    </div>
+    <div class="field">
+      <label id="lngLabel">Longitude <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="longitude"
+        placeholder=" "
+        oninput="onCoordGD(this)"
+      />
+    </div>
+    <div class="field">
+      <label>Coordenada UTM</label>
+      <input type="text" id="gd_utm" readonly disabled placeholder=" " />
+    </div>
+  </div>
+
+  <div
+    class="field"
+    id="restricaoAmbientalBox"
+    style="margin-top: 14px; display: none"
+  >
+    <div id="restricaoAmbientalConteudo"></div>
+  </div>
+</div>
+<div class="nav-bottom no-print">
+  <button class="btn btn-ghost" onclick="goTo(1)">← Voltar</button>
+  <button class="btn btn-primary" onclick="goTo(3)">
+    Avançar →
+  </button>
+</div>

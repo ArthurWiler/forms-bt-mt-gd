@@ -334,11 +334,8 @@
                   <option>Conta globalizada</option>
                 </select>
               </div>
-              <div class="field field--plain">
-                <label
-                  >Data de Vencimento da Fatura
-                  <span class="req">*</span></label
-                >
+              <div class="field field--plain col-span-2" data-noopt>
+                <label>Data de Vencimento da Fatura</label>
                 <div id="cardsDiaVenc"></div>
                 <select
                   data-k="desejaVenc"
@@ -1259,10 +1256,10 @@
               Preencha os dados técnicos de geração e ramal da propriedade.
             </p>
 
-            <div class="subbox-title" style="margin-top: 24px">
+            <h4 class="card-subtitle">
               Ramal de entrada <span class="req">*</span>
-            </div>
-            <p class="field-hint" style="margin-bottom: 12px">
+            </h4>
+            <p class="card-sub">
               Selecione a figura que representa o ramal de entrada que atende ou
               atenderá a unidade consumidora, conforme o tipo de subestação e a
               ND-5.3.
@@ -1274,11 +1271,9 @@
             </div>
 
             <div id="blocoGeracaoBT">
-              <div class="subbox-title" style="margin-top: 24px">
-                Geração e baixa tensão
-              </div>
-              <div class="grid grid-2" style="margin-top: 16px">
-                <div class="field field--plain">
+              <h4 class="card-subtitle divider">Geração e baixa tensão</h4>
+              <div class="grid grid-2 bloco-sub-gap">
+                <div class="field field--plain col-span-2">
                   <label
                     >Possui geração em paralelismo momentâneo (gerador a
                     diesel)? <span class="req">*</span></label
@@ -1298,12 +1293,7 @@
                     placeholder=" "
                   />
                 </div>
-                <div
-                  class="col-span-2 no-print"
-                  id="gerMomAviso"
-                  style="display: none"
-                ></div>
-                <div class="field field--plain">
+                <div class="field field--plain col-span-2">
                   <label
                     >Possui geração em paralelismo permanente sem injeção (GRID
                     ZERO)? <span class="req">*</span></label
@@ -1323,12 +1313,7 @@
                     placeholder=" "
                   />
                 </div>
-                <div
-                  class="col-span-2 no-print"
-                  id="gridZeroAviso"
-                  style="display: none"
-                ></div>
-                <div class="field field--plain">
+                <div class="field field--plain col-span-2">
                   <label
                     >Possui unidades consumidoras de Baixa Tensão (BT) na mesma
                     propriedade? <span class="req">*</span></label

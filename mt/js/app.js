@@ -47,8 +47,9 @@ const CAMPOS_CARDS_CONFIG = {
   ],
   // Campo especial "Dia do vencimento": substitui a antiga pergunta
   // "Deseja escolher data de vencimento?" — escolher um dia define
-  // desejaVenc='Sim'; o card de destaque "Não informar" define
-  // desejaVenc='Não' e limpa o dia.
+  // desejaVenc='Sim'. Informar a data é OPCIONAL: não há card de recusa
+  // ("Não informar"); deixar em branco já significa não escolher, e
+  // clicar de novo no dia ativo desmarca (desejaVenc='Não').
   diaVencimento: {
     chaveDia: "diaVenc",
     chaveDecisao: "desejaVenc",
@@ -61,7 +62,6 @@ const CAMPOS_CARDS_CONFIG = {
       { valor: "22", texto: "22" },
       { valor: "27", texto: "27" },
     ],
-    naoInformar: { texto: "Não informar" },
   },
   // Dispositivo auxiliar de partida (Análise de Partida de Motores).
   // labelShort é o texto do botão (e o valor salvo); labelFull entra no
@@ -204,18 +204,14 @@ function _diaVencimentoMontar() {
     grid.innerHTML = "";
     cfg.dias.forEach((d) => {
       const ativo = selDecisao.value === "Sim" && selDia.value === d.valor;
+      // Campo opcional: clicar no dia já ativo desmarca (volta a "sem data
+      // escolhida"), que é o caminho para desfazer sem um card de recusa.
       grid.appendChild(
         _campoCardBotao(d.texto, null, ativo, false, () =>
-          aplicar(d.valor, "Sim"),
+          ativo ? aplicar("", "Não") : aplicar(d.valor, "Sim"),
         ),
       );
     });
-    const ativoNao = selDecisao.value === "Não";
-    grid.appendChild(
-      _campoCardBotao(cfg.naoInformar.texto, null, ativoNao, true, () =>
-        aplicar("", "Não"),
-      ),
-    );
   };
   render();
   selDia.style.display = "none";
@@ -2925,35 +2921,11 @@ function onGeracao(t) {
     state.gerMomentaneo = event.target.value;
     const sim = state.gerMomentaneo === "Sim";
     $("#gerMomPotBox").style.display = sim ? "" : "none";
-    // Aviso contextual (migrado da orientação nº 6): geração em paralelismo
-    // momentâneo (gerador a diesel) deve ser informada no pedido.
-    const av = $("#gerMomAviso");
-    if (av) {
-      av.innerHTML = sim
-        ? alertHTML(
-            "warn",
-            "A geração em paralelismo momentâneo (gerador a diesel) deve ser informada à CEMIG. Informe a potência da geração para prosseguir.",
-          )
-        : "";
-      av.style.display = sim ? "" : "none";
-    }
   }
   if (t === "grid") {
     state.gridZero = event.target.value;
     const sim = state.gridZero === "Sim";
     $("#gridZeroPotBox").style.display = sim ? "" : "none";
-    // Aviso contextual (migrado da orientação nº 6): GRID ZERO (paralelismo
-    // permanente sem injeção) deve ser informado, com a potência da geração.
-    const av = $("#gridZeroAviso");
-    if (av) {
-      av.innerHTML = sim
-        ? alertHTML(
-            "warn",
-            "Geração em paralelismo permanente sem injeção na rede (GRID ZERO) deve ser informada à CEMIG. Informe a potência da geração para prosseguir.",
-          )
-        : "";
-      av.style.display = sim ? "" : "none";
-    }
   }
 }
 

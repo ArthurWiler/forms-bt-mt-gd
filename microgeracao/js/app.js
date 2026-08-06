@@ -55,15 +55,14 @@ const SIM_NAO = [
 const CARDS_GD = [
   { chave: "fastTrack", gridId: "cardsFastTrack", opcoes: SIM_NAO },
   { chave: "gridZero", gridId: "cardsGridZero", opcoes: SIM_NAO },
-  { chave: "laudoMedico", gridId: "cardsLaudoMedico", opcoes: SIM_NAO },
-  { chave: "nis", gridId: "cardsNis", opcoes: SIM_NAO },
   {
     chave: "geradorEmergencia",
     gridId: "cardsGeradorEmergencia",
     opcoes: SIM_NAO,
   },
+  // localizacao e prontoLigar vivem na etapa 3, que é cópia fiel
+  // do BT e usa <div data-toggle> — renderizados por montarToggles().
   { chave: "mudancaLocal", gridId: "cardsMudancaLocal", opcoes: SIM_NAO },
-  { chave: "distMenor30", gridId: "cardsDistMenor30", opcoes: SIM_NAO },
   {
     chave: "telhadoArrendado",
     gridId: "cardsTelhadoArrendado",
@@ -102,6 +101,7 @@ const CARDS_GD = [
       valor: d,
       texto: d,
     })),
+    desmarcavel: true, // informar a data de vencimento é opcional
   },
 ];
 function _cardDispatch(select, valor) {
@@ -132,7 +132,13 @@ function _cardsMontar(campo) {
       btn.disabled = !!campo.travado;
       if (!campo.travado)
         btn.addEventListener("click", () => {
-          _cardDispatch(select, op.valor);
+          // `desmarcavel`: campo opcional — clicar no card já ativo limpa a
+          // escolha (é o único caminho para desfazer, já que não há card de
+          // recusa do tipo "Não informar").
+          _cardDispatch(
+            select,
+            campo.desmarcavel && ativo ? "" : op.valor,
+          );
           render();
         });
       grid.appendChild(btn);
@@ -146,6 +152,63 @@ function _cardsMontar(campo) {
 }
 function inicializarCards() {
   CARDS_GD.forEach(_cardsMontar);
+  montarToggles();
+}
+
+/* ============================================================
+   TOGGLES data-toggle — porte literal do BT (bt-core.js). As etapas
+   copiadas do BT trazem <div data-toggle="chave"> + <select data-k>
+   oculto; este renderizador mantém esse markup funcionando aqui sem
+   precisar reescrever o HTML (que deve permanecer cópia fiel).
+   Difere de _cardsMontar apenas na origem: lê as <option> do próprio
+   select, em vez de uma lista declarada em CARDS_GD.
+   ============================================================ */
+function _toggleRender(box, sel) {
+  const valor = sel.value;
+  const opts = [...sel.options].filter((o) => o.value !== "" || o.textContent);
+  const ehSimNao =
+    opts.length === 2 &&
+    opts.every((o) => o.value === "Sim" || o.value === "Não");
+  const desab = sel.disabled;
+  box.className =
+    "toggle-group" +
+    (ehSimNao ? "" : " toggle-group--opcoes") +
+    (desab ? " toggle-disabled" : "");
+  box.setAttribute("role", "radiogroup");
+  box.innerHTML = "";
+  opts.forEach((o) => {
+    if (o.value === "" && !o.textContent) return; // placeholder vazio
+    const b = document.createElement("button");
+    b.type = "button";
+    b.setAttribute("role", "radio");
+    b.setAttribute("aria-checked", valor === o.value ? "true" : "false");
+    b.className = "toggle-btn" + (valor === o.value ? " on" : "");
+    b.textContent = o.textContent;
+    b.disabled = desab;
+    b.addEventListener("click", () => {
+      state[sel.dataset.k] = o.value;
+      sel.value = o.value;
+      sel.dispatchEvent(new Event("input", { bubbles: true }));
+      sel.dispatchEvent(new Event("change", { bubbles: true }));
+      const fn = box.dataset.toggleOnchange;
+      if (fn && typeof window[fn] === "function") window[fn]();
+      _toggleRender(box, sel);
+    });
+    box.appendChild(b);
+  });
+}
+function montarToggles() {
+  $$("[data-toggle]").forEach((box) => {
+    const k = box.dataset.toggle;
+    const sel =
+      $(`select[data-k="${k}"]`, box.parentElement) ||
+      $(`select[data-k="${k}"]`);
+    if (!sel) return;
+    _toggleRender(box, sel);
+    sel.addEventListener("change", () => _toggleRender(box, sel));
+    sel.style.display = "none";
+    sel.setAttribute("aria-hidden", "true");
+  });
 }
 
 /* ===== Navegação ===== */
@@ -173,6 +236,12 @@ function goTo(n, livre) {
   // Conteúdo dinâmico detectado por presença (lição do MT), não por índice:
   if (alvo.querySelector("#calcDemandaBox") && ilhaCargas)
     ilhaCargas.atualizar();
+  // Leaflet mede o container ao criar o mapa; se a etapa estava oculta, os
+  // tiles ficam cortados até um invalidateSize() com a página já visível.
+  if (alvo.querySelector("#map")) {
+    initMapaObra();
+    if (mapaObra) setTimeout(() => mapaObra.invalidateSize(), 60);
+  }
   if (alvo.querySelector("#previewContent")) renderPreviewGD();
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
@@ -238,23 +307,57 @@ const consultas = criarConsultasExternas({
   setCnpjStatus: (m) => setHint("status-cnpj", m),
 });
 
+/* ===== Validação de e-mail e telefone (porte do MT: feedback no blur) ===== */
+function _validarEmailGD(v) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+}
+function _validarTelefoneGD(v) {
+  const d = String(v || "").replace(/\D/g, "");
+  if (d.length < 10 || d.length > 11) return false;
+  const ddd = parseInt(d.substring(0, 2), 10);
+  if (ddd < 11 || ddd > 99) return false;
+  if (d.length === 11 && d[2] !== "9") return false;
+  return true;
+}
+// Campo vazio não acusa erro: o "obrigatório" é papel dos marcadores.
+function _feedbackCampoGD(el, spanId, valido, msgErr) {
+  if (!el || !el.value) {
+    if (el) el.classList.remove("is-invalid");
+    setHint(spanId, "");
+    return;
+  }
+  el.classList.toggle("is-invalid", !valido);
+  setHint(spanId, valido ? "" : msgErr, valido ? "" : "err");
+}
+function onEmailGD(k) {
+  const el = $(`[data-k="${k}"]`);
+  _feedbackCampoGD(el, `status-${k}`, _validarEmailGD(el && el.value), "e-mail inválido");
+}
+function onTelGD(k) {
+  const el = $(`[data-k="${k}"]`);
+  _feedbackCampoGD(el, `status-${k}`, _validarTelefoneGD(el && el.value), "telefone inválido");
+}
+
 /* ===== Identificação ===== */
 function gdEhCpfValido() {
   const r = validarCpfCnpj(state.cpfCnpj);
   return r.tipo === "CPF" && r.valido === true;
 }
+// Gate de avanço da etapa 2 (espelha btPropDocOk do BT): o documento precisa
+// estar COMPLETO e VÁLIDO — não basta o campo obrigatório estar preenchido.
+window.gdPropDocOk = () => validarCpfCnpj(state.cpfCnpj).valido === true;
 function mostrarCamposPF(pf) {
   $$(".pf-campo").forEach((el) => {
     el.style.display = pf ? "" : "none";
   });
   if (!pf) {
-    ["filiacao", "rg", "nasc", "numNis"].forEach((k) => {
+    // Espelha o MT: os campos PF ocultos são zerados, inclusive laudo/NIS —
+    // aqui são <select> com opção vazia "—", e não mais cards Sim/Não.
+    ["filiacao", "rg", "nasc", "laudoMedico", "nis", "numNis"].forEach((k) => {
       const c = $(`[data-k="${k}"]`);
       if (c) c.value = "";
       state[k] = "";
     });
-    state.laudoMedico = "Não";
-    state.nis = "Não";
     const nb = $("#numNisBox");
     if (nb) nb.style.display = "none";
   } else {
@@ -326,17 +429,25 @@ function onCepGD(el) {
   if (soDigitos(el.value).length === 8) consultas.buscarCep(el.value);
 }
 
-/* ===== Selects populados de js/data.js (fonte única das listas) ===== */
+/* ===== Selects populados de js/data.js (fonte única das listas) =====
+   A lista aceita strings simples OU objetos { valor, texto } — este segundo
+   formato existe para casos como GD_SOLICITACOES, em que o rótulo do Figma é
+   curto mas o valor gravado é o texto normativo de que as regras dependem. */
 function preencherSelect(k, lista, opts) {
   const sel = $(`select[data-k="${k}"]`);
   if (!sel) return;
+  const itens = lista.map((o) =>
+    typeof o === "object" ? o : { valor: o, texto: o },
+  );
   const semVazio = sel.hasAttribute("data-sem-vazio");
   const rotuloVazio = sel.getAttribute("data-vazio-rotulo") || "";
   const atual = sel.value;
   sel.innerHTML =
     (semVazio ? "" : `<option value="">${rotuloVazio}</option>`) +
-    lista.map((o) => `<option value="${o}">${o}</option>`).join("");
-  if (atual && lista.includes(atual)) sel.value = atual;
+    itens
+      .map((o) => `<option value="${o.valor}">${o.texto}</option>`)
+      .join("");
+  if (atual && itens.some((o) => o.valor === atual)) sel.value = atual;
 }
 function preencherSelects() {
   preencherSelect("fastRegra", GD_FAST_REGRAS);
@@ -346,9 +457,11 @@ function preencherSelects() {
   preencherSelect("edificacao", GD_EDIFICACOES);
   preencherSelect("edifTipo", GD_EDIF_TIPO);
   preencherSelect("ramal", GD_RAMAL);
+  preencherSelect("mudEstado", GD_UFS);
   preencherSelect("instExistenteBTMT", GD_BT_MT);
   preencherSelect("fontePrimaria", GD_FONTES);
   preencherSelect("tipoGeracao", GD_TIPO_GERACAO);
+  preencherSelect("tensaoConexaoInversor", GD_TENSOES_INVERSOR);
   preencherSelect("modalidade", GD_MODALIDADES);
   preencherSelect("decl85Regra", GD_DECL_85);
   atualizarTensoes();
@@ -356,7 +469,7 @@ function preencherSelects() {
 }
 
 /* ===== Etapa 3 — Dados da UC ===== */
-function onCoordGD(el) {
+function onCoordGD(el, imediato) {
   if (el) {
     el.value = el.value.replace(/[^\d.\-]/g, "");
     state[el.dataset.k] = el.value;
@@ -375,6 +488,273 @@ function onCoordGD(el) {
   if (disp) disp.value = u ? `${u.fuso}${u.banda} E:${u.utmE} N:${u.utmN}` : "";
   const utm = gdValidarUTM(state.fuso, state.utmE, state.utmN);
   setHint("utmHint", state.fuso && !utm.ok ? utm.msg : "");
+  atualizarCoordRuralGD(); // zona rural exige coordenada (aviso do BT)
+  // Mapa: só sincroniza com coordenada plausível (evita reposicionar o pino a
+  // cada tecla enquanto o usuário ainda digita).
+  const lat = parseFloat(String(state.latitude).replace(",", ".")),
+    lng = parseFloat(String(state.longitude).replace(",", "."));
+  if (isNaN(lat) || isNaN(lng)) return;
+  if (_nDig(state.latitude) < 5 || _nDig(state.longitude) < 5) return;
+  sincronizarMapaComCoordenadas(lat, lng, !!imediato);
+  consultarRestricaoAmbientalGD(lat, lng);
+}
+/* ===== Etapa 3 — zona, pronto p/ ligar (porte do BT) ===== */
+// Trocar de zona limpa os campos da zona oposta, como no BT: o endereço
+// urbano e o descritivo rural são mutuamente exclusivos no PDF.
+function onZonaGD() {
+  _sync("localizacao");
+  const rural = state.localizacao === "Rural";
+  if (rural) {
+    ["cep", "logradouro", "numero", "complemento", "bairro"].forEach((k) => {
+      state[k] = "";
+      $$(`[data-k="${k}"]`).forEach((c) => (c.value = ""));
+    });
+  } else {
+    ["distritoComunidade", "nomePropriedade", "pontoRef", "instProxima"].forEach(
+      (k) => {
+        state[k] = "";
+        $$(`[data-k="${k}"]`).forEach((c) => (c.value = ""));
+      },
+    );
+  }
+  const urb = $("#endUrbanoBox"),
+    rur = $("#endRuralBox");
+  if (urb) urb.style.display = rural ? "none" : "";
+  if (rur) rur.style.display = rural ? "" : "none";
+  atualizarCoordRuralGD();
+  if (window.CemigMarcadores) {
+    window.CemigMarcadores.aplicar();
+    window.CemigMarcadores.atualizarAvancar();
+  }
+}
+// A coordenada é obrigatória em qualquer zona (o `*` está no HTML e vira
+// data-req pelos marcadores); em zona rural, além disso, um aviso reforça
+// que sem ela não há como localizar a propriedade.
+function atualizarCoordRuralGD() {
+  const rural = state.localizacao === "Rural";
+  const coordOk =
+    String(state.latitude).trim() && String(state.longitude).trim();
+  const aviso = $("#coordRuralAviso");
+  if (aviso) aviso.style.display = rural && !coordOk ? "" : "none";
+}
+// Os avisos "pronto para ligar" (Sim/Não) foram removidos da etapa 3 junto
+// com a pergunta; resta sincronizar o estado para o campo na área de espera.
+function onProntoLigarGD() {
+  _sync("prontoLigar");
+}
+// Como no BT, o tipo de rede re-renderiza a lista de correntes do disjuntor
+// individual atual na etapa "Tipo de atendimento".
+function onTipoRedeGD() {
+  _sync("tipoRede");
+  atualizarDisjAtual();
+  atualizarFasesDisj(); // a fase do disjuntor geral deriva do tipo de rede
+}
+/* ============================================================
+   MAPA LEAFLET + RESTRIÇÃO AMBIENTAL — porte do bt-core.js para o
+   estado plano do microGD. Depende de Leaflet, Turf e shared/js/geo.js
+   (carregados no index.html). O pino é arrastável e o clique no mapa
+   define a coordenada; ambos escrevem em latitude/longitude, de onde
+   o UTM é derivado por onCoordGD().
+   ============================================================ */
+let mapaObra = null;
+let marcadorObra = null;
+let restricaoLayer = null;
+let _mapaObraDebounce = null;
+let _gdLastRestrKey = "";
+let _gdLastGeoKey = "";
+let _gdGeoDebounce = null;
+function _alertHTML(tipo, html) {
+  const cls = tipo === "warn" ? "cmg-aviso cmg-aviso--warn" : "cmg-aviso";
+  return `<div class="${cls}"><div class="cmg-aviso-icon" aria-hidden="true"></div><p class="cmg-aviso-texto">${html}</p></div>`;
+}
+function _aplicarCoordDoMapa(lat, lng) {
+  const latEl = $(`[data-k="latitude"]`),
+    lngEl = $(`[data-k="longitude"]`);
+  if (latEl) latEl.value = String(lat);
+  if (lngEl) lngEl.value = String(lng);
+  state.latitude = String(lat);
+  state.longitude = String(lng);
+  onCoordGD(null, true);
+}
+function initMapaObra() {
+  const div = $("#map");
+  if (!div || !window.L || mapaObra) return;
+  mapaObra = window.L.map(div).setView([-19.9167, -43.9345], 12);
+  const ruas = window.L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    { maxZoom: 19, attribution: "© OpenStreetMap" },
+  );
+  const satelite = window.L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    { maxZoom: 19, attribution: "" },
+  );
+  satelite.addTo(mapaObra);
+  window.L.control.layers({ Satélite: satelite, Ruas: ruas }).addTo(mapaObra);
+  mapaObra.on("click", (e) => _aplicarCoordDoMapa(e.latlng.lat, e.latlng.lng));
+  setTimeout(() => mapaObra.invalidateSize(), 200);
+  const lat = parseFloat(String(state.latitude).replace(",", ".")),
+    lng = parseFloat(String(state.longitude).replace(",", "."));
+  if (!isNaN(lat) && !isNaN(lng)) sincronizarMapaComCoordenadas(lat, lng, true);
+}
+function sincronizarMapaComCoordenadas(lat, lng, imediato) {
+  if (isNaN(lat) || isNaN(lng)) return;
+  clearTimeout(_mapaObraDebounce);
+  const atualizar = () => {
+    if (!mapaObra) return;
+    const ll = window.L.latLng(lat, lng);
+    if (marcadorObra) {
+      marcadorObra.setLatLng([lat, lng]);
+      if (!mapaObra.getBounds().contains(ll))
+        mapaObra.setView(ll, Math.max(mapaObra.getZoom(), 17));
+    } else {
+      marcadorObra = window.L.marker([lat, lng], { draggable: true }).addTo(
+        mapaObra,
+      );
+      marcadorObra.on("dragend", (e) => {
+        const p = e.target.getLatLng();
+        _aplicarCoordDoMapa(p.lat, p.lng);
+      });
+      const zMax = Number.isFinite(mapaObra.getMaxZoom())
+        ? mapaObra.getMaxZoom()
+        : 19;
+      mapaObra.setView(ll, zMax);
+    }
+    setTimeout(() => mapaObra.invalidateSize(), 100);
+  };
+  if (imediato) atualizar();
+  else _mapaObraDebounce = setTimeout(atualizar, 600);
+}
+const _nDig = (s) => (String(s || "").match(/\d/g) || []).length;
+// Geocodificação estruturada pelo endereço urbano (debounce, como no BT).
+async function geocodificarEnderecoGD() {
+  if (state.localizacao === "Rural") return;
+  const pronto =
+    String(state.logradouro || "").trim() &&
+    String(state.numero || "").trim() &&
+    String(state.municipio || "").trim();
+  if (!pronto) return;
+  if (_nDig(state.latitude) >= 5 && _nDig(state.longitude) >= 5) return;
+  const key = [
+    state.logradouro,
+    state.numero,
+    state.bairro,
+    state.municipio,
+    state.cep,
+  ]
+    .join("|")
+    .toLowerCase();
+  if (_gdLastGeoKey === key) return;
+  const status = $("#mapaStatus");
+  if (status) status.textContent = "Buscando coordenada…";
+  try {
+    const r = await geocodificarEnderecoBR({
+      logradouro: state.logradouro,
+      numero: state.numero,
+      bairro: state.bairro,
+      cidade: state.municipio,
+      uf: state.estado,
+      cep: state.cep,
+    });
+    _gdLastGeoKey = key;
+    if (!r) {
+      if (status)
+        status.textContent =
+          "Endereço não encontrado. Informe a coordenada manualmente.";
+      return;
+    }
+    if (status) status.textContent = "";
+    _aplicarCoordDoMapa(r.lat, r.lon);
+  } catch (e) {
+    if (status) status.textContent = "Falha ao geocodificar o endereço.";
+  }
+}
+function onEnderecoUrbanoGD() {
+  clearTimeout(_gdGeoDebounce);
+  _gdGeoDebounce = setTimeout(geocodificarEnderecoGD, 800);
+}
+function _limparRestricaoLayer() {
+  if (mapaObra && restricaoLayer) mapaObra.removeLayer(restricaoLayer);
+  restricaoLayer = null;
+  if (mapaObra && typeof atualizarLegendaRestricoes === "function")
+    atualizarLegendaRestricoes(mapaObra, null);
+}
+function renderRestricaoAmbiental() {
+  const box = $("#restricaoAmbientalConteudo");
+  const wrap = $("#restricaoAmbientalBox");
+  if (!box || !wrap) return;
+  if (state.restricaoAmbiental === "Sim") {
+    wrap.style.display = "";
+    const det = state.restricoesDetalhe;
+    const sentenca =
+      typeof restricaoSentencaHTML === "function"
+        ? restricaoSentencaHTML(det)
+        : "";
+    const docs =
+      typeof restricaoDocsHTML === "function" ? restricaoDocsHTML(det) : "";
+    const label =
+      typeof RESTRICAO_ACEITE_LABEL !== "undefined"
+        ? RESTRICAO_ACEITE_LABEL
+        : "Declaro que li e estou de acordo com as informações acima.";
+    box.innerHTML =
+      _alertHTML("warn", `<span>${sentenca}</span>`) +
+      docs +
+      `<label class="restricao-aceite"><input type="checkbox" id="restricaoAceite"${state.restricaoAceite ? " checked" : ""}> <span>${label}</span></label>`;
+    const chk = $("#restricaoAceite");
+    if (chk)
+      chk.onchange = (e) => {
+        state.restricaoAceite = e.target.checked;
+      };
+  } else {
+    wrap.style.display = "none";
+    box.innerHTML = "";
+  }
+}
+async function consultarRestricaoAmbientalGD(lat, lng) {
+  if (!window.turf || typeof consultarRestricoesObra !== "function") return;
+  if (isNaN(lat) || isNaN(lng)) return;
+  const key = lat.toFixed(5) + "," + lng.toFixed(5);
+  if (_gdLastRestrKey === key) return;
+  _gdLastRestrKey = key;
+  const status = $("#mapaStatus");
+  if (status) status.textContent = "Consultando restrições…";
+  try {
+    const res = await consultarRestricoesObra(lat, lng);
+    const dentros = res.filter((r) => r.dentro);
+    const errosTodos = res.length > 0 && res.every((r) => r.erro);
+    if (errosTodos) {
+      Object.assign(state, {
+        restricaoAmbiental: "",
+        restricaoAceite: false,
+        restricoesTexto: "",
+        restricoesDetalhe: [],
+      });
+      _gdLastRestrKey = "";
+      _limparRestricaoLayer();
+      renderRestricaoAmbiental();
+      if (status)
+        status.textContent =
+          "Não foi possível consultar a restrição ambiental (verifique conexão/camadas).";
+      return;
+    }
+    state.restricaoAmbiental = dentros.length ? "Sim" : "Não";
+    state.restricaoAceite = false;
+    state.restricoesTexto = dentros
+      .map(
+        (r) => r.rotulo + (r.nomes.length ? " (" + r.nomes.join(", ") + ")" : ""),
+      )
+      .join("\n");
+    state.restricoesDetalhe = detalhesRestricoes(res);
+    renderRestricaoAmbiental();
+    if (mapaObra && typeof desenharRestricoesNoMapa === "function") {
+      _limparRestricaoLayer();
+      restricaoLayer = desenharRestricoesNoMapa(window.L, mapaObra, res);
+    }
+    if (status) status.textContent = "";
+  } catch (e) {
+    _gdLastRestrKey = "";
+    if (status)
+      status.textContent = (e && e.message) || "Falha na consulta de restrições.";
+  }
 }
 function onGeradorEmergencia() {
   _sync("geradorEmergencia");
@@ -387,6 +767,233 @@ function onTelhadoArrendado() {
   _sync("telhadoArrendado");
   const box = $("#dubBox");
   if (box) box.style.display = state.telhadoArrendado === "Sim" ? "" : "none";
+}
+
+/* ============================================================
+   ETAPA 5 — Tipo de atendimento
+   ------------------------------------------------------------
+   O restante da etapa (ramal, disjuntor, demanda, perguntas
+   Sim/Não) só aparece depois que o tipo de edificação é
+   escolhido — é a tela inicial do Figma, com apenas os dois
+   primeiros campos.
+   Qual disjuntor aparece:
+     • Edificação Individual            → Disjuntor individual atual
+     • Coletiva/Agrupamento             → Disjuntor geral atual
+   Em Ligação Nova NÃO existe disjuntor "atual" (a unidade ainda
+   não existe): nenhum dos dois é exibido, como no Figma.
+   ============================================================ */
+function onEdifTipoGD() {
+  _sync("edifTipo");
+  const bloco = $("#atendimentoBloco");
+  if (bloco) bloco.style.display = state.edifTipo ? "" : "none";
+  const nova = _ehLigacaoNova();
+  const individual = state.edifTipo === "Edificação Individual";
+  const verInd = !!state.edifTipo && !nova && individual;
+  const verGeral = !!state.edifTipo && !nova && !individual;
+  const bInd = $("#disjIndividualBox");
+  if (bInd) bInd.style.display = verInd ? "" : "none";
+  const bGeral = $("#disjGeralBox");
+  if (bGeral) bGeral.style.display = verGeral ? "" : "none";
+  // Campo oculto não pode manter valor: em Ligação Nova o disjuntor "atual"
+  // não existe, e ao alternar a edificação o disjuntor do outro tipo ficaria
+  // preso no estado e sairia no PDF.
+  if (!verInd && state.disjAtualA) aplicarPatch({ disjAtualA: "" });
+  if (!verGeral && state.disjGeralA) aplicarPatch({ disjGeralA: "" });
+  atualizarDisjAtual();
+  if (window.CemigMarcadores) {
+    window.CemigMarcadores.aplicar();
+    window.CemigMarcadores.atualizarAvancar();
+  }
+}
+// Disjuntor individual atual: correntes da ND-5.1 para a rede que atende o
+// local (tipoRede), no mesmo formato "40 A" do disjuntor geral.
+function atualizarDisjAtual() {
+  const sel = $(`select[data-k="disjAtualA"]`);
+  if (!sel) return;
+  const fase =
+    state.tipoRede === "Monofásica"
+      ? "Monopolar"
+      : state.tipoRede === "Bifásica"
+        ? "Bipolar"
+        : "Tripolar";
+  const correntes = GD_DISJ_REVISADA.filter((x) => x.tipo === fase).map(
+    (x) => x.a,
+  );
+  const atual = sel.value;
+  sel.innerHTML =
+    '<option value=""></option>' +
+    correntes.map((a) => `<option value="${a}">${a} A</option>`).join("");
+  if (correntes.map(String).includes(String(atual))) sel.value = atual;
+  else sel.value = state.disjAtualA = "";
+}
+/* --- Novo local do padrão de entrada (mudancaLocal = "Sim") --- */
+function onMudancaLocalGD() {
+  _sync("mudancaLocal");
+  const bloco = $("#mudancaLocalBloco");
+  const mostrar = state.mudancaLocal === "Sim";
+  if (bloco) bloco.style.display = mostrar ? "" : "none";
+  if (mostrar) {
+    // Leaflet mede o container na criação: só dá para instanciar o mapa com o
+    // bloco já visível, senão os tiles saem cortados (mesma lição do goTo).
+    initMapaPadrao();
+    if (mapaPadrao) setTimeout(() => mapaPadrao.invalidateSize(), 60);
+  }
+  if (window.CemigMarcadores) {
+    window.CemigMarcadores.aplicar();
+    window.CemigMarcadores.atualizarAvancar();
+  }
+}
+function onCepPadraoGD(el) {
+  el.value = mascararCEP(el.value);
+  state.mudCep = el.value;
+  if (soDigitos(el.value).length === 8) buscarCepPadraoGD(el.value);
+}
+// ViaCEP direto: criarConsultasExternas().buscarCep escreve nos campos do
+// endereço DA UNIDADE (cep/logradouro/…), e aqui o alvo são os campos mud*.
+async function buscarCepPadraoGD(cep) {
+  const status = $("#mapaPadraoStatus");
+  const limpo = soDigitos(cep);
+  if (limpo.length !== 8) return;
+  if (status) status.textContent = "Buscando endereço…";
+  try {
+    const r = await fetch(`https://viacep.com.br/ws/${limpo}/json/`);
+    const j = await r.json();
+    if (j.erro) {
+      if (status) status.textContent = "CEP não encontrado.";
+      return;
+    }
+    if (status) status.textContent = "";
+    aplicarPatch({
+      mudLogradouro: j.logradouro || state.mudLogradouro,
+      mudBairro: j.bairro || state.mudBairro,
+      mudMunicipio: j.localidade || state.mudMunicipio,
+      mudEstado: j.uf || state.mudEstado,
+    });
+    onEnderecoPadraoGD();
+  } catch (e) {
+    if (status) status.textContent = "Não foi possível consultar o CEP.";
+  }
+}
+function onCoordPadraoGD(el) {
+  if (el) {
+    el.value = el.value.replace(/[^\d.\-]/g, "");
+    state[el.dataset.k] = el.value;
+  }
+  const u = gdUtmDeCoordenadas(state.mudLatitude, state.mudLongitude);
+  state.mudFuso = u ? u.fuso : "";
+  state.mudUtmE = u ? u.utmE : "";
+  state.mudUtmN = u ? u.utmN : "";
+  const disp = $("#gd_utm_padrao");
+  if (disp) disp.value = u ? `${u.fuso}${u.banda} E:${u.utmE} N:${u.utmN}` : "";
+  const lat = parseFloat(String(state.mudLatitude).replace(",", ".")),
+    lng = parseFloat(String(state.mudLongitude).replace(",", "."));
+  if (isNaN(lat) || isNaN(lng)) return;
+  if (_nDig(state.mudLatitude) < 5 || _nDig(state.mudLongitude) < 5) return;
+  sincronizarMapaPadrao(lat, lng, !!(el === null));
+}
+let mapaPadrao = null;
+let marcadorPadrao = null;
+let _mapaPadraoDebounce = null;
+let _gdLastGeoKeyPadrao = "";
+let _gdGeoDebouncePadrao = null;
+function _aplicarCoordDoMapaPadrao(lat, lng) {
+  aplicarPatch({ mudLatitude: String(lat), mudLongitude: String(lng) });
+  onCoordPadraoGD(null);
+}
+function initMapaPadrao() {
+  const div = $("#mapPadrao");
+  if (!div || !window.L || mapaPadrao) return;
+  mapaPadrao = window.L.map(div).setView([-19.9167, -43.9345], 12);
+  const ruas = window.L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    { maxZoom: 19, attribution: "© OpenStreetMap" },
+  );
+  const satelite = window.L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    { maxZoom: 19, attribution: "" },
+  );
+  satelite.addTo(mapaPadrao);
+  window.L.control.layers({ Satélite: satelite, Ruas: ruas }).addTo(mapaPadrao);
+  mapaPadrao.on("click", (e) =>
+    _aplicarCoordDoMapaPadrao(e.latlng.lat, e.latlng.lng),
+  );
+  setTimeout(() => mapaPadrao.invalidateSize(), 200);
+  const lat = parseFloat(String(state.mudLatitude).replace(",", ".")),
+    lng = parseFloat(String(state.mudLongitude).replace(",", "."));
+  if (!isNaN(lat) && !isNaN(lng)) sincronizarMapaPadrao(lat, lng, true);
+}
+function sincronizarMapaPadrao(lat, lng, imediato) {
+  if (isNaN(lat) || isNaN(lng)) return;
+  clearTimeout(_mapaPadraoDebounce);
+  const atualizar = () => {
+    if (!mapaPadrao) return;
+    const ll = window.L.latLng(lat, lng);
+    if (marcadorPadrao) {
+      marcadorPadrao.setLatLng([lat, lng]);
+      if (!mapaPadrao.getBounds().contains(ll))
+        mapaPadrao.setView(ll, Math.max(mapaPadrao.getZoom(), 17));
+    } else {
+      marcadorPadrao = window.L.marker([lat, lng], { draggable: true }).addTo(
+        mapaPadrao,
+      );
+      marcadorPadrao.on("dragend", (e) => {
+        const p = e.target.getLatLng();
+        _aplicarCoordDoMapaPadrao(p.lat, p.lng);
+      });
+      const zMax = Number.isFinite(mapaPadrao.getMaxZoom())
+        ? mapaPadrao.getMaxZoom()
+        : 19;
+      mapaPadrao.setView(ll, zMax);
+    }
+    setTimeout(() => mapaPadrao.invalidateSize(), 100);
+  };
+  if (imediato) atualizar();
+  else _mapaPadraoDebounce = setTimeout(atualizar, 600);
+}
+async function geocodificarEnderecoPadraoGD() {
+  const pronto =
+    String(state.mudLogradouro || "").trim() &&
+    String(state.mudNumero || "").trim() &&
+    String(state.mudMunicipio || "").trim();
+  if (!pronto) return;
+  if (_nDig(state.mudLatitude) >= 5 && _nDig(state.mudLongitude) >= 5) return;
+  const key = [
+    state.mudLogradouro,
+    state.mudNumero,
+    state.mudBairro,
+    state.mudMunicipio,
+    state.mudCep,
+  ]
+    .join("|")
+    .toLowerCase();
+  if (_gdLastGeoKeyPadrao === key) return;
+  const status = $("#mapaPadraoStatus");
+  if (status) status.textContent = "Buscando coordenada…";
+  try {
+    const r = await geocodificarEnderecoBR({
+      logradouro: state.mudLogradouro,
+      numero: state.mudNumero,
+      bairro: state.mudBairro,
+      cidade: state.mudMunicipio,
+      uf: state.mudEstado,
+      cep: state.mudCep,
+    });
+    _gdLastGeoKeyPadrao = key;
+    if (!r) {
+      if (status)
+        status.textContent =
+          "Endereço não encontrado. Informe a coordenada manualmente.";
+      return;
+    }
+    if (status) status.textContent = "";
+    _aplicarCoordDoMapaPadrao(r.lat, r.lon);
+  } catch (e) {
+    if (status) status.textContent = "Falha ao geocodificar o endereço.";
+  }
+}
+function onEnderecoPadraoGD() {
+  clearTimeout(_gdGeoDebouncePadrao);
+  _gdGeoDebouncePadrao = setTimeout(geocodificarEnderecoPadraoGD, 800);
 }
 
 /* --- Subestação (Grupo A / migração BT→MT) --- */
@@ -523,6 +1130,13 @@ function onSolicitacao() {
       if (el) el.style.display = nova ? "none" : "";
     },
   );
+  // #instalacaoUCBox (etapa 5): a UC existente só é perguntada quando há uma
+  // solicitação escolhida E ela não é ligação nova (numa ligação nova ainda
+  // não existe instalação). Sem solicitação, o campo fica fora da tela — como
+  // o disjuntor "atual" em onEdifTipoGD().
+  const instBox = $("#instalacaoUCBox");
+  if (instBox)
+    instBox.style.display = state.solicitacao && !nova ? "" : "none";
   const np = $("#novaProtecaoBox");
   if (np)
     np.style.display = GD_SOLICITACOES_AUMENTO_POTENCIA.includes(
@@ -543,6 +1157,7 @@ function onSolicitacao() {
       : "none";
   atualizarFasesDisj();
   atualizarSE();
+  onEdifTipoGD(); // o disjuntor visível depende de solicitação × edificação
   if (window.CemigMarcadores) {
     window.CemigMarcadores.aplicar();
     window.CemigMarcadores.atualizarAvancar();
@@ -552,12 +1167,28 @@ function onInstExistenteBTMT() {
   _sync("instExistenteBTMT");
   atualizarSE();
 }
+// Fase do disjuntor (Mono/Bi/Tripolar) derivada do tipo de rede que atende o
+// local — a etapa 5 do Figma tem um único select "Disjuntor geral atual", sem
+// campo de fase. O select de fase segue existindo (área de não alocados) e,
+// quando preenchido, prevalece sobre a derivação.
+function _faseDoTipoRede() {
+  return state.tipoRede === "Monofásica"
+    ? "Monopolar"
+    : state.tipoRede === "Bifásica"
+      ? "Bipolar"
+      : "Tripolar";
+}
 function atualizarFasesDisj() {
   const sel = $(`select[data-k="disjGeralFase"]`);
-  if (!sel) return;
   const semAlteracao =
     state.solicitacao && state.solicitacao.indexOf("SEM Alteração") >= 0;
   const fases = semAlteracao ? GD_DISJ_FASES_ALT : GD_DISJ_FASES;
+  if (!sel) {
+    // Sem o select na tela, a fase é sempre a derivada do tipo de rede.
+    state.disjGeralFase = _faseDoTipoRede();
+    onDisjFase(true);
+    return;
+  }
   const atual = sel.value;
   sel.innerHTML =
     '<option value=""></option>' +
@@ -567,10 +1198,16 @@ function atualizarFasesDisj() {
     sel.value = state.disjGeralFase = "";
     state.disjGeralA = "";
   }
+  // Nada escolhido: cai na fase do tipo de rede para que a lista de correntes
+  // do "Disjuntor geral atual" (etapa 5) não abra vazia.
+  if (!sel.value) state.disjGeralFase = _faseDoTipoRede();
   onDisjFase(true);
 }
 function onDisjFase(manterCorrente) {
-  _sync("disjGeralFase");
+  // _sync só quando o select tem escolha: com ele vazio (ou ausente da tela),
+  // a fase é a derivada do tipo de rede, definida por atualizarFasesDisj().
+  const selF = $(`select[data-k="disjGeralFase"]`);
+  if (selF && selF.value) state.disjGeralFase = selF.value;
   const selA = $(`select[data-k="disjGeralA"]`);
   if (!selA) return;
   if (!manterCorrente) state.disjGeralA = "";
@@ -581,18 +1218,13 @@ function onDisjFase(manterCorrente) {
     : [];
   selA.innerHTML =
     '<option value=""></option>' +
-    correntes.map((a) => `<option value="${a}">${a}</option>`).join("");
+    correntes.map((a) => `<option value="${a}">${a} A</option>`).join("");
   if (correntes.map(String).includes(String(state.disjGeralA)))
     selA.value = state.disjGeralA;
   onDisjCorrente();
 }
 function onDisjCorrente() {
   _sync("disjGeralA");
-  const limite = gdLimiteInjecao(state.disjGeralFase, state.disjGeralA, false);
-  setHint(
-    "limiteInjHint",
-    limite != null ? `Limite injeção: ${fmt2(limite)} kW` : "",
-  );
 }
 function atualizarTensoes() {
   const sel = $(`select[data-k="tensaoAtendimento"]`);
@@ -614,7 +1246,7 @@ function onGrupo() {
   const lbl = $("#demandaConsumoLbl");
   if (lbl)
     lbl.innerHTML =
-      "Demanda contratada de consumo (kW)" +
+      "Demanda de consumo contratada (kW)" +
       (ehBT ? "" : ' <span class="req">*</span>');
   const inp = $(`[data-k="demandaConsumo"]`);
   if (inp) {
@@ -713,11 +1345,38 @@ function atualizarKpisCargas() {
 function _ehFastTrack() {
   return state.fastTrack === "Sim";
 }
+// Modalidade de operação (etapa 4): um card único no lugar dos antigos campos
+// Fast Track e Grid Zero. Eles continuam existindo no estado — derivados desta
+// escolha — porque PDF, prévia e as regras do art. 73-A dependem deles.
+function onModoOperacaoGD(el) {
+  if (el) state.modoOperacao = el.value;
+  state.fastTrack = state.modoOperacao === "Fast Track" ? "Sim" : "Não";
+  state.gridZero = state.modoOperacao === "Grid Zero" ? "Sim" : "Não";
+  const selFast = $(`select[data-k="fastTrack"]`),
+    selGrid = $(`select[data-k="gridZero"]`);
+  if (selFast) selFast.value = state.fastTrack;
+  if (selGrid) selGrid.value = state.gridZero;
+  onFastTrack(); // revela/exige a regra de enquadramento 8.5.x
+  recalcGeracao(); // trava de modalidade + limite de 7,5 kW
+  if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
+}
+// Gate de avanço da etapa 4: a modalidade de operação são <input type="radio">
+// SEM data-k, então os marcadores (que só enxergam controles bindados) não a
+// cobrem. Só é exigida quando o box está visível — ele some fora de FV.
+window.gdModoOperacaoOk = () => {
+  const box = $("#modoOperacaoBox");
+  if (!box || box.offsetParent === null) return true;
+  return !!state.modoOperacao;
+};
 function onFonte() {
   _sync("fontePrimaria");
   const ehFV = state.fontePrimaria === "Solar";
   const blocos = $("#fvBlocos");
   if (blocos) blocos.style.display = ehFV ? "" : "none";
+  // A modalidade de operação (Padrão/Fast Track/Grid Zero) é específica de
+  // sistemas solares — some junto com os blocos FV.
+  const modo = $("#modoOperacaoBox");
+  if (modo) modo.style.display = ehFV ? "" : "none";
   const pot = $(`[data-k="potAtivaInstalada"]`);
   if (pot) pot.disabled = ehFV;
   recalcGeracao();
@@ -735,19 +1394,22 @@ function onPotAtivaInput(el) {
   recalcGeracao();
 }
 function recalcGeracao() {
+  // Módulos e inversores têm a potência nominal digitada em kW, então o total
+  // já sai em kW — sem conversão.
   const pm =
-    ((parseFloat(state.qtdModulos) || 0) *
-      (parseFloat(state.potNominalModulo) || 0)) /
-    1e3;
+    (parseFloat(state.qtdModulos) || 0) *
+    (parseFloat(state.potNominalModulo) || 0);
   const pi =
     (parseFloat(state.qtdInversores) || 0) *
     (parseFloat(state.potNominalInversor) || 0);
   state.potTotalModulos = pm ? String(pm) : "";
   state.potTotalInversores = pi ? String(pi) : "";
+  // Os totais são exibidos como texto (não são inputs): "5,76 kW" ou "—".
   const dispM = $("#gd_potTotalModulos"),
     dispI = $("#gd_potTotalInversores");
-  if (dispM) dispM.value = fmt2(pm);
-  if (dispI) dispI.value = fmt2(pi);
+  const txt = (v) => (v > 0 ? fmt2(v) + " kW" : "—");
+  if (dispM) dispM.textContent = txt(pm);
+  if (dispI) dispI.textContent = txt(pi);
   // Regra 6: em FV a Potência Ativa Instalada = MENOR entre módulos e inversores.
   if (state.fontePrimaria === "Solar") {
     const calc = pm > 0 && pi > 0 ? Math.min(pm, pi) : pm || pi || 0;
@@ -761,8 +1423,6 @@ function recalcGeracao() {
   const excede = fast && potUsina > GD_FAST_LIMITE_USINA_KW;
   const aviso = $("#fastExcedeAviso");
   if (aviso) aviso.style.display = excede ? "" : "none";
-  const banner = $("#fastBanner");
-  if (banner) banner.style.display = fast ? "" : "none";
   const selMod = $(`select[data-k="modalidade"]`);
   if (selMod) {
     if (fast && state.modalidade !== GD_MODALIDADE_AUTOCONSUMO_LOCAL) {
@@ -771,16 +1431,13 @@ function recalcGeracao() {
     }
     selMod.disabled = fast;
   }
-  setHint(
-    "modalidadeHint",
-    fast ? "Travado: Fast Track exige Autoconsumo local." : "",
-  );
   const ehFV = state.fontePrimaria === "Solar";
   setHint(
     "potAtivaHint",
     ehFV
-      ? "Calculado automaticamente: menor valor entre a potência total de módulos e a de inversores." +
-          (excede ? " Valor acima do limite Fast Track." : "")
+      ? excede
+        ? "Valor acima do limite Fast Track."
+        : ""
       : fast
         ? `Fast Track: máximo de ${GD_FAST_LIMITE_USINA_KW} kW.` +
           (excede ? " Valor acima do limite permitido." : "")
@@ -845,9 +1502,12 @@ function validarExportacao() {
   const req = (v, label) => {
     if (!String(v || "").trim()) faltas.push(label);
   };
-  req(d.instalacao, "Número da instalação");
+  // Número da instalação: exigido só fora da ligação nova — é quando o campo
+  // aparece na etapa 5 (ver #instalacaoUCBox em onSolicitacao()).
+  if (!_ehLigacaoNova()) req(d.instalacao, "Número da instalação");
   req(d.titular, "Titular da UC");
-  req(d.classe, "Classe");
+  // Classe: fora da tela (área de não alocados), então não é exigida — cobrar
+  // um campo que não há como preencher travaria a exportação para sempre.
   req(d.cpfCnpj, "CPF/CNPJ");
   req(d.logradouro, "Logradouro");
   req(d.numero, "Número");
@@ -862,7 +1522,22 @@ function validarExportacao() {
   if (d.fuso && d.utmE && d.utmN && !utm.ok)
     faltas.push("Coordenada UTM fora da faixa do fuso");
   req(d.solicitacao, "Tipo de Solicitação");
-  req(d.edificacao, "Tipo de edificação");
+  // Tipo de edificação da etapa 5 (Individual × Coletiva/Agrupamento). O campo
+  // `edificacao` (4 opções normativas) segue na área de não alocados e por
+  // isso NÃO é exigido aqui — não há como preenchê-lo na tela.
+  req(d.edifTipo, "Tipo de edificação");
+  req(d.ramal, "Ramal");
+  req(d.telhadoArrendado, "Telhado arrendado");
+  req(d.mudancaLocal, "Mudança de local do padrão");
+  if (d.mudancaLocal === "Sim") {
+    req(d.mudCep, "CEP do novo local do padrão");
+    req(d.mudLogradouro, "Endereço do novo local do padrão");
+    req(d.mudNumero, "Número do novo local do padrão");
+    req(d.mudBairro, "Bairro do novo local do padrão");
+    req(d.mudMunicipio, "Município do novo local do padrão");
+    req(d.mudLatitude, "Latitude do novo local do padrão");
+    req(d.mudLongitude, "Longitude do novo local do padrão");
+  }
   if (GD_SOLICITACOES_FORM_CARGA.includes(d.solicitacao)) {
     const c = d.cargas || {};
     const temCarga =
@@ -876,6 +1551,7 @@ function validarExportacao() {
   if (GD_SOLICITACOES_AUMENTO_POTENCIA.includes(d.solicitacao))
     req(d.novaProtecao, "Nova Proteção (Aumento de Potência)");
   req(d.fontePrimaria, "Tipo de Fonte Primária");
+  req(d.tipoGeracao, "Tecnologia de geração");
   req(d.potAtivaInstalada, "Potência Ativa Instalada Total");
   if ((d.solicitacao || "").indexOf("GD Existente") >= 0)
     req(d.potGeracaoExistente, "Potência de geração já existente");
@@ -889,7 +1565,7 @@ function validarExportacao() {
     );
   if (!d.decl84) faltas.push("Declaração 8.4 (obrigatória)");
   if (!d.decl86) faltas.push("Declaração 8.6 (obrigatória)");
-  req(d.vencimento, "Data de vencimento da fatura");
+  // Data de vencimento da fatura: opcional (não entra em `req`).
   if (d.corrAlternativa === "Outro e-mail")
     req(d.corrOutroEmail, "E-mail alternativo da fatura");
   else if (d.corrAlternativa === "Endereço novo") {
@@ -941,18 +1617,16 @@ function renderPreviewGD() {
   secoes.push(
     pvSecao(
       "1 — Identificação",
-      pvCampo("Instalação", d.instalacao, { step: 1 }) +
+      pvCampo("Instalação", d.instalacao, { step: 4 }) +
         pvCampo("Titular", d.titular, { step: 1 }) +
-        pvCampo("Grupo / Classe", `${d.grupo} / ${d.classe}`, { step: 1 }) +
+        pvCampo("Grupo / Classe", `${d.grupo} / ${d.classe}`, { step: 2 }) +
         pvCampo("CPF/CNPJ", d.cpfCnpj, { step: 1 }) +
         pvCampo(
           "Endereço",
           `${d.logradouro}, ${d.numero} ${d.complemento} — ${d.bairro}, ${d.municipio}/${d.estado}`,
-          { full: true, step: 1 },
+          { full: true, step: 2 },
         ) +
-        pvCampo("Fast Track / Grid Zero", `${d.fastTrack} / ${d.gridZero}`, {
-          step: 1,
-        }),
+        pvCampo("Fast Track / Grid Zero", `${d.fastTrack} / ${d.gridZero}`, {}),
     ),
   );
   secoes.push(
@@ -966,33 +1640,58 @@ function renderPreviewGD() {
           `Fuso ${d.fuso} · E ${d.utmE} · N ${d.utmN}`,
           { step: 2 },
         ) +
-        pvCampo("Solicitação", d.solicitacao, { step: 2 }) +
-        pvCampo("Edificação", d.edificacao, { step: 2 }) +
-        pvCampo(
-          "Disjuntor Geral",
-          `${d.disjGeralFase || "—"} ${d.disjGeralA || ""}`,
-          { step: 2 },
-        ) +
         pvCampo(
           "Demanda consumo / geração (kW)",
           `${d.demandaConsumo || "—"} / ${d.demandaGeracao || "—"}`,
-          { step: 2 },
+          {},
         ),
     ),
   );
+  // Etapa 5 — Tipo de atendimento (page-4 no stepper).
+  let atend =
+    pvCampo("Solicitação", d.solicitacao, { full: true, step: 4 }) +
+    pvCampo("Edificação", d.edifTipo, { step: 4 }) +
+    pvCampo("Ramal", d.ramal, { step: 4 }) +
+    pvCampo(
+      d.edifTipo === "Edificação Individual"
+        ? "Disjuntor individual atual"
+        : "Disjuntor geral atual",
+      d.edifTipo === "Edificação Individual" ? d.disjAtualA : d.disjGeralA,
+      { step: 4 },
+    ) +
+    pvCampo("Telhado arrendado", d.telhadoArrendado, { step: 4 }) +
+    pvCampo("Mudança de local do padrão", d.mudancaLocal, { step: 4 });
+  if (d.mudancaLocal === "Sim")
+    atend +=
+      pvCampo(
+        "Novo local do padrão",
+        [
+          [d.mudLogradouro, d.mudNumero].filter(Boolean).join(", "),
+          d.mudBairro,
+          [d.mudMunicipio, d.mudEstado].filter(Boolean).join("/"),
+          d.mudCep ? "CEP " + d.mudCep : "",
+        ]
+          .filter(Boolean)
+          .join(" - "),
+        { full: true, step: 4 },
+      ) +
+      pvCampo(
+        "Coordenadas do novo local",
+        `Lat ${d.mudLatitude || "—"} · Lon ${d.mudLongitude || "—"}`,
+        { full: true, step: 4 },
+      );
+  secoes.push(pvSecao("5 — Tipo de atendimento", atend));
   secoes.push(
     pvSecao(
       "4 — Geração",
-      pvCampo("Fonte", d.fontePrimaria, { step: 5 }) +
-        pvCampo("Pot. Ativa Instalada (kW)", d.potAtivaInstalada, {
-          step: 5,
-        }) +
-        pvCampo("Modalidade", d.modalidade, { step: 5 }) +
+      pvCampo("Fonte", d.fontePrimaria, {}) +
+        pvCampo("Pot. Ativa Instalada (kW)", d.potAtivaInstalada, {}) +
+        pvCampo("Modalidade", d.modalidade, {}) +
         (d.fontePrimaria === "Solar"
           ? pvCampo(
               "Módulos / Inversores (kW)",
               `${d.potTotalModulos || "—"} / ${d.potTotalInversores || "—"}`,
-              { step: 5 },
+              {},
             )
           : ""),
     ),
@@ -1000,21 +1699,21 @@ function renderPreviewGD() {
   secoes.push(
     pvSecao(
       "5 — Armazenamento",
-      pvCampo("Possui", d.possuiArmazenamento, { step: 6 }),
+      pvCampo("Possui", d.possuiArmazenamento, {}),
     ),
   );
   let cor =
-    pvCampo("Como deseja receber a fatura", d.corrAlternativa, { step: 8 }) +
-    pvCampo("Vencimento", d.vencimento, { step: 8 });
+    pvCampo("Como deseja receber a fatura", d.corrAlternativa, { step: 5 }) +
+    pvCampo("Vencimento", d.vencimento, { step: 5 });
   if (d.corrAlternativa === "E-mail informado")
     cor += pvCampo("E-mail para envio da fatura", d.email, {
       full: true,
-      step: 8,
+      step: 5,
     });
   if (d.corrAlternativa === "Outro e-mail")
     cor += pvCampo("E-mail para envio da fatura", d.corrOutroEmail, {
       full: true,
-      step: 8,
+      step: 5,
     });
   if (d.corrAlternativa === "Endereço novo")
     cor += pvCampo(
@@ -1028,10 +1727,10 @@ function renderPreviewGD() {
       ]
         .filter(Boolean)
         .join(" · "),
-      { full: true, step: 8 },
+      { full: true, step: 5 },
     );
   if (d.corrAlternativa === "Conta globalizada")
-    cor += pvCampo("Conta globalizada", d.contaGlobal, { step: 8 });
+    cor += pvCampo("Conta globalizada", d.contaGlobal, { step: 5 });
   secoes.push(pvSecao("Correspondência e Fatura", cor));
   const content = $("#previewContent");
   if (content) content.innerHTML = secoes.join(PV_DIVISOR);
@@ -1069,19 +1768,28 @@ window.initFormulario = function () {
   initCargas();
   // Estado inicial das condicionais
   onGrupo();
-  onSolicitacao();
+  onSolicitacao(); // já chama onEdifTipoGD() (disjuntor × edificação)
+  onMudancaLocalGD();
   onGeradorEmergencia();
   onTelhadoArrendado();
   onFonte();
   onTipoGeracao();
   onArmazenamento();
   onCorrAlternativa();
+  // Modalidade de operação: radios sem data-k — restaura a marcação a partir
+  // do estado (prefill/voltar à etapa) e deriva fastTrack/gridZero.
+  const radioModo = $(
+    `input[name="modoOperacao"][value="${state.modoOperacao}"]`,
+  );
+  if (radioModo) radioModo.checked = true;
+  onModoOperacaoGD();
+  onZonaGD();
+  onProntoLigarGD();
+  initMapaObra();
   onCoordGD();
   onFastTrack();
   mostrarCamposPF(gdEhCpfValido());
-  // nis: nº do NIS condicionado (o card dispara change no select oculto)
-  const selNis = $(`select[data-k="nis"]`);
-  if (selNis) selNis.addEventListener("change", onNisGD);
+  // nis: o próprio <select> da etapa 2 chama onNisGD() no onchange (padrão MT).
   // fastTrack: regra de enquadramento condicionada (card dispara change)
   const selFast = $(`select[data-k="fastTrack"]`);
   if (selFast) selFast.addEventListener("change", onFastTrack);

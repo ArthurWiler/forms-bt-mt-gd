@@ -1,0 +1,228 @@
+
+<!--
+  ============================================================
+  ETAPA 5 — Tipo de atendimento
+  ------------------------------------------------------------
+  Campos realocados da antiga "Dados técnicos da UC" (etapa 04
+  do formulário original), agora organizados conforme o Figma.
+
+  Tipo de solicitação: os <option> exibem os rótulos curtos do
+  Figma, mas o `value` continua sendo o texto NORMATIVO de
+  GD_SOLICITACOES — as regras existentes (GD_SOLICITACOES_FORM_CARGA,
+  GD_SOLICITACOES_AUMENTO_POTENCIA, gdSEDisponivel) e o PDF
+  comparam por esse texto e seguem valendo sem tradução.
+
+  O disjuntor exibido depende de edifTipo (individual → disjuntor
+  individual; coletivo/agrupamento → disjuntor geral) e só aparece
+  quando a solicitação NÃO é ligação nova — ver onEdifTipoGD().
+  ============================================================
+-->
+<div class="card">
+  <div class="section-eyebrow">Etapa 5</div>
+  <h3 class="card-title">Tipo de atendimento</h3>
+  <p class="card-sub">Escolha o tipo de atendimento e preencha os dados.</p>
+
+  <div class="grid grid-2">
+    <div class="field col-span-2">
+      <label>Tipo de solicitação <span class="req">*</span></label>
+      <!-- opções vêm de GD_SOLICITACOES (rótulo curto do Figma + valor
+           normativo) via preencherSelect() -->
+      <select data-k="solicitacao" onchange="onSolicitacao()"></select>
+    </div>
+
+    <div class="field field--plain col-span-2" data-noopt>
+      <label>Tipo de edificação <span class="req">*</span></label>
+      <div data-toggle="edifTipo" data-toggle-onchange="onEdifTipoGD"></div>
+      <select data-k="edifTipo" style="display: none" aria-hidden="true">
+        <option value=""></option>
+        <option value="Edificação Individual">Individual</option>
+        <option value="Edificação Coletiva ou Agrupamento">
+          Coletivo/Agrupamento
+        </option>
+      </select>
+    </div>
+
+    <!-- Bloco de dados do atendimento: só aparece depois de escolhida a
+         edificação (no Figma, a tela inicial mostra apenas os 2 campos
+         acima). `display:contents` via .grid-subgrupo mantém os filhos
+         como itens do MESMO grid, preservando o gap único da seção. -->
+    <div id="atendimentoBloco" class="grid-subgrupo" style="display: none">
+      <!-- Identificação da UC existente: só faz sentido quando a solicitação
+           NÃO é ligação nova (numa ligação nova ainda não há instalação). O
+           onSolicitacao() alterna #instalacaoUCBox junto com os demais boxes
+           de "unidade existente". Item do MESMO grid (col-span-2), então o
+           respiro vem do gap da seção — sem margem própria. -->
+      <div class="field col-span-2" id="instalacaoUCBox" style="display: none">
+        <label>Número da Instalação / UC / Medidor <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="instalacao"
+          data-fmt="fmtInstalacaoUC"
+          placeholder="Nº da instalação, UC ou medidor CEMIG"
+          oninput="onInstalacaoUC(this)"
+        />
+      </div>
+      <div class="field">
+        <label>Ramal <span class="req">*</span></label>
+        <select data-k="ramal" data-sem-vazio></select>
+      </div>
+      <div class="field" id="disjIndividualBox" style="display: none">
+        <label>Disjuntor individual atual <span class="req">*</span></label>
+        <select data-k="disjAtualA"></select>
+      </div>
+      <div class="field" id="disjGeralBox" style="display: none">
+        <label>Disjuntor geral atual <span class="req">*</span></label>
+        <select data-k="disjGeralA" onchange="onDisjCorrente()"></select>
+      </div>
+      <div class="field">
+        <label id="demandaConsumoLbl">Demanda de consumo contratada (kW)</label>
+        <input
+          type="text"
+          data-k="demandaConsumo"
+          placeholder=" "
+          oninput="onNumDec(this)"
+        />
+        <span id="demandaConsumoHint" class="field-hint" style="display: none">
+          Potência em relação ao consumo da UC (não incluir
+          trafos/inversores/placas)
+        </span>
+      </div>
+
+      <div class="field field--plain col-span-2" data-noopt>
+        <label>
+          O telhado é/será arrendado para pessoa/empresa diferente do
+          proprietário? <span class="req">*</span>
+        </label>
+        <div data-toggle="telhadoArrendado" data-toggle-onchange="onTelhadoArrendado"></div>
+        <select data-k="telhadoArrendado" style="display: none" aria-hidden="true">
+          <option>Sim</option>
+          <option>Não</option>
+        </select>
+      </div>
+      <div class="field field--plain col-span-2" id="dubBox" style="display: none" data-noopt>
+        <label>
+          As 2 instalações (existente + telhado) foram representadas no DUB e
+          memorial descritivo? <span class="req">*</span>
+        </label>
+        <div data-toggle="duasInstalacoesDUB"></div>
+        <select data-k="duasInstalacoesDUB" style="display: none" aria-hidden="true">
+          <option>Sim</option>
+          <option>Não</option>
+        </select>
+      </div>
+
+      <div class="field field--plain col-span-2" data-noopt>
+        <label>O padrão precisa ser mudado de local? <span class="req">*</span></label>
+        <div data-toggle="mudancaLocal" data-toggle-onchange="onMudancaLocalGD"></div>
+        <select data-k="mudancaLocal" style="display: none" aria-hidden="true">
+          <option>Sim</option>
+          <option>Não</option>
+        </select>
+      </div>
+
+      <!-- Novo local do padrão: endereço PRÓPRIO (campos mud*), independente
+           do endereço da unidade da etapa 3, com mapa próprio (#mapPadrao).
+           Grid PRÓPRIO de 3 colunas (col-span-2 dentro do grid-2 de cima):
+           o Figma põe Número/Complemento/Bairro numa linha e Cidade/Estado na
+           seguinte — proporções que o grid-2 do bloco pai não comporta. -->
+      <div
+        id="mudancaLocalBloco"
+        class="grid grid-3 col-span-2"
+        style="display: none"
+      >
+        <div class="field">
+          <label>CEP <span class="req">*</span></label>
+          <input
+            type="text"
+            data-k="mudCep"
+            placeholder=" "
+            oninput="onCepPadraoGD(this)"
+          />
+        </div>
+        <div class="field col-span-3">
+          <label>Endereço <span class="req">*</span></label>
+          <input
+            type="text"
+            data-k="mudLogradouro"
+            placeholder=" "
+            onblur="onEnderecoPadraoGD()"
+          />
+        </div>
+        <div class="field">
+          <label>Número <span class="req">*</span></label>
+          <input
+            type="text"
+            data-k="mudNumero"
+            placeholder=" "
+            onblur="onEnderecoPadraoGD()"
+          />
+        </div>
+        <div class="field">
+          <!-- sem "*": os marcadores acrescentam o sufixo "(opcional)" -->
+          <label>Complemento</label>
+          <input type="text" data-k="mudComplemento" placeholder=" " />
+        </div>
+        <div class="field">
+          <label>Bairro <span class="req">*</span></label>
+          <input
+            type="text"
+            data-k="mudBairro"
+            placeholder=" "
+            onblur="onEnderecoPadraoGD()"
+          />
+        </div>
+        <div class="field">
+          <label>Cidade / Município <span class="req">*</span></label>
+          <input
+            type="text"
+            data-k="mudMunicipio"
+            placeholder=" "
+            onblur="onEnderecoPadraoGD()"
+          />
+        </div>
+        <div class="field">
+          <label>Estado <span class="req">*</span></label>
+          <select data-k="mudEstado" data-sem-vazio></select>
+        </div>
+
+        <div class="mapa-obra divider col-span-3">
+          <p class="mapa-hint">
+            Confirme a localização da unidade no mapa. Se o pin estiver
+            incorreto, você pode clicar e arrastá-lo para ajustar.
+          </p>
+          <div class="mapa-actions">
+            <span class="field-hint" id="mapaPadraoStatus"></span>
+          </div>
+          <div id="mapPadrao" class="mapa-canvas"></div>
+        </div>
+
+        <div class="field">
+          <label>Latitude <span class="req">*</span></label>
+          <input
+            type="text"
+            data-k="mudLatitude"
+            placeholder=" "
+            oninput="onCoordPadraoGD(this)"
+          />
+        </div>
+        <div class="field">
+          <label>Longitude <span class="req">*</span></label>
+          <input
+            type="text"
+            data-k="mudLongitude"
+            placeholder=" "
+            oninput="onCoordPadraoGD(this)"
+          />
+        </div>
+        <div class="field">
+          <label>Coordenada UTM</label>
+          <input type="text" id="gd_utm_padrao" readonly disabled placeholder=" " />
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="nav-bottom no-print">
+  <button class="btn btn-ghost" onclick="goTo(3)">← Voltar</button>
+  <button class="btn btn-primary" onclick="goTo(5)">Avançar →</button>
+</div>

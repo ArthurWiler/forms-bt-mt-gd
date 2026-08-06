@@ -907,3 +907,110 @@ textarea.ta {
   opacity: 1;
   visibility: visible;
 }
+
+/* ============================================================
+   Etapa 4 — Dados da geração
+   ------------------------------------------------------------
+   Modalidade de operação (spec Figma "regulamento"): lista de opções em
+   rádio, SEM a moldura de card do .doc-item — apenas o rádio + rótulo,
+   com a descrição de apoio abaixo.
+
+   Nota sobre os gaps do Figma: lá as caixas de texto vêm recortadas
+   (leading-trim / text-edge:cap, que nenhum browser implementa), então
+   as alturas exportadas (11px, 10px) ignoram o leading. Os gaps verticais
+   ENTRE textos são convertidos descontando esse leading — senão o mesmo
+   número renderiza muito maior aqui. Os gaps horizontais e os de bloco,
+   onde não há recorte, entram literais.
+   ============================================================ */
+#modoOperacaoBox > label {
+  font-size: 16px;
+  line-height: 26px;
+  letter-spacing: 0.2px;
+  color: #364b46;
+}
+/* pergunta → lista: 24px (literal). */
+#modoOperacaoOpcoes {
+  gap: 32px; /* entre opções (literal) */
+  margin-top: var(--cmg-space-6);
+}
+#modoOperacaoOpcoes .doc-item {
+  border: 0;
+  background: none;
+  padding: 0;
+  gap: 4px; /* rádio → texto (literal) */
+  align-items: flex-start;
+}
+#modoOperacaoOpcoes .doc-item:hover {
+  border-color: transparent;
+}
+/* Forma do rádio: regra canônica `.cemig-form input[type="radio"]`
+   (shared.css); aqui só o alinhamento com a 1ª linha do rótulo —
+   (26px de line-height − 20px da forma) / 2 = 3px. */
+#modoOperacaoOpcoes input[type="radio"] {
+  margin-top: 3px;
+}
+#modoOperacaoOpcoes .doc-text {
+  font-size: 16px;
+  line-height: 26px;
+  letter-spacing: 0.2px;
+  color: #364b46;
+}
+/* Descrição de apoio, abaixo do rótulo. Figma pede gap:16px entre caixas
+   recortadas de 11px e 10px; o leading das duas linhas (26px e 24px) já
+   cobre ~14px disso, restando ~2px de margem real. */
+#modoOperacaoOpcoes .doc-sub {
+  margin-top: 2px;
+  font-size: 14px;
+  line-height: 24px;
+  letter-spacing: 0.2px;
+  color: #576864;
+}
+/* Descrição de apoio: uma linha abaixo do rótulo da opção. */
+.doc-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--texto-suave);
+}
+
+/* Valor calculado (potência total de módulos/inversores): não é input —
+   é um resultado exibido dentro da mesma moldura dos campos vizinhos,
+   com o rótulo à esquerda e o valor à direita. */
+/* .cemig-form .field é flex-direction:column e tem especificidade maior que
+   .gd-calc — sem prefixar aqui, rótulo, valor e ícone empilhariam. */
+.cemig-form .field.gd-calc {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 56px;
+  padding: 0 var(--cmg-space-4, 16px);
+  border: 1px solid var(--borda);
+  border-radius: 4px;
+  background: var(--card);
+}
+.gd-calc-label {
+  font-size: 14px;
+  color: var(--texto-suave);
+}
+.gd-calc-valor {
+  margin-left: auto;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--texto);
+}
+/* Ícone informativo com o memorial do cálculo. O balão é o .cmg-hint
+   compartilhado (shared.css) e o ícone é o imgs/info.svg usado em BT/MT —
+   por isso aqui só resta o alinhamento, sem círculo nem letra desenhados. */
+.cemig-form .gd-calc-info {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+/* O .field-info global usa margin-left:auto para se afastar do rótulo; aqui
+   quem empurra o conteúdo à direita é o .gd-calc-valor, então zeramos. */
+.cemig-form .gd-calc-info .field-info {
+  margin-left: 0;
+}

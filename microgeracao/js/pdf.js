@@ -78,7 +78,6 @@ function gerarPdfMicroGD(d) {
     ],
     ["Tensão de Atendimento (V)", d.tensaoAtendimento],
     ["Mudança de Local do Padrão", d.mudancaLocal],
-    ["Distância < 30 m do poste", d.distMenor30],
     ["Telhado arrendado", d.telhadoArrendado],
   ];
   if (GD_SOLICITACOES_AUMENTO_POTENCIA.includes(d.solicitacao))
@@ -87,6 +86,26 @@ function gerarPdfMicroGD(d) {
     ucPairs.push(["Disjuntor Individual Atual (A)", d.disjAtualA]);
   if (d.telhadoArrendado === "Sim")
     ucPairs.push(["2 instalações no DUB/memorial", d.duasInstalacoesDUB]);
+  // Novo local do padrão de entrada (etapa 5): endereço próprio, informado só
+  // quando há mudança de local.
+  if (d.mudancaLocal === "Sim") {
+    ucPairs.push([
+      "Novo local do padrão",
+      [
+        [d.mudLogradouro, d.mudNumero].filter(Boolean).join(", "),
+        d.mudComplemento,
+        d.mudBairro,
+        [d.mudMunicipio, d.mudEstado].filter(Boolean).join("/"),
+        d.mudCep ? "CEP " + d.mudCep : "",
+      ]
+        .filter(Boolean)
+        .join(" - ") || "—",
+    ]);
+    ucPairs.push([
+      "Coordenadas do novo local",
+      `Lat ${d.mudLatitude || "—"} · Lon ${d.mudLongitude || "—"}`,
+    ]);
+  }
   if (!ehLigacaoNova) {
     ucPairs.push(
       ["Instalação / UC / Medidor existente no local", d.instExistente],
@@ -207,7 +226,7 @@ function gerarPdfMicroGD(d) {
     kvPairs([
       ["Módulos — Modelo", d.modeloModulos],
       ["Módulos — Fabricante", d.fabricanteModulos],
-      ["Módulos — Pot. nominal (W)", d.potNominalModulo],
+      ["Módulos — Pot. nominal (kW)", d.potNominalModulo],
       ["Módulos — Quantidade", d.qtdModulos],
       ["Módulos — Pot. total (kW)", d.potTotalModulos],
       ["Área dos Arranjos (m²)", d.areaArranjos],
