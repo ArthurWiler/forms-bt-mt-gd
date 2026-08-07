@@ -524,6 +524,12 @@ async function onCpfCnpj() {
   try {
     const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${dv}`);
     if (!res.ok) {
+      // Libera a guarda para a consulta poder ser refeita neste mesmo CNPJ
+      // (404 pode ser instabilidade da BrasilAPI). Sem isso, a checagem
+      // `_cnpjBuscado === dv` acima barrava toda nova tentativa e o "CNPJ não
+      // encontrado" só saía da tela se o usuário apagasse dígitos. Mesmo
+      // tratamento que o catch abaixo já fazia.
+      _cnpjBuscado = "";
       msg.textContent = "CNPJ não encontrado";
       msg.className = "field-hint field-err";
       return;
@@ -535,8 +541,11 @@ async function onCpfCnpj() {
     const tel = $('[data-k="telCliente"]');
     if (dd.ddd_telefone_1 && tel && !tel.value)
       _setField("telCliente", mascararTelefone(dd.ddd_telefone_1));
-    msg.textContent = "dados preenchidos";
-    msg.className = "field-hint field-ok";
+    // Consulta concluída: limpa o "buscando…" sem deixar recado no lugar — os
+    // campos preenchidos (razão social, e-mail, telefone) já são a confirmação
+    // visível. Mesma convenção do BT (buscarCNPJ) e de micro/mini (api.js).
+    msg.textContent = "";
+    msg.className = "field-hint";
   } catch (_) {
     _cnpjBuscado = "";
     msg.textContent = "CNPJ não encontrado";

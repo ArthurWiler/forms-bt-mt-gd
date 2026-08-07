@@ -276,17 +276,22 @@ const opcoesDisjPrumadaF = (p) =>
 // Auto-seleção (menor disjuntor válido) da hierarquia do projeto: prumadas
 // primeiro (são o piso do geral), depois empreendimento e condomínio. Só
 // preenche o que está vazio ou fora das opções — não sobrescreve escolha válida.
+// Lista vazia zera o valor em vez de preservá-lo: sem opção adequada o
+// <select> fica só com a opção vazia, e um valor órfão no state continuaria
+// alimentando validacaoHierarquiaProjeto — que reprovaria o avanço citando um
+// disjuntor que o campo não mostra. Mesma regra de autoSelecionarDisjCondominio.
 function autoSelecionarDisjProjeto() {
   if (!MULTI) return;
   if (state.atend.temPrumada === "Sim") {
     (state.atend.prumadas || []).forEach((p) => {
       const ops = opcoesDisjPrumadaF(p);
-      if (ops.length && !(p.disj && ops.includes(p.disj))) p.disj = ops[0];
+      if (!ops.length) p.disj = "";
+      else if (!(p.disj && ops.includes(p.disj))) p.disj = ops[0];
     });
   }
   const opsE = opcoesDisjEmpreendimentoF();
-  if (
-    opsE.length &&
+  if (!opsE.length) state.atend.disjEmpreendimento = "";
+  else if (
     !(
       state.atend.disjEmpreendimento &&
       opsE.includes(state.atend.disjEmpreendimento)
@@ -294,8 +299,8 @@ function autoSelecionarDisjProjeto() {
   )
     state.atend.disjEmpreendimento = opsE[0];
   const opsC = opcoesDisjCondominioF();
-  if (
-    opsC.length &&
+  if (!opsC.length) state.atend.disjCondominio = "";
+  else if (
     !(state.atend.disjCondominio && opsC.includes(state.atend.disjCondominio))
   )
     state.atend.disjCondominio = opsC[0];

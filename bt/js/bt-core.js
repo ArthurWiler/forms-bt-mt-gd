@@ -355,7 +355,13 @@ function onCpfCnpjBT(el) {
       "cnpjStatus",
       `<span class="cnpj-status-err">${info.tipo || "Documento"} inválido</span>`,
     );
-  else if (info.valido === true && info.tipo !== "CNPJ") setStatus("cnpjStatus", "");
+  // Qualquer estado que NÃO seja "inválido" limpa a mensagem: documento válido
+  // (CPF ou CNPJ) ou ainda incompleto enquanto se digita. Antes o CNPJ válido
+  // era exceção (`info.tipo !== "CNPJ"`), na expectativa de que buscarCNPJ
+  // sobrescrevesse o texto logo em seguida — mas ela só roda quando os dígitos
+  // MUDAM (_cnpjBuscado), então corrigir um dígito e voltar a um CNPJ já
+  // consultado deixava o "CNPJ inválido" preso na tela indefinidamente.
+  else setStatus("cnpjStatus", "");
   if (info.tipo === "CNPJ") {
     // PF → PJ: limpa campos exclusivos de pessoa física (como o React)
     Object.assign(window.state.prop, {
@@ -405,7 +411,10 @@ async function buscarCNPJ(doc) {
       const el = $(`[data-k="${k}"]`);
       if (el) el.value = _get(window.state, k) || "";
     });
-    setStatus("cnpjStatus", '<span class="badge">dados preenchidos</span>');
+    // Consulta concluída: limpa o spinner sem deixar recado no lugar — os
+    // campos preenchidos (razão social, e-mail, telefone) já são a confirmação
+    // visível de que a busca deu certo.
+    setStatus("cnpjStatus", "");
     // A razão social vinda da BrasilAPI preenche prop.cliente, que é uma das
     // condições de _emprCompleto (etapa "Dados do empreendimento"). Como esta
     // é uma resposta assíncrona, o onEmprGate() disparado no oninput já rodou
