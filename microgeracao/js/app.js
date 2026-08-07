@@ -1137,6 +1137,28 @@ function onSolicitacao() {
   const instBox = $("#instalacaoUCBox");
   if (instBox)
     instBox.style.display = state.solicitacao && !nova ? "" : "none";
+  // #mudancaLocalBox (etapa 5): mesma lógica da UC existente — numa ligação
+  // nova o padrão ainda será construído, então não há local a mudar. Ao
+  // ocultar, força "Não" e fecha o bloco de endereço do novo local: sem isso
+  // um "Sim" respondido antes de trocar a solicitação sobreviveria escondido
+  // e entraria no PDF/prévia.
+  const mudBox = $("#mudancaLocalBox");
+  if (mudBox) mudBox.style.display = state.solicitacao && !nova ? "" : "none";
+  if (nova && state.mudancaLocal === "Sim") {
+    // O select oculto é a fonte da verdade — daí escrevê-lo antes de chamar
+    // onMudancaLocalGD(), que começa com _sync() lendo dele. A chamada é
+    // manual porque data-toggle-onchange só roda no clique do botão; ela
+    // fecha #mudancaLocalBloco e reaplica os marcadores.
+    const selMud = $('select[data-k="mudancaLocal"]');
+    if (selMud) {
+      selMud.value = "Não";
+      // Redesenha o destaque do toggle (montarToggles escuta "change"),
+      // senão o botão "Sim" seguiria marcado quando o campo reaparecer.
+      selMud.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    state.mudancaLocal = "Não";
+    onMudancaLocalGD();
+  }
   const np = $("#novaProtecaoBox");
   if (np)
     np.style.display = GD_SOLICITACOES_AUMENTO_POTENCIA.includes(
@@ -1528,8 +1550,10 @@ function validarExportacao() {
   req(d.edifTipo, "Tipo de edificação");
   req(d.ramal, "Ramal");
   req(d.telhadoArrendado, "Telhado arrendado");
-  req(d.mudancaLocal, "Mudança de local do padrão");
-  if (d.mudancaLocal === "Sim") {
+  // Mudança de local: exigida só fora da ligação nova — é quando o campo
+  // aparece na etapa 5 (ver #mudancaLocalBox em onSolicitacao()).
+  if (!_ehLigacaoNova()) req(d.mudancaLocal, "Mudança de local do padrão");
+  if (d.mudancaLocal === "Sim" && !_ehLigacaoNova()) {
     req(d.mudCep, "CEP do novo local do padrão");
     req(d.mudLogradouro, "Endereço do novo local do padrão");
     req(d.mudNumero, "Número do novo local do padrão");
@@ -1659,9 +1683,12 @@ function renderPreviewGD() {
       d.edifTipo === "Edificação Individual" ? d.disjAtualA : d.disjGeralA,
       { step: 4 },
     ) +
-    pvCampo("Telhado arrendado", d.telhadoArrendado, { step: 4 }) +
-    pvCampo("Mudança de local do padrão", d.mudancaLocal, { step: 4 });
-  if (d.mudancaLocal === "Sim")
+    pvCampo("Telhado arrendado", d.telhadoArrendado, { step: 4 });
+  // Mudança de local só existe quando há padrão instalado — omitida na
+  // ligação nova, como o campo na etapa 5.
+  if (!_ehLigacaoNova())
+    atend += pvCampo("Mudança de local do padrão", d.mudancaLocal, { step: 4 });
+  if (d.mudancaLocal === "Sim" && !_ehLigacaoNova())
     atend +=
       pvCampo(
         "Novo local do padrão",

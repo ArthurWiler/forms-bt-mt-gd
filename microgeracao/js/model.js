@@ -74,7 +74,9 @@ function gdEstadoInicial() {
     disjGeralA: "",
     qteDisjGeral: "",
     tensaoAtendimento: "",
-    mudancaLocal: "Não",
+    // Sem padrão: são perguntas obrigatórias, e um "Não" pré-marcado deixava
+    // o req() da validação passar sem o usuário ter escolhido nada.
+    mudancaLocal: "",
     // Novo local do padrão de entrada (etapa 5, só com mudancaLocal="Sim").
     // Endereço PRÓPRIO, independente do endereço da unidade da etapa 3: o
     // padrão pode mudar de local sem que a unidade mude de endereço.
@@ -90,7 +92,9 @@ function gdEstadoInicial() {
     mudFuso: "",
     mudUtmE: "",
     mudUtmN: "",
-    telhadoArrendado: "Não",
+    telhadoArrendado: "",
+    // duasInstalacoesDUB segue com "Não": o campo é condicional
+    // (telhadoArrendado="Sim") e não entra no req() da validação.
     duasInstalacoesDUB: "Não",
     instExistente: "",
     instExistenteBTMT: "",

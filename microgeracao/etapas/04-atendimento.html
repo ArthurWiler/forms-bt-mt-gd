@@ -94,7 +94,12 @@
           proprietário? <span class="req">*</span>
         </label>
         <div data-toggle="telhadoArrendado" data-toggle-onchange="onTelhadoArrendado"></div>
+        <!-- <option value=""> inicial: sem ela, um state vazio faria o select
+             cair na 1ª opção ("Sim") e o toggle abriria já respondido.
+             _toggleRender ignora o placeholder, então nenhum botão a mais
+             aparece na tela. -->
         <select data-k="telhadoArrendado" style="display: none" aria-hidden="true">
+          <option value=""></option>
           <option>Sim</option>
           <option>Não</option>
         </select>
@@ -111,10 +116,22 @@
         </select>
       </div>
 
-      <div class="field field--plain col-span-2" data-noopt>
+      <!-- Mudança de local do padrão: só faz sentido quando JÁ existe um padrão
+           de entrada instalado. Numa ligação nova o padrão ainda vai ser
+           construído, então não há local a mudar — o box é ocultado por
+           onSolicitacao(), junto de #instalacaoUCBox e dos disjuntores
+           "atuais". Mesma regra do BT individual, que só monta a pergunta em
+           "Alteração de Carga" / "Caixa Existente sem Alteração". -->
+      <div
+        class="field field--plain col-span-2"
+        id="mudancaLocalBox"
+        style="display: none"
+        data-noopt
+      >
         <label>O padrão precisa ser mudado de local? <span class="req">*</span></label>
         <div data-toggle="mudancaLocal" data-toggle-onchange="onMudancaLocalGD"></div>
         <select data-k="mudancaLocal" style="display: none" aria-hidden="true">
+          <option value=""></option>
           <option>Sim</option>
           <option>Não</option>
         </select>

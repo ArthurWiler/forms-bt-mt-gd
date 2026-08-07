@@ -1210,10 +1210,17 @@ label.restricao-aceite input[type="checkbox"] {
 /* supporting-text de erro (12px, erro/600) abaixo do campo. Gerado via
    ::after p/ não exigir mudança de markup; posicionado como o .field-hint
    flutuante (absoluto, bottom: -20px). Só quando o campo NÃO tem um hint
-   próprio (evita sobreposição). */
-.cemig-form .field:has(input.is-invalid):not(:has(.field-hint))::after,
-.cemig-form .field:has(select.is-invalid):not(:has(.field-hint))::after,
-.cemig-form .field:has(textarea.is-invalid):not(:has(.field-hint))::after {
+   próprio COM TEXTO (evita sobreposição).
+   `:empty` é essencial: hints de status preenchidos por JS (#cnpjStatus,
+   #cepStatusObra) já existem no markup vazios desde o primeiro paint. Sem o
+   `:empty`, a simples PRESENÇA do <span> suprimia o "Campo obrigatório" para
+   sempre — o campo ficava só com a borda vermelha, sem dizer o que faltava. */
+.cemig-form
+  .field:has(input.is-invalid):not(:has(.field-hint:not(:empty)))::after,
+.cemig-form
+  .field:has(select.is-invalid):not(:has(.field-hint:not(:empty)))::after,
+.cemig-form
+  .field:has(textarea.is-invalid):not(:has(.field-hint:not(:empty)))::after {
   content: "Campo obrigatório";
   position: absolute;
   left: 0;
@@ -2149,13 +2156,20 @@ label.restricao-aceite input[type="checkbox"] {
 /* Variante ancorada à direita: usada quando o ícone fica no canto direito
    do campo (ex.: (i) do "Primeiro complemento"). Centralizar o balão sobre
    o ícone o jogaria para fora da coluna/tela — aqui ele abre para a esquerda,
-   alinhando a borda direita do balão com a do ícone. */
-.cemig-form .field label .cmg-hint::after {
+   alinhando a borda direita do balão com a do ícone.
+   Vale tanto para o (i) que ficou DENTRO do rótulo (markup estático) quanto
+   para o extraído dele por _campo() (bt-core.js), que vira filho direto do
+   .field com a classe .field-hint-icon — nas ilhas dinâmicas (cards de torre)
+   é sempre esse o caso, e sem o segundo seletor o balão abria centralizado e
+   vazava para fora da coluna. */
+.cemig-form .field label .cmg-hint::after,
+.cemig-form .field > .cmg-hint.field-hint-icon::after {
   left: auto;
   right: 0;
   transform: none;
 }
-.cemig-form .field label .cmg-hint::before {
+.cemig-form .field label .cmg-hint::before,
+.cemig-form .field > .cmg-hint.field-hint-icon::before {
   left: auto;
   right: 8px;
   transform: none;
@@ -3244,6 +3258,14 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .field > .field-hint-icon .field-info,
 .cemig-form .field > img.field-hint-icon {
   margin: 0;
+}
+/* O balão da dica sobe ACIMA do ícone, que está ancorado ao .field. O .field
+   flutuante é a própria caixa do campo (56px, com borda), então qualquer
+   recorte ali comeria o balão. Com o (i) extraído do rótulo por _campo(), o
+   `overflow: visible` que existia só para `> label:has(.field-info)` deixa de
+   valer — o rótulo já não contém o ícone. Libera no .field. */
+.cemig-form .field:has(> .cmg-hint.field-hint-icon) {
+  overflow: visible;
 }
 /* Com o (i) ancorado ao campo, nem o rótulo nem o valor digitado podem passar
    por baixo dele: reserva o espaço à direita em ambos. */

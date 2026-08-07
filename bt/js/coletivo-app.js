@@ -361,8 +361,13 @@ function autoSelecionarDisjTorres() {
       b.disjGeral = "";
     } else {
       const ops = opcoesDisjGeralTorre(b);
-      if (ops.length && !(b.disjGeral && ops.includes(b.disjGeral)))
-        b.disjGeral = ops[0];
+      // Lista vazia (demanda das UCs acima do catálogo, ou nenhum disjuntor
+      // seletivo acima do maior das UCs): o valor guardado não é mais uma
+      // opção oferecida — some do <select> e precisa sumir do state também,
+      // senão os dois ficam divergentes (mesma regra do disjuntor do
+      // condomínio, em autoSelecionarDisjCondominio).
+      if (!ops.length) b.disjGeral = "";
+      else if (!(b.disjGeral && ops.includes(b.disjGeral))) b.disjGeral = ops[0];
     }
     autoSelecionarDisjCondominio(b);
   });
@@ -379,7 +384,15 @@ function autoSelecionarDisjCondominio(ag) {
     return;
   }
   const ops = opcoesDisjIncendioTorre(ag);
-  if (!ops.length) return;
+  // Sem opção adequada (demanda acima do teto do catálogo, 304 kVA) o valor
+  // anterior deixa de ser válido: o <select> passa a ter só a opção vazia e o
+  // campo aparece EM BRANCO. Manter o disjuntor antigo no state deixava os dois
+  // fora de sincronia — o gate (btBlocosOk) lia "preenchido" e liberava o
+  // avanço com um disjuntor que a tela não mostra e que não atende à demanda.
+  if (!ops.length) {
+    ag.disjIncendio = "";
+    return;
+  }
   if (!(ag.disjIncendio && ops.includes(ag.disjIncendio)))
     ag.disjIncendio = ops[0];
 }

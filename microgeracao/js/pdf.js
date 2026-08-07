@@ -77,18 +77,21 @@ function gerarPdfMicroGD(d) {
       `${d.disjGeralFase || "—"} ${d.disjGeralA || ""}${d.qteDisjGeral ? " · Qte " + d.qteDisjGeral : ""}`.trim(),
     ],
     ["Tensão de Atendimento (V)", d.tensaoAtendimento],
-    ["Mudança de Local do Padrão", d.mudancaLocal],
     ["Telhado arrendado", d.telhadoArrendado],
   ];
   if (GD_SOLICITACOES_AUMENTO_POTENCIA.includes(d.solicitacao))
     ucPairs.splice(4, 0, ["Nova Proteção", d.novaProtecao]);
-  if (!ehLigacaoNova)
+  // Campos de unidade JÁ existente: numa ligação nova não há padrão instalado,
+  // logo não há disjuntor "atual" nem local a mudar.
+  if (!ehLigacaoNova) {
     ucPairs.push(["Disjuntor Individual Atual (A)", d.disjAtualA]);
+    ucPairs.push(["Mudança de Local do Padrão", d.mudancaLocal]);
+  }
   if (d.telhadoArrendado === "Sim")
     ucPairs.push(["2 instalações no DUB/memorial", d.duasInstalacoesDUB]);
   // Novo local do padrão de entrada (etapa 5): endereço próprio, informado só
   // quando há mudança de local.
-  if (d.mudancaLocal === "Sim") {
+  if (d.mudancaLocal === "Sim" && !ehLigacaoNova) {
     ucPairs.push([
       "Novo local do padrão",
       [

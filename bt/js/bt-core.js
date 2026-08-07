@@ -406,6 +406,13 @@ async function buscarCNPJ(doc) {
       if (el) el.value = _get(window.state, k) || "";
     });
     setStatus("cnpjStatus", '<span class="badge">dados preenchidos</span>');
+    // A razão social vinda da BrasilAPI preenche prop.cliente, que é uma das
+    // condições de _emprCompleto (etapa "Dados do empreendimento"). Como esta
+    // é uma resposta assíncrona, o onEmprGate() disparado no oninput já rodou
+    // — com o campo ainda vazio — e os .empr-detalhe (CEP, endereço, nº,
+    // bairro, cidade, estado) continuariam ocultos até o usuário tocar em
+    // outro campo. Reavalia o gate agora que o cliente existe.
+    if (typeof window.onEmprGate === "function") window.onEmprGate();
     CemigMarcadores.atualizarAvancar();
   } catch (e) {
     setStatus(
