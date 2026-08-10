@@ -92,7 +92,7 @@ const CAMPOS_CARDS_CONFIG = {
 
 /* ===== Estado global ===== */
 const state = {};
-let trafos = []; // {potencia, quantidade, relacao, demanda} — 1 card = 1 trafo
+let trafos = []; // {potencia, quantidade, relacao} — 1 card = 1 trafo
 let trafosAbertos = new Set([0]); // índices dos cards expandidos (acordeão)
 let motores = []; // {tipo, cv, fp, rend, volts, ipIn, tempo, dispositivo}
 let motoresAbertos = new Set([0]); // índices dos cards expandidos (acordeão)
@@ -337,7 +337,6 @@ function onFinalidade() {
       t.substituir = false;
       t.situacao = "novo"; // idem nos trafos de cubículo (3 situações)
       t.novaPotencia = "";
-      t.novaDemanda = "";
     };
     trafos.forEach(limpar);
     cubiculos.forEach((c) => {
@@ -1469,6 +1468,11 @@ function onTel(k) {
 function onCompartilhada() {
   state.compartilhada = $("#f_compartilhada").value;
   const compart = state.compartilhada === "Sim";
+  // Enquanto a pergunta não for respondida não há o que mostrar: "Sim" e "Não"
+  // levam a blocos técnicos diferentes, então o bloco inteiro (transformadores,
+  // motores, resumo e tipo de subestação) só entra em cena após a escolha.
+  const respondida = state.compartilhada === "Sim" || state.compartilhada === "Não";
+  $("#blocoTecnicoIndividual").style.display = respondida ? "block" : "none";
   // A seção alterna: ou os transformadores da UC, ou os cubículos da
   // subestação compartilhada (o campo de quantidade vive dentro do bloco).
   $("#cubiculosBox").style.display = compart ? "block" : "none";
@@ -1497,7 +1501,6 @@ function novoTrafo() {
     potencia: "",
     quantidade: "1",
     relacao: "8",
-    demanda: "",
     // Substituição (só em finalidade ≠ Conexão Nova): quando `substituir` é
     // true, o trafo já existe e será trocado — os campos acima descrevem o
     // equipamento ATUAL e os `nova*` descrevem o que entra no lugar.
@@ -1506,7 +1509,6 @@ function novoTrafo() {
     // Ver TRAFO_SITUACOES / situacaoTrafo — `substituir` é derivado dela.
     situacao: "novo",
     novaPotencia: "",
-    novaDemanda: "",
     novaRelacao: "8",
   };
 }
@@ -1515,13 +1517,10 @@ function novoTrafo() {
 function permiteTrocaTrafo() {
   return !!state.finalidade && state.finalidade !== "Conexão Nova";
 }
-/* Potência/demanda que valem para o futuro da instalação: num trafo
-   substituído são os valores novos; nos demais, os próprios campos. */
+/* Potência que vale para o futuro da instalação: num trafo substituído é a
+   nova potência; nos demais, o próprio campo. */
 function potenciaFuturaTrafo(t) {
   return t.substituir ? t.novaPotencia : t.potencia;
-}
-function demandaFuturaTrafo(t) {
-  return t.substituir ? t.novaDemanda : t.demanda;
 }
 /* Projeta uma lista de trafos no que ela será DEPOIS da obra — é essa lista
    que dimensiona a instalação (o equipamento substituído sai). */
@@ -1538,7 +1537,7 @@ function trafosFuturos(lista) {
      "novo"  → equipamento acrescentado à instalação;
      "sem"   → já existe e permanece inalterado.
    `substituir` (booleano) segue derivado daqui — só "troca" o liga — porque é
-   o que potenciaFuturaTrafo/demandaFuturaTrafo e o PDF já leem. */
+   o que potenciaFuturaTrafo e o PDF já leem. */
 const TRAFO_SITUACOES = [
   { v: "troca", label: "Trocar este transformador" },
   { v: "novo", label: "Novo transformador" },
@@ -1556,9 +1555,8 @@ function _aplicarSituacaoTrafo(t, valor) {
   t.substituir = valor === "troca";
   // Ao marcar a troca pela primeira vez, semeia os campos novos com os
   // atuais — o usuário costuma alterar só a potência.
-  if (t.substituir && t.novaPotencia === "" && t.novaDemanda === "") {
+  if (t.substituir && t.novaPotencia === "") {
     t.novaPotencia = t.potencia;
-    t.novaDemanda = t.demanda;
   }
 }
 function setTrafoSituacao(i, valor) {
@@ -1643,11 +1641,6 @@ function renderTrafos() {
         ? ""
         : `<div class="trafo-card-grid">
           <div class="field">
-            <label for="trafoNovaDemanda${i}">Nova demanda (kVA)</label>
-            <input id="trafoNovaDemanda${i}" type="number" step="any" value="${t.novaDemanda ?? ""}" placeholder=" "
-                   oninput="trafos[${i}].novaDemanda=this.value;recalcTecnico()">
-          </div>
-          <div class="field">
             <label for="trafoNovaPotencia${i}">Nova potência (kVA)</label>
             <input id="trafoNovaPotencia${i}" type="number" step="any" value="${t.novaPotencia ?? ""}" placeholder=" "
                    oninput="trafos[${i}].novaPotencia=this.value;recalcTecnico()">
@@ -1670,11 +1663,6 @@ function renderTrafos() {
       <div class="trafo-card-body" id="trafoCardBody${i}"${aberto ? "" : " hidden"}>
         ${radios}
         <div class="trafo-card-grid">
-          <div class="field">
-            <label for="trafoDemanda${i}">Demanda (kVA)</label>
-            <input id="trafoDemanda${i}" type="number" step="any" value="${t.demanda ?? ""}" placeholder=" "
-                   oninput="trafos[${i}].demanda=this.value;recalcTecnico()">
-          </div>
           <div class="field">
             <label for="trafoPotencia${i}">Potência (kVA)</label>
             <input id="trafoPotencia${i}" type="number" step="any" value="${t.potencia}" placeholder=" "
@@ -1821,146 +1809,21 @@ function renderTarifacaoInstalacao() {
   reaplicarMarcadores();
 }
 /* ---- Campo "Início de Uso" (mês/ano) ----
-   Um campo ÚNICO e fechado, com o ícone de calendário: mostra "Mês/Ano"
-   enquanto vazio e "Março/2028" depois de escolhido. O clique em qualquer
-   ponto abre um seletor próprio (painel de 12 meses + navegação de ano).
-
-   Por que não input[type=month]: um month VAZIO sempre desenha o placeholder
-   nativo do browser ("--------- de ----" em pt-BR), que nenhum atributo ou CSS
-   remove, e o seletor nativo só abre pelo indicador, não pelo campo todo.
-   Com um widget próprio o texto e o comportamento são 100% nossos.
-
-   O valor continua sendo gravado no MESMO formato ISO "YYYY-MM" do month, então
-   nada muda para quem consome (state, PDF em conteudo.js, rascunho salvo).
-   Só o ano corrente em diante é ofertado — a etapa é previsão de início de uso.
+   O widget vive em shared/js/mesano.js (fonte única, reaproveitado pelo
+   Loteamento). Aqui ficam só os dois pontos de acoplamento com o MT:
+   gerar o botão dentro das tabelas e gravar a escolha no state.
    `alvo` é a expressão de destino (ex.: "trafos[0].etapasEscalonada[1].inicio"),
    avaliada na escolha. */
-const INICIO_USO_MESES = [
-  "Janeiro",
-  "Fevereiro",
-  "Março",
-  "Abril",
-  "Maio",
-  "Junho",
-  "Julho",
-  "Agosto",
-  "Setembro",
-  "Outubro",
-  "Novembro",
-  "Dezembro",
-];
-const INICIO_USO_ANOS = 15; // ano corrente + 14
-/* "2028-03" → "Março/2028" (rótulo do campo). Vazio/inválido → "". */
-function _inicioUsoRotulo(valor) {
-  const m = /^(\d{4})-(\d{2})$/.exec(valor || "");
-  if (!m) return "";
-  const mes = INICIO_USO_MESES[Number(m[2]) - 1];
-  return mes ? `${mes}/${m[1]}` : "";
-}
 function _inicioUsoHTML(alvo, valor) {
-  const rot = _inicioUsoRotulo(valor);
-  // O alvo vai no data-* e só é avaliado na escolha (eval no _inicioUsoEscolher).
-  // Botão, não input: nada de teclado nativo nem placeholder do browser.
-  return `<button type="button" class="mesano-campo" data-alvo="${alvo}" data-valor="${valor || ""}" onclick="_inicioUsoAbrir(this)" aria-haspopup="dialog">
-      <span class="mesano-campo-txt${rot ? "" : " is-vazio"}">${rot || "Mês/Ano"}</span>
-      <img class="mesano-campo-icone" src="../imgs/calendar.svg" alt="" aria-hidden="true">
-    </button>`;
+  return cmgMesAnoHTML(alvo, valor);
 }
-/* Painel único reaproveitado por todos os campos (só um fica aberto por vez).
-   Vive no <body> porque .tbl-scroll tem overflow-x:auto e recortaria um
-   painel posicionado dentro da célula. */
-let _mesanoPainel = null;
-let _mesanoCampo = null; // botão que abriu o painel
-let _mesanoAno = 0; // ano exibido na navegação
-function _inicioUsoAbrir(botao) {
-  if (_mesanoCampo === botao) return _inicioUsoFechar(); // clique no mesmo = alterna
-  _mesanoCampo = botao;
-  const m = /^(\d{4})-(\d{2})$/.exec(botao.dataset.valor || "");
-  _mesanoAno = m ? Number(m[1]) : new Date().getFullYear();
-  if (!_mesanoPainel) {
-    _mesanoPainel = document.createElement("div");
-    _mesanoPainel.className = "mesano-painel";
-    _mesanoPainel.setAttribute("role", "dialog");
-    _mesanoPainel.setAttribute("aria-label", "Escolha o mês e o ano");
-    document.body.appendChild(_mesanoPainel);
-    // Fecha ao clicar fora, no ESC, ou quando a página rola/redimensiona (o
-    // painel é position:fixed e descolaria do campo).
-    document.addEventListener("mousedown", (e) => {
-      if (
-        _mesanoCampo &&
-        !_mesanoPainel.contains(e.target) &&
-        !e.target.closest(".mesano-campo")
-      )
-        _inicioUsoFechar();
-    });
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") _inicioUsoFechar();
-    });
-    window.addEventListener("scroll", () => _mesanoCampo && _inicioUsoFechar(), true);
-    window.addEventListener("resize", () => _mesanoCampo && _inicioUsoFechar());
-  }
-  _inicioUsoPintar();
-  _mesanoPainel.hidden = false;
-  _inicioUsoPosicionar();
-}
-function _inicioUsoFechar() {
-  if (_mesanoPainel) _mesanoPainel.hidden = true;
-  _mesanoCampo = null;
-}
-/* Desenha o painel para o ano corrente da navegação. Meses fora da faixa
-   permitida (antes do ano atual, além do teto) ficam desabilitados. */
-function _inicioUsoPintar() {
-  const anoMin = new Date().getFullYear();
-  const anoMax = anoMin + INICIO_USO_ANOS - 1;
-  const sel = /^(\d{4})-(\d{2})$/.exec(_mesanoCampo.dataset.valor || "");
-  const selAno = sel ? Number(sel[1]) : 0;
-  const selMes = sel ? Number(sel[2]) : 0;
-  const grade = INICIO_USO_MESES.map((nome, i) => {
-    const mm = i + 1;
-    const ativo = selAno === _mesanoAno && selMes === mm;
-    return `<button type="button" class="mesano-mes${ativo ? " is-sel" : ""}" onclick="_inicioUsoEscolher(${mm})">${nome.slice(0, 3)}</button>`;
-  }).join("");
-  _mesanoPainel.innerHTML = `
-      <div class="mesano-nav">
-        <button type="button" class="mesano-nav-btn" onclick="_inicioUsoAno(-1)" ${_mesanoAno <= anoMin ? "disabled" : ""} aria-label="Ano anterior">‹</button>
-        <span class="mesano-nav-ano">${_mesanoAno}</span>
-        <button type="button" class="mesano-nav-btn" onclick="_inicioUsoAno(1)" ${_mesanoAno >= anoMax ? "disabled" : ""} aria-label="Próximo ano">›</button>
-      </div>
-      <div class="mesano-grade">${grade}</div>`;
-}
-function _inicioUsoAno(d) {
-  _mesanoAno += d;
-  _inicioUsoPintar();
-  _inicioUsoPosicionar();
-}
-/* Grava no state (via o alvo do data-*) e atualiza o rótulo do campo. */
-function _inicioUsoEscolher(mes) {
-  const iso = `${_mesanoAno}-${String(mes).padStart(2, "0")}`;
-  const botao = _mesanoCampo;
-  botao.dataset.valor = iso;
-  const txt = botao.querySelector(".mesano-campo-txt");
-  txt.textContent = _inicioUsoRotulo(iso);
-  txt.classList.remove("is-vazio");
+/* Gancho chamado pelo painel compartilhado quando o usuário escolhe um mês. */
+window.cmgMesAnoAoEscolher = function (alvo, iso) {
   // eslint-disable-next-line no-eval -- mesmo contrato dos oninput inline das
   // tabelas: o alvo é uma expressão de caminho gerada aqui, não entrada do usuário.
-  eval(`${botao.dataset.alvo}=iso`);
-  _inicioUsoFechar();
+  eval(`${alvo}=iso`);
   recalcTecnico();
-}
-/* position:fixed ancorado ao campo; vira para cima se não couber embaixo. */
-function _inicioUsoPosicionar() {
-  const r = _mesanoCampo.getBoundingClientRect();
-  const p = _mesanoPainel;
-  p.style.visibility = "hidden";
-  p.hidden = false;
-  const alt = p.offsetHeight;
-  const larg = p.offsetWidth;
-  const cabeEmbaixo = r.bottom + 4 + alt <= window.innerHeight;
-  p.style.top = `${cabeEmbaixo ? r.bottom + 4 : Math.max(4, r.top - 4 - alt)}px`;
-  // Alinha pela esquerda do campo, sem vazar da janela.
-  p.style.left = `${Math.max(4, Math.min(r.left, window.innerWidth - larg - 4))}px`;
-  p.style.visibility = "";
-}
+};
 /* --- Cubículos adicionais (Anexo I) --- */
 let cubiculosAbertos = new Set([0]); // índices dos cards expandidos (acordeão)
 function novoCubiculo() {
@@ -2202,7 +2065,6 @@ function setCubiculoExistente(i, valor) {
       t.substituir = false;
       t.situacao = "novo";
       t.novaPotencia = "";
-      t.novaDemanda = "";
     });
   renderCubiculos();
   recalcCubiculo(i);
@@ -2257,7 +2119,6 @@ function renderCubiculos() {
           const linhaNova = !subst
             ? ""
             : `<div class="trafo-card-grid">
-          <div class="field"><label for="cubTrafoNovaDem${i}_${j}">Nova demanda (kVA)</label><input id="cubTrafoNovaDem${i}_${j}" type="number" step="any" value="${t.novaDemanda ?? ""}" placeholder=" " oninput="cubiculos[${i}].trafos[${j}].novaDemanda=this.value;recalcCubiculo(${i})"></div>
           <div class="field"><label for="cubTrafoNovaPot${i}_${j}">Nova potência (kVA)</label><input id="cubTrafoNovaPot${i}_${j}" type="number" step="any" value="${t.novaPotencia ?? ""}" placeholder=" " oninput="cubiculos[${i}].trafos[${j}].novaPotencia=this.value;recalcCubiculo(${i})"></div>
           <div class="field"><label for="cubTrafoNovaRel${i}_${j}">Corrente de Inrush (%)</label><input id="cubTrafoNovaRel${i}_${j}" type="number" step="any" value="${t.novaRelacao ?? ""}" placeholder=" " oninput="cubiculos[${i}].trafos[${j}].novaRelacao=this.value"><span class="cmg-hint field-hint-icon" tabindex="0" role="img" aria-label="Ajuda: corrente de inrush" data-hint="${HINT_INRUSH}"><img class="field-info" src="../imgs/info.svg" alt="" aria-hidden="true" /></span></div>
         </div>`;
@@ -2265,7 +2126,6 @@ function renderCubiculos() {
         <div class="cub-trafo-titulo">Transformador ${j + 1}${status}</div>
         ${radios}
         <div class="trafo-card-grid">
-          <div class="field"><label for="cubTrafoDem${i}_${j}">Demanda (kVA)</label><input id="cubTrafoDem${i}_${j}" type="number" step="any" value="${t.demanda ?? ""}" placeholder=" " oninput="cubiculos[${i}].trafos[${j}].demanda=this.value;recalcCubiculo(${i})"></div>
           <div class="field"><label for="cubTrafoPot${i}_${j}">Potência (kVA)</label><input id="cubTrafoPot${i}_${j}" type="number" step="any" value="${t.potencia}" placeholder=" " oninput="cubiculos[${i}].trafos[${j}].potencia=this.value;recalcCubiculo(${i})"></div>
           <div class="field"><label for="cubTrafoRel${i}_${j}">Corrente de Inrush (%)</label><input id="cubTrafoRel${i}_${j}" type="number" step="any" value="${t.relacao}" placeholder=" " oninput="cubiculos[${i}].trafos[${j}].relacao=this.value"><span class="cmg-hint field-hint-icon" tabindex="0" role="img" aria-label="Ajuda: corrente de inrush" data-hint="${HINT_INRUSH}"><img class="field-info" src="../imgs/info.svg" alt="" aria-hidden="true" /></span></div>
         </div>
@@ -3027,13 +2887,11 @@ function camposObrigatoriosFaltando() {
   });
   const blocoTrafos = $("#blocoTrafosIndividual");
   if (blocoTrafos && elementoRelevante(blocoTrafos)) {
+    // O transformador declara só potência e inrush: a demanda é da instalação
+    // (Tarifação e demanda), não de cada equipamento.
     const ok =
       trafos.length > 0 &&
-      trafos.every(
-        (t) =>
-          String(t.potencia).trim() !== "" &&
-          String(t.demanda ?? "").trim() !== "",
-      );
+      trafos.every((t) => String(t.potencia).trim() !== "");
     if (!ok) faltando.push("Transformador(es)");
   }
   if (state.compartilhada === "Sim") {
@@ -3042,11 +2900,7 @@ function camposObrigatoriosFaltando() {
       cubiculos.every(
         (c) =>
           c.trafos.length > 0 &&
-          c.trafos.every(
-            (t) =>
-              String(t.potencia).trim() !== "" &&
-              String(t.demanda ?? "").trim() !== "",
-          ),
+          c.trafos.every((t) => String(t.potencia).trim() !== ""),
       );
     if (!ok)
       faltando.push(

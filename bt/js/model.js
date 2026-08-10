@@ -186,40 +186,6 @@ const ucDetalhadaPadrao = () => ({
   gerador: { possui: "Não", potencia: "", fonte: "", descricao: "" },
 });
 
-// Tipos de complemento de uma unidade. Os primeiros são moradias/pontos
-// comerciais (têm atividade principal própria); os de ÁREA COMUM do condomínio
-// (academia, portaria, salão…) não têm — ver TIPOS_COMPLEMENTO_AREA_COMUM, que
-// esconde o campo "Atividade principal" da unidade.
-const TIPOS_COMPLEMENTO = [
-  "Apartamento",
-  "Casa",
-  "Loja",
-  "Sala comercial",
-  "Academia",
-  "Portaria",
-  "Salão de festas",
-  "Área comum",
-];
-// Complementos de área comum do condomínio: a "atividade principal" não se
-// aplica (não é moradia nem ponto comercial) — o formulário assume Comercial
-// internamente e não pergunta.
-const TIPOS_COMPLEMENTO_AREA_COMUM = [
-  "Academia",
-  "Portaria",
-  "Salão de festas",
-  "Área comum",
-];
-// Uma unidade é de área comum quando seu complemento é (ou começa por) um dos
-// tipos acima — cobre tanto o "Tipo de complemento" da torre de 1 unidade
-// quanto o complemento digitado à mão na etapa das unidades ("Portaria 1").
-function ehAreaComum(complemento) {
-  const v = String(complemento || "")
-    .trim()
-    .toLowerCase();
-  if (!v) return false;
-  return TIPOS_COMPLEMENTO_AREA_COMUM.some((t) => v.startsWith(t.toLowerCase()));
-}
-
 // UC de torre/bloco (modo múltiplas torres) — identificação por unidade
 const ucTorrePadrao = (i) => ({
   identificacao: `UC ${i + 1}`,
@@ -259,118 +225,9 @@ const blocoPadrao = (i) => ({
   ucs: [ucTorrePadrao(0)],
 });
 
-// Gera a lista de complementos de uma torre a partir do primeiro complemento.
-// Padrão puramente numérico com 3+ dígitos (ex: "101") e aptosPorAndar
-// informado → os 2 últimos dígitos são o apto dentro do andar: incrementa o
-// apto (102, 103…) e, completado o andar, avança o andar (201, 202…).
-// Qualquer outro padrão com número (ex: "Apto 01") → mantém o texto fixo e
-// incrementa só o número, preservando zeros à esquerda (Apto 02, Apto 03…).
-// Retorna null quando o primeiro complemento não contém número.
-//
-// `faixas` (opcional): composição por pavimento do popup "Customizar" —
-// [{ ini, fim, unidades }]. Quando informada e o padrão for numérico, cada
-// andar usa a quantidade de unidades da faixa em que ele se encaixa (o número
-// de andar dado por `andar` inicial, não pela posição em `ini/fim`); fora de
-// qualquer faixa, cai no `aptosPorAndar` padrão. Faixas têm precedência.
-function gerarComplementos(primeiro, total, aptosPorAndar, faixas) {
-  const n = Math.max(1, parseInt(total) || 1);
-  const m = String(primeiro || "")
-    .trim()
-    .match(/^(.*?)(\d+)(\D*)$/);
-  if (!m) return null;
-  const [, pre, num, suf] = m;
-  const porAndar = Math.max(0, parseInt(aptosPorAndar) || 0);
-  const faixasOk = normalizarFaixasPavimento(faixas);
-  const out = [];
-  const numerico = !pre && !suf && num.length >= 3;
-  if (numerico && (porAndar > 0 || faixasOk.length)) {
-    let andar = parseInt(num.slice(0, -2), 10);
-    const aptoIni = parseInt(num.slice(-2), 10);
-    let apto = aptoIni;
-    // Unidades do andar atual: faixa que cobre o andar, senão o padrão.
-    const unidadesDoAndar = (a) => {
-      const f = faixasOk.find((x) => a >= x.ini && a <= x.fim);
-      return f ? f.unidades : porAndar || 1;
-    };
-    for (let i = 0; i < n; i++) {
-      out.push(`${andar}${String(apto).padStart(2, "0")}`);
-      apto++;
-      if (apto - aptoIni >= unidadesDoAndar(andar)) {
-        andar++;
-        apto = aptoIni;
-      }
-    }
-  } else {
-    const ini = parseInt(num, 10);
-    for (let i = 0; i < n; i++)
-      out.push(pre + String(ini + i).padStart(num.length, "0") + suf);
-  }
-  return out;
-}
-
-// Quantas UCs uma linha de pavimento representa: (fim - ini + 1) andares ×
-// unidades por andar. Linha incompleta (qualquer campo em branco/inválido) vale
-// 0 — ainda está sendo preenchida.
-function ucsDaFaixaPavimento(linha) {
-  const ini = parseInt(linha && linha.ini, 10);
-  const fim = parseInt(linha && linha.fim, 10);
-  const un = parseInt(linha && linha.unidades, 10);
-  if (!Number.isFinite(ini) || !Number.isFinite(fim) || !Number.isFinite(un))
-    return 0;
-  if (fim < ini || un < 1) return 0;
-  return (fim - ini + 1) * un;
-}
-// Soma das UCs de todas as linhas, exceto a de índice `ignorar`.
-function ucsAlocadasPavimento(linhas, ignorar) {
-  if (!Array.isArray(linhas)) return 0;
-  return linhas.reduce(
-    (s, l, i) => (i === ignorar ? s : s + ucsDaFaixaPavimento(l)),
-    0,
-  );
-}
-// Sugestão de "unidades por andar" da ÚLTIMA linha para que a soma bata com o
-// total de UCs da torre. Só sugere quando a divisão é exata e positiva; nos
-// demais casos devolve null e a linha fica como o usuário deixou (o campo é
-// editável de qualquer forma — a sugestão é só uma conveniência).
-// Ex.: 25 UCs, andares 1–3 com 4 un. e 4–7 com 3 un. → restam 1 UC para a
-// última linha; com andar 8–8, sugere 1 unidade por andar.
-function sugerirUnidadesUltimoPavimento(linhas, total) {
-  if (!Array.isArray(linhas) || !linhas.length) return null;
-  const totalUCs = Math.max(0, parseInt(total) || 0);
-  if (!totalUCs) return null;
-  const idx = linhas.length - 1;
-  const ultima = linhas[idx];
-  const ini = parseInt(ultima && ultima.ini, 10);
-  const fim = parseInt(ultima && ultima.fim, 10);
-  if (!Number.isFinite(ini) || !Number.isFinite(fim) || fim < ini) return null;
-  const restante = totalUCs - ucsAlocadasPavimento(linhas, idx);
-  const andares = fim - ini + 1;
-  if (restante <= 0 || restante % andares !== 0) return null;
-  return restante / andares;
-}
 
 
-// Sanitiza a composição por pavimento vinda do popup: mantém só faixas com
-// ini/fim/unidades numéricos válidos (fim >= ini, unidades >= 1) e as ordena
-// por andar inicial. Retorna [] para entrada ausente/vazia/inválida.
-function normalizarFaixasPavimento(faixas) {
-  if (!Array.isArray(faixas)) return [];
-  return faixas
-    .map((f) => ({
-      ini: parseInt(f && f.ini, 10),
-      fim: parseInt(f && f.fim, 10),
-      unidades: parseInt(f && f.unidades, 10),
-    }))
-    .filter(
-      (f) =>
-        Number.isFinite(f.ini) &&
-        Number.isFinite(f.fim) &&
-        Number.isFinite(f.unidades) &&
-        f.fim >= f.ini &&
-        f.unidades >= 1,
-    )
-    .sort((a, b) => a.ini - b.ini);
-}
+
 
 // ============================================================
 // CATÁLOGO DE MODALIDADES (tela inicial)
@@ -521,7 +378,7 @@ const SEC_BT_RESIDENCIAL = {
       // A categoria Rural NÃO trava nem força a "Atividade principal": o usuário
       // escolhe livremente entre Residencial/Comercial/Industrial e o tipo de
       // carga deriva sempre da atividade (res ou nr + categoria da Tabela 11).
-      // As demais regras rurais (zona travada em Rural, limite de 1 UC) permanecem.
+      // Zona travada em Rural e limite de 2 UCs — a 2ª sempre de irrigação.
       solicitacoesPermitidas: SOLICITACOES_INDIVIDUAIS,
       prefill: {
         atend: {

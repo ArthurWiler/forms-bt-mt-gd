@@ -1,6 +1,6 @@
 
 <div class="card">
-  <div class="section-eyebrow">Etapa 4</div>
+  <div class="section-eyebrow" data-etapa="geracao">Etapa 5</div>
   <h3 class="card-title">Dados da geração</h3>
   <p class="card-sub">
     Preencha os dados relacionados à geração distribuída instalada em sua
@@ -357,10 +357,40 @@
       </div>
     </div>
   </div>
+
+  <h4 class="card-subtitle divider">Gerador de emergência</h4>
+  <!-- Mesma estrutura da seção de armazenamento: um único .grid governa a
+       pergunta e o campo condicional (#geradorPotBox), então o respiro entre
+       eles é o gap do grid — sem margem própria no campo. -->
+  <div class="grid grid-2">
+    <div class="field field--plain col-span-2" data-noopt>
+      <label>
+        Possui Grupo Motor Gerador de Emergência em Paralelo com a Cemig
+        (Diesel/Gás)? <span class="req">*</span>
+      </label>
+      <div
+        data-toggle="geradorEmergencia"
+        data-toggle-onchange="onGeradorEmergencia"
+      ></div>
+      <select data-k="geradorEmergencia" style="display: none" aria-hidden="true">
+        <option>Não</option>
+        <option>Sim</option>
+      </select>
+    </div>
+    <div class="field" id="geradorPotBox" style="display: none">
+      <label>Potência (kVA) <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="geradorPotencia"
+        placeholder=" "
+        oninput="onNumDec(this)"
+      />
+    </div>
+  </div>
 </div>
 <div class="nav-bottom no-print">
-  <button class="btn btn-ghost" onclick="goTo(2)">← Voltar</button>
-  <button class="btn btn-primary" data-gate="gdModoOperacaoOk" onclick="goTo(4)">
+  <button class="btn btn-ghost" data-nav="prev">← Voltar</button>
+  <button class="btn btn-primary" data-gate="gdModoOperacaoOk" data-nav="next">
     Avançar →
   </button>
 </div>

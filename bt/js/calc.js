@@ -49,60 +49,6 @@ function calcBsg(items, sg) {
 }
 
 // ============================================================
-// ND-5.2 — Demanda de apartamentos residenciais (agrupamento)
-// D = 1,4 × F × A
-// ============================================================
-
-// Tabela 13 (ND-5.2): demanda por apartamento (A) pela área média ponderada.
-// Retorna null se a área for inválida ou exceder 1000 m² (fora da tabela).
-function nd52ObterA(area) {
-  if (!(area > 0) || area > 1000) return null;
-  const faixa = ND52_TABELA_A.find((r) => area <= r[0]);
-  return faixa ? faixa[1] : null;
-}
-
-// Tabela 12 (ND-5.2): fator F pela quantidade de apartamentos.
-// Válida a partir de 4 apartamentos; estabiliza em 83,00 a partir de 276.
-// Interpola linearmente os pontos não cadastrados em ND52_FATOR_F.
-function nd52ObterF(qtd) {
-  if (!(qtd >= 4)) return null;
-  if (qtd >= 276) return 83.0;
-  if (ND52_FATOR_F[qtd] != null) return ND52_FATOR_F[qtd];
-  const chaves = Object.keys(ND52_FATOR_F)
-    .map(Number)
-    .sort((a, b) => a - b);
-  let inf = null,
-    sup = null;
-  for (const k of chaves) {
-    if (k < qtd) inf = k;
-    if (k > qtd && sup == null) sup = k;
-  }
-  if (inf == null || sup == null) return null;
-  const fInf = ND52_FATOR_F[inf],
-    fSup = ND52_FATOR_F[sup];
-  return fInf + ((fSup - fInf) * (qtd - inf)) / (sup - inf);
-}
-
-// Calcula a demanda do agrupamento de apartamentos residenciais (ND-5.2).
-// Retorna null quando os parâmetros estão fora da faixa válida da norma
-// (qtd < 4 apartamentos ou área média ponderada > 1000 m²).
-function nd52CalcularDemandaApartamentos(
-  areaMediaPonderada,
-  quantidadeApartamentos,
-) {
-  const A = nd52ObterA(areaMediaPonderada);
-  const F = nd52ObterF(quantidadeApartamentos);
-  if (A == null || F == null) return null;
-  return {
-    quantidadeApartamentos,
-    areaMediaPonderada,
-    fatorF: F,
-    demandaAreaA: A,
-    demandaKVA: 1.4 * F * A,
-  };
-}
-
-// ============================================================
 // MÚLTIPLAS TORRES / BLOCOS — demanda por torre (ND-5.2 por torre)
 // A parte residencial de cada torre é calculada pelo ND-5.2 (área média
 // ponderada + quantidade de apartamentos DA TORRE); a parte não residencial
@@ -196,77 +142,6 @@ function disjGeralTorreObrigatorio(b) {
   return disjGeralTorreRegra(b).obrigatorio;
 }
 
-// Seleção de disjuntores conforme demanda e tipo de rede
-function selecionarDisjuntores(demanda, redeMono) {
-  if (demanda <= 0) return [];
-  const tipos = ["mono", "bi", "tri"];
-  const result = [];
-  for (const tp of tipos) {
-    const cand = DISJ_CN.filter(
-      (dj) =>
-        dj.tipo === tp &&
-        dj.d >= demanda &&
-        // Em rede trifásica o bipolar é admitido apenas até 63 A; acima disso
-        // o atendimento deve ser tripolar.
-        (redeMono || tp !== "bi" || correnteDisj(dj.fx) <= 63),
-    );
-    if (cand.length > 0) {
-      cand.sort((a, b) => a.d - b.d);
-      result.push(cand[0]);
-    }
-  }
-  return result;
-}
-
-// Corrente nominal de FAIXA (A) declarada nos catálogos: mapeia o rótulo (fx)
-// para o campo `a` quando existe. É o que emparelha as duas alternativas da
-// norma — ex.: "Tripolar 700 A" e "Tripolar 3 x 225 A" têm ambos a = 700,
-// mesmo a soma real das parcelas (675) sendo menor. Montado uma vez a partir de
-// todos os catálogos de disjuntores disponíveis.
-const _CORRENTE_FAIXA = (function () {
-  const m = {};
-  [
-    typeof DISJ !== "undefined" ? DISJ : null,
-    typeof DISJ_CN !== "undefined" ? DISJ_CN : null,
-    typeof DISJ_GER !== "undefined" ? DISJ_GER : null,
-  ].forEach((cat) => {
-    (cat || []).forEach((dj) => {
-      if (dj && dj.fx && dj.a != null) m[dj.fx] = dj.a;
-    });
-  });
-  return m;
-})();
-
-// Corrente EFETIVA (A) do rótulo do disjuntor, usada em toda a seletividade.
-// Ordem de resolução:
-//   1) corrente de faixa declarada (`a`) — vale para as Alternativas 1 e 2 da
-//      proteção geral, que compartilham a corrente da linha da norma;
-//   2) "Tripolar 600/630 A"   -> 600  (usa o 1º valor da opção de norma);
-//   3) "Tripolar 400 A"       -> 400.
-function correnteDisj(fx) {
-  if (!fx) return 0;
-  if (_CORRENTE_FAIXA[fx] != null) return _CORRENTE_FAIXA[fx];
-  const m = String(fx).match(/(\d+)(?:\/\d+)*\s*A/);
-  return m ? Number(m[1]) : 0;
-}
-
-// Lista de disjuntores GERAIS válidos para o agrupamento, respeitando:
-// 1) Seletividade: corrente estritamente MAIOR que a maior UC (evita que o
-//    geral atue antes do disjuntor de uma UC individual).
-// 2) Capacidade: suporta a demanda total do agrupamento (d em kVA).
-// Considera apenas tripolares (proteção geral de agrupamento é trifásica).
-// Ordenado do menor para o maior — o primeiro item é a sugestão automática.
-function disjuntoresGeraisAcima(maiorCorrenteUC, demandaTotal) {
-  return DISJ_GER.filter(
-    (d) =>
-      d.tipo === "tri" &&
-      correnteDisj(d.fx) > maiorCorrenteUC &&
-      (demandaTotal == null || d.d >= demandaTotal),
-  )
-    .sort((a, b) => correnteDisj(a.fx) - correnteDisj(b.fx))
-    .map((d) => d.fx);
-}
-
 // Disjuntor Geral de uma torre/bloco (múltiplas torres): derivado da Demanda
 // das UCs da torre (sem o combate a incêndio, que tem disjuntor próprio — ver
 // opcoesDisjIncendioTorre). O MENOR tripolar que atende dois critérios:
@@ -291,10 +166,6 @@ function opcoesDisjGeralTorre(b) {
     (d) => d.tipo === "tri" && d.d >= demanda && correnteDisj(d.fx) > pisoUC,
   ).sort((a, b) => d_corr(a, b));
   return cand.length ? [cand[0].fx] : [];
-}
-// Ordenação por corrente crescente (empate desfeito pela capacidade d).
-function d_corr(a, b) {
-  return correnteDisj(a.fx) - correnteDisj(b.fx) || a.d - b.d;
 }
 
 // Opções de disjuntor do Condomínio / Combate a Incêndio da torre: menores

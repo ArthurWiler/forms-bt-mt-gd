@@ -1,0 +1,55 @@
+<!--
+  ============================================================
+  ETAPA 7 (fluxo Coletivo/Agrupamento) — Dados das unidades
+  ------------------------------------------------------------
+  Lista das UCs do agrupamento e o cálculo da demanda. O MÉTODO
+  depende da quantidade de apartamentos residenciais:
+    • 4 ou mais  → ND-5.2 (D = 1,4 × F × A), a partir da
+      quantidade e da área média ponderada das UCs residenciais,
+      somada à demanda não residencial informada pelo RT;
+    • menos de 4 → cada UC detalha as próprias cargas (ND-5.1),
+      como no fluxo individual.
+  É a mesma regra do BT coletivo (modoCalculadoraF), agora
+  compartilhada por shared/js/calc-nd52.js.
+
+  Equivale a bt/etapas/14-cargas-coletivo.html, sem o card de
+  troca do disjuntor geral (escopo de alteração de carga do BT).
+  Montado por gdRenderUcs() / gdAtualizarCargasColetivo().
+  ============================================================
+-->
+<div class="card">
+  <div class="section-eyebrow" data-etapa="coletivo-unidades">Etapa 7</div>
+  <h3 class="card-title">Dados das unidades</h3>
+  <p class="card-sub">
+    Preencha os dados de cada UC. Em Conexão Nova não há disjuntor atual (a
+    instalação ainda não existe).
+  </p>
+  <div id="gdUcsBox"></div>
+
+  <!-- Demanda das UCs não residenciais: só no método ND-5.2, e só quando há
+       alguma UC não residencial. Alternado por gdAtualizarCargasColetivo(). -->
+  <div
+    class="grid grid-2"
+    id="gdDemandaNaoResBox"
+    style="display: none; margin-top: 14px"
+  >
+    <div class="field field--plain" data-noopt>
+      <label>Demanda geral não residencial (kVA)</label>
+      <input
+        type="number"
+        data-k="demandaNaoResidencial"
+        placeholder="0,0"
+        oninput="_sync('demandaNaoResidencial'); gdAtualizarCargasColetivo()"
+      />
+    </div>
+  </div>
+
+  <!-- Rodapé: KPIs (carga instalada / demanda) + disjuntor geral do
+       agrupamento, montados por gdRenderDisjGeral(). -->
+  <div id="gdDisjGeralBox"></div>
+</div>
+
+<div class="nav-bottom no-print">
+  <button class="btn btn-ghost" data-nav="prev">← Voltar</button>
+  <button class="btn btn-primary" data-nav="next">Avançar →</button>
+</div>

@@ -55,11 +55,8 @@ const SIM_NAO = [
 const CARDS_GD = [
   { chave: "fastTrack", gridId: "cardsFastTrack", opcoes: SIM_NAO },
   { chave: "gridZero", gridId: "cardsGridZero", opcoes: SIM_NAO },
-  {
-    chave: "geradorEmergencia",
-    gridId: "cardsGeradorEmergencia",
-    opcoes: SIM_NAO,
-  },
+  // geradorEmergencia foi para a etapa "Dados da geração" e usa <div
+  // data-toggle>, como os demais campos daquela etapa — ver montarToggles().
   // localizacao e prontoLigar vivem na etapa 3, que é cópia fiel
   // do BT e usa <div data-toggle> — renderizados por montarToggles().
   { chave: "mudancaLocal", gridId: "cardsMudancaLocal", opcoes: SIM_NAO },
@@ -211,10 +208,30 @@ function montarToggles() {
   });
 }
 
-/* ===== Navegação ===== */
+/* ===== Navegação =====
+   O índice é POSICIONAL sobre as etapas visíveis, não o sufixo do id: o fluxo
+   Coletivo/Agrupamento troca a etapa "Cargas das UCs" por duas outras, e a
+   escolha acontece no meio do formulário (etapa 5), então a lista de etapas
+   muda em tempo de execução. Ver gdEtapasVisiveis / gdRenumerarEtapas. */
+
+// Etapas que fazem parte do fluxo ativo, na ordem do DOM. As etapas do fluxo
+// alheio ficam com [hidden] (gdAplicarFluxoEdificacao) e saem daqui.
+function gdEtapasVisiveis() {
+  return $$("section.page:not(.page--oculta)").filter((p) => !p.hidden);
+}
+function gdVstepsVisiveis() {
+  return $$(".vstep").filter((s) => !s.hidden);
+}
+// Posição (0-based) da etapa atualmente exibida dentro do fluxo ativo.
+function gdPaginaAtual() {
+  return gdEtapasVisiveis().findIndex((p) => p.classList.contains("show"));
+}
+
 function goTo(n, livre) {
-  const atual = $(".page.show");
-  const atualN = atual ? parseInt(atual.id.replace("page-", ""), 10) : -1;
+  const paginas = gdEtapasVisiveis();
+  if (n < 0 || n >= paginas.length) return;
+  const atualN = gdPaginaAtual();
+  const atual = atualN >= 0 ? paginas[atualN] : null;
   if (!livre && n > atualN && atual && window.CemigMarcadores) {
     const r = window.CemigMarcadores.validar(atual);
     if (!r.ok) {
@@ -224,10 +241,10 @@ function goTo(n, livre) {
     }
   }
   $$(".page").forEach((p) => p.classList.remove("show"));
-  const alvo = $("#page-" + n);
+  const alvo = paginas[n];
   if (!alvo) return;
   alvo.classList.add("show");
-  $$(".vstep").forEach((s, i) => {
+  gdVstepsVisiveis().forEach((s, i) => {
     s.classList.remove("active", "done");
     if (i < n) s.classList.add("done");
     if (i === n) s.classList.add("active");
@@ -244,8 +261,121 @@ function goTo(n, livre) {
     initMapaObra();
     if (mapaObra) setTimeout(() => mapaObra.invalidateSize(), 60);
   }
+  // Etapas do fluxo Coletivo/Agrupamento (js/coletivo.js).
+  if (alvo.querySelector("#gdTorreBox") && typeof gdRenderTorre === "function")
+    gdRenderTorre();
+  if (alvo.querySelector("#gdUcsBox") && typeof gdRenderUcs === "function")
+    gdRenderUcs();
   if (alvo.querySelector("#previewContent")) renderPreviewGD();
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
+}
+
+// Botões Voltar/Avançar dos fragmentos: navegação RELATIVA por data-nav
+// ("prev"|"next"), como no BT. Sem isso cada fragmento teria de saber a própria
+// posição absoluta — que muda conforme o fluxo (Individual x Coletivo).
+document.addEventListener("click", (e) => {
+  const b = e.target.closest ? e.target.closest("[data-nav]") : null;
+  // aria-disabled: o "Avançar" bloqueado continua clicável (rola até o campo
+  // que falta — ver form-marcadores), mas não navega.
+  if (!b || b.disabled || b.getAttribute("aria-disabled") === "true") return;
+  const atual = gdPaginaAtual();
+  if (atual < 0) return;
+  goTo(atual + (b.dataset.nav === "next" ? 1 : -1));
+});
+
+/* ===== Fluxo por tipo de edificação (Individual x Coletivo/Agrupamento) =====
+   Diferente do BT — onde o fluxo vem da URL e as etapas do fluxo alheio são
+   REMOVIDAS antes do primeiro paint — aqui a escolha acontece na etapa 5, no
+   meio do preenchimento. As etapas dos dois fluxos ficam sempre no DOM e são
+   alternadas por [hidden], para que o usuário possa trocar de ideia. */
+const gdEhColetivo = () =>
+  state.edifTipo === "Edificação Coletiva ou Agrupamento";
+
+// A etapa de carga (individual ou coletiva) só entra no fluxo quando ela de
+// fato se aplica:
+//   • Tipo de solicitação que MEXE na potência — ligação nova ou conexão de GD
+//     com alteração de potência disponibilizada (GD_SOLICITACOES_FORM_CARGA).
+//     Sem alterar potência, a carga da UC não muda e não há o que declarar;
+//   • Grupo "B" (etapa 3) — no Grupo A a demanda é contratada, não sai do
+//     formulário de carga da ND-5.1/5.2;
+//   • "Tipo de edificação" preenchido (etapa 5) — define QUAL etapa se aplica,
+//     a individual ("Cargas das UCs") ou as duas do coletivo.
+// Enquanto qualquer uma dessas faltar, nenhuma das três etapas aparece na
+// sidebar (senão a lista mostraria "6 Cargas das UCs / 6 Dados da torre /
+// 7 Dados das unidades" ao mesmo tempo, com números repetidos).
+const gdEtapaCargaDefinida = () =>
+  !!state.edifTipo &&
+  state.grupo === "B" &&
+  GD_SOLICITACOES_FORM_CARGA.includes(state.solicitacao);
+
+function gdAplicarFluxoEdificacao() {
+  const coletivo = gdEhColetivo();
+  // `alvo` só casa com algum data-flow quando a etapa de carga está definida;
+  // caso contrário nenhum dos dois fluxos aparece.
+  const alvo = !gdEtapaCargaDefinida()
+    ? null
+    : coletivo
+      ? "coletivo"
+      : "individual";
+  // Guarda a etapa atual ANTES de ocultar: se ela pertencia ao fluxo que está
+  // saindo, o usuário precisa ser reposicionado em alguma etapa válida.
+  const exibida = $(".page.show");
+  const gdIndiceAnterior = gdPaginaAtual();
+  $$("[data-flow]").forEach((el) => {
+    el.hidden = el.dataset.flow !== alvo;
+  });
+  // A etapa exibida acabou de ser ocultada (ex.: estava em "Cargas das UCs" e
+  // trocou para Coletivo): reposiciona o usuário sem jogá-lo para o começo.
+  if (exibida && exibida.hidden) {
+    const visiveis = gdEtapasVisiveis();
+    exibida.classList.remove("show");
+    // Com um fluxo entrando, cai na primeira etapa dele (ocupa a posição da
+    // que saiu). Sem fluxo (etapa de carga ainda indefinida), volta para a
+    // etapa ANTERIOR à que sumiu — "Tipo de atendimento", de onde o usuário
+    // escolhe a edificação; avançar dali o leva ao próximo passo natural.
+    const entrando = alvo
+      ? visiveis.findIndex((p) => p.dataset.flow === alvo)
+      : -1;
+    const i =
+      entrando >= 0
+        ? entrando
+        : Math.min(Math.max(gdIndiceAnterior - 1, 0), visiveis.length - 1);
+    if (visiveis[i]) visiveis[i].classList.add("show");
+  }
+  gdRenumerarEtapas();
+  if (coletivo && typeof gdRenderColetivo === "function") gdRenderColetivo();
+  if (window.CemigMarcadores) {
+    window.CemigMarcadores.aplicar();
+    window.CemigMarcadores.atualizarAvancar();
+  }
+}
+
+// Navega até a etapa que contém o marcador data-etapa="<nome>". Usado pelos
+// lápis de edição da prévia: o nome é estável, o índice não (o fluxo
+// Coletivo/Agrupamento troca uma etapa por duas).
+function gdIrParaAncora(nome) {
+  const i = gdEtapasVisiveis().findIndex((p) =>
+    p.querySelector(`[data-etapa="${nome}"]`),
+  );
+  if (i >= 0) goTo(i, true);
+}
+
+// Renumera os "Etapa N" dos fragmentos e os números da sidebar pela posição
+// real no fluxo ativo. Necessário porque o fluxo Coletivo/Agrupamento insere
+// duas etapas e remove uma — sem isso a sequência ficaria com buracos.
+function gdRenumerarEtapas() {
+  gdEtapasVisiveis().forEach((sec, i) => {
+    const eb = $$(".section-eyebrow", sec).find((el) =>
+      /^Etapa \d+$/.test(el.textContent.trim()),
+    );
+    if (eb) eb.textContent = "Etapa " + (i + 1);
+  });
+  gdVstepsVisiveis().forEach((s, i) => {
+    const num = s.querySelector(".vstep-num");
+    // Etapas concluídas exibem o check do CSS no lugar do número (.vstep.done);
+    // aqui só reescrevemos o número, preservando esse estado.
+    if (num && !s.classList.contains("done")) num.textContent = String(i + 1);
+  });
 }
 
 /* ===== Bind genérico (data-k) ===== */
@@ -802,10 +932,10 @@ function onEdifTipoGD() {
   if (!verInd && state.disjAtualA) aplicarPatch({ disjAtualA: "" });
   if (!verGeral && state.disjGeralA) aplicarPatch({ disjGeralA: "" });
   atualizarDisjAtual();
-  if (window.CemigMarcadores) {
-    window.CemigMarcadores.aplicar();
-    window.CemigMarcadores.atualizarAvancar();
-  }
+  // Coletivo/Agrupamento troca a etapa "Cargas das UCs" (uma UC, ND-5.1) pelas
+  // etapas "Dados da torre" + "Dados das unidades" (ND-5.2). Já chama
+  // CemigMarcadores.aplicar/atualizarAvancar no fim.
+  gdAplicarFluxoEdificacao();
 }
 // Disjuntor individual atual: correntes da ND-5.1 para a rede que atende o
 // local (tipoRede), no mesmo formato "40 A" do disjuntor geral.
@@ -1260,6 +1390,11 @@ function onGrupo() {
   _sync("grupo");
   atualizarTensoes();
   const ehBT = state.grupo === "B";
+  // Demanda contratada (consumo e geração): só o Grupo A contrata demanda —
+  // no Grupo B o atendimento é dimensionado pelo disjuntor. Os campos somem
+  // da tela em vez de ficarem visíveis e opcionais.
+  const dc = $("#demandaConsumoBox");
+  if (dc) dc.style.display = ehBT ? "none" : "";
   const lbl = $("#demandaConsumoLbl");
   if (lbl)
     lbl.innerHTML =
@@ -1270,10 +1405,11 @@ function onGrupo() {
     if (ehBT) {
       inp.removeAttribute("data-req");
       inp.classList.remove("is-invalid");
+      // Campo oculto não pode manter valor: um kW digitado antes de trocar
+      // para o Grupo B continuaria no estado e sairia no PDF.
+      if (state.demandaConsumo) aplicarPatch({ demandaConsumo: "" });
     } else inp.setAttribute("data-req", "");
   }
-  const hint = $("#demandaConsumoHint");
-  if (hint) hint.style.display = ehBT ? "none" : "";
   const dg = $("#demandaGeracaoBox");
   if (dg) dg.style.display = ehBT ? "none" : "";
   atualizarSE();
@@ -1281,10 +1417,9 @@ function onGrupo() {
     ilhaCargas.atualizar(); // redeMono depende do tipo de rede
     renderResultadoCargaGD();
   }
-  if (window.CemigMarcadores) {
-    window.CemigMarcadores.aplicar();
-    window.CemigMarcadores.atualizarAvancar();
-  }
+  // A etapa de carga só existe no Grupo B — ver gdEtapaCargaDefinida().
+  // Já chama CemigMarcadores.aplicar/atualizarAvancar no fim.
+  gdAplicarFluxoEdificacao();
 }
 
 /* ===== Etapa 4/8 — checklists (GD_DOCUMENTOS / GD_DOCS_TEC) ===== */
@@ -1567,13 +1702,19 @@ function validarExportacao() {
     req(d.mudLongitude, "Longitude do novo local do padrão");
   }
   if (GD_SOLICITACOES_FORM_CARGA.includes(d.solicitacao)) {
-    const c = d.cargas || {};
-    const temCarga =
-      (c.qtds || []).some((q) => (q || 0) > 0) ||
-      (c.mots || []).some((m) => (parseInt(m.q) || 0) > 0) ||
-      (c.extras || []).some((m) => (parseInt(m.q) || 0) > 0);
-    if (!temCarga)
-      faltas.push("Formulário de Carga (declarar as cargas elétricas)");
+    if (gdEhColetivo()) {
+      // Coletivo/Agrupamento: a carga é das UCs do agrupamento (etapa "Dados
+      // das unidades"), não do state.cargas de UC única.
+      faltas.push(...gdValidarColetivo());
+    } else {
+      const c = d.cargas || {};
+      const temCarga =
+        (c.qtds || []).some((q) => (q || 0) > 0) ||
+        (c.mots || []).some((m) => (parseInt(m.q) || 0) > 0) ||
+        (c.extras || []).some((m) => (parseInt(m.q) || 0) > 0);
+      if (!temCarga)
+        faltas.push("Formulário de Carga (declarar as cargas elétricas)");
+    }
   }
   if (d.grupo !== "B") req(d.demandaConsumo, "Demanda contratada de consumo");
   if (GD_SOLICITACOES_AUMENTO_POTENCIA.includes(d.solicitacao))
@@ -1594,6 +1735,9 @@ function validarExportacao() {
   if (!d.decl84) faltas.push("Declaração 8.4 (obrigatória)");
   if (!d.decl86) faltas.push("Declaração 8.6 (obrigatória)");
   // Data de vencimento da fatura: opcional (não entra em `req`).
+  // A forma de recebimento, sim: o dropdown abre em "Selecione" (sem
+  // pré-seleção), então é preciso cobrar a escolha.
+  req(d.corrAlternativa, "Como deseja receber a fatura");
   if (d.corrAlternativa === "Outro e-mail")
     req(d.corrOutroEmail, "E-mail alternativo da fatura");
   else if (d.corrAlternativa === "Endereço novo") {
@@ -1610,12 +1754,15 @@ function validarExportacao() {
 }
 
 /* --- Prévia (padrão pvCampo/pvSecao do MT) --- */
+// `step` identifica a etapa de destino do lápis por um ANCORA (id de um
+// elemento dentro do fragmento), não por índice: a posição das etapas muda
+// conforme a edificação (Individual x Coletivo/Agrupamento) — ver gdIrParaAncora.
 function pvCampo(label, valor, opts) {
   opts = opts || {};
   const vazio = valor == null || valor === "";
   const lapis =
     opts.step != null
-      ? `<button type="button" class="previa-edit" title="Editar" aria-label="Editar ${label}" onclick="goTo(${opts.step}, true)"></button>`
+      ? `<button type="button" class="previa-edit" title="Editar" aria-label="Editar ${label}" onclick="gdIrParaAncora('${opts.step}')"></button>`
       : "";
   return (
     `<div class="previa-campo${opts.full ? " previa-campo--full" : ""}">` +
@@ -1645,14 +1792,16 @@ function renderPreviewGD() {
   secoes.push(
     pvSecao(
       "1 — Identificação",
-      pvCampo("Instalação", d.instalacao, { step: 4 }) +
-        pvCampo("Titular", d.titular, { step: 1 }) +
-        pvCampo("Grupo / Classe", `${d.grupo} / ${d.classe}`, { step: 2 }) +
-        pvCampo("CPF/CNPJ", d.cpfCnpj, { step: 1 }) +
+      pvCampo("Instalação", d.instalacao, { step: "atendimento" }) +
+        pvCampo("Titular", d.titular, { step: "identificacao" }) +
+        pvCampo("Grupo / Classe", `${d.grupo} / ${d.classe}`, {
+          step: "identificacao",
+        }) +
+        pvCampo("CPF/CNPJ", d.cpfCnpj, { step: "identificacao" }) +
         pvCampo(
           "Endereço",
           `${d.logradouro}, ${d.numero} ${d.complemento} — ${d.bairro}, ${d.municipio}/${d.estado}`,
-          { full: true, step: 2 },
+          { full: true, step: "identificacao" },
         ) +
         pvCampo("Fast Track / Grid Zero", `${d.fastTrack} / ${d.gridZero}`, {}),
     ),
@@ -1661,12 +1810,12 @@ function renderPreviewGD() {
     pvSecao(
       "2 — Dados da UC",
       pvCampo("Coordenadas", `Lat ${d.latitude} · Lon ${d.longitude}`, {
-        step: 2,
+        step: "dados-uc",
       }) +
         pvCampo(
           "UTM (calculada)",
           `Fuso ${d.fuso} · E ${d.utmE} · N ${d.utmN}`,
-          { step: 2 },
+          { step: "dados-uc" },
         ) +
         pvCampo(
           "Demanda consumo / geração (kW)",
@@ -1677,21 +1826,21 @@ function renderPreviewGD() {
   );
   // Etapa 5 — Tipo de atendimento (page-4 no stepper).
   let atend =
-    pvCampo("Solicitação", d.solicitacao, { full: true, step: 4 }) +
-    pvCampo("Edificação", d.edifTipo, { step: 4 }) +
-    pvCampo("Ramal", d.ramal, { step: 4 }) +
+    pvCampo("Solicitação", d.solicitacao, { full: true, step: "atendimento" }) +
+    pvCampo("Edificação", d.edifTipo, { step: "atendimento" }) +
+    pvCampo("Ramal", d.ramal, { step: "atendimento" }) +
     pvCampo(
       d.edifTipo === "Edificação Individual"
         ? "Disjuntor individual atual"
         : "Disjuntor geral atual",
       d.edifTipo === "Edificação Individual" ? d.disjAtualA : d.disjGeralA,
-      { step: 4 },
+      { step: "atendimento" },
     ) +
-    pvCampo("Telhado arrendado", d.telhadoArrendado, { step: 4 });
+    pvCampo("Telhado arrendado", d.telhadoArrendado, { step: "atendimento" });
   // Mudança de local só existe quando há padrão instalado — omitida na
   // ligação nova, como o campo na etapa 5.
   if (!_ehLigacaoNova())
-    atend += pvCampo("Mudança de local do padrão", d.mudancaLocal, { step: 4 });
+    atend += pvCampo("Mudança de local do padrão", d.mudancaLocal, { step: "atendimento" });
   if (d.mudancaLocal === "Sim" && !_ehLigacaoNova())
     atend +=
       pvCampo(
@@ -1704,12 +1853,12 @@ function renderPreviewGD() {
         ]
           .filter(Boolean)
           .join(" - "),
-        { full: true, step: 4 },
+        { full: true, step: "atendimento" },
       ) +
       pvCampo(
         "Coordenadas do novo local",
         `Lat ${d.mudLatitude || "—"} · Lon ${d.mudLongitude || "—"}`,
-        { full: true, step: 4 },
+        { full: true, step: "atendimento" },
       );
   secoes.push(pvSecao("5 — Tipo de atendimento", atend));
   secoes.push(
@@ -1734,17 +1883,17 @@ function renderPreviewGD() {
     ),
   );
   let cor =
-    pvCampo("Como deseja receber a fatura", d.corrAlternativa, { step: 5 }) +
-    pvCampo("Vencimento", d.vencimento, { step: 5 });
+    pvCampo("Como deseja receber a fatura", d.corrAlternativa, { step: "correspondencia" }) +
+    pvCampo("Vencimento", d.vencimento, { step: "correspondencia" });
   if (d.corrAlternativa === "E-mail informado")
     cor += pvCampo("E-mail para envio da fatura", d.email, {
       full: true,
-      step: 5,
+      step: "correspondencia",
     });
   if (d.corrAlternativa === "Outro e-mail")
     cor += pvCampo("E-mail para envio da fatura", d.corrOutroEmail, {
       full: true,
-      step: 5,
+      step: "correspondencia",
     });
   if (d.corrAlternativa === "Endereço novo")
     cor += pvCampo(
@@ -1758,10 +1907,10 @@ function renderPreviewGD() {
       ]
         .filter(Boolean)
         .join(" · "),
-      { full: true, step: 5 },
+      { full: true, step: "correspondencia" },
     );
   if (d.corrAlternativa === "Conta globalizada")
-    cor += pvCampo("Conta globalizada", d.contaGlobal, { step: 5 });
+    cor += pvCampo("Conta globalizada", d.contaGlobal, { step: "correspondencia" });
   secoes.push(pvSecao("Correspondência e Fatura", cor));
   const content = $("#previewContent");
   if (content) content.innerHTML = secoes.join(PV_DIVISOR);
@@ -1838,7 +1987,13 @@ window.initFormulario = function () {
       if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
     });
   // stepper clicável — navegação LIVRE (não bloqueia por obrigatórios).
-  $$(".vstep").forEach((s, i) =>
-    s.addEventListener("click", () => goTo(i, true)),
+  // A posição é resolvida NO CLIQUE, não na montagem: o fluxo
+  // Coletivo/Agrupamento oculta/exibe etapas, então um índice capturado aqui
+  // apontaria para a etapa errada depois da primeira troca de edificação.
+  $$(".vstep").forEach((s) =>
+    s.addEventListener("click", () => {
+      const i = gdVstepsVisiveis().indexOf(s);
+      if (i >= 0) goTo(i, true);
+    }),
   );
 };

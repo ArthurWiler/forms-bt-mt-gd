@@ -898,6 +898,9 @@ function validarExportacao() {
     faltas.push("Declaração 9.5 (obrigatória para Grid Zero)");
   if (!d.decl86) faltas.push("Declaração 9.6 (obrigatória)");
   // Data de vencimento da fatura: opcional (não entra em `req`).
+  // A forma de recebimento, sim: o dropdown abre em "Selecione" (sem
+  // pré-seleção), então é preciso cobrar a escolha.
+  req(d.corrAlternativa, "Como deseja receber a fatura");
   if (d.corrAlternativa === "Outro e-mail")
     req(d.corrOutroEmail, "E-mail alternativo da fatura");
   else if (d.corrAlternativa === "Endereço novo") {

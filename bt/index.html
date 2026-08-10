@@ -202,7 +202,17 @@
     <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
     <script src="../shared/js/ramo-atividade.js"></script>
     <script src="js/data.js"></script>
+    <!-- Catálogos de disjuntores + seletividade (fonte única): define DISJ,
+         DISJ_CN, DISJ_COL, DISJ_GER e correnteDisj/selecionarDisjuntores. -->
+    <script src="../shared/js/disjuntores.js"></script>
+    <!-- ND-5.2 (tabelas + D = 1,4 × F × A): compartilhado com a Microgeração,
+         que usa o mesmo método no fluxo Coletivo/Agrupamento. Antes de
+         js/calc.js, que consome nd52CalcularDemandaApartamentos. -->
+    <script src="../shared/js/calc-nd52.js"></script>
     <script src="js/calc.js"></script>
+    <!-- Complementos das unidades (gerarComplementos/TIPOS_COMPLEMENTO): antes de
+         js/model.js, que deixou de defini-los. Compartilhado com a Microgeracao. -->
+    <script src="../shared/js/complementos.js"></script>
     <script src="js/model.js"></script>
     <script src="js/pdf.js"></script>
 
@@ -211,6 +221,9 @@
     <script src="../shared/js/calc-demanda.js"></script>
     <script src="../shared/js/carga-bt.js"></script>
     <script src="../shared/js/valida-instalacao.js"></script>
+    <!-- Construtores de campo das ilhas dinâmicas (cmgCampo, cmgSelectDe…);
+         bt-core.js os reexporta com os nomes históricos (_campo, _selectDe…). -->
+    <script src="../shared/js/campos.js"></script>
     <script src="../shared/js/form-marcadores.js"></script>
     <script src="../shared/js/pdf-sucesso.js"></script>
     <script src="js/bt-core.js"></script>

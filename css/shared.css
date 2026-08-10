@@ -1439,6 +1439,148 @@ label.restricao-aceite input[type="checkbox"] {
   object-position: center;
   pointer-events: none;
 }
+/* ============================================================
+   Campo mês/ano (.mesano-*) — seletor próprio, ver shared/js/mesano.js
+   ------------------------------------------------------------
+   Campo único e fechado, com o ícone de calendário à direita: mostra
+   "Mês/Ano" enquanto vazio e "Março/2028" depois de escolhido. Substitui o
+   input[type=month] nativo, cujo placeholder ("--------- de ----") nenhum
+   atributo ou CSS remove e cujo seletor só abre pelo indicador.
+   Usado pelo MT (Início de Uso, dentro das tabelas — a métrica de 40px vem
+   de formulario-mt.css) e pelo Loteamento (Data de entrada de carga, dentro
+   de um .field de 56px).
+   ============================================================ */
+.cemig-form .mesano-campo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 22px var(--cmg-space-4) 4px;
+  min-height: 54px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  font-family: var(--cmg-font-family);
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: 0.2px;
+  color: var(--cmg-text-strong);
+  text-align: left;
+  cursor: pointer;
+}
+.cemig-form .mesano-campo:focus-visible {
+  outline: none;
+  border-color: var(--cmg-green-600);
+  box-shadow: 0 0 0 2px var(--cmg-focus-ring);
+}
+/* Sem valor o rótulo é placeholder: mesma cor dos demais placeholders. Dentro
+   de um .field o rótulo flutuante já ocupa a célula, então o "Mês/Ano" do
+   botão seria duplicata — some (o do MT, em tabela, não tem rótulo e fica). */
+.cemig-form .mesano-campo-txt.is-vazio {
+  color: var(--cmg-text-muted);
+}
+.cemig-form .field .mesano-campo-txt.is-vazio {
+  visibility: hidden;
+}
+/* Estado "placeholder" do rótulo flutuante: o gatilho padrão é
+   :placeholder-shown / option[value=""]:checked, que um botão não tem — aqui
+   quem sinaliza "vazio" é o .is-vazio do texto. Espelha o bloco do Padrão B. */
+:is(.cemig-form, .cemig-lote)
+  .field:has(.mesano-campo-txt.is-vazio):not(:focus-within)
+  > label {
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--cmg-neutral-600);
+}
+.cemig-form .mesano-campo-icone {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  object-fit: contain;
+}
+/* Dentro de um .field o botão herda a caixa do campo (borda/fundo/56px vêm do
+   .field), como acontece com input/select. */
+.cemig-form .field .mesano-campo {
+  background: transparent;
+  border: none;
+}
+/* ---- Painel do seletor ----
+   Fica no <body> (position:fixed) porque as tabelas do MT usam overflow-x:auto
+   e recortariam um painel ancorado dentro da célula. z-index abaixo da topbar
+   sticky (100) não serve — o painel precisa cobrir o conteúdo ao redor —,
+   então usa 90, acima das tabelas e abaixo de modais. */
+.mesano-painel {
+  position: fixed;
+  z-index: 90;
+  width: 232px;
+  padding: 8px;
+  background: var(--cmg-surface);
+  border: 1px solid var(--cmg-neutral-200);
+  border-radius: var(--cmg-radius);
+  box-shadow: var(--cmg-shadow-elevated);
+}
+.mesano-painel[hidden] {
+  display: none;
+}
+.mesano-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.mesano-nav-ano {
+  font-size: 14px;
+  font-weight: var(--cmg-fw-bold);
+  color: var(--cmg-neutral-600);
+}
+.mesano-nav-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--cmg-neutral-600);
+  cursor: pointer;
+}
+.mesano-nav-btn:hover:not(:disabled) {
+  background: var(--cmg-surface-accent);
+}
+.mesano-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+/* 12 meses em 3 colunas (abreviados: Jan, Fev, …). */
+.mesano-grade {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+.mesano-mes {
+  height: 34px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-family: var(--cmg-font-family);
+  font-size: 13px;
+  color: var(--cmg-neutral-600);
+  cursor: pointer;
+}
+.mesano-mes:hover {
+  background: var(--cmg-surface-accent);
+}
+.mesano-mes.is-sel {
+  background: var(--cmg-green-600);
+  color: var(--cmg-neutral-0);
+}
 /* Enquanto o rótulo ocupa a célula, esconde o placeholder nativo do input
    e o texto da opção placeholder do select (evita duplicação). */
 .cemig-form .field--float input::placeholder {
@@ -2669,6 +2811,13 @@ label.restricao-aceite input[type="checkbox"] {
 /* ---- Canonical step rail (single source for BT/Micro/Mini AND
    MT/Loteamento/Desistência — all render under `.cemig-form`). Markup is
    canonical everywhere: `.vstep > .vstep-num + .vstep-label`. ---- */
+/* O atributo [hidden] precisa vencer o `display` das classes abaixo: um
+   `.vstep`/`.page` marcado como oculto (ex.: etapas de um fluxo que não está
+   ativo) senão continuaria visível, porque `display:flex` tem a mesma
+   especificidade e vem depois. */
+.cemig-form [hidden] {
+  display: none !important;
+}
 .cemig-form .vstep {
   display: flex;
   align-items: center;

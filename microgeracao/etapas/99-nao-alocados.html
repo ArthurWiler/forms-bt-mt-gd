@@ -23,40 +23,6 @@
   <div
     class="field field--plain campo-nao-alocado"
     data-alocar="dados-uc"
-    data-noopt
-  >
-    <label>
-      Possui Grupo Motor Gerador de Emergência em Paralelo com a Cemig
-      (Diesel/Gás)?
-    </label>
-    <div id="cardsGeradorEmergencia"></div>
-    <select
-      data-k="geradorEmergencia"
-      onchange="onGeradorEmergencia()"
-      style="display: none"
-      aria-hidden="true"
-    >
-      <option>Não</option>
-      <option>Sim</option>
-    </select>
-  </div>
-  <div
-    class="field campo-nao-alocado"
-    data-alocar="dados-uc"
-    id="geradorPotBox"
-    style="display: none"
-  >
-    <label>Potência (kVA)</label>
-    <input
-      type="text"
-      data-k="geradorPotencia"
-      placeholder=" "
-      oninput="onNumDec(this)"
-    />
-  </div>
-  <div
-    class="field field--plain campo-nao-alocado"
-    data-alocar="dados-uc"
     id="seBox"
     style="display: none"
     data-noopt
@@ -140,10 +106,6 @@
       placeholder=" "
       oninput="onNumDec(this)"
     />
-    <span id="demandaConsumoHint" class="field-hint" style="display: none">
-      Potência em relação ao consumo da UC (não incluir
-      trafos/inversores/placas)
-    </span>
   </div>
   <div
     class="field campo-nao-alocado"

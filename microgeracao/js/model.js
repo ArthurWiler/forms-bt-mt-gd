@@ -4,6 +4,42 @@
 function gdTrafoPadrao() {
   return { se: "", qte: "", potencia: "" };
 }
+
+// ------------------------------------------------------------
+// Fluxo Coletivo/Agrupamento (edifTipo = "Edificação Coletiva ou
+// Agrupamento"): o empreendimento tem VÁRIAS UCs e a demanda da parte
+// residencial sai do ND-5.2, não das cargas de uma única UC.
+// Espelha ucBlocos/blocos[0] do BT coletivo, mas com o estado plano da
+// microgeração — ver microgeracao/js/coletivo.js.
+// ------------------------------------------------------------
+function gdUcPadrao(i) {
+  return {
+    complemento: "",
+    solicitacao: "Conexão Nova",
+    atividade: "Residencial",
+    // Área privativa (m²): entra na área média ponderada do ND-5.2.
+    area: "",
+    // Ramo de atividade: só para UC não residencial.
+    ramo: "",
+    // Identificação da UC existente (não se aplica a Conexão Nova).
+    instalacao: "",
+    disjDe: "",
+    disjPara: "",
+    // Carga prevista (kW) — método ND-5.2 com mais de 3 UCs.
+    cargaPrevista: "",
+    // Cargas detalhadas (ND-5.1), usadas no modo calculadora (< 4 aptos).
+    // A ilha montarCargaAcordeao escreve _demanda/_cargaKw/_disjuntores aqui.
+    cargas: { qtds: [], tipoA: "", catA: 0, mots: [], extras: [] },
+    _acc: {},
+  };
+}
+
+// Preset de carga prevista da UC residencial pelo disjuntor escolhido
+// (mesmos valores do BT coletivo — PRESET_PREV_RESIDENCIAL_COLETIVO).
+const GD_PRESET_PREV_RESIDENCIAL = {
+  "Monopolar 63 A": "6.9",
+  "Bipolar 63 A": "15.8",
+};
 function gdEstadoInicial() {
   return {
     // 1 - Identificação da UC
@@ -107,6 +143,25 @@ function gdEstadoInicial() {
     // cargas: { qtds, tipoA, catA, mots, extras, _demanda, _cargaKw, _disjuntores }
     cargas: { qtds: [], tipoA: "", catA: 0, mots: [], extras: [] },
     cargaDisjEscolhido: "",
+    // --- Fluxo Coletivo/Agrupamento (ver gdUcPadrao) ---
+    // Quantidade de UCs do agrupamento; `ucs` acompanha esse número.
+    nUCs: 1,
+    ucs: [gdUcPadrao(0)],
+    // "Dados da torre": equivale a blocos[0] do BT coletivo.
+    agr: {
+      aptosPorAndar: "",
+      aptosPorAndarFaixas: [],
+      complInicial: "",
+      tipoComplemento: "",
+      // Demanda/disjuntor do condomínio (combate a incêndio e áreas comuns).
+      demandaIncendio: "",
+      disjIncendio: "",
+    },
+    // Demanda do conjunto das UCs NÃO residenciais, informada pelo RT — no
+    // ND-5.2 ela não sai das cargas (só a parte residencial é calculada).
+    demandaNaoResidencial: "",
+    // Disjuntor geral do agrupamento.
+    disjGeralAgr: "",
     // 4 - Dados da geração
     // Modalidade de operação do sistema solar: card único que substitui os
     // campos separados fastTrack/gridZero (mantidos derivados por
@@ -169,7 +224,8 @@ function gdEstadoInicial() {
     // Forma de recebimento da fatura (dropdown único, igual ao BT): e-mail
     // informado, novo endereço, endereço da unidade, outro e-mail ou conta
     // globalizada.
-    corrAlternativa: "E-mail informado",
+    // Sem pré-seleção: o dropdown abre em "Selecione" e o usuário escolhe.
+    corrAlternativa: "",
     corrOutroEmail: "",
     corrCep: "",
     corrRua: "",

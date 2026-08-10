@@ -145,12 +145,18 @@ function gerarPdfMicroGD(d) {
   P.gap(2);
 
   // ---- Formulário de Carga ----
-  const c = d.cargas || {};
+  // Coletivo/Agrupamento: a carga não é de uma UC só — a etapa "Dados das
+  // unidades" lista todas e a demanda residencial sai do ND-5.2. Ver
+  // microgeracao/js/coletivo.js.
+  const ehColetivoPdf = d.edifTipo === "Edificação Coletiva ou Agrupamento";
+  const c = ehColetivoPdf ? {} : d.cargas || {};
   const temCarga =
     (c.qtds || []).some((q) => (q || 0) > 0) ||
     (c.mots || []).some((m) => (parseInt(m.q) || 0) > 0) ||
     (c.extras || []).some((m) => (parseInt(m.q) || 0) > 0);
-  if (GD_SOLICITACOES_FORM_CARGA.includes(d.solicitacao) || temCarga) {
+  if (ehColetivoPdf) {
+    gdPdfSecaoColetivo(d, { sec, kvPairs, fullLine, totRow, tabela, P });
+  } else if (GD_SOLICITACOES_FORM_CARGA.includes(d.solicitacao) || temCarga) {
     sec("FORMULÁRIO DE CARGA");
     if (GD_SOLICITACOES_FORM_CARGA.includes(d.solicitacao))
       fullLine("Preenchimento", "Obrigatório (Ligação Nova / Aumento de Carga)");
@@ -350,4 +356,111 @@ function gerarPdfMicroGD(d) {
     .replace(/[^a-zA-Z0-9]/g, "_")
     .slice(0, 30);
   P.save(`CEMIG_MicroGD_${nomeArq}.pdf`);
+}
+
+/* ============================================================
+   Seção "Formulário de Carga" do fluxo Coletivo/Agrupamento
+   ------------------------------------------------------------
+   Substitui a seção de UC única. Imprime a memória de cálculo do
+   ND-5.2 (quando aplicável), a lista das UCs e os totais do
+   agrupamento — os mesmos números exibidos na etapa "Dados das
+   unidades" (ver microgeracao/js/coletivo.js).
+   ============================================================ */
+function gdPdfSecaoColetivo(d, H) {
+  const { sec, kvPairs, fullLine, totRow, tabela, P } = H;
+  const num = (v) => {
+    const n = Number(String(v == null ? "" : v).replace(",", "."));
+    return isNaN(n) ? 0 : n;
+  };
+  const ucs = d.ucs || [];
+  const semAlt = (u) => (u && u.solicitacao) === "Caixa Existente sem Alteração";
+  const residenciais = ucs.filter(
+    (u) => u.atividade === "Residencial" && !semAlt(u),
+  );
+  const qtdApart = residenciais.length;
+  const areaMedia = !qtdApart
+    ? 0
+    : residenciais.reduce((s, u) => s + num(u.area), 0) / qtdApart;
+  const nd52 = nd52CalcularDemandaApartamentos(areaMedia, qtdApart);
+  const modoCalculadora = qtdApart < 4;
+  const temNaoRes = ucs.some(
+    (u) => u.atividade && u.atividade !== "Residencial" && !semAlt(u),
+  );
+
+  sec("FORMULÁRIO DE CARGA — AGRUPAMENTO");
+  const agr = d.agr || {};
+  kvPairs([
+    ["Tipo de edificação", d.edifTipo],
+    ["Quantidade de unidades", String(ucs.length)],
+    ["Demanda do condomínio (kVA)", agr.demandaIncendio || "—"],
+    ["Disjuntor do condomínio", agr.disjIncendio || "—"],
+  ]);
+
+  // Método de cálculo da parte residencial.
+  fullLine(
+    "Método de cálculo",
+    modoCalculadora
+      ? "ND-5.1 — menos de 4 apartamentos residenciais: cada unidade detalha as próprias cargas"
+      : "ND-5.2 — demanda dos apartamentos residenciais por quantidade e área média ponderada",
+  );
+  if (!modoCalculadora && nd52) {
+    fullLine(
+      "Memória de cálculo (ND-5.2)",
+      `${qtdApart} apartamento(s) · área média ponderada ${fmt2(areaMedia)} m² · ` +
+        `Fator F ${fmt2(nd52.fatorF)} · A ${fmt2(nd52.demandaAreaA)} → ` +
+        `D = 1,4 × F × A = ${fmt2(nd52.demandaKVA)} kVA`,
+    );
+  }
+  if (!modoCalculadora && temNaoRes)
+    fullLine(
+      "Demanda geral não residencial (kVA)",
+      d.demandaNaoResidencial || "—",
+    );
+
+  // Lista das UCs.
+  const linhas = ucs.map((u, i) => [
+    String(i + 1) + (u.complemento ? " · " + u.complemento : ""),
+    u.atividade || "—",
+    u.atividade === "Residencial" ? (u.area ? u.area + " m²" : "—") : u.ramo || "—",
+    modoCalculadora
+      ? fmt2((u.cargas || {})._demanda || 0) + " kVA"
+      : u.cargaPrevista
+        ? u.cargaPrevista + " kW"
+        : "—",
+    u.disjPara || ((u.cargas || {})._disjuntores || [])[0] || "—",
+  ]);
+  if (linhas.length)
+    tabela(
+      [
+        "Unidade",
+        "Atividade",
+        "Ramo/Área",
+        modoCalculadora ? "Demanda" : "Carga prev.",
+        "Disjuntor",
+      ],
+      [34, 30, 28, 28, 42],
+      linhas,
+    );
+
+  // Totais do agrupamento.
+  const cargaTotal = ucs.reduce((s, u) => {
+    if (semAlt(u)) return s;
+    return (
+      s +
+      (modoCalculadora ? num((u.cargas || {})._cargaKw) : num(u.cargaPrevista))
+    );
+  }, 0);
+  const demandaTotal = modoCalculadora
+    ? ucs.reduce(
+        (s, u) => s + (semAlt(u) ? 0 : num((u.cargas || {})._demanda)),
+        0,
+      )
+    : (nd52 ? nd52.demandaKVA : 0) +
+      (temNaoRes ? num(d.demandaNaoResidencial) : 0);
+  totRow(
+    `Carga instalada ${fmt2(cargaTotal)} kW  |  Demanda total`,
+    `${fmt2(demandaTotal)} kVA`,
+  );
+  fullLine("Disjuntor geral do agrupamento", d.disjGeralAgr || "—");
+  P.gap(2);
 }

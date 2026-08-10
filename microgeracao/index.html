@@ -56,15 +56,27 @@
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">4</span>
-          <span class="vstep-label">Dados da geração</span>
-        </button>
-        <button type="button" class="vstep">
-          <span class="vstep-num">5</span>
           <span class="vstep-label">Tipo de atendimento</span>
         </button>
         <button type="button" class="vstep">
+          <span class="vstep-num">5</span>
+          <span class="vstep-label">Dados da geração</span>
+        </button>
+        <!-- Etapa 6 do fluxo INDIVIDUAL: uma única UC detalha as cargas. -->
+        <button type="button" class="vstep" data-flow="individual">
           <span class="vstep-num">6</span>
           <span class="vstep-label">Cargas das UCs</span>
+        </button>
+        <!-- Etapas 6 e 7 do fluxo COLETIVO/AGRUPAMENTO: substituem a de cima.
+             A alternância é feita por gdAplicarFluxoEdificacao() quando o
+             "Tipo de edificação" muda na etapa 5. -->
+        <button type="button" class="vstep" data-flow="coletivo" hidden>
+          <span class="vstep-num">6</span>
+          <span class="vstep-label">Dados da torre</span>
+        </button>
+        <button type="button" class="vstep" data-flow="coletivo" hidden>
+          <span class="vstep-num">7</span>
+          <span class="vstep-label">Dados das unidades</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">7</span>
@@ -94,9 +106,15 @@
         <section class="page show" id="page-0" data-src="etapas/01-orientacoes.html"></section>
         <section class="page" id="page-1" data-src="etapas/02-identificacao.html"></section>
         <section class="page" id="page-2" data-src="etapas/03-dados-unidade.html"></section>
-        <section class="page" id="page-3" data-src="etapas/04-geracao.html"></section>
-        <section class="page" id="page-4" data-src="etapas/04-atendimento.html"></section>
-        <section class="page" id="page-5" data-src="etapas/05-carga.html"></section>
+        <section class="page" id="page-3" data-src="etapas/04-atendimento.html"></section>
+        <section class="page" id="page-4" data-src="etapas/04-geracao.html"></section>
+        <!-- Etapa de carga do fluxo INDIVIDUAL (uma UC) e, alternativamente, as
+             duas etapas do fluxo COLETIVO/AGRUPAMENTO (torre + unidades, com
+             cálculo ND-5.2). goTo() navega por POSIÇÃO entre as etapas
+             visíveis, então os ids abaixo são apenas rótulos estáveis. -->
+        <section class="page" id="page-5" data-flow="individual" data-src="etapas/05-carga.html"></section>
+        <section class="page" id="page-coletivo-torre" data-flow="coletivo" hidden data-src="etapas/06-dados-torre.html"></section>
+        <section class="page" id="page-coletivo-unidades" data-flow="coletivo" hidden data-src="etapas/07-dados-unidades.html"></section>
         <section class="page" id="page-6" data-src="etapas/09-correspondencia.html"></section>
         <section class="page" id="page-7" data-src="etapas/07-observacoes.html"></section>
         <section class="page" id="page-8" data-src="etapas/10-previa.html"></section>
@@ -135,7 +153,17 @@
     <script src="js/data.js"></script>
     <script src="../mt/js/subestacoes-b64.js"></script>
     <script src="../shared/js/load-form-data.js"></script>
+    <!-- Catálogos de disjuntores + seletividade (fonte única, versão do BT):
+         define DISJ_CN — antes usado daqui de load-form-data.js — e as funções
+         correnteDisj/selecionarDisjuntores/disjuntoresGeraisAcima, que
+         shared/js/calc.js e calc-demanda.js consomem. Tem de vir antes deles. -->
+    <script src="../shared/js/disjuntores.js"></script>
+    <!-- ND-5.2: método do agrupamento, usado no fluxo Coletivo/Agrupamento. -->
+    <script src="../shared/js/calc-nd52.js"></script>
     <script src="../shared/js/calc.js"></script>
+    <!-- Complementos das unidades: usado pela etapa "Dados da torre" do fluxo
+         Coletivo/Agrupamento (js/coletivo.js). -->
+    <script src="../shared/js/complementos.js"></script>
     <script src="js/model.js"></script>
     <script src="../shared/js/gd-pdf-base.js"></script>
     <script src="js/pdf.js"></script>
@@ -143,9 +171,14 @@
     <script src="../shared/js/calc-demanda.js"></script>
     <script src="../shared/js/carga-bt.js"></script>
     <script src="../shared/js/valida-instalacao.js"></script>
+    <!-- Construtores de campo das ilhas dinâmicas: usados pela lista de UCs do
+         fluxo Coletivo/Agrupamento (js/coletivo.js). -->
+    <script src="../shared/js/campos.js"></script>
     <script src="../shared/js/form-marcadores.js"></script>
     <script src="../shared/js/pdf-sucesso.js"></script>
     <script src="js/app.js"></script>
+    <!-- Fluxo Coletivo/Agrupamento: depende de state/$ definidos em app.js. -->
+    <script src="js/coletivo.js"></script>
     <script src="../shared/js/etapas-loader.js"></script>
   </body>
 </html>

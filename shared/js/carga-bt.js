@@ -14,6 +14,10 @@
    MOTOR_TRI), shared/js/calc.js (fmt2, fmtW) e
    shared/js/calc-demanda.js (calcDemandaResultados).
    ============================================================ */
+// Atividade da 2ª UC do pedido rural (BT individual): fixa e não editável.
+// Vive aqui porque a derivação do tipo de carga (aplicarAtividade) precisa
+// reconhecê-la como não residencial.
+const ATIVIDADE_IRRIGACAO = "Irrigação";
 const _REFRI = new Set([
   "Geladeira comum",
   "Geladeira duplex",
@@ -102,11 +106,17 @@ function montarCargaAcordeao(container, cfg) {
     if (window.CemigMarcadores) CemigMarcadores.atualizarAvancar();
     return r;
   }
-  // Tipo de carga sempre derivado da atividade (Residencial → res; Com/Ind → nr)
+  // Tipo de carga sempre derivado da atividade (Residencial → res; demais,
+  // incluindo a irrigação da 2ª UC rural → nr)
   function aplicarAtividade() {
     const a = opt(cfg.atividade) || "";
     if (a === "Residencial") d.tipoA = "res";
-    else if (a === "Comercial" || a === "Industrial") d.tipoA = "nr";
+    else if (
+      a === "Comercial" ||
+      a === "Industrial" ||
+      a === ATIVIDADE_IRRIGACAO
+    )
+      d.tipoA = "nr";
     else d.tipoA = "";
   }
   function _hint(txt) {

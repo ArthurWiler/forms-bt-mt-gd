@@ -247,9 +247,12 @@
                   <option>Condomínio fechado horizontal</option>
                 </select>
               </div>
+              <!-- Mês/ano pelo widget compartilhado (shared/js/mesano.js), o
+                   mesmo campo "Início de Uso" do MT: o input[type=month] nativo
+                   desenha um placeholder que não sai e só abre pelo indicador. -->
               <div class="field">
                 <label>Data de entrada de carga ou inauguração</label>
-                <input type="month" data-k="dataEntrada" />
+                <input type="hidden" data-k="dataEntrada" data-mesano />
               </div>
               <div class="field">
                 <label>Área do empreendimento <span class="req">*</span></label>
@@ -484,6 +487,7 @@
     <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
     <script src="../shared/js/geo.js"></script>
     <script src="../shared/js/form-marcadores.js"></script>
+    <script src="../shared/js/mesano.js"></script>
     <script src="js/app.js"></script>
   </body>
 </html>

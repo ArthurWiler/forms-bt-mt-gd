@@ -1,0 +1,27 @@
+<!--
+  ============================================================
+  ETAPA 6 (fluxo Coletivo/Agrupamento) — Dados da torre
+  ------------------------------------------------------------
+  Só existe quando "Tipo de edificação" = Coletiva ou Agrupamento
+  (etapa 5). Junto com "Dados das unidades", substitui a etapa
+  "Cargas das UCs" do fluxo individual — ver
+  gdAplicarFluxoEdificacao() em js/app.js.
+
+  Equivale a bt/etapas/13-ucs-coletivo.html. O conteúdo é montado
+  por gdRenderTorre() (js/coletivo.js); o número da etapa é
+  reescrito por gdRenumerarEtapas() conforme a posição real.
+  ============================================================
+-->
+<div class="card">
+  <div class="section-eyebrow" data-etapa="coletivo-torre">Etapa 6</div>
+  <h3 class="card-title">Dados da torre</h3>
+  <p class="card-sub">
+    Informe a quantidade de unidades do agrupamento e os dados da área comum.
+  </p>
+  <div id="gdTorreEndereco"></div>
+  <div id="gdTorreBox"></div>
+</div>
+<div class="nav-bottom no-print">
+  <button class="btn btn-ghost" data-nav="prev">← Voltar</button>
+  <button class="btn btn-primary" data-nav="next">Avançar →</button>
+</div>

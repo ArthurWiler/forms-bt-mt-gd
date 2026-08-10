@@ -334,7 +334,7 @@
                   <option>Conta globalizada</option>
                 </select>
               </div>
-              <div class="field field--plain col-span-2" data-noopt>
+              <div class="field field--plain col-span-2">
                 <label>Data de Vencimento da Fatura</label>
                 <div id="cardsDiaVenc"></div>
                 <select
@@ -1035,7 +1035,9 @@
               <div id="cubiculosCards"></div>
             </div>
 
-            <div id="blocoTecnicoIndividual">
+            <!-- Só aparece depois que "Subestação compartilhada
+                 (multimedição)?" for respondida — ver onCompartilhada(). -->
+            <div id="blocoTecnicoIndividual" style="display: none">
               <div id="blocoTotaisConsolidados" style="display: none">
                 <h4 class="card-subtitle divider">
                   Totais Consolidados (Cubículos)
@@ -1884,6 +1886,7 @@
     <script src="../shared/js/geo.js"></script>
     <script src="../shared/js/valida-instalacao.js"></script>
     <script src="../shared/js/form-marcadores.js"></script>
+    <script src="../shared/js/mesano.js"></script>
     <script src="../shared/js/pdf-sucesso.js"></script>
     <script src="../shared/js/gd-pdf-base.js"></script>
     <script src="js/calculo.js"></script>

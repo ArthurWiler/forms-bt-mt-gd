@@ -977,14 +977,9 @@ window.btDadosProjetoOk = function () {
    porte de views/ucs-coletivo.js). Divide a página com a
    Demanda do atendimento (renderCargasColetivo).
    ============================================================ */
-function _inp(valor, oninput, props) {
-  const i = document.createElement("input");
-  i.type = (props && props.type) || "text";
-  i.placeholder = (props && props.placeholder) || " ";
-  i.value = valor == null ? "" : valor;
-  i.addEventListener("input", () => oninput(i.value));
-  return i;
-}
+// _inp / _inpInstalacao: ver shared/js/campos.js (cmgInp / cmgInpInstalacao).
+const _inp = cmgInp;
+const _inpInstalacao = cmgInpInstalacao;
 // Campo "Ramo de atividade": input com lista filtrada (shared/js/ramo-atividade.js).
 // Exibe só a descrição; o valor guardado é "código - descrição" (o código
 // não é escolhido pelo usuário, mas sai no PDF).
@@ -994,20 +989,6 @@ function _inpRamo(valor, onChange) {
   i.placeholder = "Obrigatório";
   i.value = ramoDescricao(valor);
   ramoAtivAttach(i, onChange);
-  return i;
-}
-// Campo "Instalação / UC / Medidor": máscara + validação de formato
-// (10 dígitos iniciando por 3, ou 15 dígitos com "018" antes do verificador).
-function _inpInstalacao(valor, onChange) {
-  const i = document.createElement("input");
-  i.type = "text";
-  i.placeholder = "Nº instalação, UC ou medidor";
-  i.value = valor == null ? "" : valor;
-  i.setAttribute("data-fmt", "fmtInstalacaoUC");
-  i.addEventListener("input", () => {
-    i.value = mascararInstalacaoUC(i.value);
-    onChange(i.value);
-  });
   return i;
 }
 function renderHibridoAlertas() {
@@ -1292,21 +1273,11 @@ function renderCargasColetivo() {
   aplicarPresetResidencial();
   atualizarCargasColetivo();
 }
-// Atualiza SÓ o que é calculado (alertas ND-5.2, campo não residencial e o
-// rodapé com KPIs + disjuntor geral, montado por renderDisjGeralColetivo).
+// Atualiza SÓ o que é calculado (campo não residencial e o rodapé com KPIs +
+// disjuntor geral, montado por renderDisjGeralColetivo). O resultado do ND-5.2
+// não é mais exibido em aviso próprio — a demanda calculada já aparece no KPI
+// do rodapé desta etapa.
 function atualizarCargasColetivo() {
-  const info = nd52InfoF();
-  // Alerta ND-5.2: só o resultado do cálculo automático. No modo calculadora
-  // (menos de 4 apartamentos) não há aviso — a demanda sai das cargas
-  // detalhadas em cada UC, o que a própria etapa já mostra.
-  // Sem área válida ainda (área média fora de 1..1000 m²) também não há aviso:
-  // o campo "Área privativa (m²)" de cada UC já sinaliza o que falta preencher.
-  const alertas = $("#nd52Alertas");
-  if (alertas)
-    alertas.innerHTML =
-      !modoCalculadoraF() && info.nd52
-        ? `<div class="alert alert-ok" style="margin-bottom:14px"><b>Demanda dos apartamentos residenciais (ND-5.2):</b> ${info.quantidadeApartamentos} apartamento(s) · área média ponderada ${fmt2(info.areaMediaPonderada)} m² · Fator F ${fmt2(info.nd52.fatorF)} · A ${fmt2(info.nd52.demandaAreaA)} → D = ${fmt2(info.nd52.demandaKVA)} kVA (incluída automaticamente na demanda total abaixo).</div>`
-        : "";
   // Demanda geral não residencial: só no método 5.2 (quando o ND-5.2 calcula
   // a parte residencial); no modo calculadora as UCs não residenciais também
   // detalham as próprias cargas.
@@ -1488,17 +1459,8 @@ function enderecoObraTxt(complemento) {
   const base = [o.endereco, o.num].filter(Boolean).join(", ");
   return (base || "—") + (complemento ? `, ${complemento}` : "");
 }
-// Card de KPI dos rodapés de resultado (carga/demanda da unidade, da torre e
-// do agrupamento) — rótulo, valor e o ícone de ajuda com o texto explicativo.
-function _mkKpiCard(label, valor, titulo) {
-  const card = document.createElement("div");
-  card.className = "resultado-card";
-  card.innerHTML =
-    `<span class="resultado-card-info cmg-hint" tabindex="0" role="img" aria-label="${label}: ajuda" data-hint="${titulo}"><img class="field-info" src="../imgs/info.svg" alt="" aria-hidden="true" /></span>` +
-    `<div class="resultado-card-label">${label}</div>` +
-    `<div class="resultado-card-valor">${valor}</div>`;
-  return card;
-}
+// _mkKpiCard: ver shared/js/campos.js (cmgKpiCard).
+const _mkKpiCard = cmgKpiCard;
 function _blocoEndereco(complemento) {
   const box = document.createElement("div");
   box.className = "endereco-bloco";
@@ -1659,223 +1621,6 @@ function _campoComAcao(labelTxt, controle, botao) {
 // não há pavimento válido). Overlay + diálogo montados no <body>, fechados por
 // Cancelar/X/Esc/clique no overlay.
 // ============================================================
-function abrirComposicaoPavimento(faixasAtuais, onSalvar, totalUCs) {
-  const total = Math.max(0, parseInt(totalUCs) || 0);
-  // Cópia de trabalho: andar inicial, andar final e unidades por andar de cada
-  // pavimento. Sem faixas salvas, começa com um pavimento em branco.
-  const base = normalizarFaixasPavimento(faixasAtuais);
-  const linhas = base.length
-    ? base.map((f) => ({ ini: f.ini, fim: f.fim, unidades: f.unidades }))
-    : [{ ini: "", fim: "", unidades: "" }];
-
-  const overlay = document.createElement("div");
-  overlay.className = "cmg-modal-overlay";
-
-  const dialog = document.createElement("div");
-  dialog.className = "cmg-modal";
-  dialog.setAttribute("role", "dialog");
-  dialog.setAttribute("aria-modal", "true");
-  dialog.setAttribute("aria-labelledby", "cmg-modal-titulo");
-
-  const fechar = () => {
-    document.removeEventListener("keydown", onKey);
-    overlay.remove();
-  };
-  const onKey = (e) => {
-    if (e.key === "Escape") fechar();
-  };
-
-  // Cabeçalho: botão X
-  const btnX = document.createElement("button");
-  btnX.type = "button";
-  btnX.className = "cmg-modal-fechar";
-  btnX.setAttribute("aria-label", "Fechar");
-  btnX.innerHTML =
-    '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
-  btnX.addEventListener("click", fechar);
-
-  const titulo = document.createElement("h2");
-  titulo.className = "cmg-modal-titulo";
-  titulo.id = "cmg-modal-titulo";
-  titulo.textContent = "Composição por pavimento";
-
-  const desc = document.createElement("p");
-  desc.className = "cmg-modal-desc";
-  desc.textContent =
-    "Informe o andar inicial, o andar final e quantas unidades há por andar em cada pavimento. As unidades por andar do último pavimento são sugeridas para fechar o total de unidades da torre, mas você pode editar qualquer campo.";
-
-  // Tabela de faixas
-  const tabela = document.createElement("div");
-  tabela.className = "cmg-pav-tabela";
-
-  // Resumo do cálculo, abaixo da tabela (preenchido por renderTabela).
-  const resumo = document.createElement("p");
-  resumo.className = "cmg-pav-resumo";
-
-  const corpo = document.createElement("div");
-  corpo.className = "cmg-modal-conteudo";
-
-  const rodape = document.createElement("div");
-  rodape.className = "cmg-modal-rodape";
-  const btnCancelar = document.createElement("button");
-  btnCancelar.type = "button";
-  btnCancelar.className = "btn btn-ghost";
-  btnCancelar.textContent = "Cancelar";
-  btnCancelar.addEventListener("click", fechar);
-  const btnSalvar = document.createElement("button");
-  btnSalvar.type = "button";
-  btnSalvar.className = "btn btn-primary";
-  btnSalvar.textContent = "Salvar";
-  btnSalvar.addEventListener("click", () => {
-    // Salva o que o usuário efetivamente preencheu (linhas incompletas são
-    // descartadas por normalizarFaixasPavimento).
-    const validas = normalizarFaixasPavimento(linhas);
-    onSalvar(validas.length ? validas : null);
-    fechar();
-  });
-  rodape.append(btnCancelar, btnSalvar);
-
-  // Renderiza as linhas da tabela (cabeçalho + campos por faixa + adicionar).
-  const renderTabela = () => {
-    tabela.innerHTML = "";
-    const head = document.createElement("div");
-    head.className = "cmg-pav-linha cmg-pav-head";
-    ["Andar inicial", "Andar final", "Unidades por andar"].forEach((t) => {
-      const c = document.createElement("div");
-      c.className = "cmg-pav-cel";
-      c.textContent = t;
-      head.appendChild(c);
-    });
-    // Espaço da coluna de remover (mantém o alinhamento das colunas)
-    head.appendChild(
-      Object.assign(document.createElement("div"), {
-        className: "cmg-pav-cel cmg-pav-cel-acao",
-      }),
-    );
-    tabela.appendChild(head);
-
-    // Um campo numérico editável da linha. `campo` é a chave em `linhas[idx]`
-    // ("ini" | "fim" | "unidades"). Nenhum campo é bloqueado: o valor digitado
-    // vai direto para o estado, sem re-render (o foco/cursor não se perde).
-    // Só o resumo abaixo da tabela é atualizado a cada tecla.
-    const celCampo = (ln, idx, campo, placeholder) => {
-      const cel = document.createElement("div");
-      cel.className = "cmg-pav-cel";
-      const inp = document.createElement("input");
-      inp.type = "number";
-      inp.min = "1";
-      inp.placeholder = placeholder;
-      inp.value = ln[campo] == null ? "" : String(ln[campo]);
-      inp.setAttribute("aria-label", `${placeholder} do pavimento ${idx + 1}`);
-      inp.addEventListener("input", () => {
-        ln[campo] = inp.value;
-        // Editar um pavimento anterior muda quantas UCs sobram para o último:
-        // reaplica a sugestão nele (sem tocar na linha que está em edição).
-        aplicarSugestaoUltimo(idx);
-        atualizarResumo();
-      });
-      cel.appendChild(inp);
-      return cel;
-    };
-    // Monta uma linha de pavimento com os três campos editáveis + remover.
-    const mkLinha = (ln, idx, podeRemover) => {
-      const linha = document.createElement("div");
-      linha.className = "cmg-pav-linha";
-      linha.append(
-        celCampo(ln, idx, "ini", "Andar inicial"),
-        celCampo(ln, idx, "fim", "Andar final"),
-        celCampo(ln, idx, "unidades", "Unidades por andar"),
-      );
-      const celAcao = document.createElement("div");
-      celAcao.className = "cmg-pav-cel cmg-pav-cel-acao";
-      if (podeRemover) {
-        const btnDel = document.createElement("button");
-        btnDel.type = "button";
-        btnDel.className = "cmg-pav-remover";
-        btnDel.setAttribute("aria-label", `Remover pavimento ${idx + 1}`);
-        btnDel.innerHTML =
-          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
-        btnDel.addEventListener("click", () => {
-          linhas.splice(idx, 1);
-          aplicarSugestaoUltimo();
-          renderTabela();
-        });
-        celAcao.appendChild(btnDel);
-      }
-      linha.appendChild(celAcao);
-      tabela.appendChild(linha);
-    };
-
-    linhas.forEach((ln, idx) => mkLinha(ln, idx, linhas.length > 1));
-
-    const rodapeTabela = document.createElement("div");
-    rodapeTabela.className = "cmg-pav-adicionar-wrap";
-    const btnAdd = document.createElement("button");
-    btnAdd.type = "button";
-    btnAdd.className = "btn btn-ghost btn-outlined-acao cmg-pav-adicionar";
-    btnAdd.innerHTML =
-      '<span class="cmg-pav-mais" aria-hidden="true">+</span> Adicionar pavimento';
-    btnAdd.addEventListener("click", () => {
-      // Novo pavimento já começa no andar seguinte ao último preenchido —
-      // sugestão de partida, editável como qualquer outro campo.
-      const ultima = linhas[linhas.length - 1];
-      const fimAnterior = parseInt(ultima && ultima.fim, 10);
-      linhas.push({
-        ini: Number.isFinite(fimAnterior) ? String(fimAnterior + 1) : "",
-        fim: "",
-        unidades: "",
-      });
-      renderTabela();
-    });
-    rodapeTabela.appendChild(btnAdd);
-    tabela.appendChild(rodapeTabela);
-    atualizarResumo();
-  };
-  // Preenche as "unidades por andar" do ÚLTIMO pavimento com o valor que fecha
-  // o total de UCs da torre. Não roda quando a própria última linha é a que
-  // está em edição (`editando`) — senão sobrescreveria o que o usuário digita.
-  // O campo continua editável: isto é sugestão, não trava.
-  function aplicarSugestaoUltimo(editando) {
-    const idx = linhas.length - 1;
-    if (idx < 0 || editando === idx) return;
-    const sug = sugerirUnidadesUltimoPavimento(linhas, total);
-    if (sug == null) return;
-    linhas[idx].unidades = String(sug);
-    const inputs = tabela.querySelectorAll(".cmg-pav-linha input[type=number]");
-    // 3 campos por linha: o de "unidades" da última linha é o 3º da última.
-    const alvo = inputs[idx * 3 + 2];
-    if (alvo && alvo !== document.activeElement) alvo.value = String(sug);
-  }
-  // Resumo abaixo da tabela: quantas UCs os pavimentos informados somam frente
-  // ao total da torre — o usuário enxerga na hora se falta ou sobra unidade.
-  function atualizarResumo() {
-    if (!total) {
-      resumo.textContent = "";
-      return;
-    }
-    const somadas = ucsAlocadasPavimento(linhas);
-    const dif = total - somadas;
-    resumo.textContent =
-      dif === 0
-        ? `Os pavimentos somam as ${total} unidades da torre.`
-        : dif > 0
-          ? `Os pavimentos somam ${somadas} de ${total} unidades — faltam ${dif}.`
-          : `Os pavimentos somam ${somadas} unidades — ${-dif} a mais que as ${total} da torre.`;
-  }
-  renderTabela();
-
-  corpo.append(titulo, desc, tabela, resumo);
-  dialog.append(btnX, corpo, rodape);
-  overlay.appendChild(dialog);
-  overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) fechar();
-  });
-  document.addEventListener("keydown", onKey);
-  document.body.appendChild(overlay);
-  // Foco inicial no primeiro campo para acessibilidade.
-  const primeiro = tabela.querySelector("input");
-  if (primeiro) primeiro.focus();
-}
 // ============================================================
 // Popup "Replicar dados" — gerenciador de replicações entre torres
 // O usuário monta uma ou mais regras "torre de origem → torres de destino"
@@ -2638,32 +2383,8 @@ function abrirGerenciadorReplicacaoUC() {
   document.addEventListener("keydown", onKey);
   document.body.appendChild(overlay);
 }
-// Executa um re-render que reconstrói o campo em foco (innerHTML = "") sem
-// tirar o cursor de onde o usuário está digitando: guarda o input ativo pelo
-// data-foco + posição do cursor e devolve o foco ao equivalente recriado.
-// Usado pelos campos cujo valor muda a ESTRUTURA do card (ex.: "Quantidade de
-// unidades", que monta/desmonta "por andar" e "Primeiro complemento").
-function _preservandoFoco(rerender) {
-  const ativo = document.activeElement;
-  const chave =
-    ativo && ativo.tagName === "INPUT" ? ativo.getAttribute("data-foco") : null;
-  if (!chave) return rerender();
-  // selectionStart/End não são acessíveis em input type="number" (lança em
-  // alguns navegadores): sem cursor, só o foco é restaurado.
-  let ini = null;
-  let fim = null;
-  try {
-    ini = ativo.selectionStart;
-    fim = ativo.selectionEnd;
-  } catch (e) {}
-  rerender();
-  const novo = document.querySelector(`input[data-foco="${chave}"]`);
-  if (!novo || novo === ativo) return;
-  novo.focus();
-  try {
-    if (ini != null) novo.setSelectionRange(ini, fim);
-  } catch (e) {}
-}
+// _preservandoFoco: ver shared/js/campos.js (cmgPreservandoFoco).
+const _preservandoFoco = cmgPreservandoFoco;
 // Card só-leitura de exibição (rótulo fixo em cima + valor embaixo). Card
 // estático (sem <input>), no visual da spec do Figma (.faixa-card): padding
 // 20px, borda neutra/200, radius 8px. field--plain sai do rótulo flutuante e

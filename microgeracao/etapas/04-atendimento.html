@@ -18,7 +18,7 @@
   ============================================================
 -->
 <div class="card">
-  <div class="section-eyebrow">Etapa 5</div>
+  <div class="section-eyebrow" data-etapa="atendimento">Etapa 4</div>
   <h3 class="card-title">Tipo de atendimento</h3>
   <p class="card-sub">Escolha o tipo de atendimento e preencha os dados.</p>
 
@@ -74,7 +74,10 @@
         <label>Disjuntor geral atual <span class="req">*</span></label>
         <select data-k="disjGeralA" onchange="onDisjCorrente()"></select>
       </div>
-      <div class="field">
+      <!-- Demanda contratada: só existe no Grupo A. No Grupo B (baixa tensão)
+           não há contratação de demanda — o atendimento é dimensionado pelo
+           disjuntor. Alternado por onGrupo(). -->
+      <div class="field" id="demandaConsumoBox" style="display: none">
         <label id="demandaConsumoLbl">Demanda de consumo contratada (kW)</label>
         <input
           type="text"
@@ -82,10 +85,6 @@
           placeholder=" "
           oninput="onNumDec(this)"
         />
-        <span id="demandaConsumoHint" class="field-hint" style="display: none">
-          Potência em relação ao consumo da UC (não incluir
-          trafos/inversores/placas)
-        </span>
       </div>
 
       <div class="field field--plain col-span-2" data-noopt>
@@ -240,6 +239,6 @@
   </div>
 </div>
 <div class="nav-bottom no-print">
-  <button class="btn btn-ghost" onclick="goTo(3)">← Voltar</button>
-  <button class="btn btn-primary" onclick="goTo(5)">Avançar →</button>
+  <button class="btn btn-ghost" data-nav="prev">← Voltar</button>
+  <button class="btn btn-primary" data-nav="next">Avançar →</button>
 </div>

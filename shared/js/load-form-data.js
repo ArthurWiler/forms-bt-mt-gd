@@ -129,32 +129,6 @@ function motorKvaUnit(fase, cv, col) {
   return v == null ? 0 : v;
 }
 
-// Disjuntores padronizados CEMIG (ligação nova)
-const DISJ_CN = [
-  { fx: "Monopolar 63 A", d: 7.6, tipo: "mono" },
-  { fx: "Bipolar 63 A", d: 15.1, tipo: "bi" },
-  { fx: "Bipolar 100 A", d: 24.0, tipo: "bi" },
-  { fx: "Bipolar 125 A", d: 30.0, tipo: "bi" },
-  { fx: "Bipolar 150 A", d: 36.0, tipo: "bi" },
-  { fx: "Bipolar 200 A", d: 50.0, tipo: "bi" },
-  { fx: "Tripolar 63 A", d: 24.0, tipo: "tri" },
-  { fx: "Tripolar 80 A", d: 30.5, tipo: "tri" },
-  { fx: "Tripolar 100 A", d: 38.1, tipo: "tri" },
-  { fx: "Tripolar 125 A", d: 47.6, tipo: "tri" },
-  { fx: "Tripolar 150 A", d: 57.1, tipo: "tri" },
-  { fx: "Tripolar 175 A", d: 66.0, tipo: "tri" },
-  { fx: "Tripolar 200 A", d: 75.0, tipo: "tri" },
-  { fx: "Tripolar 225 A", d: 86.0, tipo: "tri" },
-  { fx: "Tripolar 250 A", d: 95.0, tipo: "tri" },
-  { fx: "Tripolar 300/315/320 A", d: 114.0, tipo: "tri" },
-  { fx: "Tripolar 400 A", d: 152.0, tipo: "tri" },
-  { fx: "Tripolar 450 A", d: 171.0, tipo: "tri" },
-  { fx: "Tripolar 500 A", d: 188.0, tipo: "tri" },
-  { fx: "Tripolar 600/630 A", d: 228.0, tipo: "tri" },
-  { fx: "Tripolar 700 A", d: 266.0, tipo: "tri" },
-  { fx: "Tripolar 800 A", d: 304.0, tipo: "tri" },
-];
-
 // Catálogo de cargas (ND-5.1)
 const CAT = [
   { n: "Chuveiro Elétrico 127V", w: 4400, g: "b1" },

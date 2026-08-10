@@ -86,7 +86,8 @@ function propPadrao() {
 function corrPadrao() {
   return {
     vencimento: "",
-    alternativa: "E-mail informado",
+    // Sem pré-seleção: o dropdown abre em "Selecione" e o usuário escolhe.
+    alternativa: "",
     outroEmail: "",
     rua: "",
     bairro: "",
@@ -147,6 +148,8 @@ window.btPropDocOk = () => docInfo().valido === true;
 window.btCorrOk = () => {
   const c = window.state.corr;
   const ok = (v) => String(v == null ? "" : v).trim() !== "";
+  // O dropdown abre em "Selecione" (sem pré-seleção): escolher é obrigatório.
+  if (!ok(c.alternativa)) return false;
   if (c.alternativa === "Outro e-mail" && !ok(c.outroEmail)) return false;
   if (
     c.alternativa === "Endereço novo" &&
@@ -291,41 +294,13 @@ function montarToggles() {
   });
 }
 
-/* ===== construtores de campo (ilhas dinâmicas) ===== */
-function _campo(labelHtml, controle, cls) {
-  const f = document.createElement("div");
-  f.className = "field" + (cls ? " " + cls : "");
-  const l = document.createElement("label");
-  l.innerHTML = labelHtml;
-  f.append(l, controle);
-  // Ícone de ajuda (i): quando presente no rótulo, é movido para fora do
-  // <label> e vira filho direto do .field. Assim ele fica ancorado ao campo
-  // (centralizado na vertical, via .field > .field-hint-icon no CSS) e NÃO
-  // acompanha o rótulo flutuante quando este sobe ao ser preenchido.
-  const hint = l.querySelector(".cmg-hint, .field-info");
-  if (hint) {
-    hint.classList.add("field-hint-icon");
-    f.appendChild(hint);
-  }
-  return f;
-}
-function _selectDe(opcoes, valor, onchange, comVazio) {
-  const s = document.createElement("select");
-  s.innerHTML =
-    (comVazio ? '<option value=""></option>' : "") +
-    opcoes.map((o) => `<option value="${o}">${o}</option>`).join("");
-  s.value = valor || (comVazio ? "" : opcoes[0]);
-  s.addEventListener("change", () => onchange(s.value));
-  return s;
-}
-// Acordeões exclusivos (torres/unidades/UCs/grupos de carga): abrir um item
-// fecha o que estava aberto no mesmo mapa. As chaves fechadas ficam
-// registradas como false — quem tem "aberto por padrão" testa a PRESENÇA da
-// chave e assim não ressuscita um item fechado pelo usuário.
-function btToggleExclusivo(mapa, chave, abrir) {
-  Object.keys(mapa).forEach((k) => (mapa[k] = false));
-  mapa[chave] = abrir;
-}
+/* ===== construtores de campo (ilhas dinâmicas) =====
+   As implementações vivem em shared/js/campos.js (a Microgeração monta as
+   mesmas listas no fluxo Coletivo/Agrupamento). Aqui ficam só os apelidos com
+   os nomes históricos, usados pelas chamadas espalhadas pelos dois apps do BT. */
+const _campo = cmgCampo;
+const _selectDe = cmgSelectDe;
+const btToggleExclusivo = cmgToggleExclusivo;
 
 /* ===== Proprietário (PF/CNPJ) ===== */
 function mostrarCamposPFBT() {

@@ -112,120 +112,13 @@
 }
 /* .tbl-scroll (caixa externa com borda/raio) vem de shared.css. */
 /* ---- "Início de Uso" (campo mês/ano com seletor próprio) ----
-   Campo único e fechado, com o ícone de calendário à direita: mostra "Mês/Ano"
-   enquanto vazio e "Março/2028" depois de escolhido. Substitui o
-   input[type=month] nativo — ver _inicioUsoHTML (mt/js/app.js) para o porquê
-   (placeholder nativo impossível de remover e seletor que só abria pelo
-   indicador). É um <button>, então herda a métrica do campo de tabela
-   (40px/borda/raio) explicitamente, e não de `.tbl td input`. */
+   O componente (.mesano-*) é compartilhado e vive em css/shared.css —
+   fonte única, junto de shared/js/mesano.js. Aqui fica só a métrica do
+   campo DENTRO da tabela: como é um <button>, ele não herda de
+   `.tbl td input` e precisa dos 40px/borda/raio explicitamente. */
 .cemig-mtform .tbl td .mesano-campo {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  width: 100%;
-  box-sizing: border-box;
   height: 40px;
   padding: 6px 12px;
-  background: var(--cmg-surface);
-  border: 1px solid var(--cmg-neutral-400);
-  border-radius: 4px;
-  font-family: var(--cmg-font-family);
-  font-size: 16px;
-  line-height: 24px;
-  letter-spacing: 0.2px;
-  color: var(--cmg-text-strong);
-  text-align: left;
-  cursor: pointer;
-}
-.cemig-mtform .tbl td .mesano-campo:focus-visible {
-  outline: none;
-  border-color: var(--cmg-green-600);
-  box-shadow: 0 0 0 2px var(--cmg-focus-ring);
-}
-/* Sem valor o rótulo é placeholder: mesma cor dos demais placeholders. */
-.cemig-mtform .tbl td .mesano-campo-txt.is-vazio {
-  color: var(--cmg-text-muted);
-}
-.cemig-mtform .tbl td .mesano-campo-icone {
-  width: 20px;
-  height: 20px;
-  flex: none;
-  object-fit: contain;
-}
-/* ---- Painel do seletor ----
-   Fica no <body> (position:fixed) porque .tbl-scroll usa overflow-x:auto e
-   recortaria um painel ancorado dentro da célula. z-index abaixo da topbar
-   sticky (100) não serve — o painel precisa cobrir o conteúdo ao redor —,
-   então usa 90, acima das tabelas e abaixo de modais. */
-.cemig-mtform .mesano-painel,
-.mesano-painel {
-  position: fixed;
-  z-index: 90;
-  width: 232px;
-  padding: 8px;
-  background: var(--cmg-surface);
-  border: 1px solid var(--cmg-neutral-200);
-  border-radius: var(--cmg-radius);
-  box-shadow: var(--cmg-shadow-elevated);
-}
-.mesano-painel[hidden] {
-  display: none;
-}
-.mesano-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 6px;
-}
-.mesano-nav-ano {
-  font-size: 14px;
-  font-weight: var(--cmg-fw-bold);
-  color: var(--cmg-neutral-600);
-}
-.mesano-nav-btn {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  font-size: 18px;
-  line-height: 1;
-  color: var(--cmg-neutral-600);
-  cursor: pointer;
-}
-.mesano-nav-btn:hover:not(:disabled) {
-  background: var(--cmg-surface-accent);
-}
-.mesano-nav-btn:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-/* 12 meses em 3 colunas (abreviados: Jan, Fev, …). */
-.mesano-grade {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-}
-.mesano-mes {
-  height: 34px;
-  background: none;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  font-family: var(--cmg-font-family);
-  font-size: 13px;
-  color: var(--cmg-neutral-600);
-  cursor: pointer;
-}
-.mesano-mes:hover {
-  background: var(--cmg-surface-accent);
-}
-.mesano-mes.is-sel {
-  background: var(--cmg-green-600);
-  color: var(--cmg-neutral-0);
 }
 /* Sem spinner nos campos numéricos (mesmo ajuste do BT). */
 .cemig-mtform input[type="number"]::-webkit-inner-spin-button,
@@ -538,7 +431,9 @@
 }
 .cemig-mtform .trafo-card-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* Duas colunas: o transformador declara só potência e inrush (a demanda é
+     da instalação, não de cada equipamento). */
+  grid-template-columns: repeat(2, 1fr);
   /* mesmo passo do .grid global (shared.css) — os campos do card e os do
      restante do formulário ficam no mesmo ritmo vertical/horizontal. */
   gap: 14px;

@@ -102,7 +102,8 @@ function gdEstadoInicial() {
     // Forma de recebimento da fatura (dropdown único, igual ao BT): e-mail
     // informado, novo endereço, endereço da unidade, outro e-mail ou conta
     // globalizada.
-    corrAlternativa: "E-mail informado", corrOutroEmail: "",
+    // Sem pré-seleção: o dropdown abre em "Selecione" e o usuário escolhe.
+    corrAlternativa: "", corrOutroEmail: "",
     corrCep: "", corrRua: "", corrNum: "", corrCompl: "",
     corrBairro: "", corrMunicipio: "", corrEstado: "MG",
     contaGlobal: "",

@@ -588,6 +588,8 @@ function exportarPDF() {
 document.addEventListener("DOMContentLoaded", () => {
   bindInputs();
   montarToggle("area");
+  // Campos mês/ano com seletor próprio (data-mesano) — ver shared/js/mesano.js.
+  cmgMesAnoAplicar();
   renderLicencaAmbiental(); // aviso da licença sempre visível abaixo do mapa
   // Semeia o estado com os valores pré-preenchidos no HTML (ex.: Estado=MG,
   // Área=Urbana), para que apareçam na prévia mesmo sem edição do usuário.

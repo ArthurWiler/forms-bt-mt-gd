@@ -264,35 +264,29 @@ function conteudoFormularioMT() {
       tec.push(
         _tab(
           "Transformadores",
-          ["Trafo", "Situação", "Demanda (kVA)", "Pot (kVA)", "Inrush (%)"],
+          ["Trafo", "Situação", "Pot (kVA)", "Inrush (%)"],
           // Somam 182 = largura útil da página (A4 210mm − 2×14 de margem).
-          [32, 40, 42, 34, 34],
+          [42, 56, 42, 42],
           // Um trafo substituído ocupa duas linhas: a do equipamento atual e
           // a do que entra no lugar. O total do rodapé conta só as novas.
           trafos.flatMap((t, i) => {
             const id = "TRF" + String(i + 1).padStart(2, "0");
             const troca = state.finalidade && state.finalidade !== "Conexão Nova";
-            if (!troca) return [[id, "", t.demanda, t.potencia, t.relacao]];
+            if (!troca) return [[id, "", t.potencia, t.relacao]];
             if (!t.substituir) {
               // Declara-se todo o parque existente, alterado ou não: um trafo
               // marcado como "sem" permanece: não pode sair como "Novo".
               const sit = t.situacao === "sem" ? "Sem alteração" : "Novo";
-              return [[id, sit, t.demanda, t.potencia, t.relacao]];
+              return [[id, sit, t.potencia, t.relacao]];
             }
             return [
-              [id, "Atual", t.demanda, t.potencia, t.relacao],
-              [id, "Substituto", t.novaDemanda, t.novaPotencia, t.novaRelacao],
+              [id, "Atual", t.potencia, t.relacao],
+              [id, "Substituto", t.novaPotencia, t.novaRelacao],
             ];
           }),
           {
             step: 4,
-            rodape: [
-              "Total",
-              "",
-              "",
-              fmt(state.potTotalTrafos),
-              "",
-            ],
+            rodape: ["Total", "", fmt(state.potTotalTrafos), ""],
           },
         ),
       );

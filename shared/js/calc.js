@@ -48,36 +48,11 @@ function calcBsg(items, sg) {
   return { kw, f, d: kw * f };
 }
 
-// Seleção de disjuntores conforme demanda e tipo de rede
-function selecionarDisjuntores(demanda, redeMono) {
-  if (demanda <= 0) return [];
-  const tipos = ["mono", "bi", "tri"];
-  const result = [];
-  for (const tp of tipos) {
-    if (!redeMono && tp === "bi" && demanda > 16) continue;
-    const cand = DISJ_CN.filter((dj) => dj.tipo === tp && dj.d >= demanda);
-    if (cand.length > 0) {
-      cand.sort((a, b) => a.d - b.d);
-      result.push(cand[0]);
-    }
-  }
-  return result;
-}
-
-// Extrai a corrente (A) do rótulo do disjuntor (ex.: "Tripolar 63 A" -> 63)
-function correnteDisj(fx) {
-  if (!fx) return 0;
-  const m = String(fx).match(/(\d+)(?:\/\d+)*\s*A/);
-  return m ? Number(m[1]) : 0;
-}
-
-// Lista de disjuntores GERAIS com faixa estritamente MAIOR que a maior UC.
-// Considera apenas tripolares (proteção geral de agrupamento é trifásica).
-function disjuntoresGeraisAcima(maiorCorrenteUC) {
-  return DISJ_GER.filter(
-    (d) => d.tipo === "tri" && correnteDisj(d.fx) > maiorCorrenteUC,
-  ).map((d) => d.fx);
-}
+// selecionarDisjuntores, correnteDisj e disjuntoresGeraisAcima viviam aqui em
+// versões mais fracas que as do BT (o bipolar era descartado por demanda, não
+// pela corrente de 63 A da norma; não havia a tabela de correntes de faixa nem
+// o filtro por capacidade). Foram unificadas nas versões do BT em
+// shared/js/disjuntores.js — que precisa ser carregado ANTES deste arquivo.
 
 /* ============================================================
    MÁSCARAS E VALIDAÇÃO (documentos / contatos / CEP)

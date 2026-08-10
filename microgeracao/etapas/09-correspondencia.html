@@ -1,7 +1,7 @@
 <!doctype html>
 
 <div class="card">
-  <div class="section-eyebrow">Etapa 7</div>
+  <div class="section-eyebrow" data-etapa="correspondencia">Etapa 7</div>
   <h3 class="card-title">Correspondência e Fatura</h3>
   <p class="card-sub">
     Escolha como e quando você deseja receber a conta de energia.
@@ -20,7 +20,7 @@
         </option>
       </select>
     </div>
-    <div class="field field--plain col-span-2" data-noopt>
+    <div class="field field--plain col-span-2">
       <label>Data de Vencimento da Fatura</label>
       <div id="cardsVencimento"></div>
       <select data-k="vencimento" style="display: none" aria-hidden="true">
@@ -125,6 +125,6 @@
   </div>
 </div>
 <div class="nav-bottom no-print">
-  <button class="btn btn-ghost" onclick="goTo(5)">← Voltar</button>
-  <button class="btn btn-primary" onclick="goTo(7)">Avançar →</button>
+  <button class="btn btn-ghost" data-nav="prev">← Voltar</button>
+  <button class="btn btn-primary" data-nav="next">Avançar →</button>
 </div>

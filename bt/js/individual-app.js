@@ -187,18 +187,13 @@ function onZonaBT() {
   const avisoUrb = $("#urbanaAviso");
   if (avisoUrb) avisoUrb.style.display = rural ? "none" : "";
   atualizarCoordRural();
-  // Rural limita a 1 UC sem proteção geral (useEffect do React)
-  const selN = $(`select[data-k="atend.nUCs"]`);
-  if (rural) {
-    state.atend.nUCs = 1;
-    state.atend.disjGeral = "Não";
-    if (selN) {
-      selN.value = "1";
-      selN.disabled = true;
-    }
-  } else if (selN && !zonaTravada) selN.disabled = false;
-  const hintN = $("#nUCsHint");
-  if (hintN) hintN.style.display = rural ? "" : "none";
+  // Rural: até 2 UCs (a 2ª é sempre de irrigação) e sem disjuntor geral.
+  if (rural) state.atend.disjGeral = "Não";
+  atualizarOpcoesNUCsBT();
+  // A troca de zona pode cortar a 3ª UC e fixa a atividade da 2ª — as duas
+  // etapas por UC precisam refletir isso (os renders ignoram etapas ausentes).
+  renderUcsIdentBT();
+  renderUcsBT();
   CemigMarcadores.aplicar();
   CemigMarcadores.atualizarAvancar();
 }
@@ -234,18 +229,37 @@ function onTipoRedeBT() {
    Etapa 4 — Atendimento: blocos colapsáveis por UC
    (identificação + cargas em acordeões + gerador + resultado)
    ============================================================ */
+// Máximo de UCs do pedido: 3 em zona urbana; 2 em zona rural, onde a 2ª UC
+// existe apenas para irrigação (a 1ª mantém a atividade de livre escolha).
+function maxUcsBT() {
+  return ruralBT() ? 2 : 3;
+}
+// A lista do seletor acompanha o máximo da zona; se a zona virar rural com 3
+// UCs escolhidas, o excedente é descartado.
+function atualizarOpcoesNUCsBT() {
+  const max = maxUcsBT();
+  if ((Number(state.atend.nUCs) || 1) > max) state.atend.nUCs = max;
+  const sel = $(`select[data-k="atend.nUCs"]`);
+  if (!sel) return;
+  Array.from(sel.options).forEach((o) => {
+    o.hidden = Number(o.value) > max;
+  });
+  sel.value = String(state.atend.nUCs);
+}
 function onNUCsBT() {
   _sync("atend.nUCs");
-  state.atend.nUCs = parseInt(state.atend.nUCs, 10) || 1;
+  state.atend.nUCs = Math.min(parseInt(state.atend.nUCs, 10) || 1, maxUcsBT());
   // Nº de UCs afeta as duas etapas: identificação (Tipo de atendimento) e cargas.
   renderUcsIdentBT();
   renderUcsBT();
 }
 function _sincronizarUcs() {
-  const n = Math.min(Math.max(1, Number(state.atend.nUCs) || 1), 3);
+  const n = Math.min(Math.max(1, Number(state.atend.nUCs) || 1), maxUcsBT());
   const arr = state.ucsDet;
   while (arr.length < n) arr.push(novaUcDet());
   while (arr.length > n) arr.pop();
+  // Rural: a 2ª UC é sempre irrigação (atividade fixa, não editável).
+  if (ruralBT() && arr[1]) arr[1].atividade = ATIVIDADE_IRRIGACAO;
 }
 // Recalcula os derivados de carga/demanda/disjuntor de todas as UCs (usado por
 // ambas as etapas, mesmo com o card fechado — o preset já conta na demanda).
@@ -387,7 +401,11 @@ function _ucIdentificacao(u, ui) {
   grid.className = "grid grid-2";
   grid.style.marginBottom = "24px";
   // Só a UC 1 fica presa ao tipo principal do formulário; UCs 2/3 são livres.
-  const atividadeBloqueada = (restrito || atividadeTravada) && ui === 0;
+  // Exceção rural: a 2ª UC só existe para irrigação, então a atividade dela
+  // fica fixa em "Irrigação" (a 1ª segue de livre escolha).
+  const irrigacaoFixa = ruralBT() && ui === 1;
+  const atividadeBloqueada =
+    irrigacaoFixa || ((restrito || atividadeTravada) && ui === 0);
   // Solicitação por UC
   const selSol = _selectDe(
     ["Conexão Nova", "Alteração de Carga", "Caixa Existente sem Alteração"],
@@ -402,7 +420,9 @@ function _ucIdentificacao(u, ui) {
   );
   // Atividade principal
   const selAtiv = _selectDe(
-    ["Residencial", "Comercial", "Industrial"],
+    irrigacaoFixa
+      ? [ATIVIDADE_IRRIGACAO]
+      : ["Residencial", "Comercial", "Industrial"],
     u.atividade,
     (v) => {
       u.atividade = v;
@@ -1329,15 +1349,13 @@ window.initFormulario = function () {
   if (orientColetivo && restrito) orientColetivo.style.display = "none";
   bindInputs();
   montarToggles();
-  // Zona travada (card Rural): toggle desabilitado + hint
+  // Zona travada (card Rural): toggle desabilitado
   if (zonaTravada) {
     const sel = $(`select[data-k="obra.localizacao"]`);
     if (sel) {
       sel.disabled = true;
       sel.dispatchEvent(new Event("change", { bubbles: true }));
     }
-    const hint = $("#zonaHint");
-    if (hint) hint.style.display = "";
   } else {
     // Cards não-rurais (residencial/comercial/industrial…): sem opção urbano/
     // rural — a zona fica fixa em Urbana e o seletor é ocultado. Rural só existe
