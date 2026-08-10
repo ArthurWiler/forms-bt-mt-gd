@@ -1785,9 +1785,9 @@ function _instalacaoDemandaFieldsHTML() {
   if (!state.modalidade || !state.escalonada) return "";
   if (state.escalonada === "Sim") return "";
   return state.modalidade === "Azul"
-    ? `<div class="field"><label>Demanda ponta contratada (kVA)</label><input type="number" step="any" data-k="demandaPontaContratada" value="${state.demandaPontaContratada ?? ""}" placeholder=" " oninput="state.demandaPontaContratada=this.value;recalcTecnico()"></div>
-       <div class="field"><label>Demanda fora ponta contratada (kVA)</label><input type="number" step="any" data-k="demandaForaPontaContratada" value="${state.demandaForaPontaContratada ?? ""}" placeholder=" " oninput="state.demandaForaPontaContratada=this.value;recalcTecnico()"></div>`
-    : `<div class="field"><label>Demanda contratada (kVA)</label><input type="number" step="any" data-k="demandaContratada" value="${state.demandaContratada ?? ""}" placeholder=" " oninput="state.demandaContratada=this.value;recalcTecnico()"></div>`;
+    ? `<div class="field"><label>Demanda ponta contratada (kVA) <span class="req">*</span></label><input type="number" step="any" data-k="demandaPontaContratada" value="${state.demandaPontaContratada ?? ""}" placeholder=" " oninput="state.demandaPontaContratada=this.value;recalcTecnico()"></div>
+       <div class="field"><label>Demanda fora ponta contratada (kVA) <span class="req">*</span></label><input type="number" step="any" data-k="demandaForaPontaContratada" value="${state.demandaForaPontaContratada ?? ""}" placeholder=" " oninput="state.demandaForaPontaContratada=this.value;recalcTecnico()"></div>`
+    : `<div class="field"><label>Demanda contratada (kVA) <span class="req">*</span></label><input type="number" step="any" data-k="demandaContratada" value="${state.demandaContratada ?? ""}" placeholder=" " oninput="state.demandaContratada=this.value;recalcTecnico()"></div>`;
 }
 function renderTarifacaoInstalacao() {
   const box = $("#trafoTarifacao");
@@ -2141,9 +2141,12 @@ function renderCubiculos() {
       const demandaFields = temEscalonada
         ? ""
         : azul
-          ? `<div class="field"><label>Demanda Ponta (kW)</label><input type="number" step="any" value="${c.demandaPonta}" placeholder=" " oninput="cubiculos[${i}].demandaPonta=this.value;recalcTecnico();validarDemandaCubiculo(${i})"></div>
-         <div class="field"><label>Demanda Fora de Ponta (kW)</label><input type="number" step="any" value="${c.demandaForaPonta}" placeholder=" " oninput="cubiculos[${i}].demandaForaPonta=this.value;recalcTecnico();validarDemandaCubiculo(${i})"></div>`
-          : `<div class="field"><label>Demanda contratada (kVA)</label><input type="number" step="any" value="${c.demanda}" placeholder=" " oninput="cubiculos[${i}].demanda=this.value;recalcTecnico();validarDemandaCubiculo(${i})"></div>`;
+          ? // Obrigatórios: sem data-k, o aplicar() dos marcadores não converteria
+            // o "*" em data-req (ele só marca controles bindados por data-k), então
+            // o atributo vai direto — mesma saída do carga-bt.js.
+            `<div class="field"><label>Demanda Ponta (kW)</label><input type="number" step="any" data-req value="${c.demandaPonta}" placeholder=" " oninput="cubiculos[${i}].demandaPonta=this.value;recalcTecnico();validarDemandaCubiculo(${i})"></div>
+         <div class="field"><label>Demanda Fora de Ponta (kW)</label><input type="number" step="any" data-req value="${c.demandaForaPonta}" placeholder=" " oninput="cubiculos[${i}].demandaForaPonta=this.value;recalcTecnico();validarDemandaCubiculo(${i})"></div>`
+          : `<div class="field"><label>Demanda contratada (kVA)</label><input type="number" step="any" data-req value="${c.demanda}" placeholder=" " oninput="cubiculos[${i}].demanda=this.value;recalcTecnico();validarDemandaCubiculo(${i})"></div>`;
       return `<div class="trafo-card cub-card${aberto ? " is-open" : ""}">
       <button type="button" class="trafo-card-head" onclick="toggleCubiculo(${i})"
               aria-expanded="${aberto}" aria-controls="cubCardBody${i}">
@@ -2906,6 +2909,42 @@ function camposObrigatoriosFaltando() {
       faltando.push(
         "Transformadores dos cubículos da subestação compartilhada",
       );
+    // Demanda do cubículo: os campos são obrigatórios (data-req), mas um card
+    // fechado fica com `hidden` no corpo e sairia da varredura acima. A
+    // checagem vem do array de estado, que não depende do acordeão. Com
+    // escalonamento a tabela de etapas substitui os campos — cada etapa
+    // precisa dos mesmos valores, conforme a modalidade do cubículo.
+    const demandaOk = cubiculos.every((c) => {
+      const preenchido = (v) => String(v ?? "").trim() !== "";
+      if (c.escalonada === "Sim")
+        return (
+          c.etapasEscalonada.length > 0 &&
+          c.etapasEscalonada.every((e) =>
+            c.modalidade === "Azul"
+              ? preenchido(e.ponta) && preenchido(e.foraponta)
+              : preenchido(e.demanda),
+          )
+        );
+      return c.modalidade === "Azul"
+        ? preenchido(c.demandaPonta) && preenchido(c.demandaForaPonta)
+        : preenchido(c.demanda);
+    });
+    if (!demandaOk)
+      faltando.push("Demanda dos cubículos da subestação compartilhada");
+  }
+  // Demanda escalonada da instalação: substitui os campos de demanda
+  // contratada (obrigatórios via data-req), então as etapas herdam a mesma
+  // obrigatoriedade — os inputs da tabela não são bindados por data-k.
+  if (state.escalonada === "Sim") {
+    const preenchido = (v) => String(v ?? "").trim() !== "";
+    const ok =
+      escalonadaInstalacao.length > 0 &&
+      escalonadaInstalacao.every((e) =>
+        state.modalidade === "Azul"
+          ? preenchido(e.ponta) && preenchido(e.foraponta)
+          : preenchido(e.demanda),
+      );
+    if (!ok) faltando.push("Demanda escalonada da instalação");
   }
   if (state.ramalIndice == null) faltando.push("Ramal de Entrada");
   if (state.restricaoAmbiental === "Sim" && !state.restricaoAceite)
