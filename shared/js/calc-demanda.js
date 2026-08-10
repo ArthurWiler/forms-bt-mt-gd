@@ -168,6 +168,9 @@ function montarCalcDemanda(container, cfg) {
   function _fieldTipoCarga(bloqueado) {
     const field = document.createElement("div");
     field.className = "field field--plain";
+    // field--plain sempre acompanhado de data-noopt (o campo não recebe a
+    // marca "(opcional)" — é obrigatório e mora num toggle-group).
+    field.setAttribute("data-noopt", "");
     const label = document.createElement("label");
     label.innerHTML = 'Tipo de carga <span class="req">*</span>';
     field.appendChild(label);

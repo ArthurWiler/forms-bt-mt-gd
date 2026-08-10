@@ -510,7 +510,7 @@
             </div>
 
             <div class="grid grid-2" style="margin-top: 16px" id="blocoZona">
-              <div class="field field--plain">
+              <div class="field field--plain" data-noopt>
                 <label>Localização <span class="req">*</span></label>
                 <div id="cardsLocalizacao"></div>
                 <select
@@ -682,6 +682,7 @@
               class="field field--plain"
               id="restricaoAmbientalBox"
               style="margin-top: 16px; display: none"
+              data-noopt
             >
               <div id="restricaoAmbientalConteudo"></div>
             </div>
@@ -733,7 +734,7 @@
                 />
               </div>
 
-              <div class="field field--plain">
+              <div class="field field--plain" data-noopt>
                 <label>Opção de Atendimento <span class="req">*</span></label>
                 <select id="f_opcaoAtend" data-k="opcaoAtend">
                   <option value=""></option>
@@ -741,7 +742,7 @@
                   <option>Livre</option>
                 </select>
               </div>
-              <div class="field field--plain">
+              <div class="field field--plain" data-noopt>
                 <label
                   >A subestação está pronta para ser ligada?
                   <span class="req">*</span></label
@@ -757,6 +758,7 @@
                 class="field field--plain"
                 id="mudancaLocalBox"
                 style="display: none"
+                data-noopt
               >
                 <label
                   >Haverá mudança do local da subestação?
@@ -979,7 +981,7 @@
                   <option value="34.5">34,5 kV</option>
                 </select>
               </div>
-              <div class="field field--plain">
+              <div class="field field--plain" data-noopt>
                 <label
                   >Subestação compartilhada (multimedição)?<span class="req"
                     >*</span
@@ -1025,7 +1027,7 @@
                 </div>
               </div>
 
-              <div class="field field--plain bloco-sub-gap">
+              <div class="field field--plain bloco-sub-gap" data-noopt>
                 <label>Sobre a subestação</label>
                 <div id="cardsSubestacaoExistente"></div>
               </div>
@@ -1273,7 +1275,7 @@
             <div id="blocoGeracaoBT">
               <h4 class="card-subtitle divider">Geração e baixa tensão</h4>
               <div class="grid grid-2 bloco-sub-gap">
-                <div class="field field--plain col-span-2">
+                <div class="field field--plain col-span-2" data-noopt>
                   <label
                     >Possui geração em paralelismo momentâneo (gerador a
                     diesel)? <span class="req">*</span></label
@@ -1293,7 +1295,7 @@
                     placeholder=" "
                   />
                 </div>
-                <div class="field field--plain col-span-2">
+                <div class="field field--plain col-span-2" data-noopt>
                   <label
                     >Possui geração em paralelismo permanente sem injeção (GRID
                     ZERO)? <span class="req">*</span></label
@@ -1313,7 +1315,7 @@
                     placeholder=" "
                   />
                 </div>
-                <div class="field field--plain col-span-2">
+                <div class="field field--plain col-span-2" data-noopt>
                   <label
                     >Possui unidades consumidoras de Baixa Tensão (BT) na mesma
                     propriedade? <span class="req">*</span></label

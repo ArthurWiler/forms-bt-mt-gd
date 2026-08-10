@@ -3,40 +3,21 @@
   <div class="section-eyebrow">Etapa 6</div>
   <h3 class="card-title">Cargas das UCs</h3>
   <p class="card-sub">
-    Declare todas as cargas elétricas da unidade consumidora. A demanda e o
-    disjuntor sugerido são calculados automaticamente (ND-5.1).
+    Para a unidade consumidora, detalhe as cargas para calcularmos a demanda e
+    o disjuntor adequado.
   </p>
-  <div id="avisoCargaObrigatoria" style="display: none">
-    <div class="cmg-aviso no-print" style="margin-bottom: 12px">
-      <div class="cmg-aviso-icon" aria-hidden="true"></div>
-      <p class="cmg-aviso-texto">
-        <strong>O preenchimento do Formulário de Carga é obrigatório. </strong>
-        Para Ligação Nova ou Aumento/Alteração de Carga, todas as cargas
-        elétricas devem ser declaradas aqui.
-      </p>
-    </div>
-  </div>
-  <div id="calcDemandaBox"></div>
-  <div class="kpi-row" style="margin-top: 12px">
-    <div class="kpi">
-      <div class="kpi-label">Carga Instalada</div>
-      <div class="kpi-value"><span id="kpiCargaKw">0,00</span> kW</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Demanda Calculada</div>
-      <div class="kpi-value"><span id="kpiDemanda">0,00</span> kVA</div>
-    </div>
-    <div class="kpi dark">
-      <div class="kpi-label">Disjuntor Sugerido</div>
-      <div class="kpi-value" id="kpiDisjuntores">—</div>
-    </div>
-  </div>
-  <div id="disjEscolhidoBox" style="display: none; margin-top: 12px">
+  <!-- Classe da UC: é ela que define o tipo de carga (Residencial → res;
+       Comercial/Industrial → não-residencial) e, portanto, a lista de
+       equipamentos. Equivale à "Atividade principal" do BT, que fica junto
+       da identificação da UC. Sem ela a lista não tem como ser montada. -->
+  <div class="grid grid-2">
     <div class="field">
-      <label>Disjuntor escolhido</label>
-      <select data-k="cargaDisjEscolhido"></select>
+      <label>Classe da unidade <span class="req">*</span></label>
+      <select data-k="classe" onchange="onClasseGD()"></select>
     </div>
   </div>
+  <div id="calcDemandaBox" style="margin-top: 14px"></div>
+  <div id="resultadoCargaBox"></div>
 </div>
 <div class="nav-bottom no-print">
   <button class="btn btn-ghost" onclick="goTo(4)">← Voltar</button>

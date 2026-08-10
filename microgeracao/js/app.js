@@ -28,7 +28,7 @@
 /* ===== Estado global ===== */
 const state = gdEstadoInicial();
 window.state = state; // visível p/ depuração e harnesses (const não vaza p/ window)
-let ilhaCargas = null; // ilha do Formulário de Carga (shared/js/calc-demanda.js)
+let ilhaCargas = null; // ilha do Formulário de Carga (shared/js/carga-bt.js)
 
 /* ===== util ===== */
 const $ = (s, el = document) => el.querySelector(s);
@@ -234,8 +234,10 @@ function goTo(n, livre) {
   });
   window.scrollTo({ top: 0, behavior: "smooth" });
   // Conteúdo dinâmico detectado por presença (lição do MT), não por índice:
-  if (alvo.querySelector("#calcDemandaBox") && ilhaCargas)
+  if (alvo.querySelector("#calcDemandaBox") && ilhaCargas) {
     ilhaCargas.atualizar();
+    renderResultadoCargaGD();
+  }
   // Leaflet mede o container ao criar o mapa; se a etapa estava oculta, os
   // tiles ficam cortados até um invalidateSize() com a página já visível.
   if (alvo.querySelector("#map")) {
@@ -1170,13 +1172,6 @@ function onSolicitacao() {
   if (pe)
     pe.style.display =
       (state.solicitacao || "").indexOf("GD Existente") >= 0 ? "" : "none";
-  const avisoCarga = $("#avisoCargaObrigatoria");
-  if (avisoCarga)
-    avisoCarga.style.display = GD_SOLICITACOES_FORM_CARGA.includes(
-      state.solicitacao,
-    )
-      ? ""
-      : "none";
   atualizarFasesDisj();
   atualizarSE();
   onEdifTipoGD(); // o disjuntor visível depende de solicitação × edificação
@@ -1282,7 +1277,10 @@ function onGrupo() {
   const dg = $("#demandaGeracaoBox");
   if (dg) dg.style.display = ehBT ? "none" : "";
   atualizarSE();
-  if (ilhaCargas) ilhaCargas.atualizar(); // redeMono depende do grupo
+  if (ilhaCargas) {
+    ilhaCargas.atualizar(); // redeMono depende do tipo de rede
+    renderResultadoCargaGD();
+  }
   if (window.CemigMarcadores) {
     window.CemigMarcadores.aplicar();
     window.CemigMarcadores.atualizarAvancar();
@@ -1321,46 +1319,52 @@ function _atividadeCargas() {
     ? state.classe
     : "";
 }
+// Classe da UC (etapa 6): o tipo de carga — e portanto a lista de equipamentos
+// — deriva dela, como a "Atividade principal" faz no BT.
+function onClasseGD() {
+  _sync("classe");
+  // Sai do campo depois de escolher, como nos demais selects: o rótulo
+  // flutuante volta ao estado neutro em vez de ficar preso em :focus-within
+  // enquanto a lista abaixo é remontada.
+  const sel = $(`select[data-k="classe"]`);
+  if (sel) sel.blur();
+  if (ilhaCargas) {
+    ilhaCargas.atualizar();
+    renderResultadoCargaGD();
+  }
+  if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
+}
+// Acordeões da lista de equipamentos (persistem entre re-renders da ilha).
+const _accCargas = {};
 function initCargas() {
   const box = $("#calcDemandaBox");
   if (!box) return;
-  ilhaCargas = montarCalcDemanda(box, {
+  ilhaCargas = montarCargaAcordeao(box, {
     data: state.cargas,
+    abertos: _accCargas,
+    redeMono: () =>
+      state.tipoRede === "Monofásica" || state.tipoRede === "Bifásica",
+    atividade: _atividadeCargas,
+    // O select de classe fica logo acima: o hint seria redundante.
+    hintAtividade: false,
     aoMudar: (c) => {
       state.cargas = c;
-      atualizarKpisCargas();
+      renderResultadoCargaGD();
     },
-    redeMono: () => state.grupo === "B",
-    atividade: _atividadeCargas,
-    minimizarPorPadrao: false,
-    mostrarCargasAdicionais: true,
   });
-  atualizarKpisCargas();
+  renderResultadoCargaGD();
 }
-function atualizarKpisCargas() {
-  const c = state.cargas || {};
-  const kw = $("#kpiCargaKw"),
-    dem = $("#kpiDemanda"),
-    disj = $("#kpiDisjuntores");
-  if (kw) kw.textContent = fmt2(c._cargaKw || 0);
-  if (dem) dem.textContent = fmt2(c._demanda || 0);
-  if (disj)
-    disj.textContent =
-      c._disjuntores && c._disjuntores.length
-        ? c._disjuntores.join(" · ")
-        : "—";
-  const box = $("#disjEscolhidoBox");
-  const sel = $(`select[data-k="cargaDisjEscolhido"]`);
-  if (box && sel) {
-    const lista = c._disjuntores || [];
-    box.style.display = lista.length ? "" : "none";
-    sel.innerHTML = lista
-      .map((d) => `<option value="${d}">${d}</option>`)
-      .join("");
-    sel.value = lista.includes(state.cargaDisjEscolhido)
-      ? state.cargaDisjEscolhido
-      : lista[0] || "";
-  }
+// Cards de carga/demanda + escolha do disjuntor (mesmo bloco do BT).
+function renderResultadoCargaGD() {
+  const box = $("#resultadoCargaBox");
+  if (!box) return;
+  renderResultadoCarga(box, {
+    cargas: () => state.cargas || {},
+    escolhido: () => state.cargaDisjEscolhido,
+    aoEscolher: (dj) => {
+      state.cargaDisjEscolhido = dj;
+    },
+  });
 }
 
 /* ===== Etapa 6 — Geração ===== */
@@ -1822,11 +1826,8 @@ window.initFormulario = function () {
   if (selFast) selFast.addEventListener("change", onFastTrack);
   const selGrupo = $(`select[data-k="grupo"]`);
   if (selGrupo) selGrupo.addEventListener("change", onGrupo);
-  const selClasse = $(`select[data-k="classe"]`);
-  if (selClasse)
-    selClasse.addEventListener("change", () => {
-      if (ilhaCargas) ilhaCargas.atualizar(); // atividade deriva da classe
-    });
+  // A classe da UC re-renderiza a lista de cargas pelo onchange do próprio
+  // select (onClasseGD), no fragmento da etapa 6.
   const selTensao = $(`select[data-k="tensaoAtendimento"]`);
   if (selTensao) selTensao.addEventListener("change", atualizarSE);
   // Aceite das Orientações reavalia o botão "Avançar".

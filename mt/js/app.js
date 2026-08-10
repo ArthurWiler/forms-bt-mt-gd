@@ -1809,8 +1809,8 @@ function renderTarifacaoInstalacao() {
   // quais campos de demanda existem abaixo. Em <=720px o .grid-2 já colapsa.
   box.innerHTML = `
       <div class="grid grid-2">
-        <div class="field field--plain"><label>Modalidade tarifária horária</label>${_instalacaoModalidadeCardsHTML(state.modalidade)}</div>
-        <div class="field field--plain"><label>Haverá demanda escalonada?</label>${_instalacaoEscalonadaCardsHTML(state.escalonada)}</div>
+        <div class="field field--plain" data-noopt><label>Modalidade tarifária horária</label>${_instalacaoModalidadeCardsHTML(state.modalidade)}</div>
+        <div class="field field--plain" data-noopt><label>Haverá demanda escalonada?</label>${_instalacaoEscalonadaCardsHTML(state.escalonada)}</div>
       </div>
       ${demandaFields ? `<div class="grid grid-2 cub-demanda-grid">${demandaFields}</div>` : ""}
       ${_instalacaoEscalonadaTabelaHTML()}`;
@@ -2309,9 +2309,9 @@ function renderCubiculos() {
         </div>
         ${trafoBlocos}
         <div class="cub-trafo-bloco">
-          <div class="field field--plain"><label>Modalidade tarifária horária</label>${_cubiculoModalidadeCardsHTML(i, c.modalidade)}</div>
+          <div class="field field--plain" data-noopt><label>Modalidade tarifária horária</label>${_cubiculoModalidadeCardsHTML(i, c.modalidade)}</div>
           ${demandaFields ? `<div class="grid grid-2 cub-demanda-grid">${demandaFields}</div>` : ""}
-          <div class="field field--plain bloco-sub-gap"><label>Haverá demanda escalonada?</label>${_cubiculoEscalonadaCardsHTML(i, c.escalonada)}</div>
+          <div class="field field--plain bloco-sub-gap" data-noopt><label>Haverá demanda escalonada?</label>${_cubiculoEscalonadaCardsHTML(i, c.escalonada)}</div>
           ${_cubiculoEscalonadaTabelaHTML(i, c)}
         </div>
         <div id="cubDemandaAlert${i}"></div>
