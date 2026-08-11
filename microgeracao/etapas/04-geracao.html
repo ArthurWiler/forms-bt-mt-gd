@@ -1,4 +1,4 @@
-
+<!doctype html>
 <div class="card">
   <div class="section-eyebrow" data-etapa="geracao">Etapa 5</div>
   <h3 class="card-title">Dados da geração</h3>
@@ -6,78 +6,62 @@
     Preencha os dados relacionados à geração distribuída instalada em sua
     propriedade.
   </p>
-
-  <!-- Fonte primária e modalidade de operação vivem no MESMO grid: o gap:14px
-       do .grid é o único responsável pelo respiro entre eles. Com margin-top
-       inline no box, ocultá-lo (fonte != Solar) deixava um espaçamento
-       diferente do caso Solar.
-       Fonte primária ocupa 1 coluna e fica sozinha na linha via .row-solo.
-       Aqui NÃO dá para contar com o truque de CEP + Endereço (etapa 3), em
-       que o vizinho col-span-2 se desloca sozinho por não caber: o box de
-       rádios logo abaixo some com display:none fora de Solar, e item oculto
-       não é posicionado — sem .row-solo, "Produção mensal" subiria para o
-       lado da fonte. Sem data-sem-vazio: o select abre vazio e exige escolha
-       explícita, nada de "Solar" pré-marcado. -->
   <div class="grid grid-2">
     <div class="field row-solo">
       <label>Fonte primária <span class="req">*</span></label>
       <select data-k="fontePrimaria" onchange="onFonte()"></select>
     </div>
-
-    <!-- Modalidade de operação: só faz sentido para sistemas solares; substitui
-         os antigos campos separados Fast Track / Grid Zero. -->
-    <div
-      class="field field--plain col-span-2"
-      id="modoOperacaoBox"
-      data-noopt
-    >
-      <label>Qual a modalidade de operação do sistema solar? <span class="req">*</span></label>
+    <div class="field field--plain col-span-2" id="modoOperacaoBox" data-noopt>
+      <label
+        >Qual a modalidade de operação do sistema solar?
+        <span class="req">*</span></label
+      >
       <div class="doc-list" id="modoOperacaoOpcoes">
-      <label class="doc-item">
-        <input
-          type="radio"
-          name="modoOperacao"
-          value="Padrão"
-          onchange="onModoOperacaoGD(this)"
-        />
-        <span class="doc-text">
-          Padrão com injeção de créditos (sem restrições de uso)
-          <span class="doc-sub">
-            Gera créditos para a própria unidade e permite enviar excedentes
-            para outros endereços
+        <label class="doc-item">
+          <input
+            type="radio"
+            name="modoOperacao"
+            value="Padrão"
+            onchange="onModoOperacaoGD(this)"
+          />
+          <span class="doc-text">
+            Padrão com injeção de créditos (sem restrições de uso)
+            <span class="doc-sub">
+              Gera créditos para a própria unidade e permite enviar excedentes
+              para outros endereços
+            </span>
           </span>
-        </span>
-      </label>
-      <label class="doc-item">
-        <input
-          type="radio"
-          name="modoOperacao"
-          value="Fast Track"
-          onchange="onModoOperacaoGD(this)"
-        />
-        <span class="doc-text">
-          Fast Track - Conexão simplificada (até 7,5kW)
-          <span class="doc-sub">
-            Para sistemas de até 7,5 kW com uso exclusivo de créditos no
-            próprio local (sem transferência para outros endereços).
+        </label>
+        <label class="doc-item">
+          <input
+            type="radio"
+            name="modoOperacao"
+            value="Fast Track"
+            onchange="onModoOperacaoGD(this)"
+          />
+          <span class="doc-text">
+            Fast Track - Conexão simplificada (até 7,5kW)
+            <span class="doc-sub">
+              Para sistemas de até 7,5 kW com uso exclusivo de créditos no
+              próprio local (sem transferência para outros endereços).
+            </span>
           </span>
-        </span>
-      </label>
-      <label class="doc-item">
-        <input
-          type="radio"
-          name="modoOperacao"
-          value="Grid Zero"
-          onchange="onModoOperacaoGD(this)"
-        />
-        <span class="doc-text">
-          Grid Zero (sem injeção na rede)
-          <span class="doc-sub">
-            O sistema não injeta energia na rede e possui tecnologia/medidor
-            para limitação de exportação.
+        </label>
+        <label class="doc-item">
+          <input
+            type="radio"
+            name="modoOperacao"
+            value="Grid Zero"
+            onchange="onModoOperacaoGD(this)"
+          />
+          <span class="doc-text">
+            Grid Zero (sem injeção na rede)
+            <span class="doc-sub">
+              O sistema não injeta energia na rede e possui tecnologia/medidor
+              para limitação de exportação.
+            </span>
           </span>
-        </span>
-      </label>
+        </label>
       </div>
     </div>
     <div class="field">
@@ -122,7 +106,10 @@
     <!-- Potência ativa instalada: em FV é calculada (menor entre módulos e
          inversores) e o campo fica travado; nas demais fontes é digitada. -->
     <div class="field col-span-2" id="potAtivaBox">
-      <label>Potência ativa instalada total da usina (kW) <span class="req">*</span></label>
+      <label
+        >Potência ativa instalada total da usina (kW)
+        <span class="req">*</span></label
+      >
       <input
         type="text"
         data-k="potAtivaInstalada"
@@ -136,8 +123,8 @@
         <div class="cmg-aviso-icon" aria-hidden="true"></div>
         <p class="cmg-aviso-texto">
           <strong>Limite do Fast Track excedido. </strong>
-          No enquadramento Fast Track, a potência da usina não pode ser
-          superior a 7,5 kW (7500 W).
+          No enquadramento Fast Track, a potência da usina não pode ser superior
+          a 7,5 kW (7500 W).
         </p>
       </div>
     </div>
@@ -162,7 +149,10 @@
           type="text"
           data-k="potNominalModulo"
           placeholder=" "
-          oninput="onNumDec(this); recalcGeracao()"
+          oninput="
+            onNumDec(this);
+            recalcGeracao();
+          "
         />
       </div>
       <div class="field">
@@ -171,7 +161,10 @@
           type="text"
           data-k="qtdModulos"
           placeholder=" "
-          oninput="onSoDigitos(this); recalcGeracao()"
+          oninput="
+            onSoDigitos(this);
+            recalcGeracao();
+          "
         />
       </div>
       <div class="field">
@@ -231,7 +224,10 @@
           type="text"
           data-k="potNominalInversor"
           placeholder=" "
-          oninput="onNumDec(this); recalcGeracao()"
+          oninput="
+            onNumDec(this);
+            recalcGeracao();
+          "
         />
       </div>
       <div class="field">
@@ -240,7 +236,10 @@
           type="text"
           data-k="qtdInversores"
           placeholder=" "
-          oninput="onSoDigitos(this); recalcGeracao()"
+          oninput="
+            onSoDigitos(this);
+            recalcGeracao();
+          "
         />
       </div>
       <div class="field">
@@ -278,34 +277,72 @@
        e um gap único em toda a seção. -->
   <div class="grid grid-2">
     <div class="field field--plain col-span-2" data-noopt>
-      <label>Possui sistema de armazenamento de energia? <span class="req">*</span></label>
-      <div data-toggle="possuiArmazenamento" data-toggle-onchange="onArmazenamento"></div>
-      <select data-k="possuiArmazenamento" style="display: none" aria-hidden="true">
+      <label
+        >Possui sistema de armazenamento de energia?
+        <span class="req">*</span></label
+      >
+      <div
+        data-toggle="possuiArmazenamento"
+        data-toggle-onchange="onArmazenamento"
+      ></div>
+      <select
+        data-k="possuiArmazenamento"
+        style="display: none"
+        aria-hidden="true"
+      >
         <option>Sim</option>
         <option>Não</option>
       </select>
     </div>
     <div id="armBloco" class="grid-subgrupo" style="display: none">
-    <div class="field field--plain col-span-2" data-noopt>
-      <label>Sistema com possibilidade de operação ilhada? <span class="req">*</span></label>
-      <div data-toggle="armOperacaoIlhada" data-toggle-onchange="onArmazenamento"></div>
-      <select data-k="armOperacaoIlhada" style="display: none" aria-hidden="true">
-        <option>Sim</option>
-        <option>Não</option>
-      </select>
-    </div>
-      <div class="field field--plain" id="armChaveBox" style="display: none" data-noopt>
-        <label>Chave de desconexão física <span class="req">*</span></label>
-        <div data-toggle="armChaveDesconexao"></div>
-        <select data-k="armChaveDesconexao" style="display: none" aria-hidden="true">
+      <div class="field field--plain col-span-2" data-noopt>
+        <label
+          >Sistema com possibilidade de operação ilhada?
+          <span class="req">*</span></label
+        >
+        <div
+          data-toggle="armOperacaoIlhada"
+          data-toggle-onchange="onArmazenamento"
+        ></div>
+        <select
+          data-k="armOperacaoIlhada"
+          style="display: none"
+          aria-hidden="true"
+        >
           <option>Sim</option>
           <option>Não</option>
         </select>
       </div>
-      <div class="field field--plain" id="armReconexaoBox" style="display: none" data-noopt>
+      <div
+        class="field field--plain"
+        id="armChaveBox"
+        style="display: none"
+        data-noopt
+      >
+        <label>Chave de desconexão física <span class="req">*</span></label>
+        <div data-toggle="armChaveDesconexao"></div>
+        <select
+          data-k="armChaveDesconexao"
+          style="display: none"
+          aria-hidden="true"
+        >
+          <option>Sim</option>
+          <option>Não</option>
+        </select>
+      </div>
+      <div
+        class="field field--plain"
+        id="armReconexaoBox"
+        style="display: none"
+        data-noopt
+      >
         <label>Reconexão automática? <span class="req">*</span></label>
         <div data-toggle="armReconexaoAuto"></div>
-        <select data-k="armReconexaoAuto" style="display: none" aria-hidden="true">
+        <select
+          data-k="armReconexaoAuto"
+          style="display: none"
+          aria-hidden="true"
+        >
           <option>Sim</option>
           <option>Não</option>
         </select>
@@ -372,7 +409,11 @@
         data-toggle="geradorEmergencia"
         data-toggle-onchange="onGeradorEmergencia"
       ></div>
-      <select data-k="geradorEmergencia" style="display: none" aria-hidden="true">
+      <select
+        data-k="geradorEmergencia"
+        style="display: none"
+        aria-hidden="true"
+      >
         <option>Não</option>
         <option>Sim</option>
       </select>

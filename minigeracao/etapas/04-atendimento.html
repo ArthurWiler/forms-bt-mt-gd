@@ -162,25 +162,31 @@
         <option>Sim</option>
       </select>
     </div>
-    <div
-      class="field field--plain col-span-2"
-      id="dubBox"
-      style="display: none"
-      data-noopt
-    >
-      <label
-        >As 2 instalações foram representadas no DUB e memorial
-        descritivo?</label
-      >
-      <div id="cardsDuasInstalacoesDUB"></div>
-      <select
-        data-k="duasInstalacoesDUB"
-        style="display: none"
-        aria-hidden="true"
-      >
-        <option>Não</option>
-        <option>Sim</option>
-      </select>
+    <div class="field" id="arrendUCBox" style="display: none">
+      <label>Nº da unidade/instalação <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="arrendUC"
+        data-fmt="fmtInstalacaoUC"
+        placeholder=" "
+        oninput="onInstalacaoUC(this)"
+      />
+    </div>
+    <div class="field" id="arrendTensaoBox" style="display: none">
+      <label>Nível de tensão da unidade <span class="req">*</span></label>
+      <select data-k="arrendTensao"></select>
+    </div>
+    <div class="field col-span-2" id="dubBox" style="display: none">
+      <div class="cmg-aviso cmg-aviso--warn no-print">
+        <div class="cmg-aviso-icon" aria-hidden="true"></div>
+        <p class="cmg-aviso-texto">
+          Em casos de arrendamento, é obrigatório representar tanto a
+          <strong>instalação existente</strong> quanto a
+          <strong>nova instalação do telhado</strong> no
+          <strong>DUB</strong> (Diagrama Unifilar Bruto) e no
+          <strong>Memorial Descritivo</strong>.
+        </p>
+      </div>
     </div>
     <div class="field" id="numUCBox">
       <label>Número da Unidade Consumidora</label>

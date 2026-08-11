@@ -39,7 +39,6 @@ const CARDS_GD = [
   { chave: "mudancaSE", gridId: "cardsMudancaSE", opcoes: SIM_NAO },
   { chave: "gridZero", gridId: "cardsGridZero", opcoes: SIM_NAO },
   { chave: "telhadoArrendado", gridId: "cardsTelhadoArrendado", opcoes: SIM_NAO },
-  { chave: "duasInstalacoesDUB", gridId: "cardsDuasInstalacoesDUB", opcoes: SIM_NAO },
   { chave: "anexouContrato", gridId: "cardsAnexouContrato", opcoes: SIM_NAO },
   { chave: "consorcioVerificado", gridId: "cardsConsorcioVerificado", opcoes: SIM_NAO },
   { chave: "possuiArmazenamento", gridId: "cardsPossuiArmazenamento", opcoes: SIM_NAO },
@@ -390,6 +389,8 @@ function preencherSelects() {
   preencherSelect("entradaEnergia", GD_ENTRADA_ENERGIA);
   preencherSelect("solicitacao", GD_SOLICITACOES);
   preencherSelect("instExistenteBTMT", GD_BT_MT);
+  // Nível de tensão da unidade arrendada (spec Figma) — mesma lista BT/MT.
+  preencherSelect("arrendTensao", GD_BT_MT);
   preencherSelect("modalidade", GD_MODALIDADES);
   preencherSelect("garantiaForma", GD_GARANTIA_FORMAS);
 }
@@ -857,10 +858,21 @@ function onGridZero() {
   onModalidade();
   atualizarDecl95();
 }
+// Arrendamento (spec Figma): "Sim" revela os dados da unidade arrendada e o
+// aviso do DUB. Ao voltar para "Não" os campos são limpos — dados de um
+// arrendamento que não existe não podem seguir para o PDF.
 function onTelhadoArrendado() {
   _sync("telhadoArrendado");
-  const box = $("#dubBox");
-  if (box) box.style.display = state.telhadoArrendado === "Sim" ? "" : "none";
+  const sim = state.telhadoArrendado === "Sim";
+  ["#arrendUCBox", "#arrendTensaoBox", "#dubBox"].forEach((s) => {
+    const el = $(s);
+    if (el) el.style.display = sim ? "" : "none";
+  });
+  if (!sim) aplicarPatch({ arrendUC: "", arrendTensao: "" });
+  if (window.CemigMarcadores) {
+    window.CemigMarcadores.aplicar();
+    window.CemigMarcadores.atualizarAvancar();
+  }
 }
 
 /* ===== Etapas 6/8 — checklists ===== */
@@ -1273,6 +1285,12 @@ function validarExportacao() {
   // Grid Zero trava a demanda de geração em 0 (onGridZero), então o campo já
   // vem preenchido; fora dele, é escolha do solicitante e precisa ser cobrada.
   req(d.demandaGeracao, "Demanda a ser contratada de geração");
+  // Unidade arrendada: obrigatória só quando há arrendamento (os campos ficam
+  // ocultos e zerados fora dele — ver onTelhadoArrendado).
+  if (d.telhadoArrendado === "Sim") {
+    req(d.arrendUC, "Nº da unidade/instalação arrendada");
+    req(d.arrendTensao, "Nível de tensão da unidade arrendada");
+  }
   req(d.qtdFontes, "Quantidade de fontes de geração");
   req(d.potAtivaInstalada, "Potência Ativa Instalada Total");
   if ((d.solicitacao || "").indexOf("GD Existente") >= 0)

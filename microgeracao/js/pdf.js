@@ -87,20 +87,34 @@ function gerarPdfMicroGD(d) {
     ucPairs.push(["Disjuntor Individual Atual (A)", d.disjAtualA]);
     ucPairs.push(["Mudança de Local do Padrão", d.mudancaLocal]);
   }
+  // Unidade arrendada: dados próprios do arrendamento (spec Figma).
   if (d.telhadoArrendado === "Sim")
-    ucPairs.push(["2 instalações no DUB/memorial", d.duasInstalacoesDUB]);
+    ucPairs.push(
+      ["Nº da unidade/instalação arrendada", d.arrendUC],
+      ["Nível de tensão da unidade arrendada", d.arrendTensao],
+    );
   // Novo local do padrão de entrada (etapa 5): endereço próprio, informado só
   // quando há mudança de local.
   if (d.mudancaLocal === "Sim" && !ehLigacaoNova) {
     ucPairs.push([
       "Novo local do padrão",
-      [
-        [d.mudLogradouro, d.mudNumero].filter(Boolean).join(", "),
-        d.mudComplemento,
-        d.mudBairro,
-        [d.mudMunicipio, d.mudEstado].filter(Boolean).join("/"),
-        d.mudCep ? "CEP " + d.mudCep : "",
-      ]
+      // Urbano x rural: o novo local segue a zona escolhida na etapa 3.
+      (d.localizacao === "Rural"
+        ? [
+            d.mudDistritoComunidade,
+            d.mudNomePropriedade,
+            d.mudPontoRef,
+            d.mudInstProxima ? "Inst. próxima " + d.mudInstProxima : "",
+            [d.mudMunicipio, d.mudEstado].filter(Boolean).join("/"),
+          ]
+        : [
+            [d.mudLogradouro, d.mudNumero].filter(Boolean).join(", "),
+            d.mudComplemento,
+            d.mudBairro,
+            [d.mudMunicipio, d.mudEstado].filter(Boolean).join("/"),
+            d.mudCep ? "CEP " + d.mudCep : "",
+          ]
+      )
         .filter(Boolean)
         .join(" - ") || "—",
     ]);

@@ -534,8 +534,13 @@ html {
 }
 .cmg-aviso-texto {
   flex: 1 1 auto;
-  display: flex;
-  align-items: center;
+  /* Bloco, NÃO flex: como filho do .cmg-aviso (flex row), este parágrafo já é
+     centralizado verticalmente por `align-self`. Com `display:flex` aqui, cada
+     <strong> do meio da frase virava um ITEM do flex e o texto deixava de
+     fluir inline — a frase quebrava palavra a palavra quando havia mais de um
+     destaque. Ver o aviso do DUB (arrendamento), que tem quatro. */
+  display: block;
+  align-self: center;
   margin: 0;
   /* margem interna padrão do texto (vertical + respiro lateral) */
   padding: var(--cmg-space-3) var(--cmg-space-4);

@@ -77,7 +77,10 @@ function gdEstadoInicial() {
     numUC: "",
     gridZero: "Não",
     telhadoArrendado: "Não",
-    duasInstalacoesDUB: "Não",
+    // Unidade arrendada (spec Figma): só se aplica com telhadoArrendado="Sim".
+    // O requisito do DUB virou aviso na etapa, então não há mais campo para ele.
+    arrendUC: "",
+    arrendTensao: "",
     instExistente: "",
     instExistenteBTMT: "",
     // Formulário de Carga (Item 11) — reutiliza a estrutura do formulário BT.

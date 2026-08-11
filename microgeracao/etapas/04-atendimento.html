@@ -1,21 +1,4 @@
-<!--
-  ============================================================
-  ETAPA 5 — Tipo de atendimento
-  ------------------------------------------------------------
-  Campos realocados da antiga "Dados técnicos da UC" (etapa 04
-  do formulário original), agora organizados conforme o Figma.
-
-  Tipo de solicitação: os <option> exibem os rótulos curtos do
-  Figma, mas o `value` continua sendo o texto NORMATIVO de
-  GD_SOLICITACOES — as regras existentes (GD_SOLICITACOES_FORM_CARGA,
-  GD_SOLICITACOES_AUMENTO_POTENCIA, gdSEDisponivel) e o PDF
-  comparam por esse texto e seguem valendo sem tradução.
-
-  O disjuntor exibido depende de edifTipo (individual → disjuntor
-  individual; coletivo/agrupamento → disjuntor geral) e só aparece
-  quando a solicitação NÃO é ligação nova — ver onEdifTipoGD().
-  ============================================================
--->
+<!doctype html>
 <div class="card">
   <div class="section-eyebrow" data-etapa="atendimento">Etapa 4</div>
   <h3 class="card-title">Tipo de atendimento</h3>
@@ -24,8 +7,6 @@
   <div class="grid grid-2">
     <div class="field col-span-2">
       <label>Tipo de solicitação <span class="req">*</span></label>
-      <!-- opções vêm de GD_SOLICITACOES (rótulo curto do Figma + valor
-           normativo) via preencherSelect() -->
       <select data-k="solicitacao" onchange="onSolicitacao()"></select>
     </div>
 
@@ -40,18 +21,8 @@
         </option>
       </select>
     </div>
-
-    <!-- Bloco de dados do atendimento: só aparece depois de escolhida a
-         edificação (no Figma, a tela inicial mostra apenas os 2 campos
-         acima). `display:contents` via .grid-subgrupo mantém os filhos
-         como itens do MESMO grid, preservando o gap único da seção. -->
     <div id="atendimentoBloco" class="grid-subgrupo" style="display: none">
-      <!-- Identificação da UC existente: só faz sentido quando a solicitação
-           NÃO é ligação nova (numa ligação nova ainda não há instalação). O
-           onSolicitacao() alterna #instalacaoUCBox junto com os demais boxes
-           de "unidade existente". Item do MESMO grid (col-span-2), então o
-           respiro vem do gap da seção — sem margem própria. -->
-      <div class="field col-span-2" id="instalacaoUCBox" style="display: none">
+      <div class="field" id="instalacaoUCBox" style="display: none">
         <label
           >Número da Instalação / UC / Medidor <span class="req">*</span></label
         >
@@ -63,10 +34,6 @@
           oninput="onInstalacaoUC(this)"
         />
       </div>
-      <div class="field">
-        <label>Ramal <span class="req">*</span></label>
-        <select data-k="ramal" data-sem-vazio></select>
-      </div>
       <div class="field" id="disjIndividualBox" style="display: none">
         <label>Disjuntor individual atual <span class="req">*</span></label>
         <select data-k="disjAtualA"></select>
@@ -75,9 +42,6 @@
         <label>Disjuntor geral atual <span class="req">*</span></label>
         <select data-k="disjGeralA" onchange="onDisjCorrente()"></select>
       </div>
-      <!-- Demanda contratada: só existe no Grupo A. No Grupo B (baixa tensão)
-           não há contratação de demanda — o atendimento é dimensionado pelo
-           disjuntor. Alternado por onGrupo(). -->
       <div class="field" id="demandaConsumoBox" style="display: none">
         <label id="demandaConsumoLbl">Demanda de consumo contratada (kW)</label>
         <input
@@ -87,7 +51,6 @@
           oninput="onNumDec(this)"
         />
       </div>
-
       <div class="field field--plain col-span-2" data-noopt>
         <label>
           O telhado é/será arrendado para pessoa/empresa diferente do
@@ -97,10 +60,6 @@
           data-toggle="telhadoArrendado"
           data-toggle-onchange="onTelhadoArrendado"
         ></div>
-        <!-- <option value=""> inicial: sem ela, um state vazio faria o select
-             cair na 1ª opção ("Sim") e o toggle abriria já respondido.
-             _toggleRender ignora o placeholder, então nenhum botão a mais
-             aparece na tela. -->
         <select
           data-k="telhadoArrendado"
           style="display: none"
@@ -111,33 +70,37 @@
           <option>Não</option>
         </select>
       </div>
-      <div
-        class="field field--plain col-span-2"
-        id="dubBox"
-        style="display: none"
-        data-noopt
-      >
-        <label>
-          As 2 instalações (existente + telhado) foram representadas no DUB e
-          memorial descritivo? <span class="req">*</span>
-        </label>
-        <div data-toggle="duasInstalacoesDUB"></div>
-        <select
-          data-k="duasInstalacoesDUB"
-          style="display: none"
-          aria-hidden="true"
-        >
-          <option>Sim</option>
-          <option>Não</option>
-        </select>
+      <!-- Arrendamento (spec Figma): dados da unidade ARRENDADA + aviso do DUB,
+           visíveis só com telhadoArrendado = "Sim" (ver onTelhadoArrendado).
+           São campos próprios do arrendamento — não se confundem com
+           instExistente/instExistenteBTMT, que descrevem a instalação já
+           existente no local. -->
+      <div class="field" id="arrendUCBox" style="display: none">
+        <label>Nº da unidade/instalação <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="arrendUC"
+          data-fmt="fmtInstalacaoUC"
+          placeholder=" "
+          oninput="onInstalacaoUC(this)"
+        />
       </div>
-
-      <!-- Mudança de local do padrão: só faz sentido quando JÁ existe um padrão
-           de entrada instalado. Numa ligação nova o padrão ainda vai ser
-           construído, então não há local a mudar — o box é ocultado por
-           onSolicitacao(), junto de #instalacaoUCBox e dos disjuntores
-           "atuais". Mesma regra do BT individual, que só monta a pergunta em
-           "Alteração de Carga" / "Caixa Existente sem Alteração". -->
+      <div class="field" id="arrendTensaoBox" style="display: none">
+        <label>Nível de tensão da unidade <span class="req">*</span></label>
+        <select data-k="arrendTensao"></select>
+      </div>
+      <div class="field col-span-2" id="dubBox" style="display: none">
+        <div class="cmg-aviso cmg-aviso--warn no-print">
+          <div class="cmg-aviso-icon" aria-hidden="true"></div>
+          <p class="cmg-aviso-texto">
+            Em casos de arrendamento, é obrigatório representar tanto a
+            <strong>instalação existente</strong> quanto a
+            <strong>nova instalação do telhado</strong> no
+            <strong>DUB</strong> (Diagrama Unifilar Bruto) e no
+            <strong>Memorial Descritivo</strong>.
+          </p>
+        </div>
+      </div>
       <div
         class="field field--plain col-span-2"
         id="mudancaLocalBox"
@@ -158,72 +121,143 @@
           <option>Não</option>
         </select>
       </div>
-
-      <!-- Novo local do padrão: endereço PRÓPRIO (campos mud*), independente
-           do endereço da unidade da etapa 3, com mapa próprio (#mapPadrao).
-           Grid PRÓPRIO de 3 colunas (col-span-2 dentro do grid-2 de cima):
-           o Figma põe Número/Complemento/Bairro numa linha e Cidade/Estado na
-           seguinte — proporções que o grid-2 do bloco pai não comporta. -->
       <div
         id="mudancaLocalBloco"
         class="grid grid-3 col-span-2"
         style="display: none"
       >
-        <div class="field">
-          <label>CEP <span class="req">*</span></label>
-          <input
-            type="text"
-            data-k="mudCep"
-            placeholder=" "
-            oninput="onCepPadraoGD(this)"
-          />
-        </div>
-        <div class="field col-span-3">
-          <label>Endereço <span class="req">*</span></label>
-          <input
-            type="text"
-            data-k="mudLogradouro"
-            placeholder=" "
-            onblur="onEnderecoPadraoGD()"
-          />
-        </div>
-        <div class="field">
-          <label>Número <span class="req">*</span></label>
-          <input
-            type="text"
-            data-k="mudNumero"
-            placeholder=" "
-            onblur="onEnderecoPadraoGD()"
-          />
-        </div>
-        <div class="field">
-          <!-- sem "*": os marcadores acrescentam o sufixo "(opcional)" -->
-          <label>Complemento</label>
-          <input type="text" data-k="mudComplemento" placeholder=" " />
-        </div>
-        <div class="field">
-          <label>Bairro <span class="req">*</span></label>
-          <input
-            type="text"
-            data-k="mudBairro"
-            placeholder=" "
-            onblur="onEnderecoPadraoGD()"
-          />
-        </div>
-        <div class="field">
-          <label>Cidade / Município <span class="req">*</span></label>
-          <input
-            type="text"
-            data-k="mudMunicipio"
-            placeholder=" "
-            onblur="onEnderecoPadraoGD()"
-          />
-        </div>
-        <div class="field">
-          <label>Estado <span class="req">*</span></label>
-          <select data-k="mudEstado" data-sem-vazio></select>
-        </div>
+        <!-- #todo ============================================================
+             AINDA INCORRETO — revisar (pendente de 11/08/2026).
+             O bloco "novo local do padrão" deve repetir os MESMOS campos da
+             zona escolhida em "Zona de localização" (etapa 3), mas o
+             resultado na tela continua divergindo do esperado.
 
+             Já tentado, sem resolver:
+               1. wrapper .field + grid aninhado -> quebrou o layout inteiro
+                  (.field é um campo do design system, não um contêiner);
+               2. .grid-subgrupo (display:contents) -> estrutura correta,
+                  mas o render ainda sai errado;
+               3. Município/Estado duplicados, um par por zona, para
+                  reproduzir a ordem da etapa 3 (urbano: por último;
+                  rural: primeiro).
+
+             Verificar na revisão:
+               • o que exatamente diverge (ordem? colunas? campos faltando?);
+               • se o certo é DUPLICAR mudMunicipio/mudEstado ou mantê-los
+                  fora dos dois subgrupos;
+               • se este bloco deveria reusar o markup da etapa 3 em vez de
+                  ter uma cópia própria (hoje são dois HTMLs paralelos que
+                  precisam ser mantidos em sincronia na mão).
+
+             Contexto relacionado (não reverter sem avaliar): o espelhamento
+             de campos com data-k repetido foi implementado em
+             js/app.js (_espelharCampo / bindInputs / aplicarPatch) — antes
+             disso `data-k-espelho` era só um marcador sem efeito, e a etapa 3
+             tinha o mesmo problema silencioso.
+             ============================================================ -->
+        <!-- Os campos do novo local acompanham a ZONA da etapa 3
+             (localizacao): urbano com CEP/logradouro, rural com o descritivo.
+             Quem alterna os dois blocos é onZonaGD → aplicarZonaPadraoGD. -->
+        <!-- .grid-subgrupo (display:contents): o wrapper existe só para o JS
+             alternar as duas zonas de uma vez; os campos continuam sendo itens
+             DIRETOS do grid-3 acima. Um wrapper .field aqui viraria ele mesmo
+             um campo e quebraria o layout do bloco inteiro. -->
+        <div class="grid-subgrupo" id="mudEndUrbanoBox">
+          <div class="field">
+            <label>CEP <span class="req">*</span></label>
+            <input
+              type="text"
+              data-k="mudCep"
+              placeholder=" "
+              oninput="onCepPadraoGD(this)"
+            />
+          </div>
+          <div class="field col-span-3">
+            <label>Endereço <span class="req">*</span></label>
+            <input
+              type="text"
+              data-k="mudLogradouro"
+              placeholder=" "
+              onblur="onEnderecoPadraoGD()"
+            />
+          </div>
+          <div class="field">
+            <label>Número <span class="req">*</span></label>
+            <input
+              type="text"
+              data-k="mudNumero"
+              placeholder=" "
+              onblur="onEnderecoPadraoGD()"
+            />
+          </div>
+          <div class="field">
+            <label>Complemento</label>
+            <input type="text" data-k="mudComplemento" placeholder=" " />
+          </div>
+          <div class="field">
+            <label>Bairro <span class="req">*</span></label>
+            <input
+              type="text"
+              data-k="mudBairro"
+              placeholder=" "
+              onblur="onEnderecoPadraoGD()"
+            />
+          </div>
+          <!-- Município/Estado fecham o endereço urbano, como na etapa 3. -->
+          <div class="field">
+            <label>Cidade / Município <span class="req">*</span></label>
+            <input
+              type="text"
+              data-k="mudMunicipio"
+              placeholder=" "
+              onblur="onEnderecoPadraoGD()"
+            />
+          </div>
+          <div class="field">
+            <label>Estado <span class="req">*</span></label>
+            <select data-k="mudEstado" data-sem-vazio></select>
+          </div>
+        </div>
+        <div class="grid-subgrupo" id="mudEndRuralBox" style="display: none">
+          <!-- Na zona rural Município/Estado ABREM o bloco, como na etapa 3.
+               São os mesmos data-k do bloco urbano: só um dos dois está
+               visível por vez, e `data-k-espelho` mantém os dois em sincronia
+               (mesma solução da etapa 3). -->
+          <div class="field">
+            <label>Município <span class="req">*</span></label>
+            <input
+              type="text"
+              data-k="mudMunicipio"
+              data-k-espelho
+              placeholder=" "
+            />
+          </div>
+          <div class="field">
+            <label>Estado <span class="req">*</span></label>
+            <select data-k="mudEstado" data-k-espelho data-sem-vazio></select>
+          </div>
+          <div class="field">
+            <label
+              >Distrito / Comunidade / Região <span class="req">*</span></label
+            >
+            <input type="text" data-k="mudDistritoComunidade" placeholder=" " />
+          </div>
+          <div class="field">
+            <label>Nome da propriedade <span class="req">*</span></label>
+            <input type="text" data-k="mudNomePropriedade" placeholder=" " />
+          </div>
+          <div class="field">
+            <label>Ponto de referência <span class="req">*</span></label>
+            <input type="text" data-k="mudPontoRef" placeholder=" " />
+          </div>
+          <div class="field col-span-3">
+            <label
+              >Nº instalação / UC / medidor mais próxima
+              <span class="req">*</span></label
+            >
+            <input type="text" data-k="mudInstProxima" placeholder=" " />
+          </div>
+        </div>
         <div class="mapa-obra divider col-span-3">
           <p class="mapa-hint">
             Confirme a localização da unidade no mapa. Se o pin estiver

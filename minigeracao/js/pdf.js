@@ -111,8 +111,12 @@ function gerarPdfMiniGD(d) {
   if (!ehLigacaoNova)
     ucPairs.push(["Demanda de consumo atual (kW)", d.demandaConsumoAtual]);
   ucPairs.push(["Grid Zero", d.gridZero], ["Telhado arrendado", d.telhadoArrendado]);
+  // Unidade arrendada: dados próprios do arrendamento (spec Figma).
   if (d.telhadoArrendado === "Sim")
-    ucPairs.push(["2 instalações no DUB/memorial", d.duasInstalacoesDUB]);
+    ucPairs.push(
+      ["Nº da unidade/instalação arrendada", d.arrendUC],
+      ["Nível de tensão da unidade arrendada", d.arrendTensao],
+    );
   if (!ehLigacaoNova)
     ucPairs.push(
       ["Número da Unidade Consumidora", d.numUC],

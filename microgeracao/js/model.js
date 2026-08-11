@@ -116,6 +116,9 @@ function gdEstadoInicial() {
     // Novo local do padrão de entrada (etapa 5, só com mudancaLocal="Sim").
     // Endereço PRÓPRIO, independente do endereço da unidade da etapa 3: o
     // padrão pode mudar de local sem que a unidade mude de endereço.
+    // Os campos acompanham a ZONA escolhida na etapa 3 (localizacao): urbana
+    // usa CEP/logradouro; rural usa o descritivo (distrito, propriedade, ponto
+    // de referência, instalação mais próxima). Município/Estado valem nas duas.
     mudCep: "",
     mudLogradouro: "",
     mudNumero: "",
@@ -123,15 +126,20 @@ function gdEstadoInicial() {
     mudBairro: "",
     mudMunicipio: "",
     mudEstado: "MG",
+    mudDistritoComunidade: "",
+    mudNomePropriedade: "",
+    mudPontoRef: "",
+    mudInstProxima: "",
     mudLatitude: "",
     mudLongitude: "",
     mudFuso: "",
     mudUtmE: "",
     mudUtmN: "",
     telhadoArrendado: "",
-    // duasInstalacoesDUB segue com "Não": o campo é condicional
-    // (telhadoArrendado="Sim") e não entra no req() da validação.
-    duasInstalacoesDUB: "Não",
+    // Unidade arrendada (spec Figma): só se aplica com telhadoArrendado="Sim".
+    // O requisito do DUB virou aviso na etapa, então não há mais campo para ele.
+    arrendUC: "",
+    arrendTensao: "",
     instExistente: "",
     instExistenteBTMT: "",
     novaProtecao: "",
