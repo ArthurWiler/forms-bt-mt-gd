@@ -114,6 +114,10 @@ function montarCargaAcordeao(container, cfg) {
     else if (
       a === "Comercial" ||
       a === "Industrial" ||
+      a === "Rural" ||
+      a === "Poder Público" ||
+      a === "Iluminação Pública" ||
+      a === "Serviço Público" ||
       a === ATIVIDADE_IRRIGACAO
     )
       d.tipoA = "nr";
@@ -130,38 +134,12 @@ function montarCargaAcordeao(container, cfg) {
     aplicarAtividade();
     notificar();
     container.innerHTML = "";
-    if (!d.tipoA) {
-      // O hint só faz sentido quando o campo de atividade está em OUTRA etapa
-      // (BT). Onde ele fica logo acima da lista (microGD), seria redundante:
-      // cfg.hintAtividade = false suprime.
-      if (cfg.hintAtividade !== false)
-        container.appendChild(
-          _hint(
-            "Selecione a atividade principal para detalhar os equipamentos.",
-          ),
-        );
-      return;
-    }
-    // Não-residencial: o usuário escolhe a categoria (Tabela 11); a lista de
-    // equipamentos só aparece (priorizada) depois da escolha.
     if (d.tipoA === "nr") {
       container.appendChild(_fieldCategoria());
-      if (d.catA == null) {
-        container.appendChild(
-          _hint(
-            "Selecione a categoria de atividade para detalhar os equipamentos.",
-          ),
-        );
-        return;
-      }
     }
     container.appendChild(_busca());
     container.appendChild(_accList());
   }
-  // Campo no padrão do design system: .field simples com <label> + <select>
-  // como filho DIRETO — é essa estrutura que o rótulo flutuante (shared.css,
-  // "Padrão B") exige. Sem .field--plain nem .toggle-group, que faziam o campo
-  // sair do padrão e renderizar com rótulo fixo e select de largura própria.
   function _fieldCategoria() {
     const field = document.createElement("div");
     field.className = "field";
@@ -303,10 +281,16 @@ function montarCargaAcordeao(container, cfg) {
     const acc = document.createElement("div");
     acc.className = "carga-acc" + (open ? " is-open" : "");
     acc.appendChild(
-      _accHead("_mot", "Motores e cargas especiais", d.mots.length, open, () => {
-        _cargaToggleExclusivo(abertos, "_mot", !abertos._mot);
-        _renderAccList(lista);
-      }),
+      _accHead(
+        "_mot",
+        "Motores e cargas especiais",
+        d.mots.length,
+        open,
+        () => {
+          _cargaToggleExclusivo(abertos, "_mot", !abertos._mot);
+          _renderAccList(lista);
+        },
+      ),
     );
     if (open) {
       const body = document.createElement("div");

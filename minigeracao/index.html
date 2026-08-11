@@ -11,6 +11,10 @@
     <link rel="stylesheet" href="../css/variables.css" />
     <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/formulario-minigd.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
   </head>
 
   <body class="cemig-form cemig-minigd">
@@ -44,23 +48,23 @@
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">2</span>
-          <span class="vstep-label">Identificação</span>
+          <span class="vstep-label">Dados do proprietário</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">3</span>
-          <span class="vstep-label">Dados da UC</span>
+          <span class="vstep-label">Dados da unidade</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">4</span>
-          <span class="vstep-label">Documentação</span>
+          <span class="vstep-label">Tipo de atendimento</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">5</span>
-          <span class="vstep-label">Formulário de Carga</span>
+          <span class="vstep-label">Dados da Geração</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">6</span>
-          <span class="vstep-label">Dados da Geração</span>
+          <span class="vstep-label">Formulário de Carga</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">7</span>
@@ -93,10 +97,14 @@
 
         <section class="page show" id="page-0" data-src="etapas/01-orientacoes.html"></section>
         <section class="page" id="page-1" data-src="etapas/02-identificacao.html"></section>
-        <section class="page" id="page-2" data-src="etapas/03-dados-uc.html"></section>
-        <section class="page" id="page-3" data-src="etapas/04-documentacao.html"></section>
-        <section class="page" id="page-4" data-src="etapas/05-carga.html"></section>
-        <section class="page" id="page-5" data-src="etapas/06-geracao.html"></section>
+        <section class="page" id="page-2" data-src="etapas/03-dados-unidade.html"></section>
+        <section class="page" id="page-3" data-src="etapas/04-atendimento.html"></section>
+        <!-- Geração vem ANTES de Documentação/Carga: a potência ativa
+             instalada declarada aqui filtra os tipos de subestação da etapa
+             "Tipo de atendimento" (ver _tiposSEvisiveis) e define a Garantia
+             de Fiel Cumprimento. -->
+        <section class="page" id="page-4" data-src="etapas/05-geracao.html"></section>
+        <section class="page" id="page-5" data-src="etapas/06-carga.html"></section>
         <section class="page" id="page-6" data-src="etapas/07-armazenamento.html"></section>
         <section class="page" id="page-7" data-src="etapas/08-declaracoes.html"></section>
         <section class="page" id="page-8" data-src="etapas/09-correspondencia.html"></section>
@@ -118,6 +126,11 @@
     </footer>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Mapa da etapa 3 (cópia do microGD): Leaflet + Turf + geo.js (consulta
+         de restrição ambiental e geocodificação do endereço). -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+    <script src="../shared/js/geo.js"></script>
     <script src="js/data.js"></script>
     <script src="../mt/js/subestacoes-b64.js"></script>
     <script src="../shared/js/load-form-data.js"></script>
@@ -131,6 +144,11 @@
     <script src="js/pdf.js"></script>
     <script src="../shared/js/api.js"></script>
     <script src="../shared/js/calc-demanda.js"></script>
+    <!-- Ilha de cargas + bloco de resultado (montarCargaAcordeao /
+         renderResultadoCarga), a mesma do BT e do microGD: é ela que produz os
+         cards .resultado-* estilizados em css/shared.css. Depende de
+         calc-demanda.js, então vem depois. -->
+    <script src="../shared/js/carga-bt.js"></script>
     <script src="../shared/js/valida-instalacao.js"></script>
     <script src="../shared/js/form-marcadores.js"></script>
     <script src="../shared/js/pdf-sucesso.js"></script>

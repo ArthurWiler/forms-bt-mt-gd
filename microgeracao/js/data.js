@@ -108,8 +108,6 @@ const GD_TENSAO_LIGNOVA_138 = "13800"; // 13,8 kV
 // Somente as subestações Nº 1, 5 e 8 possuem limite de 300 kVA (filtragem por potência).
 const GD_SE_LIMITE_300 = ["Nº 1", "Nº 5", "Nº 8"];
 const GD_SE_LIMITE_KW = 300;
-// Acima deste valor, sugere-se atendimento em alta tensão.
-const GD_SE_SUGESTAO_AT_KW = 2500;
 
 // Regra 4: aceitação das subestações por tipo × tensão × tipo de solicitação.
 //  - "Ligação nova" inclui a migração de BT→MT (instalação existente em BT).

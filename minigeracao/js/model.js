@@ -34,12 +34,28 @@ function gdEstadoInicial() {
     grupo: "A",
     classe: "",
     cpfCnpj: "",
-    // Campos de Pessoa Física (só aparecem com CPF válido — ver views.js)
-    filiacao: "", rg: "", nasc: "", laudoMedico: "Não", nis: "Não", numNis: "",
+    // Campos de Pessoa Física (só aparecem com CPF válido)
+    // Selects com opção vazia "—" na etapa 2 (padrão do microGD): começam sem
+    // escolha, para que o obrigatório não passe sem o usuário ter respondido.
+    filiacao: "", rg: "", nasc: "", laudoMedico: "", nis: "", numNis: "",
     logradouro: "", numero: "", complemento: "",
     bairro: "", municipio: "", estado: "MG", cep: "",
-    telefone: "", celular: "", email: "",
-    // 2 - Dados da UC
+    celular: "", email: "",
+    // Responsável técnico (bloco da etapa "Dados do proprietário" do microGD)
+    rtNome: "", rtEmail: "", rtCelular: "",
+    // 2 - Dados da unidade (cópia da etapa 3 do microGD)
+    // A zona alterna o endereço entre urbano (CEP/logradouro) e rural
+    // (distrito/propriedade/ponto de referência).
+    localizacao: "Urbana",
+    distritoComunidade: "",
+    nomePropriedade: "",
+    pontoRef: "",
+    instProxima: "",
+    // Restrição ambiental: derivada da consulta do mapa (shared/js/geo.js).
+    restricaoAmbiental: "",
+    restricaoAceite: false,
+    restricoesTexto: "",
+    restricoesDetalhe: [],
     // Coordenadas: usuário informa Latitude/Longitude; fuso/E/N derivados
     // automaticamente (latLonParaUTM), mantidos p/ validação e PDF.
     latitude: "", longitude: "",
@@ -64,8 +80,6 @@ function gdEstadoInicial() {
     duasInstalacoesDUB: "Não",
     instExistente: "",
     instExistenteBTMT: "",
-    // 3 - Documentação
-    docs: {},
     // Formulário de Carga (Item 11) — reutiliza a estrutura do formulário BT.
     // cargas: { qtds, tipoA, catA, mots, extras, _demanda, _cargaKw, _disjuntores }
     cargas: { qtds: [], tipoA: "", catA: 0, mots: [], extras: [] },

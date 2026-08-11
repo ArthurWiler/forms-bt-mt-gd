@@ -1,0 +1,216 @@
+<!doctype html>
+<div class="card">
+  <div class="section-eyebrow">Etapa 4</div>
+  <h3 class="card-title">Tipo de atendimento</h3>
+  <p class="card-sub">Escolha o tipo de atendimento e preencha os dados.</p>
+  <div class="grid grid-2">
+    <div class="field col-span-2">
+      <label>Tipo de Solicitação <span class="req">*</span></label>
+      <select data-k="solicitacao" onchange="onSolicitacao()"></select>
+    </div>
+    <div class="field">
+      <label
+        >Número da Instalação / Unidade consumidora / Medidor
+        <span class="req">*</span></label
+      >
+      <input
+        type="text"
+        data-k="instalacao"
+        data-fmt="fmtInstalacaoUC"
+        placeholder=""
+        oninput="onInstalacaoUC(this)"
+      />
+    </div>
+    <div class="field" id="demandaConsumoBox">
+      <label
+        >Demanda a ser contratada de consumo (kW)
+        <span class="req">*</span></label
+      >
+      <input
+        type="text"
+        data-k="demandaConsumo"
+        placeholder=" "
+        oninput="onNumDec(this)"
+      />
+    </div>
+    <div class="field" id="demandaConsumoAtualBox">
+      <label>Demanda de consumo atual (kW)<span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="demandaConsumoAtual"
+        placeholder=" "
+        oninput="onNumDec(this)"
+      />
+    </div>
+    <div class="field field--plain col-span-2" id="seBox" data-noopt>
+      <label>Tipo de Subestação (ND 5.3)</label>
+      <div class="se-gallery" id="seGalleryGD"></div>
+      <span id="seBloqueioMsg" class="field-hint"></span>
+    </div>
+    <div class="field field--plain col-span-2" data-noopt>
+      <label>Haverá mudança de local da subestação?</label>
+      <div id="cardsMudancaSE"></div>
+      <select
+        data-k="mudancaSE"
+        onchange="onMudancaSE()"
+        style="display: none"
+        aria-hidden="true"
+      >
+        <option>Não</option>
+        <option>Sim</option>
+      </select>
+    </div>
+    <div class="field col-span-2" id="avisoExcede300" style="display: none">
+      <div class="cmg-aviso cmg-aviso--warn no-print">
+        <div class="cmg-aviso-icon" aria-hidden="true"></div>
+        <p class="cmg-aviso-texto" id="avisoExcede300Texto"></p>
+      </div>
+    </div>
+    <div class="field">
+      <label>Tipo de Ligação do Transformador</label>
+      <select data-k="tipoLigTrafo"></select>
+    </div>
+    <div class="field">
+      <label
+        >Impedância Percentual do Transformador (%)
+        <span class="req">*</span></label
+      >
+      <input
+        type="text"
+        data-k="impedanciaTrafo"
+        placeholder=" "
+        oninput="onNumDec(this)"
+      />
+    </div>
+    <div class="subbox" id="trafosBox" style="display: none; margin-top: 12px">
+      <div class="motores-head">
+        <span class="subbox-title">Transformadores (Qte × Potência)</span>
+        <button
+          type="button"
+          class="btn btn-primary"
+          style="padding: 5px 12px; font-size: 12px"
+          onclick="addTrafoGD()"
+        >
+          + Trafo
+        </button>
+      </div>
+      <table class="motores-table">
+        <thead>
+          <tr>
+            <th>Qte</th>
+            <th>Potência (kVA)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="trafoGdBody"></tbody>
+      </table>
+    </div>
+    <div class="field col-span-2">
+      <label
+        >Potência do Grupo Motor Gerador de Emergência em Paralelo (kVA)</label
+      >
+      <input
+        type="text"
+        data-k="geradorPotencia"
+        placeholder=" "
+        oninput="onNumDec(this)"
+      />
+    </div>
+    <div class="field">
+      <label>Tensão de Atendimento (V)</label>
+      <select data-k="tensaoAtendimento" onchange="atualizarSE()"></select>
+    </div>
+    <div class="field">
+      <label>Entrada de Energia</label>
+      <select data-k="entradaEnergia" onchange="onEntradaEnergia()"></select>
+    </div>
+    <div class="field" id="qtdCubiculosBox" style="display: none">
+      <label>Quantidade de Cubículos <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="qtdCubiculos"
+        placeholder=" "
+        oninput="onSoDigitos(this)"
+      />
+      <span class="field-hint">Subestação compartilhada</span>
+    </div>
+    <div class="field field--plain" data-noopt>
+      <label>O empreendimento será "Grid Zero"?</label>
+      <div id="cardsGridZero"></div>
+      <select
+        data-k="gridZero"
+        onchange="onGridZero()"
+        style="display: none"
+        aria-hidden="true"
+      >
+        <option>Não</option>
+        <option>Sim</option>
+      </select>
+    </div>
+    <div class="field field--plain col-span-2" data-noopt>
+      <label>
+        O telhado será arrendado para pessoa/empresa diferente do proprietário?
+      </label>
+      <div id="cardsTelhadoArrendado"></div>
+      <select
+        data-k="telhadoArrendado"
+        onchange="onTelhadoArrendado()"
+        style="display: none"
+        aria-hidden="true"
+      >
+        <option>Não</option>
+        <option>Sim</option>
+      </select>
+    </div>
+    <div
+      class="field field--plain col-span-2"
+      id="dubBox"
+      style="display: none"
+      data-noopt
+    >
+      <label
+        >As 2 instalações foram representadas no DUB e memorial
+        descritivo?</label
+      >
+      <div id="cardsDuasInstalacoesDUB"></div>
+      <select
+        data-k="duasInstalacoesDUB"
+        style="display: none"
+        aria-hidden="true"
+      >
+        <option>Não</option>
+        <option>Sim</option>
+      </select>
+    </div>
+    <div class="field" id="numUCBox">
+      <label>Número da Unidade Consumidora</label>
+      <input
+        type="text"
+        data-k="numUC"
+        placeholder="Nº da UC"
+        oninput="onSoDigitos(this)"
+      />
+    </div>
+    <div class="field col-span-2" id="instExistenteBox">
+      <label>Número da Instalação / UC / Medidor existente no local</label>
+      <input
+        type="text"
+        data-k="instExistente"
+        data-fmt="fmtInstalacaoUC"
+        placeholder=" "
+        oninput="onInstalacaoUC(this)"
+      />
+    </div>
+    <div class="field" id="instExistenteBTMTBox">
+      <label>A instalação existente é atendida em BT ou MT?</label>
+      <select
+        data-k="instExistenteBTMT"
+        onchange="onInstExistenteBTMT()"
+      ></select>
+    </div>
+  </div>
+</div>
+<div class="nav-bottom no-print">
+  <button class="btn btn-ghost" onclick="goTo(2)">← Voltar</button>
+  <button class="btn btn-primary" onclick="goTo(4)">Avançar →</button>
+</div>

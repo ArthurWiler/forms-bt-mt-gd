@@ -110,8 +110,6 @@ const GD_BT_BAIXA = "BT - Baixa Tensão";
 // Regra 9: somente as subestações Nº 1, 5, 6 e 8 possuem limite de 300 kVA.
 const GD_SE_LIMITE_300 = ["Nº 1", "Nº 5", "Nº 6", "Nº 8"];
 const GD_SE_LIMITE_KW = 300;
-// Acima deste valor, o planejamento deve sugerir atendimento em alta tensão.
-const GD_SE_SUGESTAO_AT_KW = 2500;
 
 // Regras de aceitação das subestações por tipo × tensão × tipo de solicitação (Regras 7,8,14).
 //  - "Ligação nova" inclui também a migração de BT para MT (tratada como ligação nova).
@@ -176,60 +174,6 @@ const GD_SOLICITACOES_FORM_CARGA = [
   "Ligação de Nova Unidade Consumidora COM Geração Distribuída",
 ];
 const GD_ENTRADA_COMPARTILHADA = "Subestação Compartilhada";
-
-// Documentação da UC (Seção 3) — MiniGD
-const GD_DOCUMENTOS = [
-  {
-    id: "3.1",
-    req: true,
-    txt: "Documentos de identificação do consumidor, conforme incisos I e II do art. 67 da REN nº 1.000/2021.",
-  },
-  {
-    id: "3.2",
-    req: true,
-    txt: "Declaração descritiva da carga instalada — preencher Formulário de Carga (Item 11).",
-  },
-  {
-    id: "3.3",
-    req: true,
-    txt: "Informação das cargas que possam provocar perturbações no sistema de distribuição.",
-  },
-  {
-    id: "3.4",
-    req: true,
-    txt: "Informação e documentação das atividades desenvolvidas nas instalações.",
-  },
-  {
-    id: "3.5",
-    req: false,
-    txt: "Licença/declaração do órgão competente caso instalações ou extensão de rede ocupem áreas protegidas.",
-  },
-  {
-    id: "3.6.1",
-    req: true,
-    txt: "Documento com data que comprove propriedade ou posse do imóvel onde será implantada a UC com minigeração distribuída.",
-  },
-  {
-    id: "3.6.2",
-    req: false,
-    txt: "Para imóveis rurais, apresentar Cadastro Ambiental Rural – CAR (Lei nº 12.651/2012).",
-  },
-  {
-    id: "3.6.3",
-    req: false,
-    txt: "Documento que comprove posse pelo proprietário da central geradora (aluguel, cessão ou arrendamento). (Caso aplicável)",
-  },
-  {
-    id: "3.6.4",
-    req: false,
-    txt: "Documento do condomínio que autorize uso de área comum para central geradora particular. (Caso aplicável)",
-  },
-  {
-    id: "3.6.5",
-    req: false,
-    txt: "Subestação compartilhada com mais de um CPF/CNPJ: procuração elegendo um membro responsável pelo empreendimento. (Caso aplicável)",
-  },
-];
 
 // Documentação Técnica (Seção 7) — MiniGD
 const GD_DOCS_TEC = [
@@ -300,10 +244,11 @@ const GD_CONTATO_CEMIG = {
 const GD_DECL_85 = ["não injeção na rede (“Grid Zero”)"];
 
 // Orientações de preenchimento (Etapa 1) — resumo montado a partir das
-// seções oficiais do Formulário MiniGD Rev. P2: Documentação a anexar
-// (Seção 3 — GD_DOCUMENTOS), Garantia de Fiel Cumprimento (Seção 6),
-// Documentação Técnica (Seção 7 — GD_DOCS_TEC), Contato na Distribuidora
-// (Seção 8) e Solicitações/Declarações (Seção 9).
+// seções oficiais do Formulário MiniGD Rev. P2: Garantia de Fiel Cumprimento
+// (Seção 6), Documentação Técnica (Seção 7 — GD_DOCS_TEC), Contato na
+// Distribuidora (Seção 8) e Solicitações/Declarações (Seção 9).
+// A Documentação a anexar (Seção 3) saiu do formulário junto com a etapa
+// correspondente.
 const GD_ORIENTACOES = {
   intro:
     "Leia as orientações antes de iniciar. Este formulário destina-se à solicitação de acesso de MINIGERAÇÃO distribuída (potência instalada de geração superior a 75 kW e de até 5.000 kW, Grupo A) na área de concessão da CEMIG, conforme a Resolução Normativa ANEEL nº 1.000/2021.",

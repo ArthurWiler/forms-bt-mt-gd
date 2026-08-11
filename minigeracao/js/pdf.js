@@ -16,48 +16,80 @@ function gerarPdfMiniGD(d) {
     (d.solicitacao || "").indexOf("SEM Alteração de Demanda") >= 0;
   const ehAlteracaoGeracao = (d.solicitacao || "").indexOf("GD Existente") >= 0;
 
-  // ---- 1. Identificação ----
-  sec("1.  IDENTIFICAÇÃO DA UNIDADE CONSUMIDORA");
+  const ehRural = d.localizacao === "Rural";
+
+  // ---- 1. Dados do proprietário ----
+  sec("1.  DADOS DO PROPRIETÁRIO");
   kvPairs([
-    ["Instalação / UC / Medidor", d.instalacao],
     ["Titular", d.titular],
     ["E-mail", d.email],
     ["Celular", d.celular],
-    ["Telefone", d.telefone],
     ["CPF/CNPJ", d.cpfCnpj],
     // Campos de Pessoa Física (só saem se preenchidos — CPF válido).
     ...(d.filiacao ? [["Filiação", d.filiacao]] : []),
     ...(d.rg ? [["RG / RNE / RANI", d.rg]] : []),
     ...(d.nasc ? [["Data de Nascimento", d.nasc]] : []),
-    ...(d.filiacao ? [["Laudo médico?", d.laudoMedico]] : []),
+    ...(d.filiacao ? [["Equipamentos essenciais?", d.laudoMedico]] : []),
     ...(d.filiacao ? [["NIS (Tarifa Social)?", d.nis]] : []),
     ...(d.nis === "Sim" && d.numNis ? [["Número do NIS", d.numNis]] : []),
-    ["Grupo", d.grupo],
-    ["Classe", d.classe],
-    ["CEP", d.cep],
+    // Responsável técnico pelo empreendimento.
+    ["Responsável Técnico", d.rtNome],
+    ["E-mail do RT", d.rtEmail],
+    ["Celular do RT", d.rtCelular],
   ]);
-  fullLine(
-    "Endereço",
-    [
-      [d.logradouro, d.numero].filter(Boolean).join(", "),
-      d.complemento,
-      d.bairro,
-      [d.municipio, d.estado].filter(Boolean).join("/"),
-      d.cep ? "CEP " + d.cep : "",
-    ]
-      .filter(Boolean)
-      .join(" - "),
-  );
   P.gap(2);
 
-  // ---- 2. Dados da UC ----
+  // ---- 2. Dados da unidade ----
+  // O endereço urbano e o descritivo rural são mutuamente exclusivos: a zona
+  // de localização (etapa 3) limpa os campos da zona oposta.
   sec("2.  DADOS DA UNIDADE CONSUMIDORA");
-  const ucPairs = [
+  kvPairs([
+    ["Zona de localização", d.localizacao],
+    ...(ehRural
+      ? [
+          ["Município", [d.municipio, d.estado].filter(Boolean).join("/")],
+          ["Distrito / Comunidade / Região", d.distritoComunidade],
+          ["Nome da propriedade", d.nomePropriedade],
+          ["Ponto de referência", d.pontoRef],
+          ["Instalação / UC / medidor mais próxima", d.instProxima],
+        ]
+      : [["CEP", d.cep]]),
+  ]);
+  if (!ehRural)
+    fullLine(
+      "Endereço",
+      [
+        [d.logradouro, d.numero].filter(Boolean).join(", "),
+        d.complemento,
+        d.bairro,
+        [d.municipio, d.estado].filter(Boolean).join("/"),
+        d.cep ? "CEP " + d.cep : "",
+      ]
+        .filter(Boolean)
+        .join(" - "),
+    );
+  kvPairs([
     ["Coordenadas", `Lat ${d.latitude || "—"} · Lon ${d.longitude || "—"}`],
     [
       "Coordenadas UTM (calculada)",
       `Fuso ${d.fuso || "—"} · E ${d.utmE || "—"} · N ${d.utmN || "—"}`,
     ],
+  ]);
+  if (d.restricaoAmbiental)
+    fullLine(
+      "Restrição ambiental",
+      d.restricaoAmbiental === "Sim"
+        ? (d.restricoesTexto || "Sim").replace(/\n/g, " · ")
+        : "Não",
+    );
+  P.gap(2);
+
+  // ---- 3. Tipo de atendimento ----
+  sec("3.  TIPO DE ATENDIMENTO");
+  const ucPairs = [
+    ["Instalação / UC / Medidor", d.instalacao],
+    ["Grupo", d.grupo],
+    ["Classe", d.classe],
     ["Tipo de Subestação (ND 5.3)", d.tipoSE],
     ["Mudança de local da subestação", d.mudancaSE],
     ["Ligação do Transformador", d.tipoLigTrafo],
@@ -96,12 +128,8 @@ function gerarPdfMiniGD(d) {
     tabela(["Transformador", "Qte", "Potência"], [80, 30, 72], trafoRows);
   P.gap(2);
 
-  // ---- 3. Documentação da UC ----
-  sec("3.  DOCUMENTAÇÃO DA UC A ANEXAR");
-  GD_DOCUMENTOS.forEach((dc) =>
-    fullLine(`${dc.id} ${d.docs && d.docs[dc.id] ? "[X]" : "[ ]"}`, dc.txt),
-  );
-  P.gap(2);
+  // A seção "Documentação da UC a anexar" saiu junto com a etapa
+  // correspondente do formulário. A documentação TÉCNICA segue mais abaixo.
 
   // ---- Formulário de Carga (Item 11) ----
   const c = d.cargas || {};

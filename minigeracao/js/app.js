@@ -32,8 +32,10 @@ const SIM_NAO = [
   { valor: "Sim", texto: "Sim" },
 ];
 const CARDS_GD = [
-  { chave: "laudoMedico", gridId: "cardsLaudoMedico", opcoes: SIM_NAO },
-  { chave: "nis", gridId: "cardsNis", opcoes: SIM_NAO },
+  // laudoMedico e nis saíram daqui: a etapa 2 é cópia fiel do microGD e os
+  // traz como <select> com opção vazia "—", não como cards Sim/Não.
+  // localizacao vive na etapa 3, também copiada, e usa <div data-toggle>
+  // — renderizado por montarToggles().
   { chave: "mudancaSE", gridId: "cardsMudancaSE", opcoes: SIM_NAO },
   { chave: "gridZero", gridId: "cardsGridZero", opcoes: SIM_NAO },
   { chave: "telhadoArrendado", gridId: "cardsTelhadoArrendado", opcoes: SIM_NAO },
@@ -96,6 +98,63 @@ function _cardsMontar(campo) {
 }
 function inicializarCards() {
   CARDS_GD.forEach(_cardsMontar);
+  montarToggles();
+}
+
+/* ============================================================
+   TOGGLES data-toggle — porte do microGD (que por sua vez o trouxe do
+   BT). A etapa 3, cópia fiel do micro, traz <div data-toggle="chave"> +
+   <select data-k> oculto; este renderizador mantém esse markup
+   funcionando sem reescrever o HTML (que deve permanecer cópia fiel).
+   Difere de _cardsMontar apenas na origem: lê as <option> do próprio
+   select, em vez de uma lista declarada em CARDS_GD.
+   ============================================================ */
+function _toggleRender(box, sel) {
+  const valor = sel.value;
+  const opts = [...sel.options].filter((o) => o.value !== "" || o.textContent);
+  const ehSimNao =
+    opts.length === 2 &&
+    opts.every((o) => o.value === "Sim" || o.value === "Não");
+  const desab = sel.disabled;
+  box.className =
+    "toggle-group" +
+    (ehSimNao ? "" : " toggle-group--opcoes") +
+    (desab ? " toggle-disabled" : "");
+  box.setAttribute("role", "radiogroup");
+  box.innerHTML = "";
+  opts.forEach((o) => {
+    if (o.value === "" && !o.textContent) return; // placeholder vazio
+    const b = document.createElement("button");
+    b.type = "button";
+    b.setAttribute("role", "radio");
+    b.setAttribute("aria-checked", valor === o.value ? "true" : "false");
+    b.className = "toggle-btn" + (valor === o.value ? " on" : "");
+    b.textContent = o.textContent;
+    b.disabled = desab;
+    b.addEventListener("click", () => {
+      state[sel.dataset.k] = o.value;
+      sel.value = o.value;
+      sel.dispatchEvent(new Event("input", { bubbles: true }));
+      sel.dispatchEvent(new Event("change", { bubbles: true }));
+      const fn = box.dataset.toggleOnchange;
+      if (fn && typeof window[fn] === "function") window[fn]();
+      _toggleRender(box, sel);
+    });
+    box.appendChild(b);
+  });
+}
+function montarToggles() {
+  $$("[data-toggle]").forEach((box) => {
+    const k = box.dataset.toggle;
+    const sel =
+      $(`select[data-k="${k}"]`, box.parentElement) ||
+      $(`select[data-k="${k}"]`);
+    if (!sel) return;
+    _toggleRender(box, sel);
+    sel.addEventListener("change", () => _toggleRender(box, sel));
+    sel.style.display = "none";
+    sel.setAttribute("aria-hidden", "true");
+  });
 }
 
 /* ===== Navegação ===== */
@@ -120,12 +179,35 @@ function goTo(n, livre) {
     if (i === n) s.classList.add("active");
   });
   window.scrollTo({ top: 0, behavior: "smooth" });
-  if (alvo.querySelector("#calcDemandaBox") && ilhaCargas) ilhaCargas.atualizar();
+  if (alvo.querySelector("#calcDemandaBox") && ilhaCargas) {
+    ilhaCargas.atualizar();
+    renderResultadoCargaGD();
+  }
   if (alvo.querySelector("#fontesBox")) recalcFontes();
   if (alvo.querySelector("#gfcBloco")) atualizarGFC();
+  // Leaflet mede o container ao criar o mapa; se a etapa estava oculta, os
+  // tiles ficam cortados até um invalidateSize() com a página já visível.
+  if (alvo.querySelector("#map")) {
+    initMapaObra();
+    if (mapaObra) setTimeout(() => mapaObra.invalidateSize(), 60);
+  }
   if (alvo.querySelector("#previewContent")) renderPreviewGD();
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
+
+// As etapas 2 e 3 são cópias fiéis do microGD e trazem os botões
+// Voltar/Avançar com data-nav ("prev"|"next") em vez de goTo(n) literal —
+// navegação RELATIVA, que dispensa cada fragmento saber a própria posição.
+document.addEventListener("click", (e) => {
+  const b = e.target.closest ? e.target.closest("[data-nav]") : null;
+  // aria-disabled: o "Avançar" bloqueado continua clicável (rola até o campo
+  // que falta — ver form-marcadores), mas não navega.
+  if (!b || b.disabled || b.getAttribute("aria-disabled") === "true") return;
+  const atual = $(".page.show");
+  if (!atual) return;
+  const n = parseInt(atual.id.replace("page-", ""), 10);
+  goTo(n + (b.dataset.nav === "next" ? 1 : -1));
+});
 
 /* ===== Bind genérico (data-k) ===== */
 function bindInputs() {
@@ -186,23 +268,57 @@ const consultas = criarConsultasExternas({
   setCnpjStatus: (m) => setHint("status-cnpj", m),
 });
 
+/* ===== Validação de contato (etapa 2, porte do microGD) ===== */
+function _validarEmailGD(v) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+}
+function _validarTelefoneGD(v) {
+  const d = String(v || "").replace(/\D/g, "");
+  if (d.length < 10 || d.length > 11) return false;
+  const ddd = parseInt(d.substring(0, 2), 10);
+  if (ddd < 11 || ddd > 99) return false;
+  if (d.length === 11 && d[2] !== "9") return false;
+  return true;
+}
+// Campo vazio não acusa erro: o "obrigatório" é papel dos marcadores.
+function _feedbackCampoGD(el, spanId, valido, msgErr) {
+  if (!el || !el.value) {
+    if (el) el.classList.remove("is-invalid");
+    setHint(spanId, "");
+    return;
+  }
+  el.classList.toggle("is-invalid", !valido);
+  setHint(spanId, valido ? "" : msgErr, valido ? "" : "err");
+}
+function onEmailGD(k) {
+  const el = $(`[data-k="${k}"]`);
+  _feedbackCampoGD(el, `status-${k}`, _validarEmailGD(el && el.value), "e-mail inválido");
+}
+function onTelGD(k) {
+  const el = $(`[data-k="${k}"]`);
+  _feedbackCampoGD(el, `status-${k}`, _validarTelefoneGD(el && el.value), "telefone inválido");
+}
+
 /* ===== Identificação (idêntica ao micro) ===== */
 function gdEhCpfValido() {
   const r = validarCpfCnpj(state.cpfCnpj);
   return r.tipo === "CPF" && r.valido === true;
 }
+// Gate de avanço da etapa 2 (espelha gdPropDocOk do micro): o documento
+// precisa estar COMPLETO e VÁLIDO — não basta o obrigatório estar preenchido.
+window.gdPropDocOk = () => validarCpfCnpj(state.cpfCnpj).valido === true;
 function mostrarCamposPF(pf) {
   $$(".pf-campo").forEach((el) => {
     el.style.display = pf ? "" : "none";
   });
   if (!pf) {
-    ["filiacao", "rg", "nasc", "numNis"].forEach((k) => {
+    // Espelha o micro: os campos PF ocultos são zerados, inclusive laudo/NIS —
+    // na etapa 2 copiada são <select> com opção vazia "—", não cards Sim/Não.
+    ["filiacao", "rg", "nasc", "laudoMedico", "nis", "numNis"].forEach((k) => {
       const c = $(`[data-k="${k}"]`);
       if (c) c.value = "";
       state[k] = "";
     });
-    state.laudoMedico = "Não";
-    state.nis = "Não";
     const nb = $("#numNisBox");
     if (nb) nb.style.display = "none";
   } else {
@@ -266,7 +382,8 @@ function preencherSelect(k, lista) {
   if (atual && lista.map(String).includes(atual)) sel.value = atual;
 }
 function preencherSelects() {
-  preencherSelect("grupo", GD_GRUPOS);
+  // "grupo" não tem select próprio: na minigeração é sempre "A" (uma única
+  // opção em GD_GRUPOS), então o campo saiu da etapa 3 e o valor vem do estado.
   preencherSelect("classe", GD_CLASSES);
   preencherSelect("tipoLigTrafo", GD_TIPO_LIG_TRAFO);
   preencherSelect("tensaoAtendimento", GD_TENSAO_A);
@@ -277,8 +394,8 @@ function preencherSelects() {
   preencherSelect("garantiaForma", GD_GARANTIA_FORMAS);
 }
 
-/* ===== Etapa 3 — Dados da UC ===== */
-function onCoordGD(el) {
+/* ===== Etapa 3 — Dados da unidade (cópia do microGD) ===== */
+function onCoordGD(el, imediato) {
   if (el) {
     el.value = el.value.replace(/[^\d.\-]/g, "");
     state[el.dataset.k] = el.value;
@@ -297,6 +414,262 @@ function onCoordGD(el) {
   if (disp) disp.value = u ? `${u.fuso}${u.banda} E:${u.utmE} N:${u.utmN}` : "";
   const utm = gdValidarUTM(state.fuso, state.utmE, state.utmN);
   setHint("utmHint", state.fuso && !utm.ok ? utm.msg : "");
+  atualizarCoordRuralGD(); // zona rural exige coordenada (aviso do BT)
+  // Mapa: só sincroniza com coordenada plausível (evita reposicionar o pino a
+  // cada tecla enquanto o usuário ainda digita).
+  const lat = parseFloat(String(state.latitude).replace(",", ".")),
+    lng = parseFloat(String(state.longitude).replace(",", "."));
+  if (isNaN(lat) || isNaN(lng)) return;
+  if (_nDig(state.latitude) < 5 || _nDig(state.longitude) < 5) return;
+  sincronizarMapaComCoordenadas(lat, lng, !!imediato);
+  consultarRestricaoAmbientalGD(lat, lng);
+}
+/* ===== Etapa 3 — zona de localização (porte do microGD/BT) ===== */
+// Trocar de zona limpa os campos da zona oposta, como no BT: o endereço
+// urbano e o descritivo rural são mutuamente exclusivos no PDF.
+function onZonaGD() {
+  _sync("localizacao");
+  const rural = state.localizacao === "Rural";
+  if (rural) {
+    ["cep", "logradouro", "numero", "complemento", "bairro"].forEach((k) => {
+      state[k] = "";
+      $$(`[data-k="${k}"]`).forEach((c) => (c.value = ""));
+    });
+  } else {
+    ["distritoComunidade", "nomePropriedade", "pontoRef", "instProxima"].forEach(
+      (k) => {
+        state[k] = "";
+        $$(`[data-k="${k}"]`).forEach((c) => (c.value = ""));
+      },
+    );
+  }
+  const urb = $("#endUrbanoBox"),
+    rur = $("#endRuralBox");
+  if (urb) urb.style.display = rural ? "none" : "";
+  if (rur) rur.style.display = rural ? "" : "none";
+  atualizarCoordRuralGD();
+  if (window.CemigMarcadores) {
+    window.CemigMarcadores.aplicar();
+    window.CemigMarcadores.atualizarAvancar();
+  }
+}
+// A coordenada é obrigatória em qualquer zona (o `*` está no HTML e vira
+// data-req pelos marcadores); em zona rural, além disso, um aviso reforça
+// que sem ela não há como localizar a propriedade.
+function atualizarCoordRuralGD() {
+  const rural = state.localizacao === "Rural";
+  const coordOk =
+    String(state.latitude).trim() && String(state.longitude).trim();
+  const aviso = $("#coordRuralAviso");
+  if (aviso) aviso.style.display = rural && !coordOk ? "" : "none";
+}
+
+/* ============================================================
+   MAPA LEAFLET + RESTRIÇÃO AMBIENTAL — porte do microGD (que o trouxe
+   do bt-core.js) para o estado plano do miniGD. Depende de Leaflet,
+   Turf e shared/js/geo.js (carregados no index.html). O pino é
+   arrastável e o clique no mapa define a coordenada; ambos escrevem em
+   latitude/longitude, de onde o UTM é derivado por onCoordGD().
+   ============================================================ */
+let mapaObra = null;
+let marcadorObra = null;
+let restricaoLayer = null;
+let _mapaObraDebounce = null;
+let _gdLastRestrKey = "";
+let _gdLastGeoKey = "";
+let _gdGeoDebounce = null;
+function _alertHTML(tipo, html) {
+  const cls = tipo === "warn" ? "cmg-aviso cmg-aviso--warn" : "cmg-aviso";
+  return `<div class="${cls}"><div class="cmg-aviso-icon" aria-hidden="true"></div><p class="cmg-aviso-texto">${html}</p></div>`;
+}
+function _aplicarCoordDoMapa(lat, lng) {
+  const latEl = $(`[data-k="latitude"]`),
+    lngEl = $(`[data-k="longitude"]`);
+  if (latEl) latEl.value = String(lat);
+  if (lngEl) lngEl.value = String(lng);
+  state.latitude = String(lat);
+  state.longitude = String(lng);
+  onCoordGD(null, true);
+}
+function initMapaObra() {
+  const div = $("#map");
+  if (!div || !window.L || mapaObra) return;
+  mapaObra = window.L.map(div).setView([-19.9167, -43.9345], 12);
+  const ruas = window.L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    { maxZoom: 19, attribution: "© OpenStreetMap" },
+  );
+  const satelite = window.L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    { maxZoom: 19, attribution: "" },
+  );
+  satelite.addTo(mapaObra);
+  window.L.control.layers({ Satélite: satelite, Ruas: ruas }).addTo(mapaObra);
+  mapaObra.on("click", (e) => _aplicarCoordDoMapa(e.latlng.lat, e.latlng.lng));
+  setTimeout(() => mapaObra.invalidateSize(), 200);
+  const lat = parseFloat(String(state.latitude).replace(",", ".")),
+    lng = parseFloat(String(state.longitude).replace(",", "."));
+  if (!isNaN(lat) && !isNaN(lng)) sincronizarMapaComCoordenadas(lat, lng, true);
+}
+function sincronizarMapaComCoordenadas(lat, lng, imediato) {
+  if (isNaN(lat) || isNaN(lng)) return;
+  clearTimeout(_mapaObraDebounce);
+  const atualizar = () => {
+    if (!mapaObra) return;
+    const ll = window.L.latLng(lat, lng);
+    if (marcadorObra) {
+      marcadorObra.setLatLng([lat, lng]);
+      if (!mapaObra.getBounds().contains(ll))
+        mapaObra.setView(ll, Math.max(mapaObra.getZoom(), 17));
+    } else {
+      marcadorObra = window.L.marker([lat, lng], { draggable: true }).addTo(
+        mapaObra,
+      );
+      marcadorObra.on("dragend", (e) => {
+        const p = e.target.getLatLng();
+        _aplicarCoordDoMapa(p.lat, p.lng);
+      });
+      const zMax = Number.isFinite(mapaObra.getMaxZoom())
+        ? mapaObra.getMaxZoom()
+        : 19;
+      mapaObra.setView(ll, zMax);
+    }
+    setTimeout(() => mapaObra.invalidateSize(), 100);
+  };
+  if (imediato) atualizar();
+  else _mapaObraDebounce = setTimeout(atualizar, 600);
+}
+const _nDig = (s) => (String(s || "").match(/\d/g) || []).length;
+// Geocodificação estruturada pelo endereço urbano (debounce, como no BT).
+async function geocodificarEnderecoGD() {
+  if (state.localizacao === "Rural") return;
+  const pronto =
+    String(state.logradouro || "").trim() &&
+    String(state.numero || "").trim() &&
+    String(state.municipio || "").trim();
+  if (!pronto) return;
+  if (_nDig(state.latitude) >= 5 && _nDig(state.longitude) >= 5) return;
+  const key = [
+    state.logradouro,
+    state.numero,
+    state.bairro,
+    state.municipio,
+    state.cep,
+  ]
+    .join("|")
+    .toLowerCase();
+  if (_gdLastGeoKey === key) return;
+  const status = $("#mapaStatus");
+  if (status) status.textContent = "Buscando coordenada…";
+  try {
+    const r = await geocodificarEnderecoBR({
+      logradouro: state.logradouro,
+      numero: state.numero,
+      bairro: state.bairro,
+      cidade: state.municipio,
+      uf: state.estado,
+      cep: state.cep,
+    });
+    _gdLastGeoKey = key;
+    if (!r) {
+      if (status)
+        status.textContent =
+          "Endereço não encontrado. Informe a coordenada manualmente.";
+      return;
+    }
+    if (status) status.textContent = "";
+    _aplicarCoordDoMapa(r.lat, r.lon);
+  } catch (e) {
+    if (status) status.textContent = "Falha ao geocodificar o endereço.";
+  }
+}
+function onEnderecoUrbanoGD() {
+  clearTimeout(_gdGeoDebounce);
+  _gdGeoDebounce = setTimeout(geocodificarEnderecoGD, 800);
+}
+function _limparRestricaoLayer() {
+  if (mapaObra && restricaoLayer) mapaObra.removeLayer(restricaoLayer);
+  restricaoLayer = null;
+  if (mapaObra && typeof atualizarLegendaRestricoes === "function")
+    atualizarLegendaRestricoes(mapaObra, null);
+}
+function renderRestricaoAmbiental() {
+  const box = $("#restricaoAmbientalConteudo");
+  const wrap = $("#restricaoAmbientalBox");
+  if (!box || !wrap) return;
+  if (state.restricaoAmbiental === "Sim") {
+    wrap.style.display = "";
+    const det = state.restricoesDetalhe;
+    const sentenca =
+      typeof restricaoSentencaHTML === "function"
+        ? restricaoSentencaHTML(det)
+        : "";
+    const docs =
+      typeof restricaoDocsHTML === "function" ? restricaoDocsHTML(det) : "";
+    const label =
+      typeof RESTRICAO_ACEITE_LABEL !== "undefined"
+        ? RESTRICAO_ACEITE_LABEL
+        : "Declaro que li e estou de acordo com as informações acima.";
+    box.innerHTML =
+      _alertHTML("warn", `<span>${sentenca}</span>`) +
+      docs +
+      `<label class="restricao-aceite"><input type="checkbox" id="restricaoAceite"${state.restricaoAceite ? " checked" : ""}> <span>${label}</span></label>`;
+    const chk = $("#restricaoAceite");
+    if (chk)
+      chk.onchange = (e) => {
+        state.restricaoAceite = e.target.checked;
+      };
+  } else {
+    wrap.style.display = "none";
+    box.innerHTML = "";
+  }
+}
+async function consultarRestricaoAmbientalGD(lat, lng) {
+  if (!window.turf || typeof consultarRestricoesObra !== "function") return;
+  if (isNaN(lat) || isNaN(lng)) return;
+  const key = lat.toFixed(5) + "," + lng.toFixed(5);
+  if (_gdLastRestrKey === key) return;
+  _gdLastRestrKey = key;
+  const status = $("#mapaStatus");
+  if (status) status.textContent = "Consultando restrições…";
+  try {
+    const res = await consultarRestricoesObra(lat, lng);
+    const dentros = res.filter((r) => r.dentro);
+    const errosTodos = res.length > 0 && res.every((r) => r.erro);
+    if (errosTodos) {
+      Object.assign(state, {
+        restricaoAmbiental: "",
+        restricaoAceite: false,
+        restricoesTexto: "",
+        restricoesDetalhe: [],
+      });
+      _gdLastRestrKey = "";
+      _limparRestricaoLayer();
+      renderRestricaoAmbiental();
+      if (status)
+        status.textContent =
+          "Não foi possível consultar a restrição ambiental (verifique conexão/camadas).";
+      return;
+    }
+    state.restricaoAmbiental = dentros.length ? "Sim" : "Não";
+    state.restricaoAceite = false;
+    state.restricoesTexto = dentros
+      .map(
+        (r) => r.rotulo + (r.nomes.length ? " (" + r.nomes.join(", ") + ")" : ""),
+      )
+      .join("\n");
+    state.restricoesDetalhe = detalhesRestricoes(res);
+    renderRestricaoAmbiental();
+    if (mapaObra && typeof desenharRestricoesNoMapa === "function") {
+      _limparRestricaoLayer();
+      restricaoLayer = desenharRestricoesNoMapa(window.L, mapaObra, res);
+    }
+    if (status) status.textContent = "";
+  } catch (e) {
+    _gdLastRestrKey = "";
+    if (status)
+      status.textContent = (e && e.message) || "Falha na consulta de restrições.";
+  }
 }
 // Descrições resumidas (ND-5.3) — mesmas do módulo MT/BT (tooltip "i").
 const SE_INFO_GD = {
@@ -373,9 +746,6 @@ function atualizarSE() {
     if (txt && excede)
       txt.innerHTML = `<strong>Limite de 300 kVA. </strong>A Subestação ${state.tipoSE} é limitada a ${GD_SE_LIMITE_KW} kVA. A potência instalada informada (${potInst} kW) excede esse limite — selecione outro tipo de subestação.`;
   }
-  const avisoAT = $("#avisoSugereAT");
-  if (avisoAT)
-    avisoAT.style.display = potInst > GD_SE_SUGESTAO_AT_KW ? "" : "none";
   renderTrafosGD();
 }
 function onMudancaSE() {
@@ -493,7 +863,7 @@ function onTelhadoArrendado() {
   if (box) box.style.display = state.telhadoArrendado === "Sim" ? "" : "none";
 }
 
-/* ===== Etapa 4/8 — checklists ===== */
+/* ===== Etapas 6/8 — checklists ===== */
 function renderChecklist(containerId, lista, alvo) {
   const box = document.getElementById(containerId);
   if (!box) return;
@@ -517,7 +887,7 @@ function renderChecklist(containerId, lista, alvo) {
   });
 }
 
-/* ===== Etapa 5 — Formulário de Carga (redeMono sempre false no mini) ===== */
+/* ===== Etapa 7 — Formulário de Carga (redeMono sempre false no mini) ===== */
 function _atividadeCargas() {
   return state.classe === "Residencial" ||
     state.classe === "Industrial" ||
@@ -525,49 +895,41 @@ function _atividadeCargas() {
     ? state.classe
     : "";
 }
+// Acordeões da lista de equipamentos (persistem entre re-renders da ilha).
+const _accCargas = {};
 function initCargas() {
   const box = $("#calcDemandaBox");
   if (!box) return;
-  ilhaCargas = montarCalcDemanda(box, {
+  // Mesma ilha do BT e do microGD (shared/js/carga-bt.js): antes o mini usava
+  // montarCalcDemanda + uma .kpi-row escrita à mão no fragmento, que não tinha
+  // o visual dos cards .resultado-* de css/shared.css.
+  ilhaCargas = montarCargaAcordeao(box, {
     data: state.cargas,
-    aoMudar: (c) => {
-      state.cargas = c;
-      atualizarKpisCargas();
-    },
+    abertos: _accCargas,
+    // Grupo A, atendimento trifásico: não há rede mono/bifásica no mini.
     redeMono: () => false,
     atividade: _atividadeCargas,
-    minimizarPorPadrao: false,
-    mostrarCargasAdicionais: true,
+    aoMudar: (c) => {
+      state.cargas = c;
+      renderResultadoCargaGD();
+    },
   });
-  atualizarKpisCargas();
+  renderResultadoCargaGD();
 }
-function atualizarKpisCargas() {
-  const c = state.cargas || {};
-  const kw = $("#kpiCargaKw"),
-    dem = $("#kpiDemanda"),
-    disj = $("#kpiDisjuntores");
-  if (kw) kw.textContent = fmt2(c._cargaKw || 0);
-  if (dem) dem.textContent = fmt2(c._demanda || 0);
-  if (disj)
-    disj.textContent =
-      c._disjuntores && c._disjuntores.length
-        ? c._disjuntores.join(" · ")
-        : "—";
-  const box = $("#disjEscolhidoBox");
-  const sel = $(`select[data-k="cargaDisjEscolhido"]`);
-  if (box && sel) {
-    const lista = c._disjuntores || [];
-    box.style.display = lista.length ? "" : "none";
-    sel.innerHTML = lista
-      .map((d) => `<option value="${d}">${d}</option>`)
-      .join("");
-    sel.value = lista.includes(state.cargaDisjEscolhido)
-      ? state.cargaDisjEscolhido
-      : lista[0] || "";
-  }
+// Cards de carga/demanda + escolha do disjuntor (mesmo bloco do BT/micro).
+function renderResultadoCargaGD() {
+  const box = $("#resultadoCargaBox");
+  if (!box) return;
+  renderResultadoCarga(box, {
+    cargas: () => state.cargas || {},
+    escolhido: () => state.cargaDisjEscolhido,
+    aoEscolher: (dj) => {
+      state.cargaDisjEscolhido = dj;
+    },
+  });
 }
 
-/* ===== Etapa 6 — Geração (múltiplas fontes) ===== */
+/* ===== Etapa 5 — Geração (múltiplas fontes) ===== */
 function onQtdFontes() {
   _sync("qtdFontes");
   const q = parseInt(state.qtdFontes) || 1;
@@ -755,7 +1117,7 @@ function renderFontes() {
   if (window.CemigMarcadores) window.CemigMarcadores.aplicar(box);
 }
 
-/* ===== Etapa 8 — Garantia de Fiel Cumprimento (Regras 19/21) ===== */
+/* ===== Garantia de Fiel Cumprimento (Regras 19/21) — deriva da Geração ===== */
 function atualizarGFC() {
   _sync("consorcioVerificado"); // onchange inline dispara antes do bindInputs
   const gfc = gdCalcularGFC(state);
@@ -788,7 +1150,7 @@ function atualizarDecl95() {
   if (aviso) aviso.style.display = gz && !state.decl95 ? "" : "none";
 }
 
-/* ===== Etapa 7 — Armazenamento ===== */
+/* ===== Etapa 8 — Armazenamento ===== */
 function onArmazenamento() {
   _sync("possuiArmazenamento");
   _sync("armOperacaoIlhada");
@@ -802,7 +1164,7 @@ function onArmazenamento() {
   if (rec) rec.style.display = ilhada ? "" : "none";
 }
 
-/* ===== Etapa 8 — Declarações (checkboxes) ===== */
+/* ===== Etapa 9 — Declarações (checkboxes) ===== */
 function bindDeclaracoes() {
   $$("[data-decl]").forEach((chk) => {
     const k = chk.dataset.decl;
@@ -814,7 +1176,7 @@ function bindDeclaracoes() {
   });
 }
 
-/* ===== Etapa 9 — Correspondência ===== */
+/* ===== Etapa 10 — Correspondência ===== */
 function onCorrAlternativa() {
   _sync("corrAlternativa");
   const v = state.corrAlternativa;
@@ -836,7 +1198,7 @@ function onCorrAlternativa() {
   if (v !== "Conta globalizada") aplicarPatch({ contaGlobal: "" });
 }
 
-/* ===== Etapa 10 — validação de exportação + prévia ===== */
+/* ===== Etapa 11 — validação de exportação + prévia ===== */
 // Porte 1:1 do useMemo `validacao` do app React do mini.
 function validarExportacao() {
   const d = state;
@@ -853,19 +1215,39 @@ function validarExportacao() {
   if (_doc.tipo === "CPF" && _doc.valido === true) {
     req(d.filiacao, "Filiação");
     req(d.nasc, "Data de Nascimento");
-    req(d.laudoMedico, "Possui laudo médico?");
+    req(d.laudoMedico, "Possui equipamentos essenciais?");
     req(d.nis, "Possui NIS?");
     if (d.nis === "Sim") req(d.numNis, "Número do NIS");
   }
-  req(d.logradouro, "Logradouro");
-  req(d.numero, "Número");
-  req(d.bairro, "Bairro");
-  req(d.municipio, "Município");
-  req(d.cep, "CEP");
   req(d.celular, "Celular");
   req(d.email, "E-mail");
+  // Responsável técnico (bloco da etapa 2 copiada do microGD).
+  req(d.rtNome, "Nome do responsável técnico");
+  req(d.rtEmail, "E-mail do responsável técnico");
+  req(d.rtCelular, "Celular do responsável técnico");
+  // Endereço: urbano e rural são mutuamente exclusivos (onZonaGD limpa os
+  // campos da zona oposta), então cada zona cobra só os próprios campos.
+  if (d.localizacao === "Rural") {
+    req(d.municipio, "Município");
+    req(d.distritoComunidade, "Distrito / Comunidade / Região");
+    req(d.nomePropriedade, "Nome da propriedade");
+    req(d.pontoRef, "Ponto de referência");
+    req(d.instProxima, "Nº instalação / UC / medidor mais próxima");
+  } else {
+    req(d.logradouro, "Endereço");
+    req(d.numero, "Número");
+    req(d.bairro, "Bairro");
+    req(d.municipio, "Município");
+    req(d.cep, "CEP");
+  }
+  // Estado: vem "MG" por padrão e é reescrito pela busca de CEP, mas o campo é
+  // editável — nada impede que fique vazio, e ele é obrigatório nas duas zonas.
+  req(d.estado, "Estado");
   req(d.latitude, "Latitude");
   req(d.longitude, "Longitude");
+  // Restrição ambiental detectada pelo mapa exige o aceite explícito.
+  if (d.restricaoAmbiental === "Sim" && !d.restricaoAceite)
+    faltas.push("Aceite das exigências de restrição ambiental");
   const utm = gdValidarUTM(d.fuso, d.utmE, d.utmN);
   if (d.fuso && d.utmE && d.utmN && !utm.ok)
     faltas.push("Coordenada UTM fora da faixa do fuso");
@@ -884,6 +1266,14 @@ function validarExportacao() {
   }
   if ((d.solicitacao || "").indexOf("SEM Alteração de Demanda") < 0)
     req(d.demandaConsumo, "Demanda contratada de consumo");
+  // Demanda de consumo atual: só existe fora da ligação nova — é quando o
+  // #demandaConsumoAtualBox aparece (ver onSolicitacao).
+  if (!_ehLigacaoNova())
+    req(d.demandaConsumoAtual, "Demanda de consumo atual");
+  // Grid Zero trava a demanda de geração em 0 (onGridZero), então o campo já
+  // vem preenchido; fora dele, é escolha do solicitante e precisa ser cobrada.
+  req(d.demandaGeracao, "Demanda a ser contratada de geração");
+  req(d.qtdFontes, "Quantidade de fontes de geração");
   req(d.potAtivaInstalada, "Potência Ativa Instalada Total");
   if ((d.solicitacao || "").indexOf("GD Existente") >= 0)
     req(d.potGeracaoAtual, "Potência de Geração Atual");
@@ -947,29 +1337,60 @@ function renderPreviewGD() {
         v.faltas.map((f) => `<li>${f}</li>`).join("") +
         "</ul></div>";
   const secoes = [];
+  // Etapa 2 — Dados do proprietário (índice 1) e etapa 3 — Dados da unidade
+  // (índice 2). Instalação e Classe migraram para a etapa técnica (índice 3).
   let ident =
-    pvCampo("Instalação", d.instalacao, { step: 1 }) +
     pvCampo("Titular", d.titular, { step: 1 }) +
-    pvCampo("CPF/CNPJ", d.cpfCnpj, { step: 1 });
+    pvCampo("CPF/CNPJ", d.cpfCnpj, { step: 1 }) +
+    pvCampo("E-mail", d.email, { step: 1 }) +
+    pvCampo("Celular", d.celular, { step: 1 });
   if (d.filiacao) ident += pvCampo("Filiação", d.filiacao, { step: 1 });
   if (d.nasc) ident += pvCampo("Data de Nascimento", d.nasc, { step: 1 });
   if (d.filiacao)
-    ident += pvCampo("Laudo médico? / NIS?", `${d.laudoMedico} / ${d.nis}`, {
-      step: 1,
-    });
+    ident += pvCampo(
+      "Equipamentos essenciais? / NIS?",
+      `${d.laudoMedico} / ${d.nis}`,
+      { step: 1 },
+    );
   if (d.nis === "Sim" && d.numNis)
     ident += pvCampo("Número do NIS", d.numNis, { step: 1 });
   ident +=
-    pvCampo("Grupo / Classe", `${d.grupo} / ${d.classe}`, { step: 1 }) +
-    pvCampo(
-      "Endereço",
-      `${d.logradouro}, ${d.numero} — ${d.bairro}, ${d.municipio}/${d.estado}`,
-      { full: true, step: 1 },
+    pvCampo("Responsável técnico", d.rtNome, { step: 1 }) +
+    pvCampo("E-mail do RT", d.rtEmail, { step: 1 }) +
+    pvCampo("Celular do RT", d.rtCelular, { step: 1 });
+  secoes.push(pvSecao("1 — Dados do proprietário", ident));
+  // Endereço da unidade: urbano e rural são mutuamente exclusivos.
+  const endereco =
+    d.localizacao === "Rural"
+      ? [
+          d.distritoComunidade,
+          d.nomePropriedade,
+          d.pontoRef,
+          [d.municipio, d.estado].filter(Boolean).join("/"),
+        ]
+          .filter(Boolean)
+          .join(" · ")
+      : `${d.logradouro}, ${d.numero} — ${d.bairro}, ${d.municipio}/${d.estado}`;
+  // Grupo não entra aqui: saiu da etapa 3 e já aparece em "Grupo / Classe" na
+  // seção técnica, cujo lápis leva à etapa onde ele é de fato editável.
+  let uni =
+    pvCampo("Zona de localização", d.localizacao, { step: 2 }) +
+    pvCampo("Endereço", endereco, { full: true, step: 2 });
+  if (d.localizacao === "Rural" && d.instProxima)
+    uni += pvCampo("Instalação mais próxima", d.instProxima, { step: 2 });
+  if (d.restricaoAmbiental)
+    uni += pvCampo(
+      "Restrição ambiental",
+      d.restricaoAmbiental === "Sim"
+        ? (d.restricoesTexto || "Sim").replace(/\n/g, "<br>")
+        : "Não",
+      { full: true, step: 2 },
     );
-  secoes.push(pvSecao("1 — Identificação", ident));
+  secoes.push(pvSecao("2 — Dados da unidade", uni));
+  // Coordenadas ficam na etapa 3 (mapa); o restante é da etapa técnica (3).
   secoes.push(
     pvSecao(
-      "2 — Dados da UC",
+      "3 — Tipo de atendimento",
       pvCampo("Coordenadas", `Lat ${d.latitude} · Lon ${d.longitude}`, {
         step: 2,
       }) +
@@ -978,27 +1399,29 @@ function renderPreviewGD() {
           `Fuso ${d.fuso} · E ${d.utmE} · N ${d.utmN}`,
           { step: 2 },
         ) +
-        pvCampo("Solicitação", d.solicitacao, { step: 2 }) +
+        pvCampo("Instalação", d.instalacao, { step: 3 }) +
+        pvCampo("Grupo / Classe", `${d.grupo} / ${d.classe}`, { step: 3 }) +
+        pvCampo("Solicitação", d.solicitacao, { step: 3 }) +
         pvCampo(
           "Trafo (ligação/impedância)",
           `${d.tipoLigTrafo || "—"} · ${d.impedanciaTrafo || "—"}%`,
-          { step: 2 },
+          { step: 3 },
         ) +
         pvCampo(
           "Demanda consumo / geração (kW)",
           `${d.demandaConsumo || "—"} / ${d.demandaGeracao || "—"}`,
-          { step: 2 },
+          { step: 3 },
         ),
     ),
   );
   secoes.push(
     pvSecao(
       "4 — Geração",
-      pvCampo("Qtd. fontes", d.qtdFontes, { step: 5 }) +
+      pvCampo("Qtd. fontes", d.qtdFontes, { step: 4 }) +
         pvCampo("Pot. Ativa Instalada (kW)", d.potAtivaInstalada, {
-          step: 5,
+          step: 4,
         }) +
-        pvCampo("Modalidade", d.modalidade, { step: 5 }),
+        pvCampo("Modalidade", d.modalidade, { step: 4 }),
     ),
   );
   let cor =
@@ -1062,7 +1485,8 @@ window.initFormulario = function () {
   bindInputs();
   inicializarCards();
   bindDeclaracoes();
-  renderChecklist("docsChecklist", GD_DOCUMENTOS, "docs");
+  // A etapa "Documentação da UC a anexar" foi removida do formulário; resta a
+  // documentação TÉCNICA, que vive na etapa de Declarações.
   renderChecklist("docsTecChecklist", GD_DOCS_TEC, "docsTec");
   initCargas();
   renderFontes();
@@ -1075,16 +1499,25 @@ window.initFormulario = function () {
   recalcFontes();
   onArmazenamento();
   onCorrAlternativa();
+  // Etapa 3 (cópia do micro): zona antes da coordenada — onZonaGD decide quais
+  // caixas de endereço ficam visíveis, e onCoordGD já parte do estado certo.
+  onZonaGD();
+  initMapaObra();
   onCoordGD();
   atualizarDecl95();
   atualizarGFC();
   mostrarCamposPF(gdEhCpfValido());
-  const selNis = $(`select[data-k="nis"]`);
-  if (selNis) selNis.addEventListener("change", onNisGD);
+  // nis: o próprio <select> da etapa 2 copiada chama onNisGD() no onchange
+  // (padrão do micro/MT) — um listener aqui faria o handler rodar duas vezes.
+  // A classe define o tipo de carga (residencial x não-residencial), então
+  // remonta a lista de equipamentos e recalcula os cards de resultado.
   const selClasse = $(`select[data-k="classe"]`);
   if (selClasse)
     selClasse.addEventListener("change", () => {
-      if (ilhaCargas) ilhaCargas.atualizar();
+      if (ilhaCargas) {
+        ilhaCargas.atualizar();
+        renderResultadoCargaGD();
+      }
     });
   const aceite = $("#aceiteOrient");
   if (aceite)
