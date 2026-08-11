@@ -147,7 +147,8 @@ function gdEstadoInicial() {
     // Quantidade de UCs do agrupamento; `ucs` acompanha esse número.
     nUCs: 1,
     ucs: [gdUcPadrao(0)],
-    // "Dados da torre": equivale a blocos[0] do BT coletivo.
+    // Bloco da torre (1ª metade de "Dados das unidades"): equivale a blocos[0]
+    // do BT coletivo.
     agr: {
       aptosPorAndar: "",
       aptosPorAndarFaixas: [],

@@ -209,10 +209,11 @@ function montarToggles() {
 }
 
 /* ===== Navegação =====
-   O índice é POSICIONAL sobre as etapas visíveis, não o sufixo do id: o fluxo
-   Coletivo/Agrupamento troca a etapa "Cargas das UCs" por duas outras, e a
-   escolha acontece no meio do formulário (etapa 5), então a lista de etapas
-   muda em tempo de execução. Ver gdEtapasVisiveis / gdRenumerarEtapas. */
+   O índice é POSICIONAL sobre as etapas visíveis, não o sufixo do id: a etapa
+   "Dados das unidades" tem uma versão por fluxo (Individual x Coletivo) e a
+   escolha acontece no meio do formulário (etapa 5), então QUAL seção ocupa a
+   posição 6 muda em tempo de execução — embora a quantidade de etapas e os
+   rótulos sejam sempre os mesmos. Ver gdEtapasVisiveis / gdRenumerarEtapas. */
 
 // Etapas que fazem parte do fluxo ativo, na ordem do DOM. As etapas do fluxo
 // alheio ficam com [hidden] (gdAplicarFluxoEdificacao) e saem daqui.
@@ -291,18 +292,18 @@ document.addEventListener("click", (e) => {
 const gdEhColetivo = () =>
   state.edifTipo === "Edificação Coletiva ou Agrupamento";
 
-// A etapa de carga (individual ou coletiva) só entra no fluxo quando ela de
-// fato se aplica:
+// Os CAMPOS de "Dados das unidades" só se aplicam quando:
 //   • Tipo de solicitação que MEXE na potência — ligação nova ou conexão de GD
 //     com alteração de potência disponibilizada (GD_SOLICITACOES_FORM_CARGA).
 //     Sem alterar potência, a carga da UC não muda e não há o que declarar;
 //   • Grupo "B" (etapa 3) — no Grupo A a demanda é contratada, não sai do
 //     formulário de carga da ND-5.1/5.2;
-//   • "Tipo de edificação" preenchido (etapa 5) — define QUAL etapa se aplica,
-//     a individual ("Cargas das UCs") ou as duas do coletivo.
-// Enquanto qualquer uma dessas faltar, nenhuma das três etapas aparece na
-// sidebar (senão a lista mostraria "6 Cargas das UCs / 6 Dados da torre /
-// 7 Dados das unidades" ao mesmo tempo, com números repetidos).
+//   • "Tipo de edificação" preenchido (etapa 5) — define QUAL versão se aplica,
+//     a individual (uma UC) ou a coletiva (torre + lista de UCs).
+// Quando algo falta, a ETAPA continua no fluxo (número e rótulo fixos — ver
+// gdAplicarFluxoEdificacao); só o conteúdo dos dois fragmentos é ocultado.
+// Campo oculto sai da validação por _visivel() (shared/js/form-marcadores.js),
+// então o "Avançar" não trava numa etapa sem nada a preencher.
 const gdEtapaCargaDefinida = () =>
   !!state.edifTipo &&
   state.grupo === "B" &&
@@ -310,38 +311,26 @@ const gdEtapaCargaDefinida = () =>
 
 function gdAplicarFluxoEdificacao() {
   const coletivo = gdEhColetivo();
-  // `alvo` só casa com algum data-flow quando a etapa de carga está definida;
-  // caso contrário nenhum dos dois fluxos aparece.
-  const alvo = !gdEtapaCargaDefinida()
-    ? null
-    : coletivo
-      ? "coletivo"
-      : "individual";
+  // A etapa "Dados das unidades" NUNCA sai do fluxo: seu número e seu rótulo
+  // têm de ficar estáveis durante todo o preenchimento. Por isso `alvo` sempre
+  // aponta para um dos dois fragmentos — quando os campos não se aplicam, é o
+  // CONTEÚDO dele que fica oculto (gdAplicarConteudoCarga), não a etapa.
+  const alvo = coletivo ? "coletivo" : "individual";
   // Guarda a etapa atual ANTES de ocultar: se ela pertencia ao fluxo que está
   // saindo, o usuário precisa ser reposicionado em alguma etapa válida.
   const exibida = $(".page.show");
-  const gdIndiceAnterior = gdPaginaAtual();
   $$("[data-flow]").forEach((el) => {
     el.hidden = el.dataset.flow !== alvo;
   });
-  // A etapa exibida acabou de ser ocultada (ex.: estava em "Cargas das UCs" e
-  // trocou para Coletivo): reposiciona o usuário sem jogá-lo para o começo.
+  // A etapa exibida acabou de ser ocultada (estava na versão individual de
+  // "Dados das unidades" e trocou para Coletivo, ou vice-versa): mostra a
+  // versão que entrou, que ocupa exatamente a mesma posição.
   if (exibida && exibida.hidden) {
-    const visiveis = gdEtapasVisiveis();
     exibida.classList.remove("show");
-    // Com um fluxo entrando, cai na primeira etapa dele (ocupa a posição da
-    // que saiu). Sem fluxo (etapa de carga ainda indefinida), volta para a
-    // etapa ANTERIOR à que sumiu — "Tipo de atendimento", de onde o usuário
-    // escolhe a edificação; avançar dali o leva ao próximo passo natural.
-    const entrando = alvo
-      ? visiveis.findIndex((p) => p.dataset.flow === alvo)
-      : -1;
-    const i =
-      entrando >= 0
-        ? entrando
-        : Math.min(Math.max(gdIndiceAnterior - 1, 0), visiveis.length - 1);
-    if (visiveis[i]) visiveis[i].classList.add("show");
+    const entrando = gdEtapasVisiveis().find((p) => p.dataset.flow === alvo);
+    if (entrando) entrando.classList.add("show");
   }
+  gdAplicarConteudoCarga();
   gdRenumerarEtapas();
   if (coletivo && typeof gdRenderColetivo === "function") gdRenderColetivo();
   if (window.CemigMarcadores) {
@@ -350,9 +339,20 @@ function gdAplicarFluxoEdificacao() {
   }
 }
 
+// Mostra/oculta o CONTEÚDO de "Dados das unidades" (os dois fragmentos) sem
+// mexer na etapa em si — ela permanece na sidebar com número e rótulo fixos.
+// Sem aviso no lugar dos campos: o card fica só com o cabeçalho.
+function gdAplicarConteudoCarga() {
+  const aplica = gdEtapaCargaDefinida();
+  $$("[data-carga-conteudo]").forEach((el) => {
+    el.hidden = !aplica;
+  });
+}
+
 // Navega até a etapa que contém o marcador data-etapa="<nome>". Usado pelos
-// lápis de edição da prévia: o nome é estável, o índice não (o fluxo
-// Coletivo/Agrupamento troca uma etapa por duas).
+// lápis de edição da prévia. Busca só entre as etapas VISÍVEIS, então
+// "unidades" — marcador comum às versões Individual e Coletiva — cai sempre
+// na que está ativa.
 function gdIrParaAncora(nome) {
   const i = gdEtapasVisiveis().findIndex((p) =>
     p.querySelector(`[data-etapa="${nome}"]`),
@@ -361,8 +361,9 @@ function gdIrParaAncora(nome) {
 }
 
 // Renumera os "Etapa N" dos fragmentos e os números da sidebar pela posição
-// real no fluxo ativo. Necessário porque o fluxo Coletivo/Agrupamento insere
-// duas etapas e remove uma — sem isso a sequência ficaria com buracos.
+// real no fluxo ativo. Hoje a sequência é fixa (9 etapas nos dois fluxos), mas
+// os fragmentos trazem o número no HTML: isto mantém eyebrow e sidebar
+// coerentes com a posição, sem depender do que está escrito em cada arquivo.
 function gdRenumerarEtapas() {
   gdEtapasVisiveis().forEach((sec, i) => {
     const eb = $$(".section-eyebrow", sec).find((el) =>
@@ -932,8 +933,8 @@ function onEdifTipoGD() {
   if (!verInd && state.disjAtualA) aplicarPatch({ disjAtualA: "" });
   if (!verGeral && state.disjGeralA) aplicarPatch({ disjGeralA: "" });
   atualizarDisjAtual();
-  // Coletivo/Agrupamento troca a etapa "Cargas das UCs" (uma UC, ND-5.1) pelas
-  // etapas "Dados da torre" + "Dados das unidades" (ND-5.2). Já chama
+  // Alterna as duas versões de "Dados das unidades": Individual (uma UC,
+  // ND-5.1) x Coletivo/Agrupamento (torre + lista de UCs, ND-5.2). Já chama
   // CemigMarcadores.aplicar/atualizarAvancar no fim.
   gdAplicarFluxoEdificacao();
 }
@@ -1417,8 +1418,9 @@ function onGrupo() {
     ilhaCargas.atualizar(); // redeMono depende do tipo de rede
     renderResultadoCargaGD();
   }
-  // A etapa de carga só existe no Grupo B — ver gdEtapaCargaDefinida().
-  // Já chama CemigMarcadores.aplicar/atualizarAvancar no fim.
+  // Os campos de carga só valem no Grupo B — ver gdEtapaCargaDefinida(); a
+  // etapa em si continua na lista. Já chama CemigMarcadores.aplicar/
+  // atualizarAvancar no fim.
   gdAplicarFluxoEdificacao();
 }
 

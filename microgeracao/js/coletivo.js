@@ -2,9 +2,11 @@
    MICROGERAÇÃO — Fluxo Coletivo/Agrupamento
    ------------------------------------------------------------
    Ativo quando "Tipo de edificação" (etapa 5) = "Edificação
-   Coletiva ou Agrupamento". Monta as etapas "Dados da torre" e
-   "Dados das unidades", que substituem a etapa "Cargas das UCs"
-   do fluxo individual.
+   Coletiva ou Agrupamento". Monta a etapa "Dados das unidades"
+   deste fluxo — um único card com o bloco da torre e, após um
+   divider, a lista das UCs —, que substitui a versão individual
+   da mesma etapa (etapas/05-carga.html). O NOME e o número da
+   etapa são iguais nos dois fluxos: só o conteúdo muda.
 
    MÉTODO DE CÁLCULO — a regra é a mesma do BT coletivo, decidida
    SÓ pela quantidade de apartamentos residenciais (a área não
@@ -140,7 +142,7 @@ function gdAutoSelecionarDisjGeral() {
     state.disjGeralAgr = ops[0];
 }
 
-/* ===== etapa "Dados da torre" ===== */
+/* ===== bloco da torre (1ª metade da etapa "Dados das unidades") ===== */
 function gdRenderTorre() {
   const box = $("#gdTorreBox");
   if (!box) return;
@@ -432,7 +434,7 @@ function gdBlocoEndereco(complemento) {
   return box;
 }
 
-/* ===== etapa "Dados das unidades" ===== */
+/* ===== lista de UCs (2ª metade da etapa "Dados das unidades") ===== */
 function gdRenderUcs() {
   const box = $("#gdUcsBox");
   if (!box) return;
@@ -791,7 +793,7 @@ function gdValidarColetivo() {
 function gdRenderColetivo() {
   gdSincronizarUcs();
   // Reaplica a sequência de complementos (estado restaurado ou quantidade
-  // alterada em outra etapa) antes de desenhar as duas etapas.
+  // alterada em outra etapa) antes de desenhar os dois blocos da etapa.
   gdAplicarComplementos();
   gdRenderTorre();
   gdRenderUcs();

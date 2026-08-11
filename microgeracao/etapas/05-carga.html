@@ -1,23 +1,39 @@
 
+<!--
+  ============================================================
+  ETAPA 6 (fluxo Individual) — Dados das unidades
+  ------------------------------------------------------------
+  Mesmo NOME da etapa do fluxo Coletivo/Agrupamento
+  (etapas/06-dados-unidades.html): só o conteúdo muda conforme o
+  "Tipo de edificação", para que a numeração e o rótulo da
+  sidebar não se alterem durante o preenchimento. Aqui há uma
+  única UC, que detalha as próprias cargas pela ND-5.1.
+  ============================================================
+-->
 <div class="card">
-  <div class="section-eyebrow" data-etapa="carga">Etapa 6</div>
-  <h3 class="card-title">Cargas das UCs</h3>
-  <p class="card-sub">
-    Para a unidade consumidora, detalhe as cargas para calcularmos a demanda e
-    o disjuntor adequado.
-  </p>
-  <!-- Classe da UC: é ela que define o tipo de carga (Residencial → res;
-       Comercial/Industrial → não-residencial) e, portanto, a lista de
-       equipamentos. Equivale à "Atividade principal" do BT, que fica junto
-       da identificação da UC. Sem ela a lista não tem como ser montada. -->
-  <div class="grid grid-2">
-    <div class="field">
-      <label>Classe da unidade <span class="req">*</span></label>
-      <select data-k="classe" onchange="onClasseGD()"></select>
+  <div class="section-eyebrow" data-etapa="unidades">Etapa 6</div>
+  <h3 class="card-title">Dados das unidades</h3>
+  <!-- Conteúdo condicional: oculto por gdAplicarConteudoCarga() quando as
+       cargas não se aplicam (Grupo A, solicitação que não mexe na potência ou
+       edificação em branco). A ETAPA continua no fluxo — só o miolo some. -->
+  <div data-carga-conteudo>
+    <p class="card-sub">
+      Para a unidade consumidora, detalhe as cargas para calcularmos a demanda
+      e o disjuntor adequado.
+    </p>
+    <!-- Classe da UC: é ela que define o tipo de carga (Residencial → res;
+         Comercial/Industrial → não-residencial) e, portanto, a lista de
+         equipamentos. Equivale à "Atividade principal" do BT, que fica junto
+         da identificação da UC. Sem ela a lista não tem como ser montada. -->
+    <div class="grid grid-2">
+      <div class="field">
+        <label>Classe da unidade <span class="req">*</span></label>
+        <select data-k="classe" onchange="onClasseGD()"></select>
+      </div>
     </div>
+    <div id="calcDemandaBox" style="margin-top: 14px"></div>
+    <div id="resultadoCargaBox"></div>
   </div>
-  <div id="calcDemandaBox" style="margin-top: 14px"></div>
-  <div id="resultadoCargaBox"></div>
 </div>
 <div class="nav-bottom no-print">
   <button class="btn btn-ghost" data-nav="prev">← Voltar</button>
