@@ -1925,9 +1925,18 @@ function _subestacaoExistenteCardsHTML() {
     `</div>`
   );
 }
+/* Uma subestação nova ainda não tem unidade consumidora/instalação: o número
+   só existe (e só é pedido) quando a subestação já existe. */
+function temInstalacaoCubiculo() {
+  return state.subestacaoExistente === "Subestação já existente";
+}
 function setSubestacaoExistente(valor) {
   state.subestacaoExistente = valor;
+  // Numa subestação nova o número de instalação deixa de ser exibido: descarta
+  // o que já tiver sido digitado para não vazar na prévia/PDF nem na validação.
+  if (!temInstalacaoCubiculo()) cubiculos.forEach((c) => (c.instalacao = ""));
   renderSubestacaoExistente();
+  renderCubiculos();
   recalcTecnico();
 }
 function renderSubestacaoExistente() {
@@ -2167,7 +2176,11 @@ function renderCubiculos() {
         }</p>
         ${trocaCub ? _cubiculoExistenteCardsHTML(i, c.existente) : ""}
         <div class="grid grid-2">
-          <div class="field"><label for="cubInstal${i}">Número da unidade consumidora / instalação</label><input id="cubInstal${i}" type="text" value="${c.instalacao}" placeholder=" " oninput="cubiculos[${i}].instalacao=this.value"></div>
+          ${
+            temInstalacaoCubiculo()
+              ? `<div class="field"><label for="cubInstal${i}">Número da unidade consumidora / instalação</label><input id="cubInstal${i}" type="text" data-fmt="fmtInstalacaoUC" value="${c.instalacao}" placeholder=" " oninput="cubiculos[${i}].instalacao=this.value"></div>`
+              : ""
+          }
           <div class="field"><label for="qtdTrafoCub${i}">Quantidade de transformadores</label><input id="qtdTrafoCub${i}" type="number" min="1" max="99" step="1" value="${c.trafos.length || ""}" placeholder=" " oninput="sincronizarTrafosCub(${i})"></div>
         </div>
         ${trafoBlocos}
@@ -2931,6 +2944,20 @@ function camposObrigatoriosFaltando() {
     });
     if (!demandaOk)
       faltando.push("Demanda dos cubículos da subestação compartilhada");
+    // Nº de instalação/UC do cubículo: o campo só existe quando a subestação
+    // já existe (a nova ainda não tem instalação). Preenchimento é opcional,
+    // mas o formato tem de estar certo — e como o input mora num card que pode
+    // estar fechado (`hidden`), a varredura de [data-fmt] o ignoraria: a
+    // checagem vem do array de estado.
+    if (temInstalacaoCubiculo()) {
+      const instalOk = cubiculos.every(
+        (c) => validarInstalacaoUC(c.instalacao).valido,
+      );
+      if (!instalOk)
+        faltando.push(
+          "Número da unidade consumidora / instalação dos cubículos (formato inválido)",
+        );
+    }
   }
   // Demanda escalonada da instalação: substitui os campos de demanda
   // contratada (obrigatórios via data-req), então as etapas herdam a mesma

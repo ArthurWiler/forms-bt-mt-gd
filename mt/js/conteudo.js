@@ -388,7 +388,11 @@ function conteudoFormularioMT() {
       const rt = CalculoMT.calcularTrafos(c.trafos);
       const n = `Cubículo ${i + 1} — `;
       cub.push(
-        _c(n + "Nº Instalação", c.instalacao, { step: 4 }),
+        // Subestação nova não tem instalação: o campo não é exibido no
+        // formulário e também não vai para a prévia/PDF.
+        ...(temInstalacaoCubiculo()
+          ? [_c(n + "Nº Instalação", c.instalacao, { step: 4 })]
+          : []),
         _c(
           n + "Transformadores",
           `${fmt(rt.potenciaTotal)} kVA / ${rt.quantidadeTotal} un.`,
