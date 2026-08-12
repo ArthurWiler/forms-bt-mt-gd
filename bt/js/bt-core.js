@@ -511,9 +511,26 @@ function _aplicarCoordDoMapa(lat, lng) {
   window.state.obra.lng = String(lng);
   onCoordBT(true);
 }
+// Leaflet é carregado sob demanda (shared/js/libs.js). `_mapaObraPendente`
+// evita que um segundo goTo() durante o download enfileire outra criação: a
+// carga em voo já vai re-chamar esta função, que então reexecuta a cadeia de
+// guards do zero — inclusive o `!div`, caso a etapa tenha sido re-renderizada.
+let _mapaObraPendente = false;
 function initMapaObra() {
   const div = $("#map");
-  if (!div || !window.L || mapaObra) return;
+  if (!div || mapaObra || _mapaObraPendente) return;
+  if (!window.L) {
+    _mapaObraPendente = true;
+    window.CemigLibs.leaflet()
+      .then(() => {
+        _mapaObraPendente = false;
+        initMapaObra();
+      })
+      .catch(() => {
+        _mapaObraPendente = false;
+      });
+    return;
+  }
   mapaObra = window.L.map(div).setView([-19.9167, -43.9345], 12);
   const ruas = window.L.tileLayer(
     "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -661,7 +678,10 @@ function renderRestricaoAmbiental() {
   }
 }
 async function consultarRestricaoAmbientalBT(lat, lng) {
-  if (!window.turf || typeof consultarRestricoesObra !== "function") return;
+  // O `!window.turf` saiu do guard: o Turf agora é carregado sob demanda pela
+  // própria consultarRestricoesObra (shared/js/geo.js). Mantê-lo aqui fazia a
+  // consulta ambiental ser silenciosamente pulada enquanto a lib não chegava.
+  if (typeof consultarRestricoesObra !== "function") return;
   if (isNaN(lat) || isNaN(lng)) return;
   const key = lat.toFixed(5) + "," + lng.toFixed(5);
   if (_btLastRestrKey === key) return;

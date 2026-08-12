@@ -1213,7 +1213,9 @@ function _limparRestricaoLayer() {
     atualizarLegendaRestricoes(mapaObra, null);
 }
 async function consultarRestricaoAmbientalMT(lat, lon) {
-  if (!window.turf || typeof consultarRestricoesObra !== "function") return;
+  // Sem `!window.turf`: a lib é carregada sob demanda dentro de
+  // consultarRestricoesObra — ver bt/js/bt-core.js.
+  if (typeof consultarRestricoesObra !== "function") return;
   if (isNaN(lat) || isNaN(lon)) return;
   const key = lat.toFixed(5) + "," + lon.toFixed(5);
   if (_mtLastRestrKey === key) return;
@@ -1261,9 +1263,11 @@ async function consultarRestricaoAmbientalMT(lat, lon) {
   }
 }
 /* ===== Mapa interativo de localização (Etapa 3 — Unidade Consumidora) =====
-   Adaptado de bt/js/map.js (LocalizacaoObra) para o estado plano do
-   MT: lê/escreve diretamente state.latitude/state.longitude (em vez
-   do sub-objeto obra.lat/obra.lng usado em BT), via onCoord(). */
+   Adaptado do mapa do BT — hoje em bt/js/bt-core.js (initMapaObra); a
+   origem era o componente React <LocalizacaoObra> de bt/js/map.js, já
+   removido — para o estado plano do MT: lê/escreve diretamente
+   state.latitude/state.longitude (em vez do sub-objeto obra.lat/obra.lng
+   usado em BT), via onCoord(). */
 function _aplicarCoordDoMapa(lat, lon) {
   const latEl = $("[data-k=latitude]"),
     lonEl = $("[data-k=longitude]");
@@ -1337,8 +1341,29 @@ function _sincronizarPino(mapa, refPino, lat, lon, aoMover) {
   setTimeout(() => mapa.invalidateSize(), 100);
 }
 
+/* Leaflet é carregado sob demanda (shared/js/libs.js). O retry mora AQUI, e
+   não dentro de _criarMapa: é esta função que detém `mapaObra` e que, logo
+   após criar o mapa, faz o trabalho dependente da instância (o pino, quando
+   já há coordenada preenchida). Se _criarMapa devolvesse null enquanto a lib
+   baixa, pararíamos no `if (!mapaObra) return` e o mapa nasceria depois sem
+   nunca receber o pino. Assim a atribuição só acontece no caminho síncrono,
+   onde window.L é garantido. A flag evita que um segundo goTo() durante o
+   download enfileire outra criação. */
+let _mapaObraPendente = false;
 function initMapaObra() {
-  if (mapaObra) return;
+  if (mapaObra || _mapaObraPendente) return;
+  if (!window.L) {
+    _mapaObraPendente = true;
+    window.CemigLibs.leaflet()
+      .then(() => {
+        _mapaObraPendente = false;
+        initMapaObra();
+      })
+      .catch(() => {
+        _mapaObraPendente = false;
+      });
+    return;
+  }
   mapaObra = _criarMapa("#map", _aplicarCoordDoMapa);
   if (!mapaObra) return;
   // Caso já existam coordenadas preenchidas (ex.: voltando de outra etapa)
@@ -1366,8 +1391,23 @@ function _aplicarCoordNovaDoMapa(lat, lon) {
   onCoord(true); // clique/arraste é intencional: aplica na hora, sem debounce
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
+// Mesmo padrão do initMapaObra, com flag própria — aqui o trabalho pós-criação
+// é o enquadramento no local atual da UC quando ainda não há coordenada nova.
+let _mapaNovoPendente = false;
 function initMapaNovo() {
-  if (mapaNovo) return;
+  if (mapaNovo || _mapaNovoPendente) return;
+  if (!window.L) {
+    _mapaNovoPendente = true;
+    window.CemigLibs.leaflet()
+      .then(() => {
+        _mapaNovoPendente = false;
+        initMapaNovo();
+      })
+      .catch(() => {
+        _mapaNovoPendente = false;
+      });
+    return;
+  }
   mapaNovo = _criarMapa("#mapNovo", _aplicarCoordNovaDoMapa);
   if (!mapaNovo) return;
   const lat = parseFloat(state.latitudeNova),
@@ -2510,11 +2550,15 @@ function voltarDaAnalise() {
   goTo(8);
 }
 
-function exportarPDFPartida() {
+async function exportarPDFPartida() {
+  // jsPDF sob demanda; o guard do gerador alerta se a carga falhar.
+  await window.CemigLibs.jspdf().catch(() => {});
   gerarPdfAnalisePartidaMT();
 }
 
-function exportarPDFIrrigante() {
+async function exportarPDFIrrigante() {
+  // jsPDF sob demanda; o guard do gerador alerta se a carga falhar.
+  await window.CemigLibs.jspdf().catch(() => {});
   gerarPdfIrriganteMT();
 }
 
@@ -3091,6 +3135,9 @@ function pvCampoModelo(c) {
 }
 
 function renderPreview() {
+  // Aquecimento do jsPDF (carga sob demanda): chegar nesta etapa é o melhor
+  // sinal de que o PDF vem a seguir. Sem await — não bloqueia a renderização.
+  window.CemigLibs.jspdf().catch(() => {});
   syncState();
   $("#previewContent").innerHTML = conteudoFormularioMT()
     .map((s) => pvSecao(s.titulo, s.campos.map(pvCampoModelo).join("")))
@@ -3260,11 +3307,13 @@ async function onCEP(prefixo) {
    Gerado por jsPDF (mt/js/pdf.js), não mais pela impressão do navegador:
    a saída não depende das margens/opções do usuário e o modal de sucesso
    dispara no momento certo (o afterprint não distinguia salvar de cancelar). */
-function exportarPDF() {
+async function exportarPDF() {
   if (atualizarGateExportacao().length) {
     goTo(8);
     return;
   }
+  // jsPDF sob demanda; o guard do gerador alerta se a carga falhar.
+  await window.CemigLibs.jspdf().catch(() => {});
   gerarPdfFormularioMT();
 }
 
@@ -3311,10 +3360,12 @@ document.addEventListener("DOMContentLoaded", () => {
     window.CemigMarcadores.aplicar();
     window.CemigMarcadores.montarNavReativa();
   }
-  // Mapa: cria a instância já no load, sem esperar o goTo() chegar à etapa.
-  // O goTo() continua chamando initMapaObra() (idempotente pelo guard
-  // `mapaObra`), mas a criação aqui garante que o mapa exista mesmo se o
-  // gate de obrigatórios impedir o avanço — o ResizeObserver de
-  // initMapaObra() faz o invalidateSize() quando a etapa ficar visível.
-  initMapaObra();
+  // Mapa: NÃO se cria a instância aqui. A chamada no boot existia para
+  // garantir o mapa mesmo se o gate de obrigatórios travasse o avanço — mas
+  // quem não chega à etapa também não vê o mapa, e goTo() já chama
+  // initMapaObra() assim que a página que contém #map aparece (ver o bloco
+  // `if ($("#page-" + n).querySelector("#map"))`). Mantê-la aqui forçava o
+  // download do Leaflet em TODO carregamento do formulário, anulando a carga
+  // sob demanda; o ResizeObserver de _criarMapa segue fazendo o
+  // invalidateSize() quando a etapa fica visível.
 });

@@ -11,19 +11,21 @@
       name="description"
       content="Formulário digital para orçamento de conexão / alteração de carga em Baixa Tensão (BT) — atendimento individual (até 3 caixas sem proteção geral)."
     />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <!-- Open Sans auto-hospedada (@font-face em css/variables.css). -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap"
-      rel="stylesheet"
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="../fonts/open-sans-latin.woff2"
+      crossorigin
     />
 
     <link rel="stylesheet" href="../css/variables.css" />
     <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/formulario-bt.css" />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
+    <!-- leaflet.css saiu daqui: era render-blocking de terceiros numa página
+         cujo mapa só aparece etapas adiante. Agora vem junto do leaflet.js,
+         sob demanda, via shared/js/libs.js. -->
   </head>
 
   <body class="cemig-form">
@@ -99,7 +101,16 @@
           class="page show"
           id="page-0"
           data-src="etapas/01-orientacoes.html"
-        ></section>
+        >
+          <!-- Esqueleto: o etapas-loader troca o innerHTML desta seção pelo
+               fragmento, então isto desaparece sozinho quando ele chega. -->
+          <div class="card etapa-skeleton" aria-hidden="true">
+            <div class="sk-linha sk-titulo"></div>
+            <div class="sk-linha"></div>
+            <div class="sk-linha"></div>
+            <div class="sk-linha sk-curta"></div>
+          </div>
+        </section>
         <section
           class="page"
           id="page-1"
@@ -151,37 +162,37 @@
       </div>
     </footer>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
-    <script src="../shared/js/ramo-atividade.js"></script>
-    <script src="js/data.js"></script>
+    <!-- jsPDF/Leaflet/Turf não são mais carregados aqui: CemigLibs os injeta
+         na primeira necessidade real (etapa do mapa / geração do PDF). -->
+    <script defer src="../shared/js/libs.js"></script>
+    <script defer src="../shared/js/ramo-atividade.js"></script>
+    <script defer src="js/data.js"></script>
     <!-- Catálogos de disjuntores + seletividade (fonte única): define DISJ,
          DISJ_CN, DISJ_COL, DISJ_GER e correnteDisj/selecionarDisjuntores. -->
-    <script src="../shared/js/disjuntores.js"></script>
+    <script defer src="../shared/js/disjuntores.js"></script>
     <!-- ND-5.2: o fluxo individual não usa o método, mas js/calc.js é comum aos
          dois apps do BT e referencia nd52CalcularDemandaApartamentos. -->
-    <script src="../shared/js/calc-nd52.js"></script>
-    <script src="js/calc.js"></script>
+    <script defer src="../shared/js/calc-nd52.js"></script>
+    <script defer src="js/calc.js"></script>
     <!-- Complementos das unidades (gerarComplementos/TIPOS_COMPLEMENTO): antes de
          js/model.js, que deixou de defini-los. Compartilhado com a Microgeracao. -->
-    <script src="../shared/js/complementos.js"></script>
-    <script src="js/model.js"></script>
-    <script src="js/pdf.js"></script>
-    <script src="js/termo-grupo-b.js"></script>
+    <script defer src="../shared/js/complementos.js"></script>
+    <script defer src="js/model.js"></script>
+    <script defer src="js/pdf.js"></script>
+    <script defer src="js/termo-grupo-b.js"></script>
 
-    <script src="js/map.js"></script>
-    <script src="../shared/js/geo.js"></script>
-    <script src="../shared/js/calc-demanda.js"></script>
-    <script src="../shared/js/carga-bt.js"></script>
-    <script src="../shared/js/valida-instalacao.js"></script>
+    <script defer src="js/map.js"></script>
+    <script defer src="../shared/js/geo.js"></script>
+    <script defer src="../shared/js/calc-demanda.js"></script>
+    <script defer src="../shared/js/carga-bt.js"></script>
+    <script defer src="../shared/js/valida-instalacao.js"></script>
     <!-- Construtores de campo das ilhas dinâmicas (cmgCampo, cmgSelectDe…);
          bt-core.js os reexporta com os nomes históricos (_campo, _selectDe…). -->
-    <script src="../shared/js/campos.js"></script>
-    <script src="../shared/js/form-marcadores.js"></script>
-    <script src="../shared/js/pdf-sucesso.js"></script>
-    <script src="js/bt-core.js"></script>
-    <script src="js/individual-app.js"></script>
-    <script src="../shared/js/etapas-loader.js"></script>
+    <script defer src="../shared/js/campos.js"></script>
+    <script defer src="../shared/js/form-marcadores.js"></script>
+    <script defer src="../shared/js/pdf-sucesso.js"></script>
+    <script defer src="js/bt-core.js"></script>
+    <script defer src="js/individual-app.js"></script>
+    <script defer src="../shared/js/etapas-loader.js"></script>
   </body>
 </html>

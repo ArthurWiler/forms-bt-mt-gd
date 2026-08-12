@@ -310,7 +310,9 @@ const SICAR_CAM_IMOVEL = {
   flipBBox: SICAR_FLIP_BBOX,
 };
 async function consultarImovelCAR(lat, lng) {
-  if (!window.turf) throw new Error("Turf.js não carregado.");
+  // Turf sob demanda: esta função já é async e de rede, então esperar a lib
+  // aqui não custa nada — e tira ~500 KB do carregamento inicial da página.
+  await window.CemigLibs.turf();
   const ponto = window.turf.point([lng, lat]);
   try {
     const resp = await fetch(_urlWfs(SICAR_CAM_IMOVEL, lat, lng));
@@ -555,7 +557,7 @@ async function geometriaCompletaFeicao(cam, featureId) {
 // { ...cam, erro:"..." }. `geometrias` traz o contorno COMPLETO de cada
 // reserva intersectada (busca ampla por id, com fallback p/ a recortada).
 async function consultarRestricoesObra(lat, lng) {
-  if (!window.turf) throw new Error("Turf.js não carregado.");
+  await window.CemigLibs.turf(); // idem consultarImovelCAR: carga sob demanda
   if (typeof SISEMA_CAMADAS === "undefined")
     throw new Error("Configuração do Sisema (geo.js) não carregada.");
   const ponto = window.turf.point([lng, lat]);

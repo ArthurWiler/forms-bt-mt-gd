@@ -268,7 +268,9 @@ function _limparRestricaoLayer() {
     atualizarLegendaRestricoes(mapaObra, null);
 }
 async function consultarRestricaoAmbientalLote(lat, lng) {
-  if (!window.turf || typeof consultarRestricoesObra !== "function") return;
+  // Sem `!window.turf`: a lib é carregada sob demanda dentro de
+  // consultarRestricoesObra — ver bt/js/bt-core.js.
+  if (typeof consultarRestricoesObra !== "function") return;
   if (isNaN(lat) || isNaN(lng)) return;
   const key = lat.toFixed(5) + "," + lng.toFixed(5);
   if (_loteLastRestrKey === key) return;
@@ -303,9 +305,24 @@ function _aplicarCoordDoMapa(lat, lng) {
   if (la) la.dispatchEvent(new Event("input", { bubbles: true }));
   if (lo) lo.dispatchEvent(new Event("input", { bubbles: true }));
 }
+// Leaflet sob demanda (shared/js/libs.js); a flag impede que um segundo
+// goTo() durante o download enfileire outra criação — ver bt/js/bt-core.js.
+let _mapaObraPendente = false;
 function initMapaObra() {
   const div = $("#map");
-  if (!div || !window.L || mapaObra) return;
+  if (!div || mapaObra || _mapaObraPendente) return;
+  if (!window.L) {
+    _mapaObraPendente = true;
+    window.CemigLibs.leaflet()
+      .then(() => {
+        _mapaObraPendente = false;
+        initMapaObra();
+      })
+      .catch(() => {
+        _mapaObraPendente = false;
+      });
+    return;
+  }
   mapaObra = window.L.map(div).setView([-19.9167, -43.9345], 12);
   const ruas = window.L.tileLayer(
     "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",

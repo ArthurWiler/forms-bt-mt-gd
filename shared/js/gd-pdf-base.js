@@ -16,6 +16,9 @@
 //   P.assinatura();                            // bloco de assinatura
 //   P.save("arquivo.pdf");
 // ============================================================
+// Pressupõe o jsPDF já carregado: quem chama passa pelos handlers de
+// exportação, que aguardam CemigLibs.jspdf() (carga sob demanda) e avisam o
+// usuário se ela falhar — daí não haver guard redundante aqui.
 function criarPdfGD(tituloCabecalho, subtitulo) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: "mm", format: "a4" });

@@ -5,16 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5" />
     <title>Formulário de Solicitação de Acesso — Microgeração Distribuída — Cemig</title>
     <meta name="description" content="Formulário digital para solicitação de acesso de Microgeração Distribuída (REN 1.000/2021) — CEMIG." />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+    <!-- Open Sans auto-hospedada (@font-face em css/variables.css). -->
+    <link rel="preload" as="font" type="font/woff2" href="../fonts/open-sans-latin.woff2" crossorigin />
 
     <link rel="stylesheet" href="../css/variables.css" />
     <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/formulario-microgd.css" />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
+    <!-- leaflet.css saiu daqui: era render-blocking de terceiros numa página
+         cujo mapa só aparece etapas adiante. Agora vem junto do leaflet.js,
+         sob demanda, via shared/js/libs.js. -->
   </head>
 
   <body class="cemig-form cemig-microgd">
@@ -102,7 +101,16 @@
           </p>
         </div>
 
-        <section class="page show" id="page-0" data-src="etapas/01-orientacoes.html"></section>
+        <section class="page show" id="page-0" data-src="etapas/01-orientacoes.html">
+          <!-- Esqueleto: o etapas-loader troca o innerHTML desta seção pelo
+               fragmento, então isto desaparece sozinho quando ele chega. -->
+          <div class="card etapa-skeleton" aria-hidden="true">
+            <div class="sk-linha sk-titulo"></div>
+            <div class="sk-linha"></div>
+            <div class="sk-linha"></div>
+            <div class="sk-linha sk-curta"></div>
+          </div>
+        </section>
         <section class="page" id="page-1" data-src="etapas/02-identificacao.html"></section>
         <section class="page" id="page-2" data-src="etapas/03-dados-unidade.html"></section>
         <section class="page" id="page-3" data-src="etapas/04-atendimento.html"></section>
@@ -143,41 +151,40 @@
       </div>
     </footer>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- Mapa da etapa 3 (cópia do BT): Leaflet + Turf + geo.js (consulta de
-         restrição ambiental e geocodificação do endereço). -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
-    <script src="../shared/js/geo.js"></script>
-    <script src="js/data.js"></script>
-    <script src="../mt/js/subestacoes-b64.js"></script>
-    <script src="../shared/js/load-form-data.js"></script>
+    <!-- jsPDF/Leaflet/Turf não são mais carregados aqui: CemigLibs os injeta
+         na primeira necessidade real (mapa da etapa 3 / geração do PDF).
+         geo.js (restrição ambiental e geocodificação) pede o Turf sozinho. -->
+    <script defer src="../shared/js/libs.js"></script>
+    <script defer src="../shared/js/geo.js"></script>
+    <script defer src="js/data.js"></script>
+    <script defer src="../mt/js/subestacoes-b64.js"></script>
+    <script defer src="../shared/js/load-form-data.js"></script>
     <!-- Catálogos de disjuntores + seletividade (fonte única, versão do BT):
          define DISJ_CN — antes usado daqui de load-form-data.js — e as funções
          correnteDisj/selecionarDisjuntores/disjuntoresGeraisAcima, que
          shared/js/calc.js e calc-demanda.js consomem. Tem de vir antes deles. -->
-    <script src="../shared/js/disjuntores.js"></script>
+    <script defer src="../shared/js/disjuntores.js"></script>
     <!-- ND-5.2: método do agrupamento, usado no fluxo Coletivo/Agrupamento. -->
-    <script src="../shared/js/calc-nd52.js"></script>
-    <script src="../shared/js/calc.js"></script>
+    <script defer src="../shared/js/calc-nd52.js"></script>
+    <script defer src="../shared/js/calc.js"></script>
     <!-- Complementos das unidades: usado pelo bloco da torre em "Dados das
          unidades" do fluxo Coletivo/Agrupamento (js/coletivo.js). -->
-    <script src="../shared/js/complementos.js"></script>
-    <script src="js/model.js"></script>
-    <script src="../shared/js/gd-pdf-base.js"></script>
-    <script src="js/pdf.js"></script>
-    <script src="../shared/js/api.js"></script>
-    <script src="../shared/js/calc-demanda.js"></script>
-    <script src="../shared/js/carga-bt.js"></script>
-    <script src="../shared/js/valida-instalacao.js"></script>
+    <script defer src="../shared/js/complementos.js"></script>
+    <script defer src="js/model.js"></script>
+    <script defer src="../shared/js/gd-pdf-base.js"></script>
+    <script defer src="js/pdf.js"></script>
+    <script defer src="../shared/js/api.js"></script>
+    <script defer src="../shared/js/calc-demanda.js"></script>
+    <script defer src="../shared/js/carga-bt.js"></script>
+    <script defer src="../shared/js/valida-instalacao.js"></script>
     <!-- Construtores de campo das ilhas dinâmicas: usados pela lista de UCs do
          fluxo Coletivo/Agrupamento (js/coletivo.js). -->
-    <script src="../shared/js/campos.js"></script>
-    <script src="../shared/js/form-marcadores.js"></script>
-    <script src="../shared/js/pdf-sucesso.js"></script>
-    <script src="js/app.js"></script>
+    <script defer src="../shared/js/campos.js"></script>
+    <script defer src="../shared/js/form-marcadores.js"></script>
+    <script defer src="../shared/js/pdf-sucesso.js"></script>
+    <script defer src="js/app.js"></script>
     <!-- Fluxo Coletivo/Agrupamento: depende de state/$ definidos em app.js. -->
-    <script src="js/coletivo.js"></script>
-    <script src="../shared/js/etapas-loader.js"></script>
+    <script defer src="js/coletivo.js"></script>
+    <script defer src="../shared/js/etapas-loader.js"></script>
   </body>
 </html>

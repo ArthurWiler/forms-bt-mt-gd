@@ -12,11 +12,17 @@
       content="Portal de seleção de modalidade para solicitação de ligação nova e alteração de carga — Baixa Tensão, Média Tensão e Geração Distribuída."
     />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-
+    <!-- Open Sans auto-hospedada: o preload vem antes dos stylesheets para a
+         fonte baixar em paralelo com o CSS e estar pronta no primeiro paint.
+         `crossorigin` é obrigatório mesmo same-origin — sem ele o preload é
+         descartado e a fonte baixa duas vezes. As @font-face estão em
+         css/variables.css. -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap"
-      rel="stylesheet"
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="fonts/open-sans-latin.woff2"
+      crossorigin
     />
 
     <link rel="stylesheet" href="css/variables.css" />
@@ -73,93 +79,12 @@
       </footer>
     </div>
 
-    <script src="bt/js/data.js"></script>
-    <script src="bt/js/model.js"></script>
-
-    <script>
-      // Navegação a partir do card selecionado:
-      //  - cards "link" abrem o módulo correspondente (MT/Loteamento/GD);
-      //  - cards individuais abrem o formulário vanilla (bt/individual.html);
-      //  - coletivo/condomínio abrem bt/index.html — sempre via `?mod=<id>`.
-      function selectModalidade(card) {
-        if (card.status === "link" && card.href) {
-          window.location.href = card.href;
-          return;
-        }
-        if (card.status === "soon") return;
-        window.location.href =
-          (card.formType === "individual"
-            ? "bt/individual.html?mod="
-            : "bt/?mod=") + encodeURIComponent(card.id);
-      }
-
-      // Seção colapsável (mesmo markup/comportamento do SecaoModalidade
-      // React: colapsada por padrão, chevron gira via CSS).
-      function montarSecao(sec) {
-        const box = document.createElement("div");
-        box.className = "modalidade-secao is-collapsed";
-        const titulo = document.createElement("button");
-        titulo.type = "button";
-        titulo.className = "modalidade-secao-titulo";
-        titulo.setAttribute("aria-expanded", "false");
-        titulo.innerHTML =
-          '<span class="modalidade-secao-label"></span>' +
-          '<span class="modalidade-secao-chevron" aria-hidden="true">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-          'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-          '<path d="m6 9 6 6 6-6" /></svg></span>';
-        titulo.querySelector(".modalidade-secao-label").textContent =
-          sec.titulo;
-        titulo.addEventListener("click", () => {
-          const aberta = box.classList.toggle("is-collapsed");
-          titulo.setAttribute("aria-expanded", aberta ? "false" : "true");
-        });
-        const corpo = document.createElement("div");
-        corpo.className = "modalidade-secao-corpo";
-        const grid = document.createElement("div");
-        grid.className = "modalidade-grid";
-        sec.cards.forEach((card) => {
-          const btn = document.createElement("button");
-          btn.className =
-            "modalidade-card" + (card.status === "soon" ? " soon" : "");
-          btn.disabled = card.status === "soon";
-          btn.addEventListener("click", () => selectModalidade(card));
-          const imgBox = document.createElement("span");
-          imgBox.className = "modalidade-img";
-          const img = document.createElement("img");
-          img.src = card.img;
-          img.alt = card.nome;
-          img.loading = "lazy";
-          img.addEventListener("error", () => {
-            img.style.display = "none";
-            imgBox.classList.add("ph");
-          });
-          imgBox.appendChild(img);
-          const body = document.createElement("span");
-          body.className = "modalidade-card-body";
-          const nome = document.createElement("strong");
-          nome.textContent = card.nome;
-          const sub = document.createElement("span");
-          sub.className = "modalidade-sub";
-          sub.textContent = card.sub;
-          body.append(nome, sub);
-          btn.append(imgBox, body);
-          grid.appendChild(btn);
-        });
-        corpo.appendChild(grid);
-        box.append(titulo, corpo);
-        return box;
-      }
-
-      const secoesBox = document.getElementById("secoes");
-      MODALIDADES_SECOES.forEach((sec) =>
-        secoesBox.appendChild(montarSecao(sec)),
-      );
-      document.getElementById("footerCopy").textContent =
-        "CEMIG " +
-        new Date().getFullYear() +
-        "© - Todos os Direitos Reservados";
-    </script>
+    <!-- Os três com `defer`: não bloqueiam o parser nem o primeiro paint, e a
+         ordem de execução é preservada (data.js → model.js → homepage.js).
+         homepage.js era um bloco inline aqui; ver o cabeçalho do arquivo. -->
+    <script defer src="bt/js/data.js"></script>
+    <script defer src="bt/js/model.js"></script>
+    <script defer src="js/homepage.js"></script>
 
     <script>
       window.addEventListener("load", function () {

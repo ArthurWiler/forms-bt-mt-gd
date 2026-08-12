@@ -4,11 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Termo de Desistência de Obra — Cemig</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-
+    <!-- Open Sans auto-hospedada (@font-face em css/variables.css). -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap"
-      rel="stylesheet"
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="../fonts/open-sans-latin.woff2"
+      crossorigin
     />
 
     <link rel="stylesheet" href="../css/variables.css" />
@@ -468,7 +470,7 @@
       </div>
     </footer>
 
-    <script src="../shared/js/form-marcadores.js"></script>
-    <script src="js/app.js"></script>
+    <script defer src="../shared/js/form-marcadores.js"></script>
+    <script defer src="js/app.js"></script>
   </body>
 </html>

@@ -24,6 +24,13 @@
 }
 html {
   scroll-behavior: smooth;
+  /* Também no `html`, não só no `body`: o paint holding do Chrome mantém a
+     página anterior até a nova pintar, e se ela demora ele mostra o branco
+     padrão do navegador. Com a cor aqui, o primeiro paint já sai na cor certa
+     — é o que elimina o flash branco ao entrar num card da homepage.
+     Os módulos MT/Loteamento/Desistência redefinem --bg no próprio :root
+     (que é este mesmo elemento), então cada um pinta a sua cor. */
+  background: var(--bg);
 }
 
 @keyframes fadeIn {
@@ -552,7 +559,7 @@ html {
   padding: var(--cmg-space-3) var(--cmg-space-4);
   background: var(--cmg-surface); /* #FFFFFF */
   border-radius: 0 8px 8px 0;
-  font-family: "Open Sans", var(--cmg-font-family);
+  font-family: var(--cmg-font-family);
   font-weight: 400;
   font-size: 14px;
   line-height: 24px;
@@ -600,7 +607,7 @@ html {
    innerHTML (MT). Global (unscoped) como o próprio `.cmg-aviso`. ============ */
 .restricao-docs {
   margin-top: 12px;
-  font-family: "Open Sans", var(--cmg-font-family);
+  font-family: var(--cmg-font-family);
   font-size: 14px;
   line-height: 1.5;
   color: var(--cmg-neutral-600, #364b46);
@@ -630,7 +637,7 @@ label.restricao-aceite {
   align-items: flex-start;
   gap: 8px;
   margin-top: 14px;
-  font-family: "Open Sans", var(--cmg-font-family);
+  font-family: var(--cmg-font-family);
   font-size: 14px;
   line-height: 1.5;
   font-weight: var(--cmg-fw-regular, 400);
@@ -1030,7 +1037,7 @@ label.restricao-aceite input[type="checkbox"] {
   gap: var(--cmg-space-2); /* 8px */
   height: 48px;
   padding: 10px var(--cmg-space-4); /* 10px 16px */
-  font-family: "Open Sans", system-ui, sans-serif;
+  font-family: var(--cmg-font-family);
   font-size: 14px;
   line-height: 24px;
   font-weight: 600;
@@ -1166,7 +1173,7 @@ label.restricao-aceite input[type="checkbox"] {
    corpo/grande 16/26, +0.2px, neutra/600 — p.ex. o box de Observações
    dos formulários. */
 .cemig-form textarea::placeholder {
-  font-family: "Open Sans", var(--cmg-font-family);
+  font-family: var(--cmg-font-family);
   font-style: italic;
   font-weight: 400;
   font-size: 16px;
@@ -1244,7 +1251,7 @@ label.restricao-aceite input[type="checkbox"] {
   right: 0;
   bottom: -20px;
   padding: 0 var(--cmg-space-4); /* alinha ao texto do campo (16px) */
-  font-family: "Open Sans", var(--cmg-font-family);
+  font-family: var(--cmg-font-family);
   font-weight: 400;
   font-size: 12px;
   line-height: 20px;
@@ -2918,7 +2925,7 @@ label.restricao-aceite input[type="checkbox"] {
   border-radius: 100px;
 
   /* Typography — line-height igual à altura da caixa evita render fracionário */
-  font-family: "Open Sans", system-ui, sans-serif;
+  font-family: var(--cmg-font-family);
   font-size: 11px;
   font-weight: 700;
   line-height: 20px;
@@ -2929,7 +2936,7 @@ label.restricao-aceite input[type="checkbox"] {
   display: flex;
   align-items: center;
   height: 20px;
-  font-family: "Open Sans", system-ui, sans-serif;
+  font-family: var(--cmg-font-family);
   font-size: 12px;
   font-style: normal;
   font-weight: 600;
@@ -3153,6 +3160,52 @@ label.restricao-aceite input[type="checkbox"] {
   }
   .cemig-form .page.show {
     display: block !important;
+  }
+}
+
+/* ---- Esqueleto da primeira etapa ----
+   As etapas são fragmentos buscados por fetch (shared/js/etapas-loader.js),
+   então entre o primeiro paint e a chegada do fragmento a área do formulário
+   ficava vazia. Este bloco mora DENTRO da <section class="page show"> na
+   marcação e é descartado sozinho: o loader faz `sec.innerHTML = <fragmento>`,
+   que substitui o esqueleto pelo conteúdo real — nenhuma classe a remover. */
+.cemig-form .etapa-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.cemig-form .sk-linha {
+  height: 14px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--cmg-neutral-50) 25%,
+    var(--cmg-neutral-0) 50%,
+    var(--cmg-neutral-50) 75%
+  );
+  background-size: 400% 100%;
+  animation: skeletonBrilho 1.4s ease-in-out infinite;
+}
+.cemig-form .sk-titulo {
+  height: 22px;
+  width: 42%;
+  margin-bottom: 6px;
+}
+.cemig-form .sk-curta {
+  width: 65%;
+}
+@keyframes skeletonBrilho {
+  from {
+    background-position: 100% 50%;
+  }
+  to {
+    background-position: 0 50%;
+  }
+}
+/* Respeita quem pediu menos movimento: o esqueleto continua visível, parado. */
+@media (prefers-reduced-motion: reduce) {
+  .cemig-form .sk-linha {
+    animation: none;
   }
 }
 /* Prévia & PDF: o conteúdo (cards) e os botões vivem dentro de #previaWrap,
@@ -4305,7 +4358,7 @@ label.restricao-aceite input[type="checkbox"] {
    ============================================================ */
 .cemig-form .field .field-err-fmt {
   display: block;
-  font-family: "Open Sans", var(--cmg-font-family);
+  font-family: var(--cmg-font-family);
   font-weight: 400;
   font-size: 12px;
   line-height: 20px;

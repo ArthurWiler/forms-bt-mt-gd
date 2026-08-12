@@ -3,7 +3,10 @@
    Gera um PDF fiel ao modelo oficial, preenchido com os dados
    já informados no formulário (state global de js/app.js).
    ============================================================ */
-function gerarCartaMonomia() {
+// async porque é chamada de um onclick inline (mt/index.html) e precisa
+// garantir o jsPDF, agora carregado sob demanda. O retorno não é usado.
+async function gerarCartaMonomia() {
+  await window.CemigLibs.jspdf().catch(() => {}); // guard abaixo dá o alerta
   if (typeof atualizarGateExportacao === "function" && atualizarGateExportacao().length) {
     goTo(8);
     return;

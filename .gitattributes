@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Fontes auto-hospedadas: binários, fora da normalização de fim de linha
+*.woff2 binary

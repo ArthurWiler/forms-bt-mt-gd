@@ -3733,6 +3733,10 @@ function _mkPreviaTorre(b, bi) {
 function renderPreviaColetivo() {
   const box = $("#previaConteudo");
   if (!box) return;
+  // Aquecimento do jsPDF (carga sob demanda): chegar nesta etapa é o melhor
+  // sinal de que o PDF vem a seguir. Sem await — não bloqueia a renderização,
+  // e o clique em Exportar encontra a lib pronta.
+  window.CemigLibs.jspdf().catch(() => {});
   const p = state.prop,
     c = state.corr,
     o = state.obra;
@@ -3977,12 +3981,16 @@ function renderPreviaColetivo() {
   const btn = $("#btnExportarPDF");
   if (btn) btn.disabled = !v.ok;
 }
-function exportarPdfBT() {
+async function exportarPdfBT() {
   const v = validacaoObrigatoriosColetivo();
   if (!v.ok) {
     renderPreviaColetivo();
     return;
   }
+  // jsPDF é carregado sob demanda (shared/js/libs.js). O aquecimento na etapa
+  // de prévia normalmente já resolveu isto; o `catch` vazio deixa o guard de
+  // gerarPdfDoc dar o alerta de sempre caso a rede tenha falhado.
+  await window.CemigLibs.jspdf().catch(() => {});
   // Paridade com o React (app.js:853-872): `coletivo` é a flag runtime
   // disjGeral==="Sim" — verdadeira TAMBÉM no multiTorres (pdf.js imprime a
   // ART por ela).

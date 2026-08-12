@@ -512,12 +512,27 @@ function _aplicarCoordDoMapa(lat, lng) {
   state.longitude = String(lng);
   onCoordGD(null, true);
 }
+// Leaflet sob demanda (shared/js/libs.js); a flag impede que um segundo
+// goTo() durante o download enfileire outra criação — ver bt/js/bt-core.js.
+let _mapaObraPendente = false;
 function initMapaObra() {
   const div = $("#map");
-  if (!div || !window.L || mapaObra) return;
+  if (!div || mapaObra || _mapaObraPendente) return;
+  if (!window.L) {
+    _mapaObraPendente = true;
+    window.CemigLibs.leaflet()
+      .then(() => {
+        _mapaObraPendente = false;
+        initMapaObra();
+      })
+      .catch(() => {
+        _mapaObraPendente = false;
+      });
+    return;
+  }
   // O container só ganha largura depois da zona escolhida (#blocoMapaCoord).
   // Criar o mapa antes disso o deixa com 0px e os tiles saem cortados; quem
-  // revela o bloco (onZonaGD) chama de novo.
+  // revela o bloco (onZonaGD) chama de novo — e aí o Leaflet já está em cache.
   if (!div.offsetWidth) return;
   mapaObra = window.L.map(div).setView([-19.9167, -43.9345], 12);
   const ruas = window.L.tileLayer(
@@ -650,7 +665,9 @@ function renderRestricaoAmbiental() {
   }
 }
 async function consultarRestricaoAmbientalGD(lat, lng) {
-  if (!window.turf || typeof consultarRestricoesObra !== "function") return;
+  // Sem `!window.turf`: a lib é carregada sob demanda dentro de
+  // consultarRestricoesObra — ver bt/js/bt-core.js.
+  if (typeof consultarRestricoesObra !== "function") return;
   if (isNaN(lat) || isNaN(lng)) return;
   const key = lat.toFixed(5) + "," + lng.toFixed(5);
   if (_gdLastRestrKey === key) return;
@@ -1368,6 +1385,9 @@ function pvSecao(titulo, campos) {
 }
 const PV_DIVISOR = '<hr class="previa-divider"/>';
 function renderPreviewGD() {
+  // Aquecimento do jsPDF (carga sob demanda): chegar nesta etapa é o melhor
+  // sinal de que o PDF vem a seguir. Sem await — não bloqueia a renderização.
+  window.CemigLibs.jspdf().catch(() => {});
   syncState();
   const d = state;
   const v = validarExportacao();
@@ -1506,10 +1526,19 @@ function syncState() {
     state[el.dataset.k] = el.value;
   });
 }
-function exportarPdfGD() {
+async function exportarPdfGD() {
   const v = validarExportacao();
   if (!v.ok) {
     renderPreviewGD();
+    return;
+  }
+  // jsPDF sob demanda (shared/js/libs.js): o aquecimento na etapa de prévia
+  // normalmente já resolveu; aqui é a garantia antes de criar o documento.
+  // criarPdfGD pressupõe a lib presente, então a falha para aqui.
+  try {
+    await window.CemigLibs.jspdf();
+  } catch (e) {
+    alert("Biblioteca jsPDF não carregada.");
     return;
   }
   gerarPdfMiniGD(state);

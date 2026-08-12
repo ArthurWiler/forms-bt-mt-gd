@@ -607,9 +607,27 @@ function _ucIdentComNovoLocal(grid, u, ui) {
 // Registro dos mapas de novo local do padrão, por índice de UC. Recriados a
 // cada render da etapa (o box é limpo), então descartamos o mapa anterior.
 const _padraoMaps = {};
+// Leaflet sob demanda (shared/js/libs.js). A flag é POR ÍNDICE: cada UC pede o
+// seu mapa de forma independente, e o re-render da etapa pode disparar vários
+// _initPadraoMapa no mesmo tick. O re-call refaz a checagem do container —
+// necessário porque a etapa pode ter sido re-renderizada durante o download,
+// e aí `padraoMap${ui}` já não é o mesmo nó (ou nem existe mais).
+const _padraoPendentes = {};
 function _initPadraoMapa(ui, u) {
   const div = document.getElementById(`padraoMap${ui}`);
-  if (!div || !window.L) return;
+  if (!div || _padraoPendentes[ui]) return;
+  if (!window.L) {
+    _padraoPendentes[ui] = true;
+    window.CemigLibs.leaflet()
+      .then(() => {
+        _padraoPendentes[ui] = false;
+        _initPadraoMapa(ui, u);
+      })
+      .catch(() => {
+        _padraoPendentes[ui] = false;
+      });
+    return;
+  }
   if (_padraoMaps[ui]) {
     _padraoMaps[ui].remove();
     _padraoMaps[ui] = null;
@@ -873,6 +891,8 @@ const PG = { prop: 1, dados: 2, atend: 3, cargas: 4, corr: 5 };
 function renderPreviaBT() {
   const box = $("#previaConteudo");
   if (!box) return;
+  // Aquecimento do jsPDF (carga sob demanda) — ver renderPreviaColetivo.
+  window.CemigLibs.jspdf().catch(() => {});
   const p = state.prop,
     c = state.corr,
     o = state.obra;
@@ -1164,7 +1184,9 @@ function renderAnaliseMotoresBT() {
 }
 /* Exportação do relatório de partida (porte de revisar.js — folha A4 por
    motor pesado; impedância do trafo omitida: cliente em rede secundária). */
-function exportarPDFPartidaBT() {
+async function exportarPDFPartidaBT() {
+  // jsPDF sob demanda; o guard logo abaixo segue valendo se a carga falhar.
+  await window.CemigLibs.jspdf().catch(() => {});
   if (!window.jspdf) {
     alert("Biblioteca jsPDF não carregada.");
     return;
@@ -1303,19 +1325,23 @@ function exportarPDFPartidaBT() {
 }
 
 /* ===== Exportações ===== */
-function exportarTermoGrupoBBT() {
+async function exportarTermoGrupoBBT() {
+  // jsPDF sob demanda; o guard de gerarTermoGrupoB alerta se a carga falhar.
+  await window.CemigLibs.jspdf().catch(() => {});
   gerarTermoGrupoB({
     prop: state.prop,
     obra: state.obra,
     ucsDet: state.ucsDet,
   });
 }
-function exportarPdfBT() {
+async function exportarPdfBT() {
   const v = validacaoObrigatoriosBT();
   if (!v.ok) {
     renderPreviaBT();
     return;
   }
+  // jsPDF sob demanda; o guard de gerarPdfDoc alerta se a carga falhar.
+  await window.CemigLibs.jspdf().catch(() => {});
   gerarPdfDoc({
     multiTorres: false,
     coletivo: false,

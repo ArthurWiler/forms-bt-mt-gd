@@ -15,6 +15,51 @@
    because --bg collides, those tokens live in each MT page file's
    own :root and intentionally override --bg there.
    ============================================================ */
+
+/* ============================================================
+   Open Sans — auto-hospedada (fonts/), não mais via Google Fonts
+   ------------------------------------------------------------
+   Antes a fonte vinha de fonts.googleapis.com com `display=swap`:
+   o preconnect apontava só para o host do CSS, nunca para o
+   fonts.gstatic.com que serve o .woff2, e não havia preload. O
+   binário só começava a baixar depois do CSS do Google chegar E
+   de um handshake DNS+TLS numa segunda origem — daí o texto
+   nascer em Segoe UI e trocar para Open Sans depois (FOUT).
+
+   Arquivo VARIÁVEL (eixo wght 300–800): um único binário cobre os
+   pesos 400/600/700 usados no projeto, então basta um `preload`
+   por página em vez de três. Os `unicode-range` são exatamente os
+   que o Google emite — é o que impede o navegador de baixar o
+   latin-ext para conteúdo em português.
+
+   Este arquivo é o primeiro stylesheet de todas as páginas, então
+   declarar as faces aqui não cria uma nova cadeia de requisição.
+   Cada página faz o preload do subset `latin` no <head>.
+   ============================================================ */
+@font-face {
+  font-family: "Open Sans";
+  font-style: normal;
+  font-weight: 300 800;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("../fonts/open-sans-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
+    U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+    U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Open Sans";
+  font-style: normal;
+  font-weight: 300 800;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("../fonts/open-sans-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7,
+    U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
+    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
+}
+
 :root {
   /* ===========================================================
      CEMIG design system (--cmg-*)

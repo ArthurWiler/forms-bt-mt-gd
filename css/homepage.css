@@ -51,7 +51,7 @@ body {
 .logo-cemig svg { height: 34px; width: auto; }
 .logo-cemig .logo-img { height: 34px; width: auto; display: block; }
 .app-title {
-  font-family: "Open Sans", system-ui, -apple-system, sans-serif;
+  font-family: var(--cmg-font-family);
   font-style: normal;
   font-weight: 400;
   /* Responsive size lives in shared.css (`.cemig-portal .app-title`):
@@ -78,7 +78,7 @@ body {
   max-width: 862px;
 }
 .modalidade-head h1 {
-  font-family: 'Open Sans';
+  font-family: var(--cmg-font-family);
   font-style: normal;
   font-weight: 400;
   font-size: 28px;
@@ -87,7 +87,7 @@ body {
   color: #041E18;
 }
 .modalidade-head p {
-  font-family: 'Open Sans';
+  font-family: var(--cmg-font-family);
   font-style: normal;
   font-weight: 400;
   font-size: 16px;
@@ -203,11 +203,11 @@ body {
   flex-grow: 0;
 }
 .modalidade-card-body strong {
-  font-family: 'Open Sans';
+  font-family: var(--cmg-font-family);
   font-style: normal;
 }
 .modalidade-sub {
-  font-family: 'Open Sans';
+  font-family: var(--cmg-font-family);
   font-style: normal;
   font-weight: 400;
 }
