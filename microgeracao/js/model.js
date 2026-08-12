@@ -77,7 +77,11 @@ function gdEstadoInicial() {
     // Bloco espelhado da etapa "Dados da unidade consumidora" do BT:
     // a zona alterna o endereço entre urbano (CEP/logradouro) e rural
     // (distrito/propriedade/ponto de referência).
-    localizacao: "Urbana",
+    // Sem padrão (mesma razão de mudancaLocal, abaixo): com "Urbana"
+    // pré-marcada o endereço urbano aparecia antes de qualquer escolha e o
+    // data-req passava na validação sem o usuário ter decidido a zona. O
+    // endereço só é revelado por onZonaGD() — cascata portada do MT.
+    localizacao: "",
     distritoComunidade: "",
     nomePropriedade: "",
     pontoRef: "",

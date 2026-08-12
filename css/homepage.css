@@ -95,9 +95,14 @@ body {
   letter-spacing: 0.2px;
   color: #364B46;
 }
-.modalidade-secao {
-  margin-bottom: 34px;
-}
+/* ---------- Portal de modalidades ----------
+   A APARÊNCIA destes blocos (tipografia, cores, espaçamentos, bordas, grade
+   responsiva) vem de `.modalidade-screen …` em shared.css, que vence destes
+   seletores de classe única por especificidade. O que sobra aqui é só o que
+   shared.css NÃO declara: reset do <button>, os flex containers e o mecanismo
+   de colapso. Declarações que shared.css sobrescrevia foram removidas — eram
+   código morto e mandavam quem procurava a origem de um estilo para o arquivo
+   errado (mesma limpeza já feita nas media queries, ver nota no fim). */
 .link-desistencia {
   display: inline-block;
   font-size: 13px;
@@ -114,34 +119,19 @@ body {
   background: var(--verde-claro);
   text-decoration: underline;
 }
+/* Cabeçalho da seção: reset do <button> + a linha em flex (rótulo à esquerda,
+   chevron à direita). Fonte, cor, padding, bordas e o :hover/:focus-visible
+   vêm de shared.css. */
 .modalidade-secao-titulo {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   width: 100%;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--verde-escuro);
-  margin: 0 0 14px;
-  padding: 0 0 10px;
-  border: none;
-  border-bottom: 1px solid var(--borda);
-  background: transparent;
   text-align: left;
   cursor: pointer;
   -webkit-appearance: none;
   appearance: none;
-}
-.modalidade-secao-titulo:hover {
-  opacity: 0.72;
-}
-.modalidade-secao-titulo:focus-visible {
-  outline: 2px solid var(--verde-escuro);
-  outline-offset: 2px;
 }
 .modalidade-secao-chevron {
   flex: none;
@@ -157,9 +147,6 @@ body {
   height: 100%;
   display: block;
 }
-.modalidade-secao.is-collapsed .modalidade-secao-chevron {
-  transform: rotate(-90deg);
-}
 /* Corpo colapsável: anima via grid-template-rows (1fr -> 0fr). */
 .modalidade-secao-corpo {
   display: grid;
@@ -172,11 +159,7 @@ body {
   overflow: hidden;
   min-height: 0;
 }
-.modalidade-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
-}
+/* A grade (colunas e gap) é a auto-fill de shared.css. */
 .modalidade-card {
   box-sizing: border-box;
   display: flex;
@@ -187,27 +170,17 @@ body {
      left the card narrower than its grid track). Let the grid size it. */
   width: 100%;
   min-width: 0;
-  border: 1px solid #8c9895;
-  border-radius: 8px;
-}
-.modalidade-card:not(:disabled):hover {
-  transform: translateY(-3px);
-  box-shadow: var(--sombra-md);
-  border-color: var(--verde-acento);
 }
 .modalidade-img {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  aspect-ratio: 16 / 9;
-  background: linear-gradient(160deg, #eef3ee 0%, #e6efe7 100%);
   overflow: hidden;
 }
 .modalidade-img img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
   display: block;
 }
 .modalidade-img.ph::after {
@@ -222,11 +195,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: 24px 12px;
-  gap: 16px;
   /* Fluid: was fixed 268.67px × 87px which clipped text on small screens. */
   width: 100%;
-  background: #ffffff;
   flex: none;
   order: 1;
   align-self: stretch;
@@ -235,20 +205,11 @@ body {
 .modalidade-card-body strong {
   font-family: 'Open Sans';
   font-style: normal;
-  font-weight: 400;
-  font-size: 18px;
-  line-height: 26px;
-  letter-spacing: 0.4px;
-  color: #364B46;
 }
 .modalidade-sub {
   font-family: 'Open Sans';
   font-style: normal;
   font-weight: 400;
-  font-size: 14px;
-  line-height: 24px;
-  letter-spacing: 0.2px;
-  color: #576864;
 }
 .modalidade-tag {
   position: absolute;
@@ -259,17 +220,10 @@ body {
   font-size: 10.5px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
   padding: 4px 11px;
-  border-radius: 999px;
   background: var(--amarelo-bg);
   color: #8a6d1a;
   border: 1px solid rgba(138, 109, 26, 0.25);
-}
-.modalidade-tag.avail {
-  background: var(--verde-cemig);
-  color: #fff;
-  border-color: transparent;
 }
 .modalidade-card.soon {
   cursor: not-allowed;

@@ -639,28 +639,49 @@ function onCoordGD(el, imediato) {
   consultarRestricaoAmbientalGD(lat, lng);
 }
 /* ===== Etapa 3 — zona, pronto p/ ligar (porte do BT) ===== */
-// Trocar de zona limpa os campos da zona oposta, como no BT: o endereço
+// Última zona aplicada — o toggle grava state.localizacao ANTES de chamar este
+// handler, então o valor anterior precisa ser rastreado aqui para a limpeza da
+// zona oposta funcionar (mesma solução do MT, mt/js/app.js).
+let _zonaAnteriorGD = "";
+// A zona tem TRÊS estados: "" (nada escolhido), "Urbana" e "Rural". Com ""
+// nenhum bloco de endereço aparece — o endereço só faz sentido depois de saber
+// a zona, e um bloco aberto por padrão fazia o usuário preencher CEP numa área
+// rural. Trocar de zona limpa os campos da zona oposta, como no BT: o endereço
 // urbano e o descritivo rural são mutuamente exclusivos no PDF.
 function onZonaGD() {
   _sync("localizacao");
-  const rural = state.localizacao === "Rural";
-  if (rural) {
-    ["cep", "logradouro", "numero", "complemento", "bairro"].forEach((k) => {
+  const zona = state.localizacao;
+  const anterior = _zonaAnteriorGD;
+  _zonaAnteriorGD = zona;
+  const rural = zona === "Rural";
+  // Só limpa quando houve TROCA de zona: sem esta guarda o onZonaGD() do boot
+  // (e um segundo clique no mesmo card) apagaria campos que o usuário nunca
+  // trocou — inclusive dados vindos de prefill.
+  if (anterior && anterior !== zona) {
+    const limpar = rural
+      ? ["cep", "logradouro", "numero", "complemento", "bairro"]
+      : ["distritoComunidade", "nomePropriedade", "pontoRef", "instProxima"];
+    limpar.forEach((k) => {
       state[k] = "";
       $$(`[data-k="${k}"]`).forEach((c) => (c.value = ""));
     });
-  } else {
-    ["distritoComunidade", "nomePropriedade", "pontoRef", "instProxima"].forEach(
-      (k) => {
-        state[k] = "";
-        $$(`[data-k="${k}"]`).forEach((c) => (c.value = ""));
-      },
-    );
   }
   const urb = $("#endUrbanoBox"),
     rur = $("#endRuralBox");
-  if (urb) urb.style.display = rural ? "none" : "";
+  if (urb) urb.style.display = zona === "Urbana" ? "" : "none";
   if (rur) rur.style.display = rural ? "" : "none";
+  // Mapa e coordenadas fecham a cascata do endereço (como o #blocoMapaCoord do
+  // MT). O Leaflet mede o container na criação: com o bloco oculto o mapa nasce
+  // com 0px, então só instanciar depois de revelá-lo — mesma lição do goTo() e
+  // do onMudancaLocalGD().
+  const blocoMapa = $("#blocoMapaCoord");
+  if (blocoMapa) {
+    blocoMapa.style.display = zona ? "" : "none";
+    if (zona) {
+      initMapaObra();
+      if (mapaObra) setTimeout(() => mapaObra.invalidateSize(), 60);
+    }
+  }
   atualizarCoordRuralGD();
   // O novo local do padrão (etapa 4) pede os MESMOS campos da zona escolhida
   // aqui — senão o formulário cobraria CEP de quem declarou área rural.
@@ -674,11 +695,15 @@ function onZonaGD() {
 // o conjunto de campos correspondente e zera o da zona oposta, para que um
 // endereço urbano digitado antes de trocar para Rural não vá para o PDF.
 function aplicarZonaPadraoGD() {
-  const rural = state.localizacao === "Rural";
+  const zona = state.localizacao;
+  const rural = zona === "Rural";
   const urb = $("#mudEndUrbanoBox"),
     rur = $("#mudEndRuralBox");
-  if (urb) urb.style.display = rural ? "none" : "";
+  if (urb) urb.style.display = zona === "Urbana" ? "" : "none";
   if (rur) rur.style.display = rural ? "" : "none";
+  // Zona ainda não escolhida: não há conjunto de campos a espelhar, e limpar
+  // aqui apagaria o que o usuário digitou antes de voltar à etapa 3.
+  if (!zona) return;
   const limpar = rural
     ? ["mudCep", "mudLogradouro", "mudNumero", "mudComplemento", "mudBairro"]
     : [
@@ -745,6 +770,10 @@ function _aplicarCoordDoMapa(lat, lng) {
 function initMapaObra() {
   const div = $("#map");
   if (!div || !window.L || mapaObra) return;
+  // O container só ganha largura depois da zona escolhida (#blocoMapaCoord).
+  // Criar o mapa antes disso o deixa com 0px e os tiles saem cortados; quem
+  // revela o bloco (onZonaGD) chama de novo.
+  if (!div.offsetWidth) return;
   mapaObra = window.L.map(div).setView([-19.9167, -43.9345], 12);
   const ruas = window.L.tileLayer(
     "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -1033,14 +1062,19 @@ function onCepPadraoGD(el) {
 }
 // ViaCEP direto: criarConsultasExternas().buscarCep escreve nos campos do
 // endereço DA UNIDADE (cep/logradouro/…), e aqui o alvo são os campos mud*.
+// Mesma guarda de corrida do buscarCep compartilhado: trocar a zona (que limpa
+// os campos mud* da zona oposta) ou digitar outro CEP invalida a consulta em
+// voo, e sem conferir isso a resposta antiga repovoa o que acabou de ser limpo.
 async function buscarCepPadraoGD(cep) {
   const status = $("#mapaPadraoStatus");
   const limpo = soDigitos(cep);
   if (limpo.length !== 8) return;
+  const aindaVale = () => soDigitos(state.mudCep) === limpo;
   if (status) status.textContent = "Buscando endereço…";
   try {
     const r = await fetch(`https://viacep.com.br/ws/${limpo}/json/`);
     const j = await r.json();
+    if (!aindaVale()) return;
     if (j.erro) {
       if (status) status.textContent = "CEP não encontrado.";
       return;
@@ -1054,6 +1088,7 @@ async function buscarCepPadraoGD(cep) {
     });
     onEnderecoPadraoGD();
   } catch (e) {
+    if (!aindaVale()) return;
     if (status) status.textContent = "Não foi possível consultar o CEP.";
   }
 }
@@ -2051,7 +2086,9 @@ window.initFormulario = function () {
   onModoOperacaoGD();
   onZonaGD();
   onProntoLigarGD();
-  initMapaObra();
+  // initMapaObra() saiu daqui: no boot a etapa 3 ainda está oculta (e, sem zona,
+  // o #blocoMapaCoord também). Quem cria o mapa é onZonaGD(), ao revelar o
+  // bloco, ou goTo(), ao entrar na etapa — os dois com o container já medindo.
   onCoordGD();
   onFastTrack();
   mostrarCamposPF(gdEhCpfValido());

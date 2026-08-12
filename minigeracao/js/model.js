@@ -46,7 +46,10 @@ function gdEstadoInicial() {
     // 2 - Dados da unidade (cópia da etapa 3 do microGD)
     // A zona alterna o endereço entre urbano (CEP/logradouro) e rural
     // (distrito/propriedade/ponto de referência).
-    localizacao: "Urbana",
+    // Sem padrão: com "Urbana" pré-marcada o endereço urbano aparecia antes de
+    // qualquer escolha e o data-req passava na validação sem o usuário ter
+    // decidido a zona. O endereço só é revelado por onZonaGD().
+    localizacao: "",
     distritoComunidade: "",
     nomePropriedade: "",
     pontoRef: "",

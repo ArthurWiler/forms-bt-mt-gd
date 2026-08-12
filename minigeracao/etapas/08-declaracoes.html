@@ -22,7 +22,11 @@
       cobrança de Garantia de Fiel Cumprimento.
     </p>
   </div>
-  <div id="gfcBloco" class="grid grid-2" style="margin-top: 10px; display: none">
+  <div
+    id="gfcBloco"
+    class="grid grid-2"
+    style="margin-top: var(--cmg-space-8); display: none"
+  >
     <div class="field col-span-2">
       <label>Forma de apresentação da garantia <span class="req">*</span></label>
       <select data-k="garantiaForma"></select>
@@ -91,7 +95,7 @@
       </span>
     </div>
   </div>
-  <div class="doc-list" style="margin-top: 10px">
+  <div class="doc-list" style="margin-top: var(--cmg-space-8)">
     <label class="doc-item">
       <input type="checkbox" data-decl="decl82" />
       <span class="doc-text">
@@ -124,7 +128,13 @@
         <span class="doc-req">(Obrigatório para Grid Zero)</span>
       </span>
     </label>
-    <div id="decl95Aviso" class="cmg-aviso cmg-aviso--warn no-print" style="margin-top: 10px; display: none">
+    <!-- Dentro da .doc-list: o gap de 10px da lista já separa o aviso da
+         declaração 9.5; a margem própria somava a ele e dava 20px. -->
+    <div
+      id="decl95Aviso"
+      class="cmg-aviso cmg-aviso--warn no-print"
+      style="display: none"
+    >
       <div class="cmg-aviso-icon" aria-hidden="true"></div>
       <p class="cmg-aviso-texto">
         Como o empreendimento é Grid Zero, marque a declaração 9.5 acima —

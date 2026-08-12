@@ -34,11 +34,11 @@
       </select>
     </div>
 
-    <div
-      class="grid grid-2 col-span-2"
-      id="corrEmailInformadoBox"
-      style="display: none"
-    >
+    <!-- Blocos condicionais como .grid-subgrupo (display:contents): antes eram
+         .grid dentro de .grid, então o gap de 32px da linha ainda somava a
+         margem própria de cada um (44px). Agora os campos entram no grid do
+         card e todo vão da etapa é o mesmo. -->
+    <div class="grid-subgrupo" id="corrEmailInformadoBox" style="display: none">
       <div class="field col-span-2">
         <label>E-mail para envio da fatura</label>
         <input type="email" data-k="email" data-sem-vazio disabled />
@@ -48,7 +48,7 @@
     <div
       id="corrObraAviso"
       class="alert alert-info cmg-aviso col-span-2"
-      style="margin-top: 12px; display: none"
+      style="display: none"
     >
       <div class="cmg-aviso-icon" aria-hidden="true"></div>
       <p class="cmg-aviso-texto">
@@ -56,11 +56,7 @@
         <strong>Dados da Unidade Consumidora</strong>.
       </p>
     </div>
-    <div
-      id="corrEmailBox"
-      class="grid grid-2 col-span-2"
-      style="margin-top: 12px; display: none"
-    >
+    <div id="corrEmailBox" class="grid-subgrupo" style="display: none">
       <div class="field col-span-2">
         <label>E-mail para envio da fatura <span class="req">*</span></label>
         <input
@@ -70,11 +66,7 @@
         />
       </div>
     </div>
-    <div
-      id="corrEndBox"
-      class="grid grid-2 col-span-2"
-      style="margin-top: 12px; display: none"
-    >
+    <div id="corrEndBox" class="grid-subgrupo" style="display: none">
       <div class="field">
         <label>CEP <span class="req">*</span></label>
         <input
@@ -109,11 +101,7 @@
         <input type="text" data-k="corrEstado" placeholder=" " />
       </div>
     </div>
-    <div
-      class="grid grid-2 col-span-2"
-      id="contaGlobalBox"
-      style="display: none"
-    >
+    <div class="grid-subgrupo" id="contaGlobalBox" style="display: none">
       <div class="field col-span-2">
         <label>
           Conta globalizada (código de débito automático globalizado)

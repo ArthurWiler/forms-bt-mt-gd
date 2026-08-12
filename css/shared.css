@@ -896,7 +896,13 @@ label.restricao-aceite input[type="checkbox"] {
   border-top: 1px solid var(--cmg-divider);
   background: transparent;
 }
-.modalidade-screen .modalidade-secao:last-of-type .modalidade-secao-titulo {
+/* Linha de FECHO do acordeão: vai na última SEÇÃO, não no título dela. As
+   divisórias entre as seções são o border-top de cada título, mas a de baixo
+   precisa vir depois do corpo — no título, ela ficava presa sob o cabeçalho e
+   os cards da seção aberta transbordavam por baixo dela. Com a seção colapsada
+   o corpo tem altura zero (grid-template-rows: 0fr + padding vertical zerado),
+   então o resultado é idêntico ao de antes; só muda quando ela abre. */
+.modalidade-screen .modalidade-secao:last-of-type {
   border-bottom: 1px solid var(--cmg-divider);
 }
 .modalidade-screen .modalidade-secao-titulo:hover {
@@ -2624,8 +2630,11 @@ label.restricao-aceite input[type="checkbox"] {
   letter-spacing: 0.25px;
   color: var(--cmg-neutral-500);
 }
+/* A grade de coordenadas sob o mapa usa o MESMO respiro vertical do gap de
+   linha do .grid (32px). Antes eram 16px — o gutter de COLUNA aplicado na
+   vertical, que deixava o vão do mapa menor que o de qualquer outra linha. */
 .cemig-form .mapa-obra + .grid {
-  margin-top: 16px;
+  margin-top: var(--cmg-space-8);
 }
 
 /* ============================================================

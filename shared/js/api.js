@@ -16,13 +16,20 @@ function criarConsultasExternas({
   setCnpjStatus,
 }) {
   // ViaCEP
+  // O CEP consultado pode deixar de valer antes de a resposta chegar: o usuário
+  // troca a zona para Rural (o que limpa o endereço urbano) ou digita outro CEP.
+  // Sem conferir isso na volta, a resposta antiga repovoa campos já limpos — e,
+  // com duas consultas em voo, vale a que responder por último, não a mais
+  // recente. `d` é o estado vivo, então basta comparar com o CEP atual.
   const buscarCep = async (cep) => {
     const limpo = soDigitos(cep);
     if (limpo.length !== 8) return;
+    const aindaVale = () => soDigitos(d.cep) === limpo;
     setCepStatus("Buscando endereço…");
     try {
       const r = await fetch(`https://viacep.com.br/ws/${limpo}/json/`);
       const j = await r.json();
+      if (!aindaVale()) return;
       if (j.erro) {
         setCepStatus("CEP não encontrado.");
         return;
@@ -35,6 +42,7 @@ function criarConsultasExternas({
         estado: j.uf || d.estado,
       });
     } catch (e) {
+      if (!aindaVale()) return;
       setCepStatus("Falha ao buscar CEP.");
     }
   };

@@ -13,147 +13,154 @@
     <div class="field field--plain col-span-2" data-noopt>
       <label>Zona de localização <span class="req">*</span></label>
       <div data-toggle="localizacao" data-toggle-onchange="onZonaGD"></div>
+      <!-- Opção vazia: sem ela o toggle nasce com "Urbana" marcada e o endereço
+           urbano aparece antes de o usuário escolher (mesmo motivo de edifTipo /
+           telhadoArrendado / mudancaLocal). -->
       <select data-k="localizacao" style="display: none" aria-hidden="true">
+        <option value=""></option>
         <option>Urbana</option>
         <option>Rural</option>
       </select>
-      <span id="zonaHint" class="field-hint" style="display: none">
-        Modalidade rural: zona fixada em Rural.
-      </span>
     </div>
-  </div>
 
-  <div class="grid grid-2" id="endUrbanoBox" style="margin-top: 14px">
-    <div class="field">
-      <label>CEP <span class="req">*</span></label>
-      <div style="display: flex; gap: 8px; align-items: center">
-        <div style="max-width: 180px">
-          <input
-            type="text"
-            data-k="cep"
-            placeholder="00000-000"
-            oninput="onCepGD(this)"
-          />
+    <!-- Endereço urbano e rural são .grid-subgrupo (display:contents): os campos
+         entram no MESMO grid do card e herdam o gap de 32/16, em vez de cada
+         bloco trazer a própria margem. Ver .grid-subgrupo em shared.css. -->
+    <div class="grid-subgrupo" id="endUrbanoBox" style="display: none">
+      <div class="field">
+        <label>CEP <span class="req">*</span></label>
+        <div style="display: flex; gap: 8px; align-items: center">
+          <div style="max-width: 180px">
+            <input
+              type="text"
+              data-k="cep"
+              placeholder="00000-000"
+              oninput="onCepGD(this)"
+            />
+          </div>
+          <span id="status-cep"></span>
         </div>
-        <span id="status-cep"></span>
+      </div>
+      <div class="field col-span-2">
+        <label>Endereço <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="logradouro"
+          placeholder=" "
+          onblur="onEnderecoUrbanoGD()"
+        />
+      </div>
+      <div class="field">
+        <label>Nº <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="numero"
+          placeholder=" "
+          onblur="onEnderecoUrbanoGD()"
+        />
+      </div>
+      <div class="field">
+        <label>Bairro <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="bairro"
+          placeholder=" "
+          onblur="onEnderecoUrbanoGD()"
+        />
+      </div>
+      <div class="field">
+        <label>Cidade / Município <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="municipio"
+          placeholder=" "
+          onblur="onEnderecoUrbanoGD()"
+        />
+      </div>
+      <div class="field">
+        <label>Estado <span class="req">*</span></label>
+        <input type="text" data-k="estado" placeholder=" " />
       </div>
     </div>
-    <div class="field col-span-2">
-      <label>Endereço <span class="req">*</span></label>
-      <input
-        type="text"
-        data-k="logradouro"
-        placeholder=" "
-        onblur="onEnderecoUrbanoGD()"
-      />
-    </div>
-    <div class="field">
-      <label>Nº <span class="req">*</span></label>
-      <input
-        type="text"
-        data-k="numero"
-        placeholder=" "
-        onblur="onEnderecoUrbanoGD()"
-      />
-    </div>
-    <div class="field">
-      <label>Bairro <span class="req">*</span></label>
-      <input
-        type="text"
-        data-k="bairro"
-        placeholder=" "
-        onblur="onEnderecoUrbanoGD()"
-      />
-    </div>
-    <div class="field">
-      <label>Cidade / Município <span class="req">*</span></label>
-      <input
-        type="text"
-        data-k="municipio"
-        placeholder=" "
-        onblur="onEnderecoUrbanoGD()"
-      />
-    </div>
-    <div class="field">
-      <label>Estado <span class="req">*</span></label>
-      <input type="text" data-k="estado" placeholder=" " />
+
+    <div class="grid-subgrupo" id="endRuralBox" style="display: none">
+      <div class="field">
+        <label>Município <span class="req">*</span></label>
+        <input type="text" data-k="municipio" data-k-espelho placeholder=" " />
+      </div>
+      <div class="field">
+        <label>Estado <span class="req">*</span></label>
+        <input type="text" data-k="estado" data-k-espelho placeholder=" " />
+      </div>
+      <div class="field">
+        <label>Distrito / Comunidade / Região <span class="req">*</span></label>
+        <input type="text" data-k="distritoComunidade" placeholder=" " />
+      </div>
+      <div class="field">
+        <label>Nome da propriedade <span class="req">*</span></label>
+        <input type="text" data-k="nomePropriedade" placeholder=" " />
+      </div>
+      <div class="field">
+        <label>Ponto de referência <span class="req">*</span></label>
+        <input type="text" data-k="pontoRef" placeholder=" " />
+      </div>
+      <div class="field">
+        <label
+          >Nº instalação / UC / medidor mais próxima
+          <span class="req">*</span></label
+        >
+        <input type="text" data-k="instProxima" placeholder=" " />
+      </div>
     </div>
   </div>
 
-  <div
-    class="grid grid-2"
-    id="endRuralBox"
-    style="margin-top: 14px; display: none"
-  >
-    <div class="field">
-      <label>Município <span class="req">*</span></label>
-      <input type="text" data-k="municipio" data-k-espelho placeholder=" " />
+  <!-- Mapa e coordenadas fecham a cascata do endereço: só aparecem depois da
+       zona escolhida (onZonaGD), como o #blocoMapaCoord do MT. Ficam FORA do
+       grid do card — assim o `gap` não soma às margens do .divider e do
+       .mapa-obra (mesma razão anotada na etapa 4). -->
+  <div id="blocoMapaCoord" style="display: none">
+    <div class="mapa-obra divider">
+      <p class="mapa-hint">
+        Confirme a localização da unidade no mapa. Se o pin estiver incorreto,
+        você pode clicar e arrastá-lo para ajustar.
+      </p>
+      <div class="mapa-actions">
+        <span class="field-hint" id="mapaStatus"></span>
+      </div>
+      <div id="map" class="mapa-canvas"></div>
     </div>
-    <div class="field">
-      <label>Estado <span class="req">*</span></label>
-      <input type="text" data-k="estado" data-k-espelho placeholder=" " />
-    </div>
-    <div class="field">
-      <label>Distrito / Comunidade / Região <span class="req">*</span></label>
-      <input type="text" data-k="distritoComunidade" placeholder=" " />
-    </div>
-    <div class="field">
-      <label>Nome da propriedade <span class="req">*</span></label>
-      <input type="text" data-k="nomePropriedade" placeholder=" " />
-    </div>
-    <div class="field">
-      <label>Ponto de referência <span class="req">*</span></label>
-      <input type="text" data-k="pontoRef" placeholder=" " />
-    </div>
-    <div class="field">
-      <label
-        >Nº instalação / UC / medidor mais próxima
-        <span class="req">*</span></label
-      >
-      <input type="text" data-k="instProxima" placeholder=" " />
-    </div>
-  </div>
 
-  <div class="mapa-obra divider">
-    <p class="mapa-hint">
-      Confirme a localização da unidade no mapa. Se o pin estiver incorreto,
-      você pode clicar e arrastá-lo para ajustar.
-    </p>
-    <div class="mapa-actions">
-      <span class="field-hint" id="mapaStatus"></span>
-    </div>
-    <div id="map" class="mapa-canvas"></div>
-  </div>
-
-  <div class="grid grid-3">
-    <div class="field">
-      <label id="latLabel">Latitude <span class="req">*</span></label>
-      <input
-        type="text"
-        data-k="latitude"
-        placeholder=" "
-        oninput="onCoordGD(this)"
-      />
-    </div>
-    <div class="field">
-      <label id="lngLabel">Longitude <span class="req">*</span></label>
-      <input
-        type="text"
-        data-k="longitude"
-        placeholder=" "
-        oninput="onCoordGD(this)"
-      />
-    </div>
-    <div class="field">
-      <label>Coordenada UTM</label>
-      <input type="text" id="gd_utm" readonly disabled placeholder=" " />
+    <div class="grid grid-3">
+      <div class="field">
+        <label id="latLabel">Latitude <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="latitude"
+          placeholder=" "
+          oninput="onCoordGD(this)"
+        />
+      </div>
+      <div class="field">
+        <label id="lngLabel">Longitude <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="longitude"
+          placeholder=" "
+          oninput="onCoordGD(this)"
+        />
+      </div>
+      <div class="field">
+        <label>Coordenada UTM</label>
+        <input type="text" id="gd_utm" readonly disabled placeholder=" " />
+      </div>
     </div>
   </div>
+  <!-- /blocoMapaCoord -->
 
   <div
     class="field"
     id="restricaoAmbientalBox"
-    style="margin-top: 14px; display: none"
+    style="margin-top: var(--cmg-space-8); display: none"
   >
     <div id="restricaoAmbientalConteudo"></div>
   </div>
