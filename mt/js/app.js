@@ -1040,8 +1040,6 @@ function onCoord(imediato) {
 
   let erros = [];
   if (r.nivel === "erro") erros.push(r.msg);
-  // Alerta do BT: em zona rural a coordenada é obrigatória — aviso enquanto
-  // latitude/longitude não estiverem preenchidas.
   const ruralSemCoord =
     state.localizacao === "Rural" &&
     (!String(state.latitude || "").trim() ||
@@ -1056,11 +1054,6 @@ function onCoord(imediato) {
       : "");
 }
 
-/* ===== Geolocalização automática a partir do endereço (Etapa 3) =====
-   Espelha o comportamento do formulário BT (bt/js/map.js): assim que o
-   endereço urbano (logradouro + número + município) está preenchido, o
-   ponto é geocodificado, o alfinete é reposicionado e a validação
-   ambiental é executada automaticamente (Regra 7). */
 let _mtGeoDebounce = null,
   _mtLastGeoKey = "",
   _mtLastRestrKey = "",
@@ -1471,7 +1464,8 @@ function onCompartilhada() {
   // Enquanto a pergunta não for respondida não há o que mostrar: "Sim" e "Não"
   // levam a blocos técnicos diferentes, então o bloco inteiro (transformadores,
   // motores, resumo e tipo de subestação) só entra em cena após a escolha.
-  const respondida = state.compartilhada === "Sim" || state.compartilhada === "Não";
+  const respondida =
+    state.compartilhada === "Sim" || state.compartilhada === "Não";
   $("#blocoTecnicoIndividual").style.display = respondida ? "block" : "none";
   // A seção alterna: ou os transformadores da UC, ou os cubículos da
   // subestação compartilhada (o campo de quantidade vive dentro do bloco).
@@ -1627,12 +1621,12 @@ function renderTrafos() {
         : `<span class="trafo-status${subst ? " is-substituido" : semAlt ? " is-existente" : " is-novo"}">${subst ? "Substituído" : semAlt ? "Sem alteração" : "Novo"}</span>`;
       const radios = !troca
         ? ""
-        : `<div class="trafo-troca" role="radiogroup" aria-label="Situação do transformador ${i + 1}">
+        : `<div class="toggle-group trafo-troca" role="radiogroup" aria-label="Situação do transformador ${i + 1}">
           ${TRAFO_SITUACOES.map(
             (o) =>
-              `<button type="button" role="radio" class="trafo-troca-opt${situacao === o.v ? " is-active" : ""}"
+              `<button type="button" role="radio" class="toggle-btn${situacao === o.v ? " on" : ""}"
                        aria-checked="${situacao === o.v}"
-                       onclick="setTrafoSituacao(${i},'${o.v}')"><span class="trafo-troca-dot" aria-hidden="true"></span>${o.label}</button>`,
+                       onclick="setTrafoSituacao(${i},'${o.v}')">${o.label}</button>`,
           ).join("")}
         </div>`;
       // Num trafo substituído a primeira linha descreve o equipamento atual;
@@ -2080,16 +2074,16 @@ function setCubiculoExistente(i, valor) {
 }
 function _cubiculoExistenteCardsHTML(i, existente) {
   return (
-    `<div class="trafo-troca" role="radiogroup" aria-label="Situação do cubículo ${i + 1}">` +
+    `<div class="toggle-group trafo-troca" role="radiogroup" aria-label="Situação do cubículo ${i + 1}">` +
     [
       { v: true, label: "Cubículo já existente" },
       { v: false, label: "Cubículo novo" },
     ]
       .map(
         (o) =>
-          `<button type="button" role="radio" class="trafo-troca-opt${existente === o.v ? " is-active" : ""}"
+          `<button type="button" role="radio" class="toggle-btn${existente === o.v ? " on" : ""}"
              aria-checked="${existente === o.v}"
-             onclick="setCubiculoExistente(${i},${o.v})"><span class="trafo-troca-dot" aria-hidden="true"></span>${o.label}</button>`,
+             onclick="setCubiculoExistente(${i},${o.v})">${o.label}</button>`,
       )
       .join("") +
     `</div>`
@@ -2117,12 +2111,12 @@ function renderCubiculos() {
             : `<span class="trafo-status${subst ? " is-substituido" : semAlt ? " is-existente" : " is-novo"}">${subst ? "Substituído" : semAlt ? "Sem alteração" : "Novo"}</span>`;
           const radios = !trocaCub
             ? ""
-            : `<div class="trafo-troca" role="radiogroup" aria-label="Situação do transformador ${j + 1} do cubículo ${i + 1}">
+            : `<div class="toggle-group trafo-troca" role="radiogroup" aria-label="Situação do transformador ${j + 1} do cubículo ${i + 1}">
           ${TRAFO_SITUACOES.map(
             (o) =>
-              `<button type="button" role="radio" class="trafo-troca-opt${situacao === o.v ? " is-active" : ""}"
+              `<button type="button" role="radio" class="toggle-btn${situacao === o.v ? " on" : ""}"
                        aria-checked="${situacao === o.v}"
-                       onclick="setTrafoCubSituacao(${i},${j},'${o.v}')"><span class="trafo-troca-dot" aria-hidden="true"></span>${o.label}</button>`,
+                       onclick="setTrafoCubSituacao(${i},${j},'${o.v}')">${o.label}</button>`,
           ).join("")}
         </div>`;
           const linhaNova = !subst

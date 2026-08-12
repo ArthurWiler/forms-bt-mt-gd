@@ -90,6 +90,7 @@
 
   --cmg-ls-tight: 0.2px; /* corpo */
   --cmg-ls-wide: 0.4px; /* títulos / subtítulos */
+  --cmg-ls-loose: 0.5px; /* toggles / grupos de opção (spec Figma) */
 
   /* ---- Border radius ---- */
   --cmg-radius-sm: 8px;

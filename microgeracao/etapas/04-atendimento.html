@@ -96,8 +96,7 @@
             Em casos de arrendamento, é obrigatório representar tanto a
             <strong>instalação existente</strong> quanto a
             <strong>nova instalação do telhado</strong> no
-            <strong>DUB</strong> (Diagrama Unifilar Bruto) e no
-            <strong>Memorial Descritivo</strong>.
+            <strong>DUB</strong> e no <strong>Memorial Descritivo</strong>.
           </p>
         </div>
       </div>
@@ -121,48 +120,13 @@
           <option>Não</option>
         </select>
       </div>
-      <div
-        id="mudancaLocalBloco"
-        class="grid grid-3 col-span-2"
-        style="display: none"
-      >
-        <!-- #todo ============================================================
-             AINDA INCORRETO — revisar (pendente de 11/08/2026).
-             O bloco "novo local do padrão" deve repetir os MESMOS campos da
-             zona escolhida em "Zona de localização" (etapa 3), mas o
-             resultado na tela continua divergindo do esperado.
-
-             Já tentado, sem resolver:
-               1. wrapper .field + grid aninhado -> quebrou o layout inteiro
-                  (.field é um campo do design system, não um contêiner);
-               2. .grid-subgrupo (display:contents) -> estrutura correta,
-                  mas o render ainda sai errado;
-               3. Município/Estado duplicados, um par por zona, para
-                  reproduzir a ordem da etapa 3 (urbano: por último;
-                  rural: primeiro).
-
-             Verificar na revisão:
-               • o que exatamente diverge (ordem? colunas? campos faltando?);
-               • se o certo é DUPLICAR mudMunicipio/mudEstado ou mantê-los
-                  fora dos dois subgrupos;
-               • se este bloco deveria reusar o markup da etapa 3 em vez de
-                  ter uma cópia própria (hoje são dois HTMLs paralelos que
-                  precisam ser mantidos em sincronia na mão).
-
-             Contexto relacionado (não reverter sem avaliar): o espelhamento
-             de campos com data-k repetido foi implementado em
-             js/app.js (_espelharCampo / bindInputs / aplicarPatch) — antes
-             disso `data-k-espelho` era só um marcador sem efeito, e a etapa 3
-             tinha o mesmo problema silencioso.
-             ============================================================ -->
-        <!-- Os campos do novo local acompanham a ZONA da etapa 3
-             (localizacao): urbano com CEP/logradouro, rural com o descritivo.
-             Quem alterna os dois blocos é onZonaGD → aplicarZonaPadraoGD. -->
-        <!-- .grid-subgrupo (display:contents): o wrapper existe só para o JS
-             alternar as duas zonas de uma vez; os campos continuam sendo itens
-             DIRETOS do grid-3 acima. Um wrapper .field aqui viraria ele mesmo
-             um campo e quebraria o layout do bloco inteiro. -->
-        <div class="grid-subgrupo" id="mudEndUrbanoBox">
+      <!-- Bloco do novo local: item de largura cheia do grid do card, NÃO um
+           .grid-subgrupo. Dentro dele a estrutura é a mesma da etapa 3 (e do BT):
+           endereço em .grid-2, mapa em bloco próprio com .divider, coordenadas
+           em .grid-3. Como o mapa e o .grid-3 deixam de ser itens de grid, o
+           `gap` não soma às margens do .divider / `.mapa-obra + .grid`. -->
+      <div id="mudancaLocalBloco" class="col-span-2" style="display: none">
+        <div class="grid grid-2" id="mudEndUrbanoBox">
           <div class="field">
             <label>CEP <span class="req">*</span></label>
             <input
@@ -172,7 +136,7 @@
               oninput="onCepPadraoGD(this)"
             />
           </div>
-          <div class="field col-span-3">
+          <div class="field">
             <label>Endereço <span class="req">*</span></label>
             <input
               type="text"
@@ -218,11 +182,7 @@
             <select data-k="mudEstado" data-sem-vazio></select>
           </div>
         </div>
-        <div class="grid-subgrupo" id="mudEndRuralBox" style="display: none">
-          <!-- Na zona rural Município/Estado ABREM o bloco, como na etapa 3.
-               São os mesmos data-k do bloco urbano: só um dos dois está
-               visível por vez, e `data-k-espelho` mantém os dois em sincronia
-               (mesma solução da etapa 3). -->
+        <div class="grid grid-2" id="mudEndRuralBox" style="display: none">
           <div class="field">
             <label>Município <span class="req">*</span></label>
             <input
@@ -250,7 +210,7 @@
             <label>Ponto de referência <span class="req">*</span></label>
             <input type="text" data-k="mudPontoRef" placeholder=" " />
           </div>
-          <div class="field col-span-3">
+          <div class="field col-span-2">
             <label
               >Nº instalação / UC / medidor mais próxima
               <span class="req">*</span></label
@@ -258,7 +218,7 @@
             <input type="text" data-k="mudInstProxima" placeholder=" " />
           </div>
         </div>
-        <div class="mapa-obra divider col-span-3">
+        <div class="mapa-obra divider">
           <p class="mapa-hint">
             Confirme a localização da unidade no mapa. Se o pin estiver
             incorreto, você pode clicar e arrastá-lo para ajustar.
@@ -269,33 +229,35 @@
           <div id="mapPadrao" class="mapa-canvas"></div>
         </div>
 
-        <div class="field">
-          <label>Latitude <span class="req">*</span></label>
-          <input
-            type="text"
-            data-k="mudLatitude"
-            placeholder=" "
-            oninput="onCoordPadraoGD(this)"
-          />
-        </div>
-        <div class="field">
-          <label>Longitude <span class="req">*</span></label>
-          <input
-            type="text"
-            data-k="mudLongitude"
-            placeholder=" "
-            oninput="onCoordPadraoGD(this)"
-          />
-        </div>
-        <div class="field">
-          <label>Coordenada UTM</label>
-          <input
-            type="text"
-            id="gd_utm_padrao"
-            readonly
-            disabled
-            placeholder=" "
-          />
+        <div class="grid grid-3">
+          <div class="field">
+            <label>Latitude <span class="req">*</span></label>
+            <input
+              type="text"
+              data-k="mudLatitude"
+              placeholder=" "
+              oninput="onCoordPadraoGD(this)"
+            />
+          </div>
+          <div class="field">
+            <label>Longitude <span class="req">*</span></label>
+            <input
+              type="text"
+              data-k="mudLongitude"
+              placeholder=" "
+              oninput="onCoordPadraoGD(this)"
+            />
+          </div>
+          <div class="field">
+            <label>Coordenada UTM</label>
+            <input
+              type="text"
+              id="gd_utm_padrao"
+              readonly
+              disabled
+              placeholder=" "
+            />
+          </div>
         </div>
       </div>
     </div>

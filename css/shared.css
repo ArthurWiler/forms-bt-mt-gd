@@ -424,9 +424,15 @@ html {
    de cima e o vão entre wrapper e vizinhos deixa de ser o `gap`.
    `display: contents` faz o wrapper sumir da caixa e promove os filhos a
    itens do grid pai. O JS continua alternando `style.display` entre "" e
-   "none": com "" a regra abaixo volta a valer (a declaração inline some),
-   com "none" o subgrupo inteiro desaparece, como antes. */
-.grid > .grid-subgrupo {
+   "none": com "" a regra volta a valer (a declaração inline some), com
+   "none" o subgrupo inteiro desaparece, como antes.
+
+   DESCENDENTE, não filho direto, caso os subgrupos venham a se aninhar: como
+   um subgrupo já é `display: contents`, ele não é um `.grid`, e um seletor `>`
+   só alcançaria o primeiro nível — os mais fundos voltariam a ser blocos
+   comuns, empilhando os campos em 1 coluna e sem `gap`. Hoje os dois usos
+   (#atendimentoBloco e #armBloco) são filhos diretos de um .grid. */
+.grid .grid-subgrupo {
   display: contents;
 }
 @media (max-width: 720px) {
@@ -1810,18 +1816,20 @@ label.restricao-aceite input[type="checkbox"] {
   color: var(--cmg-text-strong);
   margin-top: var(--cmg-space-1);
 }
-/* Disjuntor: card mais alto, radios empilhados (vertical) e rótulos
-   em destaque (bold), como na referência do Figma. */
+/* Disjuntor: card mais alto e radios empilhados (vertical). O card não é um
+   .field, então a regra .field:has(.toggle-group) não o alcança; daí a margem
+   explícita, pela mesma invariante ("baseline do rótulo → centro da forma =
+   32px"). Aqui o rótulo é 14px/24px, que deixa 6.6px de leading abaixo da
+   baseline: 32 − 6.6 − 16 ≈ 9. Os rótulos seguem o peso padrão (400): o
+   destaque em bold que havia aqui contrariava o spec e o princípio de
+   comunicar a seleção só pelo círculo. */
 .cemig-form .resultado-disjuntor .resultado-card-label {
-  margin-bottom: var(--cmg-space-3);
+  margin-bottom: 9px;
 }
 .cemig-form .resultado-disjuntor .toggle-group {
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--cmg-space-3);
-}
-.cemig-form .resultado-disjuntor .toggle-btn {
-  font-weight: var(--cmg-fw-bold);
+  gap: var(--cmg-space-4);
 }
 @media (max-width: 720px) {
   .cemig-form .resultado-cargas {
@@ -2344,49 +2352,69 @@ label.restricao-aceite input[type="checkbox"] {
   align-items: center;
   gap: var(--cmg-space-4);
 }
+/* Rótulo → opções: 16px no Figma, 10px aqui. Lá o text box vem recortado na
+   cap height (16px/24px → caixa de ~11px), então o gap mede da baseline; a
+   line box do CSS ainda põe 5.8px de leading abaixo dela. A invariante que
+   sobra é "baseline do rótulo → centro da forma = 32px" (16 do gap + 16 de
+   meia caixa do ícone): 32 − 5.8 − 16 ≈ 10.
+   O teste :has(.toggle-group) é o mesmo usado pelo motor de rótulo flutuante e
+   cobre os três invólucros em que o grupo nasce: div[data-toggle]
+   (BT/Micro/Mini), div#cardsX (MT/Mini/Desistência) e o próprio .toggle-group
+   (etapa "Dados do projeto" e campos montados por cmgCampo). align-items segue
+   em stretch — no .field é o que dá largura inteira a inputs, hints e avisos. */
+.cemig-form .field:has(.toggle-group) {
+  gap: 10px;
+}
+/* O hint passa a herdar o mesmo passo do container, sem somar margem própria. */
+.cemig-form .field:has(.toggle-group) > .field-hint {
+  margin-top: 0;
+}
 .cemig-form .toggle-btn {
   display: inline-flex;
   flex-direction: row;
   align-items: center;
-  gap: var(--cmg-space-2);
-  /* opção = 32px de altura (círculo); sem padding extra, conforme Figma
-     (a área de 40px do Figma é só o "estado"/toque — aqui a linha inteira,
-     círculo + rótulo, já é clicável). */
+  /* 4px medidos a partir da caixa de 32×32 do ícone (ver ::before), como no
+     Figma → 10px visuais entre a forma de 20px e o rótulo. */
+  gap: 4px;
+  /* opção = 32px de altura (a própria caixa do ícone); sem padding extra —
+     aqui a linha inteira, círculo + rótulo, já é clicável. */
   padding: 0;
   min-height: 32px;
   border: none;
   background: transparent;
   cursor: pointer;
   font-family: var(--cmg-font-family);
-  /* rótulo padrão (Sim/Não): corpo/grande regular */
+  /* rótulo único para todos os grupos — binários Sim/Não e opções
+     enumeradas: corpo/grande regular, 0.5px. */
   font-size: var(--cmg-fs-body-lg);
   line-height: var(--cmg-lh-body);
   font-weight: var(--cmg-fw-regular);
-  letter-spacing: 0.2px;
+  letter-spacing: var(--cmg-ls-loose);
   color: var(--cmg-neutral-600);
   text-align: left;
   transition: color 0.15s ease;
 }
-/* rótulo de opção enumerada (ex.: "Monopolar 63A"): corpo/bold médio.
-   Aplicado pelo grupo .toggle-group--opcoes (binários Sim/Não ficam no
-   padrão acima). */
-.cemig-form .toggle-group--opcoes .toggle-btn {
-  font-size: var(--cmg-fs-body);
-  line-height: var(--cmg-lh-body);
-  font-weight: var(--cmg-fw-regular);
-  letter-spacing: var(--cmg-ls-tight);
-}
-/* círculo (contorno neutro vazio) — 32×32 (área de toque maior fica por
-   conta do padding do botão; o círculo visível é 32px). */
+/* A variante .toggle-group--opcoes rebaixava as opções enumeradas para 14px;
+   foi aposentada — o spec do Figma pede 16px em todo texto de toggle. A classe
+   segue sendo emitida pelos renderizadores, mas não tem mais estilo próprio:
+   não reintroduzir tamanho aqui. */
+
+/* Forma vazia — mesma do rádio nativo (`.cemig-form input[type="radio"]`,
+   adiante neste arquivo): 20×20, borda 2px neutra/500, miolo transparente.
+   A margem de 6px faz a caixa do ícone ocupar os 32×32 do frame do Figma
+   (`rect 32×32 rx=16`) sem trocar a borda por gradiente — o que preservaria
+   o tracejado de .toggle-btn-destaque. Esses mesmos 6px são o spread do
+   state layer no hover, então os dois coincidem exatamente. */
 .cemig-form .toggle-btn::before {
   content: "";
   flex: 0 0 auto;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
+  margin: 6px;
   box-sizing: border-box;
   border: 2px solid var(--cmg-neutral-500);
   border-radius: var(--cmg-radius-pill);
-  background: var(--cmg-surface);
+  background: transparent;
   transition:
     border-color 0.15s ease,
     background 0.15s ease,
@@ -2398,15 +2426,27 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .toggle-btn:hover:not(:disabled):not(.on)::before {
   border-color: var(--cmg-green-600);
 }
-/* selecionado: círculo preenchido (anel verde + miolo 24px).
-   O peso/tamanho do rótulo NÃO muda ao selecionar — o estado é
-   comunicado apenas pelo preenchimento do círculo. */
+/* state layer 32×32 no hover (spread de 6px sobre a forma de 20px) — mesmos
+   rgba do rádio nativo. Não entra no foco: ali o indicador é o outline em
+   volta do botão inteiro, que é o alvo clicável de verdade. */
+.cemig-form .toggle-btn:hover:not(:disabled)::before {
+  box-shadow: 0 0 0 6px rgba(87, 104, 100, 0.12);
+}
+.cemig-form .toggle-btn.on:hover:not(:disabled)::before {
+  box-shadow: 0 0 0 6px rgba(15, 108, 88, 0.14);
+}
+/* selecionado: anel verde + ponto central de 10px, com o vão entre os dois
+   transparente (o radial-gradient evita SVG e, ao contrário do antigo anel
+   branco por dentro, não vaza branco sobre fundos coloridos). Idêntico ao
+   estado :checked do rádio nativo. O peso/tamanho do rótulo NÃO muda ao
+   selecionar — o estado é comunicado apenas pelo círculo. */
 .cemig-form .toggle-btn.on::before {
   border-color: var(--cmg-green-600);
-  background: var(--cmg-green-600);
-  /* miolo ≈20px: círculo 32 − borda 2×2 − anel 4×2 (Figma: mancha com
-     inset de 8.33% sobre o ícone de 24px). */
-  box-shadow: inset 0 0 0 4px var(--cmg-surface);
+  background-image: radial-gradient(
+    circle,
+    var(--cmg-green-600) 0 5px,
+    transparent 6px
+  );
 }
 .cemig-form .toggle-btn:focus-visible {
   outline: 2px solid var(--cmg-green-600);
@@ -2434,7 +2474,7 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .toggle-group--stack {
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--cmg-space-3, 12px);
+  gap: var(--cmg-space-4);
 }
 .cemig-form .subbox-title,
 .cemig-form .uc-block-title,

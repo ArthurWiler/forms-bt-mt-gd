@@ -1,18 +1,10 @@
-
+<!doctype html>
 <div class="card">
   <div class="section-eyebrow" data-etapa="dados-uc">Etapa 3</div>
   <h3 class="card-title">Dados da unidade consumidora</h3>
   <p class="card-sub">
     Preencha os dados de identificação das unidades consumidoras.
   </p>
-
-  <!-- Grupo identifica a UC, então abre a etapa logo abaixo do subtítulo.
-       Fica no MESMO .grid da zona de localização — um grid único governa o
-       bloco inteiro e o respiro entre as linhas é o gap; um segundo .grid
-       exigiria margin-top próprio e criaria um vão diferente do resto da
-       etapa. Grupo ocupa uma linha só para ele, com a largura de UMA coluna
-       (sem col-span): a zona, logo abaixo, usa cards e toma a linha inteira,
-       então nada sobe para o lado do Grupo. -->
   <div class="grid grid-2">
     <div class="field">
       <label>Grupo <span class="req">*</span></label>
@@ -21,11 +13,7 @@
     <div class="field field--plain col-span-2" data-noopt>
       <label>Zona de localização <span class="req">*</span></label>
       <div data-toggle="localizacao" data-toggle-onchange="onZonaGD"></div>
-      <select
-        data-k="localizacao"
-        style="display: none"
-        aria-hidden="true"
-      >
+      <select data-k="localizacao" style="display: none" aria-hidden="true">
         <option>Urbana</option>
         <option>Rural</option>
       </select>
@@ -118,20 +106,12 @@
       <input type="text" data-k="pontoRef" placeholder=" " />
     </div>
     <div class="field">
-      <label>Nº instalação / UC / medidor mais próxima <span class="req">*</span></label>
+      <label
+        >Nº instalação / UC / medidor mais próxima
+        <span class="req">*</span></label
+      >
       <input type="text" data-k="instProxima" placeholder=" " />
     </div>
-  </div>
-
-  <div
-    class="cmg-aviso cmg-aviso--warn no-print"
-    id="coordRuralAviso"
-    style="margin-top: 8px; display: none"
-  >
-    <div class="cmg-aviso-icon" aria-hidden="true"></div>
-    <p class="cmg-aviso-texto">
-      Em área rural, a coordenada é obrigatória para localização da propriedade.
-    </p>
   </div>
 
   <div class="mapa-obra divider">
@@ -180,7 +160,5 @@
 </div>
 <div class="nav-bottom no-print">
   <button class="btn btn-ghost" data-nav="prev">← Voltar</button>
-  <button class="btn btn-primary" data-nav="next">
-    Avançar →
-  </button>
+  <button class="btn btn-primary" data-nav="next">Avançar →</button>
 </div>

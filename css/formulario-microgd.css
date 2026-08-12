@@ -928,16 +928,25 @@ textarea.ta {
   letter-spacing: 0.2px;
   color: #364b46;
 }
-/* pergunta → lista: 24px (literal). */
+/* pergunta → lista: 16px no Figma, 13px aqui, pela mesma invariante do toggle
+   ("baseline do rótulo → centro da forma = 32px", ver shared.css). O rótulo é
+   16px/26px, que deixa 6.8px de leading abaixo da baseline, e aqui o centro da
+   forma fica a 12px do topo do .doc-item (rádio de 20px + os 2px de nudge
+   abaixo) e não a 16px como no slot de 32px do toggle: 32 − 6.8 − 12 ≈ 13. */
 #modoOperacaoOpcoes {
   gap: 32px; /* entre opções (literal) */
-  margin-top: var(--cmg-space-6);
+  margin-top: 13px;
 }
 #modoOperacaoOpcoes .doc-item {
   border: 0;
   background: none;
   padding: 0;
-  gap: 4px; /* rádio → texto (literal) */
+  /* rádio → texto: 4px no Figma, medidos da caixa de 32×32 do ícone → 10px
+     visuais a partir da forma de 20px, a mesma distância do .toggle-btn. Aqui
+     a forma não ganha o slot de 32px: com duas linhas de texto e
+     align-items:flex-start ele exigiria margem negativa para manter o
+     alinhamento óptico com a primeira linha. */
+  gap: 10px;
   align-items: flex-start;
 }
 #modoOperacaoOpcoes .doc-item:hover {
@@ -945,25 +954,28 @@ textarea.ta {
 }
 /* Forma do rádio: regra canônica `.cemig-form input[type="radio"]`
    (shared.css); aqui só o alinhamento com a 1ª linha do rótulo —
-   (26px de line-height − 20px da forma) / 2 = 3px. */
+   (24px de line-height − 20px da forma) / 2 = 2px. */
 #modoOperacaoOpcoes input[type="radio"] {
-  margin-top: 3px;
+  margin-top: 2px;
 }
+/* Rótulo da opção: mesma tipografia do .toggle-btn canônico. */
 #modoOperacaoOpcoes .doc-text {
-  font-size: 16px;
-  line-height: 26px;
-  letter-spacing: 0.2px;
-  color: #364b46;
+  font-size: var(--cmg-fs-body-lg);
+  line-height: var(--cmg-lh-body);
+  letter-spacing: var(--cmg-ls-loose);
+  color: var(--cmg-neutral-600);
 }
 /* Descrição de apoio, abaixo do rótulo. Figma pede gap:16px entre caixas
-   recortadas de 11px e 10px; o leading das duas linhas (26px e 24px) já
-   cobre ~14px disso, restando ~2px de margem real. */
+   recortadas de 11px e 10px; o leading das duas linhas de 24px já cobre 13.2px
+   disso (5.8px abaixo da baseline do rótulo + 7.4px acima da cap do apoio),
+   restando ~3px de margem real. Corpo/médio — não é rótulo de opção, então
+   mantém os 14px. */
 #modoOperacaoOpcoes .doc-sub {
-  margin-top: 2px;
-  font-size: 14px;
-  line-height: 24px;
-  letter-spacing: 0.2px;
-  color: #576864;
+  margin-top: 3px;
+  font-size: var(--cmg-fs-body);
+  line-height: var(--cmg-lh-body);
+  letter-spacing: var(--cmg-ls-loose);
+  color: var(--cmg-neutral-500);
 }
 /* Descrição de apoio: uma linha abaixo do rótulo da opção. */
 .doc-sub {

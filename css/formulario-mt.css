@@ -367,49 +367,13 @@
   background: var(--cmg-neutral-200);
   color: var(--cmg-neutral-700);
 }
-/* Radios "Trocar este transformador / Novo transformador" — botões com
-   aparência de radio nativo, no padrão dos demais cards de opção. */
+/* Radios "Trocar este transformador / Novo transformador" e "Cubículo já
+   existente / novo": usam o componente canônico (.toggle-group/.toggle-btn em
+   shared.css). Esta classe sobrevive só como gancho da margem inferior — o
+   grupo fica no cabeçalho do card, sem <label> acima. */
 .cemig-mtform .trafo-troca {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 28px;
-  /* mesmo passo do grid de campos, acima e abaixo */
+  /* mesmo passo do grid de campos, abaixo */
   margin: 0 0 14px;
-}
-.cemig-mtform .trafo-troca-opt {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  background: none;
-  border: 0;
-  padding: 4px 0;
-  cursor: pointer;
-  font: inherit;
-  font-size: var(--cmg-fs-body);
-  color: var(--cmg-text-strong);
-  text-align: left;
-}
-.cemig-mtform .trafo-troca-opt .trafo-troca-dot {
-  flex: none;
-  width: 17px;
-  height: 17px;
-  border-radius: 50%;
-  border: 2px solid var(--cmg-neutral-500);
-  background: var(--cmg-surface);
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-.cemig-mtform .trafo-troca-opt.is-active .trafo-troca-dot {
-  border-color: var(--cmg-green-600);
-  /* miolo preenchido sem elemento extra */
-  box-shadow: inset 0 0 0 3.5px var(--cmg-surface),
-    inset 0 0 0 10px var(--cmg-green-600);
-}
-.cemig-mtform .trafo-troca-opt:focus-visible {
-  outline: 2px solid var(--cmg-green-600);
-  outline-offset: 2px;
-  border-radius: var(--cmg-radius-sm, 4px);
 }
 /* Chevron desenhado em CSS — aponta para baixo e gira ao expandir. */
 .cemig-mtform .motor-card-head .motor-chevron,
