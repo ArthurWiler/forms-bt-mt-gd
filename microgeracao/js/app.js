@@ -17,12 +17,13 @@
    ?modo=fasttrack|gridzero) que pré-definiam e TRAVAVAM os campos.
    Agora são campos livres da etapa 2, independentes entre si, e
    as regras derivam do preenchimento:
-     - fastTrack="Sim"  → exige a regra de enquadramento (8.5.x),
-       trava a modalidade em Autoconsumo local e limita a potência
-       da usina a GD_FAST_LIMITE_USINA_KW (7,5 kW).
-     - gridZero="Sim"   → informativo (consta no PDF); não deriva
-       trava alguma, pois o enquadramento correspondente é
-       declarado pelo próprio campo 8.5.1.
+     - fastTrack="Sim"  → trava a modalidade em Autoconsumo local
+       e limita a potência da usina a GD_FAST_LIMITE_USINA_KW
+       (7,5 kW). A "regra de enquadramento" (8.5.x) foi removida:
+       não é declarada no formulário — só explicada nas orientações.
+     - gridZero="Sim"   → também trava a modalidade em Autoconsumo
+       local: sem injeção na rede não há excedente a transferir,
+       então nenhuma outra modalidade se aplica. Consta no PDF.
    ============================================================ */
 
 /* ===== Estado global ===== */
@@ -127,10 +128,7 @@ function _cardsMontar(campo) {
           // `desmarcavel`: campo opcional — clicar no card já ativo limpa a
           // escolha (é o único caminho para desfazer, já que não há card de
           // recusa do tipo "Não informar").
-          _cardDispatch(
-            select,
-            campo.desmarcavel && ativo ? "" : op.valor,
-          );
+          _cardDispatch(select, campo.desmarcavel && ativo ? "" : op.valor);
           render();
         });
       grid.appendChild(btn);
@@ -469,11 +467,21 @@ function _feedbackCampoGD(el, spanId, valido, msgErr) {
 }
 function onEmailGD(k) {
   const el = $(`[data-k="${k}"]`);
-  _feedbackCampoGD(el, `status-${k}`, _validarEmailGD(el && el.value), "e-mail inválido");
+  _feedbackCampoGD(
+    el,
+    `status-${k}`,
+    _validarEmailGD(el && el.value),
+    "e-mail inválido",
+  );
 }
 function onTelGD(k) {
   const el = $(`[data-k="${k}"]`);
-  _feedbackCampoGD(el, `status-${k}`, _validarTelefoneGD(el && el.value), "telefone inválido");
+  _feedbackCampoGD(
+    el,
+    `status-${k}`,
+    _validarTelefoneGD(el && el.value),
+    "telefone inválido",
+  );
 }
 
 /* ===== Identificação ===== */
@@ -510,22 +518,11 @@ function onNisGD() {
   if (box) box.style.display = pfVisivel && state.nis === "Sim" ? "" : "none";
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
-// Regra 1: Fast Track = "Sim" revela e exige a regra de enquadramento (8.5.x)
-// e propaga as travas da etapa 6 (modalidade + limite de potência da usina).
+// Regra 1: Fast Track = "Sim" propaga as travas da etapa da geração
+// (modalidade + limite de potência da usina). A "regra de enquadramento"
+// (8.5.x) saiu: não é mais declarada no formulário.
 function onFastTrack() {
   _sync("fastTrack");
-  const sim = state.fastTrack === "Sim";
-  const box = $("#fastRegraBox");
-  if (box) box.style.display = sim ? "" : "none";
-  const sel = $(`select[data-k="fastRegra"]`);
-  if (sel) {
-    if (sim) sel.setAttribute("data-req", "");
-    else {
-      sel.removeAttribute("data-req");
-      sel.classList.remove("is-invalid");
-      sel.value = state.fastRegra = "";
-    }
-  }
   recalcGeracao(); // reavalia trava de modalidade e limite de 7,5 kW
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
@@ -582,13 +579,10 @@ function preencherSelect(k, lista, opts) {
   const atual = sel.value;
   sel.innerHTML =
     (semVazio ? "" : `<option value="">${rotuloVazio}</option>`) +
-    itens
-      .map((o) => `<option value="${o.valor}">${o.texto}</option>`)
-      .join("");
+    itens.map((o) => `<option value="${o.valor}">${o.texto}</option>`).join("");
   if (atual && itens.some((o) => o.valor === atual)) sel.value = atual;
 }
 function preencherSelects() {
-  preencherSelect("fastRegra", GD_FAST_REGRAS);
   preencherSelect("grupo", GD_GRUPOS);
   preencherSelect("classe", GD_CLASSES);
   preencherSelect("solicitacao", GD_SOLICITACOES);
@@ -952,7 +946,8 @@ async function consultarRestricaoAmbientalGD(lat, lng) {
     state.restricaoAceite = false;
     state.restricoesTexto = dentros
       .map(
-        (r) => r.rotulo + (r.nomes.length ? " (" + r.nomes.join(", ") + ")" : ""),
+        (r) =>
+          r.rotulo + (r.nomes.length ? " (" + r.nomes.join(", ") + ")" : ""),
       )
       .join("\n");
     state.restricoesDetalhe = detalhesRestricoes(res);
@@ -965,7 +960,8 @@ async function consultarRestricaoAmbientalGD(lat, lng) {
   } catch (e) {
     _gdLastRestrKey = "";
     if (status)
-      status.textContent = (e && e.message) || "Falha na consulta de restrições.";
+      status.textContent =
+        (e && e.message) || "Falha na consulta de restrições.";
   }
 }
 function onGeradorEmergencia() {
@@ -1015,8 +1011,13 @@ function onEdifTipoGD() {
   const nova = _ehLigacaoNova();
   const individual = state.edifTipo === "Edificação Individual";
   const ehBT = state.grupo === "B";
-  const verInd = !!state.edifTipo && !nova && ehBT && individual;
-  const verGeral = !!state.edifTipo && !nova && ehBT && !individual;
+  // Sem solicitação escolhida o disjuntor "atual" fica fora da tela, como a UC
+  // existente e a mudança de local (ver onSolicitacao): _ehLigacaoNova() é
+  // falso com a solicitação em branco, então checar só `!nova` deixava o campo
+  // aparecer antes de o usuário responder o que veio a pedir.
+  const base = !!state.edifTipo && !!state.solicitacao && !nova && ehBT;
+  const verInd = base && individual;
+  const verGeral = base && !individual;
   const bInd = $("#disjIndividualBox");
   if (bInd) bInd.style.display = verInd ? "" : "none";
   const bGeral = $("#disjGeralBox");
@@ -1287,8 +1288,7 @@ function onSolicitacao() {
   // não existe instalação). Sem solicitação, o campo fica fora da tela — como
   // o disjuntor "atual" em onEdifTipoGD().
   const instBox = $("#instalacaoUCBox");
-  if (instBox)
-    instBox.style.display = state.solicitacao && !nova ? "" : "none";
+  if (instBox) instBox.style.display = state.solicitacao && !nova ? "" : "none";
   // #mudancaLocalBox (etapa 5): mesma lógica da UC existente — numa ligação
   // nova o padrão ainda será construído, então não há local a mudar. Ao
   // ocultar, força "Não" e fecha o bloco de endereço do novo local: sem isso
@@ -1437,15 +1437,36 @@ function _ehAlteracaoPotenciaGD() {
 //   • Conexão nova            → só o campo "nova"
 //   • Existente COM alteração → "atual" + "futura"
 //   • Existente SEM alteração → só "atual" (a potência não muda)
-function _paresPotenciaGD() {
+// Exceção do par de CONSUMO no Grupo B: a potência NOVA/FUTURA não é
+// perguntada — ela é o RESULTADO do Formulário de Carga da etapa "Dados das
+// unidades" (ND-5.1/5.2), que devolve "Carga instalada" (kW) e "Demanda
+// calculada" (kVA) das cargas declaradas, e se aplica exatamente nas mesmas
+// solicitações que exibiam o campo (GD_SOLICITACOES_FORM_CARGA, ver
+// gdEtapaCargaDefinida). Perguntar de novo duplicava o mesmo dado.
+// A potência ATUAL continua: é a que a UC já tem — a referência contra a qual
+// a carga nova, declarada depois na etapa 6, é comparada. O formulário de
+// carga calcula a carga que a UC PASSARÁ a ter, não a de hoje.
+// No Grupo A não há formulário de carga: lá a potência é contratada, e ainda
+// dimensiona a subestação (demandaRepresentativaGD), então o par vai inteiro.
+// Exceção do par de GERAÇÃO: ele pertence ao conjunto de campos da fonte
+// SOLAR (ver onFonte) — nas demais fontes o par inteiro some da tela, junto
+// com o resto do bloco, até que os campos próprios de cada uma sejam definidos.
+// As regras valem para os três consumidores do par (etapa, validação e
+// prévia), por isso moram aqui e não em cada um.
+function _paresPotenciaGD(tipo) {
   const nova = _ehLigacaoNova();
+  const consumoBT = tipo === "consumo" && state.grupo !== "A";
+  const geracaoNaoFV = tipo === "geracao" && state.fontePrimaria !== "Solar";
   return {
     nova,
     // Sem solicitação escolhida não há o que perguntar: os campos ficam fora
     // da tela, como a UC existente e a mudança de local.
     verNovaOuFutura:
-      !!state.solicitacao && (nova || _ehAlteracaoPotenciaGD()),
-    verAtual: !!state.solicitacao && !nova,
+      !!state.solicitacao &&
+      !consumoBT &&
+      !geracaoNaoFV &&
+      (nova || _ehAlteracaoPotenciaGD()),
+    verAtual: !!state.solicitacao && !geracaoNaoFV && !nova,
   };
 }
 // Potência de consumo (etapa "Tipo de atendimento"). As chaves de estado
@@ -1454,7 +1475,7 @@ function _paresPotenciaGD() {
 // passaram a falar em "Potência".
 // Depende de grupo × solicitação, por isso é chamada pelos dois handlers.
 function _atualizarPotenciaContratada() {
-  const { nova, verNovaOuFutura, verAtual } = _paresPotenciaGD();
+  const { nova, verNovaOuFutura, verAtual } = _paresPotenciaGD("consumo");
   _campoPotenciaGD(
     "#demandaConsumoBox",
     "#demandaConsumoLbl",
@@ -1495,7 +1516,7 @@ function _campoPotenciaGD(boxSel, lblSel, chave, ver, rotulo) {
 // rótulos mudam entre os grupos. A geração que a UC já tem é a "atual" deste
 // par; não existe mais um campo "Potência já conectada" em separado.
 function _atualizarPotenciaGeracao() {
-  const { nova, verNovaOuFutura, verAtual } = _paresPotenciaGD();
+  const { nova, verNovaOuFutura, verAtual } = _paresPotenciaGD("geracao");
   _campoPotenciaGD(
     "#demandaGeracaoBox",
     "#demandaGeracaoLbl",
@@ -1615,6 +1636,9 @@ function renderResultadoCargaGD() {
 function _ehFastTrack() {
   return state.fastTrack === "Sim";
 }
+function _ehGridZero() {
+  return state.gridZero === "Sim";
+}
 // Modalidade de operação (etapa 4): um card único no lugar dos antigos campos
 // Fast Track e Grid Zero. Eles continuam existindo no estado — derivados desta
 // escolha — porque PDF, prévia e as regras do art. 73-A dependem deles.
@@ -1626,7 +1650,7 @@ function onModoOperacaoGD(el) {
     selGrid = $(`select[data-k="gridZero"]`);
   if (selFast) selFast.value = state.fastTrack;
   if (selGrid) selGrid.value = state.gridZero;
-  onFastTrack(); // revela/exige a regra de enquadramento 8.5.x
+  onFastTrack(); // propaga as travas de modalidade e potência
   recalcGeracao(); // trava de modalidade + limite de 7,5 kW
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
@@ -1638,26 +1662,127 @@ window.gdModoOperacaoOk = () => {
   if (!box || box.offsetParent === null) return true;
   return !!state.modoOperacao;
 };
+/* ===== Fonte Hidráulica — segurança de barragens (REN 696/2015) =====
+   As quatro perguntas de classificação trazem o critério oficial junto do
+   rótulo: são longas demais para os cards de toggle e aparecem como lista de
+   rádios, no mesmo desenho da modalidade de operação. Escrevê-las à mão
+   quadruplicaria o mesmo markup, então elas saem de GD_BARRAGEM_PERGUNTAS
+   (js/data.js) — a mesma lista que dá os rótulos curtos ao PDF e à validação.
+   Como não há <select data-k> por trás, os marcadores não as enxergam (só
+   veem controles bindados): quem cobra a resposta é gdBarragemOk(), pelo
+   data-gate do botão Avançar. */
+function gdMontarPerguntasBarragem() {
+  const box = $("#hidroBarragemPerguntas");
+  if (!box || box.dataset.montado) return;
+  box.dataset.montado = "1";
+  box.innerHTML = GD_BARRAGEM_PERGUNTAS.map((p) => {
+    const opcoes = p.opcoes
+      .map(
+        (o) =>
+          `<label class="doc-item">` +
+          `<input type="radio" name="${p.chave}" value="${o.valor}" onchange="onPerguntaBarragem(this)" />` +
+          `<span class="doc-text">${o.valor}<span class="doc-sub">${o.sub}</span></span>` +
+          `</label>`,
+      )
+      .join("");
+    // O "*" vai no markup porque a montagem acontece em initFormulario(), antes
+    // de CemigMarcadores.aplicar() — sem ele a pergunta entraria como
+    // "(opcional)"; o data-noopt cobre o caso do campo sem controle bindado.
+    return (
+      `<div class="field field--plain col-span-2 gd-pergunta" data-noopt>` +
+      `<label>${p.num}) ${p.pergunta} <span class="req">*</span></label>` +
+      `<div class="doc-list gd-radio-list">${opcoes}</div></div>`
+    );
+  }).join("");
+  // Restaura a marcação (prefill / volta à etapa): os rádios não passam pelo
+  // bindInputs, que só alcança [data-k].
+  GD_BARRAGEM_PERGUNTAS.forEach((p) => {
+    const r = $(`input[name="${p.chave}"][value="${state[p.chave]}"]`);
+    if (r) r.checked = true;
+  });
+}
+function onPerguntaBarragem(el) {
+  state[el.name] = el.value;
+  if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
+}
+// Só cobra as respostas com o bloco em tela — fora da fonte Hidráulica ele não
+// existe, e exigi-las travaria o avanço sem nada a responder.
+window.gdBarragemOk = () => {
+  const box = $("#hidroBlocos");
+  if (!box || box.offsetParent === null) return true;
+  return GD_BARRAGEM_PERGUNTAS.every((p) => !!state[p.chave]);
+};
+// Gate único do botão Avançar da etapa: as duas perguntas em rádio (modalidade
+// de operação e classificação da barragem) ficam fora dos marcadores.
+window.gdEtapaGeracaoOk = () => gdModoOperacaoOk() && gdBarragemOk();
+// A fonte primária comanda a etapa inteira: cada fonte tem o seu conjunto de
+// campos. Estão montados dois:
+//   • SOLAR      — blocos FV, tecnologia, modalidade de compensação, UCs
+//                  beneficiadas e potência ativa da usina (calculada);
+//   • HIDRÁULICA — #hidroBlocos: dados da central e do aproveitamento
+//                  (potências, tensão, rio, sub-bacia, níveis de operação) e a
+//                  classificação de segurança de barragens da REN 696/2015.
+// Fora deles, só a MODALIDADE DE OPERAÇÃO é comum a todas as fontes — ela
+// aparece assim que qualquer uma é escolhida. Enquanto nada for escolhido a
+// etapa mostra só a própria pergunta; os campos das demais fontes ainda serão
+// definidos. Quem depende disso: a validação de exportação, que não pode
+// cobrar campo fora de tela (ver validarExportacao).
 function onFonte() {
+  // Guarda o valor anterior: a marcação automática da tecnologia (abaixo) vale
+  // para a ESCOLHA da fonte, não para a restauração de um formulário salvo —
+  // initFormulario() também passa por aqui, e lá sobrescrever a tecnologia
+  // apagaria o que o usuário já tinha respondido.
+  const fonteAnterior = state.fontePrimaria;
   _sync("fontePrimaria");
+  const mudouFonte = state.fontePrimaria !== fonteAnterior;
+  const temFonte = !!state.fontePrimaria;
   const ehFV = state.fontePrimaria === "Solar";
+  const ehHidro = state.fontePrimaria === "Hidráulica";
+  [
+    "#tipoGeracaoBox",
+    "#modalidadeBox",
+    "#qtdUCsCreditoBox",
+    "#potAtivaBox",
+  ].forEach((s) => {
+    const el = $(s);
+    if (el) el.style.display = ehFV ? "" : "none";
+  });
   const blocos = $("#fvBlocos");
   if (blocos) blocos.style.display = ehFV ? "" : "none";
-  // A modalidade de operação (Padrão/Fast Track/Grid Zero) é específica de
-  // sistemas solares — some junto com os blocos FV.
+  // Conjunto da fonte Hidráulica: dados da central + segurança de barragens.
+  const hidro = $("#hidroBlocos");
+  if (hidro) hidro.style.display = ehHidro ? "" : "none";
+  // A modalidade de operação (Padrão/Fast Track/Grid Zero) vale para QUALQUER
+  // fonte — só espera que alguma tenha sido escolhida, como o resto da etapa.
+  // Ao voltar a fonte para vazio a resposta é DESFEITA: um "Fast Track" marcado
+  // antes seguiria valendo escondido — travando a modalidade de compensação em
+  // Autoconsumo local e limitando a potência da usina a 7,5 kW sem que nada em
+  // tela explicasse o porquê.
   const modo = $("#modoOperacaoBox");
-  if (modo) modo.style.display = ehFV ? "" : "none";
+  if (modo) modo.style.display = temFonte ? "" : "none";
+  if (!temFonte && state.modoOperacao) {
+    state.modoOperacao = "";
+    $$('input[name="modoOperacao"]').forEach((r) => (r.checked = false));
+    onModoOperacaoGD(); // deriva fastTrack/gridZero = "Não" e solta as travas
+  }
+  // Solar é sempre inversor: a tecnologia é consequência da fonte, não uma
+  // segunda pergunta. O select continua editável — só a marcação vem pronta.
+  if (
+    ehFV &&
+    (mudouFonte || !state.tipoGeracao) &&
+    state.tipoGeracao !== GD_TIPO_GERACAO_INVERSOR
+  )
+    aplicarPatch({ tipoGeracao: GD_TIPO_GERACAO_INVERSOR });
   const pot = $(`[data-k="potAtivaInstalada"]`);
   if (pot) pot.disabled = ehFV;
+  // O par de potências de geração também espera a fonte (ver
+  // _atualizarPotenciaGeracao).
+  _atualizarPotenciaGeracao();
   recalcGeracao();
 }
-function onTipoGeracao() {
-  _sync("tipoGeracao");
-  const box = $("#tipoGeracaoOutroBox");
-  if (box)
-    box.style.display =
-      state.tipoGeracao === "Outra (especificar):" ? "" : "none";
-}
+// onTipoGeracao() saiu junto com a opção "Outra (especificar):": ela era a
+// única condicional da tecnologia (revelava o campo "Especificar"), e o
+// <select> já grava o estado pelo bindInputs — não sobrou handler a chamar.
 function onPotAtivaInput(el) {
   if (state.fontePrimaria === "Solar") return; // calculado, campo travado
   onNumDec(el);
@@ -1674,16 +1799,28 @@ function recalcGeracao() {
     (parseFloat(state.potNominalInversor) || 0);
   state.potTotalModulos = pm ? String(pm) : "";
   state.potTotalInversores = pi ? String(pi) : "";
-  // Os totais são exibidos como texto (não são inputs): "5,76 kW" ou "—".
+  // Os totais são exibidos como texto (não são inputs): "5,76 kW" enquanto
+  // houver o que mostrar, senão VAZIO — o produto só existe com quantidade e
+  // potência nominal preenchidas, e um "—" fixo lia como valor calculado.
   const dispM = $("#gd_potTotalModulos"),
     dispI = $("#gd_potTotalInversores");
-  const txt = (v) => (v > 0 ? fmt2(v) + " kW" : "—");
+  const txt = (v) => (v > 0 ? fmt2(v) + " kW" : "");
   if (dispM) dispM.textContent = txt(pm);
   if (dispI) dispI.textContent = txt(pi);
   // Regra 6: em FV a Potência Ativa Instalada = MENOR entre módulos e inversores.
   if (state.fontePrimaria === "Solar") {
     const calc = pm > 0 && pi > 0 ? Math.min(pm, pi) : pm || pi || 0;
     state.potAtivaInstalada = calc ? String(calc) : "";
+    const inp = $(`[data-k="potAtivaInstalada"]`);
+    if (inp) inp.value = state.potAtivaInstalada;
+  } else if (state.fontePrimaria === "Hidráulica") {
+    // Na hidráulica a potência da usina é a "Potência Instalada (kW)" do bloco
+    // próprio — um campo só. Espelhar aqui evita perguntar o mesmo dado duas
+    // vezes e mantém potAtivaInstalada como a chave única lida pelo PDF, pela
+    // prévia e pelo limite do Fast Track. O input genérico (fora de tela nesta
+    // fonte) recebe o valor porque syncState() relê o DOM antes da prévia e
+    // apagaria o estado derivado.
+    state.potAtivaInstalada = state.hidroPotInstalada || "";
     const inp = $(`[data-k="potAtivaInstalada"]`);
     if (inp) inp.value = state.potAtivaInstalada;
   }
@@ -1693,26 +1830,18 @@ function recalcGeracao() {
   const excede = fast && potUsina > GD_FAST_LIMITE_USINA_KW;
   const aviso = $("#fastExcedeAviso");
   if (aviso) aviso.style.display = excede ? "" : "none";
+  // Grid Zero trava a mesma modalidade, por outro motivo: o sistema não injeta
+  // na rede, então não há excedente para transferir a outra unidade — sobra o
+  // autoconsumo local. O limite de 7,5 kW continua exclusivo do Fast Track.
+  const travaModalidade = fast || _ehGridZero();
   const selMod = $(`select[data-k="modalidade"]`);
   if (selMod) {
-    if (fast && state.modalidade !== GD_MODALIDADE_AUTOCONSUMO_LOCAL) {
+    if (travaModalidade && state.modalidade !== GD_MODALIDADE_AUTOCONSUMO_LOCAL) {
       state.modalidade = GD_MODALIDADE_AUTOCONSUMO_LOCAL;
       selMod.value = state.modalidade;
     }
-    selMod.disabled = fast;
+    selMod.disabled = travaModalidade;
   }
-  const ehFV = state.fontePrimaria === "Solar";
-  setHint(
-    "potAtivaHint",
-    ehFV
-      ? excede
-        ? "Valor acima do limite Fast Track."
-        : ""
-      : fast
-        ? `Fast Track: máximo de ${GD_FAST_LIMITE_USINA_KW} kW.` +
-          (excede ? " Valor acima do limite permitido." : "")
-        : "",
-  );
   atualizarSE(); // limite de 300 kVA das SE Nº 1/5/8 depende da potência
 }
 
@@ -1768,7 +1897,7 @@ function onCorrAlternativa() {
 // Cobra o par de potências (consumo ou geração) exatamente nos casos em que
 // _paresPotenciaGD() o coloca em tela, e com o rótulo que o usuário viu lá.
 function _reqParPotenciaGD(req, tipo, valorNovaOuFutura, valorAtual) {
-  const { nova, verNovaOuFutura, verAtual } = _paresPotenciaGD();
+  const { nova, verNovaOuFutura, verAtual } = _paresPotenciaGD(tipo);
   if (verNovaOuFutura)
     req(
       valorNovaOuFutura,
@@ -1864,14 +1993,31 @@ function validarExportacao() {
   if (GD_SOLICITACOES_AUMENTO_POTENCIA.includes(d.solicitacao))
     req(d.novaProtecao, "Nova Proteção (Aumento de Potência)");
   req(d.fontePrimaria, "Tipo de Fonte Primária");
-  req(d.tipoGeracao, "Tecnologia de geração");
-  req(d.potAtivaInstalada, "Potência Ativa Instalada Total");
-  // Potência de geração — mesmo critério do par de consumo acima. A geração já
-  // conectada é a "atual" deste par: em "GD Existente COM Alteração" (conexão
-  // existente sem alteração de potência disponibilizada) ela é justamente o
-  // campo cobrado aqui.
-  _reqParPotenciaGD(req, "geracao", d.demandaGeracao, d.demandaGeracaoAtual);
-  req(d.modalidade, "Modalidade de compensação");
+  // Cada fonte cobra o SEU conjunto (ver onFonte): o que não entra em tela não
+  // pode ser exigido, senão a exportação trava sem nada a preencher — mesma
+  // razão da Classe mais acima. As fontes ainda sem campos próprios não cobram
+  // nada além da escolha da fonte.
+  if (d.fontePrimaria === "Solar") {
+    req(d.tipoGeracao, "Tecnologia de geração");
+    req(d.potAtivaInstalada, "Potência Ativa Instalada Total");
+    req(d.modalidade, "Modalidade de compensação");
+  } else if (d.fontePrimaria === "Hidráulica") {
+    req(d.hidroPotAparente, "Potência Aparente (kVA)");
+    req(d.hidroTensao, "Tensão (kV)");
+    req(d.hidroRio, "Nome do rio");
+    req(d.hidroNivelJusante, "Nív. Oper. Normal Jusante (m)");
+    req(d.hidroFatorPotencia, "Fator de Potência");
+    req(d.hidroPotInstalada, "Potência Instalada (kW)");
+    req(d.hidroNivelMontante, "Nív. Oper. Normal Montante (m)");
+    req(d.hidroSubBacia, "Sub-bacia");
+    req(d.hidroBarragemAltura, "Altura da barragem (≥ 15 m)");
+    // As quatro perguntas de classificação da barragem, pelos rótulos curtos
+    // da própria lista (js/data.js) — a pergunta inteira não cabe aqui.
+    GD_BARRAGEM_PERGUNTAS.forEach((p) => req(d[p.chave], p.rotulo));
+  }
+  // Limite do Fast Track: vale para QUALQUER fonte — a potência da usina é
+  // sempre potAtivaInstalada (calculada no Solar, espelhada da potência
+  // instalada na Hidráulica), e é ela que o aviso da etapa compara.
   if (
     d.fastTrack === "Sim" &&
     (parseFloat(d.potAtivaInstalada) || 0) > GD_FAST_LIMITE_USINA_KW
@@ -1879,6 +2025,11 @@ function validarExportacao() {
     faltas.push(
       `Potência da usina acima do limite Fast Track (${GD_FAST_LIMITE_USINA_KW} kW)`,
     );
+  // Potência de geração — mesmo critério do par de consumo acima. A geração já
+  // conectada é a "atual" deste par: em "GD Existente COM Alteração" (conexão
+  // existente sem alteração de potência disponibilizada) ela é justamente o
+  // campo cobrado aqui. _paresPotenciaGD() já devolve o par vazio fora do Solar.
+  _reqParPotenciaGD(req, "geracao", d.demandaGeracao, d.demandaGeracaoAtual);
   if (!d.decl84) faltas.push("Declaração 8.4 (obrigatória)");
   if (!d.decl86) faltas.push("Declaração 8.6 (obrigatória)");
   // Data de vencimento da fatura: opcional (não entra em `req`).
@@ -1895,8 +2046,6 @@ function validarExportacao() {
     req(d.corrMunicipio, "Município de correspondência");
   } else if (d.corrAlternativa === "Conta globalizada")
     req(d.contaGlobal, "Conta globalizada");
-  if (d.fastTrack === "Sim")
-    req(d.fastRegra, "Regra de enquadramento (Fast Track)");
   return { ok: faltas.length === 0, faltas };
 }
 
@@ -1920,7 +2069,7 @@ function pvCampo(label, valor, opts) {
 // Par de potências na prévia: os mesmos campos e rótulos da etapa que os
 // pergunta (ver _paresPotenciaGD), na mesma ordem em que aparecem lá.
 function _pvParPotenciaGD(tipo, valorNovaOuFutura, valorAtual, step) {
-  const { nova, verNovaOuFutura, verAtual } = _paresPotenciaGD();
+  const { nova, verNovaOuFutura, verAtual } = _paresPotenciaGD(tipo);
   return (
     (verAtual
       ? pvCampo(gdRotuloPotencia(tipo, "atual", state.grupo), valorAtual, {
@@ -2018,7 +2167,9 @@ function renderPreviewGD() {
   // Mudança de local só existe quando há padrão instalado — omitida na
   // ligação nova, como o campo na etapa 5.
   if (!_ehLigacaoNova())
-    atend += pvCampo("Mudança de local do padrão", d.mudancaLocal, { step: "atendimento" });
+    atend += pvCampo("Mudança de local do padrão", d.mudancaLocal, {
+      step: "atendimento",
+    });
   if (d.mudancaLocal === "Sim" && !_ehLigacaoNova())
     atend +=
       pvCampo(
@@ -2047,7 +2198,8 @@ function renderPreviewGD() {
         `Lat ${d.mudLatitude || "—"} · Lon ${d.mudLongitude || "—"}`,
         { full: true, step: "atendimento" },
       );
-  // Potência de consumo: o mesmo par da etapa 4, nos dois grupos.
+  // Potência de consumo: o mesmo par da etapa 4 — no Grupo B só a potência
+  // atual, já que a nova/futura vem do Formulário de Carga (etapa 6).
   atend += _pvParPotenciaGD(
     "consumo",
     d.demandaConsumo,
@@ -2097,18 +2249,31 @@ function renderPreviewGD() {
               `${d.potTotalModulos || "—"} / ${d.potTotalInversores || "—"}`,
               {},
             )
+          : "") +
+        // Hidráulica: o resumo traz o aproveitamento (rio/sub-bacia), a
+        // potência aparente e a classificação da barragem — o detalhe todo
+        // (níveis de operação, critérios de risco) fica para o PDF.
+        (d.fontePrimaria === "Hidráulica"
+          ? pvCampo(
+              "Rio / Sub-bacia",
+              `${d.hidroRio || "—"} / ${d.hidroSubBacia || "—"}`,
+              {},
+            ) +
+            pvCampo("Pot. Aparente (kVA)", d.hidroPotAparente, {}) +
+            pvCampo("Barragem ≥ 15 m", d.hidroBarragemAltura, {}) +
+            GD_BARRAGEM_PERGUNTAS.map((p) =>
+              pvCampo(p.rotulo, d[p.chave], {}),
+            ).join("")
           : ""),
     ),
   );
   secoes.push(
-    pvSecao(
-      "5 — Armazenamento",
-      pvCampo("Possui", d.possuiArmazenamento, {}),
-    ),
+    pvSecao("5 — Armazenamento", pvCampo("Possui", d.possuiArmazenamento, {})),
   );
   let cor =
-    pvCampo("Como deseja receber a fatura", d.corrAlternativa, { step: "correspondencia" }) +
-    pvCampo("Vencimento", d.vencimento, { step: "correspondencia" });
+    pvCampo("Como deseja receber a fatura", d.corrAlternativa, {
+      step: "correspondencia",
+    }) + pvCampo("Vencimento", d.vencimento, { step: "correspondencia" });
   if (d.corrAlternativa === "E-mail informado")
     cor += pvCampo("E-mail para envio da fatura", d.email, {
       full: true,
@@ -2134,7 +2299,9 @@ function renderPreviewGD() {
       { full: true, step: "correspondencia" },
     );
   if (d.corrAlternativa === "Conta globalizada")
-    cor += pvCampo("Conta globalizada", d.contaGlobal, { step: "correspondencia" });
+    cor += pvCampo("Conta globalizada", d.contaGlobal, {
+      step: "correspondencia",
+    });
   secoes.push(pvSecao("Correspondência e Fatura", cor));
   const content = $("#previewContent");
   if (content) content.innerHTML = secoes.join(PV_DIVISOR);
@@ -2175,6 +2342,10 @@ window.initFormulario = function () {
   preencherSelects();
   bindInputs();
   inicializarCards();
+  // Perguntas de barragem (fonte Hidráulica): montadas AQUI, antes do
+  // CemigMarcadores.aplicar(), para que o "*" das perguntas seja tratado como
+  // nos campos escritos à mão no fragmento.
+  gdMontarPerguntasBarragem();
   bindDeclaracoes();
   renderChecklist("docsChecklist", GD_DOCUMENTOS, "docs");
   renderChecklist("docsTecChecklist", GD_DOCS_TEC, "docsTec");
@@ -2186,7 +2357,6 @@ window.initFormulario = function () {
   onGeradorEmergencia();
   onTelhadoArrendado();
   onFonte();
-  onTipoGeracao();
   onArmazenamento();
   onCorrAlternativa();
   // Modalidade de operação: radios sem data-k — restaura a marcação a partir
@@ -2205,7 +2375,7 @@ window.initFormulario = function () {
   onFastTrack();
   mostrarCamposPF(gdEhCpfValido());
   // nis: o próprio <select> da etapa 2 chama onNisGD() no onchange (padrão MT).
-  // fastTrack: regra de enquadramento condicionada (card dispara change)
+  // fastTrack: o card dispara "change" no <select> oculto e as travas seguem.
   const selFast = $(`select[data-k="fastTrack"]`);
   if (selFast) selFast.addEventListener("change", onFastTrack);
   const selGrupo = $(`select[data-k="grupo"]`);

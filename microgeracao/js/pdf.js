@@ -22,16 +22,26 @@ function gerarPdfMicroGD(d) {
      (js/data.js) e a regra de quais campos existem é a mesma de
      _paresPotenciaGD() (js/app.js): conexão nova declara um único valor;
      conexão existente, a potência atual e — só quando há alteração de potência
-     — também a futura. */
+     — também a futura. Mesmas exceções da etapa: no Grupo B a potência de
+     CONSUMO nova/futura não é declarada (ela sai do Formulário de Carga,
+     impresso na seção própria) e a linha nem é impressa — o campo está oculto e
+     vazio lá, e imprimi-lo daria "—" onde o dado existe em outro lugar; a
+     ATUAL continua, é a potência que a UC já tem. O par de GERAÇÃO pertence ao
+     conjunto da fonte Solar: fora dela não é perguntado nem impresso. */
   const parPotencia = (pares, tipo, novaOuFutura, atual) => {
+    if (tipo === "geracao" && d.fontePrimaria !== "Solar") return;
     const rot = (papel) => gdRotuloPotencia(tipo, papel, d.grupo);
-    if (ehLigacaoNova) pares.push([rot("nova"), novaOuFutura]);
-    else {
+    const semNovaOuFutura = tipo === "consumo" && d.grupo !== "A";
+    if (ehLigacaoNova) {
+      if (!semNovaOuFutura) pares.push([rot("nova"), novaOuFutura]);
+    } else {
       pares.push([rot("atual"), atual]);
-      if (ehAlteracaoPotencia) pares.push([rot("futura"), novaOuFutura]);
+      if (ehAlteracaoPotencia && !semNovaOuFutura)
+        pares.push([rot("futura"), novaOuFutura]);
     }
   };
   const ehFV = d.fontePrimaria === "Solar";
+  const ehHidro = d.fontePrimaria === "Hidráulica";
 
   // ---- 1. Identificação ----
   sec("1.  IDENTIFICAÇÃO DA UNIDADE CONSUMIDORA");
@@ -43,7 +53,6 @@ function gerarPdfMicroGD(d) {
     ["CPF/CNPJ", d.cpfCnpj],
     ["Fast Track (art. 73-A)", d.fastTrack],
   ];
-  if (d.fastTrack === "Sim") idPairs.push(["Regra de enquadramento", d.fastRegra]);
   idPairs.push(
     ["Grid Zero", d.gridZero],
     ["CEP", d.cep],
@@ -282,15 +291,19 @@ function gerarPdfMicroGD(d) {
   // já conectada" em separado.
   parPotencia(gerPairs, "geracao", d.demandaGeracao, d.demandaGeracaoAtual);
   gerPairs.push(
-    [
-      "Tipo de geração",
-      d.tipoGeracao === "Outra (especificar):"
-        ? `Outra: ${d.tipoGeracaoOutro}`
-        : d.tipoGeracao,
-    ],
+    // Sem o caso "Outra: <texto livre>": a lista de tecnologias (GD_TIPO_GERACAO)
+    // ficou fechada em máquina síncrona e conversor/inversor.
+    ["Tipo de geração", d.tipoGeracao],
     [
       "Modalidade de compensação",
-      d.modalidade + (d.fastTrack === "Sim" ? " (travada — Fast Track)" : ""),
+      // A trava vem do Fast Track ou do Grid Zero (ver recalcGeracao) — o PDF
+      // diz qual delas, para o valor não parecer escolha livre do solicitante.
+      d.modalidade +
+        (d.fastTrack === "Sim"
+          ? " (travada — Fast Track)"
+          : d.gridZero === "Sim"
+            ? " (travada — Grid Zero)"
+            : ""),
     ],
     ["Qtde. instalações a receber crédito", d.qtdInstalacoesCredito],
   );
@@ -310,6 +323,30 @@ function gerarPdfMicroGD(d) {
       ["Inversores — Pot. total (kW)", d.potTotalInversores],
       ["Tensão de Conexão do Inversor (V)", d.tensaoConexaoInversor],
     ]);
+  }
+  // Fonte Hidráulica: dados da central/aproveitamento e a classificação de
+  // segurança de barragens (REN 696/2015). As quatro perguntas de
+  // classificação saem de GD_BARRAGEM_PERGUNTAS (js/data.js), pelos mesmos
+  // rótulos curtos que a validação usa; a 1ª (altura ≥ 15 m) é Sim/Não.
+  if (ehHidro) {
+    kvPairs([
+      ["Potência Aparente (kVA)", d.hidroPotAparente],
+      ["Tensão (kV)", d.hidroTensao],
+      ["Nome do rio", d.hidroRio],
+      ["Sub-bacia", d.hidroSubBacia],
+      ["Fator de Potência", d.hidroFatorPotencia],
+      ["Potência Instalada (kW)", d.hidroPotInstalada],
+      ["Nív. Oper. Normal Montante (m)", d.hidroNivelMontante],
+      ["Nív. Oper. Normal Jusante (m)", d.hidroNivelJusante],
+    ]);
+    // Classificação da barragem em linhas de largura total: em duas colunas os
+    // rótulos longos comem a meia-coluna e o valor sairia cortado. Sem "≥": as
+    // fontes padrão do jsPDF escrevem em cp1252, que não tem o sinal.
+    fullLine(
+      "Altura da barragem maior ou igual a 15 m",
+      d.hidroBarragemAltura,
+    );
+    GD_BARRAGEM_PERGUNTAS.forEach((p) => fullLine(p.rotulo, d[p.chave]));
   }
   kvPairs([
     ["CEG do empreendimento", d.ceg],

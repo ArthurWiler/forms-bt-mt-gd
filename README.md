@@ -53,10 +53,11 @@ Cards com `status: "ok"` aplicam o pré-preenchimento do card na inicialização
 
 ### Fast Track (art. 73-A) e Grid Zero
 
-Fast Track e Grid Zero **não são modalidades de entrada**: são campos livres e independentes da etapa 2 (Identificação) do formulário de microgeração, e as regras derivam do preenchimento (`microgeracao/js/app.js`):
+Fast Track e Grid Zero **não são modalidades de entrada**: são as opções do card *Modalidade de operação* (etapa "Dados da geração"), que aparece assim que uma fonte primária é escolhida — qualquer uma. O card grava `modoOperacao` e dele derivam `fastTrack`/`gridZero`, que continuam alimentando PDF, prévia e regras (`microgeracao/js/app.js`):
 
-- **Fast Track = "Sim"** (`onFastTrack()`): revela e torna obrigatória a *Regra de enquadramento* (8.5.1/8.5.2/8.5.3, lista `GD_FAST_REGRAS`); trava a *Modalidade de compensação* em "Autoconsumo local"; e limita a potência ativa instalada da usina a `GD_FAST_LIMITE_USINA_KW` = **7,5 kW** (7500 W). Acima do limite, o aviso `#fastExcedeAviso` aparece e `validarExportacao()` bloqueia o PDF. Ao voltar para "Não", a regra é limpa e a modalidade destravada.
-- **Grid Zero = "Sim"**: informativo — consta no PDF e corresponde ao inciso 8.5.1, declarado no campo 8.5 da etapa 8. Não deriva trava alguma.
+- **Fast Track = "Sim"** (`onFastTrack()`): trava a *Modalidade de compensação* em "Autoconsumo local" e limita a potência ativa instalada da usina a `GD_FAST_LIMITE_USINA_KW` = **7,5 kW** (7500 W). Acima do limite, o aviso `#fastExcedeAviso` aparece e `validarExportacao()` bloqueia o PDF.
+- **Grid Zero = "Sim"**: trava a mesma *Modalidade de compensação* em "Autoconsumo local" — sem injeção na rede não há excedente a transferir — e consta no PDF. Não tem limite de potência próprio.
+- A *Regra de enquadramento* (8.5.1/8.5.2/8.5.3) **não é declarada no formulário**: o campo `fastRegra` e a lista `GD_FAST_REGRAS` foram removidos, e o item 8.5 permanece só como texto das orientações (etapa 1).
 
 ## Baixa Tensão (`bt/`)
 

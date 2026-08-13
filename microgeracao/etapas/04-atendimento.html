@@ -47,11 +47,17 @@
              • Conexão nova            → só o campo "nova"
              • Existente COM alteração → atual + futura
              • Existente SEM alteração → só atual
-           Vale nos dois grupos; só o RÓTULO muda (o Grupo A contrata demanda,
-           o Grupo B não) — por isso os textos vêm de GD_ROTULOS_POTENCIA
+           Só o RÓTULO muda entre os grupos (o Grupo A contrata demanda, o
+           Grupo B não) — por isso os textos vêm de GD_ROTULOS_POTENCIA
            (js/data.js), escritos por JS, e os <label> têm id.
-           No Grupo A a potência também dimensiona a subestação: ao mudar,
-           refaz os modelos permitidos e o aviso de demanda × potência. -->
+           No Grupo B o campo nova/futura NÃO aparece: essa potência é o
+           RESULTADO do Formulário de Carga da etapa "Dados das unidades", que
+           devolve carga instalada e demanda das cargas declaradas — perguntá-la
+           aqui duplicava o mesmo dado. A potência ATUAL fica: ela é a que a UC
+           já tem, referência para a carga nova declarada lá na etapa 6.
+           No Grupo A, sem formulário de carga, o par vai inteiro; lá a potência
+           ainda dimensiona a subestação: ao mudar, refaz os modelos permitidos
+           e o aviso de demanda × potência. -->
       <div class="field" id="demandaConsumoAtualBox" style="display: none">
         <label id="demandaConsumoAtualLbl">Potência atual (kW)</label>
         <input

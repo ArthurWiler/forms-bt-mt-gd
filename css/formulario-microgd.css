@@ -1168,9 +1168,13 @@ textarea.ta {
 /* ============================================================
    Etapa 4 — Dados da geração
    ------------------------------------------------------------
-   Modalidade de operação (spec Figma "regulamento"): lista de opções em
-   rádio, SEM a moldura de card do .doc-item — apenas o rádio + rótulo,
-   com a descrição de apoio abaixo.
+   Pergunta em lista de rádios (spec Figma "regulamento"): opções SEM a
+   moldura de card do .doc-item — apenas o rádio + rótulo, com a descrição
+   de apoio abaixo. Desenhada para a modalidade de operação
+   (#modoOperacaoBox) e reusada pela classificação de segurança de
+   barragens da fonte Hidráulica, que tem a mesma forma (rótulo curto +
+   critério oficial de apoio): .gd-pergunta é a caixa da pergunta e
+   .gd-radio-list a lista de opções.
 
    Nota sobre os gaps do Figma: lá as caixas de texto vêm recortadas
    (leading-trim / text-edge:cap, que nenhum browser implementa), então
@@ -1179,7 +1183,10 @@ textarea.ta {
    número renderiza muito maior aqui. Os gaps horizontais e os de bloco,
    onde não há recorte, entram literais.
    ============================================================ */
-#modoOperacaoBox > label {
+/* `.cemig-form .field` no seletor porque o rótulo canônico
+   (`.cemig-form .field label`, shared.css) tem especificidade maior que uma
+   classe sozinha — era o id que a vencia antes de a regra ser generalizada. */
+.cemig-form .field.gd-pergunta > label {
   font-size: 16px;
   line-height: 26px;
   letter-spacing: 0.2px;
@@ -1190,11 +1197,11 @@ textarea.ta {
    16px/26px, que deixa 6.8px de leading abaixo da baseline, e aqui o centro da
    forma fica a 12px do topo do .doc-item (rádio de 20px + os 2px de nudge
    abaixo) e não a 16px como no slot de 32px do toggle: 32 − 6.8 − 12 ≈ 13. */
-#modoOperacaoOpcoes {
+.gd-radio-list {
   gap: 32px; /* entre opções (literal) */
   margin-top: 13px;
 }
-#modoOperacaoOpcoes .doc-item {
+.gd-radio-list .doc-item {
   border: 0;
   background: none;
   padding: 0;
@@ -1206,17 +1213,17 @@ textarea.ta {
   gap: 10px;
   align-items: flex-start;
 }
-#modoOperacaoOpcoes .doc-item:hover {
+.gd-radio-list .doc-item:hover {
   border-color: transparent;
 }
 /* Forma do rádio: regra canônica `.cemig-form input[type="radio"]`
    (shared.css); aqui só o alinhamento com a 1ª linha do rótulo —
    (24px de line-height − 20px da forma) / 2 = 2px. */
-#modoOperacaoOpcoes input[type="radio"] {
+.cemig-form .gd-radio-list input[type="radio"] {
   margin-top: 2px;
 }
 /* Rótulo da opção: mesma tipografia do .toggle-btn canônico. */
-#modoOperacaoOpcoes .doc-text {
+.gd-radio-list .doc-text {
   font-size: var(--cmg-fs-body-lg);
   line-height: var(--cmg-lh-body);
   letter-spacing: var(--cmg-ls-loose);
@@ -1227,7 +1234,7 @@ textarea.ta {
    disso (5.8px abaixo da baseline do rótulo + 7.4px acima da cap do apoio),
    restando ~3px de margem real. Corpo/médio — não é rótulo de opção, então
    mantém os 14px. */
-#modoOperacaoOpcoes .doc-sub {
+.gd-radio-list .doc-sub {
   margin-top: 3px;
   font-size: var(--cmg-fs-body);
   line-height: var(--cmg-lh-body);
@@ -1248,6 +1255,10 @@ textarea.ta {
    com o rótulo à esquerda e o valor à direita. */
 /* .cemig-form .field é flex-direction:column e tem especificidade maior que
    .gd-calc — sem prefixar aqui, rótulo, valor e ícone empilhariam. */
+/* Moldura IDÊNTICA à dos campos vizinhos (rótulo flutuante, shared.css):
+   56px, raio 4, superfície e borda pelos tokens --cmg-*. Antes vinha da
+   paleta legada (--borda #DDE4E2, bem mais clara que a neutra/400 #8C9895 dos
+   campos ao lado), e o box destoava da linha. */
 .cemig-form .field.gd-calc {
   display: flex;
   flex-direction: row;
@@ -1256,19 +1267,30 @@ textarea.ta {
   gap: 8px;
   min-height: 56px;
   padding: 0 var(--cmg-space-4, 16px);
-  border: 1px solid var(--borda);
+  border: 1px solid var(--cmg-border);
   border-radius: 4px;
-  background: var(--card);
+  background: var(--cmg-surface);
 }
+/* Texto interno no mesmo padrão do campo de rótulo flutuante (shared.css):
+   o rótulo é o "flutuado" (12/20/0.2, neutra/500) e o valor é o do <input>
+   preenchido (16/24/0.2, neutra/700). Antes vinham da paleta legada
+   (--texto-suave / --texto) em 14 e 15px, e a linha destoava dos vizinhos. */
 .gd-calc-label {
-  font-size: 14px;
-  color: var(--texto-suave);
+  font-family: var(--cmg-font-family);
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 20px;
+  letter-spacing: 0.2px;
+  color: var(--cmg-neutral-500);
 }
 .gd-calc-valor {
   margin-left: auto;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--texto);
+  font-family: var(--cmg-font-family);
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: 0.2px;
+  color: var(--cmg-text-strong);
 }
 /* Ícone informativo com o memorial do cálculo. O balão é o .cmg-hint
    compartilhado (shared.css) e o ícone é o imgs/info.svg usado em BT/MT —

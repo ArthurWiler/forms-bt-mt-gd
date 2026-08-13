@@ -11,12 +11,18 @@
       <label>Fonte primária <span class="req">*</span></label>
       <select data-k="fontePrimaria" onchange="onFonte()"></select>
     </div>
-    <div class="field field--plain col-span-2" id="modoOperacaoBox" data-noopt>
+    <div
+      class="field field--plain col-span-2 gd-pergunta"
+      id="modoOperacaoBox"
+      data-noopt
+    >
+      <!-- Pergunta comum a todas as fontes primárias (ver onFonte): o texto
+           não fala mais em "sistema solar". -->
       <label
-        >Qual a modalidade de operação do sistema solar?
+        >Qual a modalidade de operação do sistema?
         <span class="req">*</span></label
       >
-      <div class="doc-list" id="modoOperacaoOpcoes">
+      <div class="doc-list gd-radio-list" id="modoOperacaoOpcoes">
         <label class="doc-item">
           <input
             type="radio"
@@ -72,9 +78,13 @@
            • Conexão nova            → só o campo "nova"
            • Existente COM alteração → atual + futura
            • Existente SEM alteração → só atual
-         Vale nos dois grupos; só o RÓTULO muda (o Grupo A contrata demanda, o
-         Grupo B não) — os textos vêm de GD_ROTULOS_POTENCIA (js/data.js),
-         escritos por JS, e por isso os <label> têm id. -->
+         Aqui os dois campos valem nos dois grupos, SEM a exceção do consumo
+         (cujo par só existe no Grupo A, porque no B ele sai do Formulário de
+         Carga): nada no formulário calcula a geração, ela só pode ser
+         declarada.
+         Só o RÓTULO muda (o Grupo A contrata demanda, o Grupo B não) — os
+         textos vêm de GD_ROTULOS_POTENCIA (js/data.js), escritos por JS, e por
+         isso os <label> têm id. -->
     <div class="field" id="demandaGeracaoAtualBox" style="display: none">
       <label id="demandaGeracaoAtualLbl">Potência de geração atual (kW)</label>
       <input
@@ -93,19 +103,19 @@
         oninput="onNumDec(this)"
       />
     </div>
-    <div class="field">
+    <!-- Tecnologia de geração: a lista (GD_TIPO_GERACAO) ficou com as duas
+         opções fechadas — máquina síncrona e conversor/inversor. O campo
+         "Especificar" (tipoGeracaoOutro) saiu junto com a opção "Outra
+         (especificar):": sem ela nada mais o revela. -->
+    <div class="field" id="tipoGeracaoBox" style="display: none">
       <label>Tecnologia de geração <span class="req">*</span></label>
-      <select data-k="tipoGeracao" onchange="onTipoGeracao()"></select>
+      <select data-k="tipoGeracao"></select>
     </div>
-    <div class="field">
+    <div class="field" id="modalidadeBox" style="display: none">
       <label>Modalidade de compensação <span class="req">*</span></label>
       <select data-k="modalidade"></select>
     </div>
-    <div class="field" id="tipoGeracaoOutroBox" style="display: none">
-      <label>Especificar <span class="req">*</span></label>
-      <input type="text" data-k="tipoGeracaoOutro" placeholder=" " />
-    </div>
-    <div class="field">
+    <div class="field" id="qtdUCsCreditoBox" style="display: none">
       <label>Qtde. de UCs beneficiadas <span class="req">*</span></label>
       <input
         type="text"
@@ -116,7 +126,7 @@
     </div>
     <!-- Potência ativa instalada: em FV é calculada (menor entre módulos e
          inversores) e o campo fica travado; nas demais fontes é digitada. -->
-    <div class="field col-span-2" id="potAtivaBox">
+    <div class="field col-span-2" id="potAtivaBox" style="display: none">
       <label
         >Potência ativa instalada total da usina (kW)
         <span class="req">*</span></label
@@ -189,7 +199,9 @@
       </div>
       <div class="field field--plain gd-calc" data-noopt>
         <span class="gd-calc-label">Potência total calculada</span>
-        <span class="gd-calc-valor" id="gd_potTotalModulos">—</span>
+        <!-- Sem valor o span fica VAZIO (não "—"): o total só existe depois da
+             quantidade e da potência nominal — ver recalcGeracao(). -->
+        <span class="gd-calc-valor" id="gd_potTotalModulos"></span>
         <span
           class="gd-calc-info cmg-hint"
           tabindex="0"
@@ -260,7 +272,7 @@
       </div>
       <div class="field field--plain gd-calc" data-noopt>
         <span class="gd-calc-label">Potência total calculada</span>
-        <span class="gd-calc-valor" id="gd_potTotalInversores">—</span>
+        <span class="gd-calc-valor" id="gd_potTotalInversores"></span>
         <span
           class="gd-calc-info cmg-hint"
           tabindex="0"
@@ -274,6 +286,113 @@
             aria-hidden="true"
         /></span>
       </div>
+    </div>
+  </div>
+
+  <!-- Conjunto da fonte HIDRÁULICA (ver onFonte): dados da central e do
+       aproveitamento + a classificação de segurança de barragens da REN
+       696/2015. A "Potência Instalada (kW)" daqui é a potência da usina nesta
+       fonte — recalcGeracao() a espelha em potAtivaInstalada, o campo que o
+       PDF, a prévia e o limite do Fast Track leem (o campo genérico
+       #potAtivaBox é do conjunto Solar e fica fora de tela aqui). -->
+  <div id="hidroBlocos" style="display: none">
+    <h4 class="card-subtitle divider">Dados da central geradora hidráulica</h4>
+    <div class="grid grid-2">
+      <div class="field">
+        <label>Potência Aparente (kVA) <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="hidroPotAparente"
+          placeholder=" "
+          oninput="onNumDec(this)"
+        />
+      </div>
+      <div class="field">
+        <label>Tensão (kV) <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="hidroTensao"
+          placeholder=" "
+          oninput="onNumDec(this)"
+        />
+      </div>
+      <div class="field">
+        <label>Nome do rio <span class="req">*</span></label>
+        <input type="text" data-k="hidroRio" placeholder=" " />
+      </div>
+      <div class="field">
+        <label>Nív. Oper. Normal Jusante (m) <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="hidroNivelJusante"
+          placeholder=" "
+          oninput="onNumDec(this)"
+        />
+      </div>
+      <div class="field">
+        <label>Fator de Potência <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="hidroFatorPotencia"
+          placeholder=" "
+          oninput="onNumDec(this)"
+        />
+      </div>
+      <div class="field">
+        <label>Potência Instalada (kW) <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="hidroPotInstalada"
+          placeholder=" "
+          oninput="
+            onNumDec(this);
+            recalcGeracao();
+          "
+        />
+      </div>
+      <div class="field">
+        <label>Nív. Oper. Normal Montante (m) <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="hidroNivelMontante"
+          placeholder=" "
+          oninput="onNumDec(this)"
+        />
+      </div>
+      <div class="field">
+        <label>Sub-bacia <span class="req">*</span></label>
+        <input type="text" data-k="hidroSubBacia" placeholder=" " />
+      </div>
+    </div>
+
+    <h4 class="card-subtitle divider">Segurança de barragens</h4>
+    <!-- Um único .grid governa as cinco perguntas: a 1ª é Sim/Não (toggle, como
+         os demais Sim/Não da etapa) e as outras quatro são rádios escritos por
+         JS a partir de GD_BARRAGEM_PERGUNTAS (js/data.js) dentro do
+         #hidroBarragemPerguntas — `display:contents` (.grid-subgrupo) mantém
+         cada pergunta como item do MESMO grid, com um gap único na seção. -->
+    <div class="grid grid-2">
+      <div class="field field--plain col-span-2 gd-pergunta" data-noopt>
+        <label>
+          1) A altura da barragem, contada do ponto mais baixo da fundação à
+          crista, é maior ou igual a 15m (quinze metros)?
+          <span class="req">*</span>
+        </label>
+        <div data-toggle="hidroBarragemAltura"></div>
+        <!-- Opção vazia à frente: sem ela o estado nasceria com "Sim" e o
+             obrigatório passaria sem o solicitante ter respondido (o toggle
+             ignora a opção sem rótulo — ver _toggleRender). -->
+        <select
+          data-k="hidroBarragemAltura"
+          style="display: none"
+          aria-hidden="true"
+        >
+          <option value=""></option>
+          <option>Sim</option>
+          <option>Não</option>
+        </select>
+      </div>
+      <div id="hidroBarragemPerguntas" class="grid-subgrupo"></div>
     </div>
   </div>
 
@@ -442,7 +561,7 @@
 </div>
 <div class="nav-bottom no-print">
   <button class="btn btn-ghost" data-nav="prev">← Voltar</button>
-  <button class="btn btn-primary" data-gate="gdModoOperacaoOk" data-nav="next">
+  <button class="btn btn-primary" data-gate="gdEtapaGeracaoOk" data-nav="next">
     Avançar →
   </button>
 </div>

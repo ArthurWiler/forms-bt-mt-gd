@@ -45,7 +45,6 @@ function gdEstadoInicial() {
     // 1 - Identificação da UC
     instalacao: "",
     fastTrack: "Não",
-    fastRegra: "",
     gridZero: "Não",
     titular: "",
     grupo: "B",
@@ -173,9 +172,10 @@ function gdEstadoInicial() {
     // Potência de consumo (etapa "Tipo de atendimento") e de geração (etapa
     // "Dados da geração"). Em cada par, a chave sem sufixo guarda a potência
     // NOVA (o único valor da conexão nova) ou a FUTURA (na alteração de
-    // potência), e a `*Atual` guarda a que a UC já tem. Os dois pares existem
-    // nos dois grupos — só o rótulo muda, ver GD_ROTULOS_POTENCIA (js/data.js)
-    // e _paresPotenciaGD() (js/app.js).
+    // potência), e a `*Atual` guarda a que a UC já tem. O rótulo muda com o
+    // grupo, e `demandaConsumo` só é perguntada no Grupo A (no B ela sai do
+    // Formulário de Carga) — ver GD_ROTULOS_POTENCIA (js/data.js) e
+    // _paresPotenciaGD() (js/app.js).
     demandaConsumo: "",
     demandaConsumoAtual: "",
     demandaGeracao: "",
@@ -207,16 +207,19 @@ function gdEstadoInicial() {
     // Disjuntor geral do agrupamento.
     disjGeralAgr: "",
     // 4 - Dados da geração
-    // Modalidade de operação do sistema solar: card único que substitui os
-    // campos separados fastTrack/gridZero (mantidos derivados por
-    // onModoOperacaoGD para não quebrar PDF, prévia e regras do art. 73-A).
+    // Modalidade de operação do sistema — vale para qualquer fonte primária.
+    // Card único que substitui os campos separados fastTrack/gridZero
+    // (mantidos derivados por onModoOperacaoGD para não quebrar PDF, prévia e
+    // regras do art. 73-A).
     modoOperacao: "",
     // Sem padrão: a fonte é escolha explícita do solicitante (o select abre
-    // vazio). Os blocos FV/modalidade de operação só aparecem após "Solar".
+    // vazio). A modalidade de operação aparece com qualquer fonte; os demais
+    // campos da etapa são hoje o conjunto do "Solar" (ver onFonte).
     fontePrimaria: "",
     // Sem padrão: tecnologia é escolha explícita (o select abre vazio).
+    // tipoGeracaoOutro saiu com a opção "Outra (especificar):" da lista
+    // GD_TIPO_GERACAO — sem ela não há texto livre a guardar.
     tipoGeracao: "",
-    tipoGeracaoOutro: "",
     modalidade: "",
     qtdInstalacoesCredito: "",
     potAtivaInstalada: "",
@@ -236,6 +239,26 @@ function gdEstadoInicial() {
     qtdInversores: "",
     potTotalInversores: "",
     tensaoConexaoInversor: "",
+    // Hidráulica — dados da central e do aproveitamento. `hidroPotInstalada` é
+    // a potência da usina nesta fonte: recalcGeracao() a espelha em
+    // potAtivaInstalada, que é o campo lido pelo PDF, pela prévia e pelo limite
+    // do Fast Track (o campo genérico fica fora de tela fora do Solar).
+    hidroPotAparente: "",
+    hidroTensao: "",
+    hidroRio: "",
+    hidroNivelJusante: "",
+    hidroFatorPotencia: "",
+    hidroPotInstalada: "",
+    hidroNivelMontante: "",
+    hidroSubBacia: "",
+    // Segurança de barragens (REN 696/2015) — sem padrão: são respostas
+    // explícitas do solicitante. A 1ª é Sim/Não (toggle); as demais são os
+    // rádios de GD_BARRAGEM_PERGUNTAS (js/data.js).
+    hidroBarragemAltura: "",
+    hidroVolumeReservatorio: "",
+    hidroPerdaVidas: "",
+    hidroImpactoAmbiental: "",
+    hidroImpactoSocio: "",
     // Outorga
     ceg: "",
     numAtoOutorga: "",

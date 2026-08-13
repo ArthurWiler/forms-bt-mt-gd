@@ -78,15 +78,120 @@ const GD_FONTES = [
   "Cogeração Qualificada",
   "Eólica",
 ];
+// Sistema solar é sempre inversor: onFonte() marca esta opção sozinho ao
+// escolher "Solar", por isso a constante (o texto é gravado no estado e sai
+// assim no PDF — não pode divergir do item da lista).
+const GD_TIPO_GERACAO_INVERSOR = "Conversor eletrônico/inversor";
 const GD_TIPO_GERACAO = [
   "Máquina síncrona sem conversor",
-  "Conversor eletrônico/inversor",
-  "Mista",
-  "Outra (especificar):",
+  GD_TIPO_GERACAO_INVERSOR,
 ];
 // Tensão de conexão do inversor (V) — as duas tensões de BT em que os
 // inversores se conectam. Valor gravado = rótulo (entra assim no PDF).
 const GD_TENSOES_INVERSOR = ["120/240", "127/220"];
+/* ===== Fonte primária Hidráulica =====
+   Classificação de segurança de barragens (REN ANEEL 696/2015, itens de
+   categoria de risco e dano potencial associado), perguntada quando a fonte
+   primária é Hidráulica — a 1ª pergunta (altura ≥ 15 m) é Sim/Não e vive no
+   HTML como toggle; estas quatro têm opções longas demais para os cards e são
+   exibidas como lista de rádios (ver gdMontarPerguntasBarragem, js/app.js).
+     • chave   — campo do estado (model.js) e do PDF;
+     • rotulo  — nome curto da pergunta: é o que cabe no PDF, na prévia e na
+                 lista de pendências da exportação;
+     • pergunta— texto integral, só na tela;
+     • valor   — o que é gravado no estado (rótulo oficial, em caixa alta como
+                 no formulário Cemig); `sub` é o critério que o acompanha. */
+const GD_BARRAGEM_PERGUNTAS = [
+  {
+    chave: "hidroVolumeReservatorio",
+    num: 2,
+    rotulo: "Volume total do reservatório",
+    pergunta:
+      "Volume Total do Reservatório para barragens de uso múltiplo ou aproveitamento energético:",
+    opcoes: [
+      {
+        valor: "Muito Pequeno",
+        sub: "Se o Volume Total do Reservatório for < 3.000.000 m³",
+      },
+      {
+        valor: "Pequeno",
+        sub: "Se o Volume Total do Reservatório for ≥ 3.000.000 m³ e ≤ 5.000.000 m³",
+      },
+      {
+        valor: "Médio",
+        sub: "Se o Volume Total do Reservatório for > 5.000.000 m³ e ≤ 75.000.000 m³",
+      },
+      {
+        valor: "Grande",
+        sub: "Se o Volume Total do Reservatório for > 75.000.000 m³ e ≤ 200.000.000 m³",
+      },
+      {
+        valor: "Muito Grande",
+        sub: "Se o Volume Total do Reservatório for > 200.000.000 m³",
+      },
+    ],
+  },
+  {
+    chave: "hidroPerdaVidas",
+    num: 3,
+    rotulo: "Potencial de perdas de vidas humanas",
+    pergunta: "Potencial de perdas de vidas humanas:",
+    opcoes: [
+      {
+        valor: "Inexistente",
+        sub: "não existem pessoas permanentes/residentes ou temporárias/transitando na área afetada a jusante da barragem",
+      },
+      {
+        valor: "Pouco frequente",
+        sub: "não existem pessoas ocupando permanentemente a área afetada a jusante da barragem, mas existe estrada vicinal de uso local",
+      },
+      {
+        valor: "Frequente",
+        sub: "não existem pessoas ocupando permanentemente a área afetada a jusante da barragem, mas existe rodovia municipal, estadual, federal ou outro local e/ou empreendimento de permanência eventual de pessoas que poderão ser atingidas",
+      },
+      {
+        valor: "Existente",
+        sub: "existem pessoas ocupando permanentemente a área afetada a jusante da barragem, portanto, vidas humanas poderão ser atingidas",
+      },
+    ],
+  },
+  {
+    chave: "hidroImpactoAmbiental",
+    num: 4,
+    rotulo: "Impacto ambiental",
+    pergunta: "Impacto ambiental:",
+    opcoes: [
+      {
+        valor: "Significativo",
+        sub: "área afetada da barragem não representa área de interesse ambiental, áreas protegidas em legislação específica ou encontra-se totalmente descaracterizada de suas condições naturais",
+      },
+      {
+        valor: "Muito significativo",
+        sub: "área afetada da barragem apresenta interesse ambiental relevante ou protegida em legislação específica",
+      },
+    ],
+  },
+  {
+    chave: "hidroImpactoSocio",
+    num: 5,
+    rotulo: "Impacto sócio-econômico",
+    pergunta: "Impacto sócio-econômico:",
+    opcoes: [
+      {
+        valor: "Inexistente",
+        sub: "não existem quaisquer instalações e serviços de navegação na área afetada por acidente da barragem",
+      },
+      {
+        valor: "Baixo",
+        sub: "existe pequena concentração de instalações residenciais e comerciais, agrícolas, industriais ou de infraestrutura na área afetada da barragem ou instalações portuárias ou serviços de navegação",
+      },
+      {
+        valor: "Alto",
+        sub: "existe grande concentração de instalações residenciais e comerciais, agrícolas, industriais, de infraestrutura e serviços de lazer e turismo na área afetada da barragem ou instalações portuárias ou serviços de navegação",
+      },
+    ],
+  },
+];
 const GD_MODALIDADES = [
   "Autoconsumo local",
   "Autoconsumo remoto",
@@ -252,15 +357,37 @@ const GD_FUSOS = [22, 23, 24];
 const GD_BT_MT = ["BT - Baixa Tensão", "MT - Média Tensão"];
 // UFs — usado no select "Estado" do novo local do padrão (etapa 5).
 const GD_UFS = [
-  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS",
-  "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC",
-  "SP", "SE", "TO",
+  "AC",
+  "AL",
+  "AP",
+  "AM",
+  "BA",
+  "CE",
+  "DF",
+  "ES",
+  "GO",
+  "MA",
+  "MT",
+  "MS",
+  "MG",
+  "PA",
+  "PB",
+  "PR",
+  "PE",
+  "PI",
+  "RJ",
+  "RN",
+  "RS",
+  "RO",
+  "RR",
+  "SC",
+  "SP",
+  "SE",
+  "TO",
 ];
-const GD_FAST_REGRAS = [
-  "8.5.1 - não injeção na rede de distribuição (“Grid Zero”)",
-  "8.5.2 - enquadramento nos critérios de gratuidade da REN 1.000/2021 e potência compatível com o consumo no horário de geração",
-  "8.5.3 - modalidade autoconsumo local, com potência instalada de geração igual ou inferior a 7,5 kW",
-];
+// GD_FAST_REGRAS (as três regras do item 8.5) foi removida junto com o campo
+// `fastRegra`: a declaração não é mais pedida no formulário. As orientações da
+// etapa 1 continuam explicando o item 8.5 — lá é texto informativo, não campo.
 const GD_SN = ["Não", "Sim"];
 // Conversão Latitude/Longitude → UTM (WGS-84), espelhando BT/MT. O usuário
 // informa lat/lon e o fuso/E/N são calculados automaticamente.
@@ -325,7 +452,12 @@ function gdUtmDeCoordenadas(latitude, longitude) {
     lon = parseFloat(longitude);
   if (isNaN(lat) || isNaN(lon)) return null;
   const u = gdLatLonParaUTM(lat, lon);
-  return { fuso: String(u.zona), utmE: String(u.easting), utmN: String(u.northing), banda: u.banda };
+  return {
+    fuso: String(u.zona),
+    utmE: String(u.easting),
+    utmN: String(u.northing),
+    banda: u.banda,
+  };
 }
 function gdValidarUTM(fuso, e, n) {
   const lim = GD_UTM_LIMITES[parseInt(fuso)];
