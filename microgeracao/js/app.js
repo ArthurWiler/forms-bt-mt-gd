@@ -999,14 +999,14 @@ function onTelhadoArrendado() {
    Sim/Não) só aparece depois que o tipo de edificação é
    escolhido — é a tela inicial do Figma, com apenas os dois
    primeiros campos.
-   Qual disjuntor aparece:
+   Qual disjuntor aparece (sempre no Grupo B):
      • Edificação Individual            → Disjuntor individual atual
-     • Coletiva/Agrupamento + Grupo B   → Disjuntor geral atual
+     • Coletiva/Agrupamento             → Disjuntor geral atual
    Em Ligação Nova NÃO existe disjuntor "atual" (a unidade ainda
    não existe): nenhum dos dois é exibido, como no Figma.
    No Grupo A o atendimento é dimensionado pela DEMANDA contratada,
-   não pelo disjuntor — por isso o disjuntor geral não se aplica lá
-   (mesma lógica que rege demandaConsumoBox em onGrupo()).
+   não pelo disjuntor — por isso nenhum dos dois se aplica lá
+   (mesma lógica que rege demandaConsumoBox em _atualizarDemandaConsumo()).
    ============================================================ */
 function onEdifTipoGD() {
   _sync("edifTipo");
@@ -1014,9 +1014,9 @@ function onEdifTipoGD() {
   if (bloco) bloco.style.display = state.edifTipo ? "" : "none";
   const nova = _ehLigacaoNova();
   const individual = state.edifTipo === "Edificação Individual";
-  const verInd = !!state.edifTipo && !nova && individual;
-  const verGeral =
-    !!state.edifTipo && !nova && !individual && state.grupo === "B";
+  const ehBT = state.grupo === "B";
+  const verInd = !!state.edifTipo && !nova && ehBT && individual;
+  const verGeral = !!state.edifTipo && !nova && ehBT && !individual;
   const bInd = $("#disjIndividualBox");
   if (bInd) bInd.style.display = verInd ? "" : "none";
   const bGeral = $("#disjGeralBox");
@@ -1425,6 +1425,8 @@ function onSolicitacao() {
       (state.solicitacao || "").indexOf("GD Existente") >= 0 ? "" : "none";
   atualizarFasesDisj();
   atualizarSE();
+  // A demanda contratada não existe em Ligação Nova (nada contratado ainda).
+  _atualizarDemandaConsumo();
   onEdifTipoGD(); // o disjuntor visível depende de solicitação × edificação
   if (window.CemigMarcadores) {
     window.CemigMarcadores.aplicar();
@@ -1494,6 +1496,16 @@ function onDisjFase(manterCorrente) {
 function onDisjCorrente() {
   _sync("disjGeralA");
 }
+// Tensão de conexão: as opções mudam com o grupo — Grupo A em kV (média
+// tensão), Grupo B nos pares fase/fase de BT.
+// O VALOR guardado continua sendo o volt "cru" ("13800"), porque ele é chave de
+// regra de negócio: gdSEDisponivel() compara com GD_TENSAO_LIGNOVA_138 para
+// bloquear a Subestação Nº 2 em ligação nova. Só o RÓTULO é formatado em kV.
+function _rotuloTensao(v) {
+  return state.grupo === "A"
+    ? (Number(v) / 1000).toFixed(1).replace(".", ",") + " kV"
+    : v + " V";
+}
 function atualizarTensoes() {
   const sel = $(`select[data-k="tensaoAtendimento"]`);
   if (!sel) return;
@@ -1501,9 +1513,36 @@ function atualizarTensoes() {
   const atual = sel.value;
   sel.innerHTML =
     '<option value=""></option>' +
-    lista.map((t) => `<option value="${t}">${t}</option>`).join("");
+    lista
+      .map((t) => `<option value="${t}">${_rotuloTensao(t)}</option>`)
+      .join("");
   if (lista.includes(atual)) sel.value = atual;
   else sel.value = state.tensaoAtendimento = "";
+  _sync("tensaoAtendimento");
+}
+// Demanda de consumo contratada: só existe no Grupo A (no Grupo B o
+// atendimento é dimensionado pelo disjuntor) e só quando já há consumo a
+// contratar — numa Ligação Nova a unidade ainda não tem demanda contratada.
+// Depende de grupo × solicitação, por isso é chamada pelos dois handlers.
+function _atualizarDemandaConsumo() {
+  const ver = state.grupo === "A" && !_ehLigacaoNova();
+  const dc = $("#demandaConsumoBox");
+  if (dc) dc.style.display = ver ? "" : "none";
+  const lbl = $("#demandaConsumoLbl");
+  if (lbl)
+    lbl.innerHTML =
+      "Demanda de consumo contratada (kW)" +
+      (ver ? ' <span class="req">*</span>' : "");
+  const inp = $(`[data-k="demandaConsumo"]`);
+  if (!inp) return;
+  if (ver) inp.setAttribute("data-req", "");
+  else {
+    inp.removeAttribute("data-req");
+    inp.classList.remove("is-invalid");
+    // Campo oculto não pode manter valor: um kW digitado antes de trocar para
+    // o Grupo B (ou para Ligação Nova) continuaria no estado e sairia no PDF.
+    if (state.demandaConsumo) aplicarPatch({ demandaConsumo: "" });
+  }
 }
 // Grupo B ⇔ A: tensões, demanda de consumo (obrigatória só no Grupo A),
 // demanda de geração (só Grupo A) e disponibilidade da seção de subestação.
@@ -1511,26 +1550,9 @@ function onGrupo() {
   _sync("grupo");
   atualizarTensoes();
   const ehBT = state.grupo === "B";
-  // Demanda contratada (consumo e geração): só o Grupo A contrata demanda —
-  // no Grupo B o atendimento é dimensionado pelo disjuntor. Os campos somem
-  // da tela em vez de ficarem visíveis e opcionais.
-  const dc = $("#demandaConsumoBox");
-  if (dc) dc.style.display = ehBT ? "none" : "";
-  const lbl = $("#demandaConsumoLbl");
-  if (lbl)
-    lbl.innerHTML =
-      "Demanda de consumo contratada (kW)" +
-      (ehBT ? "" : ' <span class="req">*</span>');
-  const inp = $(`[data-k="demandaConsumo"]`);
-  if (inp) {
-    if (ehBT) {
-      inp.removeAttribute("data-req");
-      inp.classList.remove("is-invalid");
-      // Campo oculto não pode manter valor: um kW digitado antes de trocar
-      // para o Grupo B continuaria no estado e sairia no PDF.
-      if (state.demandaConsumo) aplicarPatch({ demandaConsumo: "" });
-    } else inp.setAttribute("data-req", "");
-  }
+  _atualizarDemandaConsumo();
+  // Demanda de geração: só o Grupo A contrata demanda. O campo some da tela
+  // em vez de ficar visível e opcional.
   const dg = $("#demandaGeracaoBox");
   if (dg) dg.style.display = ehBT ? "none" : "";
   atualizarSE();
@@ -1855,7 +1877,13 @@ function validarExportacao() {
         faltas.push("Formulário de Carga (declarar as cargas elétricas)");
     }
   }
-  if (d.grupo !== "B") req(d.demandaConsumo, "Demanda contratada de consumo");
+  // Mesma condição de _atualizarDemandaConsumo(): fora dela o campo está
+  // oculto e vazio, e exigi-lo travaria o avanço sem nada para preencher.
+  if (d.grupo === "A" && !_ehLigacaoNova())
+    req(d.demandaConsumo, "Demanda contratada de consumo");
+  // Tensão de conexão: sempre exigida — o campo aparece nos dois tipos de
+  // solicitação e em ambos os grupos (só a lista de opções muda).
+  req(d.tensaoAtendimento, "Tensão de conexão");
   if (GD_SOLICITACOES_AUMENTO_POTENCIA.includes(d.solicitacao))
     req(d.novaProtecao, "Nova Proteção (Aumento de Potência)");
   req(d.fontePrimaria, "Tipo de Fonte Primária");
@@ -1970,12 +1998,18 @@ function renderPreviewGD() {
   let atend =
     pvCampo("Solicitação", d.solicitacao, { full: true, step: "atendimento" }) +
     pvCampo("Edificação", d.edifTipo, { step: "atendimento" }) +
-    pvCampo("Ramal", d.ramal, { step: "atendimento" });
-  // Disjuntor "atual": individual na Edificação Individual; geral no
-  // Coletivo/Agrupamento, mas só no Grupo B — no Grupo A o atendimento é
-  // dimensionado pela demanda contratada e o campo nem aparece na etapa 4.
+    pvCampo("Ramal", d.ramal, { step: "atendimento" }) +
+    // Rótulo formatado (kV no Grupo A) sobre o volt "cru" guardado no estado.
+    pvCampo(
+      "Tensão de conexão",
+      d.tensaoAtendimento ? _rotuloTensao(d.tensaoAtendimento) : "",
+      { step: "atendimento" },
+    );
+  // Disjuntor "atual": individual na Edificação Individual, geral no
+  // Coletivo/Agrupamento — os dois só no Grupo B. No Grupo A o atendimento é
+  // dimensionado pela demanda contratada e nenhum deles aparece na etapa 4.
   const _ehIndividual = d.edifTipo === "Edificação Individual";
-  if (_ehIndividual || d.grupo === "B")
+  if (d.grupo === "B")
     atend += pvCampo(
       _ehIndividual ? "Disjuntor individual atual" : "Disjuntor geral atual",
       _ehIndividual ? d.disjAtualA : d.disjGeralA,
@@ -2144,8 +2178,8 @@ window.initFormulario = function () {
   if (selGrupo) selGrupo.addEventListener("change", onGrupo);
   // A classe da UC re-renderiza a lista de cargas pelo onchange do próprio
   // select (onClasseGD), no fragmento da etapa 6.
-  const selTensao = $(`select[data-k="tensaoAtendimento"]`);
-  if (selTensao) selTensao.addEventListener("change", atualizarSE);
+  // tensaoAtendimento: o <select> da etapa 5 chama atualizarSE() no próprio
+  // onchange (padrão da minigeração) — um listener aqui rodaria em dobro.
   // Aceite das Orientações reavalia o botão "Avançar".
   const aceite = $("#aceiteOrient");
   if (aceite)

@@ -76,15 +76,27 @@ function gerarPdfMicroGD(d) {
       "Disjuntor Geral",
       `${d.disjGeralFase || "—"} ${d.disjGeralA || ""}${d.qteDisjGeral ? " · Qte " + d.qteDisjGeral : ""}`.trim(),
     ],
-    ["Tensão de Atendimento (V)", d.tensaoAtendimento],
+    // O valor guardado é sempre o volt "cru" (chave da regra de subestação):
+    // no Grupo A ele sai formatado em kV, como no rótulo do <select>.
+    [
+      "Tensão de conexão",
+      d.tensaoAtendimento
+        ? ehBT
+          ? d.tensaoAtendimento + " V"
+          : (Number(d.tensaoAtendimento) / 1000).toFixed(1).replace(".", ",") +
+            " kV"
+        : "",
+    ],
     ["Telhado arrendado", d.telhadoArrendado],
   ];
   if (GD_SOLICITACOES_AUMENTO_POTENCIA.includes(d.solicitacao))
     ucPairs.splice(4, 0, ["Nova Proteção", d.novaProtecao]);
   // Campos de unidade JÁ existente: numa ligação nova não há padrão instalado,
-  // logo não há disjuntor "atual" nem local a mudar.
+  // logo não há disjuntor "atual" nem local a mudar. O disjuntor individual
+  // ainda depende do grupo: no Grupo A o atendimento é dimensionado pela
+  // demanda contratada e o campo nem aparece no formulário.
   if (!ehLigacaoNova) {
-    ucPairs.push(["Disjuntor Individual Atual (A)", d.disjAtualA]);
+    if (ehBT) ucPairs.push(["Disjuntor Individual Atual (A)", d.disjAtualA]);
     ucPairs.push(["Mudança de Local do Padrão", d.mudancaLocal]);
   }
   // Unidade arrendada: dados próprios do arrendamento (spec Figma).
@@ -135,10 +147,13 @@ function gerarPdfMicroGD(d) {
       d.demandaConsumo || "Não se aplica — Baixa Tensão",
     ]);
   } else {
-    ucPairs.push(
-      ["Demanda contratada consumo (kW)", d.demandaConsumo],
-      ["Demanda contratada geração (kW)", d.demandaGeracao],
-    );
+    // Numa ligação nova ainda não há consumo contratado — o campo não é
+    // perguntado no formulário, então sai como "não se aplica" em vez de vazio.
+    ucPairs.push([
+      "Demanda contratada consumo (kW)",
+      ehLigacaoNova ? "Não se aplica — Ligação Nova" : d.demandaConsumo,
+    ]);
+    ucPairs.push(["Demanda contratada geração (kW)", d.demandaGeracao]);
   }
   kvPairs(ucPairs);
   // Transformadores (apenas MT, quando houver)

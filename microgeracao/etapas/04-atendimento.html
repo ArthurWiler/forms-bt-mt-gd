@@ -51,6 +51,16 @@
           oninput="onNumDec(this)"
         />
       </div>
+      <!-- Tensão de conexão: sempre exibida — tanto na conexão nova (tensão de
+           projeto) quanto na existente (tensão atual). Ao contrário da demanda
+           contratada e do disjuntor "atual", não pressupõe unidade já ligada; e
+           a regra da Subestação Nº 2 depende da tensão JUSTAMENTE em ligação
+           nova (ver gdSEDisponivel em data.js). As opções vêm de
+           atualizarTensoes(), que troca a lista conforme o grupo. -->
+      <div class="field" id="tensaoConexaoBox">
+        <label>Tensão de conexão <span class="req">*</span></label>
+        <select data-k="tensaoAtendimento" onchange="atualizarSE()"></select>
+      </div>
       <div class="field field--plain col-span-2" data-noopt>
         <label>
           O telhado é/será arrendado para pessoa/empresa diferente do
@@ -127,7 +137,11 @@
            `gap` não soma às margens do .divider / `.mapa-obra + .grid`. -->
       <div id="mudancaLocalBloco" class="col-span-2" style="display: none">
         <div class="grid grid-2" id="mudEndUrbanoBox">
-          <div class="field">
+          <!-- CEP sozinho na linha (.row-solo), como na etapa 3: lá o Endereço
+               é col-span-2 no grid de 3 colunas do card e empurra o CEP para uma
+               linha só dele. Aqui o grid tem 2 colunas, então o mesmo desenho
+               vem do .row-solo — linha inteira, largura de 1 coluna. -->
+          <div class="field row-solo">
             <label>CEP <span class="req">*</span></label>
             <input
               type="text"
