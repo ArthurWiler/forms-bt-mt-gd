@@ -39,6 +39,12 @@
     <link rel="stylesheet" href="../css/variables.css" />
     <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/formulario-bt.css" />
+    <!-- Estilo do PDF. É o documento impresso que consome este CSS
+         (bt/js/pdf-doc.js monta o HTML e chama window.print), então ele
+         precisa estar na página — não é folha de impressão da tela. -->
+    <link rel="stylesheet" href="../css/pdf/variables-pdf.css" />
+    <link rel="stylesheet" href="../css/pdf/shared-pdf.css" />
+    <link rel="stylesheet" href="../css/pdf/bt-pdf.css" />
     <!-- leaflet.css saiu daqui: era render-blocking de terceiros numa página
          cujo mapa só aparece etapas adiante. Agora vem junto do leaflet.js,
          sob demanda, via shared/js/libs.js. -->
@@ -226,6 +232,7 @@
     <script defer src="../shared/js/complementos.js"></script>
     <script defer src="js/model.js"></script>
     <script defer src="js/pdf.js"></script>
+    <script defer src="js/pdf-doc.js"></script>
 
     <script defer src="js/map.js"></script>
     <script defer src="../shared/js/geo.js"></script>

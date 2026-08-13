@@ -1,0 +1,89 @@
+/* ============================================================
+   CEMIG — Tokens do PDF (fonte única do estilo impresso)
+   ------------------------------------------------------------
+   Este arquivo e os demais de css/pdf/ são o ESTILO OFICIAL DO
+   PDF. Ele é consumido de verdade: o documento é montado em HTML
+   e impresso pelo próprio motor de layout do navegador
+   (window.print + @page), não desenhado por biblioteca.
+
+   Todos os valores abaixo foram medidos nos SVGs de referência
+   (svg_pdf_bt e svg_pdf_bt - correspondencia). A moldura do mock
+   é 595 × 842, que é exatamente A4 a 72 dpi — logo **1 unidade
+   do SVG = 1pt em CSS** e as medidas entram aqui sem conversão.
+   É por isso que este arquivo usa `pt` e não `px`: em `px` a
+   mesma medida dependeria do zoom e da escala de impressão.
+
+   As cores não são novas: o mock usa a paleta que já está em
+   css/variables.css. Referenciamos os tokens --cmg-* em vez de
+   repetir o hexadecimal, para que o PDF acompanhe a marca. A
+   única exceção é a régua verde do título, que só existe aqui.
+   ============================================================ */
+
+.pdf-doc {
+  /* ---- Página (A4 @72dpi) ----
+     Margem de 36pt nos quatro lados → coluna útil de 523pt
+     (x de 36 a 559 no mock) e altura útil de 770pt. */
+  --pdf-pagina-largura: 595pt;
+  --pdf-pagina-altura: 842pt;
+  --pdf-margem: 36pt;
+
+  /* ---- Grade ----
+     3 colunas de 166.333pt com 12pt de gap: (523 − 24) / 3.
+     Os eixos batem com os do mock — 36 / 214.33 / 392.67. */
+  --pdf-colunas: 3;
+  --pdf-gap: 12pt;
+
+  /* ---- Ritmo vertical ----
+     17pt é o passo entre linhas de texto (rótulo → valor e entre
+     as linhas de um valor que quebra). Com 8pt de respiro depois
+     do par, o passo entre campos fecha os 42pt medidos no mock.
+
+     Nota: a 1ª seção do mock (Dados do proprietário) usa 15/40 em
+     vez de 17/42; as demais seções e a página de continuação usam
+     17/42. Adotado 17/42 no documento inteiro — a alternativa
+     seria reproduzir a inconsistência do desenho. */
+  --pdf-linha: 17pt;
+  --pdf-campo-respiro: 8pt;
+
+  /* Filete entre seções: o mock mede 14pt acima e ~15pt abaixo.
+     Como o bloco anterior já contribui com os 8pt de respiro,
+     restam 6pt de margem própria acima. */
+  --pdf-filete-antes: 6pt;
+  --pdf-filete-depois: 14pt;
+
+  /* ---- Tipografia ---- */
+  --pdf-font: var(--cmg-font-family);
+  --pdf-fs-titulo: 18pt;
+  --pdf-fs-secao: 12pt;
+  --pdf-fs-campo: 10pt;
+  --pdf-fw-rotulo: 400;
+  --pdf-fw-valor: 700;
+
+  /* ---- Cores ---- */
+  --pdf-cor-marca: var(--cmg-green-600); /* #0F6C58 */
+  --pdf-cor-texto: var(--cmg-neutral-600); /* #364B46 */
+  --pdf-cor-filete: var(--cmg-neutral-200); /* #D1D4D3 */
+  /* Verde claro da régua sob o título: só aparece no PDF, então
+     não vira token --cmg-* em css/variables.css. */
+  --pdf-cor-regua: #91c0b6;
+
+  /* ---- Traços ---- */
+  --pdf-regua-esp: 3pt; /* régua verde sob o título */
+  --pdf-filete-esp: 2pt; /* filete entre seções */
+
+  /* ---- Cartão de destaque ----
+     Confere com as alturas do mock: 2 linhas → 4 + 10 + 34 = 48pt;
+     3 linhas → 4 + 10 + 51 = 65pt. */
+  --pdf-card-borda: 2pt;
+  --pdf-card-raio: 8pt;
+  --pdf-card-pad-y: 5pt;
+  --pdf-card-pad-x: 10pt;
+
+  /* ---- Tabela ----
+     O mock não desenha nenhuma tabela (os três SVGs são variações
+     da mesma página 1). Derivado dos tokens acima na mesma
+     linguagem minimalista: filete fino, sem zebra e sem faixa. */
+  --pdf-tabela-filete: 1pt;
+  --pdf-tabela-pad-y: 4pt;
+  --pdf-tabela-pad-x: 6pt;
+}

@@ -7,7 +7,7 @@
    O núcleo comum (binding, navegação, toggles, PF/CNPJ, CEP,
    correspondência, mapa/restrição, helpers de prévia) vive em
    bt/js/bt-core.js. O estado mantém o MESMO shape que
-   gerarPdfDoc(S) espera (atend/prop/corr/obra + ucBlocos[] +
+   gerarPdfDocumento(S) espera (atend/prop/corr/obra + ucBlocos[] +
    blocos[]) — pdf.js, calc.js, data.js e model.js reutilizados
    sem alteração. Os derivados (demanda ND-5.2, disjuntores,
    validações) são portes VERBATIM dos useMemo de app.js; os
@@ -22,7 +22,7 @@ const MULTI = CARD.formType === "condominio";
 // antes do primeiro paint e dos CDNs — aqui já chegaria tarde (a lista
 // aparecia sendo podada/renumerada na tela).
 
-/* ===== Estado (mesmo shape do App React / gerarPdfDoc) ===== */
+/* ===== Estado (mesmo shape do App React / gerarPdfDocumento) ===== */
 const _prefAtividade = (CARD.prefill && CARD.prefill.atividade) || "";
 function novaUcBloco(i) {
   const u = ucBlocoPadrao(i);
@@ -3733,10 +3733,10 @@ function _mkPreviaTorre(b, bi) {
 function renderPreviaColetivo() {
   const box = $("#previaConteudo");
   if (!box) return;
-  // Aquecimento do jsPDF (carga sob demanda): chegar nesta etapa é o melhor
-  // sinal de que o PDF vem a seguir. Sem await — não bloqueia a renderização,
-  // e o clique em Exportar encontra a lib pronta.
-  window.CemigLibs.jspdf().catch(() => {});
+  /* O aquecimento do jsPDF saiu daqui: o PDF do formulário agora é HTML
+     impresso pelo navegador (js/pdf-doc.js) e o fluxo coletivo não tem
+     documento auxiliar em jsPDF — baixar a lib nesta etapa seria ~350 kB
+     de CDN que ninguém usa. */
   const p = state.prop,
     c = state.corr,
     o = state.obra;
@@ -3987,14 +3987,11 @@ async function exportarPdfBT() {
     renderPreviaColetivo();
     return;
   }
-  // jsPDF é carregado sob demanda (shared/js/libs.js). O aquecimento na etapa
-  // de prévia normalmente já resolveu isto; o `catch` vazio deixa o guard de
-  // gerarPdfDoc dar o alerta de sempre caso a rede tenha falhado.
-  await window.CemigLibs.jspdf().catch(() => {});
+  // Sem jsPDF: o PDF é HTML impresso pelo navegador (bt/js/pdf-doc.js).
   // Paridade com o React (app.js:853-872): `coletivo` é a flag runtime
-  // disjGeral==="Sim" — verdadeira TAMBÉM no multiTorres (pdf.js imprime a
-  // ART por ela).
-  gerarPdfDoc({
+  // disjGeral==="Sim" — verdadeira TAMBÉM no multiTorres (é por ela que a
+  // ART de projeto sai no documento).
+  await gerarPdfDocumento({
     multiTorres: MULTI,
     coletivo: coletivoF(),
     // ND-5.2 não calculou: as UCs detalharam as cargas (ND-5.1) e o PDF

@@ -82,3 +82,93 @@
     </button>
   </div>
 </div>
+
+<!-- ============================================================
+     Peças do PDF (bt/js/pdf-doc.js)
+     ------------------------------------------------------------
+     O documento impresso é montado a partir destes moldes: o JS
+     clona e preenche com textContent, sem escrever markup em
+     template string. É o que a regra "HTML primeiro, JS por
+     exceção" (docs/css-architecture.md) pede — as classes seguem
+     visíveis a uma busca textual, então a poda de CSS morto
+     continua segura.
+
+     A exceção justificada é apenas a MONTAGEM: quantas páginas,
+     quantas seções e quantas linhas de tabela só se sabe em
+     runtime, a partir do que foi preenchido.
+
+     Ficam aqui, na etapa da Prévia, porque é a única tela de
+     onde o PDF é exportado — e é o fragmento que as duas páginas
+     do BT (individual.html e index.html) compartilham.
+     ============================================================ -->
+
+<template id="tplPdfDoc">
+  <div class="pdf-doc" id="documentoPdf" aria-hidden="true"></div>
+</template>
+
+<template id="tplPdfPagina">
+  <section class="pdf-pagina">
+    <div class="pdf-corpo"></div>
+    <div class="pdf-rodape"></div>
+  </section>
+</template>
+
+<template id="tplPdfCabecalho">
+  <header class="pdf-cabecalho">
+    <img
+      class="pdf-cabecalho-logo"
+      src="../imgs/logos/logo-cemig-pdf.svg"
+      alt="CEMIG"
+      width="56"
+      height="14"
+    />
+    <h1 class="pdf-titulo">
+      Formulário de Ligação Nova e Alteração de Carga
+    </h1>
+    <div class="pdf-regua"></div>
+  </header>
+</template>
+
+<template id="tplPdfSecao"><h2 class="pdf-secao-titulo"></h2></template>
+<template id="tplPdfSubsecao"><h3 class="pdf-subsecao"></h3></template>
+<template id="tplPdfFilete"><div class="pdf-filete"></div></template>
+
+<template id="tplPdfGrade"><div class="pdf-grade"></div></template>
+<template id="tplPdfCampo">
+  <div class="pdf-campo">
+    <div class="pdf-rotulo"></div>
+    <div class="pdf-valor"></div>
+  </div>
+</template>
+
+<template id="tplPdfCartoes"><div class="pdf-cartoes"></div></template>
+<template id="tplPdfCartao">
+  <div class="pdf-cartao">
+    <div class="pdf-rotulo"></div>
+    <div class="pdf-valor"></div>
+  </div>
+</template>
+
+<template id="tplPdfTabela">
+  <table class="pdf-tabela">
+    <thead>
+      <tr></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</template>
+
+<template id="tplPdfTotal">
+  <div class="pdf-total">
+    <span class="pdf-total-rotulo"></span>
+    <span class="pdf-total-valor"></span>
+  </div>
+</template>
+
+<template id="tplPdfObservacoes"><p class="pdf-observacoes"></p></template>
+
+<template id="tplPdfAssinatura">
+  <div class="pdf-assinatura">
+    Local e data / Assinatura do proprietário ou representante legal
+  </div>
+</template>

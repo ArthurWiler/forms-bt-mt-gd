@@ -7,7 +7,7 @@
    CEP, correspondência, mapa/restrição, prévia) vive em
    bt/js/bt-core.js — aqui ficam só o estado e as ilhas do fluxo.
 
-   O estado mantém o MESMO shape que gerarPdfDoc(S) espera
+   O estado mantém o MESMO shape que gerarPdfDocumento(S) espera
    (prop/corr/obra como objetos + ucsDet[]) — pdf.js, calc.js,
    data.js e termo-grupo-b.js são reutilizados sem alteração.
    Inputs escalares são bindados por caminho (data-k="prop.nome").
@@ -22,7 +22,7 @@ const restrito = !!(CARD && CARD.restrito);
 const zonaTravada = !!(CARD && CARD.travaZonaRural);
 const atividadeTravada = !!(CARD && CARD.prefill && CARD.prefill.atividade);
 
-/* ===== Estado (mesmo shape do App React / gerarPdfDoc) ===== */
+/* ===== Estado (mesmo shape do App React / gerarPdfDocumento) ===== */
 // Fábricas propPadrao/corrPadrao/obraPadrao vivem no bt-core.js.
 // Porte de selectModalidade (bt/js/app.js): estado limpo + prefill do card.
 const _prefAtividade = (CARD.prefill && CARD.prefill.atividade) || "";
@@ -891,7 +891,10 @@ const PG = { prop: 1, dados: 2, atend: 3, cargas: 4, corr: 5 };
 function renderPreviaBT() {
   const box = $("#previaConteudo");
   if (!box) return;
-  // Aquecimento do jsPDF (carga sob demanda) — ver renderPreviaColetivo.
+  // Aquecimento do jsPDF (carga sob demanda). O PDF do formulário não usa
+  // mais a lib — sai por window.print() em js/pdf-doc.js —, mas os dois
+  // documentos auxiliares desta etapa ainda usam: Termo de Opção Grupo B e
+  // Análise de Partida de Motores.
   window.CemigLibs.jspdf().catch(() => {});
   const p = state.prop,
     c = state.corr,
@@ -1340,9 +1343,10 @@ async function exportarPdfBT() {
     renderPreviaBT();
     return;
   }
-  // jsPDF sob demanda; o guard de gerarPdfDoc alerta se a carga falhar.
-  await window.CemigLibs.jspdf().catch(() => {});
-  gerarPdfDoc({
+  // Sem jsPDF: o PDF é HTML impresso pelo navegador (bt/js/pdf-doc.js).
+  // A biblioteca segue carregada sob demanda pelos documentos auxiliares
+  // (Termo Grupo B e Análise de Partida de Motores).
+  await gerarPdfDocumento({
     multiTorres: false,
     coletivo: false,
     atend: state.atend,

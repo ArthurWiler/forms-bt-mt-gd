@@ -1,0 +1,312 @@
+/* ============================================================
+   CEMIG — Estrutura do PDF (camada compartilhada)
+   ------------------------------------------------------------
+   Assim como css/shared.css é a fonte única dos componentes de
+   tela, este arquivo é a fonte única dos componentes do PDF.
+   O que for exclusivo de um formulário vai em <modulo>-pdf.css —
+   nunca uma cópia local do que já está aqui.
+
+   Carregue SEMPRE depois de css/pdf/variables-pdf.css.
+
+   O documento vive num nó próprio no <body> (`.pdf-doc`), no
+   mesmo padrão já usado pelo Termo de Desistência
+   (#documentoImpressao + body.print-termo): não é uma segunda
+   raiz de superfície de formulário, é um documento à parte.
+   ============================================================ */
+
+@page {
+  size: A4;
+  /* Margem zero na folha: quem posiciona é a .pdf-pagina, que
+     reproduz os 36pt do mock. Se a margem ficasse no @page, o
+     navegador somaria as duas e o desenho encolheria. */
+  margin: 0;
+}
+
+/* ============================================================
+   1. Isolamento — o documento só existe na impressão
+   ============================================================ */
+
+.pdf-doc {
+  display: none;
+  font-family: var(--pdf-font);
+  font-size: var(--pdf-fs-campo);
+  line-height: var(--pdf-linha);
+  color: var(--pdf-cor-texto);
+  /* Sem isto o Chrome descarta a régua verde e as bordas dos
+     cartões — ele remove fundos e cores na impressão por padrão. */
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+/* Estado de medição: o JS precisa de altura real para paginar, e
+   `display:none` não gera caixa nenhuma. Fica fora da viewport em
+   vez de escondido. */
+.pdf-doc--medindo {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: -10000px;
+  /* `visibility: hidden` deixaria o leitor de tela anunciar o
+     documento inteiro durante a medição. */
+  visibility: hidden;
+}
+
+@media print {
+  /* `.cemig-form` é o próprio <body> nesta página, então basta
+     apagar os filhos diretos: some a topbar, a trilha, o rodapé
+     institucional e a etapa visível — inclusive o
+     `.cemig-form .page.show { display: block }` do shared.css,
+     que fica dentro de um pai oculto. */
+  body.pdf-imprimindo > *:not(.pdf-doc) {
+    display: none !important;
+  }
+  body.pdf-imprimindo .pdf-doc {
+    display: block !important;
+    position: static !important;
+    left: auto !important;
+    visibility: visible !important;
+  }
+}
+
+/* ============================================================
+   2. Página
+   ============================================================ */
+
+.pdf-pagina {
+  box-sizing: border-box;
+  width: var(--pdf-pagina-largura);
+  height: var(--pdf-pagina-altura);
+  padding: var(--pdf-margem);
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  /* Rede de segurança: se a paginação errar, o excesso é cortado
+     em vez de empurrar a folha seguinte. O JS avisa no console
+     quando isso acontece (scrollHeight > clientHeight) — sem esse
+     aviso o erro apareceria como texto faltando, sem pista. */
+  overflow: hidden;
+  break-after: page;
+  page-break-after: always;
+}
+
+/* Sem isto o navegador emite uma folha em branco no fim. */
+.pdf-pagina:last-child {
+  break-after: auto;
+  page-break-after: auto;
+}
+
+/* O corpo estica e o rodapé encosta no pé: a altura útil de cada
+   página é lida daqui pelo JS (corpo.clientHeight), em vez de
+   repetir 770pt como constante mágica no código. */
+.pdf-corpo {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* ============================================================
+   3. Cabeçalho (só na 1ª página) e rodapé
+   ============================================================ */
+
+.pdf-cabecalho-logo {
+  display: block;
+  width: 56pt;
+  height: 14pt;
+  margin-bottom: 9pt;
+}
+
+.pdf-titulo {
+  margin: 0 0 12pt;
+  font-size: var(--pdf-fs-titulo);
+  font-weight: 400;
+  line-height: 26pt;
+  color: var(--pdf-cor-marca);
+}
+
+.pdf-regua {
+  height: var(--pdf-regua-esp);
+  margin-bottom: var(--pdf-filete-depois);
+  background: var(--pdf-cor-regua);
+}
+
+.pdf-rodape {
+  flex: 0 0 auto;
+  text-align: right;
+  color: var(--pdf-cor-marca);
+  /* O "n/N" só é carimbado DEPOIS da paginação, quando o total de
+     folhas é conhecido. Sem esta reserva o rodapé mede 0 enquanto
+     se pagina, cada página é medida com ~12pt a mais do que tem de
+     fato, e o conteúdo transborda ao receber o número no fim. */
+  min-height: var(--pdf-linha);
+  /* O mock alinha a BASELINE do número a 36pt do pé (y=806), não
+     a caixa de linha. A descida do Open Sans mais a meia
+     entrelinha somam ~4.6pt abaixo da baseline, e é isso que a
+     margem negativa devolve. */
+  margin-bottom: -4.6pt;
+}
+
+/* ============================================================
+   4. Seção
+   ============================================================ */
+
+.pdf-secao-titulo {
+  margin: 0 0 var(--pdf-gap);
+  font-size: var(--pdf-fs-secao);
+  font-weight: 400;
+  color: var(--pdf-cor-marca);
+}
+
+.pdf-filete {
+  height: var(--pdf-filete-esp);
+  /* 6pt aqui + os 8pt de respiro do bloco anterior fecham os 14pt
+     medidos acima do filete no mock. */
+  margin: var(--pdf-filete-antes) 0 var(--pdf-filete-depois);
+  background: var(--pdf-cor-filete);
+}
+
+/* ============================================================
+   5. Grade de campos
+   ------------------------------------------------------------
+   Cada LINHA da grade é um elemento próprio, não um contêiner
+   único com todos os campos: é o que permite ao paginador tratar
+   a linha como bloco indivisível. Uma seção inteira num só
+   `.pdf-grade` viraria um átomo maior que a página.
+   ============================================================ */
+
+.pdf-grade {
+  display: grid;
+  grid-template-columns: repeat(var(--pdf-colunas), 1fr);
+  column-gap: var(--pdf-gap);
+  margin-bottom: var(--pdf-campo-respiro);
+}
+
+.pdf-campo--2col {
+  grid-column: span 2;
+}
+.pdf-campo--3col {
+  grid-column: span 3;
+}
+
+.pdf-rotulo {
+  font-weight: var(--pdf-fw-rotulo);
+}
+
+.pdf-valor {
+  font-weight: var(--pdf-fw-valor);
+}
+
+/* ============================================================
+   6. Cartão de destaque
+   ============================================================ */
+
+.pdf-cartoes {
+  display: grid;
+  grid-template-columns: repeat(var(--pdf-colunas), 1fr);
+  column-gap: var(--pdf-gap);
+  /* Os cartões de uma mesma linha se igualam pelo mais alto —
+     é o que dá os 63pt da 1ª linha do mock, em que só o cartão
+     do disjuntor tem duas linhas de valor. */
+  align-items: stretch;
+  margin-bottom: var(--pdf-campo-respiro);
+}
+
+.pdf-cartao {
+  box-sizing: border-box;
+  border: var(--pdf-card-borda) solid var(--pdf-cor-filete);
+  border-radius: var(--pdf-card-raio);
+  padding: var(--pdf-card-pad-y) var(--pdf-card-pad-x);
+  background: #fff;
+}
+
+/* ============================================================
+   7. Tabela
+   ------------------------------------------------------------
+   Nenhum dos SVGs de referência desenha uma tabela (os três são
+   variações da mesma página 1), então o estilo abaixo é derivado
+   dos mesmos tokens, na linguagem minimalista do resto do
+   documento: filete fino, sem zebra e sem faixa verde.
+   ============================================================ */
+
+.pdf-tabela {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: var(--pdf-campo-respiro);
+}
+
+.pdf-tabela th,
+.pdf-tabela td {
+  padding: var(--pdf-tabela-pad-y) var(--pdf-tabela-pad-x);
+  text-align: left;
+  vertical-align: top;
+  border-bottom: var(--pdf-tabela-filete) solid var(--pdf-cor-filete);
+}
+
+.pdf-tabela th {
+  font-weight: var(--pdf-fw-valor);
+  color: var(--pdf-cor-marca);
+}
+
+.pdf-tabela td {
+  font-weight: var(--pdf-fw-rotulo);
+}
+
+/* Primeira coluna sem recuo à esquerda e última sem à direita:
+   a tabela alinha com a coluna de conteúdo, como a grade. */
+.pdf-tabela th:first-child,
+.pdf-tabela td:first-child {
+  padding-left: 0;
+}
+.pdf-tabela th:last-child,
+.pdf-tabela td:last-child {
+  padding-right: 0;
+}
+
+/* Colunas numéricas (carga, demanda, potência) alinhadas à direita. */
+.pdf-tabela .pdf-col-num {
+  text-align: right;
+}
+
+/* Linha de fechamento (o que era a faixa verde sólida do motor
+   antigo): sem preenchimento, só peso e um filete acima. */
+.pdf-total {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--pdf-gap);
+  padding-top: var(--pdf-card-pad-y);
+  border-top: var(--pdf-filete-esp) solid var(--pdf-cor-filete);
+  font-weight: var(--pdf-fw-valor);
+  margin-bottom: var(--pdf-campo-respiro);
+}
+
+/* ============================================================
+   8. Assinatura
+   ============================================================ */
+
+.pdf-assinatura {
+  margin-top: 24pt;
+  padding-top: 6pt;
+  border-top: var(--pdf-tabela-filete) solid var(--pdf-cor-filete);
+  text-align: center;
+}
+
+/* ============================================================
+   9. Quebras
+   ------------------------------------------------------------
+   Quem decide as quebras é o paginador em bt/js/pdf-doc.js — só
+   ele sabe numerar as páginas. Estas regras são cinto de
+   segurança para o caso de o navegador repaginar por conta.
+   ============================================================ */
+
+.pdf-grade,
+.pdf-cartoes,
+.pdf-cartao,
+.pdf-total,
+.pdf-assinatura,
+.pdf-tabela tr {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.pdf-secao-titulo {
+  break-after: avoid;
+  page-break-after: avoid;
+}

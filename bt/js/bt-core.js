@@ -64,7 +64,7 @@ function btResolverCard(formTypesAceitos) {
   return card;
 }
 
-/* ===== Fábricas de estado (mesmo shape do App React / gerarPdfDoc) ===== */
+/* ===== Fábricas de estado (mesmo shape do App React / gerarPdfDocumento) ===== */
 function propPadrao() {
   return {
     nome: "",
