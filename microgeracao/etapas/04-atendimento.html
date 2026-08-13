@@ -42,25 +42,234 @@
         <label>Disjuntor geral atual <span class="req">*</span></label>
         <select data-k="disjGeralA" onchange="onDisjCorrente()"></select>
       </div>
+      <!-- Potência de consumo. Quais dos dois campos aparecem depende do tipo
+           de solicitação (ver _paresPotenciaGD()):
+             • Conexão nova            → só o campo "nova"
+             • Existente COM alteração → atual + futura
+             • Existente SEM alteração → só atual
+           Vale nos dois grupos; só o RÓTULO muda (o Grupo A contrata demanda,
+           o Grupo B não) — por isso os textos vêm de GD_ROTULOS_POTENCIA
+           (js/data.js), escritos por JS, e os <label> têm id.
+           No Grupo A a potência também dimensiona a subestação: ao mudar,
+           refaz os modelos permitidos e o aviso de demanda × potência. -->
+      <div class="field" id="demandaConsumoAtualBox" style="display: none">
+        <label id="demandaConsumoAtualLbl">Potência atual (kW)</label>
+        <input
+          type="text"
+          data-k="demandaConsumoAtual"
+          placeholder=" "
+          oninput="
+            onNumDec(this);
+            onDemandaConsumoGD();
+          "
+        />
+      </div>
       <div class="field" id="demandaConsumoBox" style="display: none">
-        <label id="demandaConsumoLbl">Demanda de consumo contratada (kW)</label>
+        <label id="demandaConsumoLbl">Potência futura (kW)</label>
         <input
           type="text"
           data-k="demandaConsumo"
           placeholder=" "
-          oninput="onNumDec(this)"
+          oninput="
+            onNumDec(this);
+            onDemandaConsumoGD();
+          "
         />
       </div>
-      <!-- Tensão de conexão: sempre exibida — tanto na conexão nova (tensão de
-           projeto) quanto na existente (tensão atual). Ao contrário da demanda
-           contratada e do disjuntor "atual", não pressupõe unidade já ligada; e
-           a regra da Subestação Nº 2 depende da tensão JUSTAMENTE em ligação
-           nova (ver gdSEDisponivel em data.js). As opções vêm de
-           atualizarTensoes(), que troca a lista conforme o grupo. -->
       <div class="field" id="tensaoConexaoBox">
         <label>Tensão de conexão <span class="req">*</span></label>
         <select data-k="tensaoAtendimento" onchange="atualizarSE()"></select>
       </div>
+
+      <!-- Bloco técnico da subestação (transformadores, motores, resumo e tipo
+           de SE). Diferente do MT, a microgeração NÃO tem subestação
+           compartilhada (multimedição): não há cubículos nem a pergunta que os
+           governa, e por isso também não existem os "Totais Consolidados" —
+           os totais são sempre os dos transformadores da própria UC.
+           O bloco inteiro só vale no Grupo A (média tensão) — ver
+           atualizarSE() em js/subestacao.js.
+
+           col-span-2: #atendimentoBloco é .grid-subgrupo (display:contents),
+           então este bloco é item do .grid-2 do card. Sem o span ele ocuparia
+           só UMA coluna, espremendo os cards e truncando os rótulos. Mesmo
+           motivo de #dubBox e #mudancaLocalBloco abaixo. -->
+      <div id="blocoTecnicoIndividual" class="col-span-2" style="display: none">
+        <div id="blocoTrafosIndividual">
+          <h4 class="card-subtitle divider">
+            Dados dos transformadores <span class="req">*</span>
+          </h4>
+          <p class="card-sub">
+            Preencha os dados de todos os transformadores que serão usados na
+            sua propriedade.
+          </p>
+
+          <div class="grid grid-2 bloco-sub-gap">
+            <div class="field row-solo" id="qtdTransformadorBox">
+              <label
+                >Quantidade de transformadores<span class="req">*</span></label
+              >
+              <input
+                type="number"
+                min="1"
+                max="99"
+                step="1"
+                data-k="qtdTransformador"
+                placeholder=" "
+                oninput="sincronizarTrafos()"
+              />
+            </div>
+          </div>
+
+          <div id="trafoCards"></div>
+          <!-- A microgeração não tem modalidade tarifária horária nem demanda
+               escalonada: quem dimensiona a subestação é a "Demanda de consumo
+               contratada (kW)" logo acima. Aqui fica só o aviso de coerência
+               entre ela e a potência dos transformadores. -->
+          <div id="demandaVsPotenciaAlert"></div>
+        </div>
+
+        <div id="blocoMotoresIndividual">
+          <h4 class="card-subtitle divider">
+            Motores e cargas especiais
+            <span class="opt">(opcional)</span>
+          </h4>
+          <!-- O link para a "tabela de conversão de potências" (Anexo II) do MT
+               não veio junto: lá ele abre um modal de ~400 linhas embutido no
+               mt/index.html, que é monolítico. Copiá-lo para cá duplicaria a
+               tabela nos dois formulários. -->
+          <p class="card-sub">
+            Preencha os dados técnicos de todos os motores com cargas especiais,
+            caso existam, da sua propriedade.
+          </p>
+
+          <div class="grid grid-2 bloco-sub-gap">
+            <div class="field row-solo" id="qtdMotoresBox">
+              <label>Quantidade de motores</label>
+              <input
+                type="number"
+                min="0"
+                max="99"
+                step="1"
+                data-k="qtdMotores"
+                placeholder=" "
+                oninput="sincronizarMotores()"
+              />
+            </div>
+          </div>
+
+          <div id="motoresCardsContainer"></div>
+        </div>
+
+        <div id="blocoCargaOperante" style="display: none">
+          <div class="subbox-title" style="margin-top: 24px">
+            Carga operante na partida do maior motor
+            <span class="opt">(se houver motores)</span>
+          </div>
+          <div class="grid grid-3" style="margin-top: 16px">
+            <div class="field">
+              <label>Carga operante na partida (kVA)</label>
+              <input
+                type="number"
+                step="any"
+                data-k="cargaOperante"
+                placeholder=" "
+              />
+            </div>
+            <div class="field">
+              <label>Corrente de partida (Ip) prevista (A)</label>
+              <input
+                type="number"
+                step="any"
+                data-k="ipPrevista"
+                placeholder=" "
+              />
+            </div>
+            <div class="field">
+              <label>Tempo (t) da corrente de partida (s)</label>
+              <input
+                type="number"
+                step="any"
+                data-k="tempoPartida"
+                placeholder=" "
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Resumo dos dados (KPIs) — montado por renderResumoSE(), logo
+                   acima da escolha do tipo de subestação: são os totais que
+                   determinam quais modelos são permitidos. -->
+        <div id="blocoResumoSE" style="display: none">
+          <h4 class="card-subtitle divider">Resumo dos dados</h4>
+          <div
+            class="resultado-kpis resultado-kpis--linha"
+            id="resumoSEKpis"
+          ></div>
+        </div>
+
+        <!-- Tipo de subestação — a seleção é feita pela galeria visual
+                   (renderGaleriaSE); os <select> ficam como fonte de estado
+                   e são espelhados pelos cards. Potência/quantidade não
+                   aparecem mais aqui: vêm da tabela de transformadores. -->
+        <div id="blocoSubestacaoNova" style="display: none">
+          <h4 class="card-subtitle divider">Subestação para conexão nova</h4>
+          <p class="card-sub">
+            <strong>Selecione o tipo de subestação</strong> que será instalado
+            na sua propriedade.
+          </p>
+          <select
+            id="cn_tipoSE"
+            data-k="cn_tipoSE"
+            onchange="recalcRamal()"
+            hidden
+            aria-hidden="true"
+          >
+            <option value=""></option>
+          </select>
+          <div class="se-gallery" id="seGallery_nova"></div>
+        </div>
+
+        <div id="blocoSubestacaoAlteracao" style="display: none">
+          <h4 class="card-subtitle divider">
+            Subestação para alteração de carga
+          </h4>
+          <p class="card-sub">
+            Selecione o <strong>modelo atual</strong> da sua subestação.
+          </p>
+          <select
+            id="alt_tipoAtual"
+            data-k="alt_tipoAtual"
+            onchange="recalcRamal()"
+            hidden
+            aria-hidden="true"
+          >
+            <option value=""></option>
+          </select>
+          <div class="se-gallery" id="seGallery_atual"></div>
+
+          <!-- A pergunta "Haverá troca do tipo de subestação?" saiu: a
+                     galeria do novo modelo é sempre exibida (fora Conexão Nova)
+                     e a troca passa a ser DEDUZIDA — há troca quando o modelo
+                     escolhido aqui difere do atual. Ver _trocaSEDeduzida(). -->
+          <div id="seGalleryBox_para">
+            <p class="card-sub bloco-sub-gap">
+              Indique o <strong>novo modelo</strong> que será instalado em sua
+              propriedade.
+            </p>
+            <select
+              id="alt_tipoPara"
+              data-k="alt_tipoPara"
+              onchange="recalcRamal()"
+              hidden
+              aria-hidden="true"
+            >
+              <option value=""></option>
+            </select>
+            <div class="se-gallery" id="seGallery_para"></div>
+          </div>
+        </div>
+      </div>
+
       <div class="field field--plain col-span-2" data-noopt>
         <label>
           O telhado é/será arrendado para pessoa/empresa diferente do

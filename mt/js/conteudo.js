@@ -276,7 +276,7 @@ function conteudoFormularioMT() {
             if (!t.substituir) {
               // Declara-se todo o parque existente, alterado ou não: um trafo
               // marcado como "sem" permanece: não pode sair como "Novo".
-              const sit = t.situacao === "sem" ? "Sem alteração" : "Novo";
+              const sit = t.situacao === "sem" ? "Mantido" : "Novo";
               return [[id, sit, t.potencia, t.relacao]];
             }
             return [

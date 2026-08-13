@@ -18,9 +18,17 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #c2c8cd; border-radius: 4px; }
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #c2c8cd;
+  border-radius: 4px;
+}
 
 /* ---------- TOPBAR ---------- */
 .topbar {
@@ -46,17 +54,40 @@ body {
   gap: 10px;
   text-decoration: none;
 }
-.logo-cemig svg { height: 34px; width: auto; }
-.logo-cemig .logo-img { height: 34px; width: auto; display: block; }
-/* .app-title styling (incl. responsive 36/32/26 sizing) lives in shared.css (`.cemig-form .app-title`); the local rule was fully overridden. */
-.topbar-left { display: flex; align-items: center; gap: 14px; }
-.topbar-home {
-  font-family: inherit; font-size: 12px; font-weight: 700; color: #fff;
-  background: transparent; border: 1px solid rgba(255, 255, 255, 0.4);
-  padding: 7px 14px; border-radius: 999px; cursor: pointer; text-decoration: none;
-  transition: all 0.15s; letter-spacing: 0.3px;
+.logo-cemig svg {
+  height: 34px;
+  width: auto;
 }
-.topbar-home:hover { background: #fff; color: var(--verde-escuro); border-color: #fff; }
+.logo-cemig .logo-img {
+  height: 34px;
+  width: auto;
+  display: block;
+}
+/* .app-title styling (incl. responsive 36/32/26 sizing) lives in shared.css (`.cemig-form .app-title`); the local rule was fully overridden. */
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.topbar-home {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  padding: 7px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s;
+  letter-spacing: 0.3px;
+}
+.topbar-home:hover {
+  background: #fff;
+  color: var(--verde-escuro);
+  border-color: #fff;
+}
 
 /* ---------- CABEÇALHO DO FORMULÁRIO ----------
    .form-header (+ h1/p) e .flow-badge: fonte única em css/shared.css
@@ -100,7 +131,9 @@ body {
 }
 
 @media (max-width: 860px) {
-  .layout { flex-direction: column; }
+  .layout {
+    flex-direction: column;
+  }
   .sidebar {
     width: 100%;
     position: static;
@@ -110,11 +143,24 @@ body {
     overflow-x: auto;
     border-bottom: 1px solid var(--borda);
   }
-  .sidebar-title { display: none; }
-  .vstep { width: auto; white-space: nowrap; padding: 8px 12px; }
-  .vstep:not(:last-child)::before { display: none; }
-  .vstep-label { font-size: 12px; }
-  .main-col { padding: 8px 16px 40px; width: 100%; }
+  .sidebar-title {
+    display: none;
+  }
+  .vstep {
+    width: auto;
+    white-space: nowrap;
+    padding: 8px 12px;
+  }
+  .vstep:not(:last-child)::before {
+    display: none;
+  }
+  .vstep-label {
+    font-size: 12px;
+  }
+  .main-col {
+    padding: 8px 16px 40px;
+    width: 100%;
+  }
 }
 
 /* ---------- CONTEÚDO ---------- */
@@ -123,7 +169,9 @@ body {
   margin: 8px auto 60px;
   padding: 20px;
 }
-.fade-in { animation: fadeIn 0.25s ease; }
+.fade-in {
+  animation: fadeIn 0.25s ease;
+}
 
 /* ---------- CARD ---------- */
 .card {
@@ -154,7 +202,9 @@ body {
    Cópias locais removidas — eram dead code idêntico ao shared (inclusive o
    colapso para 1 coluna em telas pequenas). */
 @media (max-width: 720px) {
-  .form-header h1 { font-size: 20px; }
+  .form-header h1 {
+    font-size: 20px;
+  }
 }
 
 /* ---------- CAMPOS ---------- */
@@ -164,11 +214,22 @@ body {
    locais foram removidas — estavam mortas (sobrepostas por `.cemig-form
    .field*`, de maior especificidade) e violavam a regra de fonte única. */
 input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
 
 /* Toggle/radio: estilo canônico único em shared.css (.toggle-group/.toggle-btn). */
-input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-claro); color: var(--texto-suave); }
+input:disabled,
+select:disabled {
+  cursor: not-allowed;
+  background: var(--verde-claro);
+  color: var(--texto-suave);
+}
 
 /* ===== GD — banner de modalidade pré-definida (Fast Track / Grid Zero) ===== */
 .gd-modo-banner {
@@ -185,7 +246,9 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
   line-height: 1.5;
   color: var(--texto);
 }
-.gd-modo-banner strong { color: var(--verde-escuro); }
+.gd-modo-banner strong {
+  color: var(--verde-escuro);
+}
 
 /* ---------- BOTÕES ----------
    .btn / .btn-primary / .btn-dark / .btn-ghost / .btn-danger-ghost:
@@ -233,22 +296,51 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
   background: var(--verde-claro);
   color: var(--verde-escuro);
 }
-.badge-lime { background: #e6f9d5; color: #3d6b00; }
+.badge-lime {
+  background: #e6f9d5;
+  color: #3d6b00;
+}
 
 /* ---------- RESUMO / KPIs ---------- */
-.kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
-@media (max-width: 720px) { .kpi-row { grid-template-columns: 1fr; } }
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+@media (max-width: 720px) {
+  .kpi-row {
+    grid-template-columns: 1fr;
+  }
+}
 .kpi {
   background: var(--verde-claro);
   border-radius: var(--raio-sm);
   padding: 14px;
   text-align: center;
 }
-.kpi.dark { background: var(--verde-escuro); }
-.kpi-label { font-size: 11px; font-weight: 600; color: var(--texto-suave); }
-.kpi.dark .kpi-label { color: #a9e6bf; }
-.kpi-value { font-size: 18px; font-weight: 800; color: var(--verde-escuro); margin-top: 2px; }
-.kpi.dark .kpi-value { color: #fff; font-size: 14px; line-height: 1.2; }
+.kpi.dark {
+  background: var(--verde-escuro);
+}
+.kpi-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+.kpi.dark .kpi-label {
+  color: #a9e6bf;
+}
+.kpi-value {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--verde-escuro);
+  margin-top: 2px;
+}
+.kpi.dark .kpi-value {
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.2;
+}
 
 /* ---------- TABELA DE CARGAS ---------- */
 .carga-min-head {
@@ -297,11 +389,21 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
   border-top: 1px solid var(--borda);
   gap: 10px;
 }
-.carga-row .nome { font-size: 13.5px; }
-.carga-row .pot { font-size: 11px; color: var(--texto-suave); }
-.qtd-ctrl { display: flex; align-items: center; gap: 6px; }
+.carga-row .nome {
+  font-size: 13.5px;
+}
+.carga-row .pot {
+  font-size: 11px;
+  color: var(--texto-suave);
+}
+.qtd-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .qtd-ctrl button {
-  width: 28px; height: 28px;
+  width: 28px;
+  height: 28px;
   border-radius: 6px;
   border: 1px solid var(--borda);
   background: var(--input-bg);
@@ -309,8 +411,16 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
   cursor: pointer;
   font-size: 15px;
 }
-.qtd-ctrl button.plus { background: var(--verde); color: #fff; border-color: var(--verde); }
-.qtd-ctrl input { width: 48px; text-align: center; padding: 5px 2px; }
+.qtd-ctrl button.plus {
+  background: var(--verde);
+  color: #fff;
+  border-color: var(--verde);
+}
+.qtd-ctrl input {
+  width: 48px;
+  text-align: center;
+  padding: 5px 2px;
+}
 
 .subbox {
   background: var(--input-bg);
@@ -319,23 +429,52 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
   padding: 12px;
   margin-bottom: 10px;
 }
-.subbox-title { font-size: 12px; font-weight: 700; color: var(--verde-escuro); }
-.motor-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
-.motor-row select, .motor-row input { background: var(--card); padding: 6px; font-size: 12px; width: auto; }
+.subbox-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--verde-escuro);
+}
+.motor-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.motor-row select,
+.motor-row input {
+  background: var(--card);
+  padding: 6px;
+  font-size: 12px;
+  width: auto;
+}
 
 /* ---------- UC CARD ---------- */
-.uc-card { padding: 18px; }
-.uc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.uc-card {
+  padding: 18px;
+}
+.uc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
 .dashed-box {
   background: var(--bg);
   border: 1px dashed var(--borda);
   border-radius: var(--raio-sm);
   padding: 14px;
 }
-.divider { border-top: 1px dashed var(--borda); margin-top: 14px; padding-top: 14px; }
+.divider {
+  border-top: 1px dashed var(--borda);
+  margin-top: 14px;
+  padding-top: 14px;
+}
 
 /* ---------- PRÉVIA ---------- */
-.preview-block { margin-bottom: 18px; }
+.preview-block {
+  margin-bottom: 18px;
+}
 .preview-block h4 {
   font-size: 13px;
   font-weight: 700;
@@ -344,26 +483,59 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
   letter-spacing: 0.5px;
   margin-bottom: 8px;
 }
-.preview-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 18px; }
-@media (max-width: 720px) { .preview-grid { grid-template-columns: 1fr; } }
-.preview-item { font-size: 13px; padding: 5px 0; border-bottom: 1px solid var(--borda); }
-.preview-item .k { color: var(--texto-suave); font-size: 11px; display: block; }
-.preview-item .v { color: var(--texto); font-weight: 600; }
+.preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 18px;
+}
+@media (max-width: 720px) {
+  .preview-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.preview-item {
+  font-size: 13px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--borda);
+}
+.preview-item .k {
+  color: var(--texto-suave);
+  font-size: 11px;
+  display: block;
+}
+.preview-item .v {
+  color: var(--texto);
+  font-weight: 600;
+}
 
 /* ---------- MODAL ---------- */
 .modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,.5);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 200; padding: 20px;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 20px;
 }
 .modal {
-  background: #fff; border-radius: var(--raio);
-  max-width: 720px; width: 100%;
-  max-height: 85vh; overflow-y: auto;
+  background: #fff;
+  border-radius: var(--raio);
+  max-width: 720px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
   padding: 24px;
 }
-.modal-close { float: right; cursor: pointer; border: none; background: none; font-size: 22px; color: var(--texto-suave); }
+.modal-close {
+  float: right;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-size: 22px;
+  color: var(--texto-suave);
+}
 
 /* ---------- FOOTER ---------- */
 .footer {
@@ -373,11 +545,17 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
   padding: 18px;
   font-size: 12px;
 }
-.footer a { color: #fff; }
+.footer a {
+  color: #fff;
+}
 .spinner {
-  display: inline-block; width: 14px; height: 14px;
-  border: 2px solid var(--borda); border-top-color: var(--verde);
-  border-radius: 50%; animation: spin 0.6s linear infinite;
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--borda);
+  border-top-color: var(--verde);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
 }
 
 /* ---------- PREVISÃO DE CARGA (coletivo) ---------- */
@@ -386,7 +564,11 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
   grid-template-columns: repeat(5, 1fr);
   gap: 10px;
 }
-@media (max-width: 720px) { .prev-carga { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 720px) {
+  .prev-carga {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 .prev-total {
   display: flex;
   gap: 14px;
@@ -395,7 +577,10 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
   padding-top: 14px;
   border-top: 1px dashed var(--borda);
 }
-.prev-total .kpi { flex: 1; min-width: 140px; }
+.prev-total .kpi {
+  flex: 1;
+  min-width: 140px;
+}
 
 /* ---------- BLOCO DE UC (coletivo) ---------- */
 .uc-block {
@@ -411,9 +596,18 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
   justify-content: space-between;
   margin-bottom: 12px;
 }
-.uc-block-title { font-weight: 700; color: var(--verde-escuro); font-size: 14px; }
-.disj-pair { display: flex; gap: 8px; }
-.disj-pair > div { flex: 1; }
+.uc-block-title {
+  font-weight: 700;
+  color: var(--verde-escuro);
+  font-size: 14px;
+}
+.disj-pair {
+  display: flex;
+  gap: 8px;
+}
+.disj-pair > div {
+  flex: 1;
+}
 
 /* destaque do disjuntor geral */
 .geral-box {
@@ -647,7 +841,9 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
 /* .restricao-destaque foi movida para shared.css (padrão único do banner
    .cmg-aviso, sem duplicação entre os formulários). */
 /* ===== Motores — tabela de preenchimento ===== */
-.motores-box { margin-top: 14px; }
+.motores-box {
+  margin-top: 14px;
+}
 .motores-head {
   display: flex;
   justify-content: space-between;
@@ -670,7 +866,9 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
   border-bottom: 1px solid var(--borda);
 }
 .motores-table thead th.num,
-.motores-table td.num { text-align: right; }
+.motores-table td.num {
+  text-align: right;
+}
 .motores-table tbody td {
   padding: 6px 8px;
   border-bottom: 1px solid var(--borda);
@@ -700,7 +898,9 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
   padding: 2px 6px;
   border-radius: 6px;
 }
-.motor-del:hover { background: rgba(220, 38, 38, 0.08); }
+.motor-del:hover {
+  background: rgba(220, 38, 38, 0.08);
+}
 .motores-total {
   text-align: right;
   font-size: 13px;
@@ -708,18 +908,26 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
   color: var(--verde-cemig);
 }
 @media (max-width: 560px) {
-  .motores-table thead { display: none; }
+  .motores-table thead {
+    display: none;
+  }
   .motores-table,
   .motores-table tbody,
   .motores-table tr,
-  .motores-table td { display: block; width: 100%; }
+  .motores-table td {
+    display: block;
+    width: 100%;
+  }
   .motores-table tr {
     border: 1px solid var(--borda);
     border-radius: 10px;
     padding: 6px;
     margin-bottom: 10px;
   }
-  .motores-table td { border: none; padding: 4px 6px; }
+  .motores-table td {
+    border: none;
+    padding: 4px 6px;
+  }
   .motores-table td.num::before {
     content: attr(data-label);
     float: left;
@@ -730,7 +938,12 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
 }
 
 /* ===== GD — Checklist de documentação ===== */
-.doc-list { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.doc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
 .doc-item {
   display: flex;
   gap: 12px;
@@ -740,17 +953,32 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
   border-radius: 10px;
   background: var(--card);
   cursor: pointer;
-  transition: border-color 0.12s ease, background 0.12s ease;
+  transition:
+    border-color 0.12s ease,
+    background 0.12s ease;
 }
-.doc-item:hover { border-color: var(--verde-acento); }
+.doc-item:hover {
+  border-color: var(--verde-acento);
+}
 /* Forma do checkbox: regra canônica `.cemig-form input[type="checkbox"]`
    (shared.css); aqui só o alinhamento com a 1ª linha do texto. */
 .doc-item input[type="checkbox"] {
   margin-top: 3px;
 }
-.doc-text { font-size: 13px; line-height: 1.5; color: var(--texto); }
-.doc-text strong { color: var(--verde-cemig); margin-right: 4px; }
-.doc-req { color: var(--vermelho); font-size: 11px; font-weight: 700; }
+.doc-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--texto);
+}
+.doc-text strong {
+  color: var(--verde-cemig);
+  margin-right: 4px;
+}
+.doc-req {
+  color: var(--vermelho);
+  font-size: 11px;
+  font-weight: 700;
+}
 
 /* ===== GD — Subtítulo de seção ===== */
 .gd-subhead {
@@ -762,6 +990,21 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
   margin: 18px 0 10px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--borda);
+}
+
+/* ===== Bloco técnico da subestação — primeiro título =====
+   `.divider` (shared.css) traz `margin-top: 32px` para separar uma seção da
+   anterior. Só que o PRIMEIRO título do bloco é o primeiro filho de um item do
+   `.grid` do card, e esse grid já aplica `row-gap: 32px` — os dois se somam e
+   o vão vira 64px (ver #blocoTecnicoIndividual na etapa 4).
+
+   Mesma regra que vale para o `.cmg-aviso`: dentro do grid, o respiro vem do
+   grid, não do elemento. Zera-se APENAS a margem deste primeiro título; os
+   demais (Motores, Resumo, Subestação…) estão em fluxo normal dentro do bloco
+   e continuam precisando dela. O `padding-top` segue intacto — ele separa a
+   linha do texto, não uma seção da outra. */
+.cemig-microgd #blocoTecnicoIndividual > :first-child > .divider:first-child {
+  margin-top: 0;
 }
 
 /* ===== GD — textarea ===== */
@@ -784,8 +1027,15 @@ textarea.ta {
   border-bottom: 1px solid var(--borda);
   font-size: 13px;
 }
-.rev-label { color: var(--texto-suave); flex-shrink: 0; }
-.rev-val { font-weight: 600; color: var(--texto); text-align: right; }
+.rev-label {
+  color: var(--texto-suave);
+  flex-shrink: 0;
+}
+.rev-val {
+  font-weight: 600;
+  color: var(--texto);
+  text-align: right;
+}
 .rev-faltas {
   background: #fff4f4;
   border: 1px solid #f3c0c0;
@@ -795,8 +1045,13 @@ textarea.ta {
   font-size: 13px;
   margin-bottom: 14px;
 }
-.rev-faltas ul { margin: 8px 0 0; padding-left: 18px; }
-.rev-faltas li { margin: 2px 0; }
+.rev-faltas ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+.rev-faltas li {
+  margin: 2px 0;
+}
 .rev-ok {
   background: var(--verde-claro);
   border: 1px solid var(--borda);
@@ -823,22 +1078,22 @@ textarea.ta {
   border-radius: 10px;
   overflow: visible;
   cursor: pointer;
-  transition: .18s;
+  transition: 0.18s;
   background: #fff;
   text-align: center;
   position: relative;
 }
 .se-card:hover {
   border-color: var(--verde);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, .1);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
   transform: translateY(-2px);
 }
 .se-card.selected {
   border-color: var(--verde);
-  box-shadow: 0 0 0 4px rgba(16, 119, 97, .18);
+  box-shadow: 0 0 0 4px rgba(16, 119, 97, 0.18);
 }
 .se-card.disabled {
-  opacity: .45;
+  opacity: 0.45;
   cursor: not-allowed;
   filter: grayscale(1);
 }
@@ -869,7 +1124,7 @@ textarea.ta {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: rgba(10, 47, 39, .8);
+  background: rgba(10, 47, 39, 0.8);
   color: #fff;
   font-size: 12px;
   font-weight: 700;
@@ -896,10 +1151,12 @@ textarea.ta {
   text-align: left;
   padding: 10px 12px;
   border-radius: 8px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, .2);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
   opacity: 0;
   visibility: hidden;
-  transition: opacity .18s, visibility .18s;
+  transition:
+    opacity 0.18s,
+    visibility 0.18s;
   z-index: 30;
   pointer-events: none;
 }

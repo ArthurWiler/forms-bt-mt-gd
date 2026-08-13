@@ -1571,11 +1571,13 @@ function trafosFuturos(lista) {
      "novo"  → equipamento acrescentado à instalação;
      "sem"   → já existe e permanece inalterado.
    `substituir` (booleano) segue derivado daqui — só "troca" o liga — porque é
-   o que potenciaFuturaTrafo e o PDF já leem. */
+   o que potenciaFuturaTrafo e o PDF já leem.
+   O rótulo do card é a AÇÃO ("Manter/Trocar este transformador"); o badge do
+   cabeçalho é o ESTADO resultante ("Mantido"/"Substituído"/"Novo"). */
 const TRAFO_SITUACOES = [
   { v: "troca", label: "Trocar este transformador" },
   { v: "novo", label: "Novo transformador" },
-  { v: "sem", label: "Sem alteração" },
+  { v: "sem", label: "Manter este transformador" },
 ];
 /* Tolerante a estado anterior à 3ª opção (quando só havia `substituir`). */
 function situacaoTrafo(t) {
@@ -1652,13 +1654,13 @@ function renderTrafos() {
       const troca = permiteTrocaTrafo();
       const situacao = situacaoTrafo(t);
       const subst = troca && situacao === "troca";
-      // "Sem alteração" é neutro (.is-existente): o equipamento já existe e
+      // "Mantido" é neutro (.is-existente): o equipamento já existe e
       // permanece — não é novo nem uma substituição.
       const semAlt = troca && situacao === "sem";
       // Em Conexão Nova não há badge de status: todo trafo é novo.
       const status = !troca
         ? ""
-        : `<span class="trafo-status${subst ? " is-substituido" : semAlt ? " is-existente" : " is-novo"}">${subst ? "Substituído" : semAlt ? "Sem alteração" : "Novo"}</span>`;
+        : `<span class="trafo-status${subst ? " is-substituido" : semAlt ? " is-existente" : " is-novo"}">${subst ? "Substituído" : semAlt ? "Mantido" : "Novo"}</span>`;
       const radios = !troca
         ? ""
         : `<div class="toggle-group trafo-troca" role="radiogroup" aria-label="Situação do transformador ${i + 1}">
@@ -2143,12 +2145,12 @@ function renderCubiculos() {
         .map((t, j) => {
           const situacao = situacaoTrafo(t);
           const subst = trocaCub && situacao === "troca";
-          // Badge: "Sem alteração" é neutro (.is-existente) — não é um
-          // equipamento novo nem uma substituição.
+          // Badge: "Mantido" é neutro (.is-existente) — não é um equipamento
+          // novo nem uma substituição.
           const semAlt = trocaCub && situacao === "sem";
           const status = !trocaCub
             ? ""
-            : `<span class="trafo-status${subst ? " is-substituido" : semAlt ? " is-existente" : " is-novo"}">${subst ? "Substituído" : semAlt ? "Sem alteração" : "Novo"}</span>`;
+            : `<span class="trafo-status${subst ? " is-substituido" : semAlt ? " is-existente" : " is-novo"}">${subst ? "Substituído" : semAlt ? "Mantido" : "Novo"}</span>`;
           const radios = !trocaCub
             ? ""
             : `<div class="toggle-group trafo-troca" role="radiogroup" aria-label="Situação do transformador ${j + 1} do cubículo ${i + 1}">

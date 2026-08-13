@@ -13,7 +13,7 @@ const GD_CLASSES = [
   "Serviço Público",
 ];
 // Tipos de solicitação. O `valor` é o texto NORMATIVO (usado pelas regras —
-// GD_SOLICITACOES_FORM_CARGA, GD_SOLICITACOES_AUMENTO_POTENCIA, gdSEDisponivel
+// GD_SOLICITACOES_FORM_CARGA, GD_SOLICITACOES_AUMENTO_POTENCIA e _finalidadeGD
 // — e impresso no PDF); o `texto` é o rótulo curto que aparece na tela,
 // conforme o Figma da etapa "Tipo de atendimento".
 const GD_SOLICITACOES = [
@@ -56,15 +56,21 @@ const GD_EDIF_TIPO = [
 const GD_TENSAO_A = ["13800", "22000", "34500"];
 const GD_TENSAO_B = ["127/220", "120/240"];
 const GD_RAMAL = ["Aéreo", "Subterrâneo"];
-const GD_TIPOS_SE = ["Nº 1", "Nº 2", "Nº 4", "Nº 5", "Nº 8"];
-const GD_TRAFO_POR_SE = {
-  "Nº 1": [75, 112.5, 150, 225, 300],
-  "Nº 2": [75, 112.5, 150, 225, 300],
-  "Nº 4": [75, 112.5, 150, 225, 300],
-  "Nº 5": [75, 112.5, 150, 225, 300],
-  "Nº 8": [75, 112.5, 150, 225, 300],
-};
+// Tipo de ligação do transformador — mesma lista da minigeração
+// (minigeracao/js/data.js). Perguntado por transformador, dentro do card.
+const GD_TIPO_LIG_TRAFO = ["∆-Y", "∆-∆", "Y-∆", "Y-Y"];
 const GD_TRAFOS_PARTICULARES = [100, 200, 300, 500, 700];
+// Dispositivos de partida de motor — mesma lista do MT (mt/js/dados.js), usada
+// pelos cards de "Motores e cargas especiais" da etapa de atendimento.
+const GD_DISPOSITIVOS_MOTOR = [
+  "Chave Série-Paralelo",
+  "Partida Estrela-Triângulo",
+  "Chave Compensadora",
+  "Resistência/Reatância Primária",
+  "Resistência Rotórica",
+  "Soft-Starter",
+  "Outro",
+];
 const GD_FONTES = [
   "Solar",
   "Hidráulica",
@@ -97,44 +103,65 @@ const GD_SOLICITACOES_AUMENTO_POTENCIA = [
   "Conexão de GD em Unidade Consumidora Existente COM Alteração de Potência Disponibilizada",
   "GD Existente COM Alteração de Potência Ativa Instalada Total",
 ];
-// Tipos de subestação indisponíveis em Baixa Tensão (BT/Grupo B).
-const GD_TIPOS_SE_BLOQ_BT = ["Nº 1", "Nº 2"];
-
-// ===== Disponibilidade da subestação (Regras de MT/GD) — espelha minigeração =====
+// ===== Disponibilidade da subestação (Regras de MT/GD) =====
 const GD_SOLICITACAO_LIG_NOVA =
   "Ligação de Nova Unidade Consumidora COM Geração Distribuída";
 const GD_BT_BAIXA = "BT - Baixa Tensão"; // valor de instExistenteBTMT que caracteriza migração BT→MT
-const GD_TENSAO_LIGNOVA_138 = "13800"; // 13,8 kV
-// Somente as subestações Nº 1, 5 e 8 possuem limite de 300 kVA (filtragem por potência).
-const GD_SE_LIMITE_300 = ["Nº 1", "Nº 5", "Nº 8"];
-const GD_SE_LIMITE_KW = 300;
+const GD_TENSAO_LIGNOVA_138 = "13800"; // 13,8 kV — mantido: documenta o volt "cru" guardado no estado
 
-// Regra 4: aceitação das subestações por tipo × tensão × tipo de solicitação.
-//  - "Ligação nova" inclui a migração de BT→MT (instalação existente em BT).
-//  ctx = { solicitacao, tensao, instExistenteBTMT }
-function gdSEDisponivel(tipo, ctx) {
-  const e138 = ctx.tensao === GD_TENSAO_LIGNOVA_138;
-  const ehBTtoMT = ctx.instExistenteBTMT === GD_BT_BAIXA;
-  const novaConexao = ctx.solicitacao === GD_SOLICITACAO_LIG_NOVA || ehBTtoMT;
-  switch (tipo) {
-    case "Nº 1":
-      if (novaConexao)
-        return {
-          ok: false,
-          msg: "Subestação Nº 1 não aceita ligação nova / migração BT→MT.",
-        };
-      return { ok: true, msg: "" };
-    case "Nº 2":
-      if (novaConexao && e138)
-        return {
-          ok: false,
-          msg: "Subestação Nº 2 não aceita ligação nova em 13,8 kV (disponível em 22 kV e 34,5 kV).",
-        };
-      return { ok: true, msg: "" };
-    // Nº 4, Nº 5 e Nº 8 aceitam ligação nova em qualquer tensão.
-    default:
-      return { ok: true, msg: "" };
-  }
+/* gdSEDisponivel() e as listas GD_TIPOS_SE / GD_SE_LIMITE_* foram retiradas: a
+   aceitação das subestações passou a vir de CalculoMT.tiposSubestacaoPermitidos
+   (mt/js/calculo.js), junto com o bloco técnico portado do MT — fonte única
+   com o formulário de média tensão. Os critérios de lá são um superconjunto
+   dos que existiam aqui:
+     • Nº 1 não aceita conexão nova            → novaOk: false   (era a regra 1)
+     • Nº 2 só existe em 22 e 34,5 kV          → tensoes: [22, 34.5]
+       (mais estrito que antes: aqui a Nº 2 só era bloqueada em 13,8 kV na
+        LIGAÇÃO NOVA; agora também na alteração de carga)
+     • teto de 300 kW em Nº 1, 3, 5, 6 e 8     → maxKW: 300
+     • entram no catálogo os modelos Nº 3 e Nº 6, que esta lista não trazia. */
+/* ===== Rótulos dos pares de potência =====
+   Consumo (etapa "Tipo de atendimento") e geração (etapa "Dados da geração")
+   perguntam o MESMO trio de campos, e quais deles aparecem sai do tipo de
+   solicitação:
+     nova   → conexão nova: só um campo, não há potência anterior;
+     atual  → a potência que a UC já tem (conexão existente);
+     futura → a potência depois da obra (só com alteração de potência).
+   Só o NOME muda entre os grupos: o Grupo A contrata demanda ("potência
+   contratada"), o Grupo B não. Tabela única porque os mesmos rótulos são
+   usados pela etapa, pela validação, pela prévia e pelo PDF — ver
+   gdRotuloPotencia(). */
+const GD_ROTULOS_POTENCIA = {
+  consumo: {
+    A: {
+      nova: "Potência de consumo a ser contratada (kW)",
+      atual: "Potência contratada atual (kW)",
+      futura: "Potência contratada futura (kW)",
+    },
+    B: {
+      nova: "Potência de consumo (kW)",
+      atual: "Potência atual (kW)",
+      futura: "Potência futura (kW)",
+    },
+  },
+  geracao: {
+    A: {
+      nova: "Potência contratada de geração (kW)",
+      atual: "Potência contratada de geração atual (kW)",
+      futura: "Potência contratada de geração futura (kW)",
+    },
+    B: {
+      nova: "Potência de geração (kW)",
+      atual: "Potência de geração atual (kW)",
+      futura: "Potência de geração futura (kW)",
+    },
+  },
+};
+// `grupo` pode chegar vazio (estado recém-criado): cai no Grupo B, que é o
+// padrão do formulário.
+function gdRotuloPotencia(tipo, papel, grupo) {
+  const porGrupo = GD_ROTULOS_POTENCIA[tipo];
+  return (porGrupo[grupo] || porGrupo.B)[papel];
 }
 // Solicitações que exigem o preenchimento do Formulário de Carga:
 // Ligação Nova e Aumento/Alteração de Carga (alteração de potência disponibilizada).

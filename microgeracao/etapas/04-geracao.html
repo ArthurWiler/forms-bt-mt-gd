@@ -64,20 +64,31 @@
         </label>
       </div>
     </div>
-    <div class="field">
-      <label>Produção mensal (kWh) <span class="req">*</span></label>
+    <!-- "Potência já conectada" (potGeracaoExistente) saiu daqui: a geração que
+         a UC já tem é justamente a "Potência de geração atual" abaixo, que vale
+         nos dois grupos — não havia por que perguntar o mesmo dado duas vezes. -->
+    <!-- Potência de geração — mesmo desenho da potência de consumo da etapa 4
+         (ver _paresPotenciaGD()):
+           • Conexão nova            → só o campo "nova"
+           • Existente COM alteração → atual + futura
+           • Existente SEM alteração → só atual
+         Vale nos dois grupos; só o RÓTULO muda (o Grupo A contrata demanda, o
+         Grupo B não) — os textos vêm de GD_ROTULOS_POTENCIA (js/data.js),
+         escritos por JS, e por isso os <label> têm id. -->
+    <div class="field" id="demandaGeracaoAtualBox" style="display: none">
+      <label id="demandaGeracaoAtualLbl">Potência de geração atual (kW)</label>
       <input
         type="text"
-        data-k="producaoMensal"
+        data-k="demandaGeracaoAtual"
         placeholder=" "
         oninput="onNumDec(this)"
       />
     </div>
-    <div class="field">
-      <label>Potência já conectada</label>
+    <div class="field" id="demandaGeracaoBox" style="display: none">
+      <label id="demandaGeracaoLbl">Potência de geração futura (kW)</label>
       <input
         type="text"
-        data-k="potGeracaoExistente"
+        data-k="demandaGeracao"
         placeholder=" "
         oninput="onNumDec(this)"
       />

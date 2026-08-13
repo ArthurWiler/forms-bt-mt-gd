@@ -19,18 +19,10 @@
   fragmento da etapa de destino e remova o atributo data-alocar.
   Busca rápida: grep -rn "data-alocar" microgeracao/etapas/
   <!-- ===== origem: Dados técnicos da UC ===== -->
+<!-- #seBox (galeria "Tipo de Subestação") saiu daqui: a escolha da subestação
+     passou a ser feita pelo bloco técnico da etapa 4 (Tipo de atendimento),
+     portado do MT — ver microgeracao/js/subestacao.js. -->
 <div class="grid grid-2">
-  <div
-    class="field field--plain campo-nao-alocado"
-    data-alocar="dados-uc"
-    id="seBox"
-    style="display: none"
-    data-noopt
-  >
-    <label>Tipo de Subestação (Conforme ND 5.3)</label>
-    <div class="se-gallery" id="seGalleryGD"></div>
-    <span id="seBloqueioMsg" class="field-hint"></span>
-  </div>
   <div class="field campo-nao-alocado col-span-2" data-alocar="dados-uc">
     <label>Tipo de Solicitação</label>
     <select data-k="solicitacao" onchange="onSolicitacao()"></select>
@@ -98,60 +90,17 @@
     <label>Nova Proteção</label>
     <input type="text" data-k="novaProtecao" placeholder=" " />
   </div>
-  <div class="field campo-nao-alocado" data-alocar="dados-uc">
-    <label id="demandaConsumoLbl">Demanda contratada de consumo (kW)</label>
-    <input
-      type="text"
-      data-k="demandaConsumo"
-      placeholder=" "
-      oninput="onNumDec(this)"
-    />
-  </div>
-  <div
-    class="field campo-nao-alocado"
-    data-alocar="dados-uc"
-    id="demandaGeracaoBox"
-    style="display: none"
-  >
-    <label>Demanda contratada de geração (kW)</label>
-    <input
-      type="text"
-      data-k="demandaGeracao"
-      placeholder=" "
-      oninput="onNumDec(this)"
-    />
-  </div>
+  <!-- As demandas contratadas saíram daqui: viraram pares de potências
+       contratadas ("a ser contratada" / "atual" / "futura", conforme a
+       solicitação) — a de consumo na etapa 4 (Tipo de atendimento) e a de
+       geração na etapa 5 (Dados da geração). Manter as cópias aqui duplicaria
+       os ids que essas etapas reescrevem por JS. -->
 </div>
 
-<!-- ===== origem: Transformadores (ilha dinâmica) ===== -->
-<div
-  class="subbox campo-nao-alocado"
-  data-alocar="dados-uc"
-  id="trafosBox"
-  style="display: none"
->
-  <div class="motores-head">
-    <span class="subbox-title">Transformadores (Qte × Potência)</span>
-    <button
-      type="button"
-      class="btn btn-primary"
-      style="padding: 5px 12px; font-size: 12px"
-      onclick="addTrafoGD()"
-    >
-      + Trafo
-    </button>
-  </div>
-  <table class="motores-table">
-    <thead>
-      <tr>
-        <th>Qte</th>
-        <th>Potência (kVA)</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody id="trafoGdBody"></tbody>
-  </table>
-</div>
+<!-- A ilha "Transformadores (Qte × Potência)" saiu daqui: os transformadores
+     agora são declarados em cards na etapa 4 (Dados dos transformadores),
+     com situação, potência e tipo de ligação — ver
+     microgeracao/js/subestacao.js. -->
 
 <!-- ===== origem: Dados da geração (fora do escopo da etapa 4) ===== -->
 <div class="grid grid-2 campo-nao-alocado" data-alocar="geracao-outorga">
@@ -180,8 +129,8 @@
     <label>Tipo do Ato de Outorga ou Registro</label>
     <input type="text" data-k="tipoAtoOutorga" placeholder=" " />
   </div>
-  <!-- armProducaoMensal: a etapa 4 tem "Produção mensal (kWh)" da geração
-         (producaoMensal); este é o campo específico do armazenamento. -->
+  <!-- armProducaoMensal: campo específico do armazenamento. A "Produção mensal
+         (kWh)" da geração deixou de existir no formulário. -->
   <div class="field campo-nao-alocado" data-alocar="armazenamento">
     <label>Produção mensal da central geradora (kWh)</label>
     <input

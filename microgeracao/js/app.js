@@ -1004,9 +1004,9 @@ function onTelhadoArrendado() {
      • Coletiva/Agrupamento             → Disjuntor geral atual
    Em Ligação Nova NÃO existe disjuntor "atual" (a unidade ainda
    não existe): nenhum dos dois é exibido, como no Figma.
-   No Grupo A o atendimento é dimensionado pela DEMANDA contratada,
+   No Grupo A o atendimento é dimensionado pela POTÊNCIA contratada,
    não pelo disjuntor — por isso nenhum dos dois se aplica lá
-   (mesma lógica que rege demandaConsumoBox em _atualizarDemandaConsumo()).
+   (mesma lógica que rege os campos de _atualizarPotenciaContratada()).
    ============================================================ */
 function onEdifTipoGD() {
   _sync("edifTipo");
@@ -1258,112 +1258,11 @@ const SE_INFO_GD = {
   5: "Medição, proteção e transformação, em alvenaria. Até 300 kW, com um transformador de 75 a 300 kVA. Proteção por chave fusível tripolar; medição a 3 elementos na média tensão.",
   8: "Blindada Simplificada (SEBS): subestação blindada metálica para uma única unidade, até 300 kW. Medição na média tensão, proteção por chave fusível tripolar e disjuntor de baixa tensão.",
 };
-function _mostrarSE() {
-  return state.grupo === "A";
-}
-function _seCtx() {
-  return {
-    solicitacao: state.solicitacao,
-    tensao: state.tensaoAtendimento,
-    instExistenteBTMT: state.instExistenteBTMT,
-  };
-}
-function _tiposSEvisiveis() {
-  const potInst = parseFloat(state.potAtivaInstalada) || 0;
-  return GD_TIPOS_SE.filter(
-    (s) => !(GD_SE_LIMITE_300.includes(s) && potInst > GD_SE_LIMITE_KW),
-  );
-}
-function atualizarSE() {
-  const box = $("#seBox");
-  if (!box) return;
-  const mostrar = _mostrarSE();
-  box.style.display = mostrar ? "" : "none";
-  const ctx = _seCtx();
-  const visiveis = _tiposSEvisiveis();
-  // Limpa a seleção quando a seção não se aplica ou o tipo ficou inválido
-  // (mesma lógica do useEffect do React).
-  if (!mostrar) {
-    if (state.tipoSE || state.trafos.some((t) => t.qte || t.potencia)) {
-      state.tipoSE = "";
-      state.trafos = [gdTrafoPadrao()];
-    }
-  } else if (
-    state.tipoSE &&
-    (!gdSEDisponivel(state.tipoSE, ctx).ok || !visiveis.includes(state.tipoSE))
-  ) {
-    state.tipoSE = "";
-  }
-  setHint(
-    "seBloqueioMsg",
-    state.tipoSE ? gdSEDisponivel(state.tipoSE, ctx).msg : "",
-  );
-  const galeria = $("#seGalleryGD");
-  if (galeria && mostrar) {
-    const imgs =
-      typeof SUBESTACAO_IMGS_B64 !== "undefined" ? SUBESTACAO_IMGS_B64 : {};
-    galeria.innerHTML = "";
-    visiveis.forEach((tipo) => {
-      const n = (String(tipo).match(/(\d+)/) || [])[1];
-      const desabilitado = !gdSEDisponivel(tipo, ctx).ok;
-      const card = document.createElement("div");
-      card.className =
-        "se-card" +
-        (state.tipoSE === tipo ? " selected" : "") +
-        (desabilitado ? " disabled" : "");
-      card.innerHTML =
-        (n && SE_INFO_GD[n]
-          ? `<span class="se-info">i<span class="se-tooltip">${SE_INFO_GD[n]}</span></span>`
-          : "") +
-        (n && imgs[n] ? `<img src="${imgs[n]}" alt="${tipo}">` : "") +
-        `<div class="lbl">${tipo}${desabilitado ? " (indisponível)" : ""}</div>`;
-      if (!desabilitado)
-        card.addEventListener("click", () => {
-          state.tipoSE = state.tipoSE === tipo ? state.tipoSE : tipo;
-          atualizarSE();
-        });
-      galeria.appendChild(card);
-    });
-  }
-  renderTrafosGD();
-}
-function renderTrafosGD() {
-  const box = $("#trafosBox");
-  const tbody = $("#trafoGdBody");
-  if (!box || !tbody) return;
-  const mostrar = _mostrarSE() && !!state.tipoSE;
-  box.style.display = mostrar ? "" : "none";
-  if (!mostrar) return;
-  const potes = GD_TRAFO_POR_SE[state.tipoSE] || [];
-  tbody.innerHTML = "";
-  state.trafos.forEach((t, i) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td><input type="number" min="0" style="width:70px" value="${t.qte}"></td>
-      <td><select>
-        <option value=""></option>
-        ${potes.map((p) => `<option value="${p}"${String(t.potencia) === String(p) ? " selected" : ""}>${p}</option>`).join("")}
-      </select></td>
-      <td>${state.trafos.length > 1 ? '<button type="button" class="motor-del">✕</button>' : ""}</td>`;
-    tr.querySelector("input").addEventListener("input", (e) => {
-      state.trafos[i].qte = e.target.value;
-    });
-    tr.querySelector("select").addEventListener("change", (e) => {
-      state.trafos[i].potencia = e.target.value;
-    });
-    const del = tr.querySelector(".motor-del");
-    if (del)
-      del.addEventListener("click", () => {
-        state.trafos.splice(i, 1);
-        renderTrafosGD();
-      });
-    tbody.appendChild(tr);
-  });
-}
-function addTrafoGD() {
-  state.trafos.push({ se: state.tipoSE, qte: "", potencia: "" });
-  renderTrafosGD();
-}
+/* A implementação ANTIGA da subestação (galeria #seBox + tabela #trafosBox,
+   com _mostrarSE/_seCtx/_tiposSEvisiveis/atualizarSE/renderTrafosGD/addTrafoGD)
+   foi substituída pelo bloco técnico portado do MT — ver js/subestacao.js,
+   que define o novo atualizarSE(). A regra de quais modelos são permitidos
+   agora vem de CalculoMT.tiposSubestacaoPermitidos (mt/js/calculo.js). */
 
 /* --- Solicitação e campos dependentes --- */
 function _ehLigacaoNova() {
@@ -1419,14 +1318,15 @@ function onSolicitacao() {
     )
       ? ""
       : "none";
-  const pe = $("#potExistenteBox");
-  if (pe)
-    pe.style.display =
-      (state.solicitacao || "").indexOf("GD Existente") >= 0 ? "" : "none";
+  // Etapa 5 (Dados da geração): o par de potências de lá depende da solicitação.
+  _atualizarPotenciaGeracao();
   atualizarFasesDisj();
+  // Qual par de potências contratadas é perguntado sai da solicitação — e a
+  // que sobra é zerada aqui. Vem ANTES de atualizarSE() porque a potência
+  // contratada dimensiona a subestação (demandaRepresentativaGD): na ordem
+  // inversa, os modelos permitidos seriam refeitos com o valor antigo.
+  _atualizarPotenciaContratada();
   atualizarSE();
-  // A demanda contratada não existe em Ligação Nova (nada contratado ainda).
-  _atualizarDemandaConsumo();
   onEdifTipoGD(); // o disjuntor visível depende de solicitação × edificação
   if (window.CemigMarcadores) {
     window.CemigMarcadores.aplicar();
@@ -1498,9 +1398,10 @@ function onDisjCorrente() {
 }
 // Tensão de conexão: as opções mudam com o grupo — Grupo A em kV (média
 // tensão), Grupo B nos pares fase/fase de BT.
-// O VALOR guardado continua sendo o volt "cru" ("13800"), porque ele é chave de
-// regra de negócio: gdSEDisponivel() compara com GD_TENSAO_LIGNOVA_138 para
-// bloquear a Subestação Nº 2 em ligação nova. Só o RÓTULO é formatado em kV.
+// O VALOR guardado continua sendo o volt "cru" ("13800"), porque ele alimenta
+// as regras de subestação: _tensaoMTkVGD() (js/subestacao.js) o converte para
+// kV e CalculoMT decide quais modelos valem — a Subestação Nº 2, por exemplo,
+// só existe em 22 e 34,5 kV. Só o RÓTULO é formatado em kV.
 function _rotuloTensao(v) {
   return state.grupo === "A"
     ? (Number(v) / 1000).toFixed(1).replace(".", ",") + " kV"
@@ -1520,41 +1421,103 @@ function atualizarTensoes() {
   else sel.value = state.tensaoAtendimento = "";
   _sync("tensaoAtendimento");
 }
-// Demanda de consumo contratada: só existe no Grupo A (no Grupo B o
-// atendimento é dimensionado pelo disjuntor) e só quando já há consumo a
-// contratar — numa Ligação Nova a unidade ainda não tem demanda contratada.
+// Alteração da potência disponibilizada: a UC já existe e vai passar a ter
+// outra potência contratada — é o único caso (fora da conexão nova) em que há
+// uma potência FUTURA a declarar.
+function _ehAlteracaoPotenciaGD() {
+  return (
+    (state.solicitacao || "").indexOf(
+      "COM Alteração de Potência Disponibilizada",
+    ) >= 0
+  );
+}
+// Quais campos de potência aparecem — vale para os dois pares (consumo e
+// geração) e para os dois grupos; só os RÓTULOS mudam, e eles vêm de
+// GD_ROTULOS_POTENCIA (js/data.js). Sai do tipo de solicitação:
+//   • Conexão nova            → só o campo "nova"
+//   • Existente COM alteração → "atual" + "futura"
+//   • Existente SEM alteração → só "atual" (a potência não muda)
+function _paresPotenciaGD() {
+  const nova = _ehLigacaoNova();
+  return {
+    nova,
+    // Sem solicitação escolhida não há o que perguntar: os campos ficam fora
+    // da tela, como a UC existente e a mudança de local.
+    verNovaOuFutura:
+      !!state.solicitacao && (nova || _ehAlteracaoPotenciaGD()),
+    verAtual: !!state.solicitacao && !nova,
+  };
+}
+// Potência de consumo (etapa "Tipo de atendimento"). As chaves de estado
+// continuam `demandaConsumo` (a nova/futura) e `demandaConsumoAtual` — são as
+// que o PDF, a validação e o dimensionamento da subestação leem; só os rótulos
+// passaram a falar em "Potência".
 // Depende de grupo × solicitação, por isso é chamada pelos dois handlers.
-function _atualizarDemandaConsumo() {
-  const ver = state.grupo === "A" && !_ehLigacaoNova();
-  const dc = $("#demandaConsumoBox");
-  if (dc) dc.style.display = ver ? "" : "none";
-  const lbl = $("#demandaConsumoLbl");
-  if (lbl)
-    lbl.innerHTML =
-      "Demanda de consumo contratada (kW)" +
-      (ver ? ' <span class="req">*</span>' : "");
-  const inp = $(`[data-k="demandaConsumo"]`);
+function _atualizarPotenciaContratada() {
+  const { nova, verNovaOuFutura, verAtual } = _paresPotenciaGD();
+  _campoPotenciaGD(
+    "#demandaConsumoBox",
+    "#demandaConsumoLbl",
+    "demandaConsumo",
+    verNovaOuFutura,
+    gdRotuloPotencia("consumo", nova ? "nova" : "futura", state.grupo),
+  );
+  _campoPotenciaGD(
+    "#demandaConsumoAtualBox",
+    "#demandaConsumoAtualLbl",
+    "demandaConsumoAtual",
+    verAtual,
+    gdRotuloPotencia("consumo", "atual", state.grupo),
+  );
+}
+// Mostra/oculta um campo de potência e escreve o seu rótulo. O "*" vai no
+// innerHTML porque initFormulario() roda ANTES do CemigMarcadores.aplicar():
+// sem ele o campo entraria na tela como "(opcional)".
+function _campoPotenciaGD(boxSel, lblSel, chave, ver, rotulo) {
+  const box = $(boxSel);
+  if (box) box.style.display = ver ? "" : "none";
+  const lbl = $(lblSel);
+  if (lbl) lbl.innerHTML = rotulo + (ver ? ' <span class="req">*</span>' : "");
+  const inp = $(`[data-k="${chave}"]`);
   if (!inp) return;
   if (ver) inp.setAttribute("data-req", "");
   else {
     inp.removeAttribute("data-req");
     inp.classList.remove("is-invalid");
-    // Campo oculto não pode manter valor: um kW digitado antes de trocar para
-    // o Grupo B (ou para Ligação Nova) continuaria no estado e sairia no PDF.
-    if (state.demandaConsumo) aplicarPatch({ demandaConsumo: "" });
+    // Campo oculto não pode manter valor: um kW digitado antes de trocar de
+    // solicitação continuaria no estado, sairia no PDF e — no par de consumo do
+    // Grupo A — ainda dimensionaria a subestação (demandaRepresentativaGD).
+    if (state[chave]) aplicarPatch({ [chave]: "" });
   }
 }
-// Grupo B ⇔ A: tensões, demanda de consumo (obrigatória só no Grupo A),
-// demanda de geração (só Grupo A) e disponibilidade da seção de subestação.
+/* --- Etapa "Dados da geração" --- */
+// Potência de GERAÇÃO: mesmo desenho do par de consumo da etapa 4 — só os
+// rótulos mudam entre os grupos. A geração que a UC já tem é a "atual" deste
+// par; não existe mais um campo "Potência já conectada" em separado.
+function _atualizarPotenciaGeracao() {
+  const { nova, verNovaOuFutura, verAtual } = _paresPotenciaGD();
+  _campoPotenciaGD(
+    "#demandaGeracaoBox",
+    "#demandaGeracaoLbl",
+    "demandaGeracao",
+    verNovaOuFutura,
+    gdRotuloPotencia("geracao", nova ? "nova" : "futura", state.grupo),
+  );
+  _campoPotenciaGD(
+    "#demandaGeracaoAtualBox",
+    "#demandaGeracaoAtualLbl",
+    "demandaGeracaoAtual",
+    verAtual,
+    gdRotuloPotencia("geracao", "atual", state.grupo),
+  );
+}
+// Grupo B ⇔ A: tensões, potência contratada de consumo (só Grupo A), campos de
+// geração da etapa 5 e disponibilidade da seção de subestação.
 function onGrupo() {
   _sync("grupo");
   atualizarTensoes();
-  const ehBT = state.grupo === "B";
-  _atualizarDemandaConsumo();
-  // Demanda de geração: só o Grupo A contrata demanda. O campo some da tela
-  // em vez de ficar visível e opcional.
-  const dg = $("#demandaGeracaoBox");
-  if (dg) dg.style.display = ehBT ? "none" : "";
+  _atualizarPotenciaContratada();
+  _atualizarPotenciaGeracao();
   atualizarSE();
   if (ilhaCargas) {
     ilhaCargas.atualizar(); // redeMono depende do tipo de rede
@@ -1802,6 +1765,17 @@ function onCorrAlternativa() {
 }
 
 /* ===== Etapa 10 — validação de exportação + prévia ===== */
+// Cobra o par de potências (consumo ou geração) exatamente nos casos em que
+// _paresPotenciaGD() o coloca em tela, e com o rótulo que o usuário viu lá.
+function _reqParPotenciaGD(req, tipo, valorNovaOuFutura, valorAtual) {
+  const { nova, verNovaOuFutura, verAtual } = _paresPotenciaGD();
+  if (verNovaOuFutura)
+    req(
+      valorNovaOuFutura,
+      gdRotuloPotencia(tipo, nova ? "nova" : "futura", state.grupo),
+    );
+  if (verAtual) req(valorAtual, gdRotuloPotencia(tipo, "atual", state.grupo));
+}
 // Porte 1:1 do useMemo `validacao` do app React.
 function validarExportacao() {
   const d = state;
@@ -1877,20 +1851,26 @@ function validarExportacao() {
         faltas.push("Formulário de Carga (declarar as cargas elétricas)");
     }
   }
-  // Mesma condição de _atualizarDemandaConsumo(): fora dela o campo está
-  // oculto e vazio, e exigi-lo travaria o avanço sem nada para preencher.
-  if (d.grupo === "A" && !_ehLigacaoNova())
-    req(d.demandaConsumo, "Demanda contratada de consumo");
+  // Potência de consumo — mesmas condições de _paresPotenciaGD(), pelos mesmos
+  // rótulos: fora delas os campos estão ocultos e vazios, e exigi-los travaria
+  // o avanço sem nada a preencher.
+  _reqParPotenciaGD(req, "consumo", d.demandaConsumo, d.demandaConsumoAtual);
   // Tensão de conexão: sempre exigida — o campo aparece nos dois tipos de
   // solicitação e em ambos os grupos (só a lista de opções muda).
   req(d.tensaoAtendimento, "Tensão de conexão");
+  // Bloco técnico da subestação (só Grupo A) — transformadores, tarifação,
+  // demanda e tipo de SE. A própria função devolve [] fora do Grupo A.
+  faltas.push(...gdValidarSubestacao());
   if (GD_SOLICITACOES_AUMENTO_POTENCIA.includes(d.solicitacao))
     req(d.novaProtecao, "Nova Proteção (Aumento de Potência)");
   req(d.fontePrimaria, "Tipo de Fonte Primária");
   req(d.tipoGeracao, "Tecnologia de geração");
   req(d.potAtivaInstalada, "Potência Ativa Instalada Total");
-  if ((d.solicitacao || "").indexOf("GD Existente") >= 0)
-    req(d.potGeracaoExistente, "Potência de geração já existente");
+  // Potência de geração — mesmo critério do par de consumo acima. A geração já
+  // conectada é a "atual" deste par: em "GD Existente COM Alteração" (conexão
+  // existente sem alteração de potência disponibilizada) ela é justamente o
+  // campo cobrado aqui.
+  _reqParPotenciaGD(req, "geracao", d.demandaGeracao, d.demandaGeracaoAtual);
   req(d.modalidade, "Modalidade de compensação");
   if (
     d.fastTrack === "Sim" &&
@@ -1935,6 +1915,25 @@ function pvCampo(label, valor, opts) {
     `<div class="previa-campo${opts.full ? " previa-campo--full" : ""}">` +
     `<div class="previa-campo-label">${label}</div>` +
     `<div class="previa-campo-valor">${vazio ? "—" : valor}${lapis}</div></div>`
+  );
+}
+// Par de potências na prévia: os mesmos campos e rótulos da etapa que os
+// pergunta (ver _paresPotenciaGD), na mesma ordem em que aparecem lá.
+function _pvParPotenciaGD(tipo, valorNovaOuFutura, valorAtual, step) {
+  const { nova, verNovaOuFutura, verAtual } = _paresPotenciaGD();
+  return (
+    (verAtual
+      ? pvCampo(gdRotuloPotencia(tipo, "atual", state.grupo), valorAtual, {
+          step,
+        })
+      : "") +
+    (verNovaOuFutura
+      ? pvCampo(
+          gdRotuloPotencia(tipo, nova ? "nova" : "futura", state.grupo),
+          valorNovaOuFutura,
+          { step },
+        )
+      : "")
   );
 }
 function pvSecao(titulo, campos) {
@@ -1982,15 +1981,13 @@ function renderPreviewGD() {
       pvCampo("Coordenadas", `Lat ${d.latitude} · Lon ${d.longitude}`, {
         step: "dados-uc",
       }) +
+        // As potências contratadas saíram daqui: elas mudam com o tipo de
+        // solicitação e ficam junto da etapa que as pergunta — a de consumo no
+        // "Tipo de atendimento", a de geração em "Geração", ambas abaixo.
         pvCampo(
           "UTM (calculada)",
           `Fuso ${d.fuso} · E ${d.utmE} · N ${d.utmN}`,
           { step: "dados-uc" },
-        ) +
-        pvCampo(
-          "Demanda consumo / geração (kW)",
-          `${d.demandaConsumo || "—"} / ${d.demandaGeracao || "—"}`,
-          {},
         ),
     ),
   );
@@ -2050,6 +2047,37 @@ function renderPreviewGD() {
         `Lat ${d.mudLatitude || "—"} · Lon ${d.mudLongitude || "—"}`,
         { full: true, step: "atendimento" },
       );
+  // Potência de consumo: o mesmo par da etapa 4, nos dois grupos.
+  atend += _pvParPotenciaGD(
+    "consumo",
+    d.demandaConsumo,
+    d.demandaConsumoAtual,
+    "atendimento",
+  );
+  // Bloco técnico da subestação (só Grupo A) — os campos portados do MT.
+  if (d.grupo === "A") {
+    atend +=
+      pvCampo("Tipo de subestação", d.tipoSE, { step: "atendimento" }) +
+      // A troca é deduzida da comparação entre o modelo atual e o novo; só
+      // faz sentido mostrar fora da conexão nova, onde não há modelo atual.
+      (_finalidadeGD() === "Conexão Nova"
+        ? ""
+        : pvCampo(
+            "Troca de subestação",
+            d.alt_troca === "Sim"
+              ? `Sim — de ${d.alt_tipoAtual || "—"} para ${d.alt_tipoPara || "—"}`
+              : d.alt_troca,
+            { full: true, step: "atendimento" },
+          )) +
+      pvCampo(
+        "Transformadores",
+        `${d.qtdTotalTrafos || 0} un · ${d.potTotalTrafos || 0} kVA`,
+        { step: "atendimento" },
+      ) +
+      pvCampo("Motores declarados", String((d.motores || []).length), {
+        step: "atendimento",
+      });
+  }
   secoes.push(pvSecao("5 — Tipo de atendimento", atend));
   secoes.push(
     pvSecao(
@@ -2057,6 +2085,12 @@ function renderPreviewGD() {
       pvCampo("Fonte", d.fontePrimaria, {}) +
         pvCampo("Pot. Ativa Instalada (kW)", d.potAtivaInstalada, {}) +
         pvCampo("Modalidade", d.modalidade, {}) +
+        _pvParPotenciaGD(
+          "geracao",
+          d.demandaGeracao,
+          d.demandaGeracaoAtual,
+          "geracao",
+        ) +
         (d.fontePrimaria === "Solar"
           ? pvCampo(
               "Módulos / Inversores (kW)",

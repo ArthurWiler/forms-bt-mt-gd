@@ -103,8 +103,31 @@ function gdEstadoInicial() {
     utmN: "",
     geradorEmergencia: "Não",
     geradorPotencia: "",
+    // Subestação (só Grupo A) — ver js/subestacao.js. tipoSE é o modelo
+    // EFETIVO (o que vale depois da obra), derivado das galerias abaixo:
+    // conexão nova usa cn_tipoSE; alteração usa alt_tipoPara quando há troca
+    // deduzida, senão alt_tipoAtual.
     tipoSE: "",
-    trafos: [gdTrafoPadrao()],
+    cn_tipoSE: "",
+    alt_tipoAtual: "",
+    alt_tipoPara: "",
+    alt_troca: "",
+    // Espelho dos cards de transformador no formato {qte, potencia} que a
+    // prévia e o PDF já liam; a fonte é o array trafosGD.
+    trafos: [],
+    qtdTransformador: "",
+    potTotalTrafos: 0,
+    qtdTotalTrafos: 0,
+    // Sem modalidade tarifária horária e sem demanda escalonada (existem no MT,
+    // não na microgeração): quem dimensiona a subestação é a potência de consumo
+    // que a própria etapa já pergunta — `demandaConsumo` quando há potência nova
+    // a contratar, senão `demandaConsumoAtual`.
+    // Motores e cargas especiais + carga operante na partida do maior motor.
+    qtdMotores: "",
+    motores: [],
+    cargaOperante: "",
+    ipPrevista: "",
+    tempoPartida: "",
     solicitacao: "",
     edificacao: "",
     edifTipo: "",
@@ -147,8 +170,16 @@ function gdEstadoInicial() {
     instExistente: "",
     instExistenteBTMT: "",
     novaProtecao: "",
+    // Potência de consumo (etapa "Tipo de atendimento") e de geração (etapa
+    // "Dados da geração"). Em cada par, a chave sem sufixo guarda a potência
+    // NOVA (o único valor da conexão nova) ou a FUTURA (na alteração de
+    // potência), e a `*Atual` guarda a que a UC já tem. Os dois pares existem
+    // nos dois grupos — só o rótulo muda, ver GD_ROTULOS_POTENCIA (js/data.js)
+    // e _paresPotenciaGD() (js/app.js).
     demandaConsumo: "",
+    demandaConsumoAtual: "",
     demandaGeracao: "",
+    demandaGeracaoAtual: "",
     // 3 - Documentação (checklist)
     docs: {},
     // Formulário de Carga — reutiliza a estrutura do formulário BT (CalcDemanda).
@@ -180,7 +211,6 @@ function gdEstadoInicial() {
     // campos separados fastTrack/gridZero (mantidos derivados por
     // onModoOperacaoGD para não quebrar PDF, prévia e regras do art. 73-A).
     modoOperacao: "",
-    producaoMensal: "",
     // Sem padrão: a fonte é escolha explícita do solicitante (o select abre
     // vazio). Os blocos FV/modalidade de operação só aparecem após "Solar".
     fontePrimaria: "",
@@ -190,8 +220,8 @@ function gdEstadoInicial() {
     modalidade: "",
     qtdInstalacoesCredito: "",
     potAtivaInstalada: "",
-    // Potência de geração já existente/conectada (somente para "GD Existente COM Alteração").
-    potGeracaoExistente: "",
+    // potGeracaoExistente ("Potência já conectada") saiu: a geração que a UC já
+    // tem é `demandaGeracaoAtual`, acima.
     // Fotovoltaica - módulos
     modeloModulos: "",
     fabricanteModulos: "",

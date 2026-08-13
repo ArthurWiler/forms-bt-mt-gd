@@ -10,6 +10,12 @@
 
     <link rel="stylesheet" href="../css/variables.css" />
     <link rel="stylesheet" href="../css/shared.css" />
+    <!-- Estilos dos cards de transformador/motor e das tabelas técnicas do
+         bloco de subestação, portado do MT. As regras vivem em
+         formulario-mt.css e valem para os dois formulários: cada seletor do
+         bloco lista .cemig-mtform E .cemig-microgd, então nada mais deste
+         arquivo alcança a microgeração (o resto continua só .cemig-mtform). -->
+    <link rel="stylesheet" href="../css/formulario-mt.css" />
     <link rel="stylesheet" href="../css/formulario-microgd.css" />
     <!-- leaflet.css saiu daqui: era render-blocking de terceiros numa página
          cujo mapa só aparece etapas adiante. Agora vem junto do leaflet.js,
@@ -182,9 +188,17 @@
     <script defer src="../shared/js/campos.js"></script>
     <script defer src="../shared/js/form-marcadores.js"></script>
     <script defer src="../shared/js/pdf-sucesso.js"></script>
+    <!-- Regras de média tensão (dimensionamento de trafos/motores e catálogo de
+         subestações) — o MESMO arquivo que o formulário de MT usa, para as duas
+         telas não divergirem. Mesma prática de ../mt/js/subestacoes-b64.js
+         acima. Tem de vir antes de js/subestacao.js, que o consome. -->
+    <script defer src="../mt/js/calculo.js"></script>
     <script defer src="js/app.js"></script>
     <!-- Fluxo Coletivo/Agrupamento: depende de state/$ definidos em app.js. -->
     <script defer src="js/coletivo.js"></script>
+    <!-- Bloco técnico da subestação (Grupo A): transformadores, motores, resumo
+         e tipo de SE. Depende de state/$/aplicarPatch (app.js) e de CalculoMT. -->
+    <script defer src="js/subestacao.js"></script>
     <script defer src="../shared/js/etapas-loader.js"></script>
   </body>
 </html>

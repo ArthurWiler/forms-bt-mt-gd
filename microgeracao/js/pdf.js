@@ -13,6 +13,24 @@ function gerarPdfMicroGD(d) {
   const sn = (b) => (b ? "Sim" : "Não");
   const ehBT = d.grupo === "B";
   const ehLigacaoNova = (d.solicitacao || "").indexOf("Nova Unidade") >= 0;
+  // Único caso, fora da ligação nova, com potência FUTURA a declarar.
+  const ehAlteracaoPotencia =
+    (d.solicitacao || "").indexOf("COM Alteração de Potência Disponibilizada") >=
+    0;
+  /* Imprime o par de potências (consumo ou geração) com os mesmos campos e
+     rótulos que a etapa mostrou — a tabela de nomes é GD_ROTULOS_POTENCIA
+     (js/data.js) e a regra de quais campos existem é a mesma de
+     _paresPotenciaGD() (js/app.js): conexão nova declara um único valor;
+     conexão existente, a potência atual e — só quando há alteração de potência
+     — também a futura. */
+  const parPotencia = (pares, tipo, novaOuFutura, atual) => {
+    const rot = (papel) => gdRotuloPotencia(tipo, papel, d.grupo);
+    if (ehLigacaoNova) pares.push([rot("nova"), novaOuFutura]);
+    else {
+      pares.push([rot("atual"), atual]);
+      if (ehAlteracaoPotencia) pares.push([rot("futura"), novaOuFutura]);
+    }
+  };
   const ehFV = d.fontePrimaria === "Solar";
 
   // ---- 1. Identificação ----
@@ -141,28 +159,44 @@ function gerarPdfMicroGD(d) {
       ["Instalação existente BT/MT", d.instExistenteBTMT],
     );
   }
-  if (ehBT) {
-    ucPairs.push([
-      "Demanda contratada consumo (kW)",
-      d.demandaConsumo || "Não se aplica — Baixa Tensão",
-    ]);
-  } else {
-    // Numa ligação nova ainda não há consumo contratado — o campo não é
-    // perguntado no formulário, então sai como "não se aplica" em vez de vazio.
-    ucPairs.push([
-      "Demanda contratada consumo (kW)",
-      ehLigacaoNova ? "Não se aplica — Ligação Nova" : d.demandaConsumo,
-    ]);
-    ucPairs.push(["Demanda contratada geração (kW)", d.demandaGeracao]);
-  }
+  // Potência de consumo: os mesmos campos e rótulos da etapa "Tipo de
+  // atendimento" (a de GERAÇÃO sai na seção 4, junto do resto da etapa dela).
+  parPotencia(ucPairs, "consumo", d.demandaConsumo, d.demandaConsumoAtual);
   kvPairs(ucPairs);
-  // Transformadores (apenas MT, quando houver)
+  // Bloco técnico da subestação — só no Grupo A (em BT não há subestação).
+  // Espelha a etapa "Tipo de atendimento": transformadores, tarifação/demanda,
+  // motores e carga operante na partida.
   if (!ehBT) {
     const trafoRows = (d.trafos || [])
       .filter((t) => t.qte || t.potencia)
       .map((t, i) => [`Trafo ${i + 1}`, t.qte || "—", `${t.potencia || "—"} kVA`]);
     if (trafoRows.length)
       tabela(["Transformador", "Qte", "Potência"], [80, 30, 72], trafoRows);
+    // Sem tarifação/demanda próprias: a demanda que dimensiona a subestação é
+    // a "Demanda contratada consumo (kW)" já impressa acima.
+    const motoRows = (d.motores || [])
+      .filter((m) => m.cv || m.volts)
+      .map((m, i) => [
+        `Motor ${i + 1}`,
+        m.fases || "—",
+        `${m.cv || "—"} CV`,
+        m.dispositivo || "—",
+      ]);
+    if (motoRows.length) {
+      tabela(
+        ["Motor", "Fases", "Potência", "Disp. partida"],
+        [46, 40, 40, 56],
+        motoRows,
+      );
+      // Carga operante só é perguntada havendo motores.
+      kvPairs(
+        [
+          ["Carga operante na partida (kVA)", d.cargaOperante],
+          ["Corrente de partida prevista (A)", d.ipPrevista],
+          ["Tempo da corrente de partida (s)", d.tempoPartida],
+        ].filter(([, v]) => v != null && v !== ""),
+      );
+    }
   }
   P.gap(2);
 
@@ -244,8 +278,9 @@ function gerarPdfMicroGD(d) {
           : ""),
     ],
   ];
-  if ((d.solicitacao || "").indexOf("GD Existente") >= 0)
-    gerPairs.push(["Potência de geração já existente (kW)", d.potGeracaoExistente]);
+  // A geração que a UC já tem é a "atual" deste par — não há campo "Potência
+  // já conectada" em separado.
+  parPotencia(gerPairs, "geracao", d.demandaGeracao, d.demandaGeracaoAtual);
   gerPairs.push(
     [
       "Tipo de geração",
