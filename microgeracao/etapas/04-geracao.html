@@ -396,6 +396,83 @@
     </div>
   </div>
 
+  <!-- Conjunto da fonte BIOMASSA (ver onFonte). Mesma convenção da hidráulica:
+       a "Potência Instalada (kW)" é a potência da usina nesta fonte e
+       recalcGeracao() a espelha em potAtivaInstalada (ver
+       GD_POT_INSTALADA_POR_FONTE). Máquina motriz e ciclo termodinâmico são
+       escolhas de dois valores — toggles, como os demais pares da etapa. -->
+  <div id="bioBlocos" style="display: none">
+    <h4 class="card-subtitle divider">Dados da central geradora a biomassa</h4>
+    <div class="grid grid-2">
+      <div class="field">
+        <label>Potência Aparente (kVA) <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="bioPotAparente"
+          placeholder=" "
+          oninput="onNumDec(this)"
+        />
+      </div>
+      <div class="field">
+        <label>Potência Instalada (kW) <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="bioPotInstalada"
+          placeholder=" "
+          oninput="
+            onNumDec(this);
+            recalcGeracao();
+          "
+        />
+      </div>
+      <div class="field">
+        <label>Combustível <span class="req">*</span></label>
+        <input type="text" data-k="bioCombustivel" placeholder=" " />
+      </div>
+      <!-- Despacho de qualificação: só existe em cogeração qualificada pela
+           ANEEL (item 6.8 da documentação técnica, "caso aplicável") — por isso
+           é o único campo opcional do bloco. -->
+      <div class="field">
+        <label>Nº do Despacho de qualificação</label>
+        <input type="text" data-k="bioDespachoQualificacao" placeholder=" " />
+      </div>
+      <div class="field field--plain" data-noopt>
+        <label>Máq. Motriz <span class="req">*</span></label>
+        <div data-toggle="bioMaqMotriz"></div>
+        <!-- Opção vazia à frente: sem ela o estado nasceria já respondido e o
+             obrigatório passaria em branco (o toggle ignora a opção sem
+             rótulo — ver _toggleRender). -->
+        <select data-k="bioMaqMotriz" style="display: none" aria-hidden="true">
+          <option value=""></option>
+          <option>Motor</option>
+          <option>Turbina</option>
+        </select>
+      </div>
+      <div class="field field--plain" data-noopt>
+        <label>Ciclo Termodin. <span class="req">*</span></label>
+        <div data-toggle="bioCicloTermodinamico"></div>
+        <select
+          data-k="bioCicloTermodinamico"
+          style="display: none"
+          aria-hidden="true"
+        >
+          <option value=""></option>
+          <option>Aberto</option>
+          <option>Fechado</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Fator de Potência <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="bioFatorPotencia"
+          placeholder=" "
+          oninput="onNumDec(this)"
+        />
+      </div>
+    </div>
+  </div>
+
   <h4 class="card-subtitle divider">Armazenamento e banco de baterias</h4>
   <!-- Um único .grid governa TODA a seção: a 1ª pergunta (sempre visível) e o
        #armBloco condicional são itens do mesmo grid, então o respiro entre

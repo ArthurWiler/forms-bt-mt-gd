@@ -42,6 +42,7 @@ function gerarPdfMicroGD(d) {
   };
   const ehFV = d.fontePrimaria === "Solar";
   const ehHidro = d.fontePrimaria === "Hidráulica";
+  const ehBio = d.fontePrimaria === "Biomassa";
 
   // ---- 1. Identificação ----
   sec("1.  IDENTIFICAÇÃO DA UNIDADE CONSUMIDORA");
@@ -347,6 +348,19 @@ function gerarPdfMicroGD(d) {
       d.hidroBarragemAltura,
     );
     GD_BARRAGEM_PERGUNTAS.forEach((p) => fullLine(p.rotulo, d[p.chave]));
+  }
+  // Fonte Biomassa: dados da central. O despacho de qualificação só aparece
+  // quando informado (cogeração qualificada) — kvPairs descarta o par vazio.
+  if (ehBio) {
+    kvPairs([
+      ["Potência Aparente (kVA)", d.bioPotAparente],
+      ["Potência Instalada (kW)", d.bioPotInstalada],
+      ["Combustível", d.bioCombustivel],
+      ["Fator de Potência", d.bioFatorPotencia],
+      ["Máquina motriz", d.bioMaqMotriz],
+      ["Ciclo termodinâmico", d.bioCicloTermodinamico],
+      ["Nº do Despacho de qualificação", d.bioDespachoQualificacao],
+    ]);
   }
   kvPairs([
     ["CEG do empreendimento", d.ceg],

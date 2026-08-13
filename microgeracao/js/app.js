@@ -1716,12 +1716,15 @@ window.gdBarragemOk = () => {
 // de operação e classificação da barragem) ficam fora dos marcadores.
 window.gdEtapaGeracaoOk = () => gdModoOperacaoOk() && gdBarragemOk();
 // A fonte primária comanda a etapa inteira: cada fonte tem o seu conjunto de
-// campos. Estão montados dois:
+// campos. Estão montados três:
 //   • SOLAR      — blocos FV, tecnologia, modalidade de compensação, UCs
 //                  beneficiadas e potência ativa da usina (calculada);
 //   • HIDRÁULICA — #hidroBlocos: dados da central e do aproveitamento
 //                  (potências, tensão, rio, sub-bacia, níveis de operação) e a
-//                  classificação de segurança de barragens da REN 696/2015.
+//                  classificação de segurança de barragens da REN 696/2015;
+//   • BIOMASSA   — #bioBlocos: potências, fator de potência, combustível,
+//                  máquina motriz, ciclo termodinâmico e o despacho de
+//                  qualificação (cogeração qualificada).
 // Fora deles, só a MODALIDADE DE OPERAÇÃO é comum a todas as fontes — ela
 // aparece assim que qualquer uma é escolhida. Enquanto nada for escolhido a
 // etapa mostra só a própria pergunta; os campos das demais fontes ainda serão
@@ -1738,6 +1741,7 @@ function onFonte() {
   const temFonte = !!state.fontePrimaria;
   const ehFV = state.fontePrimaria === "Solar";
   const ehHidro = state.fontePrimaria === "Hidráulica";
+  const ehBio = state.fontePrimaria === "Biomassa";
   [
     "#tipoGeracaoBox",
     "#modalidadeBox",
@@ -1752,6 +1756,9 @@ function onFonte() {
   // Conjunto da fonte Hidráulica: dados da central + segurança de barragens.
   const hidro = $("#hidroBlocos");
   if (hidro) hidro.style.display = ehHidro ? "" : "none";
+  // Conjunto da fonte Biomassa: dados da central.
+  const bio = $("#bioBlocos");
+  if (bio) bio.style.display = ehBio ? "" : "none";
   // A modalidade de operação (Padrão/Fast Track/Grid Zero) vale para QUALQUER
   // fonte — só espera que alguma tenha sido escolhida, como o resto da etapa.
   // Ao voltar a fonte para vazio a resposta é DESFEITA: um "Fast Track" marcado
@@ -1788,6 +1795,22 @@ function onPotAtivaInput(el) {
   onNumDec(el);
   recalcGeracao();
 }
+// Fontes cujo bloco próprio já declara a potência da usina: a chave do campo
+// "Potência Instalada (kW)" de cada uma. O valor é copiado para
+// potAtivaInstalada (ver recalcGeracao), que é o que PDF, prévia e Fast Track
+// leem — cada fonte nova entra aqui junto com o seu bloco.
+const GD_POT_INSTALADA_POR_FONTE = {
+  Hidráulica: "hidroPotInstalada",
+  Biomassa: "bioPotInstalada",
+};
+// Grava a potência da usina no estado E no input genérico (#potAtivaBox): ele
+// fica fora de tela fora do Solar, mas syncState() relê o DOM antes da prévia e
+// apagaria o valor derivado se o campo ficasse vazio.
+function _gravarPotAtivaGD(valor) {
+  state.potAtivaInstalada = valor;
+  const inp = $(`[data-k="potAtivaInstalada"]`);
+  if (inp) inp.value = valor;
+}
 function recalcGeracao() {
   // Módulos e inversores têm a potência nominal digitada em kW, então o total
   // já sai em kW — sem conversão.
@@ -1810,19 +1833,15 @@ function recalcGeracao() {
   // Regra 6: em FV a Potência Ativa Instalada = MENOR entre módulos e inversores.
   if (state.fontePrimaria === "Solar") {
     const calc = pm > 0 && pi > 0 ? Math.min(pm, pi) : pm || pi || 0;
-    state.potAtivaInstalada = calc ? String(calc) : "";
-    const inp = $(`[data-k="potAtivaInstalada"]`);
-    if (inp) inp.value = state.potAtivaInstalada;
-  } else if (state.fontePrimaria === "Hidráulica") {
-    // Na hidráulica a potência da usina é a "Potência Instalada (kW)" do bloco
-    // próprio — um campo só. Espelhar aqui evita perguntar o mesmo dado duas
-    // vezes e mantém potAtivaInstalada como a chave única lida pelo PDF, pela
-    // prévia e pelo limite do Fast Track. O input genérico (fora de tela nesta
-    // fonte) recebe o valor porque syncState() relê o DOM antes da prévia e
-    // apagaria o estado derivado.
-    state.potAtivaInstalada = state.hidroPotInstalada || "";
-    const inp = $(`[data-k="potAtivaInstalada"]`);
-    if (inp) inp.value = state.potAtivaInstalada;
+    _gravarPotAtivaGD(calc ? String(calc) : "");
+  } else {
+    // Fora do FV a potência da usina é DECLARADA no campo "Potência Instalada
+    // (kW)" do bloco da fonte — um campo só. Espelhar aqui evita perguntar o
+    // mesmo dado duas vezes e mantém potAtivaInstalada como a chave única lida
+    // pelo PDF, pela prévia e pelo limite do Fast Track. As fontes ainda sem
+    // bloco próprio não entram no mapa e não mexem no valor.
+    const chave = GD_POT_INSTALADA_POR_FONTE[state.fontePrimaria];
+    if (chave) _gravarPotAtivaGD(state[chave] || "");
   }
   // Regra 5: Fast Track trava a modalidade em Autoconsumo local e limita 7,5 kW.
   const fast = _ehFastTrack();
@@ -2014,6 +2033,15 @@ function validarExportacao() {
     // As quatro perguntas de classificação da barragem, pelos rótulos curtos
     // da própria lista (js/data.js) — a pergunta inteira não cabe aqui.
     GD_BARRAGEM_PERGUNTAS.forEach((p) => req(d[p.chave], p.rotulo));
+  } else if (d.fontePrimaria === "Biomassa") {
+    req(d.bioPotAparente, "Potência Aparente (kVA)");
+    req(d.bioPotInstalada, "Potência Instalada (kW)");
+    req(d.bioCombustivel, "Combustível");
+    req(d.bioMaqMotriz, "Máq. Motriz");
+    req(d.bioCicloTermodinamico, "Ciclo Termodin.");
+    req(d.bioFatorPotencia, "Fator de Potência");
+    // bioDespachoQualificacao fica de fora: só existe em cogeração qualificada
+    // (item 6.8, "caso aplicável") — o campo é opcional na etapa.
   }
   // Limite do Fast Track: vale para QUALQUER fonte — a potência da usina é
   // sempre potAtivaInstalada (calculada no Solar, espelhada da potência
@@ -2264,6 +2292,15 @@ function renderPreviewGD() {
             GD_BARRAGEM_PERGUNTAS.map((p) =>
               pvCampo(p.rotulo, d[p.chave], {}),
             ).join("")
+          : "") +
+        (d.fontePrimaria === "Biomassa"
+          ? pvCampo("Combustível", d.bioCombustivel, {}) +
+            pvCampo("Pot. Aparente (kVA)", d.bioPotAparente, {}) +
+            pvCampo(
+              "Máq. motriz / Ciclo",
+              `${d.bioMaqMotriz || "—"} / ${d.bioCicloTermodinamico || "—"}`,
+              {},
+            )
           : ""),
     ),
   );

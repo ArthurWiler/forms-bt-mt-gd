@@ -251,6 +251,17 @@ function gdEstadoInicial() {
     hidroPotInstalada: "",
     hidroNivelMontante: "",
     hidroSubBacia: "",
+    // Biomassa — dados da central. `bioPotInstalada` é a potência da usina
+    // nesta fonte, espelhada em potAtivaInstalada como a da hidráulica (ver
+    // GD_POT_INSTALADA_POR_FONTE, js/app.js). O despacho de qualificação é o
+    // único opcional: só existe em cogeração qualificada pela ANEEL.
+    bioPotAparente: "",
+    bioPotInstalada: "",
+    bioCombustivel: "",
+    bioDespachoQualificacao: "",
+    bioMaqMotriz: "",
+    bioCicloTermodinamico: "",
+    bioFatorPotencia: "",
     // Segurança de barragens (REN 696/2015) — sem padrão: são respostas
     // explícitas do solicitante. A 1ª é Sim/Não (toggle); as demais são os
     // rádios de GD_BARRAGEM_PERGUNTAS (js/data.js).
