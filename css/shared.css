@@ -2867,6 +2867,17 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .sidebar-title {
   display: none;
 }
+/* Invólucro do rail mobile (montado por shared/js/trilha-etapas.js). No
+   desktop ele se dissolve: `display: contents` devolve a .sidebar à coluna do
+   .layout, exatamente como se o wrapper não existisse. Setas e barra de
+   rolagem são exclusivas do rail — ver o `@media (max-width: 900px)`. */
+.cemig-form .trilha {
+  display: contents;
+}
+.cemig-form .trilha-seta,
+.cemig-form .trilha-barra {
+  display: none;
+}
 /* O antigo botão "VOLTAR" (.form-back) da sidebar foi removido: o retorno ao
    portal agora é pela LOGO da topbar (.logo-link, seção 3). */
 /* ---- Canonical step rail (single source for BT/Micro/Mini AND
@@ -3161,6 +3172,13 @@ label.restricao-aceite input[type="checkbox"] {
   .cemig-form .page.show {
     display: block !important;
   }
+  /* Enfeites de rolagem do rail mobile: a folha impressa é estreita (~794px),
+     então as regras de mobile valem aqui também. Cada formulário já esconde a
+     .sidebar na impressão; setas e barra precisam sumir junto. */
+  .cemig-form .trilha-seta,
+  .cemig-form .trilha-barra {
+    display: none !important;
+  }
 }
 
 /* ---- Esqueleto da primeira etapa ----
@@ -3403,23 +3421,172 @@ label.restricao-aceite input[type="checkbox"] {
     gap: var(--cmg-space-6);
   }
 }
+/* ---- Mobile: trilha de etapas em rail horizontal (spec do Figma) ----
+   A coluna fixa vira uma fita de chips que rola na horizontal, entre o
+   cabeçalho e o card da etapa. Como o `.form-header` mora DENTRO do
+   `.main-col`, dissolvemos a coluna com `display: contents`: cabeçalho e
+   `.page`s viram irmãos diretos do `.layout` e a trilha pode ser posicionada
+   entre os dois por `order`.
+
+   O invólucro `.trilha` (setas + barra de rolagem) é montado em tempo de
+   execução por shared/js/trilha-etapas.js — o HTML dos 7 formulários continua
+   com a `<aside class="sidebar">` sozinha. Sem JS o rail funciona igual, só
+   sem setas, fade e barra: os comprimentos do fade nascem em zero e as setas
+   só aparecem sob as classes que o script liga. */
 @media (max-width: 900px) {
   .cemig-form .layout {
     flex-direction: column;
+    /* Com o .main-col dissolvido, são os filhos promovidos que se alinham
+       aqui; sem `stretch` eles encolheriam para a largura do conteúdo. */
+    align-items: stretch;
+    /* Reproduz o respiro que era do .main-col (gap: --cmg-space-8) entre
+       cabeçalho, trilha e card — o gap do .layout é o único que resta. */
+    gap: var(--cmg-space-8);
+  }
+  .cemig-form .main-col {
+    display: contents;
+  }
+  .cemig-form .main-col > .form-header {
+    order: 1;
+  }
+  .cemig-form .main-col > .page {
+    order: 3;
+    /* Herdeiro do `min-width: 0` do .main-col: sem ele, um conteúdo largo
+       (tabela da prévia) esticaria o item de flex e vazaria a viewport. */
+    min-width: 0;
+  }
+
+  /* Uma única célula de grade empilha rail e setas (as setas flutuam sobre as
+     bordas, com os chips passando por baixo); a barra desenhada fica na linha
+     de baixo. Assim nenhuma seta precisa de altura fixa: `align-self: stretch`
+     as iguala à altura do rail. */
+  .cemig-form .trilha {
+    order: 2;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--cmg-space-2);
   }
   .cemig-form .sidebar {
+    /* `order` também aqui: sem o JS a trilha entra crua no .layout e precisa
+       cair no mesmo lugar (entre cabeçalho e card). */
+    order: 2;
+    grid-area: 1 / 1;
     position: static;
     width: 100%;
     flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     gap: var(--cmg-space-2);
     overflow-x: auto;
+    /* Cada seta ocupa 32px na borda: o chip trazido pelo navegador (foco por
+       Tab, `scrollIntoView`) não pode parar embaixo delas. */
+    scroll-padding-inline: 32px;
+    /* Barra nativa fora de cena — o indicador é desenhado (.trilha-barra),
+       porque no mobile a barra do sistema é overlay e some sozinha. */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    /* Fade das bordas: o chip que sai da tela se dissolve em vez de ser
+       guilhotinado no meio da palavra. Os comprimentos ficam em zero até o JS
+       marcar que há conteúdo para aquele lado, então no início/fim do rail a
+       borda correspondente fica limpa.
+
+       A primeira metade do fade é transparência plena, não rampa: é a faixa
+       onde a seta fica, e ela precisa de fundo limpo para não ser lida por
+       cima de um chip meio apagado. A rampa mora na metade de dentro. */
+    --trilha-fade-ini: 0px;
+    --trilha-fade-fim: 0px;
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      transparent calc(var(--trilha-fade-ini) / 2),
+      #000 var(--trilha-fade-ini),
+      #000 calc(100% - var(--trilha-fade-fim)),
+      transparent calc(100% - var(--trilha-fade-fim) / 2),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      transparent calc(var(--trilha-fade-ini) / 2),
+      #000 var(--trilha-fade-ini),
+      #000 calc(100% - var(--trilha-fade-fim)),
+      transparent calc(100% - var(--trilha-fade-fim) / 2),
+      transparent 100%
+    );
   }
-  .cemig-form .main-col {
-    flex-basis: auto;
-    max-width: none;
-    width: 100%;
+  .cemig-form .sidebar::-webkit-scrollbar {
+    display: none;
+  }
+  .cemig-form .trilha.tem-ini .sidebar {
+    --trilha-fade-ini: 64px;
+  }
+  .cemig-form .trilha.tem-fim .sidebar {
+    --trilha-fade-fim: 64px;
+  }
+  /* Chip: largura do próprio rótulo, numa linha só. */
+  .cemig-form .vstep {
+    width: auto;
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  /* Setas ‹ › — aparecem só do lado que ainda tem etapa escondida. Ficam FORA
+     do rail (irmãs, não filhas): dentro do container rolável elas rolariam
+     junto com os chips. */
+  .cemig-form .trilha-seta {
+    grid-area: 1 / 1;
+    z-index: 1;
+    align-self: stretch;
+    display: none;
+    place-items: center;
+    width: 32px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--cmg-green-600);
+    cursor: pointer;
+  }
+  .cemig-form .trilha.tem-ini .trilha-seta--ini,
+  .cemig-form .trilha.tem-fim .trilha-seta--fim {
+    display: grid;
+  }
+  .cemig-form .trilha-seta--ini {
+    justify-self: start;
+  }
+  .cemig-form .trilha-seta--fim {
+    justify-self: end;
+  }
+  /* Mesmo desenho SVG mascarado do check/acordeão: independe do glifo da
+     fonte e herda a cor por currentColor. */
+  .cemig-form .trilha-seta::before {
+    content: "";
+    width: 20px;
+    height: 20px;
+    background-color: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 6l6 6-6 6' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 6l6 6-6 6' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+  }
+  .cemig-form .trilha-seta--ini::before {
+    transform: rotate(180deg);
+  }
+  /* Barra de rolagem desenhada: diz quanto da trilha está à vista e onde. */
+  .cemig-form .trilha-barra {
+    grid-area: 2 / 1;
+    display: none;
+    height: 4px;
+    border-radius: var(--cmg-radius-pill);
+    background: var(--cmg-neutral-200);
+    overflow: hidden;
+  }
+  .cemig-form .trilha.rolavel .trilha-barra {
+    display: block;
+  }
+  .cemig-form .trilha-barra span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--cmg-neutral-400);
   }
 }
 @media (max-width: 600px) {
