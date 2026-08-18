@@ -1716,20 +1716,24 @@ window.gdBarragemOk = () => {
 // de operação e classificação da barragem) ficam fora dos marcadores.
 window.gdEtapaGeracaoOk = () => gdModoOperacaoOk() && gdBarragemOk();
 // A fonte primária comanda a etapa inteira: cada fonte tem o seu conjunto de
-// campos. Estão montados três:
+// campos. As cinco de GD_FONTES estão cobertas por quatro conjuntos:
 //   • SOLAR      — blocos FV, tecnologia, modalidade de compensação, UCs
 //                  beneficiadas e potência ativa da usina (calculada);
 //   • HIDRÁULICA — #hidroBlocos: dados da central e do aproveitamento
 //                  (potências, tensão, rio, sub-bacia, níveis de operação) e a
 //                  classificação de segurança de barragens da REN 696/2015;
-//   • BIOMASSA   — #bioBlocos: potências, fator de potência, combustível,
-//                  máquina motriz, ciclo termodinâmico e o despacho de
-//                  qualificação (cogeração qualificada).
+//   • CENTRAL TÉRMICA — #bioBlocos, compartilhado por BIOMASSA e COGERAÇÃO
+//                  QUALIFICADA (GD_FONTES_CENTRAL_TERMICA, js/data.js): as duas
+//                  declaram a mesma central — potências, fator de potência,
+//                  combustível, máquina motriz, ciclo termodinâmico e o
+//                  despacho de qualificação. Só o título do bloco muda.
+//   • EÓLICA     — #eolBlocos: quantidade, potência instalada, fabricante e
+//                  modelo dos aerogeradores, altura da pá, eixo do rotor e
+//                  fator de potência.
 // Fora deles, só a MODALIDADE DE OPERAÇÃO é comum a todas as fontes — ela
 // aparece assim que qualquer uma é escolhida. Enquanto nada for escolhido a
-// etapa mostra só a própria pergunta; os campos das demais fontes ainda serão
-// definidos. Quem depende disso: a validação de exportação, que não pode
-// cobrar campo fora de tela (ver validarExportacao).
+// etapa mostra só a própria pergunta. Quem depende disso: a validação de
+// exportação, que não pode cobrar campo fora de tela (ver validarExportacao).
 function onFonte() {
   // Guarda o valor anterior: a marcação automática da tecnologia (abaixo) vale
   // para a ESCOLHA da fonte, não para a restauração de um formulário salvo —
@@ -1741,7 +1745,8 @@ function onFonte() {
   const temFonte = !!state.fontePrimaria;
   const ehFV = state.fontePrimaria === "Solar";
   const ehHidro = state.fontePrimaria === "Hidráulica";
-  const ehBio = state.fontePrimaria === "Biomassa";
+  const ehBio = GD_FONTES_CENTRAL_TERMICA.includes(state.fontePrimaria);
+  const ehEol = state.fontePrimaria === "Eólica";
   [
     "#tipoGeracaoBox",
     "#modalidadeBox",
@@ -1756,9 +1761,17 @@ function onFonte() {
   // Conjunto da fonte Hidráulica: dados da central + segurança de barragens.
   const hidro = $("#hidroBlocos");
   if (hidro) hidro.style.display = ehHidro ? "" : "none";
-  // Conjunto da fonte Biomassa: dados da central.
+  // Conjunto da central térmica (Biomassa / Cogeração Qualificada): dados da
+  // central. O título é escrito aqui — só com o bloco em tela, para não apagar
+  // o cabeçalho ao sair para uma fonte que não usa este conjunto.
   const bio = $("#bioBlocos");
   if (bio) bio.style.display = ehBio ? "" : "none";
+  const bioTit = $("#bioBlocosTitulo");
+  if (bioTit && ehBio)
+    bioTit.textContent = GD_TITULO_CENTRAL_TERMICA[state.fontePrimaria];
+  // Conjunto da fonte Eólica: dados da central.
+  const eol = $("#eolBlocos");
+  if (eol) eol.style.display = ehEol ? "" : "none";
   // A modalidade de operação (Padrão/Fast Track/Grid Zero) vale para QUALQUER
   // fonte — só espera que alguma tenha sido escolhida, como o resto da etapa.
   // Ao voltar a fonte para vazio a resposta é DESFEITA: um "Fast Track" marcado
@@ -1798,10 +1811,16 @@ function onPotAtivaInput(el) {
 // Fontes cujo bloco próprio já declara a potência da usina: a chave do campo
 // "Potência Instalada (kW)" de cada uma. O valor é copiado para
 // potAtivaInstalada (ver recalcGeracao), que é o que PDF, prévia e Fast Track
-// leem — cada fonte nova entra aqui junto com o seu bloco.
+// leem — cada fonte nova entra aqui junto com o seu bloco. Com a Eólica, TODAS
+// as fontes fora do Solar (que calcula a sua) estão cobertas: fonte de fora do
+// mapa não mexeria no valor e deixaria passar a potência da fonte anterior.
 const GD_POT_INSTALADA_POR_FONTE = {
   Hidráulica: "hidroPotInstalada",
+  // As duas fontes da central térmica declaram a potência no MESMO campo do
+  // bloco compartilhado (ver GD_FONTES_CENTRAL_TERMICA, js/data.js).
   Biomassa: "bioPotInstalada",
+  "Cogeração Qualificada": "bioPotInstalada",
+  Eólica: "eolPotInstalada",
 };
 // Grava a potência da usina no estado E no input genérico (#potAtivaBox): ele
 // fica fora de tela fora do Solar, mas syncState() relê o DOM antes da prévia e
@@ -2033,15 +2052,25 @@ function validarExportacao() {
     // As quatro perguntas de classificação da barragem, pelos rótulos curtos
     // da própria lista (js/data.js) — a pergunta inteira não cabe aqui.
     GD_BARRAGEM_PERGUNTAS.forEach((p) => req(d[p.chave], p.rotulo));
-  } else if (d.fontePrimaria === "Biomassa") {
+  } else if (GD_FONTES_CENTRAL_TERMICA.includes(d.fontePrimaria)) {
+    // Biomassa e Cogeração Qualificada dividem o bloco da central (#bioBlocos)
+    // e, com ele, a mesma lista de obrigatórios.
     req(d.bioPotAparente, "Potência Aparente (kVA)");
     req(d.bioPotInstalada, "Potência Instalada (kW)");
     req(d.bioCombustivel, "Combustível");
     req(d.bioMaqMotriz, "Máq. Motriz");
     req(d.bioCicloTermodinamico, "Ciclo Termodin.");
     req(d.bioFatorPotencia, "Fator de Potência");
-    // bioDespachoQualificacao fica de fora: só existe em cogeração qualificada
-    // (item 6.8, "caso aplicável") — o campo é opcional na etapa.
+    // bioDespachoQualificacao fica de fora nas duas: o reconhecimento da ANEEL
+    // é "caso aplicável" (item 6.8) — o campo é opcional na etapa.
+  } else if (d.fontePrimaria === "Eólica") {
+    req(d.eolQtdAerogeradores, "Quantidade de Aerogeradores");
+    req(d.eolPotInstalada, "Potência Instalada (kW)");
+    req(d.eolFabricante, "Fabricante dos Aerogeradores");
+    req(d.eolModelo, "Modelo dos Aerogeradores");
+    req(d.eolAlturaPa, "Altura da pá (m)");
+    req(d.eolEixoRotor, "Eixo do rotor");
+    req(d.eolFatorPotencia, "Fator de Potência");
   }
   // Limite do Fast Track: vale para QUALQUER fonte — a potência da usina é
   // sempre potAtivaInstalada (calculada no Solar, espelhada da potência
@@ -2293,12 +2322,29 @@ function renderPreviewGD() {
               pvCampo(p.rotulo, d[p.chave], {}),
             ).join("")
           : "") +
-        (d.fontePrimaria === "Biomassa"
+        // Central térmica (Biomassa / Cogeração Qualificada): mesmo resumo, o
+        // bloco de origem é o mesmo.
+        (GD_FONTES_CENTRAL_TERMICA.includes(d.fontePrimaria)
           ? pvCampo("Combustível", d.bioCombustivel, {}) +
             pvCampo("Pot. Aparente (kVA)", d.bioPotAparente, {}) +
             pvCampo(
               "Máq. motriz / Ciclo",
               `${d.bioMaqMotriz || "—"} / ${d.bioCicloTermodinamico || "—"}`,
+              {},
+            )
+          : "") +
+        // Eólica: o resumo traz os aerogeradores; o detalhe (fator de potência)
+        // fica para o PDF, como nas demais fontes.
+        (d.fontePrimaria === "Eólica"
+          ? pvCampo("Aerogeradores", `${d.eolQtdAerogeradores || "—"} un`, {}) +
+            pvCampo(
+              "Fabricante / Modelo",
+              `${d.eolFabricante || "—"} / ${d.eolModelo || "—"}`,
+              {},
+            ) +
+            pvCampo(
+              "Altura da pá (m) / Eixo",
+              `${d.eolAlturaPa || "—"} / ${d.eolEixoRotor || "—"}`,
               {},
             )
           : ""),

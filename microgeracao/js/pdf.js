@@ -42,7 +42,11 @@ function gerarPdfMicroGD(d) {
   };
   const ehFV = d.fontePrimaria === "Solar";
   const ehHidro = d.fontePrimaria === "Hidráulica";
-  const ehBio = d.fontePrimaria === "Biomassa";
+  // Biomassa e Cogeração Qualificada declaram a MESMA central (bloco e chaves
+  // bio* compartilhados — ver GD_FONTES_CENTRAL_TERMICA, js/data.js), então a
+  // seção da central é impressa igual nas duas.
+  const ehBio = GD_FONTES_CENTRAL_TERMICA.includes(d.fontePrimaria);
+  const ehEol = d.fontePrimaria === "Eólica";
 
   // ---- 1. Identificação ----
   sec("1.  IDENTIFICAÇÃO DA UNIDADE CONSUMIDORA");
@@ -349,8 +353,9 @@ function gerarPdfMicroGD(d) {
     );
     GD_BARRAGEM_PERGUNTAS.forEach((p) => fullLine(p.rotulo, d[p.chave]));
   }
-  // Fonte Biomassa: dados da central. O despacho de qualificação só aparece
-  // quando informado (cogeração qualificada) — kvPairs descarta o par vazio.
+  // Central térmica (Biomassa / Cogeração Qualificada): dados da central. O
+  // despacho de qualificação só aparece quando informado — é "caso aplicável"
+  // nas duas fontes e kvPairs descarta o par vazio.
   if (ehBio) {
     kvPairs([
       ["Potência Aparente (kVA)", d.bioPotAparente],
@@ -360,6 +365,18 @@ function gerarPdfMicroGD(d) {
       ["Máquina motriz", d.bioMaqMotriz],
       ["Ciclo termodinâmico", d.bioCicloTermodinamico],
       ["Nº do Despacho de qualificação", d.bioDespachoQualificacao],
+    ]);
+  }
+  // Fonte Eólica: dados da central.
+  if (ehEol) {
+    kvPairs([
+      ["Quantidade de Aerogeradores", d.eolQtdAerogeradores],
+      ["Potência Instalada (kW)", d.eolPotInstalada],
+      ["Fabricante dos Aerogeradores", d.eolFabricante],
+      ["Modelo dos Aerogeradores", d.eolModelo],
+      ["Altura da pá (m)", d.eolAlturaPa],
+      ["Eixo do rotor", d.eolEixoRotor],
+      ["Fator de Potência", d.eolFatorPotencia],
     ]);
   }
   kvPairs([

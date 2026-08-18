@@ -396,13 +396,20 @@
     </div>
   </div>
 
-  <!-- Conjunto da fonte BIOMASSA (ver onFonte). Mesma convenção da hidráulica:
-       a "Potência Instalada (kW)" é a potência da usina nesta fonte e
-       recalcGeracao() a espelha em potAtivaInstalada (ver
-       GD_POT_INSTALADA_POR_FONTE). Máquina motriz e ciclo termodinâmico são
-       escolhas de dois valores — toggles, como os demais pares da etapa. -->
+  <!-- Conjunto da CENTRAL TÉRMICA — serve as fontes Biomassa e Cogeração
+       Qualificada (GD_FONTES_CENTRAL_TERMICA, js/data.js): as duas declaram a
+       mesma central (combustível, máquina motriz, ciclo termodinâmico), então
+       o bloco e as chaves bio* são um só. Só o TÍTULO muda entre elas — o
+       texto vem de GD_TITULO_CENTRAL_TERMICA, escrito por onFonte(), e por
+       isso o <h4> tem id.
+       Mesma convenção da hidráulica: a "Potência Instalada (kW)" é a potência
+       da usina nestas fontes e recalcGeracao() a espelha em potAtivaInstalada
+       (ver GD_POT_INSTALADA_POR_FONTE). Máquina motriz e ciclo termodinâmico
+       são escolhas de dois valores — toggles, como os demais pares da etapa. -->
   <div id="bioBlocos" style="display: none">
-    <h4 class="card-subtitle divider">Dados da central geradora a biomassa</h4>
+    <h4 class="card-subtitle divider" id="bioBlocosTitulo">
+      Dados da central geradora a biomassa
+    </h4>
     <div class="grid grid-2">
       <div class="field">
         <label>Potência Aparente (kVA) <span class="req">*</span></label>
@@ -429,9 +436,10 @@
         <label>Combustível <span class="req">*</span></label>
         <input type="text" data-k="bioCombustivel" placeholder=" " />
       </div>
-      <!-- Despacho de qualificação: só existe em cogeração qualificada pela
-           ANEEL (item 6.8 da documentação técnica, "caso aplicável") — por isso
-           é o único campo opcional do bloco. -->
+      <!-- Despacho de qualificação: é o reconhecimento da cogeração
+           qualificada pela ANEEL (item 6.8 da documentação técnica, "caso
+           aplicável") — segue opcional NAS DUAS fontes, o único campo sem
+           obrigatoriedade do bloco. -->
       <div class="field">
         <label>Nº do Despacho de qualificação</label>
         <input type="text" data-k="bioDespachoQualificacao" placeholder=" " />
@@ -466,6 +474,77 @@
         <input
           type="text"
           data-k="bioFatorPotencia"
+          placeholder=" "
+          oninput="onNumDec(this)"
+        />
+      </div>
+    </div>
+  </div>
+
+  <!-- Conjunto da fonte EÓLICA (ver onFonte). Mesma convenção da hidráulica e
+       da central térmica: a "Potência Instalada (kW)" é a potência da usina
+       nesta fonte e recalcGeracao() a espelha em potAtivaInstalada (ver
+       GD_POT_INSTALADA_POR_FONTE) — o campo genérico #potAtivaBox é do conjunto
+       Solar e fica fora de tela aqui. O eixo do rotor é escolha de dois
+       valores — toggle, como os demais pares da etapa. -->
+  <div id="eolBlocos" style="display: none">
+    <h4 class="card-subtitle divider">Dados da central geradora eólica</h4>
+    <div class="grid grid-2">
+      <div class="field">
+        <label>Quantidade de Aerogeradores <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="eolQtdAerogeradores"
+          placeholder=" "
+          oninput="onSoDigitos(this)"
+        />
+      </div>
+      <div class="field">
+        <label>Potência Instalada (kW) <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="eolPotInstalada"
+          placeholder=" "
+          oninput="
+            onNumDec(this);
+            recalcGeracao();
+          "
+        />
+      </div>
+      <div class="field">
+        <label>Fabricante dos Aerogeradores <span class="req">*</span></label>
+        <input type="text" data-k="eolFabricante" placeholder=" " />
+      </div>
+      <div class="field">
+        <label>Modelo dos Aerogeradores <span class="req">*</span></label>
+        <input type="text" data-k="eolModelo" placeholder=" " />
+      </div>
+      <div class="field">
+        <label>Altura da pá (m) <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="eolAlturaPa"
+          placeholder=" "
+          oninput="onNumDec(this)"
+        />
+      </div>
+      <div class="field field--plain" data-noopt>
+        <label>Eixo do rotor <span class="req">*</span></label>
+        <div data-toggle="eolEixoRotor"></div>
+        <!-- Opção vazia à frente: sem ela o estado nasceria já respondido e o
+             obrigatório passaria em branco (o toggle ignora a opção sem
+             rótulo — ver _toggleRender). -->
+        <select data-k="eolEixoRotor" style="display: none" aria-hidden="true">
+          <option value=""></option>
+          <option>Horizontal</option>
+          <option>Vertical</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Fator de Potência <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="eolFatorPotencia"
           placeholder=" "
           oninput="onNumDec(this)"
         />

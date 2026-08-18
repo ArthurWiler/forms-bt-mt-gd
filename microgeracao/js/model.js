@@ -251,10 +251,13 @@ function gdEstadoInicial() {
     hidroPotInstalada: "",
     hidroNivelMontante: "",
     hidroSubBacia: "",
-    // Biomassa — dados da central. `bioPotInstalada` é a potência da usina
-    // nesta fonte, espelhada em potAtivaInstalada como a da hidráulica (ver
-    // GD_POT_INSTALADA_POR_FONTE, js/app.js). O despacho de qualificação é o
-    // único opcional: só existe em cogeração qualificada pela ANEEL.
+    // Central térmica — dados da central, compartilhados pelas fontes Biomassa
+    // e Cogeração Qualificada (GD_FONTES_CENTRAL_TERMICA, js/data.js): as duas
+    // declaram os mesmos dados, então as chaves são um conjunto só.
+    // `bioPotInstalada` é a potência da usina nestas fontes, espelhada em
+    // potAtivaInstalada como a da hidráulica (ver GD_POT_INSTALADA_POR_FONTE,
+    // js/app.js). O despacho de qualificação é o único opcional: o
+    // reconhecimento pela ANEEL é "caso aplicável".
     bioPotAparente: "",
     bioPotInstalada: "",
     bioCombustivel: "",
@@ -262,6 +265,17 @@ function gdEstadoInicial() {
     bioMaqMotriz: "",
     bioCicloTermodinamico: "",
     bioFatorPotencia: "",
+    // Eólica — dados da central. `eolPotInstalada` é a potência da usina nesta
+    // fonte, espelhada em potAtivaInstalada como nas demais (ver
+    // GD_POT_INSTALADA_POR_FONTE, js/app.js). O eixo do rotor nasce sem padrão:
+    // é resposta explícita do solicitante (o toggle ignora a opção sem rótulo).
+    eolQtdAerogeradores: "",
+    eolPotInstalada: "",
+    eolFabricante: "",
+    eolModelo: "",
+    eolAlturaPa: "",
+    eolEixoRotor: "",
+    eolFatorPotencia: "",
     // Segurança de barragens (REN 696/2015) — sem padrão: são respostas
     // explícitas do solicitante. A 1ª é Sim/Não (toggle); as demais são os
     // rádios de GD_BARRAGEM_PERGUNTAS (js/data.js).

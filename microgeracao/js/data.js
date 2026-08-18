@@ -78,6 +78,18 @@ const GD_FONTES = [
   "Cogeração Qualificada",
   "Eólica",
 ];
+// Fontes que declaram a MESMA central térmica (combustível, máquina motriz,
+// ciclo termodinâmico): compartilham o bloco #bioBlocos e as chaves bio* —
+// perguntar os mesmos dados duas vezes, em blocos separados, só duplicaria
+// estado, validação, prévia e PDF. Lida por onFonte(), validarExportacao() e
+// pela prévia (js/app.js) e pela seção 4 do PDF (js/pdf.js).
+const GD_FONTES_CENTRAL_TERMICA = ["Biomassa", "Cogeração Qualificada"];
+// Título do bloco por fonte: só a biomassa nomeia o combustível no cabeçalho.
+// Escrito por JS (ver onFonte), como os rótulos de GD_ROTULOS_POTENCIA.
+const GD_TITULO_CENTRAL_TERMICA = {
+  Biomassa: "Dados da central geradora a biomassa",
+  "Cogeração Qualificada": "Dados da central geradora",
+};
 // Sistema solar é sempre inversor: onFonte() marca esta opção sozinho ao
 // escolher "Solar", por isso a constante (o texto é gravado no estado e sai
 // assim no PDF — não pode divergir do item da lista).
