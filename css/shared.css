@@ -1181,11 +1181,15 @@ label.restricao-aceite input[type="checkbox"] {
   letter-spacing: 0.2px;
   color: var(--cmg-neutral-600); /* #364B46 */
 }
+/* Foco (spec Figma): campo em foco NÃO ganha sombra — a única mudança é a
+   borda, de neutra/400 (repouso) para neutra/600. O anel verde
+   (--cmg-focus-ring) fica com os controles sem borda própria a escurecer
+   (botões, checkbox, rádio, toggle) e com os `:focus-visible` de teclado. */
 .cemig-form .field input:focus,
 .cemig-form .field select:focus,
 .cemig-form .field textarea:focus {
-  border-color: var(--cmg-green-600);
-  box-shadow: 0 0 0 3px var(--cmg-focus-ring);
+  border-color: var(--cmg-neutral-600);
+  box-shadow: none;
 }
 .cemig-form .field input:disabled,
 .cemig-form .field select:disabled,
@@ -1374,7 +1378,8 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form
   .field--float:is(
     :has(input:placeholder-shown),
-    :has(select option[value=""]:checked)
+    :has(select option[value=""]:checked),
+    :has(.mesano-campo-txt.is-vazio)
   ):not(:focus-within)
   > label,
 :is(.cemig-form, .cemig-lote)
@@ -1382,7 +1387,10 @@ label.restricao-aceite input[type="checkbox"] {
     :has([type="checkbox"])
   ):not(:has([type="radio"])):has(input, select):is(
     :has(input:placeholder-shown),
-    :has(select option[value=""]:checked)
+    :has(select option[value=""]:checked),
+    /* mês/ano: o botão não tem :placeholder-shown — quem sinaliza "vazio" é o
+       .is-vazio do texto (ver bloco .mesano-*) */
+    :has(.mesano-campo-txt.is-vazio)
   ):not(:focus-within)
   > label {
   top: 50%;
@@ -1469,7 +1477,16 @@ label.restricao-aceite input[type="checkbox"] {
   display: none;
 }
 /* Ícone de calendário: maior que o (i) padrão e apenas decorativo — cliques
-   atravessam (pointer-events:none) para o indicador nativo por baixo. */
+   atravessam (pointer-events:none) para o indicador nativo por baixo.
+   Ancorado a 6px da borda (e não aos 16px do (i)): o arquivo traz o slot de
+   40px do Figma com ~11px de folga em volta do traço, então o traço fica a
+   17px da borda — a mesma medida do campo mês/ano. As reservas de espaço do
+   .field-hint-icon (40px no valor, 28px no rótulo) continuam cobrindo. */
+/* `img` no seletor para vencer o `.field > .field-hint-icon` (16px), que
+   é declarado bem depois neste arquivo. */
+.cemig-form .field > img.field-cal-icon {
+  right: 6px;
+}
 .cemig-form .field-cal-icon {
   width: 40px;
   height: 40px;
@@ -1509,43 +1526,66 @@ label.restricao-aceite input[type="checkbox"] {
   text-align: left;
   cursor: pointer;
 }
+/* Foco: mesma convenção dos demais campos — só a borda escurece para
+   neutra/600, sem sombra (ver bloco de :focus dos campos). */
 .cemig-form .mesano-campo:focus-visible {
   outline: none;
-  border-color: var(--cmg-green-600);
-  box-shadow: 0 0 0 2px var(--cmg-focus-ring);
+  border-color: var(--cmg-neutral-600);
+  box-shadow: none;
 }
-/* Sem valor o rótulo é placeholder: mesma cor dos demais placeholders. Dentro
-   de um .field o rótulo flutuante já ocupa a célula, então o "Mês/Ano" do
-   botão seria duplicata — some (o do MT, em tabela, não tem rótulo e fica). */
+/* Sem valor o texto é o placeholder do campo — neutra/600, a mesma cor do
+   rótulo em estado placeholder nos demais campos (spec Figma). Dentro de um
+   .field o rótulo flutuante já ocupa a célula, então o "Mês/Ano" do botão
+   seria duplicata — some (o do MT, em tabela, não tem rótulo e fica). */
 .cemig-form .mesano-campo-txt.is-vazio {
-  color: var(--cmg-text-muted);
+  color: var(--cmg-neutral-600);
 }
 .cemig-form .field .mesano-campo-txt.is-vazio {
   visibility: hidden;
 }
-/* Estado "placeholder" do rótulo flutuante: o gatilho padrão é
-   :placeholder-shown / option[value=""]:checked, que um botão não tem — aqui
-   quem sinaliza "vazio" é o .is-vazio do texto. Espelha o bloco do Padrão B. */
+/* Estado "placeholder": quem sinaliza "vazio" aqui é o .is-vazio do texto (um
+   botão não tem :placeholder-shown), e ele entra como terceira alternativa no
+   gatilho do rótulo flutuante — mesma regra dos demais campos, acima.
+   Vazio, a caixa mostra só o rótulo centralizado: o "Mês/Ano" está oculto
+   (duplicaria o rótulo) e sobra o ícone, que perde a reserva de 22px do valor
+   para centralizar junto. Com valor, a geometria volta a ser a do campo
+   preenchido (rótulo flutuado em cima, "Março/2028" embaixo). */
 :is(.cemig-form, .cemig-lote)
   .field:has(.mesano-campo-txt.is-vazio):not(:focus-within)
-  > label {
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 16px;
-  line-height: 24px;
-  color: var(--cmg-neutral-600);
+  .mesano-campo {
+  padding-top: 4px;
 }
+/* Ícone: o arquivo (imgs/calendar.svg) é o slot de 40×40 do Figma com o
+   desenho de 18×20 ao centro — renderizado a 20px, o desenho encolhia para
+   ~9px. Vai no tamanho natural, e o recuo óptico à direita (17px até o traço)
+   sai dos 6px de folga + os 11px de transparência do próprio arquivo. */
 .cemig-form .mesano-campo-icone {
-  width: 20px;
-  height: 20px;
+  width: 40px;
+  height: 40px;
   flex: none;
   object-fit: contain;
 }
+/* Dentro de um .field o slot de 40px não caberia entre o rótulo flutuado e o
+   valor: o ícone sai do fluxo e ancora à direita da caixa, como o (i) de ajuda
+   e o calendário do input[type=date] (.field-hint-icon). */
+.cemig-form .field .mesano-campo-icone {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
 /* Dentro de um .field o botão herda a caixa do campo (borda/fundo/56px vêm do
-   .field), como acontece com input/select. */
+   .field), como acontece com input/select. O recuo à direita reserva o espaço
+   do ícone ancorado — mesma medida do (i) de ajuda (.field-hint-icon), para
+   que nem o valor nem o rótulo passem por baixo dele. */
 .cemig-form .field .mesano-campo {
   background: transparent;
   border: none;
+  padding-right: 44px;
+}
+.cemig-form .field:has(.mesano-campo) > label {
+  padding-right: 28px;
 }
 /* ---- Painel do seletor ----
    Fica no <body> (position:fixed) porque as tabelas do MT usam overflow-x:auto
@@ -1669,8 +1709,9 @@ label.restricao-aceite input[type="checkbox"] {
   .field:not(.field--plain):not(:has(textarea)):not(:has(.toggle-group)):not(
     :has([type="checkbox"])
   ):not(:has([type="radio"])):has(input, select):focus-within {
-  border-color: var(--cmg-green-600);
-  box-shadow: 0 0 0 3px var(--cmg-focus-ring);
+  /* mesma regra de foco do Padrão A (acima): só a borda muda, sem sombra */
+  border-color: var(--cmg-neutral-600);
+  box-shadow: none;
 }
 .cemig-form .field--float:has(input:disabled),
 .cemig-form .field--float:has(select:disabled),
@@ -1904,8 +1945,8 @@ label.restricao-aceite input[type="checkbox"] {
 }
 .cemig-form .carga-busca input:focus {
   outline: none;
-  border-color: var(--cmg-green-600);
-  box-shadow: 0 0 0 3px var(--cmg-focus-ring);
+  border-color: var(--cmg-neutral-600);
+  box-shadow: none;
 }
 .cemig-form .carga-acc-list {
   display: flex;
@@ -2765,8 +2806,8 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .motores-table input:focus:not(.carga-busca input, .qtd-ctrl input),
 .cemig-form .motores-table select:focus {
   outline: none;
-  border-color: var(--cmg-green-600);
-  box-shadow: 0 0 0 2px var(--cmg-focus-ring);
+  border-color: var(--cmg-neutral-600);
+  box-shadow: none;
 }
 .cemig-form .prev-table .col-demanda {
   background: var(--cmg-surface-accent);
@@ -3772,7 +3813,7 @@ label.restricao-aceite input[type="checkbox"] {
   padding: 6px var(--cmg-space-4);
 }
 .cemig-form .field--com-acao:focus-within {
-  border-color: var(--cmg-green-600);
+  border-color: var(--cmg-neutral-600);
 }
 /* Corpo esquerdo: rótulo flutuante (encolhido) por cima do valor. */
 .cemig-form .field--com-acao .field-acao-corpo {
@@ -3958,7 +3999,7 @@ label.restricao-aceite input[type="checkbox"] {
 }
 .cemig-form .cmg-pav-cel input:focus {
   outline: none;
-  border-color: var(--cmg-green-600, #0f6c58);
+  border-color: var(--cmg-neutral-600, #364b46);
 }
 /* Célula com <select> (ex.: coluna "Disjuntor" das prumadas em "Dados do
    projeto"): mesma caixa dos inputs, com a seta padrão do campo do formulário. */
@@ -3983,7 +4024,7 @@ label.restricao-aceite input[type="checkbox"] {
 }
 .cemig-form .cmg-pav-cel select:focus {
   outline: none;
-  border-color: var(--cmg-green-600, #0f6c58);
+  border-color: var(--cmg-neutral-600, #364b46);
 }
 /* Prumadas: rótulo/aviso sob a tabela (faixa de torres incompleta, sobreposta
    ou hierarquia inválida) fica junto da própria caixa da tabela. */
@@ -4445,7 +4486,7 @@ label.restricao-aceite input[type="checkbox"] {
 }
 .cemig-form .cmg-replic-campo select:focus {
   outline: none;
-  border-color: var(--cmg-green-600, #0f6c58);
+  border-color: var(--cmg-neutral-600, #364b46);
 }
 /* Destinos: grade de checkboxes rolável (empreendimentos com muitas torres). */
 .cemig-form .cmg-replic-destinos {

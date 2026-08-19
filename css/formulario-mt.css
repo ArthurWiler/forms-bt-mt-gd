@@ -82,7 +82,9 @@
 .cemig-microgd .tbl td select {
   width: 100%;
   box-sizing: border-box;
-  height: 40px;
+  /* 48px: altura de controle do sistema (a mesma do .field em shared.css) e a
+     do campo mês/ano no spec do Figma — as células da linha precisam casar. */
+  height: 48px;
   padding: 6px 12px;
   font-family: var(--cmg-font-family);
   font-size: 14px;
@@ -96,8 +98,8 @@
 .cemig-mtform .tbl td select:focus,
 .cemig-microgd .tbl td select:focus {
   outline: none;
-  border-color: var(--cmg-green-600);
-  box-shadow: 0 0 0 2px var(--cmg-focus-ring);
+  border-color: var(--cmg-neutral-600);
+  box-shadow: none;
 }
 .cemig-mtform .tbl .calc,
 .cemig-microgd .tbl .calc {
@@ -128,8 +130,36 @@
    `.tbl td input` e precisa dos 40px/borda/raio explicitamente. */
 .cemig-mtform .tbl td .mesano-campo,
 .cemig-microgd .tbl td .mesano-campo {
-  height: 40px;
-  padding: 6px 12px;
+  /* Spec Figma (242×48): texto a 16px da esquerda e o slot de 40px do ícone a
+     6px da direita — com padding vertical zero o slot centraliza nos 48px. */
+  height: 48px;
+  /* o min-height de 54px do componente vale para o .field de 56px; na tabela
+     a altura é a do spec */
+  min-height: 48px;
+  padding: 0 6px 0 16px;
+  /* A caixa do campo: o <button> não herda de `.tbl td input` e o componente
+     compartilhado nasce sem borda (dentro de um .field quem desenha a caixa é
+     o próprio .field). Na tabela ele é o campo, então repete a moldura das
+     células vizinhas — sem isto o "Início de uso" aparecia solto, sem caixa. */
+  background: var(--cmg-surface);
+  border: 1px solid var(--cmg-neutral-400);
+  border-radius: 4px;
+}
+/* Largura FIXA da célula: com largura automática a coluna era dimensionada
+   pelo texto, e trocar "Mês/Ano" (7 caracteres) por "Setembro/2026" (13)
+   alargava a coluna e reorganizava a linha inteira a cada escolha. 242px é a
+   largura do campo no spec do Figma; o que passar disso é cortado com
+   reticências, como em qualquer campo. */
+.cemig-mtform .tbl td:has(.mesano-campo),
+.cemig-microgd .tbl td:has(.mesano-campo) {
+  width: 242px;
+  min-width: 242px;
+}
+.cemig-mtform .tbl td .mesano-campo-txt,
+.cemig-microgd .tbl td .mesano-campo-txt {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 /* Sem spinner nos campos numéricos (mesmo ajuste do BT). */
 .cemig-mtform input[type="number"]::-webkit-inner-spin-button,

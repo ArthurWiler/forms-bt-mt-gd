@@ -616,8 +616,8 @@ select:disabled {
 }
 .kpi.kpi-demanda input:focus {
   outline: none;
-  border-color: var(--verde-escuro);
-  box-shadow: 0 0 0 3px rgba(1, 136, 55, 0.15);
+  border-color: var(--cmg-neutral-600);
+  box-shadow: none;
 }
 
 /* ---------- UCs por TORRE/BLOCO (múltiplas torres) ---------- */
@@ -708,8 +708,8 @@ select:disabled {
 }
 .prev-table input:focus {
   outline: none;
-  border-color: var(--verde-acento);
-  box-shadow: 0 0 0 2px rgba(0, 168, 79, 0.15);
+  border-color: var(--cmg-neutral-600);
+  box-shadow: none;
 }
 .prev-table .carga-cell {
   font-weight: 600;

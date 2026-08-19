@@ -71,8 +71,8 @@
 }
 .cemig-lote .tbl td input:focus {
   outline: none;
-  border-color: var(--cmg-green-600);
-  box-shadow: 0 0 0 2px var(--cmg-focus-ring);
+  border-color: var(--cmg-neutral-600);
+  box-shadow: none;
 }
 .cemig-lote .tbl .calc {
   font-weight: 400;
