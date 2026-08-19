@@ -1202,25 +1202,40 @@ label.restricao-aceite input[type="checkbox"] {
    todos os formulários (React e vanilla, todos sob `.cemig-form`). Uma só
    classe (.is-invalid), sem estilos de erro concorrentes. Declarada após o
    :focus para prevalecer mesmo com o campo focado.
-   Spec Figma (erro): borda erro/600 (#C8303F), rótulo em #C8303F e
-   supporting-text de erro (12px) abaixo do campo. */
-/* Padrão A (borda no próprio controle, ex.: campos .field--plain). */
+   Spec Figma (erro): caixa branca, borda de 1px em erro/600 (#C8303F),
+   raio 4, TODO o texto da caixa em #C8303F e supporting-text de erro (12px)
+   abaixo do campo. A caixa NÃO tem sombra: o halo vermelho que existia aqui
+   (0 0 0 3px rgba(200,48,63,.18)) engrossava a borda de 1px num vão rosado de
+   4px e era o que fazia a cor lida na tela divergir do #C8303F do spec. */
+/* Padrão A (borda no próprio controle, ex.: campos .field--plain).
+   `box-shadow: none` é declaração, não omissão: sem ela o anel VERDE de
+   `:focus` (acima) voltaria no campo focado — e o primeiro campo inválido
+   recebe foco justamente ao clicar em "Avançar" (form-marcadores.js). */
 .cemig-form .field input.is-invalid,
 .cemig-form .field select.is-invalid,
 .cemig-form .field textarea.is-invalid {
   border-color: var(--cmg-error-500); /* #C8303F — erro/600 */
-  box-shadow: 0 0 0 3px rgba(200, 48, 63, 0.18);
+  box-shadow: none;
 }
 /* Padrão B (rótulo flutuante): a borda é do .field (o input não tem borda),
    então o estado de erro (borda + rótulo) precisa ir no CONTÊINER. Restrito
    a campos NÃO-plain com input/select (mesma heurística do Padrão B) p/ não
    duplicar a borda dos campos Padrão A. !important vence a borda neutra do
-   Padrão B (declarada depois e com especificidade maior) — o erro deve
-   sempre prevalecer. */
+   Padrão B e o anel de `:focus-within` (ambos declarados depois e com
+   especificidade maior) — o erro deve sempre prevalecer. */
 .cemig-form .field:not(.field--plain):has(input.is-invalid),
 .cemig-form .field:not(.field--plain):has(select.is-invalid) {
   border-color: var(--cmg-error-500) !important; /* #C8303F */
-  box-shadow: 0 0 0 3px rgba(200, 48, 63, 0.18) !important;
+  box-shadow: none !important;
+}
+/* Texto da caixa em erro: o rótulo já vai em erro/600 (regra adiante, junto do
+   rótulo flutuante) e o placeholder acompanha — nos campos que trazem exemplo
+   de formato ("Nome completo ou razão social", "email@exemplo.com") ele é o
+   texto de 16px que ocupa a caixa quando o rótulo sobe, e ficava cinza no meio
+   de uma caixa vermelha. */
+.cemig-form .field:has(input.is-invalid) input::placeholder,
+.cemig-form .field:has(textarea.is-invalid) textarea::placeholder {
+  color: var(--cmg-error-500);
 }
 /* (o rótulo em erro/600 é reforçado após o bloco do rótulo flutuante,
    para vencer a cor do estado "placeholder" — ver adiante.) */
