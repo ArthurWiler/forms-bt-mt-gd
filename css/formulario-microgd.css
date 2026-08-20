@@ -1223,58 +1223,6 @@ textarea.ta {
   color: var(--texto-suave);
 }
 
-/* Valor calculado (potência total de módulos/inversores): não é input —
-   é um resultado exibido dentro da mesma moldura dos campos vizinhos,
-   com o rótulo à esquerda e o valor à direita. */
-/* .cemig-form .field é flex-direction:column e tem especificidade maior que
-   .gd-calc — sem prefixar aqui, rótulo, valor e ícone empilhariam. */
-/* Moldura IDÊNTICA à dos campos vizinhos (rótulo flutuante, shared.css):
-   56px, raio 4, superfície e borda pelos tokens --cmg-*. Antes vinha da
-   paleta legada (--borda #DDE4E2, bem mais clara que a neutra/400 #8C9895 dos
-   campos ao lado), e o box destoava da linha. */
-.cemig-form .field.gd-calc {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-height: 56px;
-  padding: 0 var(--cmg-space-4, 16px);
-  border: 1px solid var(--cmg-border);
-  border-radius: 4px;
-  background: var(--cmg-surface);
-}
-/* Texto interno no mesmo padrão do campo de rótulo flutuante (shared.css):
-   o rótulo é o "flutuado" (12/20/0.2, neutra/500) e o valor é o do <input>
-   preenchido (16/24/0.2, neutra/700). Antes vinham da paleta legada
-   (--texto-suave / --texto) em 14 e 15px, e a linha destoava dos vizinhos. */
-.gd-calc-label {
-  font-family: var(--cmg-font-family);
-  font-weight: 400;
-  font-size: 12px;
-  line-height: 20px;
-  letter-spacing: 0.2px;
-  color: var(--cmg-neutral-500);
-}
-.gd-calc-valor {
-  margin-left: auto;
-  font-family: var(--cmg-font-family);
-  font-weight: 400;
-  font-size: 16px;
-  line-height: 24px;
-  letter-spacing: 0.2px;
-  color: var(--cmg-text-strong);
-}
-/* Ícone informativo com o memorial do cálculo. O balão é o .cmg-hint
-   compartilhado (shared.css) e o ícone é o imgs/info.svg usado em BT/MT —
-   por isso aqui só resta o alinhamento, sem círculo nem letra desenhados. */
-.cemig-form .gd-calc-info {
-  display: inline-flex;
-  align-items: center;
-  flex: none;
-}
-/* O .field-info global usa margin-left:auto para se afastar do rótulo; aqui
-   quem empurra o conteúdo à direita é o .gd-calc-valor, então zeramos. */
-.cemig-form .gd-calc-info .field-info {
-  margin-left: 0;
-}
+/* .gd-calc saiu daqui: os totais calculados de módulos/inversores passaram ao
+   padrão somente-leitura compartilhado (.readonly-val, shared.css), que já é a
+   moldura cinza de campo bloqueado com rótulo no topo. */

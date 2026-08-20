@@ -10,7 +10,10 @@
       <select data-k="solicitacao" onchange="onSolicitacao()"></select>
     </div>
 
-    <div class="field field--plain col-span-2" data-noopt>
+    <!-- Pergunta só de BAIXA tensão: no Grupo A o campo some inteiro (e com
+         ele o fluxo Coletivo/Agrupamento) — ver gdPerguntaEdifTipo() em
+         js/app.js. Daí o id, que o JS usa para ocultar o campo. -->
+    <div class="field field--plain col-span-2" data-noopt id="edifTipoBox">
       <label>Tipo de edificação <span class="req">*</span></label>
       <div data-toggle="edifTipo" data-toggle-onchange="onEdifTipoGD"></div>
       <select data-k="edifTipo" style="display: none" aria-hidden="true">

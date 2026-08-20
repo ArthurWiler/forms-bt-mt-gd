@@ -73,32 +73,19 @@
     <!-- "Potência já conectada" (potGeracaoExistente) saiu daqui: a geração que
          a UC já tem é justamente a "Potência de geração atual" abaixo, que vale
          nos dois grupos — não havia por que perguntar o mesmo dado duas vezes. -->
-    <!-- Potência de geração — mesmo desenho da potência de consumo da etapa 4
-         (ver _paresPotenciaGD()):
-           • Conexão nova            → só o campo "nova"
-           • Existente COM alteração → atual + futura
-           • Existente SEM alteração → só atual
-         Aqui os dois campos valem nos dois grupos, SEM a exceção do consumo
-         (cujo par só existe no Grupo A, porque no B ele sai do Formulário de
-         Carga): nada no formulário calcula a geração, ela só pode ser
-         declarada.
-         Só o RÓTULO muda (o Grupo A contrata demanda, o Grupo B não) — os
-         textos vêm de GD_ROTULOS_POTENCIA (js/data.js), escritos por JS, e por
-         isso os <label> têm id. -->
+    <!-- Do par de potências de geração restou só a ATUAL: a nova/futura era o
+         mesmo dado da potência da usina, hoje apresentada no KPI ao final do
+         conjunto Solar (#gdGeracaoKpis). A atual continua sendo perguntada —
+         é a geração que a UC JÁ tem, que nada calcula, e só aparece fora da
+         ligação nova (ver _paresPotenciaGD()).
+         Só o RÓTULO muda entre os grupos (o Grupo A contrata demanda, o Grupo B
+         não) — o texto vem de GD_ROTULOS_POTENCIA (js/data.js), escrito por JS,
+         e por isso o <label> tem id. -->
     <div class="field" id="demandaGeracaoAtualBox" style="display: none">
       <label id="demandaGeracaoAtualLbl">Potência de geração atual (kW)</label>
       <input
         type="text"
         data-k="demandaGeracaoAtual"
-        placeholder=" "
-        oninput="onNumDec(this)"
-      />
-    </div>
-    <div class="field" id="demandaGeracaoBox" style="display: none">
-      <label id="demandaGeracaoLbl">Potência de geração futura (kW)</label>
-      <input
-        type="text"
-        data-k="demandaGeracao"
         placeholder=" "
         oninput="onNumDec(this)"
       />
@@ -124,21 +111,14 @@
         oninput="onSoDigitos(this)"
       />
     </div>
-    <!-- Potência ativa instalada: em FV é calculada (menor entre módulos e
-         inversores) e o campo fica travado; nas demais fontes é digitada. -->
-    <div class="field col-span-2" id="potAtivaBox" style="display: none">
-      <label
-        >Potência ativa instalada total da usina (kW)
-        <span class="req">*</span></label
-      >
-      <input
-        type="text"
-        data-k="potAtivaInstalada"
-        placeholder=" "
-        oninput="onPotAtivaInput(this)"
-      />
-      <span id="potAtivaHint" class="field-hint"></span>
-    </div>
+    <!-- Potência da usina: NUNCA é digitada. No Solar sai do cálculo (menor
+         entre módulos e inversores) e aparece no KPI ao final do conjunto
+         (#gdGeracaoKpis); nas demais fontes é espelhada do campo "Potência
+         Instalada (kW)" do bloco da própria fonte. O input fica só como
+         PORTADOR do estado: _gravarPotAtivaGD() escreve nele e syncState()
+         o relê antes da prévia — sem ele o valor derivado se perderia. Sendo
+         type=hidden, os marcadores o ignoram (nem "*" nem "(opcional)"). -->
+    <input type="hidden" data-k="potAtivaInstalada" />
     <div class="field col-span-2" id="fastExcedeAviso" style="display: none">
       <div class="cmg-aviso cmg-aviso--warn no-print">
         <div class="cmg-aviso-icon" aria-hidden="true"></div>
@@ -197,23 +177,14 @@
           oninput="onNumDec(this)"
         />
       </div>
-      <div class="field field--plain gd-calc" data-noopt>
-        <span class="gd-calc-label">Potência total calculada</span>
-        <!-- Sem valor o span fica VAZIO (não "—"): o total só existe depois da
-             quantidade e da potência nominal — ver recalcGeracao(). -->
-        <span class="gd-calc-valor" id="gd_potTotalModulos"></span>
-        <span
-          class="gd-calc-info cmg-hint"
-          tabindex="0"
-          role="img"
-          aria-label="Ajuda: potência total dos módulos"
-          data-hint="Calculado: quantidade × potência nominal (kW)"
-          ><img
-            class="field-info"
-            src="../imgs/info.svg"
-            alt=""
-            aria-hidden="true"
-        /></span>
+      <!-- Resultado somente-leitura no padrão .readonly-val (shared.css):
+           rótulo no topo e valor na moldura cinza de campo bloqueado, igual
+           aos demais calculados do projeto. Sem valor o corpo fica VAZIO (não
+           "—"): o total só existe depois da quantidade e da potência nominal
+           — ver recalcGeracao(). -->
+      <div class="field" data-noopt>
+        <label>Potência total calculada</label>
+        <div class="readonly-val" id="gd_potTotalModulos"></div>
       </div>
     </div>
 
@@ -270,31 +241,29 @@
         <!-- opções de GD_TENSOES_INVERSOR via preencherSelect() -->
         <select data-k="tensaoConexaoInversor"></select>
       </div>
-      <div class="field field--plain gd-calc" data-noopt>
-        <span class="gd-calc-label">Potência total calculada</span>
-        <span class="gd-calc-valor" id="gd_potTotalInversores"></span>
-        <span
-          class="gd-calc-info cmg-hint"
-          tabindex="0"
-          role="img"
-          aria-label="Ajuda: potência total dos inversores"
-          data-hint="Calculado: quantidade × potência nominal (kW)"
-          ><img
-            class="field-info"
-            src="../imgs/info.svg"
-            alt=""
-            aria-hidden="true"
-        /></span>
+      <div class="field" data-noopt>
+        <label>Potência total calculada</label>
+        <div class="readonly-val" id="gd_potTotalInversores"></div>
       </div>
     </div>
+
+    <!-- Resumo da geração (KPIs) — montado por recalcGeracao(), no mesmo molde
+         de #blocoResumoSE (etapa 4): fica DEPOIS dos blocos que o alimentam.
+         Dentro de #fvBlocos de propósito: o KPI só faz sentido no Solar, e
+         onFonte() já esconde o bloco inteiro nas demais fontes. -->
+    <div
+      class="resultado-kpis resultado-kpis--linha"
+      id="gdGeracaoKpis"
+      style="display: none"
+    ></div>
   </div>
 
   <!-- Conjunto da fonte HIDRÁULICA (ver onFonte): dados da central e do
        aproveitamento + a classificação de segurança de barragens da REN
        696/2015. A "Potência Instalada (kW)" daqui é a potência da usina nesta
-       fonte — recalcGeracao() a espelha em potAtivaInstalada, o campo que o
-       PDF, a prévia e o limite do Fast Track leem (o campo genérico
-       #potAtivaBox é do conjunto Solar e fica fora de tela aqui). -->
+       fonte — recalcGeracao() a espelha em potAtivaInstalada, a chave que o
+       PDF, a prévia e o limite do Fast Track leem (o KPI #gdGeracaoKpis, que a
+       mostra, é do conjunto Solar e fica fora de tela aqui). -->
   <div id="hidroBlocos" style="display: none">
     <h4 class="card-subtitle divider">Dados da central geradora hidráulica</h4>
     <div class="grid grid-2">
@@ -484,8 +453,8 @@
   <!-- Conjunto da fonte EÓLICA (ver onFonte). Mesma convenção da hidráulica e
        da central térmica: a "Potência Instalada (kW)" é a potência da usina
        nesta fonte e recalcGeracao() a espelha em potAtivaInstalada (ver
-       GD_POT_INSTALADA_POR_FONTE) — o campo genérico #potAtivaBox é do conjunto
-       Solar e fica fora de tela aqui. O eixo do rotor é escolha de dois
+       GD_POT_INSTALADA_POR_FONTE) — o KPI #gdGeracaoKpis, que a mostra, é do
+       conjunto Solar e fica fora de tela aqui. O eixo do rotor é escolha de dois
        valores — toggle, como os demais pares da etapa. -->
   <div id="eolBlocos" style="display: none">
     <h4 class="card-subtitle divider">Dados da central geradora eólica</h4>

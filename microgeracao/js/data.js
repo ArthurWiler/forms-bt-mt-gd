@@ -261,17 +261,12 @@ const GD_ROTULOS_POTENCIA = {
       futura: "Potência futura (kW)",
     },
   },
+  // A geração não tem `nova`/`futura`: esse valor É a potência da usina, que a
+  // etapa calcula dos módulos e inversores (ver _paresPotenciaGD, js/app.js).
+  // Sobra a potência já conectada.
   geracao: {
-    A: {
-      nova: "Potência contratada de geração (kW)",
-      atual: "Potência contratada de geração atual (kW)",
-      futura: "Potência contratada de geração futura (kW)",
-    },
-    B: {
-      nova: "Potência de geração (kW)",
-      atual: "Potência de geração atual (kW)",
-      futura: "Potência de geração futura (kW)",
-    },
+    A: { atual: "Potência contratada de geração atual (kW)" },
+    B: { atual: "Potência de geração atual (kW)" },
   },
 };
 // `grupo` pode chegar vazio (estado recém-criado): cai no Grupo B, que é o

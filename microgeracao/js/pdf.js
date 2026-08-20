@@ -27,11 +27,14 @@ function gerarPdfMicroGD(d) {
      impresso na seção própria) e a linha nem é impressa — o campo está oculto e
      vazio lá, e imprimi-lo daria "—" onde o dado existe em outro lugar; a
      ATUAL continua, é a potência que a UC já tem. O par de GERAÇÃO pertence ao
-     conjunto da fonte Solar: fora dela não é perguntado nem impresso. */
+     conjunto da fonte Solar: fora dela não é perguntado nem impresso — e dele
+     só resta a ATUAL, porque a nova/futura é a potência da usina, impressa em
+     linha própria acima. */
   const parPotencia = (pares, tipo, novaOuFutura, atual) => {
     if (tipo === "geracao" && d.fontePrimaria !== "Solar") return;
     const rot = (papel) => gdRotuloPotencia(tipo, papel, d.grupo);
-    const semNovaOuFutura = tipo === "consumo" && d.grupo !== "A";
+    const semNovaOuFutura =
+      tipo === "geracao" || (tipo === "consumo" && d.grupo !== "A");
     if (ehLigacaoNova) {
       if (!semNovaOuFutura) pares.push([rot("nova"), novaOuFutura]);
     } else {
@@ -285,7 +288,7 @@ function gerarPdfMicroGD(d) {
   const gerPairs = [
     ["Tipo de Fonte Primária", d.fontePrimaria],
     [
-      "Potência Ativa Instalada Total (kW)",
+      "Potência de geração (kW)",
       (d.potAtivaInstalada || "—") +
         (d.fastTrack === "Sim"
           ? ` (limite Fast Track: ${GD_FAST_LIMITE_USINA_KW} kW)`
@@ -294,7 +297,7 @@ function gerarPdfMicroGD(d) {
   ];
   // A geração que a UC já tem é a "atual" deste par — não há campo "Potência
   // já conectada" em separado.
-  parPotencia(gerPairs, "geracao", d.demandaGeracao, d.demandaGeracaoAtual);
+  parPotencia(gerPairs, "geracao", "", d.demandaGeracaoAtual);
   gerPairs.push(
     // Sem o caso "Outra: <texto livre>": a lista de tecnologias (GD_TIPO_GERACAO)
     // ficou fechada em máquina síncrona e conversor/inversor.

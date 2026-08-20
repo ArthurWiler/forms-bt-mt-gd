@@ -178,7 +178,8 @@ function gdEstadoInicial() {
     // _paresPotenciaGD() (js/app.js).
     demandaConsumo: "",
     demandaConsumoAtual: "",
-    demandaGeracao: "",
+    // Da geração só resta a ATUAL: a nova/futura era a potência da usina, que
+    // o formulário calcula em `potAtivaInstalada`.
     demandaGeracaoAtual: "",
     // 3 - Documentação (checklist)
     docs: {},

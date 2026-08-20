@@ -435,6 +435,31 @@ function gdBlocoEndereco(complemento) {
 }
 
 /* ===== lista de UCs (2ª metade da etapa "Dados das unidades") ===== */
+// Copia os dados da UC 1 para todas as outras (porte de replicarUC1Coletivo,
+// bt/js/coletivo-app.js). A IDENTIDADE de cada unidade não se replica —
+// complemento e instalação são o que a distingue das demais, e sobrescrevê-los
+// deixaria o agrupamento com N cópias do mesmo endereço. As cargas vão em cópia
+// profunda: compartilhar o objeto faria cada UC editar a carga das outras. O
+// acordeão (_acc) nasce fechado em cada destino, que é o estado de quem ainda
+// não abriu aquela unidade.
+function gdReplicarUC1() {
+  const base = state.ucs[0];
+  if (!base) return;
+  state.ucs = state.ucs.map((u, k) =>
+    k === 0
+      ? u
+      : Object.assign({}, base, {
+          cargas: JSON.parse(JSON.stringify(base.cargas || {})),
+          _acc: {},
+          complemento: u.complemento,
+          instalacao: u.instalacao,
+        }),
+  );
+  // Redesenha a lista e, no fim, já reaplica o preset residencial e recalcula
+  // os KPIs e o disjuntor geral do agrupamento.
+  gdRenderUcs();
+}
+
 function gdRenderUcs() {
   const box = $("#gdUcsBox");
   if (!box) return;
@@ -653,6 +678,19 @@ function gdRenderUcs() {
           },
         });
         gdRenderResultadoUC(disjBox, u);
+      }
+      // Replicar a UC 1 para as demais — dentro da própria UC 1, como no BT
+      // coletivo (bt/js/coletivo-app.js). Sozinha na lista não há destino.
+      if (ui === 0 && state.ucs.length > 1) {
+        const linha = document.createElement("div");
+        linha.className = "acao-central";
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "btn btn-ghost btn-outlined-acao";
+        btn.textContent = "Replicar dados para todas unidades";
+        btn.addEventListener("click", gdReplicarUC1);
+        linha.appendChild(btn);
+        corpo.appendChild(linha);
       }
       bloco.appendChild(corpo);
     }

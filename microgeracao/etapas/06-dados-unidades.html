@@ -1,3 +1,4 @@
+<!doctype html>
 <!--
   ============================================================
   ETAPA 6 (fluxo Coletivo/Agrupamento) — Dados das unidades
@@ -37,7 +38,8 @@
   <h3 class="card-title">Dados das unidades</h3>
   <!-- Conteúdo condicional: oculto por gdAplicarConteudoCarga() quando as
        cargas não se aplicam (Grupo A, solicitação que não mexe na potência ou
-       edificação em branco). A ETAPA continua no fluxo — só o miolo some. -->
+       edificação em branco). A ETAPA continua no fluxo — só o miolo some, e no
+       lugar dele entra o [data-carga-aviso] abaixo. -->
   <div data-carga-conteudo>
     <p class="card-sub">
       Informe a quantidade de unidades do agrupamento e os dados da área comum.
@@ -48,10 +50,7 @@
     <!-- Segundo bloco da etapa: as UCs em si. Fica no MESMO card, separado só
          pelo divider — antes era a etapa 7 ("Dados das unidades"). -->
     <h4 class="card-subtitle divider">Unidades consumidoras</h4>
-    <p class="card-sub">
-      Preencha os dados de cada UC. Em Conexão Nova não há disjuntor atual (a
-      instalação ainda não existe).
-    </p>
+    <p class="card-sub">Preencha os dados de cada Unidade consumidora.</p>
     <div id="gdUcsBox"></div>
 
     <!-- Demanda das UCs não residenciais: só no método ND-5.2, e só quando há
@@ -67,7 +66,10 @@
           type="number"
           data-k="demandaNaoResidencial"
           placeholder="0,0"
-          oninput="_sync('demandaNaoResidencial'); gdAtualizarCargasColetivo()"
+          oninput="
+            _sync('demandaNaoResidencial');
+            gdAtualizarCargasColetivo();
+          "
         />
       </div>
     </div>
@@ -75,6 +77,20 @@
     <!-- Rodapé: KPIs (carga instalada / demanda) + disjuntor geral do
          agrupamento, montados por gdRenderDisjGeral(). -->
     <div id="gdDisjGeralBox"></div>
+  </div>
+  <!-- No lugar dos campos quando as cargas não se aplicam por um motivo
+       DEFINITIVO (Grupo A ou solicitação que não mexe na potência) — ver
+       gdCargaNaoSeAplica() em js/app.js. Com o tipo de edificação ainda em
+       branco nem os campos nem o aviso aparecem: o card fica só com o
+       cabeçalho. -->
+  <div data-carga-aviso hidden>
+    <div class="cmg-aviso no-print">
+      <div class="cmg-aviso-icon" aria-hidden="true"></div>
+      <p class="cmg-aviso-texto">
+        Devido às características da sua solicitação, não é necessário detalhar
+        as cargas. Por favor, avance para o próximo passo.
+      </p>
+    </div>
   </div>
 </div>
 

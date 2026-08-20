@@ -285,6 +285,25 @@ document.addEventListener("click", (e) => {
 const gdEhColetivo = () =>
   state.edifTipo === "Edificação Coletiva ou Agrupamento";
 
+// "Tipo de edificação" é pergunta de BAIXA tensão: o fluxo Coletivo/Agrupamento
+// é o agrupamento da ND-5.2 e o atendimento sai do disjuntor. No Grupo A quem
+// dimensiona é a potência contratada e a subestação — nem o MT nem a
+// minigeração têm o campo. Some do Grupo A, e com ele o fluxo coletivo: sem
+// valor, gdEhColetivo() cai para falso e a etapa "Dados das unidades" fica na
+// versão individual (cujo conteúdo já não se aplica lá — ver
+// gdEtapaCargaDefinida).
+const gdPerguntaEdifTipo = () => state.grupo !== "A";
+// Campo oculto não guarda valor. aplicarPatch() não serve aqui: ele só escreve
+// no <select> oculto, e os botões do toggle continuariam com a opção marcada ao
+// voltar para o Grupo B. O `change` é o que faz montarToggles() redesenhá-los.
+function _limparEdifTipoGD() {
+  state.edifTipo = "";
+  $$('select[data-k="edifTipo"]').forEach((sel) => {
+    sel.value = "";
+    sel.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+}
+
 // Os CAMPOS de "Dados das unidades" só se aplicam quando:
 //   • Tipo de solicitação que MEXE na potência — ligação nova ou conexão de GD
 //     com alteração de potência disponibilizada (GD_SOLICITACOES_FORM_CARGA).
@@ -301,6 +320,17 @@ const gdEtapaCargaDefinida = () =>
   !!state.edifTipo &&
   state.grupo === "B" &&
   GD_SOLICITACOES_FORM_CARGA.includes(state.solicitacao);
+
+// Quando dizer, no lugar dos campos, que as cargas NÃO precisam ser detalhadas.
+// Não é a simples negação de gdEtapaCargaDefinida(): aquela também é falsa com
+// o "Tipo de edificação" ainda em branco no Grupo B, e ali não há o que
+// afirmar — o usuário só não chegou na resposta. O aviso exige um motivo
+// DEFINITIVO: Grupo A (a demanda é contratada, não sai de formulário de carga)
+// ou solicitação que não mexe na potência disponibilizada.
+const gdCargaNaoSeAplica = () =>
+  !!state.solicitacao &&
+  (state.grupo === "A" ||
+    !GD_SOLICITACOES_FORM_CARGA.includes(state.solicitacao));
 
 function gdAplicarFluxoEdificacao() {
   const coletivo = gdEhColetivo();
@@ -334,11 +364,17 @@ function gdAplicarFluxoEdificacao() {
 
 // Mostra/oculta o CONTEÚDO de "Dados das unidades" (os dois fragmentos) sem
 // mexer na etapa em si — ela permanece na sidebar com número e rótulo fixos.
-// Sem aviso no lugar dos campos: o card fica só com o cabeçalho.
+// No lugar dos campos entra o aviso de que não há cargas a detalhar, mas só
+// quando o motivo é definitivo (gdCargaNaoSeAplica): com a edificação ainda em
+// branco o card fica só com o cabeçalho, como antes.
 function gdAplicarConteudoCarga() {
   const aplica = gdEtapaCargaDefinida();
   $$("[data-carga-conteudo]").forEach((el) => {
     el.hidden = !aplica;
+  });
+  const avisar = !aplica && gdCargaNaoSeAplica();
+  $$("[data-carga-aviso]").forEach((el) => {
+    el.hidden = !avisar;
   });
 }
 
@@ -1003,11 +1039,18 @@ function onTelhadoArrendado() {
    No Grupo A o atendimento é dimensionado pela POTÊNCIA contratada,
    não pelo disjuntor — por isso nenhum dos dois se aplica lá
    (mesma lógica que rege os campos de _atualizarPotenciaContratada()).
+   E lá o próprio tipo de edificação não é perguntado (gdPerguntaEdifTipo):
+   sem a pergunta não há o que esperar, então o restante da etapa abre direto
+   — é nele que ficam a potência contratada e o bloco da subestação.
    ============================================================ */
 function onEdifTipoGD() {
   _sync("edifTipo");
+  const pergunta = gdPerguntaEdifTipo();
+  const campo = $("#edifTipoBox");
+  if (campo) campo.style.display = pergunta ? "" : "none";
+  if (!pergunta && state.edifTipo) _limparEdifTipoGD();
   const bloco = $("#atendimentoBloco");
-  if (bloco) bloco.style.display = state.edifTipo ? "" : "none";
+  if (bloco) bloco.style.display = !pergunta || state.edifTipo ? "" : "none";
   const nova = _ehLigacaoNova();
   const individual = state.edifTipo === "Edificação Individual";
   const ehBT = state.grupo === "B";
@@ -1451,6 +1494,10 @@ function _ehAlteracaoPotenciaGD() {
 // Exceção do par de GERAÇÃO: ele pertence ao conjunto de campos da fonte
 // SOLAR (ver onFonte) — nas demais fontes o par inteiro some da tela, junto
 // com o resto do bloco, até que os campos próprios de cada uma sejam definidos.
+// E dele só restou a potência ATUAL: a nova/futura era o mesmo dado da
+// potência da usina (potAtivaInstalada), que o formulário JÁ calcula a partir
+// dos módulos e inversores e apresenta no KPI #gdGeracaoKpis. Perguntá-la
+// pedia ao usuário um número que a própria etapa deriva.
 // As regras valem para os três consumidores do par (etapa, validação e
 // prévia), por isso moram aqui e não em cada um.
 function _paresPotenciaGD(tipo) {
@@ -1462,6 +1509,7 @@ function _paresPotenciaGD(tipo) {
     // Sem solicitação escolhida não há o que perguntar: os campos ficam fora
     // da tela, como a UC existente e a mudança de local.
     verNovaOuFutura:
+      tipo !== "geracao" &&
       !!state.solicitacao &&
       !consumoBT &&
       !geracaoNaoFV &&
@@ -1491,14 +1539,20 @@ function _atualizarPotenciaContratada() {
     gdRotuloPotencia("consumo", "atual", state.grupo),
   );
 }
-// Mostra/oculta um campo de potência e escreve o seu rótulo. O "*" vai no
-// innerHTML porque initFormulario() roda ANTES do CemigMarcadores.aplicar():
-// sem ele o campo entraria na tela como "(opcional)".
+// Mostra/oculta um campo de potência e escreve o seu rótulo. O rótulo é texto
+// PURO: a convenção do projeto é obrigatório SEM "*" (ver
+// shared/js/form-marcadores.js), e um "*" escrito aqui reaparecia a cada
+// chamada — esta função roda depois do CemigMarcadores.aplicar(), que só limpa
+// os "*" existentes na sua própria passada. Quem impede o "(opcional)" é o
+// `data-req` marcado abaixo: aplicar() devolve cedo em controle já obrigatório,
+// inclusive na primeira passada (initFormulario roda antes dele).
+// textContent também apaga um "(opcional)" anexado enquanto o campo esteve
+// oculto — ali ele perde o data-req e volta a contar como opcional.
 function _campoPotenciaGD(boxSel, lblSel, chave, ver, rotulo) {
   const box = $(boxSel);
   if (box) box.style.display = ver ? "" : "none";
   const lbl = $(lblSel);
-  if (lbl) lbl.innerHTML = rotulo + (ver ? ' <span class="req">*</span>' : "");
+  if (lbl) lbl.textContent = rotulo;
   const inp = $(`[data-k="${chave}"]`);
   if (!inp) return;
   if (ver) inp.setAttribute("data-req", "");
@@ -1512,18 +1566,12 @@ function _campoPotenciaGD(boxSel, lblSel, chave, ver, rotulo) {
   }
 }
 /* --- Etapa "Dados da geração" --- */
-// Potência de GERAÇÃO: mesmo desenho do par de consumo da etapa 4 — só os
-// rótulos mudam entre os grupos. A geração que a UC já tem é a "atual" deste
-// par; não existe mais um campo "Potência já conectada" em separado.
+// Potência de GERAÇÃO: sobrou um campo só, a ATUAL — a geração que a UC já
+// tem. A nova/futura saiu (é a potência da usina, calculada; ver
+// _paresPotenciaGD), e não existe mais um campo "Potência já conectada" em
+// separado. Só o rótulo muda entre os grupos.
 function _atualizarPotenciaGeracao() {
-  const { nova, verNovaOuFutura, verAtual } = _paresPotenciaGD("geracao");
-  _campoPotenciaGD(
-    "#demandaGeracaoBox",
-    "#demandaGeracaoLbl",
-    "demandaGeracao",
-    verNovaOuFutura,
-    gdRotuloPotencia("geracao", nova ? "nova" : "futura", state.grupo),
-  );
+  const { verAtual } = _paresPotenciaGD("geracao");
   _campoPotenciaGD(
     "#demandaGeracaoAtualBox",
     "#demandaGeracaoAtualLbl",
@@ -1747,12 +1795,7 @@ function onFonte() {
   const ehHidro = state.fontePrimaria === "Hidráulica";
   const ehBio = GD_FONTES_CENTRAL_TERMICA.includes(state.fontePrimaria);
   const ehEol = state.fontePrimaria === "Eólica";
-  [
-    "#tipoGeracaoBox",
-    "#modalidadeBox",
-    "#qtdUCsCreditoBox",
-    "#potAtivaBox",
-  ].forEach((s) => {
+  ["#tipoGeracaoBox", "#modalidadeBox", "#qtdUCsCreditoBox"].forEach((s) => {
     const el = $(s);
     if (el) el.style.display = ehFV ? "" : "none";
   });
@@ -1793,8 +1836,8 @@ function onFonte() {
     state.tipoGeracao !== GD_TIPO_GERACAO_INVERSOR
   )
     aplicarPatch({ tipoGeracao: GD_TIPO_GERACAO_INVERSOR });
-  const pot = $(`[data-k="potAtivaInstalada"]`);
-  if (pot) pot.disabled = ehFV;
+  // A potência da usina não tem mais campo a habilitar/desabilitar: ela é
+  // sempre derivada (KPI no Solar, espelho da fonte nas demais).
   // O par de potências de geração também espera a fonte (ver
   // _atualizarPotenciaGeracao).
   _atualizarPotenciaGeracao();
@@ -1803,11 +1846,6 @@ function onFonte() {
 // onTipoGeracao() saiu junto com a opção "Outra (especificar):": ela era a
 // única condicional da tecnologia (revelava o campo "Especificar"), e o
 // <select> já grava o estado pelo bindInputs — não sobrou handler a chamar.
-function onPotAtivaInput(el) {
-  if (state.fontePrimaria === "Solar") return; // calculado, campo travado
-  onNumDec(el);
-  recalcGeracao();
-}
 // Fontes cujo bloco próprio já declara a potência da usina: a chave do campo
 // "Potência Instalada (kW)" de cada uma. O valor é copiado para
 // potAtivaInstalada (ver recalcGeracao), que é o que PDF, prévia e Fast Track
@@ -1822,13 +1860,44 @@ const GD_POT_INSTALADA_POR_FONTE = {
   "Cogeração Qualificada": "bioPotInstalada",
   Eólica: "eolPotInstalada",
 };
-// Grava a potência da usina no estado E no input genérico (#potAtivaBox): ele
-// fica fora de tela fora do Solar, mas syncState() relê o DOM antes da prévia e
-// apagaria o valor derivado se o campo ficasse vazio.
+// Grava a potência da usina no estado E no input portador (type=hidden, na
+// etapa): ele nunca aparece em tela, mas syncState() relê o DOM antes da prévia
+// e apagaria o valor derivado se o campo ficasse vazio.
 function _gravarPotAtivaGD(valor) {
   state.potAtivaInstalada = valor;
   const inp = $(`[data-k="potAtivaInstalada"]`);
   if (inp) inp.value = valor;
+}
+// Resumo da geração em KPIs — mesmo molde de renderResumoSEGD()
+// (js/subestacao.js). Substituiu o campo "Potência ativa instalada total da
+// usina": o número nunca foi digitado (é o MENOR entre módulos e inversores),
+// e ao lado das duas parcelas ele se explica sozinho.
+// Fica oculto enquanto nada há para mostrar — três travessões no topo do
+// bloco liam como cálculo já feito, dando zero.
+function _renderKpisGeracaoGD(potModulos, potInversores) {
+  const box = $("#gdGeracaoKpis");
+  if (!box) return;
+  const usina = parseFloat(state.potAtivaInstalada) || 0;
+  const pronto = usina > 0 || potModulos > 0 || potInversores > 0;
+  box.style.display = pronto ? "" : "none";
+  if (!pronto) {
+    box.innerHTML = "";
+    return;
+  }
+  const kw = (v) => (v > 0 ? `${fmt2(v)} kW` : "—");
+  box.innerHTML = [
+    ["Potência de geração", kw(usina)],
+    ["Potência dos módulos", kw(potModulos)],
+    ["Potência dos inversores", kw(potInversores)],
+  ]
+    .map(
+      ([rot, val]) =>
+        `<div class="resultado-card">
+          <div class="resultado-card-label">${rot}</div>
+          <div class="resultado-card-valor">${val}</div>
+        </div>`,
+    )
+    .join("");
 }
 function recalcGeracao() {
   // Módulos e inversores têm a potência nominal digitada em kW, então o total
@@ -1862,6 +1931,7 @@ function recalcGeracao() {
     const chave = GD_POT_INSTALADA_POR_FONTE[state.fontePrimaria];
     if (chave) _gravarPotAtivaGD(state[chave] || "");
   }
+  _renderKpisGeracaoGD(pm, pi);
   // Regra 5: Fast Track trava a modalidade em Autoconsumo local e limita 7,5 kW.
   const fast = _ehFastTrack();
   const potUsina = parseFloat(state.potAtivaInstalada) || 0;
@@ -1970,10 +2040,12 @@ function validarExportacao() {
   if (d.fuso && d.utmE && d.utmN && !utm.ok)
     faltas.push("Coordenada UTM fora da faixa do fuso");
   req(d.solicitacao, "Tipo de Solicitação");
-  // Tipo de edificação da etapa 5 (Individual × Coletiva/Agrupamento). O campo
-  // `edificacao` (4 opções normativas) segue na área de não alocados e por
-  // isso NÃO é exigido aqui — não há como preenchê-lo na tela.
-  req(d.edifTipo, "Tipo de edificação");
+  // Tipo de edificação da etapa 5 (Individual × Coletiva/Agrupamento). Só no
+  // Grupo B: no Grupo A o campo nem entra em tela (ver gdPerguntaEdifTipo), e
+  // exigi-lo travaria a exportação sem nada a preencher. O campo `edificacao`
+  // (4 opções normativas) segue na área de não alocados e pelo mesmo motivo
+  // NÃO é exigido aqui.
+  if (gdPerguntaEdifTipo()) req(d.edifTipo, "Tipo de edificação");
   req(d.ramal, "Ramal");
   req(d.telhadoArrendado, "Telhado arrendado");
   // Unidade arrendada: obrigatória só quando há arrendamento (os campos ficam
@@ -2003,7 +2075,12 @@ function validarExportacao() {
     req(d.mudLatitude, "Latitude do novo local do padrão");
     req(d.mudLongitude, "Longitude do novo local do padrão");
   }
-  if (GD_SOLICITACOES_FORM_CARGA.includes(d.solicitacao)) {
+  // Formulário de Carga: exigido exatamente quando os campos ENTRAM em tela —
+  // por isso a condição é a MESMA que os mostra (gdEtapaCargaDefinida), e não
+  // só o tipo de solicitação. No Grupo A não há formulário de carga (a demanda
+  // é contratada) e o conteúdo da etapa "Dados das unidades" fica oculto:
+  // cobrá-lo ali travava a exportação sem nada a preencher.
+  if (gdEtapaCargaDefinida()) {
     if (gdEhColetivo()) {
       // Coletivo/Agrupamento: a carga é das UCs do agrupamento (etapa "Dados
       // das unidades"), não do state.cargas de UC única.
@@ -2037,7 +2114,7 @@ function validarExportacao() {
   // nada além da escolha da fonte.
   if (d.fontePrimaria === "Solar") {
     req(d.tipoGeracao, "Tecnologia de geração");
-    req(d.potAtivaInstalada, "Potência Ativa Instalada Total");
+    req(d.potAtivaInstalada, "Potência de geração");
     req(d.modalidade, "Modalidade de compensação");
   } else if (d.fontePrimaria === "Hidráulica") {
     req(d.hidroPotAparente, "Potência Aparente (kVA)");
@@ -2082,11 +2159,10 @@ function validarExportacao() {
     faltas.push(
       `Potência da usina acima do limite Fast Track (${GD_FAST_LIMITE_USINA_KW} kW)`,
     );
-  // Potência de geração — mesmo critério do par de consumo acima. A geração já
-  // conectada é a "atual" deste par: em "GD Existente COM Alteração" (conexão
-  // existente sem alteração de potência disponibilizada) ela é justamente o
-  // campo cobrado aqui. _paresPotenciaGD() já devolve o par vazio fora do Solar.
-  _reqParPotenciaGD(req, "geracao", d.demandaGeracao, d.demandaGeracaoAtual);
+  // Potência de geração já conectada — o que restou do par (a nova/futura virou
+  // a potência da usina, cobrada acima). Vazio na ligação nova e fora do Solar,
+  // pelo mesmo _paresPotenciaGD() que governa a etapa.
+  _reqParPotenciaGD(req, "geracao", "", d.demandaGeracaoAtual);
   if (!d.decl84) faltas.push("Declaração 8.4 (obrigatória)");
   if (!d.decl86) faltas.push("Declaração 8.6 (obrigatória)");
   // Data de vencimento da fatura: opcional (não entra em `req`).
@@ -2200,7 +2276,11 @@ function renderPreviewGD() {
   // Etapa 5 — Tipo de atendimento (page-4 no stepper).
   let atend =
     pvCampo("Solicitação", d.solicitacao, { full: true, step: "atendimento" }) +
-    pvCampo("Edificação", d.edifTipo, { step: "atendimento" }) +
+    // "Edificação" só existe no Grupo B (ver gdPerguntaEdifTipo): fora dele a
+    // linha sairia com o travessão de campo vazio.
+    (gdPerguntaEdifTipo()
+      ? pvCampo("Edificação", d.edifTipo, { step: "atendimento" })
+      : "") +
     pvCampo("Ramal", d.ramal, { step: "atendimento" }) +
     // Rótulo formatado (kV no Grupo A) sobre o volt "cru" guardado no estado.
     pvCampo(
@@ -2292,14 +2372,9 @@ function renderPreviewGD() {
     pvSecao(
       "4 — Geração",
       pvCampo("Fonte", d.fontePrimaria, {}) +
-        pvCampo("Pot. Ativa Instalada (kW)", d.potAtivaInstalada, {}) +
+        pvCampo("Potência de geração (kW)", d.potAtivaInstalada, {}) +
         pvCampo("Modalidade", d.modalidade, {}) +
-        _pvParPotenciaGD(
-          "geracao",
-          d.demandaGeracao,
-          d.demandaGeracaoAtual,
-          "geracao",
-        ) +
+        _pvParPotenciaGD("geracao", "", d.demandaGeracaoAtual, "geracao") +
         (d.fontePrimaria === "Solar"
           ? pvCampo(
               "Módulos / Inversores (kW)",

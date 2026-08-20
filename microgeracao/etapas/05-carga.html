@@ -15,7 +15,8 @@
   <h3 class="card-title">Dados das unidades</h3>
   <!-- Conteúdo condicional: oculto por gdAplicarConteudoCarga() quando as
        cargas não se aplicam (Grupo A, solicitação que não mexe na potência ou
-       edificação em branco). A ETAPA continua no fluxo — só o miolo some. -->
+       edificação em branco). A ETAPA continua no fluxo — só o miolo some, e no
+       lugar dele entra o [data-carga-aviso] abaixo. -->
   <div data-carga-conteudo>
     <p class="card-sub">
       Para a unidade consumidora, detalhe as cargas para calcularmos a demanda
@@ -33,6 +34,20 @@
     </div>
     <div id="calcDemandaBox" style="margin-top: var(--cmg-space-8)"></div>
     <div id="resultadoCargaBox"></div>
+  </div>
+  <!-- No lugar dos campos quando as cargas não se aplicam por um motivo
+       DEFINITIVO (Grupo A ou solicitação que não mexe na potência) — ver
+       gdCargaNaoSeAplica() em js/app.js. Com o tipo de edificação ainda em
+       branco nem os campos nem o aviso aparecem: o card fica só com o
+       cabeçalho. -->
+  <div data-carga-aviso hidden>
+    <div class="cmg-aviso no-print">
+      <div class="cmg-aviso-icon" aria-hidden="true"></div>
+      <p class="cmg-aviso-texto">
+        Devido às características da sua solicitação, não é necessário detalhar
+        as cargas. Por favor, avance para o próximo passo.
+      </p>
+    </div>
   </div>
 </div>
 <div class="nav-bottom no-print">
