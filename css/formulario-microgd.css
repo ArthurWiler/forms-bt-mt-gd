@@ -1036,9 +1036,8 @@ textarea.ta {
   margin-bottom: 14px;
 }
 
-/* ===== Galeria visual de tipos de subestação (MICROGD / MINIGD) =====
-   Mesma experiência por cards do módulo MT. O selo "i" exibe a descrição
-   (ND 5.3) somente em hover, via .se-tooltip. */
+/* ===== Galeria visual de tipos de subestação (MICROGD) =====
+   Mesma experiência por cards do módulo MT. */
 .se-gallery {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -1090,52 +1089,24 @@ textarea.ta {
   font-weight: 700;
   color: var(--verde-escuro);
 }
-.se-info {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: rgba(10, 47, 39, 0.8);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
-  font-style: italic;
-  font-family: Georgia, serif;
+/* .se-info / .se-tooltip removidos junto com o badge (i) da galeria de tipos
+   de subestação — mesma decisão do módulo MT (ver renderGaleriaSEGD em
+   microgeracao/js/subestacao.js). A minigeração tem cópias próprias dessas
+   regras e segue com o tooltip. */
+
+/* ===== Resumo da geração: KPIs + aviso do limite Fast Track =====
+   Os dois andam juntos (o aviso fala do número dos cards), mas cada um tem a
+   sua própria condição de exibição — por isso o VÃO mora no wrapper e não em
+   cada filho: 32px acima (o passo vertical da etapa, como .bloco-sub-gap) e
+   16px entre eles. Nem .resultado-kpis nem .cmg-aviso trazem margem própria;
+   nos demais blocos o respiro vem de um .divider, que aqui não existe.
+   Quem liga o wrapper é recalcGeracao() — o display inline do HTML some e
+   esta regra passa a valer, como no .grid-subgrupo. */
+.cemig-microgd #gdGeracaoResumo {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2;
-  cursor: help;
-}
-.se-tooltip {
-  position: absolute;
-  bottom: calc(100% + 10px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: 240px;
-  background: var(--verde-escuro);
-  color: #fff;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 11.5px;
-  line-height: 1.5;
-  text-align: left;
-  padding: 10px 12px;
-  border-radius: 8px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity 0.18s,
-    visibility 0.18s;
-  z-index: 30;
-  pointer-events: none;
-}
-.se-card:hover .se-tooltip {
-  opacity: 1;
-  visibility: visible;
+  flex-direction: column;
+  gap: var(--cmg-space-4);
+  margin-top: var(--cmg-space-8);
 }
 
 /* ============================================================

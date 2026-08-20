@@ -1294,14 +1294,8 @@ function onEnderecoPadraoGD() {
 }
 
 /* --- Subestação (Grupo A / migração BT→MT) --- */
-// Descrições resumidas (ND-5.3) — mesmas do módulo MT/BT (tooltip "i").
-const SE_INFO_GD = {
-  1: "Aérea em poste: transformador instalado na rede aérea, para pequenas potências. Medição e proteção na base.",
-  2: "Medição e proteção (com ou sem transformação), em alvenaria. Desde 03/07/2023 não se aplica a fornecimento individual em 13,8 kV; desde 01/01/2024 também não em compartilhado 13,8 kV. Permitida em 22/34,5 kV e uso compartilhado.",
-  4: "Blindada: cubículo metálico compartimentado, com alívio de pressão e ventilação, abrigado ou ao tempo. Proteção na média tensão, sem transformação. Atende demandas de até 2500 kW.",
-  5: "Medição, proteção e transformação, em alvenaria. Até 300 kW, com um transformador de 75 a 300 kVA. Proteção por chave fusível tripolar; medição a 3 elementos na média tensão.",
-  8: "Blindada Simplificada (SEBS): subestação blindada metálica para uma única unidade, até 300 kW. Medição na média tensão, proteção por chave fusível tripolar e disjuntor de baixa tensão.",
-};
+// SE_INFO_GD (descrições ND-5.3 do tooltip "i" da galeria) saiu junto com o
+// selo — ver renderGaleriaSEGD em js/subestacao.js.
 /* A implementação ANTIGA da subestação (galeria #seBox + tabela #trafosBox,
    com _mostrarSE/_seCtx/_tiposSEvisiveis/atualizarSE/renderTrafosGD/addTrafoGD)
    foi substituída pelo bloco técnico portado do MT — ver js/subestacao.js,
@@ -1870,19 +1864,27 @@ function _gravarPotAtivaGD(valor) {
 }
 // Resumo da geração em KPIs — mesmo molde de renderResumoSEGD()
 // (js/subestacao.js). Substituiu o campo "Potência ativa instalada total da
-// usina": o número nunca foi digitado (é o MENOR entre módulos e inversores),
-// e ao lado das duas parcelas ele se explica sozinho.
-// Fica oculto enquanto nada há para mostrar — três travessões no topo do
-// bloco liam como cálculo já feito, dando zero.
+// usina": o número nunca foi digitado (sai dos inversores), e ao lado das duas
+// parcelas ele se explica sozinho — dá para ver o quanto os módulos passam do
+// que o inversor entrega.
+// Só vale no Solar: nas demais fontes não há módulos nem inversores a somar, e
+// a potência da usina é declarada no bloco da própria fonte. Essa condição
+// vinha da posição no DOM (dentro de #fvBlocos) e agora é explícita — o bloco
+// mudou de lugar para acompanhar o aviso do Fast Track, que vale em qualquer
+// fonte. Devolve se ficou visível: quem monta o vão é o wrapper.
+// Fica oculto enquanto nada há para mostrar — três travessões liam como
+// cálculo já feito, dando zero.
 function _renderKpisGeracaoGD(potModulos, potInversores) {
   const box = $("#gdGeracaoKpis");
-  if (!box) return;
+  if (!box) return false;
   const usina = parseFloat(state.potAtivaInstalada) || 0;
-  const pronto = usina > 0 || potModulos > 0 || potInversores > 0;
+  const pronto =
+    state.fontePrimaria === "Solar" &&
+    (usina > 0 || potModulos > 0 || potInversores > 0);
   box.style.display = pronto ? "" : "none";
   if (!pronto) {
     box.innerHTML = "";
-    return;
+    return false;
   }
   const kw = (v) => (v > 0 ? `${fmt2(v)} kW` : "—");
   box.innerHTML = [
@@ -1898,6 +1900,7 @@ function _renderKpisGeracaoGD(potModulos, potInversores) {
         </div>`,
     )
     .join("");
+  return true;
 }
 function recalcGeracao() {
   // Módulos e inversores têm a potência nominal digitada em kW, então o total
@@ -1918,10 +1921,12 @@ function recalcGeracao() {
   const txt = (v) => (v > 0 ? fmt2(v) + " kW" : "");
   if (dispM) dispM.textContent = txt(pm);
   if (dispI) dispI.textContent = txt(pi);
-  // Regra 6: em FV a Potência Ativa Instalada = MENOR entre módulos e inversores.
+  // Em FV a potência da usina é a dos INVERSORES: são eles que limitam a
+  // injeção na rede, então um arranjo de módulos maior (sobredimensionamento,
+  // comum no FV) não aumenta o que a usina entrega. Sem inversores declarados a
+  // potência fica vazia — e a validação da exportação a cobra.
   if (state.fontePrimaria === "Solar") {
-    const calc = pm > 0 && pi > 0 ? Math.min(pm, pi) : pm || pi || 0;
-    _gravarPotAtivaGD(calc ? String(calc) : "");
+    _gravarPotAtivaGD(pi ? String(pi) : "");
   } else {
     // Fora do FV a potência da usina é DECLARADA no campo "Potência Instalada
     // (kW)" do bloco da fonte — um campo só. Espelhar aqui evita perguntar o
@@ -1931,13 +1936,17 @@ function recalcGeracao() {
     const chave = GD_POT_INSTALADA_POR_FONTE[state.fontePrimaria];
     if (chave) _gravarPotAtivaGD(state[chave] || "");
   }
-  _renderKpisGeracaoGD(pm, pi);
+  const verKpis = _renderKpisGeracaoGD(pm, pi);
   // Regra 5: Fast Track trava a modalidade em Autoconsumo local e limita 7,5 kW.
   const fast = _ehFastTrack();
   const potUsina = parseFloat(state.potAtivaInstalada) || 0;
   const excede = fast && potUsina > GD_FAST_LIMITE_USINA_KW;
   const aviso = $("#fastExcedeAviso");
   if (aviso) aviso.style.display = excede ? "" : "none";
+  // O wrapper dos dois carrega o vão de 32px: sem desligá-lo quando ambos estão
+  // ocultos, a margem sobraria como um buraco no meio da etapa.
+  const resumo = $("#gdGeracaoResumo");
+  if (resumo) resumo.style.display = verKpis || excede ? "" : "none";
   // Grid Zero trava a mesma modalidade, por outro motivo: o sistema não injeta
   // na rede, então não há excedente para transferir a outra unidade — sobra o
   // autoconsumo local. O limite de 7,5 kW continua exclusivo do Fast Track.

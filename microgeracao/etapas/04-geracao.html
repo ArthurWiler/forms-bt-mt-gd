@@ -111,24 +111,14 @@
         oninput="onSoDigitos(this)"
       />
     </div>
-    <!-- Potência da usina: NUNCA é digitada. No Solar sai do cálculo (menor
-         entre módulos e inversores) e aparece no KPI ao final do conjunto
-         (#gdGeracaoKpis); nas demais fontes é espelhada do campo "Potência
-         Instalada (kW)" do bloco da própria fonte. O input fica só como
+    <!-- Potência da usina: NUNCA é digitada. No Solar é a potência dos
+         inversores (são eles que limitam a injeção) e aparece no KPI logo
+         abaixo do conjunto (#gdGeracaoKpis); nas demais fontes é espelhada do
+         campo "Potência Instalada (kW)" do bloco da própria fonte. Fica só como
          PORTADOR do estado: _gravarPotAtivaGD() escreve nele e syncState()
          o relê antes da prévia — sem ele o valor derivado se perderia. Sendo
          type=hidden, os marcadores o ignoram (nem "*" nem "(opcional)"). -->
     <input type="hidden" data-k="potAtivaInstalada" />
-    <div class="field col-span-2" id="fastExcedeAviso" style="display: none">
-      <div class="cmg-aviso cmg-aviso--warn no-print">
-        <div class="cmg-aviso-icon" aria-hidden="true"></div>
-        <p class="cmg-aviso-texto">
-          <strong>Limite do Fast Track excedido. </strong>
-          No enquadramento Fast Track, a potência da usina não pode ser superior
-          a 7,5 kW (7500 W).
-        </p>
-      </div>
-    </div>
   </div>
 
   <div id="fvBlocos">
@@ -246,16 +236,29 @@
         <div class="readonly-val" id="gd_potTotalInversores"></div>
       </div>
     </div>
+  </div>
 
-    <!-- Resumo da geração (KPIs) — montado por recalcGeracao(), no mesmo molde
-         de #blocoResumoSE (etapa 4): fica DEPOIS dos blocos que o alimentam.
-         Dentro de #fvBlocos de propósito: o KPI só faz sentido no Solar, e
-         onFonte() já esconde o bloco inteiro nas demais fontes. -->
-    <div
-      class="resultado-kpis resultado-kpis--linha"
-      id="gdGeracaoKpis"
-      style="display: none"
-    ></div>
+  <!-- Resumo da geração: os KPIs e o aviso do limite Fast Track, que fala
+       justamente do número mostrado neles. Fica FORA de #fvBlocos de propósito:
+       o KPI só vale no Solar, mas o aviso vale em qualquer fonte (a potência da
+       usina é espelhada das demais) — dentro do bloco Solar ele sumiria na
+       Hidráulica, Eólica e Biomassa.
+       O wrapper é quem carrega o vão (32px acima, 16px entre os dois filhos),
+       e recalcGeracao() o liga/desliga: sem isso a margem sobraria com o bloco
+       vazio. O display inline é o mesmo mecanismo do .grid-subgrupo — o JS
+       alterna entre "none" e "", e com "" a regra do CSS volta a valer. -->
+  <div id="gdGeracaoResumo" style="display: none">
+    <div class="resultado-kpis resultado-kpis--linha" id="gdGeracaoKpis"></div>
+    <div id="fastExcedeAviso" style="display: none">
+      <div class="cmg-aviso cmg-aviso--warn no-print">
+        <div class="cmg-aviso-icon" aria-hidden="true"></div>
+        <p class="cmg-aviso-texto">
+          <strong>Limite do Fast Track excedido. </strong>
+          No enquadramento Fast Track, a potência da usina não pode ser superior
+          a 7,5 kW (7500 W).
+        </p>
+      </div>
+    </div>
   </div>
 
   <!-- Conjunto da fonte HIDRÁULICA (ver onFonte): dados da central e do

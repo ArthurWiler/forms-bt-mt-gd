@@ -585,6 +585,14 @@
 .cemig-mtform .cub-card [id^="cubDemandaAlert"]:not(:empty) {
   margin-top: 14px;
 }
+/* Mesma ideia na microgeração, um nível acima: o aviso de demanda × potência
+   vem depois da LISTA de transformadores, não dentro de um card, então o vão é
+   o passo vertical da etapa (32px) e não o de 14px entre cards. `:not(:empty)`
+   porque o conteúdo é injetado — sem ele, a margem sobraria com tudo em ordem
+   (o .cmg-aviso tem margin:0 por convenção: o respiro é de quem o contém). */
+.cemig-microgd #demandaVsPotenciaAlert:not(:empty) {
+  margin-top: var(--cmg-space-8);
+}
 /* Os campos do cubículo ficam sobre o cinza do card: fundo branco como nos
    demais campos de rótulo flutuante. */
 .cemig-mtform .cub-card .field {
@@ -732,13 +740,15 @@
    --cmg-space-2 abaixo, apertado para uma faixa de cards. O respiro acima e
    abaixo do bloco inteiro vem do .divider do próprio título, igual aos demais
    blocos da etapa — sem margem extra aqui, que somaria duas vezes. */
-.cemig-mtform #blocoResumoSE .resultado-kpis {
+.cemig-mtform #blocoResumoSE .resultado-kpis,
+.cemig-microgd #blocoResumoSE .resultado-kpis {
   margin-top: var(--cmg-space-4);
 }
 /* Os cards da faixa têm altura própria (rótulo de 1 ou 2 linhas): stretch faz
    todos acompanharem o mais alto, senão o de rótulo curto ("Cubículos") fica
    visivelmente mais baixo que os vizinhos. */
-.cemig-mtform #blocoResumoSE .resultado-kpis--linha {
+.cemig-mtform #blocoResumoSE .resultado-kpis--linha,
+.cemig-microgd #blocoResumoSE .resultado-kpis--linha {
   align-items: stretch;
 }
 

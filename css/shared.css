@@ -1806,6 +1806,25 @@ label.restricao-aceite input[type="checkbox"] {
   bottom: -20px;
   margin: 0;
 }
+/* Somente-leitura AINDA SEM valor (ex.: "Potência total calculada", que só
+   existe depois da quantidade × potência nominal): o bloco acima fixa o visual
+   de campo PREENCHIDO, mas enquanto o valor não chega o campo é um campo vazio
+   como qualquer outro — fundo branco e rótulo ocupando a célula. Repete o
+   estado "placeholder" do rótulo flutuante; a borda é a mesma nos dois estados,
+   por isso só fundo e rótulo mudam aqui. */
+:is(.cemig-form, .cemig-lote)
+  .field:not(.field--plain):has(> .readonly-val:empty) {
+  background: var(--cmg-surface);
+}
+:is(.cemig-form, .cemig-lote)
+  .field:not(.field--plain):has(> .readonly-val:empty)
+  > label {
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--cmg-neutral-600);
+}
 /* "(opcional)" no rótulo — peso menor e itálico (ver componente Field). */
 .cemig-form .field label .opt {
   font-weight: 400;

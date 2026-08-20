@@ -533,7 +533,11 @@ function preencherTiposSEGD() {
 /* Galeria visual dos modelos: os <select> ficam como fonte de estado e são
    espelhados pelos cards. Usa as imagens em base64 que a micro já carrega
    (SUBESTACAO_IMGS_B64) — o MT usa arquivos soltos, cujo caminho relativo não
-   valeria a partir de microgeracao/. */
+   valeria a partir de microgeracao/.
+   Sem o selo (i) com a descrição ND-5.3: era uma implementação legada só desta
+   tela (círculo escuro com "i" em serifa, balão próprio), fora do tooltip
+   canônico do projeto. O MT já o havia removido; aqui o card ficou só com a
+   foto e o rótulo, como lá. */
 function renderGaleriaSEGD(containerId, selectId) {
   const cont = $("#" + containerId),
     sel = $("#" + selectId);
@@ -546,7 +550,6 @@ function renderGaleriaSEGD(containerId, selectId) {
       const n = (String(o.value).match(/(\d+)/) || [])[1];
       const marcado = o.value === sel.value ? " selected" : "";
       return `<div class="se-card${marcado}" onclick="selecionarSEGD('${selectId}','${o.value}')">
-      ${n && SE_INFO_GD[n] ? `<span class="se-info">i<span class="se-tooltip">${SE_INFO_GD[n]}</span></span>` : ""}
       ${n && imgs[n] ? `<img src="${imgs[n]}" alt="${o.value}">` : ""}
       <div class="lbl">${o.value}</div>
     </div>`;
