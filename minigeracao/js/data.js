@@ -12,18 +12,39 @@ const GD_CLASSES = [
   "Iluminação Pública",
   "Serviço Público",
 ];
+// Tipos de solicitação. O texto é o NORMATIVO: é ele que as regras leem
+// (_ehLigacaoNova, _ehAlteracaoDemanda, GD_SOLICITACOES_FORM_CARGA) e o que sai
+// impresso no PDF. A ordem é a lógica do microGD — ligação nova, existente SEM
+// alteração, existente COM alteração, geração já existente — e não a alfabética
+// de antes: o usuário lê a lista do caso mais simples para o mais específico.
 const GD_SOLICITACOES = [
-  "Conexão de GD em Unidade Consumidora Existente COM Alteração de Demanda Contratada",
-  "Conexão de GD em Unidade Consumidora Existente SEM Alteração de Demanda Contratada",
-  "GD Existente COM Alteração de Potência Ativa Instalada Total de Geração",
   "Ligação de Nova Unidade Consumidora COM Geração Distribuída",
+  "Conexão de GD em Unidade Consumidora Existente SEM Alteração de Demanda Contratada",
+  "Conexão de GD em Unidade Consumidora Existente COM Alteração de Demanda Contratada",
+  "GD Existente COM Alteração de Potência Ativa Instalada Total de Geração",
 ];
 const GD_TENSAO_A = ["13800", "22000", "34500"];
 const GD_TENSAO_B = ["127/220", "120/240"];
 const GD_RAMAL = ["Aéreo", "Subterrâneo"];
-const GD_TIPOS_SE = ["Nº 1", "Nº 2", "Nº 4", "Nº 5", "Nº 8"];
+/* GD_TIPOS_SE saiu: o catálogo de subestações passou a vir de
+   CalculoMT.tiposSubestacao() / tiposSubestacaoPermitidos() (mt/js/calculo.js),
+   junto com o bloco técnico portado do MT — ver js/subestacao.js. Fonte única
+   com o formulário de MT e com a microgeração, para as três telas não
+   divergirem. Os rótulos de lá são completos ("Subestação Nº 1"), não os
+   abreviados ("Nº 1") que esta lista trazia. */
 // Transformadores: campo livre (qualquer potência, inclusive > RT, ex.: 1500/2000 kVA). Sem lista fixa.
 const GD_TIPO_LIG_TRAFO = ["∆-Y", "∆-∆", "Y-∆", "Y-Y"];
+// Dispositivos de partida de motor — mesma lista do MT (mt/js/dados.js) e da
+// microgeração, usada pelos cards de "Motores e cargas especiais" da etapa 4.
+const GD_DISPOSITIVOS_MOTOR = [
+  "Chave Série-Paralelo",
+  "Partida Estrela-Triângulo",
+  "Chave Compensadora",
+  "Resistência/Reatância Primária",
+  "Resistência Rotórica",
+  "Soft-Starter",
+  "Outro",
+];
 const GD_ENTRADA_ENERGIA = [
   "Subestação Individual",
   "Subestação Compartilhada",
@@ -100,74 +121,47 @@ function gdCalcularGFC(d) {
   return perc * liquida * custo;
 }
 
-// Tipo de subestação indisponível em Ligação Nova atendida em 13,8 kV
-const GD_TIPO_SE_BLOQ_LIGNOVA_138 = "Nº 2";
-const GD_TENSAO_LIGNOVA_138 = "13800";
+/* GD_TIPO_SE_BLOQ_LIGNOVA_138 e gdSEDisponivel() saíram: a aceitação das
+   subestações passou a vir de CalculoMT.tiposSubestacaoPermitidos
+   (mt/js/calculo.js), junto com o bloco técnico portado do MT — fonte única com
+   o formulário de MT. Os critérios de lá são um superconjunto dos que existiam
+   aqui e ainda cobrem a subestação COMPARTILHADA, que esta função não tratava:
+     • Nº 1, Nº 3 e Nº 6 não aceitam conexão nova   → novaOk: false
+     • Nº 2 só existe em 22 e 34,5 kV               → tensoes: [22, 34.5]
+       (mais estrito: aqui a Nº 2 só era bloqueada em 13,8 kV na LIGAÇÃO NOVA)
+     • teto de 300 kW de DEMANDA em Nº 1/3/5/6/8    → maxKW: 300
+     • na compartilhada só valem Nº 2 e Nº 4        → compartilhada: true
+   GD_TENSAO_LIGNOVA_138 saiu junto: era chave só desse `switch`.
+   A pergunta "Haverá mudança de local da subestação?" CONTINUA no formulário —
+   é campo de negócio e sai no PDF —, mas deixou de filtrar a galeria. */
 const GD_SOLICITACAO_LIG_NOVA =
   "Ligação de Nova Unidade Consumidora COM Geração Distribuída";
+// Valor de instExistenteBTMT que caracteriza migração BT→MT: para efeito de
+// subestação ela equivale a uma conexão nova (ver _finalidadeGD).
 const GD_BT_BAIXA = "BT - Baixa Tensão";
-
-// Regra 9: somente as subestações Nº 1, 5, 6 e 8 possuem limite de 300 kVA.
-const GD_SE_LIMITE_300 = ["Nº 1", "Nº 5", "Nº 6", "Nº 8"];
+// Regra 9: teto de 300 kVA das subestações Nº 1, 3, 5, 6 e 8 — aqui medido
+// contra a POTÊNCIA ATIVA INSTALADA DE GERAÇÃO (etapa 5), que é conceito
+// distinto do `maxKW` do CalculoMT (teto de DEMANDA contratada). Por isso o
+// limite sobrevive à migração para o catálogo do MT; QUAIS modelos o têm sai de
+// CalculoMT.SE_CRITERIOS (ver _tiposSEminiGD em js/subestacao.js), não de uma
+// lista literal — os rótulos das duas divergiam ("Nº 1" × "Subestação Nº 1").
 const GD_SE_LIMITE_KW = 300;
-
-// Regras de aceitação das subestações por tipo × tensão × tipo de solicitação (Regras 7,8,14).
-//  - "Ligação nova" inclui também a migração de BT para MT (tratada como ligação nova).
-//  - "Mudança de local" = campo "Haverá mudança de local da subestação?" (Regra 12).
-function gdSEDisponivel(tipo, ctx) {
-  const t = ctx.tensao;
-  const e138 = t === GD_TENSAO_LIGNOVA_138;
-  const ehBTtoMT = ctx.instExistenteBTMT === GD_BT_BAIXA;
-  const novaConexao = ctx.solicitacao === GD_SOLICITACAO_LIG_NOVA || ehBTtoMT;
-  const mudancaLocal = ctx.mudancaSE === "Sim";
-  switch (tipo) {
-    case "Nº 1":
-      if (novaConexao)
-        return { ok: false, msg: "Subestação Nº 1 não aceita ligação nova." };
-      if (mudancaLocal)
-        return {
-          ok: false,
-          msg: "Subestação Nº 1 não aceita mudança de local.",
-        };
-      return { ok: true, msg: "" };
-    case "Nº 2":
-      if (novaConexao && e138)
-        return {
-          ok: false,
-          msg: "Subestação Nº 2 não aceita ligação nova em 13,8 kV (disponível em 22 kV e 34,5 kV).",
-        };
-      if (mudancaLocal && e138)
-        return {
-          ok: false,
-          msg: "Subestação Nº 2 não aceita mudança de local em 13,8 kV (disponível em 22 kV e 34,5 kV).",
-        };
-      return { ok: true, msg: "" };
-    case "Nº 3":
-      if (novaConexao)
-        return { ok: false, msg: "Subestação Nº 3 não aceita ligação nova." };
-      if (mudancaLocal)
-        return {
-          ok: false,
-          msg: "Subestação Nº 3 não aceita mudança de local em nenhum nível de tensão.",
-        };
-      return { ok: true, msg: "" };
-    case "Nº 6":
-      if (novaConexao)
-        return {
-          ok: false,
-          msg: "Subestação Nº 6 (adaptação da Nº 1 para o mercado livre) aceita apenas mudança para ACL.",
-        };
-      if (mudancaLocal)
-        return {
-          ok: false,
-          msg: "Subestação Nº 6 aceita apenas mudança para ACL, não mudança de local.",
-        };
-      return { ok: true, msg: "" };
-    // Nº 4, Nº 5 e Nº 8 aceitam ligação nova e mudança de local em qualquer tensão.
-    default:
-      return { ok: true, msg: "" };
-  }
-}
+// Rótulos dos três papéis do par de demanda contratada da etapa 4. Ficam aqui
+// porque os MESMOS textos são usados pela etapa, pela validação, pela prévia e
+// pelo PDF — ver _paresPotenciaGD (js/app.js).
+const GD_ROTULOS_DEMANDA = {
+  nova: "Demanda a ser contratada de consumo (kW)",
+  atual: "Demanda de consumo atual (kW)",
+  futura: "Demanda de consumo futura (kW)",
+};
+// Sobre a subestação, no bloco de cubículos: numa subestação nova não há UC por
+// cubículo a informar; numa já existente, sim.
+const GD_SUBESTACAO_EXISTENTE = ["Nova subestação", "Subestação já existente"];
+// Solicitações que alteram a demanda CONTRATADA — as únicas, fora a ligação
+// nova, com uma demanda FUTURA a declarar (ver _paresPotenciaGD em js/app.js).
+const GD_SOLICITACOES_ALTERACAO_DEMANDA = [
+  "Conexão de GD em Unidade Consumidora Existente COM Alteração de Demanda Contratada",
+];
 // Solicitações que exigem o preenchimento do Formulário de Carga (aumento de demanda / ligação nova)
 const GD_SOLICITACOES_FORM_CARGA = [
   "Conexão de GD em Unidade Consumidora Existente COM Alteração de Demanda Contratada",

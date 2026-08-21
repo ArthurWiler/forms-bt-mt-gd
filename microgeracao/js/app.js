@@ -1862,6 +1862,161 @@ function _gravarPotAtivaGD(valor) {
   const inp = $(`[data-k="potAtivaInstalada"]`);
   if (inp) inp.value = valor;
 }
+/* ============================================================
+   MÓDULOS E INVERSORES — um bloco por MODELO
+   ------------------------------------------------------------
+   A usina raramente tem um modelo só, e o campo único obrigava a
+   espremer vários num texto ("separar com barra"), do qual nada
+   se somava. Cada modelo agora declara os próprios dados e a
+   potência total sai da soma de quantidade × potência nominal.
+
+   Diferente dos transformadores e motores da etapa 4, aqui NÃO
+   há acordeão: são quatro campos por modelo, que cabem numa
+   olhada — esconder atrás de um cabeçalho clicável só somaria um
+   clique. Cada bloco é um subtítulo ("Módulo 1") seguido do grid
+   padrão de dois campos, como no Figma da etapa.
+
+   Área ocupada, tensão de conexão e a potência total ficam FORA
+   dos blocos: as duas primeiras valem para a usina inteira e a
+   última é a soma de todos os modelos.
+
+   Os campos não têm `data-k` (são indexados), então o marcador de
+   obrigatório não os alcança pelo caminho normal — o `data-req`
+   vai escrito à mão no markup, que é o que o gate do "Avançar"
+   lê. A exportação revalida em gdValidarFVGD(), que independe do
+   que está em tela.
+   ============================================================ */
+let modulosGD = []; // {modelo, fabricante, potNominal, quantidade}
+let inversoresGD = []; // mesma forma dos módulos
+
+function novoEquipFVGD() {
+  return { modelo: "", fabricante: "", potNominal: "", quantidade: "" };
+}
+/* Modelo e fabricante são texto livre que volta para dentro de um atributo
+   value="…". Sem escapar, uma aspa no nome do equipamento ("Painel 21\"")
+   fecharia o atributo e quebraria o bloco. Os cards de transformador e motor
+   não precisam disso — só têm campos numéricos. */
+function _escAttrGD(v) {
+  return String(v == null ? "" : v)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;");
+}
+// Soma das potências instaladas de uma lista de modelos (kW): a potência
+// nominal já é declarada em kW, então não há conversão.
+function _somaPotFVGD(lista) {
+  return lista.reduce(
+    (soma, e) =>
+      soma +
+      (parseFloat(e.potNominal) || 0) * (parseFloat(e.quantidade) || 0),
+    0,
+  );
+}
+// Soma das UNIDADES de uma lista de modelos — é o "Quantidade de módulos"
+// (ou de inversores) que o PDF imprime, agora somando todos os modelos.
+function _somaQtdFVGD(lista) {
+  return lista.reduce((soma, e) => soma + (parseInt(e.quantidade, 10) || 0), 0);
+}
+/* Cria/remove blocos para bater com o valor digitado — mesma mecânica de
+   sincronizarTrafos() (js/subestacao.js), inclusive o teto de 99 do input. */
+function _sincronizarEquipFVGD(chave, lista) {
+  const el = $(`[data-k="${chave}"]`);
+  const bruto = parseInt(el?.value, 10);
+  if (el && el.value !== "" && (isNaN(bruto) || bruto < 1)) return; // aguarda valor válido
+  const n = Math.min(Math.max(bruto || 0, 0), 99);
+  while (lista.length < n) lista.push(novoEquipFVGD());
+  lista.length = n;
+  state[chave] = n;
+}
+function sincronizarModulosGD() {
+  _sincronizarEquipFVGD("qtdModeloModulos", modulosGD);
+  renderModulosGD();
+  recalcGeracao();
+}
+function sincronizarInversoresGD() {
+  _sincronizarEquipFVGD("qtdModeloInversores", inversoresGD);
+  renderInversoresGD();
+  recalcGeracao();
+}
+/* Um render para os dois: módulos e inversores declaram exatamente os mesmos
+   quatro campos. `arr` é o nome da variável global no oninput inline — o mesmo
+   recurso dos cards de transformador. */
+function _renderEquipFVGD(boxSel, lista, arr, titulo, prefixo) {
+  const box = $(boxSel);
+  if (!box) return;
+  box.innerHTML = lista
+    .map(
+      (e, i) => `<div class="gd-modelo-bloco">
+      <div class="gd-modelo-titulo">${titulo} ${i + 1}</div>
+      <div class="grid grid-2">
+        <div class="field">
+          <label for="${prefixo}Modelo${i}">Modelo</label>
+          <input id="${prefixo}Modelo${i}" type="text" data-req value="${_escAttrGD(e.modelo)}" placeholder=" "
+                 oninput="${arr}[${i}].modelo=this.value">
+        </div>
+        <div class="field">
+          <label for="${prefixo}Fabricante${i}">Fabricante</label>
+          <input id="${prefixo}Fabricante${i}" type="text" data-req value="${_escAttrGD(e.fabricante)}" placeholder=" "
+                 oninput="${arr}[${i}].fabricante=this.value">
+        </div>
+        <div class="field">
+          <label for="${prefixo}PotNominal${i}">Potência nominal (kW)</label>
+          <input id="${prefixo}PotNominal${i}" type="number" step="any" data-req value="${e.potNominal}" placeholder=" "
+                 oninput="${arr}[${i}].potNominal=this.value;recalcGeracao()">
+        </div>
+        <div class="field">
+          <label for="${prefixo}Quantidade${i}">Quantidade</label>
+          <input id="${prefixo}Quantidade${i}" type="number" min="1" step="1" data-req value="${e.quantidade}" placeholder=" "
+                 oninput="${arr}[${i}].quantidade=this.value;recalcGeracao()">
+        </div>
+      </div>
+    </div>`,
+    )
+    .join("");
+  if (window.CemigMarcadores) {
+    window.CemigMarcadores.aplicar(box);
+    window.CemigMarcadores.atualizarAvancar();
+  }
+}
+function renderModulosGD() {
+  _renderEquipFVGD("#moduloModelos", modulosGD, "modulosGD", "Módulo", "moduloGd");
+}
+function renderInversoresGD() {
+  _renderEquipFVGD(
+    "#inversorModelos",
+    inversoresGD,
+    "inversoresGD",
+    "Inversor",
+    "inversorGd",
+  );
+}
+/* O gate do "Avançar" já cobre os campos em tela (todos ficam visíveis, sem
+   acordeão), mas ele só olha a ETAPA ativa: a exportação revalida a lista
+   inteira, como gdValidarSubestacao() faz com os transformadores. Só no Solar
+   — fora dele o conjunto está fora de tela. */
+function gdValidarFVGD() {
+  const faltas = [];
+  if (state.fontePrimaria !== "Solar") return faltas;
+  [
+    ["módulo", modulosGD],
+    ["inversor", inversoresGD],
+  ].forEach(([nome, lista]) => {
+    if (!lista.length) {
+      faltas.push(`Modelos de ${nome} (nenhum declarado)`);
+      return;
+    }
+    lista.forEach((e, i) => {
+      const rot = `${nome === "módulo" ? "Módulo" : "Inversor"} ${i + 1}`;
+      if (!String(e.modelo || "").trim()) faltas.push(`${rot} — Modelo`);
+      if (!String(e.fabricante || "").trim()) faltas.push(`${rot} — Fabricante`);
+      if (!(parseFloat(e.potNominal) > 0))
+        faltas.push(`${rot} — Potência nominal`);
+      if (!(parseInt(e.quantidade, 10) > 0))
+        faltas.push(`${rot} — Quantidade`);
+    });
+  });
+  return faltas;
+}
 // Resumo da geração em KPIs — mesmo molde de renderResumoSEGD()
 // (js/subestacao.js). Substituiu o campo "Potência ativa instalada total da
 // usina": o número nunca foi digitado (sai dos inversores), e ao lado das duas
@@ -1903,16 +2058,19 @@ function _renderKpisGeracaoGD(potModulos, potInversores) {
   return true;
 }
 function recalcGeracao() {
-  // Módulos e inversores têm a potência nominal digitada em kW, então o total
-  // já sai em kW — sem conversão.
-  const pm =
-    (parseFloat(state.qtdModulos) || 0) *
-    (parseFloat(state.potNominalModulo) || 0);
-  const pi =
-    (parseFloat(state.qtdInversores) || 0) *
-    (parseFloat(state.potNominalInversor) || 0);
+  // Soma de TODOS os modelos declarados (quantidade × potência nominal). A
+  // potência nominal já é digitada em kW, então o total sai em kW.
+  const pm = _somaPotFVGD(modulosGD);
+  const pi = _somaPotFVGD(inversoresGD);
   state.potTotalModulos = pm ? String(pm) : "";
   state.potTotalInversores = pi ? String(pi) : "";
+  // Espelhos para a prévia e o PDF: a lista de modelos e o total de unidades
+  // (o "Quantidade de módulos"/"de inversores" que o PDF imprime, agora
+  // somando os modelos).
+  state.modulos = modulosGD;
+  state.inversores = inversoresGD;
+  state.qtdModulos = String(_somaQtdFVGD(modulosGD) || "");
+  state.qtdInversores = String(_somaQtdFVGD(inversoresGD) || "");
   // Os totais são exibidos como texto (não são inputs): "5,76 kW" enquanto
   // houver o que mostrar, senão VAZIO — o produto só existe com quantidade e
   // potência nominal preenchidas, e um "—" fixo lia como valor calculado.
@@ -2125,6 +2283,11 @@ function validarExportacao() {
     req(d.tipoGeracao, "Tecnologia de geração");
     req(d.potAtivaInstalada, "Potência de geração");
     req(d.modalidade, "Modalidade de compensação");
+    req(d.areaArranjos, "Área ocupada pelos arranjos");
+    req(d.tensaoConexaoInversor, "Tensão de conexão do inversor");
+    // Os modelos vivem em cards: card fechado não entra no gate do "Avançar",
+    // então a lista inteira é revalidada aqui.
+    faltas.push(...gdValidarFVGD());
   } else if (d.fontePrimaria === "Hidráulica") {
     req(d.hidroPotAparente, "Potência Aparente (kVA)");
     req(d.hidroTensao, "Tensão (kV)");
@@ -2386,8 +2549,13 @@ function renderPreviewGD() {
         _pvParPotenciaGD("geracao", "", d.demandaGeracaoAtual, "geracao") +
         (d.fontePrimaria === "Solar"
           ? pvCampo(
-              "Módulos / Inversores (kW)",
-              `${d.potTotalModulos || "—"} / ${d.potTotalInversores || "—"}`,
+              "Módulos",
+              `${(d.modulos || []).length} modelo(s) · ${d.qtdModulos || "—"} un · ${d.potTotalModulos || "—"} kW`,
+              {},
+            ) +
+            pvCampo(
+              "Inversores",
+              `${(d.inversores || []).length} modelo(s) · ${d.qtdInversores || "—"} un · ${d.potTotalInversores || "—"} kW`,
               {},
             )
           : "") +
@@ -2523,6 +2691,12 @@ window.initFormulario = function () {
   onMudancaLocalGD();
   onGeradorEmergencia();
   onTelhadoArrendado();
+  // Cards de modelo de módulo/inversor: o estado nasce com 1 de cada, então a
+  // sincronização inicial já cria o primeiro card — sem ela o conjunto Solar
+  // abriria com as listas vazias, sem nenhum campo a preencher. Vem antes de
+  // onFonte(), que termina em recalcGeracao() e soma as listas.
+  sincronizarModulosGD();
+  sincronizarInversoresGD();
   onFonte();
   onArmazenamento();
   onCorrAlternativa();

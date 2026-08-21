@@ -226,17 +226,22 @@ function gdEstadoInicial() {
     potAtivaInstalada: "",
     // potGeracaoExistente ("Potência já conectada") saiu: a geração que a UC já
     // tem é `demandaGeracaoAtual`, acima.
-    // Fotovoltaica - módulos
-    modeloModulos: "",
-    fabricanteModulos: "",
-    potNominalModulo: "",
+    // Fotovoltaica — módulos e inversores, um card por MODELO (ver
+    // modulosGD/inversoresGD em js/app.js). `modulos`/`inversores` são o
+    // espelho das listas no formato {modelo, fabricante, potNominal,
+    // quantidade}, lido pela prévia e pelo PDF; `qtd*` e `potTotal*` são as
+    // somas de todos os modelos, mantidas porque o PDF já as imprimia.
+    // A contagem de modelos abre em 1: em FV sempre há ao menos um, e assim o
+    // conjunto entra em tela com o primeiro card pronto para preencher.
+    qtdModeloModulos: 1,
+    modulos: [],
     qtdModulos: "",
     potTotalModulos: "",
+    // Área ocupada e tensão de conexão ficam FORA dos cards: a primeira é o
+    // total dos arranjos, a segunda vale para a usina inteira.
     areaArranjos: "",
-    // Fotovoltaica - inversores
-    modeloInversores: "",
-    fabricanteInversores: "",
-    potNominalInversor: "",
+    qtdModeloInversores: 1,
+    inversores: [],
     qtdInversores: "",
     potTotalInversores: "",
     tensaoConexaoInversor: "",

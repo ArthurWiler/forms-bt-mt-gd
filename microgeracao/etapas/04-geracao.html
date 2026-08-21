@@ -121,41 +121,33 @@
     <input type="hidden" data-k="potAtivaInstalada" />
   </div>
 
+  <!-- Módulos e inversores em BLOCOS, um por MODELO: a usina costuma misturar
+       modelos, e o campo único obrigava a espremer tudo num texto ("separar
+       com barra") que não dava para somar. Cada modelo é um subtítulo seguido
+       do grid padrão de dois campos (sem acordeão — são quatro campos, que
+       cabem numa olhada); a quantidade de blocos vem do campo "Quantidade de
+       modelos". Montagem em js/app.js (renderModulosGD/renderInversoresGD).
+       Área ocupada, tensão de conexão e a potência total ficam FORA dos
+       blocos: as duas primeiras valem para a usina inteira (é assim que o PDF
+       as imprime) e a última é a soma de todos os modelos. -->
   <div id="fvBlocos">
     <h4 class="card-subtitle divider">
       Módulos da central geradora fotovoltaica
     </h4>
-    <div class="grid grid-2">
+    <p class="card-sub">
+      Preencha os dados de cada modelo de módulo instalado na usina.
+    </p>
+    <div class="grid grid-2 bloco-sub-gap">
       <div class="field">
-        <label>Modelo <span class="req">*</span></label>
-        <input type="text" data-k="modeloModulos" placeholder=" " />
-      </div>
-      <div class="field">
-        <label>Fabricante <span class="req">*</span></label>
-        <input type="text" data-k="fabricanteModulos" placeholder=" " />
-      </div>
-      <div class="field">
-        <label>Potência nominal (kW) <span class="req">*</span></label>
+        <label>Quantidade de modelos <span class="req">*</span></label>
         <input
-          type="text"
-          data-k="potNominalModulo"
+          type="number"
+          min="1"
+          max="99"
+          step="1"
+          data-k="qtdModeloModulos"
           placeholder=" "
-          oninput="
-            onNumDec(this);
-            recalcGeracao();
-          "
-        />
-      </div>
-      <div class="field">
-        <label>Quantidade <span class="req">*</span></label>
-        <input
-          type="text"
-          data-k="qtdModulos"
-          placeholder=" "
-          oninput="
-            onSoDigitos(this);
-            recalcGeracao();
-          "
+          oninput="sincronizarModulosGD()"
         />
       </div>
       <div class="field">
@@ -167,6 +159,13 @@
           oninput="onNumDec(this)"
         />
       </div>
+    </div>
+
+    <div id="moduloModelos"></div>
+
+    <!-- Total da lista acima. `.bloco-sub-gap` dá o passo vertical de 32px:
+         aqui o vizinho anterior é a lista de modelos, não um subtítulo. -->
+    <div class="grid grid-2 bloco-sub-gap">
       <!-- Resultado somente-leitura no padrão .readonly-val (shared.css):
            rótulo no topo e valor na moldura cinza de campo bloqueado, igual
            aos demais calculados do projeto. Sem valor o corpo fica VAZIO (não
@@ -181,49 +180,20 @@
     <h4 class="card-subtitle divider">
       Inversores da central geradora fotovoltaica
     </h4>
-    <div class="grid grid-2">
+    <p class="card-sub">
+      Preencha os dados de cada modelo de inversor instalado na usina.
+    </p>
+    <div class="grid grid-2 bloco-sub-gap">
       <div class="field">
-        <label>Modelo <span class="req">*</span></label>
-        <input type="text" data-k="modeloInversores" placeholder=" " />
-        <span
-          class="field-hint-icon cmg-hint"
-          tabindex="0"
-          role="img"
-          aria-label="Ajuda: modelo dos inversores"
-          data-hint="Para mais de 1 modelo, separar com barra (/)"
-          ><img
-            class="field-info"
-            src="../imgs/info.svg"
-            alt=""
-            aria-hidden="true"
-        /></span>
-      </div>
-      <div class="field">
-        <label>Fabricante <span class="req">*</span></label>
-        <input type="text" data-k="fabricanteInversores" placeholder=" " />
-      </div>
-      <div class="field">
-        <label>Potência nominal (kW) <span class="req">*</span></label>
+        <label>Quantidade de modelos <span class="req">*</span></label>
         <input
-          type="text"
-          data-k="potNominalInversor"
+          type="number"
+          min="1"
+          max="99"
+          step="1"
+          data-k="qtdModeloInversores"
           placeholder=" "
-          oninput="
-            onNumDec(this);
-            recalcGeracao();
-          "
-        />
-      </div>
-      <div class="field">
-        <label>Quantidade <span class="req">*</span></label>
-        <input
-          type="text"
-          data-k="qtdInversores"
-          placeholder=" "
-          oninput="
-            onSoDigitos(this);
-            recalcGeracao();
-          "
+          oninput="sincronizarInversoresGD()"
         />
       </div>
       <div class="field">
@@ -231,6 +201,11 @@
         <!-- opções de GD_TENSOES_INVERSOR via preencherSelect() -->
         <select data-k="tensaoConexaoInversor"></select>
       </div>
+    </div>
+
+    <div id="inversorModelos"></div>
+
+    <div class="grid grid-2 bloco-sub-gap">
       <div class="field" data-noopt>
         <label>Potência total calculada</label>
         <div class="readonly-val" id="gd_potTotalInversores"></div>

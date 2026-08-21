@@ -1,14 +1,19 @@
 <!doctype html>
 <div class="card">
-  <div class="section-eyebrow">Etapa 4</div>
+  <div class="section-eyebrow" data-etapa="atendimento">Etapa 4</div>
   <h3 class="card-title">Tipo de atendimento</h3>
   <p class="card-sub">Escolha o tipo de atendimento e preencha os dados.</p>
+
   <div class="grid grid-2">
     <div class="field col-span-2">
       <label>Tipo de Solicitação <span class="req">*</span></label>
       <select data-k="solicitacao" onchange="onSolicitacao()"></select>
     </div>
-    <div class="field">
+
+    <!-- Numa ligação nova ainda não existe instalação: o campo some inteiro
+         (ver onSolicitacao). Fica fora de tela também enquanto nenhuma
+         solicitação tiver sido escolhida. -->
+    <div class="field" id="instalacaoUCBox">
       <label
         >Número da Instalação / Unidade consumidora / Medidor
         <span class="req">*</span></label
@@ -21,32 +26,336 @@
         oninput="onInstalacaoUC(this)"
       />
     </div>
-    <div class="field" id="demandaConsumoBox">
-      <label
-        >Demanda a ser contratada de consumo (kW)
-        <span class="req">*</span></label
+
+    <!-- Demanda contratada. Quais dos dois campos aparecem depende do tipo de
+         solicitação (ver _paresPotenciaGD, js/app.js):
+           • Ligação nova                  → só a demanda a contratar
+           • Existente COM alteração       → atual + futura
+           • Existente SEM alteração / GD  → só a atual
+         Os rótulos vêm de GD_ROTULOS_DEMANDA (js/data.js) e são escritos por
+         JS, por isso os <label> têm id. A demanda dimensiona a subestação
+         (demandaRepresentativaGD), daí o onDemandaConsumoGD() no oninput. -->
+    <div class="field" id="demandaConsumoAtualBox" style="display: none">
+      <label id="demandaConsumoAtualLbl">Demanda de consumo atual (kW)</label>
+      <input
+        type="text"
+        data-k="demandaConsumoAtual"
+        placeholder=" "
+        oninput="
+          onNumDec(this);
+          onDemandaConsumoGD();
+        "
+      />
+    </div>
+    <div class="field" id="demandaConsumoBox" style="display: none">
+      <label id="demandaConsumoLbl"
+        >Demanda a ser contratada de consumo (kW)</label
       >
       <input
         type="text"
         data-k="demandaConsumo"
         placeholder=" "
-        oninput="onNumDec(this)"
+        oninput="
+          onNumDec(this);
+          onDemandaConsumoGD();
+        "
       />
     </div>
-    <div class="field" id="demandaConsumoAtualBox">
-      <label>Demanda de consumo atual (kW)<span class="req">*</span></label>
-      <input
-        type="text"
-        data-k="demandaConsumoAtual"
-        placeholder=" "
-        oninput="onNumDec(this)"
-      />
+
+    <div class="field">
+      <label>Tensão de Atendimento <span class="req">*</span></label>
+      <select data-k="tensaoAtendimento" onchange="atualizarSE()"></select>
     </div>
-    <div class="field field--plain col-span-2" id="seBox" data-noopt>
-      <label>Tipo de Subestação (ND 5.3)</label>
-      <div class="se-gallery" id="seGalleryGD"></div>
-      <span id="seBloqueioMsg" class="field-hint"></span>
+    <!-- "Entrada de energia" é o "Subestação compartilhada (multimedição)?" do
+         MT com outro rótulo: Individual e Compartilhada levam a blocos
+         técnicos diferentes, e nada abaixo aparece antes da resposta. -->
+    <div class="field">
+      <label>Entrada de Energia <span class="req">*</span></label>
+      <select data-k="entradaEnergia" onchange="onEntradaEnergia()"></select>
     </div>
+    <div class="field col-span-2" id="compartilhadaAlert"></div>
+
+    <!-- ===== Subestação COMPARTILHADA — cubículos (Anexo I) =====
+         col-span-2 porque este bloco é item direto do .grid-2 do card: sem o
+         span ocuparia uma coluna só, espremendo os cards e truncando os
+         rótulos. Mesmo motivo de #blocoTecnicoIndividual abaixo. -->
+    <div id="blocoCubiculos" class="col-span-2" style="display: none">
+      <h4 class="card-subtitle divider">
+        Dados da subestação compartilhada <span class="req">*</span>
+      </h4>
+      <p class="card-sub">
+        Preencha os dados dos cubículos da subestação. Para
+        <strong>novas subestações</strong>, informe os
+        <strong>dados de todos os cubículos</strong>. Se a
+        <strong>subestação já existir</strong>, preencha apenas as
+        <strong>informações do novo cubículo</strong> a ser adicionado.
+      </p>
+
+      <div class="grid grid-2 bloco-sub-gap">
+        <div class="field row-solo" id="qtdCubiculosBox">
+          <label>Quantidade de cubículos <span class="req">*</span></label>
+          <input
+            type="number"
+            min="1"
+            max="99"
+            step="1"
+            data-k="qtdCubiculos"
+            placeholder=" "
+            oninput="sincronizarCubiculos()"
+          />
+        </div>
+      </div>
+
+      <div class="field field--plain bloco-sub-gap" data-noopt>
+        <label>Sobre a subestação</label>
+        <div id="cardsSubestacaoExistente"></div>
+      </div>
+
+      <div id="cubiculosCards"></div>
+      <!-- Coerência entre a geração declarada por cubículo e a potência da
+           usina (etapa 5) — escrito por _validarGDcubiculosGD(). -->
+      <div id="cubiculosGDAlert"></div>
+    </div>
+
+    <!-- ===== Bloco técnico da subestação =====
+         Transformadores (ou totais dos cubículos), motores, carga operante,
+         resumo e escolha do tipo de subestação. Só entra em cena depois que a
+         entrada de energia for respondida — ver atualizarSE() em
+         js/subestacao.js. -->
+    <div id="blocoTecnicoIndividual" class="col-span-2" style="display: none">
+      <div id="blocoTotaisConsolidados" style="display: none">
+        <h4 class="card-subtitle divider">Totais consolidados (cubículos)</h4>
+        <div class="grid grid-3 bloco-sub-gap">
+          <div class="field" data-noopt>
+            <label>Soma dos transformadores (kVA)</label>
+            <input
+              type="text"
+              id="totConsolidadoTrafos"
+              readonly
+              disabled
+              placeholder=" "
+            />
+          </div>
+          <div class="field" data-noopt>
+            <label>Soma das demandas (kW)</label>
+            <input
+              type="text"
+              id="totConsolidadoDemanda"
+              readonly
+              disabled
+              placeholder=" "
+            />
+          </div>
+          <div class="field" data-noopt>
+            <label>Soma da geração (kW)</label>
+            <input
+              type="text"
+              id="totConsolidadoGD"
+              readonly
+              disabled
+              placeholder=" "
+            />
+          </div>
+        </div>
+      </div>
+
+      <div id="blocoTrafosIndividual">
+        <h4 class="card-subtitle divider">
+          Dados dos transformadores <span class="req">*</span>
+        </h4>
+        <p class="card-sub">
+          Preencha os dados de todos os transformadores que serão usados na sua
+          propriedade.
+        </p>
+        <!-- Aviso do DUB em conexão nova — escrito por _avisoTrafosDUBGD(). -->
+        <div id="avisoTrafosDUB"></div>
+
+        <div class="grid grid-2 bloco-sub-gap">
+          <div class="field row-solo" id="qtdTransformadorBox">
+            <label
+              >Quantidade de transformadores <span class="req">*</span></label
+            >
+            <input
+              type="number"
+              min="1"
+              max="99"
+              step="1"
+              data-k="qtdTransformador"
+              placeholder=" "
+              oninput="sincronizarTrafos()"
+            />
+          </div>
+        </div>
+
+        <div id="trafoCards"></div>
+        <!-- A minigeração não tem modalidade tarifária horária nem demanda
+             escalonada: quem dimensiona a subestação é a demanda contratada
+             declarada acima. Aqui fica só o aviso de coerência entre ela e a
+             potência dos transformadores. -->
+        <div id="demandaVsPotenciaAlert"></div>
+
+        <div class="grid grid-2 bloco-sub-gap">
+          <div class="field row-solo">
+            <label
+              >Impedância Percentual do Transformador (%)
+              <span class="req">*</span></label
+            >
+            <input
+              type="text"
+              data-k="impedanciaTrafo"
+              placeholder=" "
+              oninput="onNumDec(this)"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div id="blocoMotoresIndividual">
+        <h4 class="card-subtitle divider">
+          Motores e cargas especiais <span class="opt">(opcional)</span>
+        </h4>
+        <p class="card-sub">
+          Preencha os dados técnicos de todos os motores com cargas especiais,
+          caso existam, da sua propriedade.
+        </p>
+
+        <div class="grid grid-2 bloco-sub-gap">
+          <div class="field row-solo" id="qtdMotoresBox">
+            <label>Quantidade de motores</label>
+            <input
+              type="number"
+              min="0"
+              max="99"
+              step="1"
+              data-k="qtdMotores"
+              placeholder=" "
+              oninput="sincronizarMotores()"
+            />
+          </div>
+        </div>
+
+        <div id="motoresCardsContainer"></div>
+      </div>
+
+      <div id="blocoCargaOperante" style="display: none">
+        <div class="subbox-title" style="margin-top: 24px">
+          Carga operante na partida do maior motor
+          <span class="opt">(se houver motores)</span>
+        </div>
+        <div class="grid grid-3" style="margin-top: 16px">
+          <div class="field">
+            <label>Carga operante na partida (kVA)</label>
+            <input
+              type="number"
+              step="any"
+              data-k="cargaOperante"
+              placeholder=" "
+            />
+          </div>
+          <div class="field">
+            <label>Corrente de partida (Ip) prevista (A)</label>
+            <input
+              type="number"
+              step="any"
+              data-k="ipPrevista"
+              placeholder=" "
+            />
+          </div>
+          <div class="field">
+            <label>Tempo (t) da corrente de partida (s)</label>
+            <input
+              type="number"
+              step="any"
+              data-k="tempoPartida"
+              placeholder=" "
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Regra 9: modelos com teto de 300 kVA indisponíveis quando a potência
+           ativa instalada de geração (etapa 5) o excede. Escrito por
+           _renderAvisoExcede300GD(). -->
+      <div id="avisoExcede300" style="display: none">
+        <div class="cmg-aviso cmg-aviso--warn no-print">
+          <div class="cmg-aviso-icon" aria-hidden="true"></div>
+          <p class="cmg-aviso-texto" id="avisoExcede300Texto"></p>
+        </div>
+      </div>
+
+      <!-- Resumo dos dados (KPIs) — montado por renderResumoSEGD(), logo acima
+           da escolha do tipo de subestação: são os totais que determinam quais
+           modelos são permitidos. -->
+      <div id="blocoResumoSE" style="display: none">
+        <h4 class="card-subtitle divider">Resumo dos dados</h4>
+        <div class="resultado-kpis resultado-kpis--linha" id="resumoSEKpis"></div>
+      </div>
+
+      <!-- Tipo de subestação (ND 5.3) — a seleção é feita pela galeria visual
+           (renderGaleriaSEGD); os <select> ficam como fonte de estado e são
+           espelhados pelos cards. -->
+      <div id="blocoSubestacaoNova" style="display: none">
+        <h4 class="card-subtitle divider">Subestação para conexão nova</h4>
+        <p class="card-sub">
+          <strong>Selecione o tipo de subestação</strong> que será instalado na
+          sua propriedade.
+        </p>
+        <select
+          id="cn_tipoSE"
+          data-k="cn_tipoSE"
+          onchange="recalcRamal()"
+          hidden
+          aria-hidden="true"
+        >
+          <option value=""></option>
+        </select>
+        <div class="se-gallery" id="seGallery_nova"></div>
+      </div>
+
+      <div id="blocoSubestacaoAlteracao" style="display: none">
+        <h4 class="card-subtitle divider">
+          Subestação para alteração de carga
+        </h4>
+        <p class="card-sub">
+          Selecione o <strong>modelo atual</strong> da sua subestação.
+        </p>
+        <select
+          id="alt_tipoAtual"
+          data-k="alt_tipoAtual"
+          onchange="recalcRamal()"
+          hidden
+          aria-hidden="true"
+        >
+          <option value=""></option>
+        </select>
+        <div class="se-gallery" id="seGallery_atual"></div>
+
+        <!-- A pergunta "Haverá troca do tipo de subestação?" não existe: a
+             galeria do novo modelo é sempre exibida (fora Conexão Nova) e a
+             troca passa a ser DEDUZIDA — há troca quando o modelo escolhido
+             aqui difere do atual. Ver _trocaSEDeduzidaGD(). -->
+        <div id="seGalleryBox_para">
+          <p class="card-sub bloco-sub-gap">
+            Indique o <strong>novo modelo</strong> que será instalado em sua
+            propriedade.
+          </p>
+          <select
+            id="alt_tipoPara"
+            data-k="alt_tipoPara"
+            onchange="recalcRamal()"
+            hidden
+            aria-hidden="true"
+          >
+            <option value=""></option>
+          </select>
+          <div class="se-gallery" id="seGallery_para"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Regra 12: campo de negócio próprio da minigeração, impresso no PDF.
+         Deixou de filtrar a galeria quando gdSEDisponivel() saiu — o catálogo
+         de modelos agora vem do CalculoMT. -->
     <div class="field field--plain col-span-2" data-noopt>
       <label>Haverá mudança de local da subestação?</label>
       <div id="cardsMudancaSE"></div>
@@ -60,51 +369,7 @@
         <option>Sim</option>
       </select>
     </div>
-    <div class="field col-span-2" id="avisoExcede300" style="display: none">
-      <div class="cmg-aviso cmg-aviso--warn no-print">
-        <div class="cmg-aviso-icon" aria-hidden="true"></div>
-        <p class="cmg-aviso-texto" id="avisoExcede300Texto"></p>
-      </div>
-    </div>
-    <div class="field">
-      <label>Tipo de Ligação do Transformador</label>
-      <select data-k="tipoLigTrafo"></select>
-    </div>
-    <div class="field">
-      <label
-        >Impedância Percentual do Transformador (%)
-        <span class="req">*</span></label
-      >
-      <input
-        type="text"
-        data-k="impedanciaTrafo"
-        placeholder=" "
-        oninput="onNumDec(this)"
-      />
-    </div>
-    <div class="subbox" id="trafosBox" style="display: none">
-      <div class="motores-head">
-        <span class="subbox-title">Transformadores (Qte × Potência)</span>
-        <button
-          type="button"
-          class="btn btn-primary"
-          style="padding: 5px 12px; font-size: 12px"
-          onclick="addTrafoGD()"
-        >
-          + Trafo
-        </button>
-      </div>
-      <table class="motores-table">
-        <thead>
-          <tr>
-            <th>Qte</th>
-            <th>Potência (kVA)</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="trafoGdBody"></tbody>
-      </table>
-    </div>
+
     <div class="field col-span-2">
       <label
         >Potência do Grupo Motor Gerador de Emergência em Paralelo (kVA)</label
@@ -116,24 +381,7 @@
         oninput="onNumDec(this)"
       />
     </div>
-    <div class="field">
-      <label>Tensão de Atendimento (V)</label>
-      <select data-k="tensaoAtendimento" onchange="atualizarSE()"></select>
-    </div>
-    <div class="field">
-      <label>Entrada de Energia</label>
-      <select data-k="entradaEnergia" onchange="onEntradaEnergia()"></select>
-    </div>
-    <div class="field" id="qtdCubiculosBox" style="display: none">
-      <label>Quantidade de Cubículos <span class="req">*</span></label>
-      <input
-        type="text"
-        data-k="qtdCubiculos"
-        placeholder=" "
-        oninput="onSoDigitos(this)"
-      />
-      <span class="field-hint">Subestação compartilhada</span>
-    </div>
+
     <div class="field field--plain" data-noopt>
       <label>O empreendimento será "Grid Zero"?</label>
       <div id="cardsGridZero"></div>
@@ -216,6 +464,6 @@
   </div>
 </div>
 <div class="nav-bottom no-print">
-  <button class="btn btn-ghost" onclick="goTo(2)">← Voltar</button>
-  <button class="btn btn-primary" onclick="goTo(4)">Avançar →</button>
+  <button class="btn btn-ghost" data-nav="prev">← Voltar</button>
+  <button class="btn btn-primary" data-nav="next">Avançar →</button>
 </div>

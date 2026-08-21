@@ -318,19 +318,36 @@ function gerarPdfMicroGD(d) {
   kvPairs(gerPairs);
   if (ehFV) {
     kvPairs([
-      ["Módulos — Modelo", d.modeloModulos],
-      ["Módulos — Fabricante", d.fabricanteModulos],
-      ["Módulos — Pot. nominal (kW)", d.potNominalModulo],
-      ["Módulos — Quantidade", d.qtdModulos],
+      ["Módulos — Quantidade total", d.qtdModulos],
       ["Módulos — Pot. total (kW)", d.potTotalModulos],
       ["Área dos Arranjos (m²)", d.areaArranjos],
-      ["Inversores — Modelo", d.modeloInversores],
-      ["Inversores — Fabricante", d.fabricanteInversores],
-      ["Inversores — Pot. nominal (kW)", d.potNominalInversor],
-      ["Inversores — Quantidade", d.qtdInversores],
+      ["Inversores — Quantidade total", d.qtdInversores],
       ["Inversores — Pot. total (kW)", d.potTotalInversores],
       ["Tensão de Conexão do Inversor (V)", d.tensaoConexaoInversor],
     ]);
+    // Um MODELO por linha: a usina costuma misturar modelos, e os totais
+    // acima não dizem de quê são feitos. Mesmas larguras da tabela de
+    // transformadores (somam a caixa útil de 182 mm).
+    const linhasEquip = (lista) =>
+      (lista || [])
+        .filter((e) => e.modelo || e.potNominal || e.quantidade)
+        .map((e) => [
+          e.modelo || "—",
+          e.fabricante || "—",
+          e.potNominal || "—",
+          e.quantidade || "—",
+          fmt2(
+            (parseFloat(e.potNominal) || 0) * (parseFloat(e.quantidade) || 0),
+          ),
+        ]);
+    // O cabeçalho já nomeia o conjunto, como na tabela de transformadores —
+    // sem linha de legenda antes dela.
+    const larg = [50, 46, 30, 18, 38];
+    const cab = (o) => [o, "Fabricante", "Pot. nom.", "Qte", "Total (kW)"];
+    const modRows = linhasEquip(d.modulos);
+    if (modRows.length) tabela(cab("Módulo"), larg, modRows);
+    const invRows = linhasEquip(d.inversores);
+    if (invRows.length) tabela(cab("Inversor"), larg, invRows);
   }
   // Fonte Hidráulica: dados da central/aproveitamento e a classificação de
   // segurança de barragens (REN 696/2015). As quatro perguntas de

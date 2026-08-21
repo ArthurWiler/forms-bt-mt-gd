@@ -370,22 +370,38 @@ function onCepGD(el) {
 }
 
 /* ===== Selects populados de js/data.js ===== */
+// Aceita uma lista de strings ou de {valor, texto} — o segundo formato separa
+// o que é GRAVADO (chave de regra e texto do PDF) do que é EXIBIDO. Usado pela
+// tensão de atendimento, que guarda volts e mostra kV.
 function preencherSelect(k, lista) {
   const sel = $(`select[data-k="${k}"]`);
   if (!sel) return;
+  const itens = lista.map((o) =>
+    typeof o === "object" ? o : { valor: o, texto: o },
+  );
   const semVazio = sel.hasAttribute("data-sem-vazio");
   const atual = sel.value;
   sel.innerHTML =
     (semVazio ? "" : '<option value=""></option>') +
-    lista.map((o) => `<option value="${o}">${o}</option>`).join("");
-  if (atual && lista.map(String).includes(atual)) sel.value = atual;
+    itens.map((o) => `<option value="${o.valor}">${o.texto}</option>`).join("");
+  if (atual && itens.some((o) => String(o.valor) === atual)) sel.value = atual;
+}
+// A tensão é GRAVADA em volts ("13800") — é assim que o PDF a imprimiu sempre e
+// é a chave que _tensaoMTkVGD() converte para o CalculoMT. Na tela, porém, o
+// solicitante lê kV, como no MT.
+function _rotuloTensaoGD(v) {
+  return (parseFloat(v) / 1000).toFixed(1).replace(".", ",") + " kV";
 }
 function preencherSelects() {
   // "grupo" não tem select próprio: na minigeração é sempre "A" (uma única
   // opção em GD_GRUPOS), então o campo saiu da etapa 3 e o valor vem do estado.
   preencherSelect("classe", GD_CLASSES);
-  preencherSelect("tipoLigTrafo", GD_TIPO_LIG_TRAFO);
-  preencherSelect("tensaoAtendimento", GD_TENSAO_A);
+  // tipoLigTrafo saiu da etapa: a ligação passou a ser perguntada POR
+  // transformador, dentro do card (ver _opcoesTipoLigGD, js/subestacao.js).
+  preencherSelect(
+    "tensaoAtendimento",
+    GD_TENSAO_A.map((v) => ({ valor: v, texto: _rotuloTensaoGD(v) })),
+  );
   preencherSelect("entradaEnergia", GD_ENTRADA_ENERGIA);
   preencherSelect("solicitacao", GD_SOLICITACOES);
   preencherSelect("instExistenteBTMT", GD_BT_MT);
@@ -713,129 +729,26 @@ async function consultarRestricaoAmbientalGD(lat, lng) {
       status.textContent = (e && e.message) || "Falha na consulta de restrições.";
   }
 }
-// Descrições resumidas (ND-5.3) — mesmas do módulo MT/BT (tooltip "i").
-const SE_INFO_GD = {
-  1: "Aérea em poste: transformador instalado na rede aérea, para pequenas potências. Medição e proteção na base.",
-  2: "Medição e proteção (com ou sem transformação), em alvenaria. Desde 03/07/2023 não se aplica a fornecimento individual em 13,8 kV; desde 01/01/2024 também não em compartilhado 13,8 kV. Permitida em 22/34,5 kV e uso compartilhado.",
-  4: "Blindada: cubículo metálico compartimentado, com alívio de pressão e ventilação, abrigado ou ao tempo. Proteção na média tensão, sem transformação. Atende demandas de até 2500 kW.",
-  5: "Medição, proteção e transformação, em alvenaria. Até 300 kW, com um transformador de 75 a 300 kVA. Proteção por chave fusível tripolar; medição a 3 elementos na média tensão.",
-  8: "Blindada Simplificada (SEBS): subestação blindada metálica para uma única unidade, até 300 kW. Medição na média tensão, proteção por chave fusível tripolar e disjuntor de baixa tensão.",
-};
-function _seCtx() {
-  return {
-    solicitacao: state.solicitacao,
-    tensao: state.tensaoAtendimento,
-    mudancaSE: state.mudancaSE,
-    instExistenteBTMT: state.instExistenteBTMT,
-  };
-}
-function _tiposSEvisiveis() {
-  const potInst = parseFloat(state.potAtivaInstalada) || 0;
-  return GD_TIPOS_SE.filter(
-    (s) => !(GD_SE_LIMITE_300.includes(s) && potInst > GD_SE_LIMITE_KW),
-  );
-}
-function atualizarSE() {
-  _sync("tensaoAtendimento");
-  const galeria = $("#seGalleryGD");
-  if (!galeria) return;
-  const ctx = _seCtx();
-  const visiveis = _tiposSEvisiveis();
-  if (
-    state.tipoSE &&
-    (!gdSEDisponivel(state.tipoSE, ctx).ok || !visiveis.includes(state.tipoSE))
-  ) {
-    state.tipoSE = "";
-  }
-  setHint(
-    "seBloqueioMsg",
-    state.tipoSE ? gdSEDisponivel(state.tipoSE, ctx).msg : "",
-  );
-  const imgs =
-    typeof SUBESTACAO_IMGS_B64 !== "undefined" ? SUBESTACAO_IMGS_B64 : {};
-  galeria.innerHTML = "";
-  visiveis.forEach((tipo) => {
-    const n = (String(tipo).match(/(\d+)/) || [])[1];
-    const desabilitado = !gdSEDisponivel(tipo, ctx).ok;
-    const card = document.createElement("div");
-    card.className =
-      "se-card" +
-      (state.tipoSE === tipo ? " selected" : "") +
-      (desabilitado ? " disabled" : "");
-    card.innerHTML =
-      (n && SE_INFO_GD[n]
-        ? `<span class="se-info">i<span class="se-tooltip">${SE_INFO_GD[n]}</span></span>`
-        : "") +
-      (n && imgs[n] ? `<img src="${imgs[n]}" alt="${tipo}">` : "") +
-      `<div class="lbl">${tipo}${desabilitado ? " (indisponível)" : ""}</div>`;
-    if (!desabilitado)
-      card.addEventListener("click", () => {
-        state.tipoSE = tipo;
-        atualizarSE();
-      });
-    galeria.appendChild(card);
-  });
-  // Regra 9: aviso do limite de 300 kVA quando a SE selecionada o excede.
-  const potInst = parseFloat(state.potAtivaInstalada) || 0;
-  const excede =
-    state.tipoSE &&
-    GD_SE_LIMITE_300.includes(state.tipoSE) &&
-    potInst > GD_SE_LIMITE_KW;
-  const avisoEx = $("#avisoExcede300");
-  if (avisoEx) {
-    avisoEx.style.display = excede ? "" : "none";
-    const txt = $("#avisoExcede300Texto");
-    if (txt && excede)
-      txt.innerHTML = `<strong>Limite de 300 kVA. </strong>A Subestação ${state.tipoSE} é limitada a ${GD_SE_LIMITE_KW} kVA. A potência instalada informada (${potInst} kW) excede esse limite — selecione outro tipo de subestação.`;
-  }
-  renderTrafosGD();
-}
+/* ===== Etapa 4 — bloco técnico da subestação =====
+   SE_INFO_GD, _seCtx, _tiposSEvisiveis, atualizarSE, renderTrafosGD e
+   addTrafoGD saíram daqui: a galeria única de tipos de subestação e a tabela
+   Qte × Potência foram substituídas pelo bloco técnico portado do MT — ver
+   js/subestacao.js, que define o novo atualizarSE(). A regra de quais modelos
+   são permitidos agora vem de CalculoMT.tiposSubestacaoPermitidos
+   (mt/js/calculo.js), e a subestação COMPARTILHADA ganhou os cubículos.
+   O que sobrou aqui são os handlers dos campos que continuam na etapa. */
+
+// Regra 12: campo de negócio próprio (sai no PDF). Deixou de filtrar a galeria
+// junto com gdSEDisponivel(), então não refaz mais o bloco técnico.
 function onMudancaSE() {
   _sync("mudancaSE");
-  atualizarSE();
-}
-function renderTrafosGD() {
-  const box = $("#trafosBox");
-  const tbody = $("#trafoGdBody");
-  if (!box || !tbody) return;
-  const mostrar = !!state.tipoSE;
-  box.style.display = mostrar ? "" : "none";
-  if (!mostrar) return;
-  tbody.innerHTML = "";
-  state.trafos.forEach((t, i) => {
-    const tr = document.createElement("tr");
-    // Potência LIVRE no mini (qualquer kVA, inclusive > RT — sem lista fixa).
-    tr.innerHTML = `
-      <td><input type="number" min="0" style="width:70px" value="${t.qte}"></td>
-      <td><input type="number" min="0" step="any" style="width:120px" placeholder="kVA" value="${t.potencia}"></td>
-      <td>${state.trafos.length > 1 ? '<button type="button" class="motor-del">✕</button>' : ""}</td>`;
-    const inputs = tr.querySelectorAll("input");
-    inputs[0].addEventListener("input", (e) => {
-      state.trafos[i].qte = e.target.value;
-    });
-    inputs[1].addEventListener("input", (e) => {
-      e.target.value = e.target.value.replace(/[^\d.]/g, "");
-      state.trafos[i].potencia = e.target.value;
-    });
-    const del = tr.querySelector(".motor-del");
-    if (del)
-      del.addEventListener("click", () => {
-        state.trafos.splice(i, 1);
-        renderTrafosGD();
-      });
-    tbody.appendChild(tr);
-  });
-}
-function addTrafoGD() {
-  state.trafos.push({ se: state.tipoSE, qte: "", potencia: "" });
-  renderTrafosGD();
 }
 function onEntradaEnergia() {
   _sync("entradaEnergia");
-  const box = $("#qtdCubiculosBox");
-  if (box)
-    box.style.display =
-      state.entradaEnergia === GD_ENTRADA_COMPARTILHADA ? "" : "none";
+  // atualizarSE() (js/subestacao.js) é o dono único da visibilidade: alterna
+  // entre o ramo individual (transformadores da UC) e o compartilhado
+  // (cubículos + totais consolidados).
+  atualizarSE();
   if (window.CemigMarcadores) {
     window.CemigMarcadores.aplicar();
     window.CemigMarcadores.atualizarAvancar();
@@ -844,29 +757,92 @@ function onEntradaEnergia() {
 function _ehLigacaoNova() {
   return state.solicitacao === GD_SOLICITACAO_LIG_NOVA;
 }
+// Regra 10: só a alteração da demanda CONTRATADA tem uma demanda futura a
+// declarar. O texto conferido é o completo de propósito: "COM Alteração"
+// sozinho também casaria com "GD Existente COM Alteração de Potência Ativa
+// Instalada Total de Geração", que altera a GERAÇÃO, não a demanda.
+function _ehAlteracaoDemandaGD() {
+  return GD_SOLICITACOES_ALTERACAO_DEMANDA.includes(state.solicitacao);
+}
+/* Quais campos de demanda contratada aparecem sai do tipo de solicitação:
+     • Ligação nova            → só a demanda a contratar
+     • Existente COM alteração → atual + futura
+     • Existente SEM alteração → só a atual (a demanda não muda)
+     • GD existente            → só a atual (o que muda é a geração)
+   A minigeração é sempre Grupo A, então não há o ramo de baixa tensão do
+   microGD. As regras valem para os três consumidores do par (etapa, validação
+   e prévia), por isso moram aqui e não em cada um. */
+function _paresPotenciaGD() {
+  const nova = _ehLigacaoNova();
+  return {
+    nova,
+    // Sem solicitação escolhida não há o que perguntar.
+    verNovaOuFutura:
+      !!state.solicitacao && (nova || _ehAlteracaoDemandaGD()),
+    verAtual: !!state.solicitacao && !nova,
+  };
+}
+// Mostra/oculta um campo de demanda e escreve o seu rótulo. O rótulo é texto
+// PURO: a convenção do projeto é obrigatório SEM "*" (ver
+// shared/js/form-marcadores.js), e um "*" escrito aqui reapareceria a cada
+// chamada. Quem impede o "(opcional)" é o `data-req` marcado abaixo.
+function _campoPotenciaGD(boxSel, lblSel, chave, ver, rotulo) {
+  const box = $(boxSel);
+  if (box) box.style.display = ver ? "" : "none";
+  const lbl = $(lblSel);
+  if (lbl) lbl.textContent = rotulo;
+  const inp = $(`[data-k="${chave}"]`);
+  if (!inp) return;
+  if (ver) inp.setAttribute("data-req", "");
+  else {
+    inp.removeAttribute("data-req");
+    inp.classList.remove("is-invalid");
+    // Campo oculto não pode manter valor: um kW digitado antes de trocar de
+    // solicitação continuaria no estado, sairia no PDF e ainda dimensionaria a
+    // subestação (demandaRepresentativaGD).
+    if (state[chave]) aplicarPatch({ [chave]: "" });
+  }
+}
+function _atualizarPotenciaContratada() {
+  const { nova, verNovaOuFutura, verAtual } = _paresPotenciaGD();
+  _campoPotenciaGD(
+    "#demandaConsumoBox",
+    "#demandaConsumoLbl",
+    "demandaConsumo",
+    verNovaOuFutura,
+    nova ? GD_ROTULOS_DEMANDA.nova : GD_ROTULOS_DEMANDA.futura,
+  );
+  _campoPotenciaGD(
+    "#demandaConsumoAtualBox",
+    "#demandaConsumoAtualLbl",
+    "demandaConsumoAtual",
+    verAtual,
+    GD_ROTULOS_DEMANDA.atual,
+  );
+}
 function onSolicitacao() {
   _sync("solicitacao");
-  const aviso = $("#avisoFormCarga");
   const exige = GD_SOLICITACOES_FORM_CARGA.includes(state.solicitacao);
-  if (aviso) aviso.style.display = exige ? "" : "none";
   const avisoCarga = $("#avisoCargaObrigatoria");
   if (avisoCarga) avisoCarga.style.display = exige ? "" : "none";
   const nova = _ehLigacaoNova();
-  ["#numUCBox", "#instExistenteBox", "#instExistenteBTMTBox", "#demandaConsumoAtualBox"].forEach(
-    (s) => {
-      const el = $(s);
-      if (el) el.style.display = nova ? "none" : "";
+  // Campos de unidade JÁ existente: numa ligação nova não há instalação
+  // anterior. Sem solicitação escolhida também ficam fora de tela.
+  ["#instalacaoUCBox", "#numUCBox", "#instExistenteBox", "#instExistenteBTMTBox"].forEach(
+    (sel) => {
+      const el = $(sel);
+      if (el) el.style.display = state.solicitacao && !nova ? "" : "none";
     },
   );
-  // Regra 10: "SEM Alteração de Demanda Contratada" não pede nova demanda.
-  const semAlt = (state.solicitacao || "").indexOf("SEM Alteração de Demanda") >= 0;
-  const dc = $("#demandaConsumoBox");
-  if (dc) dc.style.display = semAlt ? "none" : "";
-  // Regra 11: GD existente COM alteração ⇒ potência de geração atual.
+  // Regra 11: GD existente COM alteração ⇒ potência de geração atual (etapa 5).
   const pa = $("#potGeracaoAtualBox");
   if (pa)
     pa.style.display =
       (state.solicitacao || "").indexOf("GD Existente") >= 0 ? "" : "none";
+  // Vem ANTES de atualizarSE(): a demanda contratada dimensiona a subestação
+  // (demandaRepresentativaGD); na ordem inversa, os modelos permitidos seriam
+  // refeitos com o valor antigo.
+  _atualizarPotenciaContratada();
   atualizarSE();
   if (window.CemigMarcadores) {
     window.CemigMarcadores.aplicar();
@@ -1039,7 +1015,10 @@ function recalcFontes() {
     const f = state.fontes[i];
     if (f && f.fontePrimaria === "Solar") el.value = f.potencia;
   });
-  atualizarSE(); // limite 300 kVA / sugestão AT dependem da potência
+  // Regra 9: a potência de geração filtra os modelos de subestação. Basta
+  // recalcular — refazer os cards a cada tecla da etapa 5 seria desperdício, e
+  // atualizarSE() é quem os redesenha.
+  recalcTecnicoGD();
   atualizarGFC();
 }
 function renderFontes() {
@@ -1259,7 +1238,9 @@ function validarExportacao() {
   const req = (v, label) => {
     if (!String(v || "").trim()) faltas.push(label);
   };
-  req(d.instalacao, "Número da instalação");
+  // Numa ligação nova ainda não existe instalação — o campo nem aparece na
+  // etapa 4 (ver onSolicitacao).
+  if (!_ehLigacaoNova()) req(d.instalacao, "Número da instalação");
   req(d.titular, "Titular da UC");
   req(d.classe, "Classe");
   req(d.cpfCnpj, "CPF/CNPJ");
@@ -1304,10 +1285,16 @@ function validarExportacao() {
   const utm = gdValidarUTM(d.fuso, d.utmE, d.utmN);
   if (d.fuso && d.utmE && d.utmN && !utm.ok)
     faltas.push("Coordenada UTM fora da faixa do fuso");
-  req(d.impedanciaTrafo, "Impedância do transformador");
-  if (d.entradaEnergia === GD_ENTRADA_COMPARTILHADA)
-    req(d.qtdCubiculos, "Quantidade de Cubículos");
   req(d.solicitacao, "Tipo de Solicitação");
+  req(d.tensaoAtendimento, "Tensão de atendimento");
+  // A impedância só é perguntada no ramo individual (vive dentro de
+  // #blocoTrafosIndividual); na compartilhada ela é dado de cada cubículo.
+  if (d.entradaEnergia !== GD_ENTRADA_COMPARTILHADA)
+    req(d.impedanciaTrafo, "Impedância do transformador");
+  // Bloco técnico da subestação: transformadores, cubículos e tipo de SE. Os
+  // cards são construídos por JS, então esta é a rede que fecha o que o
+  // CemigMarcadores não alcança. Cobre também a quantidade de cubículos.
+  faltas.push(...gdValidarSubestacao());
   if (GD_SOLICITACOES_FORM_CARGA.includes(d.solicitacao)) {
     const c = d.cargas || {};
     const temCarga =
@@ -1317,12 +1304,17 @@ function validarExportacao() {
     if (!temCarga)
       faltas.push("Formulário de Carga (declarar as cargas elétricas)");
   }
-  if ((d.solicitacao || "").indexOf("SEM Alteração de Demanda") < 0)
-    req(d.demandaConsumo, "Demanda contratada de consumo");
-  // Demanda de consumo atual: só existe fora da ligação nova — é quando o
-  // #demandaConsumoAtualBox aparece (ver onSolicitacao).
-  if (!_ehLigacaoNova())
-    req(d.demandaConsumoAtual, "Demanda de consumo atual");
+  // Demanda contratada: exatamente os campos que _paresPotenciaGD() coloca em
+  // tela, com os rótulos que o usuário viu lá.
+  {
+    const { nova, verNovaOuFutura, verAtual } = _paresPotenciaGD();
+    if (verNovaOuFutura)
+      req(
+        d.demandaConsumo,
+        nova ? GD_ROTULOS_DEMANDA.nova : GD_ROTULOS_DEMANDA.futura,
+      );
+    if (verAtual) req(d.demandaConsumoAtual, GD_ROTULOS_DEMANDA.atual);
+  }
   // Grid Zero trava a demanda de geração em 0 (onGridZero), então o campo já
   // vem preenchido; fora dele, é escolha do solicitante e precisa ser cobrada.
   req(d.demandaGeracao, "Demanda a ser contratada de geração");
@@ -1465,15 +1457,44 @@ function renderPreviewGD() {
         pvCampo("Grupo / Classe", `${d.grupo} / ${d.classe}`, { step: 3 }) +
         pvCampo("Solicitação", d.solicitacao, { step: 3 }) +
         pvCampo(
-          "Trafo (ligação/impedância)",
-          `${d.tipoLigTrafo || "—"} · ${d.impedanciaTrafo || "—"}%`,
+          "Tensão de atendimento",
+          d.tensaoAtendimento ? _rotuloTensaoGD(d.tensaoAtendimento) : "",
           { step: 3 },
         ) +
-        pvCampo(
-          "Demanda consumo / geração (kW)",
-          `${d.demandaConsumo || "—"} / ${d.demandaGeracao || "—"}`,
-          { step: 3 },
-        ),
+        pvCampo("Entrada de energia", d.entradaEnergia, { step: 3 }) +
+        pvCampo("Subestação (ND 5.3)", d.tipoSE, { step: 3 }) +
+        // Individual e compartilhada resumem coisas diferentes: lá são os
+        // transformadores da própria UC, aqui os cubículos do bloco.
+        (d.entradaEnergia === GD_ENTRADA_COMPARTILHADA
+          ? pvCampo(
+              "Cubículos",
+              `${(d.cubiculos || []).length} · ${d.qtdTotalTrafos || 0} trafos · ${d.potTotalTrafos || 0} kVA · demanda ${d.demandaTotalCubiculos || 0} kW · geração ${d.gdTotalCubiculos || 0} kW`,
+              { full: true, step: 3 },
+            )
+          : pvCampo(
+              "Transformadores",
+              `${d.qtdTotalTrafos || 0} un · ${d.potTotalTrafos || 0} kVA · impedância ${d.impedanciaTrafo || "—"}%`,
+              { full: true, step: 3 },
+            )) +
+        // Demandas: os mesmos campos que _paresPotenciaGD() põe em tela.
+        (() => {
+          const { nova, verNovaOuFutura, verAtual } = _paresPotenciaGD();
+          return (
+            (verAtual
+              ? pvCampo(GD_ROTULOS_DEMANDA.atual, d.demandaConsumoAtual, {
+                  step: 3,
+                })
+              : "") +
+            (verNovaOuFutura
+              ? pvCampo(
+                  nova ? GD_ROTULOS_DEMANDA.nova : GD_ROTULOS_DEMANDA.futura,
+                  d.demandaConsumo,
+                  { step: 3 },
+                )
+              : "")
+          );
+        })() +
+        pvCampo("Demanda de geração (kW)", d.demandaGeracao, { step: 3 }),
     ),
   );
   secoes.push(
@@ -1561,9 +1582,14 @@ window.initFormulario = function () {
   renderChecklist("docsTecChecklist", GD_DOCS_TEC, "docsTec");
   initCargas();
   renderFontes();
-  // Estado inicial das condicionais
-  onSolicitacao();
+  // Estado inicial das condicionais.
+  // A ordem importa: onEntradaEnergia() decide SE o bloco técnico existe;
+  // onSolicitacao() define a finalidade (conexão nova × alteração) e o par de
+  // demandas. Os dois terminam em atualizarSE(), que é idempotente.
   onEntradaEnergia();
+  onSolicitacao();
+  sincronizarTrafos();
+  sincronizarMotores();
   onGridZero();
   onTelhadoArrendado();
   onModalidade();

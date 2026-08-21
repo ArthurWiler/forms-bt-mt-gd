@@ -1094,6 +1094,32 @@ textarea.ta {
    microgeracao/js/subestacao.js). A minigeração tem cópias próprias dessas
    regras e segue com o tooltip. */
 
+/* ===== Módulos e inversores: um bloco por MODELO =====
+   Sem acordeão (são quatro campos, que cabem numa olhada): cada modelo é um
+   subtítulo seguido do grid padrão de dois campos. O título repete a
+   tipografia do cabeçalho dos cards de transformador (.trafo-titulo,
+   formulario-mt.css) — subtítulo/18px em peso regular, neutra/700 —, que é a
+   do Figma desta etapa.
+   Os vãos seguem o passo vertical da etapa: 32px entre a lista e o que vem
+   antes/entre um modelo e o seguinte, 16px do título para os campos.
+   `:not(:empty)` porque a lista é injetada: sem nenhum modelo o contêiner não
+   deve reservar espaço. */
+.cemig-microgd #moduloModelos:not(:empty),
+.cemig-microgd #inversorModelos:not(:empty) {
+  margin-top: var(--cmg-space-8);
+}
+.cemig-microgd .gd-modelo-bloco + .gd-modelo-bloco {
+  margin-top: var(--cmg-space-8);
+}
+.cemig-microgd .gd-modelo-titulo {
+  margin-bottom: var(--cmg-space-4);
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-subtitle);
+  line-height: var(--cmg-lh-subtitle);
+  font-weight: var(--cmg-fw-regular);
+  color: var(--cmg-text-strong);
+}
+
 /* ===== Resumo da geração: KPIs + aviso do limite Fast Track =====
    Os dois andam juntos (o aviso fala do número dos cards), mas cada um tem a
    sua própria condição de exibição — por isso o VÃO mora no wrapper e não em

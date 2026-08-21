@@ -12,9 +12,26 @@ function gerarPdfMiniGD(d) {
   const { sec, subSec, kvPairs, fullLine, totRow, tabela } = P;
   const sn = (b) => (b ? "Sim" : "Não");
   const ehLigacaoNova = d.solicitacao === GD_SOLICITACAO_LIG_NOVA;
-  const semAlteracaoDemanda =
-    (d.solicitacao || "").indexOf("SEM Alteração de Demanda") >= 0;
+  const ehAlteracaoDemanda = GD_SOLICITACOES_ALTERACAO_DEMANDA.includes(
+    d.solicitacao,
+  );
   const ehAlteracaoGeracao = (d.solicitacao || "").indexOf("GD Existente") >= 0;
+  const ehCompartilhada = d.entradaEnergia === GD_ENTRADA_COMPARTILHADA;
+  // Situação declarada de um transformador, no vocabulário do formulário.
+  const situacaoTrafo = (t) =>
+    ({ troca: "Substituído", sem: "Mantido", novo: "Novo" })[t.situacao] ||
+    "Novo";
+  // Linhas da tabela de transformadores — a coluna "Situação" só existe fora da
+  // conexão nova, onde todo trafo é novo por definição.
+  const linhasTrafo = (lista, comSituacao) =>
+    (lista || [])
+      .filter((t) => t.potencia || t.qte)
+      .map((t, i) => [
+        "Trafo " + (i + 1),
+        (t.potencia || "—") + " kVA",
+        t.tipoLigacao || "—",
+        ...(comSituacao ? [situacaoTrafo(t)] : []),
+      ]);
 
   const ehRural = d.localizacao === "Rural";
 
@@ -90,26 +107,45 @@ function gerarPdfMiniGD(d) {
     ["Instalação / UC / Medidor", d.instalacao],
     ["Grupo", d.grupo],
     ["Classe", d.classe],
-    ["Tipo de Subestação (ND 5.3)", d.tipoSE],
-    ["Mudança de local da subestação", d.mudancaSE],
-    ["Ligação do Transformador", d.tipoLigTrafo],
-    ["Impedância do Transformador (%)", d.impedanciaTrafo],
-    ["Gerador de Emergência (kVA)", d.geradorPotencia],
-    ["Tensão de Atendimento (V)", d.tensaoAtendimento],
+    ["Tipo de Solicitação", d.solicitacao],
+    // O valor guardado é o volt "cru" (chave da regra de subestação); sai
+    // formatado em kV, como no rótulo do <select>.
+    [
+      "Tensão de Atendimento",
+      d.tensaoAtendimento
+        ? (Number(d.tensaoAtendimento) / 1000).toFixed(1).replace(".", ",") +
+          " kV"
+        : "",
+    ],
     ["Entrada de Energia", d.entradaEnergia],
+    ["Mudança de local da subestação", d.mudancaSE],
+    ["Gerador de Emergência (kVA)", d.geradorPotencia],
   ];
-  if (d.entradaEnergia === GD_ENTRADA_COMPARTILHADA)
-    ucPairs.push(["Quantidade de Cubículos", d.qtdCubiculos]);
-  ucPairs.push(["Tipo de Solicitação", d.solicitacao]);
-  // Demandas (respeitando regras de visibilidade do formulário)
+  // Escolha da subestação: conexão nova e alteração são caminhos exclusivos.
+  if (ehLigacaoNova) {
+    ucPairs.push(["Subestação para conexão nova", d.cn_tipoSE]);
+  } else {
+    ucPairs.push(
+      ["Subestação atual", d.alt_tipoAtual],
+      ["Troca de subestação", d.alt_troca],
+    );
+    if (d.alt_troca === "Sim")
+      ucPairs.push(["Nova subestação", d.alt_tipoPara]);
+  }
+  ucPairs.push(["Tipo de Subestação efetivo (ND 5.3)", d.tipoSE]);
+  // Demandas (respeitando as regras de visibilidade do formulário —
+  // _paresPotenciaGD em js/app.js).
   ucPairs.push([
     "Demanda a contratar de geração (kW)",
     d.gridZero === "Sim" ? "0 (Grid Zero)" : d.demandaGeracao,
   ]);
-  if (!semAlteracaoDemanda)
-    ucPairs.push(["Demanda a contratar de consumo (kW)", d.demandaConsumo]);
   if (!ehLigacaoNova)
-    ucPairs.push(["Demanda de consumo atual (kW)", d.demandaConsumoAtual]);
+    ucPairs.push([GD_ROTULOS_DEMANDA.atual, d.demandaConsumoAtual]);
+  if (ehLigacaoNova || ehAlteracaoDemanda)
+    ucPairs.push([
+      ehLigacaoNova ? GD_ROTULOS_DEMANDA.nova : GD_ROTULOS_DEMANDA.futura,
+      d.demandaConsumo,
+    ]);
   ucPairs.push(["Grid Zero", d.gridZero], ["Telhado arrendado", d.telhadoArrendado]);
   // Unidade arrendada: dados próprios do arrendamento (spec Figma).
   if (d.telhadoArrendado === "Sim")
@@ -124,12 +160,89 @@ function gerarPdfMiniGD(d) {
       ["Instalação existente BT/MT", d.instExistenteBTMT],
     );
   kvPairs(ucPairs);
-  // Transformadores
-  const trafoRows = (d.trafos || [])
-    .filter((t) => t.qte || t.potencia)
-    .map((t, i) => [`Trafo ${i + 1}`, t.qte || "—", `${t.potencia || "—"} kVA`]);
-  if (trafoRows.length)
-    tabela(["Transformador", "Qte", "Potência"], [80, 30, 72], trafoRows);
+
+  // ---- Bloco técnico da subestação ----
+  // Individual e compartilhada são ramos exclusivos: no primeiro os
+  // transformadores são da própria UC; no segundo pertencem a cada cubículo,
+  // e cada cubículo é uma NS distinta.
+  const comSituacao = !ehLigacaoNova;
+  const cabTrafo = ["Transformador", "Potência", "Ligação"].concat(
+    comSituacao ? ["Situação"] : [],
+  );
+  const largTrafo = comSituacao ? [52, 40, 44, 46] : [70, 56, 56];
+  if (ehCompartilhada) {
+    subSec("SUBESTAÇÃO COMPARTILHADA — CUBÍCULOS");
+    kvPairs([
+      ["Sobre a subestação", d.subestacaoExistente],
+      ["Quantidade de cubículos", String((d.cubiculos || []).length || "")],
+    ]);
+    fullLine(
+      "Observação",
+      "Cada cubículo corresponde a uma NS distinta, vinculada a uma instalação própria. Apresente um formulário por cubículo alterado, para que o montante de geração de cada NS do bloco fique explícito.",
+    );
+    (d.cubiculos || []).forEach((c, i) => {
+      const marca = !comSituacao
+        ? ""
+        : c.existente
+          ? " — já existente"
+          : " — novo";
+      subSec("Cubículo " + (i + 1) + marca);
+      // kvPairs descarta o par vazio, então o nº de UC some sozinho numa
+      // subestação nova (onde ele não é perguntado).
+      kvPairs([
+        ["Nº da unidade consumidora / instalação", c.instalacao],
+        ["Demanda contratada de consumo (kW)", c.demanda],
+        ["Potência de geração deste cubículo (kW)", c.potGD],
+      ]);
+      const linhas = linhasTrafo(c.trafos, comSituacao);
+      if (linhas.length) tabela(cabTrafo, largTrafo, linhas);
+    });
+    totRow(
+      "Totais consolidados",
+      (d.qtdTotalTrafos || 0) +
+        " trafos · " +
+        (d.potTotalTrafos || 0) +
+        " kVA · demanda " +
+        (d.demandaTotalCubiculos || 0) +
+        " kW · geração " +
+        (d.gdTotalCubiculos || 0) +
+        " kW",
+    );
+  } else {
+    kvPairs([["Impedância do Transformador (%)", d.impedanciaTrafo]]);
+    const linhas = linhasTrafo(d.trafos, comSituacao);
+    if (linhas.length) {
+      tabela(cabTrafo, largTrafo, linhas);
+      totRow(
+        "Potência total instalada",
+        (d.qtdTotalTrafos || 0) + " un · " + (d.potTotalTrafos || 0) + " kVA",
+      );
+    }
+  }
+  // Motores e cargas especiais — valem nos dois ramos.
+  const motoRows = (d.motores || [])
+    .filter((m) => m.cv || m.volts)
+    .map((m, i) => [
+      "Motor " + (i + 1),
+      m.fases || "—",
+      (m.cv || "—") + " CV",
+      m.dispositivo || "—",
+    ]);
+  if (motoRows.length) {
+    tabela(
+      ["Motor", "Fases", "Potência", "Disp. partida"],
+      [46, 40, 40, 56],
+      motoRows,
+    );
+    // Carga operante só é perguntada havendo motores.
+    kvPairs(
+      [
+        ["Carga operante na partida (kVA)", d.cargaOperante],
+        ["Corrente de partida prevista (A)", d.ipPrevista],
+        ["Tempo da corrente de partida (s)", d.tempoPartida],
+      ].filter(([, v]) => v != null && v !== ""),
+    );
+  }
   P.gap(2);
 
   // A seção "Documentação da UC a anexar" saiu junto com a etapa

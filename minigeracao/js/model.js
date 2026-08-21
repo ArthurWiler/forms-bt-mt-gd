@@ -1,7 +1,10 @@
 // ============================================================
 // MINIGERAÇÃO DISTRIBUÍDA — Modelo de estado
 // ============================================================
-function gdTrafoPadrao() { return { se: "", qte: "", potencia: "" }; }
+/* gdTrafoPadrao() saiu: os transformadores passaram a ser cards com situação
+   (trocar/novo/manter) e tipo de ligação próprios — quem os cria é
+   novoTrafoGD() em js/subestacao.js. `trafos` aqui é só o ESPELHO que a
+   prévia e o PDF leem, escrito por recalcTecnicoGD(). */
 function gdFontePadrao() {
   return {
     fontePrimaria: "Solar",
@@ -63,16 +66,45 @@ function gdEstadoInicial() {
     // automaticamente (latLonParaUTM), mantidos p/ validação e PDF.
     latitude: "", longitude: "",
     fuso: "", utmE: "", utmN: "",
+    // Tipo de subestação EFETIVO — o modelo que a instalação terá depois da
+    // obra. Derivado (ver tipoSEefetivoGD, js/subestacao.js): é a chave que a
+    // prévia e o PDF leem.
     tipoSE: "",
-    // Regra 12: haverá mudança de local da subestação?
+    // Regra 12: haverá mudança de local da subestação? Segue sendo perguntada e
+    // impressa; deixou de filtrar a galeria quando gdSEDisponivel() saiu.
     mudancaSE: "Não",
-    trafos: [gdTrafoPadrao()],
-    tipoLigTrafo: "",
     impedanciaTrafo: "",
     geradorPotencia: "",
     tensaoAtendimento: "",
     entradaEnergia: "",
     qtdCubiculos: "",
+    // ----- Bloco técnico da subestação (js/subestacao.js) -----
+    // Os cards vivem nos arrays modulares trafosGD/motoresGD/cubiculosGD; estas
+    // chaves são os espelhos gravados por recalcTecnicoGD() para prévia e PDF.
+    // `trafos` nasce VAZIO: uma linha em branco viraria um trafo fantasma no PDF.
+    qtdTransformador: "",
+    qtdMotores: "",
+    trafos: [],
+    motores: [],
+    cubiculos: [],
+    potTotalTrafos: 0,
+    qtdTotalTrafos: 0,
+    // Totais consolidados do bloco de cubículos (subestação compartilhada).
+    demandaTotalCubiculos: 0,
+    gdTotalCubiculos: 0,
+    // Numa subestação NOVA não há UC por cubículo a informar; numa já existente,
+    // sim (ver temInstalacaoCubiculoGD).
+    subestacaoExistente: "Nova subestação",
+    // Carga operante na partida do maior motor — só perguntada havendo motores.
+    cargaOperante: "",
+    ipPrevista: "",
+    tempoPartida: "",
+    // Escolha do tipo de subestação: conexão nova tem um campo; a alteração tem
+    // o modelo ATUAL e o NOVO, de onde `alt_troca` é deduzida.
+    cn_tipoSE: "",
+    alt_tipoAtual: "",
+    alt_tipoPara: "",
+    alt_troca: "",
     solicitacao: "",
     demandaGeracao: "",
     demandaConsumo: "",

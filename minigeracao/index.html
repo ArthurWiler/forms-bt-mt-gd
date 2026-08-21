@@ -10,6 +10,13 @@
 
     <link rel="stylesheet" href="../css/variables.css" />
     <link rel="stylesheet" href="../css/shared.css" />
+    <!-- Estilos dos cards de transformador/motor/cubículo e das tabelas
+         técnicas do bloco de subestação, portado do MT. As regras vivem em
+         formulario-mt.css e valem para os três formulários: cada seletor do
+         bloco lista .cemig-mtform, .cemig-microgd E .cemig-minigd, então nada
+         mais deste arquivo alcança a minigeração. Mesma prática do
+         microgeracao/index.html. -->
+    <link rel="stylesheet" href="../css/formulario-mt.css" />
     <link rel="stylesheet" href="../css/formulario-minigd.css" />
     <!-- leaflet.css saiu daqui: era render-blocking de terceiros numa página
          cujo mapa só aparece etapas adiante. Agora vem junto do leaflet.js,
@@ -109,8 +116,8 @@
         <section class="page" id="page-3" data-src="etapas/04-atendimento.html"></section>
         <!-- Geração vem ANTES de Documentação/Carga: a potência ativa
              instalada declarada aqui filtra os tipos de subestação da etapa
-             "Tipo de atendimento" (ver _tiposSEvisiveis) e define a Garantia
-             de Fiel Cumprimento. -->
+             "Tipo de atendimento" (Regra 9, ver _tiposSEminiGD) e define a
+             Garantia de Fiel Cumprimento. -->
         <section class="page" id="page-4" data-src="etapas/05-geracao.html"></section>
         <section class="page" id="page-5" data-src="etapas/06-carga.html"></section>
         <section class="page" id="page-6" data-src="etapas/07-armazenamento.html"></section>
@@ -160,7 +167,16 @@
     <script defer src="../shared/js/form-marcadores.js"></script>
     <script defer src="../shared/js/trilha-etapas.js"></script>
     <script defer src="../shared/js/pdf-sucesso.js"></script>
+    <!-- Regras de média tensão (dimensionamento de trafos/motores e catálogo de
+         subestações) — o MESMO arquivo que o formulário de MT e a microgeração
+         usam, para as três telas não divergirem. Tem de vir antes de
+         js/subestacao.js, que o consome. -->
+    <script defer src="../mt/js/calculo.js"></script>
     <script defer src="js/app.js"></script>
+    <!-- Bloco técnico da subestação: transformadores, motores, cubículos da
+         subestação compartilhada, resumo e tipo de SE. Depende de state/$/
+         _sync/aplicarPatch/_ehLigacaoNova (app.js) e de CalculoMT. -->
+    <script defer src="js/subestacao.js"></script>
     <script defer src="../shared/js/etapas-loader.js"></script>
   </body>
 </html>

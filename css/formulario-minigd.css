@@ -797,8 +797,12 @@ textarea.ta {
 }
 
 /* ===== Galeria visual de tipos de subestação (MINIGD) =====
-   Mesma experiência por cards do módulo MT. O selo "i" exibe a descrição
-   (ND 5.3) somente em hover, via .se-tooltip. */
+   Mesma experiência por cards do módulo MT: três galerias (conexão nova,
+   modelo atual e novo modelo), montadas por renderGaleriaSEGD
+   (js/subestacao.js). Não há mais card DESABILITADO nem selo "i": os modelos
+   não permitidos simplesmente não são renderizados, e a descrição ND-5.3
+   deixou de ser exibida em tooltip — por isso .se-card.disabled, .se-info e
+   .se-tooltip saíram daqui. */
 .se-gallery {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -825,16 +829,6 @@ textarea.ta {
   border-color: var(--verde);
   box-shadow: 0 0 0 4px rgba(16, 119, 97, .18);
 }
-.se-card.disabled {
-  opacity: .45;
-  cursor: not-allowed;
-  filter: grayscale(1);
-}
-.se-card.disabled:hover {
-  transform: none;
-  box-shadow: none;
-  border-color: var(--borda);
-}
 .se-card img {
   width: 100%;
   height: 150px;
@@ -850,48 +844,13 @@ textarea.ta {
   font-weight: 700;
   color: var(--verde-escuro);
 }
-.se-info {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: rgba(10, 47, 39, .8);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
-  font-style: italic;
-  font-family: Georgia, serif;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2;
-  cursor: help;
-}
-.se-tooltip {
-  position: absolute;
-  bottom: calc(100% + 10px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: 240px;
-  background: var(--verde-escuro);
-  color: #fff;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 11.5px;
-  line-height: 1.5;
-  text-align: left;
-  padding: 10px 12px;
-  border-radius: 8px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, .2);
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity .18s, visibility .18s;
-  z-index: 30;
-  pointer-events: none;
-}
-.se-card:hover .se-tooltip {
-  opacity: 1;
-  visibility: visible;
+
+/* ===== Avisos do bloco técnico da subestação (js/subestacao.js) =====
+   Escritos por JS e vazios na maior parte do tempo: o respiro só existe quando
+   há texto, senão sobraria um vão entre os blocos. Mesma solução de
+   #demandaVsPotenciaAlert em formulario-mt.css. */
+#avisoTrafosDUB:not(:empty),
+#cubiculosGDAlert:not(:empty),
+#compartilhadaAlert:not(:empty) {
+  margin-top: var(--cmg-space-8);
 }
