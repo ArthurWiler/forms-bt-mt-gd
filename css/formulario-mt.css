@@ -640,16 +640,16 @@
    PRIMEIRO card de cada lista; os seguintes mantêm o passo de 14px entre si. */
 .cemig-mtform #trafoCards > .trafo-card:first-child,
 .cemig-microgd #trafoCards > .trafo-card:first-child,
-.cemig-minigd #trafoCards > .trafo-card:first-child,
 .cemig-mtform #cubiculosCards > .trafo-card:first-child,
-.cemig-minigd #cubiculosCards > .trafo-card:first-child,
 .cemig-microgd #cubiculosCards > .trafo-card:first-child,
-.cemig-minigd #cubiculosCards > .trafo-card:first-child,
 .cemig-mtform #motoresCardsContainer > .motor-card:first-child,
-.cemig-microgd #motoresCardsContainer > .motor-card:first-child,
-.cemig-minigd #motoresCardsContainer > .motor-card:first-child {
+.cemig-microgd #motoresCardsContainer > .motor-card:first-child {
   margin-top: var(--cmg-space-8);
 }
+/* A minigeração ficou de fora: lá as listas de cards são itens de um .grid
+   (ver #blocoTrafosIndividual na etapa 4), então o passo de 32px vem do
+   row-gap. A margem daqui somaria aos 14px do próprio card — o vão é zerado
+   em formulario-minigd.css. */
 /* Duas .trafo-card-grid empilhadas (linha atual + linha "Nova …") precisam do
    mesmo vão vertical que separa os campos dentro de cada grid. */
 .cemig-mtform .trafo-card-grid + .trafo-card-grid,
@@ -667,10 +667,11 @@
    o passo vertical da etapa (32px) e não o de 14px entre cards. `:not(:empty)`
    porque o conteúdo é injetado — sem ele, a margem sobraria com tudo em ordem
    (o .cmg-aviso tem margin:0 por convenção: o respiro é de quem o contém). */
-.cemig-microgd #demandaVsPotenciaAlert:not(:empty),
-.cemig-minigd #demandaVsPotenciaAlert:not(:empty) {
+.cemig-microgd #demandaVsPotenciaAlert:not(:empty) {
   margin-top: var(--cmg-space-8);
 }
+/* Idem: na minigeração o alerta é filho direto do grid do bloco, com
+   col-span-2 — quem dá o respiro (e quem colapsa a linha vazia) é o grid. */
 /* Os campos do cubículo ficam sobre o cinza do card: fundo branco como nos
    demais campos de rótulo flutuante. */
 .cemig-mtform .cub-card .field,

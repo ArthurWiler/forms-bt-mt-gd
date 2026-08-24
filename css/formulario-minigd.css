@@ -845,12 +845,77 @@ textarea.ta {
   color: var(--verde-escuro);
 }
 
-/* ===== Avisos do bloco técnico da subestação (js/subestacao.js) =====
-   Escritos por JS e vazios na maior parte do tempo: o respiro só existe quando
-   há texto, senão sobraria um vão entre os blocos. Mesma solução de
-   #demandaVsPotenciaAlert em formulario-mt.css. */
-#avisoTrafosDUB:not(:empty),
-#cubiculosGDAlert:not(:empty),
-#compartilhadaAlert:not(:empty) {
-  margin-top: var(--cmg-space-8);
+/* ============================================================
+   Bloco técnico da subestação (etapa 4) — o vão é do GRID
+   ------------------------------------------------------------
+   #blocoCubiculos, #blocoTotaisConsolidados, #blocoTrafosIndividual,
+   #blocoMotoresIndividual e #blocoCargaOperante são `.grid` no HTML: cabeçalho,
+   campos, listas de cards e contêineres de aviso são filhos diretos, e o passo
+   vertical de 32px entre eles é o `row-gap` de `.cemig-form .grid`.
+
+   Antes cada filho carregava a própria margem (.bloco-sub-gap, 32px) e o
+   respiro dependia do seletor de irmão adjacente `.card-sub + .bloco-sub-gap`
+   para não dobrar. Bastava um contêiner de aviso VAZIO entre os dois — o
+   #avisoTrafosDUB — para o `+` deixar de casar e o vão virar 32px onde os
+   blocos vizinhos (Motores) mostravam 24px. Com o grid não há o que casar: a
+   linha vazia some por `.grid > .col-span-2:empty` (shared.css) e o passo é
+   sempre o mesmo.
+
+   O que sobra aqui são só as margens que PRECISAM ser zeradas para não somar
+   ao row-gap.
+   ============================================================ */
+
+/* 1. Título + subtexto formam UMA unidade dentro do grid — senão o subtexto
+      viraria outro item e herdaria os 32px no lugar dos 8px do título. A
+      margem do último filho sai: quem separa o cabeçalho do primeiro campo é
+      o row-gap. */
+.cemig-minigd .bloco-cabecalho > :last-child {
+  margin-bottom: 0;
+}
+
+/* 2. Primeiro título de cada bloco: `.divider` (shared.css) traz margin-top de
+      32px para separar uma seção da anterior, mas o bloco já é item de um grid
+      que aplica o row-gap de 32px — os dois somavam 64px logo abaixo de
+      "Entrada de Energia". O `padding-top` segue intacto: ele separa a linha do
+      texto, não uma seção da outra. Porte da regra equivalente da microgeração
+      (formulario-microgd.css); aqui são três porque #blocoTotaisConsolidados
+      (compartilhada) e #blocoTrafosIndividual (individual) se alternam como
+      primeiro filho VISÍVEL de #blocoTecnicoIndividual — `:first-child` sozinho
+      não distingue os dois. */
+.cemig-minigd #blocoCubiculos > :first-child > .divider:first-child,
+.cemig-minigd #blocoTotaisConsolidados > :first-child > .divider:first-child,
+.cemig-minigd #blocoTrafosIndividual > :first-child > .divider:first-child {
+  margin-top: 0;
+}
+
+/* 3. Listas de cards: `.trafo-card` / `.motor-card` trazem margin-top de 14px
+      para o passo ENTRE cards (formulario-mt.css). No primeiro card essa margem
+      somaria ao row-gap do grid, então some — os 32px acima já são do grid. */
+.cemig-minigd #trafoCards > .trafo-card:first-child,
+.cemig-minigd #cubiculosCards > .trafo-card:first-child,
+.cemig-minigd #motoresCardsContainer > .motor-card:first-child {
+  margin-top: 0;
+}
+
+/* 4. #compartilhadaAlert, #avisoTrafosDUB, #cubiculosGDAlert e
+      #demandaVsPotenciaAlert não têm margem própria: são filhos diretos de um
+      grid com col-span-2. Vale para eles a convenção do .cmg-aviso — dentro do
+      grid o respiro é do grid, e a linha vazia colapsa sozinha. */
+
+/* ===== Card do transformador — três campos por linha =====
+   A minigeração declara a IMPEDÂNCIA de cada transformador (característica do
+   equipamento, não da instalação), então o card tem três campos onde o MT e a
+   microgeração têm dois — e a linha "Nova …" da troca acompanha, com a nova
+   potência, o novo tipo de ligação e a nova impedância.
+   O recorte inferior é próprio: abaixo de 900px voltam duas colunas, e o
+   @media de 560px do .trafo-card-grid (formulario-mt.css) segue mandando na
+   coluna única — por isso a faixa aqui começa em 561px, senão esta regra, que
+   vem depois na cascata, desfaria aquela. */
+.cemig-minigd .trafo-card-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+@media (min-width: 561px) and (max-width: 900px) {
+  .cemig-minigd .trafo-card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }

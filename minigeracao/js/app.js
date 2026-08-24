@@ -1287,10 +1287,9 @@ function validarExportacao() {
     faltas.push("Coordenada UTM fora da faixa do fuso");
   req(d.solicitacao, "Tipo de Solicitação");
   req(d.tensaoAtendimento, "Tensão de atendimento");
-  // A impedância só é perguntada no ramo individual (vive dentro de
-  // #blocoTrafosIndividual); na compartilhada ela é dado de cada cubículo.
-  if (d.entradaEnergia !== GD_ENTRADA_COMPARTILHADA)
-    req(d.impedanciaTrafo, "Impedância do transformador");
+  // A impedância deixou de ser uma resposta da instalação: agora é campo de
+  // cada transformador, e quem a cobra é gdValidarSubestacao() logo abaixo —
+  // nos dois ramos, individual e cubículos.
   // Bloco técnico da subestação: transformadores, cubículos e tipo de SE. Os
   // cards são construídos por JS, então esta é a rede que fecha o que o
   // CemigMarcadores não alcança. Cobre também a quantidade de cubículos.
@@ -1473,7 +1472,9 @@ function renderPreviewGD() {
             )
           : pvCampo(
               "Transformadores",
-              `${d.qtdTotalTrafos || 0} un · ${d.potTotalTrafos || 0} kVA · impedância ${d.impedanciaTrafo || "—"}%`,
+              // A impedância saiu do resumo: com um valor por transformador não
+              // há um número único a exibir — a tabela do PDF traz a coluna.
+              `${d.qtdTotalTrafos || 0} un · ${d.potTotalTrafos || 0} kVA`,
               { full: true, step: 3 },
             )) +
         // Demandas: os mesmos campos que _paresPotenciaGD() põe em tela.

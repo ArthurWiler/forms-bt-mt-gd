@@ -30,6 +30,7 @@ function gerarPdfMiniGD(d) {
         "Trafo " + (i + 1),
         (t.potencia || "—") + " kVA",
         t.tipoLigacao || "—",
+        (t.impedancia || "—") + "%",
         ...(comSituacao ? [situacaoTrafo(t)] : []),
       ]);
 
@@ -118,9 +119,13 @@ function gerarPdfMiniGD(d) {
         : "",
     ],
     ["Entrada de Energia", d.entradaEnergia],
-    ["Mudança de local da subestação", d.mudancaSE],
     ["Gerador de Emergência (kVA)", d.geradorPotencia],
   ];
+  // A mudança de local só é perguntada havendo subestação a mudar de lugar
+  // (atualizarMudancaSEGD, js/subestacao.js). Fora disso o campo fica oculto e
+  // travado em "Não" — imprimir a linha só acrescentaria ruído.
+  if (_temSubestacaoExistenteGD())
+    ucPairs.push(["Mudança de local da subestação", d.mudancaSE]);
   // Escolha da subestação: conexão nova e alteração são caminhos exclusivos.
   if (ehLigacaoNova) {
     ucPairs.push(["Subestação para conexão nova", d.cn_tipoSE]);
@@ -166,10 +171,11 @@ function gerarPdfMiniGD(d) {
   // transformadores são da própria UC; no segundo pertencem a cada cubículo,
   // e cada cubículo é uma NS distinta.
   const comSituacao = !ehLigacaoNova;
-  const cabTrafo = ["Transformador", "Potência", "Ligação"].concat(
+  const cabTrafo = ["Transformador", "Potência", "Ligação", "Imped."].concat(
     comSituacao ? ["Situação"] : [],
   );
-  const largTrafo = comSituacao ? [52, 40, 44, 46] : [70, 56, 56];
+  // Somam sempre 182 (a largura útil da tabela).
+  const largTrafo = comSituacao ? [46, 34, 38, 26, 38] : [56, 44, 46, 36];
   if (ehCompartilhada) {
     subSec("SUBESTAÇÃO COMPARTILHADA — CUBÍCULOS");
     kvPairs([
@@ -209,7 +215,6 @@ function gerarPdfMiniGD(d) {
         " kW",
     );
   } else {
-    kvPairs([["Impedância do Transformador (%)", d.impedanciaTrafo]]);
     const linhas = linhasTrafo(d.trafos, comSituacao);
     if (linhas.length) {
       tabela(cabTrafo, largTrafo, linhas);

@@ -10,6 +10,22 @@
         <option>2</option>
       </select>
     </div>
+    <!-- Regras 17/18: a resposta trava a demanda de geração em 0 e a
+         modalidade em Autoconsumo Local — os dois campos logo abaixo. Por isso
+         a pergunta vive aqui, e não na etapa 4 (Tipo de atendimento). -->
+    <div class="field field--plain" data-noopt>
+      <label>O empreendimento será "Grid Zero"?</label>
+      <div id="cardsGridZero"></div>
+      <select
+        data-k="gridZero"
+        onchange="onGridZero()"
+        style="display: none"
+        aria-hidden="true"
+      >
+        <option>Não</option>
+        <option>Sim</option>
+      </select>
+    </div>
     <div class="field col-span-2">
       <label
         >Potência Ativa Instalada Total de Geração (kW)

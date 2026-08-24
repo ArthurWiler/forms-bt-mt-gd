@@ -116,12 +116,17 @@ function novoTrafoGD() {
     // Tipo de ligação (∆-Y, ∆-∆, …) no lugar da corrente de inrush do MT: a
     // minigeração não calcula nada com o inrush.
     tipoLigacao: "",
+    // Impedância percentual: característica do EQUIPAMENTO, não da instalação —
+    // por isso é declarada em cada card (individual e de cubículo) e não uma vez
+    // para a UC inteira, como era até então (state.impedanciaTrafo).
+    impedancia: "",
     // Situação declarada: "troca" | "novo" | "sem". `substituir` é derivado
     // dela — só a troca usa os campos nova*.
     situacao: "novo",
     substituir: false,
     novaPotencia: "",
     novaTipoLigacao: "",
+    novaImpedancia: "",
   };
 }
 /* <option>s do tipo de ligação, com o valor do trafo já marcado. */
@@ -141,6 +146,11 @@ function _permiteTrocaTrafoGD() {
 }
 function _potenciaFuturaTrafoGD(t) {
   return t.substituir ? t.novaPotencia : t.potencia;
+}
+/* Mesma projeção para a impedância: quem dimensiona é o equipamento que FICA,
+   e numa troca esse é o novo. */
+function _impedanciaFuturaTrafoGD(t) {
+  return t.substituir ? t.novaImpedancia : t.impedancia;
 }
 /* Projeta a lista no que ela será DEPOIS da obra — é ela que dimensiona a
    instalação (o equipamento substituído sai). */
@@ -168,6 +178,8 @@ function _aplicarSituacaoTrafoGD(t, valor) {
   // Ao marcar a troca pela primeira vez, semeia a nova potência com a atual —
   // o usuário costuma alterar só esse número.
   if (t.substituir && t.novaPotencia === "") t.novaPotencia = t.potencia;
+  if (t.substituir && t.novaImpedancia === "")
+    t.novaImpedancia = t.impedancia;
 }
 function setTrafoSituacaoGD(i, valor) {
   const t = trafosGD[i];
@@ -211,6 +223,11 @@ function _camposTrafoGD(t, id, ref, apos, subst) {
           <select id="${id}NovaLig"
                   onchange="${ref}.novaTipoLigacao=this.value">${_opcoesTipoLigGD(t.novaTipoLigacao)}</select>
         </div>
+        <div class="field">
+          <label for="${id}NovaImp">Nova impedância (%)</label>
+          <input id="${id}NovaImp" type="number" step="any" data-req value="${_escAttrGD(t.novaImpedancia)}" placeholder=" "
+                 oninput="${ref}.novaImpedancia=this.value;${apos}">
+        </div>
       </div>`;
   return `<div class="trafo-card-grid">
       <div class="field">
@@ -222,6 +239,11 @@ function _camposTrafoGD(t, id, ref, apos, subst) {
         <label for="${id}Lig">Tipo de ligação</label>
         <select id="${id}Lig"
                 onchange="${ref}.tipoLigacao=this.value">${_opcoesTipoLigGD(t.tipoLigacao)}</select>
+      </div>
+      <div class="field">
+        <label for="${id}Imp">Impedância (%)</label>
+        <input id="${id}Imp" type="number" step="any" data-req value="${_escAttrGD(t.impedancia)}" placeholder=" "
+               oninput="${ref}.impedancia=this.value;${apos}">
       </div>
     </div>
     ${linhaNova}`;
@@ -523,12 +545,11 @@ function _subestacaoExistenteCardsHTML() {
   return (
     '<div class="toggle-group" role="radiogroup" aria-label="Sobre a subestação">' +
     GD_SUBESTACAO_EXISTENTE.map(
-        (v) =>
-          `<button type="button" role="radio" class="toggle-btn${atual === v ? " on" : ""}"
+      (v) =>
+        `<button type="button" role="radio" class="toggle-btn${atual === v ? " on" : ""}"
              aria-checked="${atual === v}"
              onclick="setSubestacaoExistenteGD('${v}')">${v}</button>`,
-      )
-      .join("") +
+    ).join("") +
     "</div>"
   );
 }
@@ -737,11 +758,6 @@ function renderCubiculos() {
         <span class="trafo-chevron" aria-hidden="true"></span>
       </button>
       <div class="trafo-card-body" id="cubCardBody${i}"${aberto ? "" : " hidden"}>
-        <p class="cub-card-sub">Este cubículo corresponde a uma <strong>NS própria</strong>, vinculada a uma instalação distinta. Preencha os dados de cada transformador dele${
-          trocaCub
-            ? " e informe a <strong>quantidade total de transformadores</strong> considerando os <strong>que serão alterados + os novos</strong> a acrescentar"
-            : ""
-        }.</p>
         ${trocaCub ? _cubiculoExistenteCardsHTML(i, c.existente) : ""}
         <div class="grid grid-2">
           ${campoInstal}
@@ -806,7 +822,10 @@ function renderResumoSEGD() {
     ...(compart
       ? [
           ["Cubículos", String(cubiculosGD.length)],
-          ["Geração total dos cubículos", `${_fmtGD(state.gdTotalCubiculos)} kW`],
+          [
+            "Geração total dos cubículos",
+            `${_fmtGD(state.gdTotalCubiculos)} kW`,
+          ],
         ]
       : []),
     // Sem demanda declarada o dimensionamento recai sobre a potência instalada
@@ -832,6 +851,32 @@ function renderResumoSEGD() {
     .join("");
   return true;
 }
+/* REGRA 12 — "Haverá mudança de local da subestação?" pressupõe uma subestação
+   JÁ EXISTENTE: em Conexão Nova (inclusive a migração BT→MT, que estreia um
+   padrão de média tensão) ela ainda será construída, e na compartilhada quem
+   responde é o "Sobre a subestação" dos cubículos. */
+function _temSubestacaoExistenteGD() {
+  // Sem solicitação escolhida ainda não se sabe se existe instalação anterior —
+  // a pergunta fica fora de tela, como #instalacaoUCBox em onSolicitacao().
+  if (!state.solicitacao) return false;
+  if (_finalidadeGD() === "Conexão Nova") return false;
+  return _ehCompartilhadaGD() ? temInstalacaoCubiculoGD() : true;
+}
+function atualizarMudancaSEGD() {
+  const ver = _temSubestacaoExistenteGD();
+  _mostrarGD("#mudancaSEBox", ver);
+  // Campo oculto não pode guardar "Sim": a resposta sobreviveria escondida e
+  // sairia na prévia/PDF. O <select> é a fonte da verdade dos cards, e
+  // _cardsMontar (js/app.js) redesenha o toggle ao ouvir "change".
+  if (!ver && state.mudancaSE !== "Não") {
+    state.mudancaSE = "Não";
+    const sel = $('[data-k="mudancaSE"]');
+    if (sel) {
+      sel.value = "Não";
+      sel.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  }
+}
 /* Exibe a escolha do tipo de subestação (nova ou alteração) só quando os totais
    já existem — os mesmos totais dos KPIs, que são o que filtra os modelos
    permitidos. Conexão Nova e alteração são caminhos EXCLUSIVOS. */
@@ -840,6 +885,9 @@ function atualizarVisibilidadeSEGD() {
   const pronto = renderResumoSEGD();
   _mostrarGD("#blocoSubestacaoNova", ehNova && pronto);
   _mostrarGD("#blocoSubestacaoAlteracao", !ehNova && pronto);
+  // Aqui e não só em atualizarSE(): o "Sobre a subestação" da compartilhada
+  // chega por setSubestacaoExistenteGD() → recalcTecnicoGD().
+  atualizarMudancaSEGD();
 }
 /* Teto de cada modelo em kW, tal como declarado no catálogo do MT. */
 function _tetoSEkW(tipo) {
@@ -1045,6 +1093,7 @@ function recalcTecnicoGD() {
         qte: t.quantidade,
         potencia: _potenciaFuturaTrafoGD(t),
         tipoLigacao: t.substituir ? t.novaTipoLigacao : t.tipoLigacao,
+        impedancia: _impedanciaFuturaTrafoGD(t),
         situacao: _situacaoTrafoGD(t),
       }));
   state.motores = motoresGD;
@@ -1077,6 +1126,10 @@ function atualizarSE() {
         )
       : "",
   );
+  // Repetido aqui porque o !respondida abaixo desvia antes de
+  // recalcTecnicoGD(): sem entrada de energia respondida a pergunta ainda
+  // precisa sumir/reaparecer conforme a solicitação.
+  atualizarMudancaSEGD();
   if (!respondida) {
     // Nada respondido: o que porventura tenha sido declarado não pode
     // sobreviver escondido e sair no PDF.
@@ -1135,6 +1188,7 @@ function gdValidarSubestacao() {
     return faltas;
   }
   const potFutura = (t) => parseFloat(_potenciaFuturaTrafoGD(t)) || 0;
+  const impedFutura = (t) => parseFloat(_impedanciaFuturaTrafoGD(t)) || 0;
   if (_ehCompartilhadaGD()) {
     if (!cubiculosGD.length) {
       faltas.push("Quantidade de cubículos");
@@ -1147,6 +1201,8 @@ function gdValidarSubestacao() {
         c.trafos.forEach((t, j) => {
           if (!(potFutura(t) > 0))
             faltas.push(`${rot}: potência do transformador ${j + 1}`);
+          if (!(impedFutura(t) > 0))
+            faltas.push(`${rot}: impedância do transformador ${j + 1}`);
         });
         const dem = demandaRepresentativaCubiculoGD(c);
         if (!(dem > 0)) faltas.push(`${rot}: demanda contratada de consumo`);
@@ -1168,6 +1224,8 @@ function gdValidarSubestacao() {
     trafosGD.forEach((t, i) => {
       if (!(potFutura(t) > 0))
         faltas.push(`Potência do transformador ${i + 1}`);
+      if (!(impedFutura(t) > 0))
+        faltas.push(`Impedância do transformador ${i + 1}`);
     });
     // A demanda contratada em si NÃO é exigida aqui: quem a exige é
     // validarExportacao(), no mesmo critério dos campos (ver
