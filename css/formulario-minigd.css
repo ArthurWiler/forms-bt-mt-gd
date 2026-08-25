@@ -158,23 +158,6 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 /* Toggle/radio: estilo canônico único em shared.css (.toggle-group/.toggle-btn). */
 input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-claro); color: var(--texto-suave); }
 
-/* ===== GD — banner de modalidade pré-definida (Fast Track / Grid Zero) ===== */
-.gd-modo-banner {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  background: var(--verde-claro);
-  border: 1px solid var(--verde);
-  border-left-width: 4px;
-  border-radius: 10px;
-  padding: 10px 14px;
-  margin-bottom: 16px;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--texto);
-}
-.gd-modo-banner strong { color: var(--verde-escuro); }
-
 /* ---------- BOTÕES ----------
    .btn / .btn-primary / .btn-dark / .btn-ghost / .btn-danger-ghost:
    fonte única em shared.css (`.cemig-form .btn …`). Dupes locais removidos. */
@@ -185,26 +168,9 @@ input:disabled, select:disabled { cursor: not-allowed; background: var(--verde-c
 
 /* ---------- ORIENTAÇÕES ----------
    Estilo centralizado em css/shared.css (`.cemig-form .orient-*`).
-   As definições locais foram removidas para evitar duplicação. */
-.callout {
-  background: var(--verde-claro);
-  border-radius: var(--raio-sm);
-  padding: 14px 16px;
-  font-size: 13px;
-  color: var(--verde-escuro);
-  line-height: 1.55;
-  margin-top: 14px;
-}
-.legend {
-  display: flex;
-  gap: 18px;
-  flex-wrap: wrap;
-  font-size: 12px;
-  color: var(--texto-suave);
-  margin-top: 16px;
-  padding-top: 14px;
-  border-top: 1px solid var(--borda);
-}
+   As definições locais foram removidas para evitar duplicação.
+   O aviso de orientações migrou para o componente canônico `.cmg-aviso`
+   (shared.css); a regra local `.callout` foi removida por ficar sem uso. */
 
 /* Os antigos .alert/.alert-* foram substituídos pelo banner canônico
    `.cmg-aviso` (shared.css) via o componente GdAviso (shared/js/components.js). */
@@ -888,6 +854,15 @@ textarea.ta {
   margin-top: 0;
 }
 
+/* 2b. Par de demanda dentro de um card (transformador ou cubículo): ele é o
+      PRIMEIRO filho do .cub-trafo-bloco, cujo filete já traz 16px de
+      padding-top. O margin-top de 14px do .cub-demanda-grid (formulario-mt.css)
+      existe para separá-lo da modalidade tarifária que vem antes dele no MT —
+      aqui não há modalidade, então os dois se somavam em 30px. */
+.cemig-minigd .cub-trafo-bloco > .cub-demanda-grid:first-child {
+  margin-top: 0;
+}
+
 /* 3. Listas de cards: `.trafo-card` / `.motor-card` trazem margin-top de 14px
       para o passo ENTRE cards (formulario-mt.css). No primeiro card essa margem
       somaria ao row-gap do grid, então some — os 32px acima já são do grid. */
@@ -918,4 +893,117 @@ textarea.ta {
   .cemig-minigd .trafo-card-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+
+/* ============================================================
+   Etapa 5 — Dados da geração
+   ------------------------------------------------------------
+   Porte das regras da etapa equivalente do microGD
+   (css/formulario-microgd.css): a pergunta em lista de rádios, os blocos de
+   modelo de módulo/inversor e o resumo em KPIs. Aqui os blocos são ESCRITOS
+   por JS (renderFontes), um conjunto por fonte, então os seletores são de
+   classe — no micro alguns eram de id, porque lá o markup é único.
+   ============================================================ */
+
+/* Cada fonte é um bloco do card: o passo vertical entre eles — e entre o grid
+   comum do topo e o primeiro deles — é o mesmo 32px das demais seções da
+   etapa. O .gd-subhead traz margem própria de 18px, que serve aos usos
+   antigos; dentro do bloco quem manda é o wrapper, senão os dois se somam. */
+.cemig-minigd .gd-fonte-bloco {
+  margin-top: var(--cmg-space-8);
+}
+.cemig-minigd .gd-fonte-bloco > .gd-subhead:first-child {
+  margin-top: 0;
+}
+
+/* Pergunta em lista de rádios (spec Figma "regulamento"): opções SEM a moldura
+   de card do .doc-item — apenas o rádio + rótulo, com a descrição de apoio
+   abaixo. Desenhada para a modalidade de operação (#modoOperacaoBox) e
+   reusada pela classificação de segurança de barragens da fonte Hidráulica,
+   que tem a mesma forma (rótulo curto + critério oficial de apoio):
+   .gd-pergunta é a caixa da pergunta e .gd-radio-list a lista de opções. */
+/* `.cemig-form .field` no seletor porque o rótulo canônico
+   (`.cemig-form .field label`, shared.css) tem especificidade maior que uma
+   classe sozinha. */
+.cemig-form .field.gd-pergunta > label {
+  font-size: 16px;
+  line-height: 26px;
+  letter-spacing: 0.2px;
+  color: #364b46;
+}
+/* pergunta → lista: 16px no Figma, 13px aqui, pela mesma invariante do toggle
+   ("baseline do rótulo → centro da forma = 32px", ver shared.css). */
+.gd-radio-list {
+  gap: 32px; /* entre opções (literal) */
+  margin-top: 13px;
+}
+.gd-radio-list .doc-item {
+  border: 0;
+  background: none;
+  padding: 0;
+  /* rádio → texto: 4px no Figma, medidos da caixa de 32×32 do ícone → 10px
+     visuais a partir da forma de 20px, a mesma distância do .toggle-btn. */
+  gap: 10px;
+  align-items: flex-start;
+}
+.gd-radio-list .doc-item:hover {
+  border-color: transparent;
+}
+/* Forma do rádio: regra canônica `.cemig-form input[type="radio"]`
+   (shared.css); aqui só o alinhamento com a 1ª linha do rótulo —
+   (24px de line-height − 20px da forma) / 2 = 2px. */
+.cemig-form .gd-radio-list input[type="radio"] {
+  margin-top: 2px;
+}
+/* Rótulo da opção: mesma tipografia do .toggle-btn canônico. */
+.gd-radio-list .doc-text {
+  font-size: var(--cmg-fs-body-lg);
+  line-height: var(--cmg-lh-body);
+  letter-spacing: var(--cmg-ls-loose);
+  color: var(--cmg-neutral-600);
+}
+.gd-radio-list .doc-sub {
+  margin-top: 3px;
+  font-size: var(--cmg-fs-body);
+  line-height: var(--cmg-lh-body);
+  letter-spacing: var(--cmg-ls-loose);
+  color: var(--cmg-neutral-500);
+}
+/* Descrição de apoio: uma linha abaixo do rótulo da opção. */
+.doc-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--texto-suave);
+}
+
+/* Blocos de MODELO de módulo/inversor. A tipografia do cabeçalho é a dos
+   cards de transformador (.trafo-titulo, formulario-mt.css) — subtítulo/18px
+   em peso regular. Os vãos seguem o passo vertical da etapa: 32px entre a
+   lista e o que vem antes / entre um modelo e o seguinte, 16px do título para
+   os campos. `:not(:empty)` porque a lista é injetada: sem nenhum modelo o
+   contêiner não deve reservar espaço. */
+.cemig-minigd .gd-modelos-lista:not(:empty) {
+  margin-top: var(--cmg-space-8);
+}
+.cemig-minigd .gd-modelo-bloco + .gd-modelo-bloco {
+  margin-top: var(--cmg-space-8);
+}
+.cemig-minigd .gd-modelo-titulo {
+  margin-bottom: var(--cmg-space-4);
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-subtitle);
+  line-height: var(--cmg-lh-subtitle);
+  font-weight: var(--cmg-fw-regular);
+  color: var(--cmg-text-strong);
+}
+
+/* Resumo da fonte em KPIs: .resultado-kpis não traz margem própria e aqui não
+   há um .divider acima, então o vão de 32px mora no wrapper. Quem o liga é
+   _renderKpisGeracaoGD() — o display inline do HTML some e esta regra volta a
+   valer, como no .grid-subgrupo. */
+.cemig-minigd .gd-fonte-resumo {
+  margin-top: var(--cmg-space-8);
 }

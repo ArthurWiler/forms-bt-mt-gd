@@ -121,12 +121,9 @@ function gdEstadoInicial() {
     // não na microgeração): quem dimensiona a subestação é a potência de consumo
     // que a própria etapa já pergunta — `demandaConsumo` quando há potência nova
     // a contratar, senão `demandaConsumoAtual`.
-    // Motores e cargas especiais + carga operante na partida do maior motor.
+    // Motores e cargas especiais.
     qtdMotores: "",
     motores: [],
-    cargaOperante: "",
-    ipPrevista: "",
-    tempoPartida: "",
     solicitacao: "",
     edificacao: "",
     edifTipo: "",

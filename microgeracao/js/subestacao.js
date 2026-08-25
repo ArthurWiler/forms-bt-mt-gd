@@ -270,9 +270,15 @@ function _validarDemandaVsPotenciaGD() {
 /* ============================================================
    MOTORES E CARGAS ESPECIAIS
    ------------------------------------------------------------
-   Diferente do MT, NÃO se coletam aqui os dados de "Análise de
-   Partida" do motor pesado: a microgeração não tem essa página
-   nem o PDF correspondente.
+   Mesma regra do MT (mt/js/app.js): o card pergunta só fases, CV e
+   dispositivo de partida. O conjunto completo de dados de partida é
+   exigido apenas do MOTOR PESADO — critério Cemig: trifásico acima
+   de 50 CV OU monofásico acima de 15 CV.
+
+   Os dados de partida gravam em motoresGD[i].analisePartida, no mesmo
+   formato do MT. A microgeração não tem a página "Análise de
+   Partida" nem o PDF dela: aqui os dados são coletados na mesma
+   estrutura, sem a segunda tela que o MT oferece.
    ============================================================ */
 function novoMotorGD() {
   return {
@@ -288,6 +294,35 @@ function novoMotorGD() {
     tap: "",
   };
 }
+/* Critério Cemig do motor pesado, idêntico a motorPesado() do MT:
+   trifásico acima de 50 CV ou monofásico acima de 15 CV. Trifásico é o
+   padrão, então qualquer valor diferente de "Monofásico" cai no teto de 50. */
+function motorPesadoGD(m) {
+  const cv = parseFloat(m.cv) || 0;
+  if (!cv) return false;
+  return m.fases === "Monofásico" ? cv > 15 : cv > 50;
+}
+/* Ficha de partida do motor pesado — mesmo formato do MT, inclusive as três
+   chaves (fpPartida, dispositivo, tap) que lá só a página "Análise de Partida"
+   preenche: manter a estrutura idêntica evita divergir se ela for portada. */
+function ensureAnalisePartidaGD(m) {
+  if (!m.analisePartida) {
+    m.analisePartida = {
+      fpPartida: "",
+      dispositivo: "",
+      tap: "",
+      numPartidas: "",
+      ordemPartida: "",
+      cargaOperanteKVA: "",
+      cargaOperanteFP: "",
+      cargaSensivelTipo: "",
+      cargaSensivelPercentual: "",
+      simultaneidade: "",
+      impedanciaZ: "",
+    };
+  }
+  return m.analisePartida;
+}
 function sincronizarMotores() {
   const el = $('[data-k="qtdMotores"]');
   const bruto = parseInt(el?.value, 10);
@@ -298,7 +333,6 @@ function sincronizarMotores() {
   state.qtdMotores = n;
   if (!motoresGDAbertos.size && n) motoresGDAbertos.add(0);
   renderMotoresGD();
-  atualizarCargaOperanteGD();
 }
 function toggleMotorGD(i) {
   motoresGDAbertos.has(i)
@@ -327,6 +361,28 @@ function _calcMotorGD(m) {
     _tensaoMTkVGD(),
   );
 }
+/* Campos exigidos só de motor pesado (acima de 50 CV trifásico / 15 CV
+   monofásico) — porte de _motorCamposPesadoHTML() do MT. Os oito primeiros
+   gravam na ficha de partida; os cinco últimos são as grandezas elétricas que
+   alimentam o cálculo do card. */
+function _motorCamposPesadoHTMLGD(i, m, ap) {
+  const ref = `motoresGD[${i}].analisePartida`;
+  return `<div class="motor-card-grid" style="margin-top:12px">
+    <div class="field"><label>Número de partidas</label><input type="number" value="${ap.numPartidas}" placeholder=" " oninput="${ref}.numPartidas=this.value"></div>
+    <div class="field"><label>Ordem de partida</label><input type="number" value="${ap.ordemPartida}" placeholder=" " oninput="${ref}.ordemPartida=this.value"></div>
+    <div class="field"><label>Carga operando (kVA)</label><input type="number" step="any" value="${ap.cargaOperanteKVA}" placeholder=" " oninput="${ref}.cargaOperanteKVA=this.value"></div>
+    <div class="field"><label>Carga operando (FP)</label><input type="number" step="any" value="${ap.cargaOperanteFP}" placeholder=" " oninput="${ref}.cargaOperanteFP=this.value"></div>
+    <div class="field"><label>Tipo de carga sensível</label><input type="text" value="${ap.cargaSensivelTipo}" placeholder=" " oninput="${ref}.cargaSensivelTipo=this.value"></div>
+    <div class="field"><label>% admissível da carga sensível</label><input type="number" step="any" value="${ap.cargaSensivelPercentual}" placeholder=" " oninput="${ref}.cargaSensivelPercentual=this.value"></div>
+    <div class="field"><label>Simultaneidade</label><select onchange="${ref}.simultaneidade=this.value"><option value=""></option><option ${ap.simultaneidade === "Sim" ? "selected" : ""}>Sim</option><option ${ap.simultaneidade === "Não" ? "selected" : ""}>Não</option></select></div>
+    <div class="field"><label>Impedância do transformador (%Z)</label><input type="number" step="any" value="${ap.impedanciaZ}" placeholder=" " oninput="${ref}.impedanciaZ=this.value"></div>
+    <div class="field"><label>Rendimento</label><input type="number" step="any" value="${m.rend}" placeholder=" " oninput="motoresGD[${i}].rend=this.value" onchange="atualizarCalculosMotorGD(this)"></div>
+    <div class="field"><label>FP</label><input type="number" step="any" value="${m.fp}" placeholder=" " oninput="motoresGD[${i}].fp=this.value" onchange="atualizarCalculosMotorGD(this)"></div>
+    <div class="field"><label>Tensão (V)</label><input type="number" step="any" value="${m.volts}" placeholder=" " oninput="motoresGD[${i}].volts=this.value" onchange="atualizarCalculosMotorGD(this)"></div>
+    <div class="field"><label>IP/IN</label><input type="number" step="any" value="${m.ipIn}" placeholder=" " oninput="motoresGD[${i}].ipIn=this.value" onchange="atualizarCalculosMotorGD(this)"></div>
+    <div class="field"><label>Tempo IP (s)</label><input type="number" step="any" value="${m.tempo}" placeholder=" " oninput="motoresGD[${i}].tempo=this.value"></div>
+  </div>`;
+}
 function renderMotoresGD() {
   const box = $("#motoresCardsContainer");
   if (!box) return;
@@ -338,10 +394,15 @@ function renderMotoresGD() {
       (d) => `<option ${m.dispositivo === d ? "selected" : ""}>${d}</option>`,
     ).join("");
     const compensadora = m.dispositivo === "Chave Compensadora";
+    // Motor pesado (trifásico acima de 50 CV / monofásico acima de 15 CV) exige
+    // o conjunto completo de dados de partida, exibido no próprio card.
+    const pesado = motorPesadoGD(m);
+    const ap = pesado ? ensureAnalisePartidaGD(m) : null;
     const aberto = motoresGDAbertos.has(i);
     const card = document.createElement("div");
     card.className = "motor-card" + (aberto ? " is-open" : "");
     card.dataset.motorRow = i;
+    card.dataset.pesado = pesado ? "1" : "0";
     card.innerHTML = `
       <button type="button" class="motor-card-head" onclick="toggleMotorGD(${i})"
               aria-expanded="${aberto}" aria-controls="motorGdCardBody${i}">
@@ -352,15 +413,11 @@ function renderMotoresGD() {
       <div class="motor-card-body" id="motorGdCardBody${i}"${aberto ? "" : " hidden"}>
         <div class="motor-card-grid">
           <div class="field"><label>Fases</label><select onchange="motoresGD[${i}].fases=this.value;renderMotoresGD()"><option ${m.fases === "Monofásico" ? "selected" : ""}>Monofásico</option><option ${m.fases !== "Monofásico" ? "selected" : ""}>Trifásico</option></select></div>
-          <div class="field"><label>CV</label><input type="number" step="any" value="${m.cv}" placeholder=" " oninput="motoresGD[${i}].cv=this.value;atualizarCalculosMotorGD(this)"></div>
-          <div class="field"><label>FP</label><input type="number" step="any" value="${m.fp}" placeholder=" " oninput="motoresGD[${i}].fp=this.value;atualizarCalculosMotorGD(this)"></div>
-          <div class="field"><label>Rendimento</label><input type="number" step="any" value="${m.rend}" placeholder=" " oninput="motoresGD[${i}].rend=this.value;atualizarCalculosMotorGD(this)"></div>
-          <div class="field"><label>Tensão (V)</label><input type="number" step="any" value="${m.volts}" placeholder=" " oninput="motoresGD[${i}].volts=this.value;atualizarCalculosMotorGD(this)"></div>
-          <div class="field"><label>IP/IN</label><input type="number" step="any" value="${m.ipIn}" placeholder=" " oninput="motoresGD[${i}].ipIn=this.value;atualizarCalculosMotorGD(this)"></div>
-          <div class="field"><label>Tempo IP (s)</label><input type="number" step="any" value="${m.tempo}" placeholder=" " oninput="motoresGD[${i}].tempo=this.value"></div>
+          <div class="field"><label>CV</label><input type="number" step="any" value="${m.cv}" placeholder=" " oninput="motoresGD[${i}].cv=this.value;atualizarCalculosMotorGD(this)" onchange="atualizarCalculosMotorGD(this)"></div>
           <div class="field"><label>Disp. Partida</label><select onchange="onDispositivoMotorGD(this,${i})"><option value=""></option>${dispOpts}</select></div>
           <div class="field motor-tap-field" style="display:${compensadora ? "" : "none"}"><label>Tap (%)</label><input type="number" step="any" value="${m.tap || ""}" placeholder=" " oninput="motoresGD[${i}].tap=this.value"></div>
         </div>
+        ${pesado ? _motorCamposPesadoHTMLGD(i, m, ap) : ""}
         ${_motorCalcHTMLGD(c)}
       </div>`;
     box.appendChild(card);
@@ -375,6 +432,14 @@ function atualizarCalculosMotorGD(inputEl) {
   const card = inputEl.closest(".motor-card");
   if (!card) return;
   const i = parseInt(card.dataset.motorRow, 10);
+  // Se o motor cruzou o limite de "pesado" (acima de 50 CV trifásico / 15 CV
+  // monofásico), o card ganha/perde os campos de partida: aí sim vale
+  // reconstruir. Fora isso, só os valores calculados são atualizados.
+  const eraPesado = card.dataset.pesado === "1";
+  if (motoresGD[i] && motorPesadoGD(motoresGD[i]) !== eraPesado) {
+    renderMotoresGD();
+    return;
+  }
   const m = motoresGD[i];
   if (!m) return;
   const c = _calcMotorGD(m);
@@ -396,17 +461,6 @@ function onDispositivoMotorGD(selectEl, i) {
   const tap = card && card.querySelector(".motor-tap-field");
   if (tap)
     tap.style.display = selectEl.value === "Chave Compensadora" ? "" : "none";
-}
-/* Carga operante na partida só faz sentido havendo motores declarados. */
-function atualizarCargaOperanteGD() {
-  const box = $("#blocoCargaOperante");
-  if (box) box.style.display = motoresGD.length > 0 ? "" : "none";
-  // Campo oculto não pode manter valor: sem motores, um número digitado antes
-  // continuaria no estado e sairia no PDF.
-  if (!motoresGD.length) {
-    if (state.cargaOperante || state.ipPrevista || state.tempoPartida)
-      aplicarPatch({ cargaOperante: "", ipPrevista: "", tempoPartida: "" });
-  }
 }
 
 /* ============================================================
@@ -650,7 +704,6 @@ function atualizarSE() {
     });
   renderTrafosGD();
   renderMotoresGD();
-  atualizarCargaOperanteGD();
   recalcTecnicoGD();
 }
 /* Faltas do bloco técnico para o gate de exportação (etapa Prévia). */

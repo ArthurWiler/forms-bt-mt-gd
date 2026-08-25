@@ -5,23 +5,84 @@
    (trocar/novo/manter) e tipo de ligação próprios — quem os cria é
    novoTrafoGD() em js/subestacao.js. `trafos` aqui é só o ESPELHO que a
    prévia e o PDF leem, escrito por recalcTecnicoGD(). */
+/* Uma FONTE de geração. Cada fonte declara o conjunto completo da etapa 5 do
+   microGD (microgeracao/etapas/04-geracao.html): a fonte primária, a
+   tecnologia e o bloco da própria fonte — fotovoltaico (módulos e inversores,
+   um card por MODELO), hidráulico (central + segurança de barragens),
+   central térmica (Biomassa / Cogeração Qualificada) ou eólico. O mini
+   admite 1 ou 2 fontes (qtdFontes), então o que lá é estado plano aqui vive
+   dentro de cada item de `fontes`.
+   `potencia` é a potência da usina DESTA fonte: no Solar sai dos inversores,
+   nas demais é espelhada do "Potência Instalada (kW)" do bloco da fonte (ver
+   recalcFontes, js/app.js). A soma das fontes é state.potAtivaInstalada. */
 function gdFontePadrao() {
   return {
-    fontePrimaria: "Solar",
-    tipoGeracao: "Empregando conversor eletrônico/inversor",
-    tipoGeracaoOutro: "",
+    // Sem padrão: a fonte é escolha explícita do solicitante (o select abre
+    // vazio), como no microGD. Os demais blocos só aparecem depois dela.
+    fontePrimaria: "",
+    // Sem padrão: tecnologia é escolha explícita. tipoGeracaoOutro saiu com a
+    // opção "Outra (especificar):" da lista GD_TIPO_GERACAO — sem ela não há
+    // texto livre a guardar.
+    tipoGeracao: "",
+    // Potência da usina desta fonte — sempre DERIVADA (ver recalcFontes).
     potencia: "",
-    // fotovoltaica
-    potTotalModulos: "",
-    potTotalInversores: "",
-    areaArranjos: "",
+    // ----- Fotovoltaica: módulos e inversores, um card por MODELO -----
+    // `modulos`/`inversores` guardam {modelo, fabricante, potNominal,
+    // quantidade}; `qtd*` e `potTotal*` são as somas de todos os modelos,
+    // mantidas porque o PDF e a prévia já as imprimiam.
+    // A contagem de modelos abre em 1: em FV sempre há ao menos um.
+    qtdModeloModulos: 1,
+    modulos: [],
     qtdModulos: "",
-    modeloModulos: "",
-    fabricanteModulos: "",
+    potTotalModulos: "",
+    // Área ocupada e tensão de conexão ficam FORA dos cards: a primeira é o
+    // total dos arranjos, a segunda vale para a usina inteira.
+    areaArranjos: "",
+    qtdModeloInversores: 1,
+    inversores: [],
     qtdInversores: "",
-    modeloInversores: "",
-    fabricanteInversores: "",
-    // outorga
+    potTotalInversores: "",
+    tensaoConexaoInversor: "",
+    // ----- Hidráulica: central e aproveitamento -----
+    // `hidroPotInstalada` é a potência da usina nesta fonte.
+    hidroPotAparente: "",
+    hidroTensao: "",
+    hidroRio: "",
+    hidroNivelJusante: "",
+    hidroFatorPotencia: "",
+    hidroPotInstalada: "",
+    hidroNivelMontante: "",
+    hidroSubBacia: "",
+    // Segurança de barragens (REN 696/2015) — sem padrão: são respostas
+    // explícitas. A 1ª é Sim/Não (toggle); as demais são os rádios de
+    // GD_BARRAGEM_PERGUNTAS (js/data.js).
+    hidroBarragemAltura: "",
+    hidroVolumeReservatorio: "",
+    hidroPerdaVidas: "",
+    hidroImpactoAmbiental: "",
+    hidroImpactoSocio: "",
+    // ----- Central térmica: Biomassa e Cogeração Qualificada -----
+    // As duas declaram os mesmos dados (GD_FONTES_CENTRAL_TERMICA,
+    // js/data.js), então as chaves são um conjunto só. `bioPotInstalada` é a
+    // potência da usina nestas fontes. O despacho de qualificação é o único
+    // opcional: o reconhecimento pela ANEEL é "caso aplicável".
+    bioPotAparente: "",
+    bioPotInstalada: "",
+    bioCombustivel: "",
+    bioDespachoQualificacao: "",
+    bioMaqMotriz: "",
+    bioCicloTermodinamico: "",
+    bioFatorPotencia: "",
+    // ----- Eólica -----
+    // `eolPotInstalada` é a potência da usina nesta fonte.
+    eolQtdAerogeradores: "",
+    eolPotInstalada: "",
+    eolFabricante: "",
+    eolModelo: "",
+    eolAlturaPa: "",
+    eolEixoRotor: "",
+    eolFatorPotencia: "",
+    // ----- Outorga (campos próprios do mini) -----
     ceg: "",
     numAtoOutorga: "",
     nomeUsina: "",
@@ -75,6 +136,7 @@ function gdEstadoInicial() {
     mudancaSE: "Não",
     // impedanciaTrafo saiu do estado plano: a impedância virou campo de cada
     // transformador (trafos[].impedancia / cubiculos[].trafos[].impedancia).
+    geradorEmergencia: "Não",
     geradorPotencia: "",
     tensaoAtendimento: "",
     entradaEnergia: "",
@@ -92,14 +154,9 @@ function gdEstadoInicial() {
     qtdTotalTrafos: 0,
     // Totais consolidados do bloco de cubículos (subestação compartilhada).
     demandaTotalCubiculos: 0,
-    gdTotalCubiculos: 0,
     // Numa subestação NOVA não há UC por cubículo a informar; numa já existente,
     // sim (ver temInstalacaoCubiculoGD).
     subestacaoExistente: "Nova subestação",
-    // Carga operante na partida do maior motor — só perguntada havendo motores.
-    cargaOperante: "",
-    ipPrevista: "",
-    tempoPartida: "",
     // Escolha do tipo de subestação: conexão nova tem um campo; a alteração tem
     // o modelo ATUAL e o NOVO, de onde `alt_troca` é deduzida.
     cn_tipoSE: "",
@@ -108,17 +165,22 @@ function gdEstadoInicial() {
     alt_troca: "",
     solicitacao: "",
     demandaGeracao: "",
-    demandaConsumo: "",
-    demandaConsumoAtual: "",
-    numUC: "",
+    // Demanda contratada declarada card a card: a soma dos transformadores no
+    // ramo individual e a dos cubículos no compartilhado (ver recalcTecnicoGD).
+    demandaTotalTrafos: 0,
+    // Modalidade de operação do sistema — card único portado do microGD, que
+    // vale para qualquer fonte primária. `gridZero` continua no estado,
+    // DERIVADO desta escolha (ver onModoOperacaoGD), porque PDF, prévia e as
+    // regras 17/18/22 dependem dele.
+    // Sem `fastTrack`: o enquadramento de até 7,5 kW é da microgeração, então
+    // o card aqui tem só duas opções (Padrão e Grid Zero).
+    modoOperacao: "",
     gridZero: "Não",
     telhadoArrendado: "Não",
     // Unidade arrendada (spec Figma): só se aplica com telhadoArrendado="Sim".
     // O requisito do DUB virou aviso na etapa, então não há mais campo para ele.
     arrendUC: "",
     arrendTensao: "",
-    instExistente: "",
-    instExistenteBTMT: "",
     // Formulário de Carga (Item 11) — reutiliza a estrutura do formulário BT.
     // cargas: { qtds, tipoA, catA, mots, extras, _demanda, _cargaKw, _disjuntores }
     cargas: { qtds: [], tipoA: "", catA: 0, mots: [], extras: [] },

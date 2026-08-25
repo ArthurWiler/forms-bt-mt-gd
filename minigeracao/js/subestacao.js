@@ -10,9 +10,8 @@
    ----------------------
    1. Em relação à MICROGERAÇÃO: aqui EXISTE subestação
       compartilhada (multimedição). Volta todo o ramo de cubículos
-      do MT e os "Totais Consolidados". Cada cubículo é uma NS
-      distinta, vinculada a uma instalação própria, pode ter vários
-      transformadores e declara o seu próprio montante de GD.
+      do MT e os "Totais Consolidados". Cada cubículo tem a sua
+      instalação, os seus transformadores e a sua demanda.
    2. Em relação ao MT: o cliente NÃO informa modalidade tarifária
       (Verde/Azul) nem demanda escalonada — a tarifa é padronizada
       pela CEMIG. O cubículo declara uma demanda única em kW.
@@ -34,16 +33,16 @@ let trafosGD = []; // {potencia, quantidade, tipoLigacao, situacao, substituir, 
 let trafosGDAbertos = new Set([0]); // índices dos cards expandidos (acordeão)
 let motoresGD = []; // {tipo, fases, cv, fp, rend, volts, ipIn, tempo, dispositivo, tap}
 let motoresGDAbertos = new Set([0]);
-let cubiculosGD = []; // {instalacao, trafos[], demanda, potGD, existente}
+let cubiculosGD = []; // {instalacao, trafos[], demanda, demandaAtual, existente}
 let cubiculosGDAbertos = new Set([0]);
 
 /* ===== Pontes mini → MT ===== */
 /* O MT pergunta a "finalidade" (Conexão Nova / Aumento de Demanda); a mini já
-   sabe disso pela solicitação. Ligação nova (inclusive migração BT→MT, que
-   estreia um padrão de média tensão) equivale à Conexão Nova do MT. */
+   sabe disso pela solicitação: ligação nova equivale à Conexão Nova do MT.
+   O ramo da migração BT→MT saiu junto com o campo instExistenteBTMT, removido
+   da etapa 4 por repetir o "Número da Instalação / UC / Medidor" do topo. */
 function _finalidadeGD() {
-  const ehBTtoMT = state.instExistenteBTMT === GD_BT_BAIXA;
-  return _ehLigacaoNova() || ehBTtoMT ? "Conexão Nova" : "Aumento de Demanda";
+  return _ehLigacaoNova() ? "Conexão Nova" : "Aumento de Demanda";
 }
 /* CalculoMT raciocina em kV; o estado guarda o volt "cru" porque é o que o PDF
    sempre imprimiu e o que o <select> grava. */
@@ -51,8 +50,9 @@ function _tensaoMTkVGD() {
   const v = parseFloat(state.tensaoAtendimento);
   return v ? v / 1000 : "";
 }
-/* O campo "Entrada de energia" da minigeração é o "Subestação compartilhada
-   (multimedição)?" do MT com outro rótulo. CalculoMT espera "Sim"/"Não". */
+/* O campo "Tipo de edificação" da minigeração (data-k entradaEnergia) é o
+   "Subestação compartilhada (multimedição)?" do MT com outro rótulo.
+   CalculoMT espera "Sim"/"Não". */
 function _compartilhadaGD() {
   return state.entradaEnergia === GD_ENTRADA_COMPARTILHADA ? "Sim" : "Não";
 }
@@ -60,8 +60,8 @@ function _ehCompartilhadaGD() {
   return _compartilhadaGD() === "Sim";
 }
 /* A minigeração é sempre Grupo A — não existe o ramo de baixa tensão da micro.
-   O que governa a exibição é a "Entrada de energia": Individual e Compartilhada
-   levam a blocos diferentes, então nada aparece antes de ela ser respondida. */
+   O que governa a exibição é o "Tipo de edificação": Individual e Compartilhada
+   levam a blocos diferentes, então nada aparece antes de ele ser respondido. */
 function _mostrarBlocoTecnicoGD() {
   return !!state.entradaEnergia;
 }
@@ -127,6 +127,11 @@ function novoTrafoGD() {
     novaPotencia: "",
     novaTipoLigacao: "",
     novaImpedancia: "",
+    // Par de demanda do transformador, espelho do par do cubículo: a
+    // CONTRATAR ("a ser contratada" na ligação nova, "futura" na alteração) e
+    // a ATUAL. Quais aparecem sai de _paresPotenciaGD() — ver renderTrafosGD.
+    demanda: "",
+    demandaAtual: "",
   };
 }
 /* <option>s do tipo de ligação, com o valor do trafo já marcado. */
@@ -248,6 +253,43 @@ function _camposTrafoGD(t, id, ref, apos, subst) {
     </div>
     ${linhaNova}`;
 }
+/* Par de demanda de um card — o mesmo markup no transformador individual e no
+   cubículo. `pares` vem de _paresPotenciaGD() (js/app.js) e diz quais dos dois
+   campos a solicitação escolhida coloca em tela; sem solicitação escolhida não
+   há nenhum, e aí nem o .cub-trafo-bloco (que é o filete separador) é escrito
+   — um bloco vazio abriria um filete sobre nada. */
+function _camposDemandaGD(obj, id, ref, apos, pares) {
+  if (!pares.verAtual && !pares.verNovaOuFutura) return "";
+  const rotuloContratar = pares.nova
+    ? GD_ROTULOS_DEMANDA.nova
+    : GD_ROTULOS_DEMANDA.futura;
+  return `<div class="cub-trafo-bloco">
+      <div class="grid grid-2 cub-demanda-grid">
+      ${
+        pares.verAtual
+          ? `<div class="field"><label for="${id}DemAtual">${GD_ROTULOS_DEMANDA.atual}</label>
+        <input id="${id}DemAtual" type="number" step="any" data-req value="${_escAttrGD(obj.demandaAtual)}" placeholder=" "
+               oninput="${ref}.demandaAtual=this.value;${apos}"></div>`
+          : ""
+      }
+      ${
+        pares.verNovaOuFutura
+          ? `<div class="field"><label for="${id}Dem">${rotuloContratar}</label>
+        <input id="${id}Dem" type="number" step="any" data-req value="${_escAttrGD(obj.demanda)}" placeholder=" "
+               oninput="${ref}.demanda=this.value;${apos}"></div>`
+          : ""
+      }
+      </div>
+    </div>`;
+}
+/* Campo oculto não guarda valor: um kW digitado antes de trocar de solicitação
+   continuaria no objeto, sairia no PDF e ainda dimensionaria a subestação. */
+function _limparDemandaOcultaGD(lista, pares) {
+  lista.forEach((o) => {
+    if (!pares.verNovaOuFutura) o.demanda = "";
+    if (!pares.verAtual) o.demandaAtual = "";
+  });
+}
 /* Radios de situação — idem: mesmos três estados no card e no cubículo.
    `onclick` recebe a chamada já pronta, com o valor interpolado. */
 function _radiosSituacaoTrafoGD(situacao, rotulo, chamada) {
@@ -275,6 +317,8 @@ function renderTrafosGD() {
   if (!box) return;
   const total = trafosGD.length;
   const troca = _permiteTrocaTrafoGD();
+  const pares = _paresPotenciaGD();
+  _limparDemandaOcultaGD(trafosGD, pares);
   box.innerHTML = trafosGD
     .map((t, i) => {
       const aberto = trafosGDAbertos.has(i);
@@ -297,14 +341,16 @@ function renderTrafosGD() {
       </button>
       <div class="trafo-card-body" id="trafoGdCardBody${i}"${aberto ? "" : " hidden"}>
         ${radios}
-        ${_camposTrafoGD(t, `trafoGd${i}`, `trafosGD[${i}]`, "recalcTecnicoGD()", subst)}
+        ${_camposTrafoGD(t, `trafoGd${i}`, `trafosGD[${i}]`, "recalcTrafoGD(" + i + ")", subst)}
+        ${_camposDemandaGD(t, `trafoGd${i}`, `trafosGD[${i}]`, "recalcTrafoGD(" + i + ")", pares)}
+        <div id="trafoDemandaAlert${i}"></div>
       </div>
     </div>`;
     })
     .join("");
-  // Avisos que ficam DEPOIS de todos os cards, fora deles.
+  // Aviso que fica DEPOIS de todos os cards, fora deles.
   _avisoTrafosDUBGD();
-  _validarDemandaVsPotenciaGD();
+  trafosGD.forEach((t, i) => validarDemandaTrafoGD(i));
   if (window.CemigMarcadores) window.CemigMarcadores.aplicar();
 }
 /* Em conexão nova o parque inteiro é declarado do zero: todos os
@@ -328,57 +374,66 @@ function _avisoTrafosDUBGD() {
    nem demanda escalonada — os dois blocos do MT não vieram: a
    tarifa é padronizada pela CEMIG e não é declarada pelo cliente.
 
-   Na subestação INDIVIDUAL vale a demanda contratada que a própria
-   etapa já pergunta: a A CONTRATAR (state.demandaConsumo — "a ser
-   contratada" na conexão nova, "futura" na alteração) e, quando ela
-   não se aplica, a ATUAL (state.demandaConsumoAtual). O campo que
-   não se aplica fica oculto e zerado por
-   _atualizarPotenciaContratada() (js/app.js).
-
-   Na COMPARTILHADA a demanda é a soma dos cubículos — cada um deles
-   é uma NS com contrato próprio.
+   A demanda é declarada CARD A CARD nos dois ramos: no individual
+   dentro do card de cada transformador, no compartilhado dentro do
+   card de cada cubículo. O que dimensiona a instalação é a soma.
+   Em cada card vale a A CONTRATAR ("a ser contratada" na conexão
+   nova, "futura" na alteração) e, quando ela não se aplica, a ATUAL
+   — o campo que não se aplica fica fora de tela e é zerado por
+   _limparDemandaOcultaGD().
    ============================================================ */
-function demandaRepresentativaGD() {
-  if (_ehCompartilhadaGD()) return totaisCubiculosGD().demandaTotal;
-  const aContratar = parseFloat(state.demandaConsumo);
+function demandaRepresentativaObjGD(o) {
+  const aContratar = parseFloat(o.demanda);
   if (Number.isFinite(aContratar)) return aContratar;
-  const atual = parseFloat(state.demandaConsumoAtual);
+  const atual = parseFloat(o.demandaAtual);
   return Number.isFinite(atual) ? atual : 0;
 }
-/* A demanda contratada vive fora deste bloco (são campos da própria etapa), mas
-   alimenta o dimensionamento: ao mudar, refaz os modelos permitidos, o resumo e
-   o aviso de coerência. Chamada pelo oninput dos dois campos. */
-function onDemandaConsumoGD() {
-  _sync("demandaConsumo");
-  _sync("demandaConsumoAtual");
-  if (_mostrarBlocoTecnicoGD()) recalcTecnicoGD();
+function demandaTotalTrafosGD() {
+  return trafosGD.reduce((s, t) => s + demandaRepresentativaObjGD(t), 0);
 }
-/* A demanda declarada não pode superar a potência instalada. Na compartilhada a
-   coerência é verificada cubículo a cubículo (validarDemandaCubiculo). */
-function _validarDemandaVsPotenciaGD() {
-  const el = $("#demandaVsPotenciaAlert");
+function demandaRepresentativaGD() {
+  return _ehCompartilhadaGD()
+    ? totaisCubiculosGD().demandaTotal
+    : demandaTotalTrafosGD();
+}
+/* Potência do próprio card, para confrontar com a demanda dele. */
+function _potenciaCardTrafoGD(t) {
+  return CalculoMT.calcularTrafos(_trafosFuturosGD([t])).potenciaTotal;
+}
+/* A demanda de um transformador não pode superar a potência dele — mesmo
+   confronto que validarDemandaCubiculo() faz no ramo compartilhado. */
+function validarDemandaTrafoGD(i) {
+  const t = trafosGD[i];
+  if (!t) return;
+  const el = $("#trafoDemandaAlert" + i);
   if (!el) return;
-  if (_ehCompartilhadaGD()) {
-    el.innerHTML = "";
-    return;
-  }
-  const pot = parseFloat(state.potTotalTrafos) || 0;
-  const dem = demandaRepresentativaGD();
+  const pot = _potenciaCardTrafoGD(t);
+  const dem = demandaRepresentativaObjGD(t);
   el.innerHTML =
     dem > 0 && pot > 0 && dem > pot
       ? _avisoGD(
           "error",
-          `A demanda contratada (${_fmtGD(dem)} kW) não pode ser superior à potência total dos transformadores (${_fmtGD(pot)} kVA).`,
+          `A demanda deste transformador (${_fmtGD(dem)} kW) não pode ser superior à potência dele (${_fmtGD(pot)} kVA).`,
         )
       : "";
+}
+function recalcTrafoGD(i) {
+  validarDemandaTrafoGD(i);
+  recalcTecnicoGD();
 }
 
 /* ============================================================
    MOTORES E CARGAS ESPECIAIS
    ------------------------------------------------------------
-   Diferente do MT, NÃO se coletam aqui os dados de "Análise de
-   Partida" do motor pesado: a minigeração não tem essa página nem o
-   PDF correspondente.
+   Mesma regra do MT (mt/js/app.js): o card pergunta só fases, CV e
+   dispositivo de partida. O conjunto completo de dados de partida é
+   exigido apenas do MOTOR PESADO — critério Cemig: trifásico acima
+   de 50 CV OU monofásico acima de 15 CV.
+
+   Os dados de partida gravam em motoresGD[i].analisePartida, no mesmo
+   formato do MT. A minigeração não tem a página "Análise de
+   Partida" nem o PDF dela: aqui os dados são coletados na mesma
+   estrutura, sem a segunda tela que o MT oferece.
    ============================================================ */
 function novoMotorGD() {
   return {
@@ -394,6 +449,35 @@ function novoMotorGD() {
     tap: "",
   };
 }
+/* Critério Cemig do motor pesado, idêntico a motorPesado() do MT:
+   trifásico acima de 50 CV ou monofásico acima de 15 CV. Trifásico é o
+   padrão, então qualquer valor diferente de "Monofásico" cai no teto de 50. */
+function motorPesadoGD(m) {
+  const cv = parseFloat(m.cv) || 0;
+  if (!cv) return false;
+  return m.fases === "Monofásico" ? cv > 15 : cv > 50;
+}
+/* Ficha de partida do motor pesado — mesmo formato do MT, inclusive as três
+   chaves (fpPartida, dispositivo, tap) que lá só a página "Análise de Partida"
+   preenche: manter a estrutura idêntica evita divergir se ela for portada. */
+function ensureAnalisePartidaGD(m) {
+  if (!m.analisePartida) {
+    m.analisePartida = {
+      fpPartida: "",
+      dispositivo: "",
+      tap: "",
+      numPartidas: "",
+      ordemPartida: "",
+      cargaOperanteKVA: "",
+      cargaOperanteFP: "",
+      cargaSensivelTipo: "",
+      cargaSensivelPercentual: "",
+      simultaneidade: "",
+      impedanciaZ: "",
+    };
+  }
+  return m.analisePartida;
+}
 function sincronizarMotores() {
   const el = $('[data-k="qtdMotores"]');
   const bruto = parseInt(el?.value, 10);
@@ -404,7 +488,6 @@ function sincronizarMotores() {
   state.qtdMotores = n;
   if (!motoresGDAbertos.size && n) motoresGDAbertos.add(0);
   renderMotoresGD();
-  atualizarCargaOperanteGD();
 }
 function toggleMotorGD(i) {
   motoresGDAbertos.has(i)
@@ -433,6 +516,28 @@ function _calcMotorGD(m) {
     _tensaoMTkVGD(),
   );
 }
+/* Campos exigidos só de motor pesado (acima de 50 CV trifásico / 15 CV
+   monofásico) — porte de _motorCamposPesadoHTML() do MT. Os oito primeiros
+   gravam na ficha de partida; os cinco últimos são as grandezas elétricas que
+   alimentam o cálculo do card. */
+function _motorCamposPesadoHTMLGD(i, m, ap) {
+  const ref = `motoresGD[${i}].analisePartida`;
+  return `<div class="motor-card-grid" style="margin-top:12px">
+    <div class="field"><label>Número de partidas</label><input type="number" value="${ap.numPartidas}" placeholder=" " oninput="${ref}.numPartidas=this.value"></div>
+    <div class="field"><label>Ordem de partida</label><input type="number" value="${ap.ordemPartida}" placeholder=" " oninput="${ref}.ordemPartida=this.value"></div>
+    <div class="field"><label>Carga operando (kVA)</label><input type="number" step="any" value="${ap.cargaOperanteKVA}" placeholder=" " oninput="${ref}.cargaOperanteKVA=this.value"></div>
+    <div class="field"><label>Carga operando (FP)</label><input type="number" step="any" value="${ap.cargaOperanteFP}" placeholder=" " oninput="${ref}.cargaOperanteFP=this.value"></div>
+    <div class="field"><label>Tipo de carga sensível</label><input type="text" value="${ap.cargaSensivelTipo}" placeholder=" " oninput="${ref}.cargaSensivelTipo=this.value"></div>
+    <div class="field"><label>% admissível da carga sensível</label><input type="number" step="any" value="${ap.cargaSensivelPercentual}" placeholder=" " oninput="${ref}.cargaSensivelPercentual=this.value"></div>
+    <div class="field"><label>Simultaneidade</label><select onchange="${ref}.simultaneidade=this.value"><option value=""></option><option ${ap.simultaneidade === "Sim" ? "selected" : ""}>Sim</option><option ${ap.simultaneidade === "Não" ? "selected" : ""}>Não</option></select></div>
+    <div class="field"><label>Impedância do transformador (%Z)</label><input type="number" step="any" value="${ap.impedanciaZ}" placeholder=" " oninput="${ref}.impedanciaZ=this.value"></div>
+    <div class="field"><label>Rendimento</label><input type="number" step="any" value="${m.rend}" placeholder=" " oninput="motoresGD[${i}].rend=this.value" onchange="atualizarCalculosMotorGD(this)"></div>
+    <div class="field"><label>FP</label><input type="number" step="any" value="${m.fp}" placeholder=" " oninput="motoresGD[${i}].fp=this.value" onchange="atualizarCalculosMotorGD(this)"></div>
+    <div class="field"><label>Tensão (V)</label><input type="number" step="any" value="${m.volts}" placeholder=" " oninput="motoresGD[${i}].volts=this.value" onchange="atualizarCalculosMotorGD(this)"></div>
+    <div class="field"><label>IP/IN</label><input type="number" step="any" value="${m.ipIn}" placeholder=" " oninput="motoresGD[${i}].ipIn=this.value" onchange="atualizarCalculosMotorGD(this)"></div>
+    <div class="field"><label>Tempo IP (s)</label><input type="number" step="any" value="${m.tempo}" placeholder=" " oninput="motoresGD[${i}].tempo=this.value"></div>
+  </div>`;
+}
 function renderMotoresGD() {
   const box = $("#motoresCardsContainer");
   if (!box) return;
@@ -444,10 +549,15 @@ function renderMotoresGD() {
       (d) => `<option ${m.dispositivo === d ? "selected" : ""}>${d}</option>`,
     ).join("");
     const compensadora = m.dispositivo === "Chave Compensadora";
+    // Motor pesado (trifásico acima de 50 CV / monofásico acima de 15 CV) exige
+    // o conjunto completo de dados de partida, exibido no próprio card.
+    const pesado = motorPesadoGD(m);
+    const ap = pesado ? ensureAnalisePartidaGD(m) : null;
     const aberto = motoresGDAbertos.has(i);
     const card = document.createElement("div");
     card.className = "motor-card" + (aberto ? " is-open" : "");
     card.dataset.motorRow = i;
+    card.dataset.pesado = pesado ? "1" : "0";
     card.innerHTML = `
       <button type="button" class="motor-card-head" onclick="toggleMotorGD(${i})"
               aria-expanded="${aberto}" aria-controls="motorGdCardBody${i}">
@@ -458,15 +568,11 @@ function renderMotoresGD() {
       <div class="motor-card-body" id="motorGdCardBody${i}"${aberto ? "" : " hidden"}>
         <div class="motor-card-grid">
           <div class="field"><label>Fases</label><select onchange="motoresGD[${i}].fases=this.value;renderMotoresGD()"><option ${m.fases === "Monofásico" ? "selected" : ""}>Monofásico</option><option ${m.fases !== "Monofásico" ? "selected" : ""}>Trifásico</option></select></div>
-          <div class="field"><label>CV</label><input type="number" step="any" value="${m.cv}" placeholder=" " oninput="motoresGD[${i}].cv=this.value;atualizarCalculosMotorGD(this)"></div>
-          <div class="field"><label>FP</label><input type="number" step="any" value="${m.fp}" placeholder=" " oninput="motoresGD[${i}].fp=this.value;atualizarCalculosMotorGD(this)"></div>
-          <div class="field"><label>Rendimento</label><input type="number" step="any" value="${m.rend}" placeholder=" " oninput="motoresGD[${i}].rend=this.value;atualizarCalculosMotorGD(this)"></div>
-          <div class="field"><label>Tensão (V)</label><input type="number" step="any" value="${m.volts}" placeholder=" " oninput="motoresGD[${i}].volts=this.value;atualizarCalculosMotorGD(this)"></div>
-          <div class="field"><label>IP/IN</label><input type="number" step="any" value="${m.ipIn}" placeholder=" " oninput="motoresGD[${i}].ipIn=this.value;atualizarCalculosMotorGD(this)"></div>
-          <div class="field"><label>Tempo IP (s)</label><input type="number" step="any" value="${m.tempo}" placeholder=" " oninput="motoresGD[${i}].tempo=this.value"></div>
+          <div class="field"><label>CV</label><input type="number" step="any" value="${m.cv}" placeholder=" " oninput="motoresGD[${i}].cv=this.value;atualizarCalculosMotorGD(this)" onchange="atualizarCalculosMotorGD(this)"></div>
           <div class="field"><label>Disp. Partida</label><select onchange="onDispositivoMotorGD(this,${i})"><option value=""></option>${dispOpts}</select></div>
           <div class="field motor-tap-field" style="display:${compensadora ? "" : "none"}"><label>Tap (%)</label><input type="number" step="any" value="${m.tap || ""}" placeholder=" " oninput="motoresGD[${i}].tap=this.value"></div>
         </div>
+        ${pesado ? _motorCamposPesadoHTMLGD(i, m, ap) : ""}
         ${_motorCalcHTMLGD(c)}
       </div>`;
     box.appendChild(card);
@@ -481,6 +587,14 @@ function atualizarCalculosMotorGD(inputEl) {
   const card = inputEl.closest(".motor-card");
   if (!card) return;
   const i = parseInt(card.dataset.motorRow, 10);
+  // Se o motor cruzou o limite de "pesado" (acima de 50 CV trifásico / 15 CV
+  // monofásico), o card ganha/perde os campos de partida: aí sim vale
+  // reconstruir. Fora isso, só os valores calculados são atualizados.
+  const eraPesado = card.dataset.pesado === "1";
+  if (motoresGD[i] && motorPesadoGD(motoresGD[i]) !== eraPesado) {
+    renderMotoresGD();
+    return;
+  }
   const m = motoresGD[i];
   if (!m) return;
   const c = _calcMotorGD(m);
@@ -503,33 +617,25 @@ function onDispositivoMotorGD(selectEl, i) {
   if (tap)
     tap.style.display = selectEl.value === "Chave Compensadora" ? "" : "none";
 }
-/* Carga operante na partida só faz sentido havendo motores declarados. */
-function atualizarCargaOperanteGD() {
-  _mostrarGD("#blocoCargaOperante", motoresGD.length > 0);
-  // Campo oculto não pode manter valor: sem motores, um número digitado antes
-  // continuaria no estado e sairia no PDF.
-  if (!motoresGD.length) {
-    if (state.cargaOperante || state.ipPrevista || state.tempoPartida)
-      aplicarPatch({ cargaOperante: "", ipPrevista: "", tempoPartida: "" });
-  }
-}
 
 /* ============================================================
    CUBÍCULOS — SUBESTAÇÃO COMPARTILHADA (multimedição)
    ------------------------------------------------------------
    Porte de mt/js/app.js (Anexo I), sem a modalidade tarifária
    horária nem a demanda escalonada: o cliente da minigeração não
-   declara tarifa. O que cada cubículo acrescenta em relação ao MT é
-   a POTÊNCIA DE GD própria — cada cubículo é uma NS distinta, e o
-   bloco só faz sentido se o montante de geração de cada uma estiver
-   explícito.
+   declara tarifa. O cubículo declara os seus transformadores e o seu
+   par de demanda; a GERAÇÃO não é declarada aqui — ela é uma só, da
+   usina, e vive na etapa 5 (potência ativa instalada + fontes).
    ============================================================ */
 function novoCubiculoGD() {
   return {
     instalacao: "",
     trafos: [novoTrafoGD()],
+    // Par de demanda do cubículo, espelho do da UC: a CONTRATAR ("a ser
+    // contratada" na ligação nova, "futura" na alteração) e a ATUAL. Quais
+    // aparecem sai de _paresPotenciaGD() — ver o card em renderCubiculos().
     demanda: "",
-    potGD: "",
+    demandaAtual: "",
     // Cubículo já existente (será alterado) x novo (será acrescentado).
     // Só relevante em finalidade ≠ Conexão Nova — ver _permiteTrocaTrafoGD().
     existente: false,
@@ -649,12 +755,10 @@ function onInstalacaoUCCub(el, i) {
   el.value = mascararInstalacaoUC(el.value);
   if (cubiculosGD[i]) cubiculosGD[i].instalacao = el.value;
 }
-/* Sem modalidade horária, a demanda do cubículo é um número só. */
+/* Sem modalidade horária, a demanda do cubículo é um número só — mesma escolha
+   dos cards de transformador (ver demandaRepresentativaObjGD). */
 function demandaRepresentativaCubiculoGD(c) {
-  return parseFloat(c.demanda) || 0;
-}
-function potGDCubiculoGD(c) {
-  return parseFloat(c.potGD) || 0;
+  return demandaRepresentativaObjGD(c);
 }
 function validarDemandaCubiculo(i) {
   const c = cubiculosGD[i];
@@ -676,40 +780,17 @@ function validarDemandaCubiculo(i) {
 function totaisCubiculosGD() {
   let potenciaTotal = 0,
     quantidadeTotal = 0,
-    demandaTotal = 0,
-    gdTotal = 0;
+    demandaTotal = 0;
   cubiculosGD.forEach((c) => {
     const rt = CalculoMT.calcularTrafos(_trafosFuturosGD(c.trafos));
     potenciaTotal += rt.potenciaTotal;
     quantidadeTotal += rt.quantidadeTotal;
     demandaTotal += demandaRepresentativaCubiculoGD(c);
-    gdTotal += potGDCubiculoGD(c);
   });
-  return { potenciaTotal, quantidadeTotal, demandaTotal, gdTotal };
-}
-/* A soma das GDs declaradas nos cubículos tem de fechar com a potência ativa
-   instalada da usina (etapa 5): é justamente por isso que se preenche um
-   formulário por cubículo. Aviso informativo — não bloqueia. */
-function _validarGDcubiculosGD() {
-  const el = $("#cubiculosGDAlert");
-  if (!el) return;
-  if (!_ehCompartilhadaGD() || !cubiculosGD.length) {
-    el.innerHTML = "";
-    return;
-  }
-  const usina = parseFloat(state.potAtivaInstalada) || 0;
-  const soma = totaisCubiculosGD().gdTotal;
-  el.innerHTML =
-    usina > 0 && soma > 0 && Math.abs(usina - soma) > 0.01
-      ? _avisoGD(
-          "warn",
-          `A soma da geração declarada nos cubículos (${_fmtGD(soma)} kW) não fecha com a potência ativa instalada da usina (${_fmtGD(usina)} kW). Cada cubículo é uma NS distinta — a divisão da GD entre eles precisa somar o total.`,
-        )
-      : "";
+  return { potenciaTotal, quantidadeTotal, demandaTotal };
 }
 function recalcCubiculo(i) {
   validarDemandaCubiculo(i);
-  _validarGDcubiculosGD();
   recalcTecnicoGD();
 }
 function renderCubiculos() {
@@ -717,6 +798,11 @@ function renderCubiculos() {
   if (!box) return;
   const total = cubiculosGD.length;
   const trocaCub = _permiteTrocaTrafoGD();
+  // O par de demanda do cubículo segue a MESMA regra do par da UC
+  // (_paresPotenciaGD, js/app.js): a alteração de demanda contratada é a única
+  // solicitação que mostra os dois campos.
+  const paresCub = _paresPotenciaGD();
+  _limparDemandaOcultaGD(cubiculosGD, paresCub);
   box.innerHTML = cubiculosGD
     .map((c, i) => {
       const aberto = cubiculosGDAbertos.has(i);
@@ -766,23 +852,13 @@ function renderCubiculos() {
                    oninput="sincronizarTrafosCub(${i})"></div>
         </div>
         ${trafoBlocos}
-        <div class="cub-trafo-bloco">
-          <div class="grid grid-2 cub-demanda-grid">
-            <div class="field"><label for="cubDemanda${i}">Demanda contratada de consumo (kW)</label>
-              <input id="cubDemanda${i}" type="number" step="any" data-req value="${_escAttrGD(c.demanda)}" placeholder=" "
-                     oninput="cubiculosGD[${i}].demanda=this.value;recalcCubiculo(${i})"></div>
-            <div class="field"><label for="cubPotGD${i}">Potência de geração deste cubículo (kW)</label>
-              <input id="cubPotGD${i}" type="number" step="any" data-req value="${_escAttrGD(c.potGD)}" placeholder=" "
-                     oninput="cubiculosGD[${i}].potGD=this.value;recalcCubiculo(${i})"></div>
-          </div>
-        </div>
+        ${_camposDemandaGD(c, `cub${i}`, `cubiculosGD[${i}]`, "recalcCubiculo(" + i + ")", paresCub)}
         <div id="cubDemandaAlert${i}"></div>
       </div>
     </div>`;
     })
     .join("");
   cubiculosGD.forEach((c, i) => validarDemandaCubiculo(i));
-  _validarGDcubiculosGD();
   if (window.CemigMarcadores) window.CemigMarcadores.aplicar();
 }
 
@@ -818,21 +894,14 @@ function renderResumoSEGD() {
   const compart = _ehCompartilhadaGD();
   const dem = demandaRepresentativaGD();
   const kpis = [
-    // "Cubículos" e a GD do bloco só existem na compartilhada.
-    ...(compart
-      ? [
-          ["Cubículos", String(cubiculosGD.length)],
-          [
-            "Geração total dos cubículos",
-            `${_fmtGD(state.gdTotalCubiculos)} kW`,
-          ],
-        ]
-      : []),
-    // Sem demanda declarada o dimensionamento recai sobre a potência instalada
-    // — o KPI diz isso em vez de mostrar "0 kW".
+    // "Cubículos" só existe na compartilhada. A geração não entra: ela é
+    // declarada uma única vez na etapa 5 (potência ativa instalada + fontes).
+    ...(compart ? [["Cubículos", String(cubiculosGD.length)]] : []),
+    // Sem demanda declarada o KPI mostra só o travessão — o dimensionamento
+    // recai sobre a potência instalada, mas isso não precisa estar no card.
     [
       compart ? "Demanda total dos cubículos" : "Demanda contratada",
-      dem > 0 ? `${_fmtGD(dem)} kW` : "— (dimensiona pela potência)",
+      dem > 0 ? `${_fmtGD(dem)} kW` : "—",
     ],
     [
       "Potência total dos transformadores",
@@ -1076,14 +1145,15 @@ function recalcTecnicoGD() {
   state.potTotalTrafos = rt.potenciaTotal;
   state.qtdTotalTrafos = rt.quantidadeTotal;
   state.demandaTotalCubiculos = compart ? rt.demandaTotal : 0;
-  state.gdTotalCubiculos = compart ? rt.gdTotal : 0;
+  // Demanda da instalação no ramo individual: a soma dos cards, como a dos
+  // cubículos é no compartilhado. É o que a prévia e o PDF imprimem.
+  state.demandaTotalTrafos = compart ? 0 : demandaTotalTrafosGD();
   const escrever = (id, v) => {
     const el = $("#" + id);
     if (el) el.value = compart ? _fmtGD(v) : "";
   };
   escrever("totConsolidadoTrafos", rt.potenciaTotal);
   escrever("totConsolidadoDemanda", state.demandaTotalCubiculos);
-  escrever("totConsolidadoGD", state.gdTotalCubiculos);
   // Espelhos para o PDF/prévia. `trafos` já era lido no formato {qte, potencia}
   // e ganhou a ligação e a situação; na compartilhada ele fica vazio — lá os
   // transformadores pertencem a cada cubículo.
@@ -1095,10 +1165,11 @@ function recalcTecnicoGD() {
         tipoLigacao: t.substituir ? t.novaTipoLigacao : t.tipoLigacao,
         impedancia: _impedanciaFuturaTrafoGD(t),
         situacao: _situacaoTrafoGD(t),
+        demanda: t.demanda,
+        demandaAtual: t.demandaAtual,
       }));
   state.motores = motoresGD;
   state.cubiculos = compart ? cubiculosGD : [];
-  _validarDemandaVsPotenciaGD();
   atualizarVisibilidadeSEGD();
   preencherTiposSEGD();
   recalcRamal();
@@ -1117,15 +1188,9 @@ function atualizarSE() {
   _mostrarGD("#blocoCubiculos", respondida && compart);
   _mostrarGD("#blocoTotaisConsolidados", respondida && compart);
   _mostrarGD("#blocoTrafosIndividual", respondida && !compart);
-  _setHTMLGD(
-    "compartilhadaAlert",
-    compart
-      ? _avisoGD(
-          "",
-          "Cada cubículo gera uma <strong>NS distinta</strong>, vinculada a uma instalação própria. Apresente <strong>um formulário por cubículo alterado</strong>, para que o montante de geração de cada NS do bloco fique explícito. Após o orçamento e a assinatura do CUSD, a análise de projeto deve ser solicitada para cada UC de forma individualizada.",
-        )
-      : "",
-  );
+  // O aviso de "uma NS por cubículo" (e o #compartilhadaAlert que o exibia)
+  // saiu: o processo passa a entrar com uma nota única, então instruir o
+  // solicitante a abrir um formulário por cubículo estaria errado.
   // Repetido aqui porque o !respondida abaixo desvia antes de
   // recalcTecnicoGD(): sem entrada de energia respondida a pergunta ainda
   // precisa sumir/reaparecer conforme a solicitação.
@@ -1145,7 +1210,7 @@ function atualizarSE() {
       potTotalTrafos: 0,
       qtdTotalTrafos: 0,
       demandaTotalCubiculos: 0,
-      gdTotalCubiculos: 0,
+      demandaTotalTrafos: 0,
       trafos: [],
       motores: [],
       cubiculos: [],
@@ -1174,7 +1239,6 @@ function atualizarSE() {
   sincronizarCubiculos();
   renderTrafosGD();
   renderMotoresGD();
-  atualizarCargaOperanteGD();
   recalcTecnicoGD();
 }
 /* Faltas do bloco técnico para o gate de exportação (etapa Prévia). Os cards
@@ -1184,7 +1248,7 @@ function atualizarSE() {
 function gdValidarSubestacao() {
   const faltas = [];
   if (!_mostrarBlocoTecnicoGD()) {
-    faltas.push("Entrada de energia (subestação individual ou compartilhada)");
+    faltas.push("Tipo de edificação (subestação individual ou compartilhada)");
     return faltas;
   }
   const potFutura = (t) => parseFloat(_potenciaFuturaTrafoGD(t)) || 0;
@@ -1205,9 +1269,14 @@ function gdValidarSubestacao() {
             faltas.push(`${rot}: impedância do transformador ${j + 1}`);
         });
         const dem = demandaRepresentativaCubiculoGD(c);
-        if (!(dem > 0)) faltas.push(`${rot}: demanda contratada de consumo`);
-        if (!(potGDCubiculoGD(c) > 0))
-          faltas.push(`${rot}: potência de geração do cubículo`);
+        // Os mesmos campos que o card põe em tela (ver renderCubiculos).
+        const paresCub = _paresPotenciaGD();
+        if (paresCub.verNovaOuFutura && !(parseFloat(c.demanda) > 0))
+          faltas.push(
+            `${rot}: ${paresCub.nova ? GD_ROTULOS_DEMANDA.nova : GD_ROTULOS_DEMANDA.futura}`,
+          );
+        if (paresCub.verAtual && !(parseFloat(c.demandaAtual) > 0))
+          faltas.push(`${rot}: ${GD_ROTULOS_DEMANDA.atual}`);
         const pot = CalculoMT.calcularTrafos(
           _trafosFuturosGD(c.trafos),
         ).potenciaTotal;
@@ -1219,24 +1288,28 @@ function gdValidarSubestacao() {
     }
   } else {
     if (!trafosGD.length) faltas.push("Dados dos transformadores");
+    const paresTrafo = _paresPotenciaGD();
     // Só a potência é validada: a quantidade não é campo do card (1 card = 1
     // transformador), então não há como o usuário deixá-la inválida.
     trafosGD.forEach((t, i) => {
-      if (!(potFutura(t) > 0))
-        faltas.push(`Potência do transformador ${i + 1}`);
+      const rot = `Transformador ${i + 1}`;
+      if (!(potFutura(t) > 0)) faltas.push(`Potência do transformador ${i + 1}`);
       if (!(impedFutura(t) > 0))
         faltas.push(`Impedância do transformador ${i + 1}`);
+      // Demanda: os mesmos campos que o card põe em tela (ver renderTrafosGD).
+      if (paresTrafo.verNovaOuFutura && !(parseFloat(t.demanda) > 0))
+        faltas.push(
+          `${rot}: ${paresTrafo.nova ? GD_ROTULOS_DEMANDA.nova : GD_ROTULOS_DEMANDA.futura}`,
+        );
+      if (paresTrafo.verAtual && !(parseFloat(t.demandaAtual) > 0))
+        faltas.push(`${rot}: ${GD_ROTULOS_DEMANDA.atual}`);
+      const dem = demandaRepresentativaObjGD(t);
+      const pot = _potenciaCardTrafoGD(t);
+      if (dem > 0 && pot > 0 && dem > pot)
+        faltas.push(
+          `${rot}: demanda (${_fmtGD(dem)} kW) acima da potência dele (${_fmtGD(pot)} kVA)`,
+        );
     });
-    // A demanda contratada em si NÃO é exigida aqui: quem a exige é
-    // validarExportacao(), no mesmo critério dos campos (ver
-    // _atualizarPotenciaContratada). O que se valida aqui é a coerência dela
-    // com os transformadores declarados.
-    const pot = parseFloat(state.potTotalTrafos) || 0;
-    const dem = demandaRepresentativaGD();
-    if (dem > 0 && pot > 0 && dem > pot)
-      faltas.push(
-        `Demanda contratada (${_fmtGD(dem)} kW) acima da potência dos transformadores (${_fmtGD(pot)} kVA)`,
-      );
   }
   if (!tipoSEefetivoGD()) faltas.push("Tipo de subestação");
   return faltas;

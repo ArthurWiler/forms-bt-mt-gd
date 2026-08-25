@@ -1,60 +1,79 @@
 <!doctype html>
 <div class="card">
-  <div class="section-eyebrow">Etapa 5</div>
-  <h3 class="card-title">Dados da Geração</h3>
+  <div class="section-eyebrow" data-etapa="geracao">Etapa 5</div>
+  <h3 class="card-title">Dados da geração</h3>
+  <p class="card-sub">
+    Preencha os dados relacionados à geração distribuída instalada em sua
+    propriedade.
+  </p>
+  <!-- Bloco COMUM às fontes. No microGD estes campos convivem com a fonte
+       primária no mesmo grid; aqui a fonte é declarada por BLOCO (o mini
+       admite 1 ou 2 fontes — ver #fontesBox), então o que vale para o
+       empreendimento inteiro fica em cima e o que descreve cada usina desce
+       para o bloco da fonte. -->
   <div class="grid grid-2">
-    <div class="field">
+    <div class="field row-solo">
       <label>Quantidade de fontes de geração <span class="req">*</span></label>
       <select data-k="qtdFontes" data-sem-vazio onchange="onQtdFontes()">
         <option>1</option>
         <option>2</option>
       </select>
     </div>
-    <!-- Regras 17/18: a resposta trava a demanda de geração em 0 e a
-         modalidade em Autoconsumo Local — os dois campos logo abaixo. Por isso
-         a pergunta vive aqui, e não na etapa 4 (Tipo de atendimento). -->
-    <div class="field field--plain" data-noopt>
-      <label>O empreendimento será "Grid Zero"?</label>
-      <div id="cardsGridZero"></div>
-      <select
-        data-k="gridZero"
-        onchange="onGridZero()"
-        style="display: none"
-        aria-hidden="true"
-      >
-        <option>Não</option>
-        <option>Sim</option>
-      </select>
-    </div>
-    <div class="field col-span-2">
+    <!-- Modalidade de operação: card único portado do microGD, no lugar da
+         antiga pergunta "O empreendimento será Grid Zero?". `gridZero` segue
+         no estado, DERIVADO desta escolha (ver onModoOperacaoGD), então as
+         regras 17/18/22 continuam valendo sem mudança. Vale para qualquer
+         fonte primária, por isso vive aqui e não no bloco da fonte.
+         Sem o "Fast Track" do microGD: aquele enquadramento é a conexão
+         simplificada de até 7,5 kW (art. 73-A, III da REN 1.000/2021), faixa
+         da MICROgeração — na minigeração (75 kW a 5 MW) ele nunca se aplica. -->
+    <div
+      class="field field--plain col-span-2 gd-pergunta"
+      id="modoOperacaoBox"
+      data-noopt
+    >
       <label
-        >Potência Ativa Instalada Total de Geração (kW)
+        >Qual a modalidade de operação do sistema?
         <span class="req">*</span></label
       >
-      <input
-        type="text"
-        data-k="potAtivaInstalada"
-        readonly
-        disabled
-        placeholder=" "
-      />
+      <div class="doc-list gd-radio-list" id="modoOperacaoOpcoes">
+        <label class="doc-item">
+          <input
+            type="radio"
+            name="modoOperacao"
+            value="Padrão"
+            onchange="onModoOperacaoGD(this)"
+          />
+          <span class="doc-text">
+            Padrão com injeção de créditos (sem restrições de uso)
+            <span class="doc-sub">
+              Gera créditos para a própria unidade e permite enviar excedentes
+              para outros endereços
+            </span>
+          </span>
+        </label>
+        <label class="doc-item">
+          <input
+            type="radio"
+            name="modoOperacao"
+            value="Grid Zero"
+            onchange="onModoOperacaoGD(this)"
+          />
+          <span class="doc-text">
+            Grid Zero (sem injeção na rede)
+            <span class="doc-sub">
+              O sistema não injeta energia na rede e possui tecnologia/medidor
+              para limitação de exportação.
+            </span>
+          </span>
+        </label>
+      </div>
     </div>
-    <div class="field">
-      <label
-        >Demanda a ser contratada de geração (kW)<span class="req"
-          >*</span
-        ></label
-      >
-      <input
-        type="text"
-        data-k="demandaGeracao"
-        placeholder=" "
-        oninput="onNumDec(this)"
-      />
-      <span id="demandaGeracaoHint" class="field-hint"></span>
-    </div>
+    <!-- Regra 11: a geração que a UC JÁ tem. Só aparece nas solicitações de GD
+         existente (ver onSolicitacao) e entra no cálculo da GFC como potência
+         já instalada — daí o recalcFontes() no oninput. -->
     <div class="field" id="potGeracaoAtualBox" style="display: none">
-      <label>Potência de Geração Atual (kW) <span class="req">*</span></label>
+      <label>Potência de geração atual (kW) <span class="req">*</span></label>
       <input
         type="text"
         data-k="potGeracaoAtual"
@@ -65,22 +84,12 @@
         "
       />
     </div>
-    <div class="field col-span-2">
+    <div class="field">
       <label>Modalidade de compensação <span class="req">*</span></label>
       <select data-k="modalidade" onchange="onModalidade()"></select>
-      <span id="modalidadeHint" class="field-hint"></span>
-    </div>
-    <div class="field col-span-2" id="gridZeroBanner" style="display: none">
-      <div class="gd-modo-banner">
-        <strong>Modalidade definida automaticamente: Autoconsumo Local</strong>
-        <span>
-          Como o empreendimento é "Grid Zero" (sem injeção de excedentes na
-          rede), a modalidade de compensação fica travada em Autoconsumo Local.
-        </span>
-      </div>
     </div>
     <div class="field">
-      <label>Qtde. de Instalações a receber o crédito</label>
+      <label>Qtde. de UCs beneficiadas <span class="req">*</span></label>
       <input
         type="text"
         data-k="qtdInstalacoesCredito"
@@ -88,9 +97,47 @@
         oninput="onSoDigitos(this)"
       />
     </div>
+  </div>
+
+  <!-- Um bloco por FONTE (1 ou 2). Cada bloco traz o conjunto completo da
+       etapa de geração do microGD: fonte primária, tecnologia e os campos da
+       própria fonte — fotovoltaico (módulos e inversores, um card por MODELO,
+       com os totais calculados e os KPIs), hidráulico (central + segurança de
+       barragens da REN 696/2015), central térmica (Biomassa / Cogeração
+       Qualificada) ou eólico —, seguidos dos dados de outorga.
+       Montagem em js/app.js (renderFontes). -->
+  <div id="fontesBox"></div>
+
+  <!-- Fecho da geração: o que só existe no mini — a soma das fontes, a demanda
+       contratada de geração e o contrato de constituição (consórcio /
+       cooperativa), que alimenta a Garantia de Fiel Cumprimento. -->
+  <h4 class="card-subtitle divider">Contratação e documentação da geração</h4>
+  <div class="grid grid-2 bloco-sub-gap">
+    <!-- Resultado somente-leitura no padrão .readonly-val (shared.css): a
+         potência total NUNCA é digitada — é a soma das fontes (recalcFontes).
+         O input escondido é o PORTADOR do estado: syncState() relê o DOM antes
+         da prévia e apagaria o valor derivado sem ele. Sendo type=hidden, os
+         marcadores o ignoram (nem "*" nem "(opcional)"). -->
+    <div class="field col-span-2" data-noopt>
+      <label>Potência Ativa Instalada Total de Geração (kW)</label>
+      <div class="readonly-val" id="gd_potAtivaTotal"></div>
+      <input type="hidden" data-k="potAtivaInstalada" />
+    </div>
+    <div class="field">
+      <label
+        >Demanda a ser contratada de geração (kW)
+        <span class="req">*</span></label
+      >
+      <input
+        type="text"
+        data-k="demandaGeracao"
+        placeholder=" "
+        oninput="onNumDec(this)"
+      />
+    </div>
     <div class="field field--plain col-span-2" data-noopt>
       <label>Anexou contrato de constituição? (consórcio/cooperativa)</label>
-      <div id="cardsAnexouContrato"></div>
+      <div data-toggle="anexouContrato"></div>
       <select data-k="anexouContrato" style="display: none" aria-hidden="true">
         <option>Não</option>
         <option>Sim</option>
@@ -103,7 +150,7 @@
       data-noopt
     >
       <label>Documentação do consórcio verificada?</label>
-      <div id="cardsConsorcioVerificado"></div>
+      <div data-toggle="consorcioVerificado"></div>
       <select
         data-k="consorcioVerificado"
         onchange="atualizarGFC()"
@@ -116,9 +163,184 @@
     </div>
   </div>
 
-  <div id="fontesBox"></div>
+  <h4 class="card-subtitle divider">Armazenamento e banco de baterias</h4>
+  <!-- Um único .grid governa TODA a seção: a 1ª pergunta (sempre visível) e o
+       #armBloco condicional são itens do mesmo grid, então o respiro entre
+       elas é o gap — campo solto no card não tem margem própria e encostava
+       no bloco de baixo.
+       #armBloco é `display:contents` quando visível (ver .grid-subgrupo em
+       shared.css): ele não vira um item de grid, seus filhos é que entram
+       diretamente nas colunas do grid de cima, mantendo o mesmo alinhamento
+       e um gap único em toda a seção. -->
+  <div class="grid grid-2">
+    <div class="field field--plain col-span-2" data-noopt>
+      <label
+        >Possui sistema de armazenamento de energia?
+        <span class="req">*</span></label
+      >
+      <div
+        data-toggle="possuiArmazenamento"
+        data-toggle-onchange="onArmazenamento"
+      ></div>
+      <select
+        data-k="possuiArmazenamento"
+        style="display: none"
+        aria-hidden="true"
+      >
+        <option>Sim</option>
+        <option>Não</option>
+      </select>
+    </div>
+    <div id="armBloco" class="grid-subgrupo" style="display: none">
+      <div class="field field--plain col-span-2" data-noopt>
+        <label
+          >Sistema com possibilidade de operação ilhada?
+          <span class="req">*</span></label
+        >
+        <div
+          data-toggle="armOperacaoIlhada"
+          data-toggle-onchange="onArmazenamento"
+        ></div>
+        <select
+          data-k="armOperacaoIlhada"
+          style="display: none"
+          aria-hidden="true"
+        >
+          <option>Sim</option>
+          <option>Não</option>
+        </select>
+      </div>
+      <div
+        class="field field--plain"
+        id="armChaveBox"
+        style="display: none"
+        data-noopt
+      >
+        <label>Chave de desconexão física <span class="req">*</span></label>
+        <div data-toggle="armChaveDesconexao"></div>
+        <select
+          data-k="armChaveDesconexao"
+          style="display: none"
+          aria-hidden="true"
+        >
+          <option>Sim</option>
+          <option>Não</option>
+        </select>
+      </div>
+      <div
+        class="field field--plain"
+        id="armReconexaoBox"
+        style="display: none"
+        data-noopt
+      >
+        <label>Reconexão automática? <span class="req">*</span></label>
+        <div data-toggle="armReconexaoAuto"></div>
+        <select
+          data-k="armReconexaoAuto"
+          style="display: none"
+          aria-hidden="true"
+        >
+          <option>Sim</option>
+          <option>Não</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Capacidade total (kW) <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="armCapacidadeKwh"
+          placeholder=" "
+          oninput="onNumDec(this)"
+        />
+      </div>
+      <div class="field">
+        <label>Potência total (kW) <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="armPotenciaKw"
+          placeholder=" "
+          oninput="onNumDec(this)"
+        />
+      </div>
+      <div class="field">
+        <label>Capacidade nominal (Ah) <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="armCapacidadeAh"
+          placeholder=" "
+          oninput="onNumDec(this)"
+        />
+      </div>
+      <div class="field">
+        <label>Tensão em CC (V) <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="armTensaoCC"
+          placeholder=" "
+          oninput="onNumDec(this)"
+        />
+      </div>
+      <div class="field">
+        <label>Profundidade de descarga (%) <span class="req">*</span></label>
+        <input
+          type="text"
+          data-k="armProfundidadeDescarga"
+          placeholder=" "
+          oninput="onNumDec(this)"
+        />
+      </div>
+      <!-- Produção mensal: campo próprio do mini (no microGD ele está na área
+           de não alocados). Fica ao final do bloco, depois dos campos que as
+           duas telas compartilham. -->
+      <div class="field">
+        <label>Produção mensal (kWh)</label>
+        <input
+          type="text"
+          data-k="armProducaoMensal"
+          placeholder=" "
+          oninput="onNumDec(this)"
+        />
+      </div>
+    </div>
+  </div>
+
+  <h4 class="card-subtitle divider">Gerador de emergência</h4>
+  <!-- Mesma estrutura da seção de armazenamento: um único .grid governa a
+       pergunta e o campo condicional (#geradorPotBox), então o respiro entre
+       eles é o gap do grid — sem margem própria no campo. -->
+  <div class="grid grid-2">
+    <div class="field field--plain col-span-2" data-noopt>
+      <label>
+        Possui Grupo Motor Gerador de Emergência em Paralelo com a Cemig
+        (Diesel/Gás)? <span class="req">*</span>
+      </label>
+      <div
+        data-toggle="geradorEmergencia"
+        data-toggle-onchange="onGeradorEmergencia"
+      ></div>
+      <select
+        data-k="geradorEmergencia"
+        style="display: none"
+        aria-hidden="true"
+      >
+        <option>Não</option>
+        <option>Sim</option>
+      </select>
+    </div>
+    <div class="field" id="geradorPotBox" style="display: none">
+      <label>Potência (kVA) <span class="req">*</span></label>
+      <input
+        type="text"
+        data-k="geradorPotencia"
+        placeholder=" "
+        oninput="onNumDec(this)"
+      />
+    </div>
+  </div>
 </div>
 <div class="nav-bottom no-print">
-  <button class="btn btn-ghost" onclick="goTo(3)">← Voltar</button>
-  <button class="btn btn-primary" onclick="goTo(5)">Avançar →</button>
+  <button class="btn btn-ghost" data-nav="prev">← Voltar</button>
+  <button class="btn btn-primary" data-gate="gdEtapaGeracaoOk" data-nav="next">
+    Avançar →
+  </button>
 </div>

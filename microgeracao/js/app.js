@@ -2642,6 +2642,11 @@ function renderPreviewGD() {
   if (content) content.innerHTML = secoes.join(PV_DIVISOR);
   const btn = $("#btnExportarPDF");
   if (btn) btn.disabled = !v.ok;
+  // O PDF de Análise de Partida só existe havendo motor pesado — mesma
+  // condição com que o MT oferece o documento na prévia dele.
+  const btnPartida = $("#btnExportarPartida");
+  if (btnPartida)
+    btnPartida.style.display = motoresPesadosGD(d).length ? "" : "none";
 }
 function syncState() {
   $$("[data-k]").forEach((el) => {
@@ -2664,6 +2669,20 @@ async function exportarPdfGD() {
     return;
   }
   gerarPdfMicroGD(state);
+}
+
+/* PDF complementar de Análise de Partida (documento à parte, anexado ao
+   pedido). Sem o gate de validarExportacao(): como no MT, o preenchimento é
+   opcional e não bloqueia nem depende da exportação do formulário. */
+async function exportarPdfAnalisePartidaGD() {
+  try {
+    await window.CemigLibs.jspdf();
+  } catch (e) {
+    alert("Biblioteca jsPDF não carregada.");
+    return;
+  }
+  syncState();
+  gerarPdfAnalisePartidaGD(state);
 }
 
 /* ===== Aceite das Orientações (gate do botão Iniciar) ===== */

@@ -205,14 +205,6 @@ function gerarPdfMicroGD(d) {
         [46, 40, 40, 56],
         motoRows,
       );
-      // Carga operante só é perguntada havendo motores.
-      kvPairs(
-        [
-          ["Carga operante na partida (kVA)", d.cargaOperante],
-          ["Corrente de partida prevista (A)", d.ipPrevista],
-          ["Tempo da corrente de partida (s)", d.tempoPartida],
-        ].filter(([, v]) => v != null && v !== ""),
-      );
     }
   }
   P.gap(2);
@@ -615,4 +607,197 @@ function gdPdfSecaoColetivo(d, H) {
   );
   fullLine("Disjuntor geral do agrupamento", d.disjGeralAgr || "—");
   P.gap(2);
+}
+
+/* ============================================================
+   ANÁLISE DE PARTIDA DE MOTORES — uma folha por motor pesado
+   ------------------------------------------------------------
+   Porte de gerarPdfAnalisePartidaMT() (mt/js/pdf.js) com o modelo de
+   conteúdo de conteudoAnalisePartida() (mt/js/conteudo.js): mesmas
+   seções, mesmos rótulos, mesma ordem e o mesmo chassi visual
+   (criarPdfGD), então o documento sai igual ao do MT.
+
+   O MT monta essas seções pela camada neutra de conteúdo, que serve
+   também à prévia da tela dele; aqui só existe o PDF, então as seções
+   são emitidas direto nas primitivas do chassi — o agrupamento em
+   duas colunas (kvPairs) e a linha inteira (fullLine) reproduzem o
+   que _renderCamposPdfMT() faz com aquele modelo.
+
+   Os dados vêm do card do motor pesado (js/subestacao.js), que já os
+   coleta em motores[i].analisePartida. As três chaves que no MT só a
+   página "Análise de Partida" preenche (fpPartida, dispositivo, tap)
+   ficam vazias — e campo vazio não é impresso, o chassi o descarta.
+   ============================================================ */
+const GD_NOTAS_MOTORES = [
+  "1 - Em caso de partida sequencial de motores, preencher uma folha para cada motor, indicando a ordem de partida.",
+  "2 - Anexar, sempre que possível, a(s) folha(s) das características elétricas, fornecida(s) pelo fabricante do motor.",
+];
+
+/* Formatação idêntica à do fmt() do MT (mt/js/app.js): duas casas e "—"
+   quando não é número. O chassi trata "—" como vazio, então o campo
+   simplesmente não sai — mesmo efeito que no MT. */
+function _fmtMotorGD(n, d = 2) {
+  return n == null || isNaN(n)
+    ? "—"
+    : Number(n).toLocaleString("pt-BR", {
+        minimumFractionDigits: d,
+        maximumFractionDigits: d,
+      });
+}
+/* Texto corrido sem rótulo (as notas do rodapé). fullLine("", …) sairia com
+   um ":" solto, daí desenhar direto com quebra automática — é o
+   _paragrafoPdfMT() do MT. */
+function _paragrafoMotorGD(P, texto) {
+  const linhas = P.doc.splitTextToSize(String(texto), P.CW - 2);
+  P.checkSpace(2 + linhas.length * 4.2);
+  P.doc.setFont("helvetica", "normal");
+  P.doc.setFontSize(9);
+  P.doc.setTextColor(30, 32, 42);
+  P.doc.text(linhas, P.MG + 1, P.state.cy + 4.5);
+  P.state.cy += 2 + linhas.length * 4.2;
+}
+function _dataExtensoMotorGD() {
+  const h = new Date();
+  return `${String(h.getDate()).padStart(2, "0")} de ${h.toLocaleDateString("pt-BR", { month: "long" })} de ${h.getFullYear()}`;
+}
+/* Motores pesados da solicitação, na ordem em que foram declarados —
+   equivale a motoresPesadosIdx() do MT. */
+function motoresPesadosGD(d) {
+  return (d.motores || []).filter((m) => motorPesadoGD(m));
+}
+
+function gerarPdfAnalisePartidaGD(d) {
+  const P = criarPdfGD(
+    "FORMULÁRIO PARA A ANÁLISE DE PARTIDA DE MOTORES",
+    "Microgeração Distribuída",
+  );
+  const { sec, kvPairs, fullLine } = P;
+  // O estado guarda a tensão em volts; CalculoMT raciocina em kV.
+  const tMTkV = (parseFloat(d.tensaoAtendimento) || 0) / 1000 || "";
+  const un = (v, u) => (String(v ?? "").trim() ? `${v} ${u}` : "");
+  const pesados = motoresPesadosGD(d);
+
+  // Uma folha por motor pesado. Sem nenhum, sai a folha única que o MT
+  // também emite, dizendo que não há motor no critério.
+  const folhas = pesados.length
+    ? pesados.map((m) => () => {
+        const ap = ensureAnalisePartidaGD(m);
+        const c = CalculoMT.calcularMotor(
+          {
+            potenciaCV: m.cv,
+            fp: m.fp,
+            rendimento: m.rend,
+            tensaoV: m.volts,
+            relacaoIpIn: m.ipIn,
+          },
+          tMTkV,
+        );
+        // ÚNICO desvio do MT, e por falta de origem do dado: lá o dispositivo
+        // impresso vem de ap.dispositivo, preenchido na página "Análise de
+        // Partida" — que aqui não existe, o que deixaria esta seção sempre em
+        // branco. O card do motor já pergunta a mesma coisa (m.dispositivo, com
+        // m.tap sob "Chave Compensadora"), então ela é a origem quando a ficha
+        // não tiver a sua. Se a página do MT for portada, ap volta a mandar.
+        const disp = ap.dispositivo || m.dispositivo || "";
+        const dispTap = ap.dispositivo ? ap.tap : m.tap;
+        const dispositivo = disp
+          ? disp +
+            (disp === "Chave Compensadora" && dispTap
+              ? ` — Tap: ${dispTap} %`
+              : "")
+          : "";
+        sec("IDENTIFICAÇÃO");
+        kvPairs([["Cliente", d.titular]]);
+        P.gap(1);
+        sec("TIPO DO MOTOR / NÚMERO DE FASES");
+        kvPairs([
+          ["Tipo do motor", m.tipo],
+          ["Número de fases", m.fases || "Trifásico"],
+        ]);
+        P.gap(1);
+        sec("DADOS ELÉTRICOS");
+        kvPairs([
+          ["Potência do motor", un(m.cv, "CV")],
+          ["Tensão no motor", un(m.volts, "V")],
+          [
+            "Corrente de partida (sem dispositivo de partida)",
+            c.iPartida == null ? "" : _fmtMotorGD(c.iPartida) + " A",
+          ],
+          [
+            "Corrente nominal",
+            c.iNominal == null ? "" : _fmtMotorGD(c.iNominal) + " A",
+          ],
+          ["Relação Ip/In", m.ipIn],
+          ["Fator de potência em regime", m.fp],
+          ["Fator de potência na partida", ap.fpPartida],
+        ]);
+        P.gap(1);
+        sec("NÚMERO DE PARTIDAS");
+        kvPairs([["Número de partidas", ap.numPartidas]]);
+        P.gap(1);
+        sec("DISPOSITIVO AUXILIAR DE PARTIDA (QUANDO HOUVER)");
+        kvPairs([["Dispositivo", dispositivo]]);
+        P.gap(1);
+        sec("ORDEM DE PARTIDA DO MOTOR (CASOS DE DOIS OU MAIS MOTORES)");
+        kvPairs([["Ordem de partida", ap.ordemPartida]]);
+        P.gap(1);
+        sec("CARGAS OPERANDO ENQUANTO O MOTOR PARTE (QUANDO HOUVER)");
+        kvPairs([
+          ["Potência", un(ap.cargaOperanteKVA, "kVA")],
+          ["Fator de potência", ap.cargaOperanteFP],
+        ]);
+        P.gap(1);
+        sec("CARGAS SENSÍVEIS A FLUTUAÇÕES DE TENSÃO");
+        kvPairs([
+          ["Tipo", ap.cargaSensivelTipo],
+          ["Flutuação admissível", un(ap.cargaSensivelPercentual, "%")],
+        ]);
+        P.gap(1);
+        sec("SIMULTANEIDADE DE PARTIDA");
+        fullLine(
+          "Em caso de simultaneidade, relacionar os motores e suas características elétricas",
+          ap.simultaneidade,
+        );
+        P.gap(1);
+        sec("TRANSFORMADOR DO CONSUMIDOR");
+        kvPairs([
+          [
+            "Potência do transformador",
+            un(_fmtMotorGD(d.potTotalTrafos), "kVA"),
+          ],
+          ["Impedância percentual do transformador", un(ap.impedanciaZ, "%")],
+        ]);
+        P.gap(1);
+      })
+    : [
+        () => {
+          sec("IDENTIFICAÇÃO");
+          kvPairs([["Cliente", d.titular]]);
+          _paragrafoMotorGD(
+            P,
+            "Nenhum motor pesado identificado (trifásico acima de 50 CV ou monofásico acima de 15 CV).",
+          );
+          P.gap(1);
+        },
+      ];
+
+  folhas.forEach((folha, i) => {
+    if (i > 0) {
+      P.doc.addPage();
+      P.state.cy = P.MG;
+      P.header();
+    }
+    folha();
+    P.gap(2);
+    sec("NOTAS");
+    GD_NOTAS_MOTORES.forEach((n) => _paragrafoMotorGD(P, n));
+    P.gap(2);
+    fullLine("Data", _dataExtensoMotorGD());
+    P.assinatura("Responsável pelas informações");
+  });
+
+  const nomeArq = (d.titular || "MicroGD")
+    .replace(/[^a-zA-Z0-9]/g, "_")
+    .slice(0, 30);
+  P.save(`Analise_Partida_Motores_${nomeArq}.pdf`);
 }

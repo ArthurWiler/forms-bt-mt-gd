@@ -118,8 +118,14 @@ function gerarPdfMiniGD(d) {
           " kV"
         : "",
     ],
-    ["Entrada de Energia", d.entradaEnergia],
-    ["Gerador de Emergência (kVA)", d.geradorPotencia],
+    ["Tipo de edificação", d.entradaEnergia],
+    [
+      "Gerador de emergência",
+      d.geradorEmergencia +
+        (d.geradorEmergencia === "Sim"
+          ? ` (${d.geradorPotencia || "—"} kVA)`
+          : ""),
+    ],
   ];
   // A mudança de local só é perguntada havendo subestação a mudar de lugar
   // (atualizarMudancaSEGD, js/subestacao.js). Fora disso o campo fica oculto e
@@ -138,31 +144,21 @@ function gerarPdfMiniGD(d) {
       ucPairs.push(["Nova subestação", d.alt_tipoPara]);
   }
   ucPairs.push(["Tipo de Subestação efetivo (ND 5.3)", d.tipoSE]);
-  // Demandas (respeitando as regras de visibilidade do formulário —
-  // _paresPotenciaGD em js/app.js).
+  // A demanda de GERAÇÃO é uma só, da usina (etapa 5), e sai aqui; a de
+  // consumo é campo de card e sai no bloco técnico.
   ucPairs.push([
     "Demanda a contratar de geração (kW)",
     d.gridZero === "Sim" ? "0 (Grid Zero)" : d.demandaGeracao,
   ]);
-  if (!ehLigacaoNova)
-    ucPairs.push([GD_ROTULOS_DEMANDA.atual, d.demandaConsumoAtual]);
-  if (ehLigacaoNova || ehAlteracaoDemanda)
-    ucPairs.push([
-      ehLigacaoNova ? GD_ROTULOS_DEMANDA.nova : GD_ROTULOS_DEMANDA.futura,
-      d.demandaConsumo,
-    ]);
+  // A demanda de consumo não sai aqui: é declarada card a card (transformador
+  // ou cubículo) e impressa no bloco técnico, junto do equipamento a que
+  // pertence.
   ucPairs.push(["Grid Zero", d.gridZero], ["Telhado arrendado", d.telhadoArrendado]);
   // Unidade arrendada: dados próprios do arrendamento (spec Figma).
   if (d.telhadoArrendado === "Sim")
     ucPairs.push(
       ["Nº da unidade/instalação arrendada", d.arrendUC],
       ["Nível de tensão da unidade arrendada", d.arrendTensao],
-    );
-  if (!ehLigacaoNova)
-    ucPairs.push(
-      ["Número da Unidade Consumidora", d.numUC],
-      ["Instalação / UC / Medidor existente no local", d.instExistente],
-      ["Instalação existente BT/MT", d.instExistenteBTMT],
     );
   kvPairs(ucPairs);
 
@@ -182,10 +178,6 @@ function gerarPdfMiniGD(d) {
       ["Sobre a subestação", d.subestacaoExistente],
       ["Quantidade de cubículos", String((d.cubiculos || []).length || "")],
     ]);
-    fullLine(
-      "Observação",
-      "Cada cubículo corresponde a uma NS distinta, vinculada a uma instalação própria. Apresente um formulário por cubículo alterado, para que o montante de geração de cada NS do bloco fique explícito.",
-    );
     (d.cubiculos || []).forEach((c, i) => {
       const marca = !comSituacao
         ? ""
@@ -197,8 +189,11 @@ function gerarPdfMiniGD(d) {
       // subestação nova (onde ele não é perguntado).
       kvPairs([
         ["Nº da unidade consumidora / instalação", c.instalacao],
-        ["Demanda contratada de consumo (kW)", c.demanda],
-        ["Potência de geração deste cubículo (kW)", c.potGD],
+        [
+          ehLigacaoNova ? GD_ROTULOS_DEMANDA.nova : GD_ROTULOS_DEMANDA.futura,
+          c.demanda,
+        ],
+        [GD_ROTULOS_DEMANDA.atual, c.demandaAtual],
       ]);
       const linhas = linhasTrafo(c.trafos, comSituacao);
       if (linhas.length) tabela(cabTrafo, largTrafo, linhas);
@@ -210,17 +205,41 @@ function gerarPdfMiniGD(d) {
         (d.potTotalTrafos || 0) +
         " kVA · demanda " +
         (d.demandaTotalCubiculos || 0) +
-        " kW · geração " +
-        (d.gdTotalCubiculos || 0) +
         " kW",
     );
   } else {
     const linhas = linhasTrafo(d.trafos, comSituacao);
     if (linhas.length) {
       tabela(cabTrafo, largTrafo, linhas);
+      // Demanda contratada por transformador — as mesmas colunas que o card
+      // mostra, conforme a solicitação (ver _camposDemandaGD, subestacao.js).
+      const cabDem = ["Transformador"]
+        .concat(!ehLigacaoNova ? [GD_ROTULOS_DEMANDA.atual] : [])
+        .concat(
+          ehLigacaoNova || ehAlteracaoDemanda
+            ? [ehLigacaoNova ? GD_ROTULOS_DEMANDA.nova : GD_ROTULOS_DEMANDA.futura]
+            : [],
+        );
+      // Somam sempre 182 (a largura útil da tabela).
+      const largDem = cabDem.length === 3 ? [50, 66, 66] : [72, 110];
+      const linhasDem = (d.trafos || [])
+        .filter((t) => t.potencia || t.qte)
+        .map((t, i) =>
+          ["Trafo " + (i + 1)]
+            .concat(!ehLigacaoNova ? [t.demandaAtual || "—"] : [])
+            .concat(
+              ehLigacaoNova || ehAlteracaoDemanda ? [t.demanda || "—"] : [],
+            ),
+        );
+      if (linhasDem.length) tabela(cabDem, largDem, linhasDem);
       totRow(
         "Potência total instalada",
-        (d.qtdTotalTrafos || 0) + " un · " + (d.potTotalTrafos || 0) + " kVA",
+        (d.qtdTotalTrafos || 0) +
+          " un · " +
+          (d.potTotalTrafos || 0) +
+          " kVA · demanda " +
+          (d.demandaTotalTrafos || 0) +
+          " kW",
       );
     }
   }
@@ -238,14 +257,6 @@ function gerarPdfMiniGD(d) {
       ["Motor", "Fases", "Potência", "Disp. partida"],
       [46, 40, 40, 56],
       motoRows,
-    );
-    // Carga operante só é perguntada havendo motores.
-    kvPairs(
-      [
-        ["Carga operante na partida (kVA)", d.cargaOperante],
-        ["Corrente de partida prevista (A)", d.ipPrevista],
-        ["Tempo da corrente de partida (s)", d.tempoPartida],
-      ].filter(([, v]) => v != null && v !== ""),
     );
   }
   P.gap(2);
@@ -307,44 +318,108 @@ function gerarPdfMiniGD(d) {
   }
 
   // ---- 4. Geração ----
+  // Cada FONTE imprime o conjunto que declarou na etapa (ver renderFontes,
+  // js/app.js): fotovoltaico (uma linha por MODELO de módulo e de inversor),
+  // hidráulico (central + classificação de barragens), central térmica
+  // (Biomassa / Cogeração Qualificada, o mesmo bloco nas duas) ou eólico.
   sec("4.  DADOS DA GERAÇÃO");
   const gerPairs = [
     ["Quantidade de fontes", d.qtdFontes],
+    ["Modalidade de operação", d.modoOperacao],
     ["Potência Ativa Instalada Total (kW)", d.potAtivaInstalada],
   ];
   if (ehAlteracaoGeracao)
     gerPairs.push(["Potência de Geração Atual (kW)", d.potGeracaoAtual]);
   gerPairs.push(
-    ["Modalidade de compensação", d.modalidade],
+    [
+      "Modalidade de compensação",
+      // A trava vem do Grid Zero (ver onModalidade) — o PDF diz isso, para o
+      // valor não parecer escolha livre do solicitante.
+      d.modalidade + (d.gridZero === "Sim" ? " (travada — Grid Zero)" : ""),
+    ],
     ["Qtde. instalações a receber crédito", d.qtdInstalacoesCredito],
+    // A demanda a contratar de geração sai na seção 2 (Dados da unidade),
+    // junto do restante do que é contratado — imprimi-la aqui a repetiria.
     ["Anexou contrato de constituição", d.anexouContrato],
   );
   if (d.modalidade === "Geração Compartilhada")
-    gerPairs.push(["Documentação do consórcio verificada", d.consorcioVerificado]);
+    gerPairs.push([
+      "Documentação do consórcio verificada",
+      d.consorcioVerificado,
+    ]);
   kvPairs(gerPairs);
+  // Um MODELO por linha: a usina costuma misturar modelos, e os totais não
+  // dizem de quê são feitos. Mesmas larguras da tabela de transformadores
+  // (somam a caixa útil de 182 mm).
+  const linhasEquipFV = (lista) =>
+    (lista || [])
+      .filter((e) => e.modelo || e.potNominal || e.quantidade)
+      .map((e) => [
+        e.modelo || "—",
+        e.fabricante || "—",
+        e.potNominal || "—",
+        e.quantidade || "—",
+        fmt2((parseFloat(e.potNominal) || 0) * (parseFloat(e.quantidade) || 0)),
+      ]);
+  const largEquipFV = [50, 46, 30, 18, 38];
+  const cabEquipFV = (o) => [o, "Fabricante", "Pot. nom.", "Qte", "Total (kW)"];
   (d.fontes || []).forEach((f, i) => {
     subSec(`4.${i + 1}  Fonte de Geração ${i + 1}`);
     kvPairs([
       ["Tipo de Fonte Primária", f.fontePrimaria],
       ["Potência da Fonte (kW)", f.potencia],
-      [
-        "Tipo de geração",
-        f.tipoGeracao === "Outra (especificar):"
-          ? `Outra: ${f.tipoGeracaoOutro}`
-          : f.tipoGeracao,
-      ],
+      ["Tecnologia de geração", f.tipoGeracao],
     ]);
     if (f.fontePrimaria === "Solar") {
       kvPairs([
-        ["Pot. total módulos (kW)", f.potTotalModulos],
-        ["Pot. total inversores (kW)", f.potTotalInversores],
+        ["Módulos — Quantidade total", f.qtdModulos],
+        ["Módulos — Pot. total (kW)", f.potTotalModulos],
         ["Área dos Arranjos (m²)", f.areaArranjos],
-        ["Quantidade de Módulos", f.qtdModulos],
-        ["Modelo dos Módulos", f.modeloModulos],
-        ["Fabricante dos Módulos", f.fabricanteModulos],
-        ["Quantidade de Inversores", f.qtdInversores],
-        ["Modelo dos Inversores", f.modeloInversores],
-        ["Fabricante dos Inversores", f.fabricanteInversores],
+        ["Inversores — Quantidade total", f.qtdInversores],
+        ["Inversores — Pot. total (kW)", f.potTotalInversores],
+        ["Tensão de Conexão do Inversor (V)", f.tensaoConexaoInversor],
+      ]);
+      const modRows = linhasEquipFV(f.modulos);
+      if (modRows.length) tabela(cabEquipFV("Módulo"), largEquipFV, modRows);
+      const invRows = linhasEquipFV(f.inversores);
+      if (invRows.length) tabela(cabEquipFV("Inversor"), largEquipFV, invRows);
+    } else if (f.fontePrimaria === "Hidráulica") {
+      kvPairs([
+        ["Potência Aparente (kVA)", f.hidroPotAparente],
+        ["Tensão (kV)", f.hidroTensao],
+        ["Nome do rio", f.hidroRio],
+        ["Sub-bacia", f.hidroSubBacia],
+        ["Fator de Potência", f.hidroFatorPotencia],
+        ["Potência Instalada (kW)", f.hidroPotInstalada],
+        ["Nív. Oper. Normal Montante (m)", f.hidroNivelMontante],
+        ["Nív. Oper. Normal Jusante (m)", f.hidroNivelJusante],
+      ]);
+      // Classificação da barragem em linhas de largura total: em duas colunas
+      // os rótulos longos comem a meia-coluna e o valor sairia cortado. Sem
+      // "≥": as fontes padrão do jsPDF escrevem em cp1252, que não o tem.
+      fullLine("Altura da barragem maior ou igual a 15 m", f.hidroBarragemAltura);
+      GD_BARRAGEM_PERGUNTAS.forEach((q) => fullLine(q.rotulo, f[q.chave]));
+    } else if (GD_FONTES_CENTRAL_TERMICA.includes(f.fontePrimaria)) {
+      // O despacho de qualificação só aparece quando informado — é "caso
+      // aplicável" nas duas fontes e kvPairs descarta o par vazio.
+      kvPairs([
+        ["Potência Aparente (kVA)", f.bioPotAparente],
+        ["Potência Instalada (kW)", f.bioPotInstalada],
+        ["Combustível", f.bioCombustivel],
+        ["Fator de Potência", f.bioFatorPotencia],
+        ["Máquina motriz", f.bioMaqMotriz],
+        ["Ciclo termodinâmico", f.bioCicloTermodinamico],
+        ["Nº do Despacho de qualificação", f.bioDespachoQualificacao],
+      ]);
+    } else if (f.fontePrimaria === "Eólica") {
+      kvPairs([
+        ["Quantidade de Aerogeradores", f.eolQtdAerogeradores],
+        ["Potência Instalada (kW)", f.eolPotInstalada],
+        ["Fabricante dos Aerogeradores", f.eolFabricante],
+        ["Modelo dos Aerogeradores", f.eolModelo],
+        ["Altura da pá (m)", f.eolAlturaPa],
+        ["Eixo do rotor", f.eolEixoRotor],
+        ["Fator de Potência", f.eolFatorPotencia],
       ]);
     }
     kvPairs([
@@ -479,4 +554,197 @@ function gerarPdfMiniGD(d) {
     .replace(/[^a-zA-Z0-9]/g, "_")
     .slice(0, 30);
   P.save(`CEMIG_MiniGD_${nomeArq}.pdf`);
+}
+
+/* ============================================================
+   ANÁLISE DE PARTIDA DE MOTORES — uma folha por motor pesado
+   ------------------------------------------------------------
+   Porte de gerarPdfAnalisePartidaMT() (mt/js/pdf.js) com o modelo de
+   conteúdo de conteudoAnalisePartida() (mt/js/conteudo.js): mesmas
+   seções, mesmos rótulos, mesma ordem e o mesmo chassi visual
+   (criarPdfGD), então o documento sai igual ao do MT.
+
+   O MT monta essas seções pela camada neutra de conteúdo, que serve
+   também à prévia da tela dele; aqui só existe o PDF, então as seções
+   são emitidas direto nas primitivas do chassi — o agrupamento em
+   duas colunas (kvPairs) e a linha inteira (fullLine) reproduzem o
+   que _renderCamposPdfMT() faz com aquele modelo.
+
+   Os dados vêm do card do motor pesado (js/subestacao.js), que já os
+   coleta em motores[i].analisePartida. As três chaves que no MT só a
+   página "Análise de Partida" preenche (fpPartida, dispositivo, tap)
+   ficam vazias — e campo vazio não é impresso, o chassi o descarta.
+   ============================================================ */
+const GD_NOTAS_MOTORES = [
+  "1 - Em caso de partida sequencial de motores, preencher uma folha para cada motor, indicando a ordem de partida.",
+  "2 - Anexar, sempre que possível, a(s) folha(s) das características elétricas, fornecida(s) pelo fabricante do motor.",
+];
+
+/* Formatação idêntica à do fmt() do MT (mt/js/app.js): duas casas e "—"
+   quando não é número. O chassi trata "—" como vazio, então o campo
+   simplesmente não sai — mesmo efeito que no MT. */
+function _fmtMotorGD(n, d = 2) {
+  return n == null || isNaN(n)
+    ? "—"
+    : Number(n).toLocaleString("pt-BR", {
+        minimumFractionDigits: d,
+        maximumFractionDigits: d,
+      });
+}
+/* Texto corrido sem rótulo (as notas do rodapé). fullLine("", …) sairia com
+   um ":" solto, daí desenhar direto com quebra automática — é o
+   _paragrafoPdfMT() do MT. */
+function _paragrafoMotorGD(P, texto) {
+  const linhas = P.doc.splitTextToSize(String(texto), P.CW - 2);
+  P.checkSpace(2 + linhas.length * 4.2);
+  P.doc.setFont("helvetica", "normal");
+  P.doc.setFontSize(9);
+  P.doc.setTextColor(30, 32, 42);
+  P.doc.text(linhas, P.MG + 1, P.state.cy + 4.5);
+  P.state.cy += 2 + linhas.length * 4.2;
+}
+function _dataExtensoMotorGD() {
+  const h = new Date();
+  return `${String(h.getDate()).padStart(2, "0")} de ${h.toLocaleDateString("pt-BR", { month: "long" })} de ${h.getFullYear()}`;
+}
+/* Motores pesados da solicitação, na ordem em que foram declarados —
+   equivale a motoresPesadosIdx() do MT. */
+function motoresPesadosGD(d) {
+  return (d.motores || []).filter((m) => motorPesadoGD(m));
+}
+
+function gerarPdfAnalisePartidaGD(d) {
+  const P = criarPdfGD(
+    "FORMULÁRIO PARA A ANÁLISE DE PARTIDA DE MOTORES",
+    "Minigeração Distribuída",
+  );
+  const { sec, kvPairs, fullLine } = P;
+  // O estado guarda a tensão em volts; CalculoMT raciocina em kV.
+  const tMTkV = (parseFloat(d.tensaoAtendimento) || 0) / 1000 || "";
+  const un = (v, u) => (String(v ?? "").trim() ? `${v} ${u}` : "");
+  const pesados = motoresPesadosGD(d);
+
+  // Uma folha por motor pesado. Sem nenhum, sai a folha única que o MT
+  // também emite, dizendo que não há motor no critério.
+  const folhas = pesados.length
+    ? pesados.map((m) => () => {
+        const ap = ensureAnalisePartidaGD(m);
+        const c = CalculoMT.calcularMotor(
+          {
+            potenciaCV: m.cv,
+            fp: m.fp,
+            rendimento: m.rend,
+            tensaoV: m.volts,
+            relacaoIpIn: m.ipIn,
+          },
+          tMTkV,
+        );
+        // ÚNICO desvio do MT, e por falta de origem do dado: lá o dispositivo
+        // impresso vem de ap.dispositivo, preenchido na página "Análise de
+        // Partida" — que aqui não existe, o que deixaria esta seção sempre em
+        // branco. O card do motor já pergunta a mesma coisa (m.dispositivo, com
+        // m.tap sob "Chave Compensadora"), então ela é a origem quando a ficha
+        // não tiver a sua. Se a página do MT for portada, ap volta a mandar.
+        const disp = ap.dispositivo || m.dispositivo || "";
+        const dispTap = ap.dispositivo ? ap.tap : m.tap;
+        const dispositivo = disp
+          ? disp +
+            (disp === "Chave Compensadora" && dispTap
+              ? ` — Tap: ${dispTap} %`
+              : "")
+          : "";
+        sec("IDENTIFICAÇÃO");
+        kvPairs([["Cliente", d.titular]]);
+        P.gap(1);
+        sec("TIPO DO MOTOR / NÚMERO DE FASES");
+        kvPairs([
+          ["Tipo do motor", m.tipo],
+          ["Número de fases", m.fases || "Trifásico"],
+        ]);
+        P.gap(1);
+        sec("DADOS ELÉTRICOS");
+        kvPairs([
+          ["Potência do motor", un(m.cv, "CV")],
+          ["Tensão no motor", un(m.volts, "V")],
+          [
+            "Corrente de partida (sem dispositivo de partida)",
+            c.iPartida == null ? "" : _fmtMotorGD(c.iPartida) + " A",
+          ],
+          [
+            "Corrente nominal",
+            c.iNominal == null ? "" : _fmtMotorGD(c.iNominal) + " A",
+          ],
+          ["Relação Ip/In", m.ipIn],
+          ["Fator de potência em regime", m.fp],
+          ["Fator de potência na partida", ap.fpPartida],
+        ]);
+        P.gap(1);
+        sec("NÚMERO DE PARTIDAS");
+        kvPairs([["Número de partidas", ap.numPartidas]]);
+        P.gap(1);
+        sec("DISPOSITIVO AUXILIAR DE PARTIDA (QUANDO HOUVER)");
+        kvPairs([["Dispositivo", dispositivo]]);
+        P.gap(1);
+        sec("ORDEM DE PARTIDA DO MOTOR (CASOS DE DOIS OU MAIS MOTORES)");
+        kvPairs([["Ordem de partida", ap.ordemPartida]]);
+        P.gap(1);
+        sec("CARGAS OPERANDO ENQUANTO O MOTOR PARTE (QUANDO HOUVER)");
+        kvPairs([
+          ["Potência", un(ap.cargaOperanteKVA, "kVA")],
+          ["Fator de potência", ap.cargaOperanteFP],
+        ]);
+        P.gap(1);
+        sec("CARGAS SENSÍVEIS A FLUTUAÇÕES DE TENSÃO");
+        kvPairs([
+          ["Tipo", ap.cargaSensivelTipo],
+          ["Flutuação admissível", un(ap.cargaSensivelPercentual, "%")],
+        ]);
+        P.gap(1);
+        sec("SIMULTANEIDADE DE PARTIDA");
+        fullLine(
+          "Em caso de simultaneidade, relacionar os motores e suas características elétricas",
+          ap.simultaneidade,
+        );
+        P.gap(1);
+        sec("TRANSFORMADOR DO CONSUMIDOR");
+        kvPairs([
+          [
+            "Potência do transformador",
+            un(_fmtMotorGD(d.potTotalTrafos), "kVA"),
+          ],
+          ["Impedância percentual do transformador", un(ap.impedanciaZ, "%")],
+        ]);
+        P.gap(1);
+      })
+    : [
+        () => {
+          sec("IDENTIFICAÇÃO");
+          kvPairs([["Cliente", d.titular]]);
+          _paragrafoMotorGD(
+            P,
+            "Nenhum motor pesado identificado (trifásico acima de 50 CV ou monofásico acima de 15 CV).",
+          );
+          P.gap(1);
+        },
+      ];
+
+  folhas.forEach((folha, i) => {
+    if (i > 0) {
+      P.doc.addPage();
+      P.state.cy = P.MG;
+      P.header();
+    }
+    folha();
+    P.gap(2);
+    sec("NOTAS");
+    GD_NOTAS_MOTORES.forEach((n) => _paragrafoMotorGD(P, n));
+    P.gap(2);
+    fullLine("Data", _dataExtensoMotorGD());
+    P.assinatura("Responsável pelas informações");
+  });
+
+  const nomeArq = (d.titular || "MiniGD")
+    .replace(/[^a-zA-Z0-9]/g, "_")
+    .slice(0, 30);
+  P.save(`Analise_Partida_Motores_${nomeArq}.pdf`);
 }

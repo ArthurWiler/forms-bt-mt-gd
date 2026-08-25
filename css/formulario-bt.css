@@ -187,16 +187,6 @@ select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
    As definições locais foram removidas para evitar duplicação.
    O aviso de orientações migrou para o componente canônico `.cmg-aviso`
    (shared.css); a regra local `.callout` foi removida por ficar sem uso. */
-.legend {
-  display: flex;
-  gap: 18px;
-  flex-wrap: wrap;
-  font-size: 12px;
-  color: var(--texto-suave);
-  margin-top: 16px;
-  padding-top: 14px;
-  border-top: 1px solid var(--borda);
-}
 
 /* ---------- BANNERS / ALERTAS ---------- */
 .alert {

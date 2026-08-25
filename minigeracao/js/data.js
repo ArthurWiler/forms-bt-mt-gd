@@ -12,16 +12,34 @@ const GD_CLASSES = [
   "Iluminação Pública",
   "Serviço Público",
 ];
-// Tipos de solicitação. O texto é o NORMATIVO: é ele que as regras leem
+// Tipos de solicitação. O `valor` é o texto NORMATIVO: é ele que as regras leem
 // (_ehLigacaoNova, _ehAlteracaoDemanda, GD_SOLICITACOES_FORM_CARGA) e o que sai
-// impresso no PDF. A ordem é a lógica do microGD — ligação nova, existente SEM
+// impresso no PDF; o `texto` é o rótulo curto que aparece na tela, como no
+// microGD. A ordem é a lógica do microGD — ligação nova, existente SEM
 // alteração, existente COM alteração, geração já existente — e não a alfabética
 // de antes: o usuário lê a lista do caso mais simples para o mais específico.
 const GD_SOLICITACOES = [
-  "Ligação de Nova Unidade Consumidora COM Geração Distribuída",
-  "Conexão de GD em Unidade Consumidora Existente SEM Alteração de Demanda Contratada",
-  "Conexão de GD em Unidade Consumidora Existente COM Alteração de Demanda Contratada",
-  "GD Existente COM Alteração de Potência Ativa Instalada Total de Geração",
+  {
+    valor: "Ligação de Nova Unidade Consumidora COM Geração Distribuída",
+    texto: "Ligar nova unidade com Geração Distribuída",
+  },
+  {
+    valor:
+      "Conexão de GD em Unidade Consumidora Existente SEM Alteração de Demanda Contratada",
+    texto:
+      "Instalar geração distribuída em unidade existente (sem alteração de demanda)",
+  },
+  {
+    valor:
+      "Conexão de GD em Unidade Consumidora Existente COM Alteração de Demanda Contratada",
+    texto:
+      "Instalar geração distribuída em unidade existente (com alteração de demanda)",
+  },
+  {
+    valor:
+      "GD Existente COM Alteração de Potência Ativa Instalada Total de Geração",
+    texto: "Alterar potência de geração já existente",
+  },
 ];
 const GD_TENSAO_A = ["13800", "22000", "34500"];
 const GD_TENSAO_B = ["127/220", "120/240"];
@@ -45,6 +63,8 @@ const GD_DISPOSITIVOS_MOTOR = [
   "Soft-Starter",
   "Outro",
 ];
+// Opções do toggle "Tipo de edificação" da etapa 4 (data-k entradaEnergia):
+// é ele que separa o ramo individual do compartilhado no bloco técnico.
 const GD_ENTRADA_ENERGIA = [
   "Subestação Individual",
   "Subestação Compartilhada",
@@ -56,12 +76,31 @@ const GD_FONTES = [
   "Cogeração Qualificada",
   "Eólica",
 ];
+// Fontes que declaram a MESMA central térmica (combustível, máquina motriz,
+// ciclo termodinâmico): compartilham o bloco da central e as chaves bio* —
+// perguntar os mesmos dados duas vezes, em blocos separados, só duplicaria
+// estado, validação, prévia e PDF. Porte do microGD.
+const GD_FONTES_CENTRAL_TERMICA = ["Biomassa", "Cogeração Qualificada"];
+// Título do bloco por fonte: só a biomassa nomeia o combustível no cabeçalho.
+// Escrito por JS (ver renderFontes), como no microGD.
+const GD_TITULO_CENTRAL_TERMICA = {
+  Biomassa: "Dados da central geradora a biomassa",
+  "Cogeração Qualificada": "Dados da central geradora",
+};
+// Sistema solar é sempre inversor: renderFontes() marca esta opção sozinho ao
+// escolher "Solar", por isso a constante (o texto é gravado no estado e sai
+// assim no PDF — não pode divergir do item da lista).
+const GD_TIPO_GERACAO_INVERSOR = "Conversor eletrônico/inversor";
+// Lista fechada nas duas tecnologias reais, como no microGD: "Mista" e
+// "Outra (especificar):" saíram, e com elas o campo de texto livre
+// (tipoGeracaoOutro) que só a segunda revelava.
 const GD_TIPO_GERACAO = [
-  "Empregando máquina síncrona sem conversor",
-  "Empregando conversor eletrônico/inversor",
-  "Mista",
-  "Outra (especificar):",
+  "Máquina síncrona sem conversor",
+  GD_TIPO_GERACAO_INVERSOR,
 ];
+// Tensão de conexão do inversor (V) — as duas tensões de BT em que os
+// inversores se conectam. Valor gravado = rótulo (entra assim no PDF).
+const GD_TENSOES_INVERSOR = ["120/240", "127/220"];
 const GD_MODALIDADES = [
   "Autoconsumo Local",
   "Autoconsumo Remoto",
@@ -70,6 +109,115 @@ const GD_MODALIDADES = [
 ];
 const GD_MODALIDADE_AUTOCONSUMO_LOCAL = "Autoconsumo Local";
 const GD_QTD_FONTES = [1, 2];
+/* ===== Fonte primária Hidráulica =====
+   Classificação de segurança de barragens (REN ANEEL 696/2015, itens de
+   categoria de risco e dano potencial associado), perguntada quando a fonte
+   primária é Hidráulica — a 1ª pergunta (altura ≥ 15 m) é Sim/Não e sai como
+   toggle; estas quatro têm opções longas demais para os cards e são exibidas
+   como lista de rádios. Aqui as duas formas são escritas por JS, porque o
+   bloco vive DENTRO do card da fonte (ver renderFontes, js/app.js).
+     • chave   — campo do estado (model.js) e do PDF;
+     • rotulo  — nome curto da pergunta: é o que cabe no PDF, na prévia e na
+                 lista de pendências da exportação;
+     • pergunta— texto integral, só na tela;
+     • valor   — o que é gravado no estado (rótulo oficial, em caixa alta como
+                 no formulário Cemig); `sub` é o critério que o acompanha. */
+const GD_BARRAGEM_PERGUNTAS = [
+  {
+    chave: "hidroVolumeReservatorio",
+    num: 2,
+    rotulo: "Volume total do reservatório",
+    pergunta:
+      "Volume Total do Reservatório para barragens de uso múltiplo ou aproveitamento energético:",
+    opcoes: [
+      {
+        valor: "Muito Pequeno",
+        sub: "Se o Volume Total do Reservatório for < 3.000.000 m³",
+      },
+      {
+        valor: "Pequeno",
+        sub: "Se o Volume Total do Reservatório for ≥ 3.000.000 m³ e ≤ 5.000.000 m³",
+      },
+      {
+        valor: "Médio",
+        sub: "Se o Volume Total do Reservatório for > 5.000.000 m³ e ≤ 75.000.000 m³",
+      },
+      {
+        valor: "Grande",
+        sub: "Se o Volume Total do Reservatório for > 75.000.000 m³ e ≤ 200.000.000 m³",
+      },
+      {
+        valor: "Muito Grande",
+        sub: "Se o Volume Total do Reservatório for > 200.000.000 m³",
+      },
+    ],
+  },
+  {
+    chave: "hidroPerdaVidas",
+    num: 3,
+    rotulo: "Potencial de perdas de vidas humanas",
+    pergunta: "Potencial de perdas de vidas humanas:",
+    opcoes: [
+      {
+        valor: "Inexistente",
+        sub: "não existem pessoas permanentes/residentes ou temporárias/transitando na área afetada a jusante da barragem",
+      },
+      {
+        valor: "Pouco frequente",
+        sub: "não existem pessoas ocupando permanentemente a área afetada a jusante da barragem, mas existe estrada vicinal de uso local",
+      },
+      {
+        valor: "Frequente",
+        sub: "não existem pessoas ocupando permanentemente a área afetada a jusante da barragem, mas existe rodovia municipal, estadual, federal ou outro local e/ou empreendimento de permanência eventual de pessoas que poderão ser atingidas",
+      },
+      {
+        valor: "Existente",
+        sub: "existem pessoas ocupando permanentemente a área afetada a jusante da barragem, portanto, vidas humanas poderão ser atingidas",
+      },
+    ],
+  },
+  {
+    chave: "hidroImpactoAmbiental",
+    num: 4,
+    rotulo: "Impacto ambiental",
+    pergunta: "Impacto ambiental:",
+    opcoes: [
+      {
+        valor: "Significativo",
+        sub: "área afetada da barragem não representa área de interesse ambiental, áreas protegidas em legislação específica ou encontra-se totalmente descaracterizada de suas condições naturais",
+      },
+      {
+        valor: "Muito significativo",
+        sub: "área afetada da barragem apresenta interesse ambiental relevante ou protegida em legislação específica",
+      },
+    ],
+  },
+  {
+    chave: "hidroImpactoSocio",
+    num: 5,
+    rotulo: "Impacto sócio-econômico",
+    pergunta: "Impacto sócio-econômico:",
+    opcoes: [
+      {
+        valor: "Inexistente",
+        sub: "não existem quaisquer instalações e serviços de navegação na área afetada por acidente da barragem",
+      },
+      {
+        valor: "Baixo",
+        sub: "existe pequena concentração de instalações residenciais e comerciais, agrícolas, industriais ou de infraestrutura na área afetada da barragem ou instalações portuárias ou serviços de navegação",
+      },
+      {
+        valor: "Alto",
+        sub: "existe grande concentração de instalações residenciais e comerciais, agrícolas, industriais, de infraestrutura e serviços de lazer e turismo na área afetada da barragem ou instalações portuárias ou serviços de navegação",
+      },
+    ],
+  },
+];
+/* GD_FAST_LIMITE_USINA_KW não existe aqui: o Fast Track é a conexão
+   simplificada de até 7,5 kW (art. 73-A, III da REN 1.000/2021) e vale só para
+   a MICROgeração — a minigeração começa em 75 kW, então nem a opção nem o
+   limite fazem sentido nesta tela. Ver GD_FAST_LIMITE_USINA_KW em
+   microgeracao/js/data.js. */
 const GD_UTM_LIMITES = {
   22: { eMin: 487307, eMax: 833012, nMin: 7733378, nMax: 7981566 },
   23: { eMin: 161564, eMax: 840139, nMin: 7460145, nMax: 8435094 },
@@ -136,9 +284,6 @@ function gdCalcularGFC(d) {
    é campo de negócio e sai no PDF —, mas deixou de filtrar a galeria. */
 const GD_SOLICITACAO_LIG_NOVA =
   "Ligação de Nova Unidade Consumidora COM Geração Distribuída";
-// Valor de instExistenteBTMT que caracteriza migração BT→MT: para efeito de
-// subestação ela equivale a uma conexão nova (ver _finalidadeGD).
-const GD_BT_BAIXA = "BT - Baixa Tensão";
 // Regra 9: teto de 300 kVA das subestações Nº 1, 3, 5, 6 e 8 — aqui medido
 // contra a POTÊNCIA ATIVA INSTALADA DE GERAÇÃO (etapa 5), que é conceito
 // distinto do `maxKW` do CalculoMT (teto de DEMANDA contratada). Por isso o
@@ -146,9 +291,10 @@ const GD_BT_BAIXA = "BT - Baixa Tensão";
 // CalculoMT.SE_CRITERIOS (ver _tiposSEminiGD em js/subestacao.js), não de uma
 // lista literal — os rótulos das duas divergiam ("Nº 1" × "Subestação Nº 1").
 const GD_SE_LIMITE_KW = 300;
-// Rótulos dos três papéis do par de demanda contratada da etapa 4. Ficam aqui
-// porque os MESMOS textos são usados pela etapa, pela validação, pela prévia e
-// pelo PDF — ver _paresPotenciaGD (js/app.js).
+// Rótulos dos três papéis do par de demanda contratada. O par é campo do CARD
+// (de transformador ou de cubículo); os rótulos ficam aqui porque os MESMOS
+// textos valem para o card, para a validação e para o PDF — ver
+// _paresPotenciaGD (js/app.js) e _camposDemandaGD (js/subestacao.js).
 const GD_ROTULOS_DEMANDA = {
   nova: "Demanda a ser contratada de consumo (kW)",
   atual: "Demanda de consumo atual (kW)",
@@ -237,66 +383,6 @@ const GD_CONTATO_CEMIG = {
 };
 const GD_DECL_85 = ["não injeção na rede (“Grid Zero”)"];
 
-// Orientações de preenchimento (Etapa 1) — resumo montado a partir das
-// seções oficiais do Formulário MiniGD Rev. P2: Garantia de Fiel Cumprimento
-// (Seção 6), Documentação Técnica (Seção 7 — GD_DOCS_TEC), Contato na
-// Distribuidora (Seção 8) e Solicitações/Declarações (Seção 9).
-// A Documentação a anexar (Seção 3) saiu do formulário junto com a etapa
-// correspondente.
-const GD_ORIENTACOES = {
-  intro:
-    "Leia as orientações antes de iniciar. Este formulário destina-se à solicitação de acesso de MINIGERAÇÃO distribuída (potência instalada de geração superior a 75 kW e de até 5.000 kW, Grupo A) na área de concessão da CEMIG, conforme a Resolução Normativa ANEEL nº 1.000/2021.",
-  blocos: [
-    {
-      // O Formulário de Carga obrigatório e a Garantia de Fiel Cumprimento (>500
-      // kW) migraram para avisos contextuais (.cmg-aviso) exibidos ao escolher a
-      // solicitação e na seção de Garantia (ver minigeracao/js/views.js).
-      titulo: "Antes de começar, tenha em mãos",
-      itens: [
-        "Dados da conta de energia da unidade consumidora: número da instalação, titular, classe e endereço completo (informando o CEP, o endereço é preenchido automaticamente).",
-        "Coordenadas do ponto de conexão em Latitude/Longitude — o fuso e as coordenadas UTM são calculados automaticamente e validados contra a faixa do fuso em Minas Gerais.",
-        "Dados da subestação de entrada (ND-5.3): tipo de subestação, transformadores (potência, tipo de ligação e impedância) e, em subestação compartilhada, a quantidade de cubículos.",
-        "Dados da usina: fonte(s) primária(s), módulos e inversores — as potências totais são calculadas automaticamente.",
-      ],
-    },
-    {
-      titulo: "Documentação a anexar (Seção 3)",
-      itens: [
-        "Documentos de identificação do consumidor, conforme incisos I e II do art. 67 da REN nº 1.000/2021.",
-        "Documento com data que comprove a propriedade ou posse do imóvel onde será implantada a UC; para imóveis rurais, também o Cadastro Ambiental Rural – CAR (Lei nº 12.651/2012).",
-        "Licença ou declaração do órgão competente, caso as instalações ou a extensão de rede ocupem áreas protegidas.",
-        "Quando aplicável: documento que comprove o direito de posse em áreas, telhados ou estruturas alugados, cedidos ou arrendados; autorização do condomínio para uso de área comum; e, em subestação compartilhada com mais de um CPF/CNPJ, procuração elegendo um membro responsável pelo empreendimento.",
-      ],
-    },
-    {
-      titulo: "Documentação técnica (Seção 7)",
-      itens: [
-        "Documento de responsabilidade técnica de projeto e execução, emitido pelo conselho profissional competente.",
-        "Projeto elétrico das instalações de conexão e memorial descritivo com planta de situação.",
-        "Diagrama unifilar e de blocos do sistema de geração, carga e proteção.",
-        "Relatório de ensaio, em português, atestando a conformidade dos conversores de potência para a tensão de conexão.",
-        "Dados necessários ao registro da central geradora conforme o site da ANEEL e, quando aplicável: lista de UCs participantes da compensação, instrumento jurídico dos integrantes, cogeração qualificada, segurança de barragens e comprovante do aporte da Garantia de Fiel Cumprimento.",
-      ],
-    },
-    {
-      // A obrigatoriedade da declaração 9.5 para Grid Zero migrou para aviso
-      // contextual (.cmg-aviso) exibido na seção de Declarações quando Grid Zero.
-      titulo: "Declarações (Seção 9)",
-      itens: [
-        "As declarações 9.4 (instalações internas em conformidade com as normas da distribuidora, ABNT e art. 8º da Lei nº 9.074/1995) e 9.6 (veracidade das informações) são obrigatórias — o PDF só é liberado após marcá-las.",
-        "Se o padrão de entrada NÃO estiver pronto para ser ligado (item 9.1), o pedido de vistoria/ligação deve ser feito em até 120 dias após a conclusão do orçamento de conexão.",
-      ],
-    },
-  ],
-  callout:
-    "Ao final, revise os dados na etapa Prévia & PDF, exporte o formulário preenchido e anexe-o ao seu pedido. Dúvidas: " +
-    GD_CONTATO_CEMIG.responsavel +
-    " — " +
-    GD_CONTATO_CEMIG.telefone +
-    " · " +
-    GD_CONTATO_CEMIG.email +
-    ".",
-};
 
 // GFC exigida acima de 500 kW, EXCETO:
 //  - Geração Compartilhada com consórcio verificado;

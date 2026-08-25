@@ -400,7 +400,13 @@ html {
    do grid e reserva uma linha, somando o `gap` acima E abaixo (~28px de vão
    entre os campos vizinhos) mesmo sem aviso nenhum na tela. */
 .grid > .col-span-2:empty,
-.grid > .col-span-3:empty {
+.grid > .col-span-3:empty,
+/* .grid-subgrupo é display:contents — seus filhos são itens do MESMO grid,
+   mas o `>` acima deixa de alcançá-los. Sem esta linha, um contêiner de aviso
+   vazio dentro do subgrupo (ex.: #compartilhadaAlert na etapa 4 da mini)
+   volta a reservar a linha. */
+.grid > .grid-subgrupo > .col-span-2:empty,
+.grid > .grid-subgrupo > .col-span-3:empty {
   display: none;
 }
 /* Campo sozinho na linha SEM esticar: reserva a linha inteira mas continua
@@ -3642,6 +3648,34 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .card-sub a {
   color: var(--cmg-green-600);
   font-weight: var(--cmg-fw-bold);
+}
+
+/* ---- Cabeçalho que abre cada grupo de orientações (single source) ----
+   Rótulo acima de uma `.orient-list` ("Antes de começar, tenha em mãos",
+   "Documentação a anexar", "Atendimento individual ou agrupamento…").
+   A referência é o SVG de spec da etapa 1: lá o grupo é um cabeçalho de
+   SEÇÃO no mesmo degrau do `.card-title` — as alturas de caixa alta medidas
+   nos paths batem com os tokens (eyebrow 12px/verde-600, título 26px/#041E18,
+   corpo 16px), e o rótulo do grupo renderiza do mesmo tamanho do título do
+   card. Não é o 14px/negrito/verde que o BT trazia em `style=` inline, nem o
+   `.subbox-title` (12px, neutra) que Micro e Mini reusavam — aquele é o
+   título dos SUBBOXES de carga/demanda.
+   Repete o ramo do `.card-title` em vez de reusá-lo porque a caixa é outra:
+   aqui o cabeçalho precisa da margem SUPERIOR que separa um grupo do
+   anterior. O `margin-bottom` de 8px colapsa com o `margin-top` da
+   `.orient-list`, que é o mesmo valor. */
+.cemig-form .orient-subtitulo {
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-subtitle-lg, 26px);
+  line-height: var(--cmg-lh-subtitle-lg, 38px);
+  font-weight: var(--cmg-fw-regular);
+  letter-spacing: var(--cmg-ls-wide);
+  color: var(--cmg-text-strong);
+  margin: var(--cmg-space-6) 0 var(--cmg-space-2);
+}
+/* Primeiro grupo do card: quem dá o respiro é o margin-bottom do `.card-sub`. */
+.cemig-form .card-sub + .orient-subtitulo {
+  margin-top: 0;
 }
 
 @media (max-width: 1024px) {
