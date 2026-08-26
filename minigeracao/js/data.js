@@ -315,65 +315,6 @@ const GD_SOLICITACOES_FORM_CARGA = [
 ];
 const GD_ENTRADA_COMPARTILHADA = "Subestação Compartilhada";
 
-// Documentação Técnica (Seção 7) — MiniGD
-const GD_DOCS_TEC = [
-  {
-    id: "7.1",
-    req: true,
-    txt: "Documento de responsabilidade técnica (projeto e execução) do conselho profissional competente.",
-  },
-  {
-    id: "7.2",
-    req: true,
-    txt: "Projeto elétrico das instalações de conexão e memorial descritivo com planta de situação.",
-  },
-  {
-    id: "7.3",
-    req: true,
-    txt: "Diagrama unifilar e de blocos do sistema de geração, carga e proteção.",
-  },
-  {
-    id: "7.4",
-    req: true,
-    txt: "Relatório de ensaio (português) atestando conformidade dos conversores de potência para a tensão de conexão.",
-  },
-  {
-    id: "7.5",
-    req: true,
-    txt: "Dados necessários ao registro da central geradora distribuída conforme site da ANEEL.",
-  },
-  {
-    id: "7.6",
-    req: false,
-    txt: "Lista de UCs participantes do sistema de compensação com percentual/ordem de utilização dos excedentes.",
-  },
-  {
-    id: "7.7",
-    req: false,
-    txt: "Instrumento jurídico que comprove participação dos integrantes (múltiplas UCs e geração compartilhada). (Caso aplicável)",
-  },
-  {
-    id: "7.8",
-    req: false,
-    txt: "Documento que comprove reconhecimento pela ANEEL da cogeração qualificada. (Caso aplicável)",
-  },
-  {
-    id: "7.9",
-    req: false,
-    txt: "Dados de segurança das barragens para fontes hídricas (REN 696/2015). (Caso aplicável)",
-  },
-  {
-    id: "7.10",
-    req: false,
-    txt: "Para centrais FV despacháveis, comprovação de atendimento ao art. 655-B (armazenamento). (Caso aplicável)",
-  },
-  {
-    id: "7.11",
-    req: false,
-    txt: "Documento que comprove o aporte da Garantia de Fiel Cumprimento (art. 655-C). (Caso aplicável > 500 kW)",
-  },
-];
-
 const GD_CONTATO_CEMIG = {
   responsavel:
     "Gerência de Processos Especiais da Expansão de Média e Baixa Tensão - EM/PE",
@@ -381,9 +322,6 @@ const GD_CONTATO_CEMIG = {
   telefone: "0800 721 0167",
   email: "geracaodistribuida@cemig.com.br",
 };
-const GD_DECL_85 = ["não injeção na rede (“Grid Zero”)"];
-
-
 // GFC exigida acima de 500 kW, EXCETO:
 //  - Geração Compartilhada com consórcio verificado;
 //  - Geração Compartilhada / EMUC (Regra 21: GFC não se aplica a EMUC).

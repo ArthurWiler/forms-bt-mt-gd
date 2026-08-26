@@ -848,30 +848,6 @@ function onTelhadoArrendado() {
   }
 }
 
-/* ===== Etapa 7 — checklists ===== */
-function renderChecklist(containerId, lista, alvo) {
-  const box = document.getElementById(containerId);
-  if (!box) return;
-  box.innerHTML = "";
-  lista.forEach((doc) => {
-    const label = document.createElement("label");
-    label.className = "doc-item";
-    const chk = document.createElement("input");
-    chk.type = "checkbox";
-    chk.checked = !!state[alvo][doc.id];
-    chk.addEventListener("change", () => {
-      state[alvo][doc.id] = chk.checked;
-    });
-    const span = document.createElement("span");
-    span.className = "doc-text";
-    span.innerHTML =
-      `<strong>${doc.id}</strong> ${doc.txt}` +
-      (doc.req ? ' <span class="doc-req">(obrigatório)</span>' : "");
-    label.append(chk, span);
-    box.appendChild(label);
-  });
-}
-
 /* ===== Etapa 6 — Formulário de Carga (redeMono sempre false no mini) ===== */
 function _atividadeCargas() {
   return state.classe === "Residencial" ||
@@ -936,13 +912,15 @@ function _ehGridZero() {
 function onModoOperacaoGD(el) {
   if (el) state.modoOperacao = el.value;
   state.gridZero = state.modoOperacao === "Grid Zero" ? "Sim" : "Não";
-  onGridZero(); // travas da demanda de geração, da modalidade e do item 9.5
+  onGridZero(); // travas da demanda de geração, da modalidade e da dispensa 73-A
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
 // Gate de avanço da etapa: a modalidade de operação são <input type="radio">
 // SEM data-k, então os marcadores (que só enxergam controles bindados) não a
-// cobrem. Diferente do microGD, aqui a pergunta está sempre em tela — não
-// espera a escolha da fonte —, então é sempre exigida.
+// cobrem. Como no microGD, a pergunta espera a escolha da fonte (vive em
+// #posFontesBox — ver atualizarPosFontesGD); até lá quem segura o "Avançar" é
+// a própria Fonte primária, obrigatória e em tela, então exigir sempre aqui
+// nunca deixa o botão preso num campo que o usuário não alcança.
 window.gdModoOperacaoOk = () => !!state.modoOperacao;
 // Segurança de barragens: só as fontes HIDRÁULICAS têm o que classificar. As
 // respostas são rádios e toggles dentro do bloco da fonte, sem data-k, então
@@ -1524,74 +1502,170 @@ function _outorgaHTML(f) {
     `</div>`
   );
 }
+/* Progresso da etapa: tudo o que vem DEPOIS das fontes (#posFontesBox —
+   modalidade de operação/compensação, contratação, armazenamento e gerador de
+   emergência) só entra em tela quando cada bloco de #fontesBox já declarou a
+   sua Fonte primária. Antes disso o bloco da fonte não mostra campo nenhum
+   (ver renderFontes), e a etapa aberta de uma vez enterrava esse primeiro
+   passo no meio do card.
+   Basta a fonte primária — não o bloco inteiro: o restante da fonte convive
+   com o resto da etapa, e só a exportação cobra o conjunto completo
+   (validarExportacao). Alterna por style inline entre "" e "none", como os
+   demais blocos condicionais da etapa. */
+function gdFontesDeclaradas() {
+  const fontes = state.fontes || [];
+  return fontes.length > 0 && fontes.every((f) => !!f.fontePrimaria);
+}
+function atualizarPosFontesGD() {
+  const box = $("#posFontesBox");
+  if (box) box.style.display = gdFontesDeclaradas() ? "" : "none";
+}
+/* Rótulo de cada fonte — na linha do topo e no cabeçalho do seu acordeão.
+   O mini admite no máximo 2 (ver o select "Quantidade de fontes"); um índice
+   além disso cairia no numérico em vez de sumir sem aviso. */
+function _fonteRotuloGD(i) {
+  return ["Fonte primária", "Fonte secundária"][i] || `Fonte ${i + 1}`;
+}
+// Índices dos acordeões de fonte expandidos. NÃO é exclusivo (são dois no
+// máximo): comparar as duas fontes lado a lado é justamente o que a linha do
+// topo propõe. Mesma mecânica dos cards de transformador (js/subestacao.js).
+let _fontesAbertasGD = new Set([0]);
+function toggleFonteGD(i) {
+  _fontesAbertasGD.has(i)
+    ? _fontesAbertasGD.delete(i)
+    : _fontesAbertasGD.add(i);
+  renderFontes();
+}
+/* Corpo do acordeão: o conjunto de campos da fonte escolhida, o mesmo de
+   antes. A "Tecnologia de geração" entrou aqui — no desenho anterior ela
+   dividia a linha com a fonte primária, e essa linha agora é das DUAS fontes;
+   sendo campo de UMA usina, seu lugar é dentro do card dela. */
+function _fonteCorpoHTML(f, i) {
+  const ehFV = f.fontePrimaria === "Solar";
+  const ehHidro = f.fontePrimaria === "Hidráulica";
+  const ehBio = GD_FONTES_CENTRAL_TERMICA.includes(f.fontePrimaria);
+  const ehEol = f.fontePrimaria === "Eólica";
+  return (
+    // Tecnologia de geração: perguntada só no Solar, como no microGD — nas
+    // demais fontes a máquina é a própria central declarada no bloco.
+    (ehFV
+      ? `<div class="grid grid-2">` +
+        _fSelectGD(f, "tipoGeracao", "Tecnologia de geração", GD_TIPO_GERACAO) +
+        `</div>`
+      : "") +
+    (ehFV ? _fvBlocosHTML(f, i) : "") +
+    (ehHidro ? _hidroBlocosHTML(f, i) : "") +
+    (ehBio ? _bioBlocosHTML(f) : "") +
+    (ehEol ? _eolBlocosHTML(f) : "") +
+    _outorgaHTML(f)
+  );
+}
+/* Liga os campos de UMA fonte ao seu índice em state.fontes. `escopo` é o
+   elemento que os contém — o card do acordeão —, e por isso a fonte primária
+   não passa por aqui: os dois selects dela vivem no MESMO grid do topo, fora
+   de qualquer card (ver renderFontes). */
+function _ligarCamposFonteGD(escopo, i) {
+  escopo.querySelectorAll("[data-f]").forEach((el) => {
+    const chave = el.dataset.f;
+    const handler = () => {
+      if (el.hasAttribute("data-num"))
+        el.value = el.value.replace(/[^\d.]/g, "");
+      if (el.hasAttribute("data-int")) el.value = el.value.replace(/\D/g, "");
+      state.fontes[i][chave] = el.value;
+      if (el.hasAttribute("data-f-sync")) {
+        sincronizarEquipFVGD(i, el.dataset.fSync);
+      } else if (el.hasAttribute("data-f-recalc")) {
+        recalcFontes();
+      } else if (window.CemigMarcadores) {
+        window.CemigMarcadores.atualizarAvancar();
+      }
+    };
+    el.addEventListener(el.tagName === "SELECT" ? "change" : "input", handler);
+  });
+  escopo.querySelectorAll("[data-ftoggle]").forEach((btn) => {
+    btn.addEventListener("click", () =>
+      onFonteToggleGD(i, btn.dataset.ftoggle, btn.dataset.fvalor),
+    );
+  });
+  escopo.querySelectorAll("[data-fradio]").forEach((r) => {
+    r.addEventListener("change", () => {
+      state.fontes[i][r.dataset.fradio] = r.value;
+      if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
+    });
+  });
+}
+/* A seção das fontes: um subtítulo "Método de geração", as fontes lado a lado
+   numa ÚNICA linha (primária | secundária) e, abaixo, um acordeão por fonte com
+   os campos dela. Antes cada fonte era um bloco corrido com a sua própria
+   pergunta "Fonte primária" — com duas fontes a mesma pergunta aparecia duas
+   vezes, longe uma da outra, e o conjunto da etapa 5 virava uma coluna sem
+   fim. */
 function renderFontes() {
   const box = $("#fontesBox");
   if (!box) return;
   box.innerHTML = "";
-  (state.fontes || []).forEach((f, i) => {
-    const ehFV = f.fontePrimaria === "Solar";
-    const ehHidro = f.fontePrimaria === "Hidráulica";
-    const ehBio = GD_FONTES_CENTRAL_TERMICA.includes(f.fontePrimaria);
-    const ehEol = f.fontePrimaria === "Eólica";
-    const bloco = document.createElement("div");
-    bloco.className = "gd-fonte-bloco";
-    bloco.id = `fonteBloco${i}`;
-    bloco.innerHTML =
-      // Cabeçalho do bloco no MESMO padrão dos blocos de modelo ("Módulo 1"):
-      // subtítulo/18px em peso regular, SEM divider — o .gd-subhead (12px
-      // caixa-alta com linha embaixo) é o cabeçalho de SEÇÃO da etapa 8, não
-      // de um bloco repetido dentro do card.
-      `<div class="gd-fonte-titulo">Fonte de geração ${i + 1}</div>` +
-      `<div class="grid grid-2">` +
-      _fSelectGD(f, "fontePrimaria", "Fonte primária", GD_FONTES) +
-      // Tecnologia de geração: perguntada só no Solar, como no microGD — nas
-      // demais fontes a máquina é a própria central declarada no bloco.
-      (ehFV
-        ? _fSelectGD(f, "tipoGeracao", "Tecnologia de geração", GD_TIPO_GERACAO)
-        : "") +
-      `</div>` +
-      (ehFV ? _fvBlocosHTML(f, i) : "") +
-      (ehHidro ? _hidroBlocosHTML(f, i) : "") +
-      (ehBio ? _bioBlocosHTML(f) : "") +
-      (ehEol ? _eolBlocosHTML(f) : "") +
-      (f.fontePrimaria ? _outorgaHTML(f) : "");
-    // ----- listeners: campos da fonte i gravam em state.fontes[i] -----
-    bloco.querySelectorAll("[data-f]").forEach((el) => {
-      const chave = el.dataset.f;
-      const handler = () => {
-        if (el.hasAttribute("data-num"))
-          el.value = el.value.replace(/[^\d.]/g, "");
-        if (el.hasAttribute("data-int")) el.value = el.value.replace(/\D/g, "");
-        state.fontes[i][chave] = el.value;
-        if (chave === "fontePrimaria") {
-          onFontePrimariaGD(i);
-        } else if (el.hasAttribute("data-f-sync")) {
-          sincronizarEquipFVGD(i, el.dataset.fSync);
-        } else if (el.hasAttribute("data-f-recalc")) {
-          recalcFontes();
-        } else if (window.CemigMarcadores) {
-          window.CemigMarcadores.atualizarAvancar();
-        }
-      };
-      el.addEventListener(el.tagName === "SELECT" ? "change" : "input", handler);
-    });
-    bloco.querySelectorAll("[data-ftoggle]").forEach((btn) => {
-      btn.addEventListener("click", () =>
-        onFonteToggleGD(i, btn.dataset.ftoggle, btn.dataset.fvalor),
-      );
-    });
-    bloco.querySelectorAll("[data-fradio]").forEach((r) => {
-      r.addEventListener("change", () => {
-        state.fontes[i][r.dataset.fradio] = r.value;
-        if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
+  const fontes = state.fontes || [];
+
+  const cabecalho = document.createElement("div");
+  cabecalho.className = "gd-fonte-bloco";
+  cabecalho.innerHTML =
+    `<div class="gd-fonte-titulo">Método de geração</div>` +
+    `<div class="grid grid-2">` +
+    fontes
+      .map((f, i) =>
+        _fSelectGD(f, "fontePrimaria", _fonteRotuloGD(i), GD_FONTES),
+      )
+      .join("") +
+    `</div>`;
+  // Os dois selects são irmãos no mesmo grid, então o índice não pode vir de um
+  // contêiner por fonte como no resto dos campos: vem da ORDEM em que foram
+  // escritos, que é a de state.fontes.
+  cabecalho
+    .querySelectorAll(`select[data-f="fontePrimaria"]`)
+    .forEach((sel, i) => {
+      sel.addEventListener("change", () => {
+        state.fontes[i].fontePrimaria = sel.value;
+        // Fonte recém-declarada abre já expandida: quem acabou de escolher é
+        // quem vai preencher.
+        if (sel.value) _fontesAbertasGD.add(i);
+        onFontePrimariaGD(i);
       });
     });
-    box.appendChild(bloco);
-    if (ehFV) {
+  box.appendChild(cabecalho);
+
+  fontes.forEach((f, i) => {
+    // Sem fonte escolhida não há campo nenhum a guardar — o card só nasce
+    // depois da resposta no select do topo.
+    if (!f.fontePrimaria) return;
+    const aberta = _fontesAbertasGD.has(i);
+    const card = document.createElement("div");
+    card.className = "gd-fonte-card" + (aberta ? " is-open" : "");
+    // O id continua sendo o endereço dos campos DESTA fonte (ver
+    // sincronizarEquipFVGD e onFonteToggleGD).
+    card.id = `fonteBloco${i}`;
+    card.innerHTML =
+      `<button type="button" class="gd-fonte-card-head" onclick="toggleFonteGD(${i})"` +
+      ` aria-expanded="${aberta}" aria-controls="fonteCardBody${i}">` +
+      `<span class="gd-fonte-card-nome">${_fonteRotuloGD(i)}</span>` +
+      // Fechado, o card precisa continuar dizendo o que guarda.
+      `<span class="gd-fonte-card-badge">${_escAttrGD(f.fontePrimaria)}</span>` +
+      `<span class="gd-fonte-card-chevron" aria-hidden="true"></span>` +
+      `</button>` +
+      `<div class="gd-fonte-card-body" id="fonteCardBody${i}"${aberta ? "" : " hidden"}>` +
+      _fonteCorpoHTML(f, i) +
+      `</div>`;
+    _ligarCamposFonteGD(card, i);
+    box.appendChild(card);
+    if (f.fontePrimaria === "Solar") {
       renderEquipFVGD(i, "modulos");
       renderEquipFVGD(i, "inversores");
     }
   });
+  // Antes do atualizarAvancar(): o gate só ignora os obrigatórios de
+  // #posFontesBox enquanto ele estiver oculto (ver _visivel em
+  // shared/js/form-marcadores.js), então a visibilidade precisa estar resolvida
+  // quando ele rodar.
+  atualizarPosFontesGD();
   if (window.CemigMarcadores) {
     window.CemigMarcadores.aplicar(box);
     window.CemigMarcadores.atualizarAvancar();
@@ -1657,7 +1731,9 @@ function atualizarGFC() {
     window.CemigMarcadores.atualizarAvancar();
   }
 }
-// Regra 22: item 9.5 só aparece (e é obrigatório) quando Grid Zero = Sim.
+// Regra 22: a dispensa do art. 73-A só aparece (e é obrigatória) quando
+// Grid Zero = Sim. Item e aviso vivem na etapa 5, ao lado da modalidade de
+// operação que os origina.
 function atualizarDecl95() {
   const gz = state.gridZero === "Sim";
   const item = $("#decl95Item");
@@ -1682,7 +1758,11 @@ function onArmazenamento() {
   if (rec) rec.style.display = ilhada ? "" : "none";
 }
 
-/* ===== Etapa 7 — Declarações (checkboxes) ===== */
+/* ===== Declarações em caixa de seleção =====
+   Restou uma: a dispensa do art. 73-A, que vive na etapa 5 junto da
+   modalidade de operação. O binding é por [data-decl], então independe de
+   qual fragmento a hospeda — os fragmentos já estão todos no DOM quando
+   initFormulario() roda. ===== */
 function bindDeclaracoes() {
   $$("[data-decl]").forEach((chk) => {
     const k = chk.dataset.decl;
@@ -1855,10 +1935,10 @@ function validarExportacao() {
   // "Avançar" só olha a etapa ativa, então a lista inteira é revalidada aqui.
   faltas.push(...gdValidarFVGD());
   if (gdExigeGFC(d)) req(d.garantiaForma, "Forma de apresentação da garantia");
-  if (!d.decl84) faltas.push("Declaração 9.4 (obrigatória)");
   if (d.gridZero === "Sim" && !d.decl95)
-    faltas.push("Declaração 9.5 (obrigatória para Grid Zero)");
-  if (!d.decl86) faltas.push("Declaração 9.6 (obrigatória)");
+    faltas.push(
+      "Dispensa de análise de inversão de fluxo (obrigatória para Grid Zero)",
+    );
   // Data de vencimento da fatura: opcional (não entra em `req`).
   // A forma de recebimento, sim: o dropdown abre em "Selecione" (sem
   // pré-seleção), então é preciso cobrar a escolha.
@@ -2098,6 +2178,18 @@ function renderPreviewGD() {
   if (d.corrAlternativa === "Conta globalizada")
     cor += pvCampo("Conta globalizada", d.contaGlobal, { step: 7 });
   secoes.push(pvSecao("Correspondência e Fatura", cor));
+  // Observações (etapa 9): só entra na prévia quando há texto — uma seção com
+  // um "—" solto não acrescenta nada à conferência.
+  if ((d.obs || "").trim())
+    secoes.push(
+      pvSecao(
+        "Observações",
+        pvCampo("Informações adicionais", d.obs.replace(/\n/g, "<br>"), {
+          full: true,
+          step: 8,
+        }),
+      ),
+    );
   const content = $("#previewContent");
   if (content) content.innerHTML = secoes.join(PV_DIVISOR);
   const btn = $("#btnExportarPDF");
@@ -2157,9 +2249,6 @@ window.initFormulario = function () {
   bindInputs();
   inicializarCards();
   bindDeclaracoes();
-  // A etapa "Documentação da UC a anexar" foi removida do formulário; resta a
-  // documentação TÉCNICA, que vive na etapa de Declarações.
-  renderChecklist("docsTecChecklist", GD_DOCS_TEC, "docsTec");
   initCargas();
   // Blocos de modelo de módulo/inversor: sem esta garantia uma fonte Solar
   // restaurada abriria com as listas vazias, sem nenhum campo a preencher.

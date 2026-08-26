@@ -22,6 +22,22 @@
   </div>
   <div id="calcDemandaBox" style="margin-top: var(--cmg-space-8)"></div>
   <div id="resultadoCargaBox"></div>
+  <!-- Fecha a etapa: com as cargas declaradas e o disjuntor sugerido à vista, a
+       pergunta sobre o estado do padrão e da usina é o último passo do
+       Formulário de Carga. Veio da etapa de Declarações. Os cards Sim/Não são
+       montados por _cardsMontar (CARDS_GD, js/app.js) sobre o <select> oculto. -->
+  <div class="grid grid-2" style="margin-top: var(--cmg-space-8)">
+    <div class="field field--plain col-span-2" data-noopt>
+      <label>
+        O padrão está pronto para ser ligado e a usina está instalada?
+      </label>
+      <div id="cardsDecl81"></div>
+      <select data-k="decl81" style="display: none" aria-hidden="true">
+        <option>Não</option>
+        <option>Sim</option>
+      </select>
+    </div>
+  </div>
 </div>
 <div class="nav-bottom no-print">
   <button class="btn btn-ghost" data-nav="prev">← Voltar</button>

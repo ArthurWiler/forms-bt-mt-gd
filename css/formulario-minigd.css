@@ -93,6 +93,23 @@ body {
    `.cemig-form`. Cópias locais removidas — dead code sobreposto
    pelo shared (o conector já é ocultado lá com display:none). */
 
+/* Única exceção: o rótulo pode quebrar em duas linhas.
+   "Garantia de Fiel Cumprimento" (etapa 7) é o rótulo mais longo dos seis
+   formulários e não cabe nos ~148px que sobram na trilha de 204px. O
+   `.cemig-form .vstep-label` do shared trava a caixa em `flex: none` +
+   `height: 20px`, então o texto sairia numa linha só, vazando o painel por
+   cima da coluna do formulário. Aqui ele passa a poder ENCOLHER — sem
+   crescer: com `flex-grow` os rótulos curtos ganhariam sobra e o
+   `text-align: center` que já vem do shared apareceria neles — e a altura
+   fixa vira piso. Mesma especificidade do shared, arquivo carregado depois.
+   No mobile a trilha vira fita rolável com `white-space: nowrap` no `.vstep`
+   (shared.css, @media), então lá nada quebra e o chip segue de 20px. */
+.cemig-minigd .vstep-label {
+  flex: 0 1 auto;
+  height: auto;
+  min-height: 20px;
+}
+
 .main-col {
   flex: 1;
   min-width: 0;
@@ -906,11 +923,29 @@ textarea.ta {
    classe — no micro alguns eram de id, porque lá o markup é único.
    ============================================================ */
 
-/* Cada fonte é um bloco do card: o passo vertical entre eles — e entre o grid
-   comum do topo e o primeiro deles — é o mesmo 32px das demais seções da
-   etapa, e mora no wrapper (o título do bloco não tem margem no topo). */
+/* Cabeçalho da seção ("Método de geração" + a linha primária/secundária): o
+   passo vertical até o grid acima é o mesmo 32px das demais seções da etapa, e
+   mora no wrapper (o título não tem margem no topo). */
 .cemig-minigd .gd-fonte-bloco {
   margin-top: var(--cmg-space-8);
+}
+/* Acordeão de cada fonte (.gd-fonte-card, ver renderFontes): o desenho vem das
+   listas do acordeão de transformador/motor (css/formulario-mt.css) — aqui
+   ficam só as diferenças desta etapa.
+   O corpo do trafo abre direto em campos; o da fonte, quando a fonte NÃO é
+   Solar, abre num .card-subtitle.divider ("Dados da central geradora…") — e o
+   .divider desenharia uma linha colada no cabeçalho, com 32px de vazio antes
+   do texto. No PRIMEIRO filho a linha e o passo saem; quem dá o respiro é o
+   padding do próprio corpo. No Solar o primeiro filho é o grid da tecnologia
+   de geração, e aí o divider seguinte separa mesmo duas seções — por isso a
+   regra é de :first-child, e não de todos os dividers do corpo. */
+.cemig-minigd .gd-fonte-card-body {
+  padding-top: var(--cmg-space-4);
+}
+.cemig-minigd .gd-fonte-card-body > .divider:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
 }
 
 /* Pergunta em lista de rádios (spec Figma "regulamento"): opções SEM a moldura

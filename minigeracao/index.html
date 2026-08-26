@@ -2,11 +2,25 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5" />
-    <title>Formulário de Solicitação de Acesso — Minigeração Distribuída — Cemig</title>
-    <meta name="description" content="Formulário digital para solicitação de acesso de Minigeração Distribuída (REN 1.000/2021) — CEMIG." />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=5"
+    />
+    <title>
+      Formulário de Solicitação de Acesso — Minigeração Distribuída — Cemig
+    </title>
+    <meta
+      name="description"
+      content="Formulário digital para solicitação de acesso de Minigeração Distribuída (REN 1.000/2021) — CEMIG."
+    />
     <!-- Open Sans auto-hospedada (@font-face em css/variables.css). -->
-    <link rel="preload" as="font" type="font/woff2" href="../fonts/open-sans-latin.woff2" crossorigin />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="../fonts/open-sans-latin.woff2"
+      crossorigin
+    />
 
     <link rel="stylesheet" href="../css/variables.css" />
     <link rel="stylesheet" href="../css/shared.css" />
@@ -74,7 +88,7 @@
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">7</span>
-          <span class="vstep-label">Declarações</span>
+          <span class="vstep-label">Fiel Cumprimento</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">8</span>
@@ -82,6 +96,10 @@
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">9</span>
+          <span class="vstep-label">Observações</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">10</span>
           <span class="vstep-label">Prévia &amp; PDF</span>
         </button>
       </aside>
@@ -91,13 +109,17 @@
           <h1>Minigeração Distribuída - Solicitação de Acesso</h1>
           <p>
             Preenchimento digital do formulário de solicitação de acesso para
-            conexão de minigeração distribuída (potência instalada superior a
-            75 kW e de até 5.000 kW), conforme a REN ANEEL nº 1.000/2021 e as
+            conexão de minigeração distribuída (potência instalada superior a 75
+            kW e de até 5.000 kW), conforme a REN ANEEL nº 1.000/2021 e as
             normas de distribuição da CEMIG.
           </p>
         </div>
 
-        <section class="page show" id="page-0" data-src="etapas/01-orientacoes.html">
+        <section
+          class="page show"
+          id="page-0"
+          data-src="etapas/01-orientacoes.html"
+        >
           <!-- Esqueleto: o etapas-loader troca o innerHTML desta seção pelo
                fragmento, então isto desaparece sozinho quando ele chega. -->
           <div class="card etapa-skeleton" aria-hidden="true">
@@ -107,23 +129,60 @@
             <div class="sk-linha sk-curta"></div>
           </div>
         </section>
-        <section class="page" id="page-1" data-src="etapas/02-identificacao.html"></section>
-        <section class="page" id="page-2" data-src="etapas/03-dados-unidade.html"></section>
-        <section class="page" id="page-3" data-src="etapas/04-atendimento.html"></section>
+        <section
+          class="page"
+          id="page-1"
+          data-src="etapas/02-identificacao.html"
+        ></section>
+        <section
+          class="page"
+          id="page-2"
+          data-src="etapas/03-dados-unidade.html"
+        ></section>
+        <section
+          class="page"
+          id="page-3"
+          data-src="etapas/04-atendimento.html"
+        ></section>
         <!-- Geração vem ANTES de Documentação/Carga: a potência ativa
              instalada declarada aqui filtra os tipos de subestação da etapa
              "Tipo de atendimento" (Regra 9, ver _tiposSEminiGD) e define a
              Garantia de Fiel Cumprimento. -->
-        <section class="page" id="page-4" data-src="etapas/05-geracao.html"></section>
-        <section class="page" id="page-5" data-src="etapas/06-carga.html"></section>
+        <section
+          class="page"
+          id="page-4"
+          data-src="etapas/05-geracao.html"
+        ></section>
+        <section
+          class="page"
+          id="page-5"
+          data-src="etapas/06-carga.html"
+        ></section>
         <!-- A etapa "Armazenamento" deixou de existir: o bloco "Armazenamento e
              banco de baterias" passou a viver DENTRO da etapa de Geração, como
-             na microgeração (microgeracao/etapas/04-geracao.html). Os nomes
-             dos fragmentos seguem a numeração antiga — quem manda na ordem são
-             estes ids, e goTo() navega por eles. -->
-        <section class="page" id="page-6" data-src="etapas/08-declaracoes.html"></section>
-        <section class="page" id="page-7" data-src="etapas/09-correspondencia.html"></section>
-        <section class="page" id="page-8" data-src="etapas/10-previa.html"></section>
+             na microgeração (microgeracao/etapas/04-geracao.html). Quem manda
+             na ordem são estes ids, e goTo() navega por eles — os nomes dos
+             fragmentos apenas os acompanham. -->
+        <section
+          class="page"
+          id="page-6"
+          data-src="etapas/07-garantia.html"
+        ></section>
+        <section
+          class="page"
+          id="page-7"
+          data-src="etapas/08-correspondencia.html"
+        ></section>
+        <section
+          class="page"
+          id="page-8"
+          data-src="etapas/09-observacoes.html"
+        ></section>
+        <section
+          class="page"
+          id="page-9"
+          data-src="etapas/10-previa.html"
+        ></section>
       </main>
     </div>
 

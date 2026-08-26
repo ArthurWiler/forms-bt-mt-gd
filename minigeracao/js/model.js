@@ -205,12 +205,13 @@ function gdEstadoInicial() {
     // 6 - Garantia de Fiel Cumprimento
     gfcValor: "",
     garantiaForma: "",
-    // 7 - Documentação técnica
-    docsTec: {},
-    // 8 - Declarações
+    // A etapa de Declarações deixou de existir: o checklist de documentação
+    // técnica e as declarações genéricas saíram do formulário, e as duas
+    // perguntas que restaram migraram para a etapa que as origina — o estado
+    // do padrão/usina fecha o Formulário de Carga (etapa 6) e a dispensa do
+    // art. 73-A acompanha a modalidade de operação (etapa 5).
     decl81: "Não",
-    decl82: false, decl83: false, decl84: true, decl85Regra: "", decl86: true,
-    // Regra 22: item 9.5 — dispensa de análise de inversão de fluxo (obrigatório quando Grid Zero = Sim).
+    // Regra 22: dispensa de análise de inversão de fluxo (obrigatória quando Grid Zero = Sim).
     decl95: false,
     // Correspondência (etapa própria — replica o bloco do BT) + Solicitante.
     vencimento: "",
@@ -222,5 +223,7 @@ function gdEstadoInicial() {
     corrCep: "", corrRua: "", corrNum: "", corrCompl: "",
     corrBairro: "", corrMunicipio: "", corrEstado: "MG",
     contaGlobal: "",
+    // Observações (etapa própria, como no BT e no microGD).
+    obs: "",
   };
 }

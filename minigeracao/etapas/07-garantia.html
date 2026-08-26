@@ -1,11 +1,11 @@
+<!doctype html>
 <div class="card">
   <div class="section-eyebrow">Etapa 7</div>
-  <h3 class="card-title">
-    Garantia, documentação técnica, declarações e solicitante
-  </h3>
+  <h3 class="card-title">Garantia de Fiel Cumprimento</h3>
 
-  <div class="gd-subhead">6 — Garantia de Fiel Cumprimento</div>
-  <div class="cmg-aviso no-print">
+  <!-- Aviso de enquadramento: `--warn` porque a exigência acima de 500 kW é
+       uma condição a cumprir, não uma informação de apoio. -->
+  <div class="cmg-aviso cmg-aviso--warn no-print">
     <div class="cmg-aviso-icon" aria-hidden="true"></div>
     <p class="cmg-aviso-texto">
       Para minigeração com potência instalada superior a 500 kW, é necessário
@@ -40,10 +40,14 @@
       <label>Valor da Garantia de Fiel Cumprimento (R$)</label>
       <input type="text" id="gd_gfcValor" readonly disabled placeholder=" " />
     </div>
-    <div class="field col-span-2">
-      <div class="cmg-aviso no-print">
-        <div class="cmg-aviso-icon" aria-hidden="true"></div>
-        <p class="cmg-aviso-texto">
+    <!-- Aviso único: as instruções de apresentação e o contato da área
+         responsável eram dois banners seguidos dizendo "procure a CEMIG" de
+         formas diferentes. Filho direto do grid com col-span-2 — o respiro vem
+         do grid, o .cmg-aviso não tem margem própria. -->
+    <div class="cmg-aviso no-print col-span-2">
+      <div class="cmg-aviso-icon" aria-hidden="true"></div>
+      <p class="cmg-aviso-texto">
+        <span style="display: block">
           Para informações bancárias e instruções de apresentação da garantia,
           consulte as
           <a
@@ -52,102 +56,21 @@
             rel="noreferrer"
             >Dúvidas Frequentes da CEMIG</a
           >.
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <div class="gd-subhead">7 — Documentação Técnica (obrigatória)</div>
-  <div class="doc-list" id="docsTecChecklist"></div>
-
-  <div class="gd-subhead">8 — Contato na Distribuidora</div>
-  <div class="cmg-aviso no-print">
-    <div class="cmg-aviso-icon" aria-hidden="true"></div>
-    <p class="cmg-aviso-texto">
-      <span style="display: block">
-        <strong>
-          Gerência de Processos Especiais da Expansão de Média e Baixa Tensão -
-          EM/PE
-        </strong>
-      </span>
-      <span style="display: block">
-        Av. Barbacena, 1200, Santo Agostinho, CEP 30190-131, BH - MG
-      </span>
-      <span style="display: block">
-        Telefone: 0800 721 0167 · E-mail: geracaodistribuida@cemig.com.br
-      </span>
-    </p>
-  </div>
-
-  <div class="gd-subhead">9 — Solicitações e Declarações</div>
-  <div class="grid grid-2">
-    <div class="field field--plain col-span-2" data-noopt>
-      <label>
-        9.1 - O padrão está pronto para ser ligado e a usina está instalada?
-      </label>
-      <div id="cardsDecl81"></div>
-      <select data-k="decl81" style="display: none" aria-hidden="true">
-        <option>Não</option>
-        <option>Sim</option>
-      </select>
-      <span class="field-hint">
-        Se 'Não', solicite vistoria/ligação em até 120 dias após o orçamento de
-        conexão.
-      </span>
-    </div>
-  </div>
-  <div class="doc-list" style="margin-top: var(--cmg-space-8)">
-    <label class="doc-item">
-      <input type="checkbox" data-decl="decl82" />
-      <span class="doc-text">
-        <strong>9.2</strong> Renuncio ao direito de desistir do orçamento de
-        conexão. (Opcional)
-      </span>
-    </label>
-    <label class="doc-item">
-      <input type="checkbox" data-decl="decl83" />
-      <span class="doc-text">
-        <strong>9.3</strong> Autorizo a entrega dos contratos e meio de
-        pagamento junto ao orçamento. (Opcional)
-      </span>
-    </label>
-    <label class="doc-item">
-      <input type="checkbox" data-decl="decl84" />
-      <span class="doc-text">
-        <strong>9.4</strong> Declaro conformidade das instalações com normas da
-        distribuidora, ABNT e órgãos oficiais.
-        <span class="doc-req">(Obrigatório)</span>
-      </span>
-    </label>
-    <label class="doc-item" id="decl95Item" style="display: none">
-      <input type="checkbox" data-decl="decl95" />
-      <span class="doc-text">
-        <strong>9.5</strong> Solicito dispensa da análise de inversão de fluxo
-        em razão do atendimento ao art. 73-A, sob a seguinte regra (opcional):
-        não injeção na rede de distribuição de energia elétrica (“Grid Zero”).
-        <span class="doc-req">(Obrigatório para Grid Zero)</span>
-      </span>
-    </label>
-    <!-- Dentro da .doc-list: o gap de 10px da lista já separa o aviso da
-         declaração 9.5; a margem própria somava a ele e dava 20px. -->
-    <div
-      id="decl95Aviso"
-      class="cmg-aviso cmg-aviso--warn no-print"
-      style="display: none"
-    >
-      <div class="cmg-aviso-icon" aria-hidden="true"></div>
-      <p class="cmg-aviso-texto">
-        Como o empreendimento é Grid Zero, marque a declaração 9.5 acima — ela é
-        obrigatória para prosseguir com a exportação.
+        </span>
+        <span style="display: block">
+          <strong>
+            Gerência de Processos Especiais da Expansão de Média e Baixa Tensão
+            - EM/PE
+          </strong>
+        </span>
+        <span style="display: block">
+          Av. Barbacena, 1200, Santo Agostinho, CEP 30190-131, BH - MG
+        </span>
+        <span style="display: block">
+          Telefone: 0800 721 0167 · E-mail: geracaodistribuida@cemig.com.br
+        </span>
       </p>
     </div>
-    <label class="doc-item">
-      <input type="checkbox" data-decl="decl86" />
-      <span class="doc-text">
-        <strong>9.6</strong> Declaro que todas as informações são verdadeiras.
-        <span class="doc-req">(Obrigatório)</span>
-      </span>
-    </label>
   </div>
 </div>
 <div class="nav-bottom no-print">

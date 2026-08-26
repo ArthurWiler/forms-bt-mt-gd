@@ -317,6 +317,14 @@ function gerarPdfMiniGD(d) {
     P.gap(2);
   }
 
+  // ---- Padrão de entrada e usina ----
+  // Fecha a etapa 6 no formulário; aqui vem em seção própria porque o bloco de
+  // carga acima é condicional (só sai quando há cargas a declarar) e a
+  // pergunta vale para qualquer solicitação.
+  sec("PADRÃO DE ENTRADA E USINA");
+  kvPairs([["Padrão pronto para ser ligado e usina instalada", d.decl81]]);
+  P.gap(2);
+
   // ---- 4. Geração ----
   // Cada FONTE imprime o conjunto que declarou na etapa (ver renderFontes,
   // js/app.js): fotovoltaico (uma linha por MODELO de módulo e de inversor),
@@ -326,6 +334,10 @@ function gerarPdfMiniGD(d) {
   const gerPairs = [
     ["Quantidade de fontes", d.qtdFontes],
     ["Modalidade de operação", d.modoOperacao],
+    // Regra 22: acompanha a modalidade de operação, que é o que a origina.
+    ...(d.gridZero === "Sim"
+      ? [["Dispensa de análise de inversão de fluxo (art. 73-A)", sn(d.decl95)]]
+      : []),
     ["Potência Ativa Instalada Total (kW)", d.potAtivaInstalada],
   ];
   if (ehAlteracaoGeracao)
@@ -470,17 +482,9 @@ function gerarPdfMiniGD(d) {
       ["Valor da GFC (R$)", fmt2(gdCalcularGFC(d))],
     ]);
   }
-  P.gap(2);
-
-  // ---- 7. Documentação Técnica ----
-  sec("7.  DOCUMENTAÇÃO TÉCNICA");
-  GD_DOCS_TEC.forEach((dc) =>
-    fullLine(`${dc.id} ${d.docsTec && d.docsTec[dc.id] ? "[X]" : "[ ]"}`, dc.txt),
-  );
-  P.gap(2);
-
-  // ---- 8. Contato na Distribuidora ----
-  sec("8.  CONTATO NA DISTRIBUIDORA");
+  // Contato da área responsável: na tela ele vive dentro do próprio card da
+  // Garantia (etapa 7), unificado com as instruções de apresentação — aqui
+  // acompanha a mesma seção, em vez de uma seção só para ele.
   fullLine("Responsável/Área", GD_CONTATO_CEMIG.responsavel);
   fullLine("Endereço", GD_CONTATO_CEMIG.endereco);
   kvPairs([
@@ -489,22 +493,12 @@ function gerarPdfMiniGD(d) {
   ]);
   P.gap(2);
 
-  // ---- 9. Solicitações e Declarações ----
-  sec("9.  SOLICITAÇÕES E DECLARAÇÕES");
-  kvPairs([["9.1 Padrão pronto e usina instalada", d.decl81]]);
-  fullLine("9.2 Renúncia ao direito de desistir", sn(d.decl82));
-  fullLine("9.3 Autorizo entrega de contratos/pagamento", sn(d.decl83));
-  fullLine("9.4 Declaração de conformidade (obrigatória)", sn(d.decl84));
-  if (d.gridZero === "Sim")
-    fullLine(
-      "9.5 Dispensa de análise de inversão de fluxo (Grid Zero)",
-      sn(d.decl95),
-    );
-  fullLine("9.6 Informações verdadeiras (obrigatória)", sn(d.decl86));
-  P.gap(2);
+  // O checklist de Documentação Técnica e as declarações genéricas saíram do
+  // formulário junto com a etapa que os hospedava. As duas perguntas que
+  // sobreviveram foram impressas acima, cada uma na seção que a origina.
 
-  // ---- 10. Correspondência ----
-  sec("10.  CORRESPONDÊNCIA E FATURA");
+  // ---- 7. Correspondência ----
+  sec("7.  CORRESPONDÊNCIA E FATURA");
   {
     const corrPairs = [
       ["Forma de recebimento da fatura", d.corrAlternativa],
@@ -547,7 +541,17 @@ function gerarPdfMiniGD(d) {
       .join(" - ");
     fullLine("Endereço de correspondência", endC);
   }
-  P.gap(4);
+  P.gap(2);
+
+  // ---- 8. Observações ----
+  // Só sai quando há texto, como no BT (bt/js/pdf-doc.js): um cabeçalho sobre
+  // espaço em branco não acrescenta nada ao documento.
+  if ((d.obs || "").trim()) {
+    sec("8.  OBSERVAÇÕES");
+    _paragrafoMotorGD(P, d.obs);
+    P.gap(2);
+  }
+  P.gap(2);
 
   P.assinatura();
   const nomeArq = (d.titular || "MiniGD")
