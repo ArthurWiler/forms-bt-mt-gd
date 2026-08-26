@@ -908,13 +908,9 @@ textarea.ta {
 
 /* Cada fonte é um bloco do card: o passo vertical entre eles — e entre o grid
    comum do topo e o primeiro deles — é o mesmo 32px das demais seções da
-   etapa. O .gd-subhead traz margem própria de 18px, que serve aos usos
-   antigos; dentro do bloco quem manda é o wrapper, senão os dois se somam. */
+   etapa, e mora no wrapper (o título do bloco não tem margem no topo). */
 .cemig-minigd .gd-fonte-bloco {
   margin-top: var(--cmg-space-8);
-}
-.cemig-minigd .gd-fonte-bloco > .gd-subhead:first-child {
-  margin-top: 0;
 }
 
 /* Pergunta em lista de rádios (spec Figma "regulamento"): opções SEM a moldura
@@ -991,7 +987,11 @@ textarea.ta {
 .cemig-minigd .gd-modelo-bloco + .gd-modelo-bloco {
   margin-top: var(--cmg-space-8);
 }
-.cemig-minigd .gd-modelo-titulo {
+/* O título do bloco de FONTE (renderFontes) usa a mesma tipografia: os dois
+   são cabeçalhos de bloco repetido dentro do card, e o divider do
+   .card-subtitle/.gd-subhead fica reservado às seções da etapa. */
+.cemig-minigd .gd-modelo-titulo,
+.cemig-minigd .gd-fonte-titulo {
   margin-bottom: var(--cmg-space-4);
   font-family: var(--cmg-font-family);
   font-size: var(--cmg-fs-subtitle);

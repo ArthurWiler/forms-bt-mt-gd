@@ -1537,7 +1537,11 @@ function renderFontes() {
     bloco.className = "gd-fonte-bloco";
     bloco.id = `fonteBloco${i}`;
     bloco.innerHTML =
-      `<div class="gd-subhead">5.${i + 1} — Dados da fonte de geração ${i + 1}</div>` +
+      // Cabeçalho do bloco no MESMO padrão dos blocos de modelo ("Módulo 1"):
+      // subtítulo/18px em peso regular, SEM divider — o .gd-subhead (12px
+      // caixa-alta com linha embaixo) é o cabeçalho de SEÇÃO da etapa 8, não
+      // de um bloco repetido dentro do card.
+      `<div class="gd-fonte-titulo">Fonte de geração ${i + 1}</div>` +
       `<div class="grid grid-2">` +
       _fSelectGD(f, "fontePrimaria", "Fonte primária", GD_FONTES) +
       // Tecnologia de geração: perguntada só no Solar, como no microGD — nas

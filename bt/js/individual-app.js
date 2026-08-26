@@ -956,12 +956,12 @@ function renderPreviaBT() {
     html += pvCampoBT(
       "Distância do padrão até a rede Cemig inferior a 30m?",
       o.distMenor30,
-      PG.dados,
+      PG.atend,
     );
     html += pvCampoBT(
       "O padrão está pronto para ser ligado?",
       o.prontoLigar,
-      PG.dados,
+      PG.atend,
     );
     html += pvCampoBT(
       "O padrão precisa ser mudado de local?",
@@ -979,7 +979,7 @@ function renderPreviaBT() {
     html += pvCampoBT(
       "Tipo de rede BT que atende o local",
       o.tipoRede,
-      PG.dados,
+      PG.atend,
     );
     html += `</div></div>`;
   });

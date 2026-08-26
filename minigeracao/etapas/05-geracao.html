@@ -12,13 +12,6 @@
        empreendimento inteiro fica em cima e o que descreve cada usina desce
        para o bloco da fonte. -->
   <div class="grid grid-2">
-    <div class="field row-solo">
-      <label>Quantidade de fontes de geração <span class="req">*</span></label>
-      <select data-k="qtdFontes" data-sem-vazio onchange="onQtdFontes()">
-        <option>1</option>
-        <option>2</option>
-      </select>
-    </div>
     <!-- Modalidade de operação: card único portado do microGD, no lugar da
          antiga pergunta "O empreendimento será Grid Zero?". `gridZero` segue
          no estado, DERIVADO desta escolha (ver onModoOperacaoGD), então as
@@ -97,6 +90,13 @@
         oninput="onSoDigitos(this)"
       />
     </div>
+    <div class="field row-solo">
+      <label>Quantidade de fontes de geração <span class="req">*</span></label>
+      <select data-k="qtdFontes" data-sem-vazio onchange="onQtdFontes()">
+        <option>1</option>
+        <option>2</option>
+      </select>
+    </div>
   </div>
 
   <!-- Um bloco por FONTE (1 ou 2). Cada bloco traz o conjunto completo da
@@ -114,15 +114,19 @@
   <h4 class="card-subtitle divider">Contratação e documentação da geração</h4>
   <div class="grid grid-2 bloco-sub-gap">
     <!-- Resultado somente-leitura no padrão .readonly-val (shared.css): a
-         potência total NUNCA é digitada — é a soma das fontes (recalcFontes).
-         O input escondido é o PORTADOR do estado: syncState() relê o DOM antes
-         da prévia e apagaria o valor derivado sem ele. Sendo type=hidden, os
-         marcadores o ignoram (nem "*" nem "(opcional)"). -->
+         potência total NUNCA é digitada — é a soma das fontes (recalcFontes). -->
     <div class="field col-span-2" data-noopt>
       <label>Potência Ativa Instalada Total de Geração (kW)</label>
       <div class="readonly-val" id="gd_potAtivaTotal"></div>
-      <input type="hidden" data-k="potAtivaInstalada" />
     </div>
+    <!-- PORTADOR do estado: syncState() relê o DOM antes da prévia e apagaria
+         o valor derivado sem ele. Fica FORA do .field (como no microGD): o
+         rótulo flutuante do Padrão B vale para todo .field que contenha um
+         <input>, e um input escondido não tem :placeholder-shown — dentro do
+         campo ele prendia o rótulo no topo mesmo com o total ainda vazio.
+         Sendo type=hidden não ocupa célula do grid nem é visto pelos
+         marcadores (nem "*" nem "(opcional)"). -->
+    <input type="hidden" data-k="potAtivaInstalada" />
     <div class="field">
       <label
         >Demanda a ser contratada de geração (kW)

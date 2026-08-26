@@ -27,6 +27,79 @@
   </div>
 
   <div id="ucsIdentBox" style="margin-top: 24px"></div>
+
+  <!-- Padrão e rede do local: valem para o ENDEREÇO da obra, não para cada UC
+       (são um único padrão e uma única rede atendendo até 3 caixas), por isso
+       ficam FORA dos cards de #ucsIdentBox — logo depois deles, separados pelo
+       .divider. O estado continua em `obra.*`. -->
+  <div class="grid grid-2 divider">
+    <div class="field field--plain" data-noopt>
+      <label>Distância do padrão até a rede Cemig inferior a 30m?</label>
+      <div data-toggle="obra.distMenor30"></div>
+      <select
+        data-k="obra.distMenor30"
+        style="display: none"
+        aria-hidden="true"
+      >
+        <option>Sim</option>
+        <option>Não</option>
+      </select>
+    </div>
+    <div class="field field--plain" data-noopt>
+      <label>O padrão está pronto para ser ligado?</label>
+      <div
+        data-toggle="obra.prontoLigar"
+        data-toggle-onchange="onProntoLigarBT"
+      ></div>
+      <select
+        data-k="obra.prontoLigar"
+        style="display: none"
+        aria-hidden="true"
+      >
+        <option>Sim</option>
+        <option>Não</option>
+      </select>
+    </div>
+    <!-- Aviso do campo "pronto para ligar" logo abaixo dele (col-span-2 mantém
+         a largura total; alterna por id via onProntoLigarBT). -->
+    <div
+      class="cmg-aviso no-print col-span-2"
+      id="prontoSimAviso"
+      style="display: none"
+    >
+      <div class="cmg-aviso-icon" aria-hidden="true"></div>
+      <p class="cmg-aviso-texto">
+        Como o padrão já está pronto para ligar, o pedido de vistoria e ligação
+        será disparado automaticamente após a conclusão das etapas do orçamento
+        de conexão.
+      </p>
+    </div>
+    <div
+      class="cmg-aviso cmg-aviso--warn no-print col-span-2"
+      id="prontoNaoAviso"
+      style="display: none"
+    >
+      <div class="cmg-aviso-icon" aria-hidden="true"></div>
+      <p class="cmg-aviso-texto">
+        Solicite o pedido de vistoria e ligação em até 120 dias após a conclusão
+        das etapas do orçamento de conexão. O orçamento pode ser cancelado após
+        duas reprovações pelo mesmo motivo, e há cobrança de taxa a partir do
+        segundo serviço realizado.
+      </p>
+    </div>
+    <div class="field">
+      <label>Tipo de rede BT que atende o local</label>
+      <select data-k="obra.tipoRede" data-sem-vazio onchange="onTipoRedeBT()">
+        <option>Monofásica</option>
+        <option>Bifásica</option>
+        <option>Trifásica</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Código do transformador mais próximo</label>
+      <input type="text" data-k="obra.transformador" placeholder=" " />
+    </div>
+  </div>
 </div>
 <div class="nav-bottom no-print">
   <button class="btn btn-ghost" data-nav="prev">← Voltar</button>
