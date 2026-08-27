@@ -2955,7 +2955,11 @@ label.restricao-aceite input[type="checkbox"] {
   flex: none;
   width: 204px;
   position: sticky;
-  top: calc(var(--cmg-header-height) + var(--cmg-space-4));
+  /* O vão até o header tem de ser o MESMO parado e rolando: aqui o espaço é
+     `--cmg-space-8` porque é ele o `padding-top` do `.layout` logo acima. Com
+     um valor menor a trilha "pulava" a diferença no instante em que grudava.
+     Quem mexer no padding do `.layout` mexe neste `top` junto. */
+  top: calc(var(--cmg-header-height) + var(--cmg-space-8));
   padding: 0;
   display: flex;
   flex-direction: column;

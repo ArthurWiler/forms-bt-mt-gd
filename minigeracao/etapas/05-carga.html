@@ -1,6 +1,6 @@
 <!doctype html>
 <div class="card">
-  <div class="section-eyebrow">Etapa 6</div>
+  <div class="section-eyebrow">Etapa 5</div>
   <h3 class="card-title">Formulário de Carga</h3>
   <p class="card-sub">
     Declare todas as cargas elétricas da unidade consumidora. A demanda e o
@@ -16,12 +16,37 @@
       </p>
     </div>
   </div>
-  <div class="field">
-    <label>Classe <span class="req">*</span></label>
-    <select data-k="classe"></select>
-  </div>
   <div id="calcDemandaBox" style="margin-top: var(--cmg-space-8)"></div>
   <div id="resultadoCargaBox"></div>
+  <!-- Motores e cargas especiais: veio da etapa "Tipo de atendimento", onde
+       morava dentro de #blocoTecnicoIndividual e só existia depois de o "Tipo
+       de edificação" ser respondido. Aqui é seção fixa da etapa — os motores
+       são carga declarada como as outras, e nenhum cálculo da subestação
+       depende deles (recalcTecnicoGD só os espelha para prévia/PDF). -->
+  <div id="blocoMotoresIndividual" class="grid grid-2">
+    <div class="bloco-cabecalho col-span-2">
+      <h4 class="card-subtitle divider">Motores e cargas especiais</h4>
+      <p class="card-sub">
+        Preencha os dados técnicos de todos os motores com cargas especiais,
+        caso existam, da sua propriedade.
+      </p>
+    </div>
+
+    <div class="field row-solo" id="qtdMotoresBox">
+      <label>Quantidade de motores</label>
+      <input
+        type="number"
+        min="0"
+        max="99"
+        step="1"
+        data-k="qtdMotores"
+        placeholder=" "
+        oninput="sincronizarMotores()"
+      />
+    </div>
+
+    <div id="motoresCardsContainer" class="col-span-2"></div>
+  </div>
   <!-- Fecha a etapa: com as cargas declaradas e o disjuntor sugerido à vista, a
        pergunta sobre o estado do padrão e da usina é o último passo do
        Formulário de Carga. Veio da etapa de Declarações. Os cards Sim/Não são

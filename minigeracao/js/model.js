@@ -5,7 +5,7 @@
    (trocar/novo/manter) e tipo de ligação próprios — quem os cria é
    novoTrafoGD() em js/subestacao.js. `trafos` aqui é só o ESPELHO que a
    prévia e o PDF leem, escrito por recalcTecnicoGD(). */
-/* Uma FONTE de geração. Cada fonte declara o conjunto completo da etapa 5 do
+/* Uma FONTE de geração. Cada fonte declara o conjunto completo da etapa 6 do
    microGD (microgeracao/etapas/04-geracao.html): a fonte primária, a
    tecnologia e o bloco da própria fonte — fotovoltaico (módulos e inversores,
    um card por MODELO), hidráulico (central + segurança de barragens),
@@ -208,8 +208,8 @@ function gdEstadoInicial() {
     // A etapa de Declarações deixou de existir: o checklist de documentação
     // técnica e as declarações genéricas saíram do formulário, e as duas
     // perguntas que restaram migraram para a etapa que as origina — o estado
-    // do padrão/usina fecha o Formulário de Carga (etapa 6) e a dispensa do
-    // art. 73-A acompanha a modalidade de operação (etapa 5).
+    // do padrão/usina fecha o Formulário de Carga (etapa 5) e a dispensa do
+    // art. 73-A acompanha a modalidade de operação (etapa 6).
     decl81: "Não",
     // Regra 22: dispensa de análise de inversão de fluxo (obrigatória quando Grid Zero = Sim).
     decl95: false,

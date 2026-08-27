@@ -107,7 +107,7 @@ function gerarPdfMiniGD(d) {
   const ucPairs = [
     ["Instalação / UC / Medidor", d.instalacao],
     ["Grupo", d.grupo],
-    ["Classe", d.classe],
+    ["Atividade principal", d.classe],
     ["Tipo de Solicitação", d.solicitacao],
     // O valor guardado é o volt "cru" (chave da regra de subestação); sai
     // formatado em kV, como no rótulo do <select>.
@@ -144,7 +144,7 @@ function gerarPdfMiniGD(d) {
       ucPairs.push(["Nova subestação", d.alt_tipoPara]);
   }
   ucPairs.push(["Tipo de Subestação efetivo (ND 5.3)", d.tipoSE]);
-  // A demanda de GERAÇÃO é uma só, da usina (etapa 5), e sai aqui; a de
+  // A demanda de GERAÇÃO é uma só, da usina (etapa 6), e sai aqui; a de
   // consumo é campo de card e sai no bloco técnico.
   ucPairs.push([
     "Demanda a contratar de geração (kW)",
@@ -318,7 +318,7 @@ function gerarPdfMiniGD(d) {
   }
 
   // ---- Padrão de entrada e usina ----
-  // Fecha a etapa 6 no formulário; aqui vem em seção própria porque o bloco de
+  // Fecha a etapa 5 no formulário; aqui vem em seção própria porque o bloco de
   // carga acima é condicional (só sai quando há cargas a declarar) e a
   // pergunta vale para qualquer solicitação.
   sec("PADRÃO DE ENTRADA E USINA");

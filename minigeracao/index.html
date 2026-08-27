@@ -80,11 +80,11 @@
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">5</span>
-          <span class="vstep-label">Dados da Geração</span>
+          <span class="vstep-label">Formulário de Carga</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">6</span>
-          <span class="vstep-label">Formulário de Carga</span>
+          <span class="vstep-label">Dados da Geração</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">7</span>
@@ -144,19 +144,21 @@
           id="page-3"
           data-src="etapas/04-atendimento.html"
         ></section>
-        <!-- Geração vem ANTES de Documentação/Carga: a potência ativa
-             instalada declarada aqui filtra os tipos de subestação da etapa
-             "Tipo de atendimento" (Regra 9, ver _tiposSEminiGD) e define a
-             Garantia de Fiel Cumprimento. -->
+        <!-- Carga vem ANTES de Geração: as duas dependem da etapa "Tipo de
+             atendimento", que já vem antes das duas, e nenhuma depende da
+             outra. A potência ativa instalada declarada na Geração segue
+             filtrando os tipos de subestação (Regra 9, ver _tiposSEminiGD) —
+             uma volta à etapa 4, como já era — e define a Garantia de Fiel
+             Cumprimento, que continua depois dela. -->
         <section
           class="page"
           id="page-4"
-          data-src="etapas/05-geracao.html"
+          data-src="etapas/05-carga.html"
         ></section>
         <section
           class="page"
           id="page-5"
-          data-src="etapas/06-carga.html"
+          data-src="etapas/06-geracao.html"
         ></section>
         <!-- A etapa "Armazenamento" deixou de existir: o bloco "Armazenamento e
              banco de baterias" passou a viver DENTRO da etapa de Geração, como

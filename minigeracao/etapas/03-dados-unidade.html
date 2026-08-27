@@ -6,6 +6,15 @@
     Preencha os dados de identificação das unidades consumidoras.
   </p>
   <div class="grid grid-2">
+    <!-- Atividade principal (state.classe): é ela que define o tipo de carga
+         — Residencial x não-residencial — e, portanto, a lista de equipamentos
+         do Formulário de Carga. Mesmo nome e mesmo lugar do BT, junto da
+         identificação da UC; antes ficava na própria etapa de Carga. -->
+    <div class="field">
+      <label>Atividade principal <span class="req">*</span></label>
+      <select data-k="classe"></select>
+    </div>
+
     <div class="field field--plain col-span-2" data-noopt>
       <label>Zona de localização <span class="req">*</span></label>
       <div data-toggle="localizacao" data-toggle-onchange="onZonaGD"></div>

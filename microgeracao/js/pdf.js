@@ -57,7 +57,7 @@ function gerarPdfMicroGD(d) {
     ["Instalação / UC / Medidor", d.instalacao],
     ["Titular", d.titular],
     ["Grupo", d.grupo],
-    ["Classe", d.classe],
+    ["Atividade principal", d.classe],
     ["CPF/CNPJ", d.cpfCnpj],
     ["Fast Track (art. 73-A)", d.fastTrack],
   ];

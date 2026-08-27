@@ -36,7 +36,7 @@ const CARDS_GD = [
   // traz como <select> com opção vazia "—", não como cards Sim/Não.
   // localizacao vive na etapa 3, também copiada, e usa <div data-toggle>
   // — renderizado por montarToggles().
-  // A etapa 5 é porte da etapa de geração do microGD e traz os Sim/Não como
+  // A etapa 6 é porte da etapa de geração do microGD e traz os Sim/Não como
   // <div data-toggle> + <select data-k> oculto (montarToggles) — gridZero saiu
   // junto: virou a modalidade de operação, um card de três opções.
   { chave: "mudancaSE", gridId: "cardsMudancaSE", opcoes: SIM_NAO },
@@ -795,7 +795,7 @@ function onSolicitacao() {
   const instBox = $("#instalacaoUCBox");
   if (instBox)
     instBox.style.display = state.solicitacao && !nova ? "" : "none";
-  // Regra 11: GD existente COM alteração ⇒ potência de geração atual (etapa 5).
+  // Regra 11: GD existente COM alteração ⇒ potência de geração atual (etapa 6).
   const pa = $("#potGeracaoAtualBox");
   if (pa)
     pa.style.display =
@@ -848,7 +848,7 @@ function onTelhadoArrendado() {
   }
 }
 
-/* ===== Etapa 6 — Formulário de Carga (redeMono sempre false no mini) ===== */
+/* ===== Etapa 5 — Formulário de Carga (redeMono sempre false no mini) ===== */
 function _atividadeCargas() {
   return state.classe === "Residencial" ||
     state.classe === "Industrial" ||
@@ -890,7 +890,7 @@ function renderResultadoCargaGD() {
   });
 }
 
-/* ===== Etapa 5 — Geração =====
+/* ===== Etapa 6 — Geração =====
    Porte do conjunto da etapa de geração do microGD
    (microgeracao/etapas/04-geracao.html + js/app.js), com UMA diferença de
    estrutura: lá existe uma única fonte primária e o estado é plano; aqui o
@@ -1224,7 +1224,7 @@ function recalcFontes() {
   const disp = $("#gd_potAtivaTotal");
   if (disp) disp.textContent = total ? fmt2(total) + " kW" : "";
   // Regra 9: a potência de geração filtra os modelos de subestação. Basta
-  // recalcular — refazer os cards a cada tecla da etapa 5 seria desperdício, e
+  // recalcular — refazer os cards a cada tecla da etapa 6 seria desperdício, e
   // atualizarSE() é quem os redesenha.
   recalcTecnicoGD();
   atualizarGFC();
@@ -1598,7 +1598,7 @@ function _ligarCamposFonteGD(escopo, i) {
    numa ÚNICA linha (primária | secundária) e, abaixo, um acordeão por fonte com
    os campos dela. Antes cada fonte era um bloco corrido com a sua própria
    pergunta "Fonte primária" — com duas fontes a mesma pergunta aparecia duas
-   vezes, longe uma da outra, e o conjunto da etapa 5 virava uma coluna sem
+   vezes, longe uma da outra, e o conjunto da etapa 6 virava uma coluna sem
    fim. */
 function renderFontes() {
   const box = $("#fontesBox");
@@ -1732,7 +1732,7 @@ function atualizarGFC() {
   }
 }
 // Regra 22: a dispensa do art. 73-A só aparece (e é obrigatória) quando
-// Grid Zero = Sim. Item e aviso vivem na etapa 5, ao lado da modalidade de
+// Grid Zero = Sim. Item e aviso vivem na etapa 6, ao lado da modalidade de
 // operação que os origina.
 function atualizarDecl95() {
   const gz = state.gridZero === "Sim";
@@ -1742,7 +1742,7 @@ function atualizarDecl95() {
   if (aviso) aviso.style.display = gz && !state.decl95 ? "" : "none";
 }
 
-/* ===== Etapa 5 — Armazenamento =====
+/* ===== Etapa 6 — Armazenamento =====
    O bloco "Armazenamento e banco de baterias" passou a viver DENTRO da etapa
    de geração, como na microgeração — a etapa própria deixou de existir. ===== */
 function onArmazenamento() {
@@ -1759,7 +1759,7 @@ function onArmazenamento() {
 }
 
 /* ===== Declarações em caixa de seleção =====
-   Restou uma: a dispensa do art. 73-A, que vive na etapa 5 junto da
+   Restou uma: a dispensa do art. 73-A, que vive na etapa 6 junto da
    modalidade de operação. O binding é por [data-decl], então independe de
    qual fragmento a hospeda — os fragmentos já estão todos no DOM quando
    initFormulario() roda. ===== */
@@ -1808,7 +1808,7 @@ function validarExportacao() {
   // etapa 4 (ver onSolicitacao).
   if (!_ehLigacaoNova()) req(d.instalacao, "Número da instalação");
   req(d.titular, "Titular da UC");
-  req(d.classe, "Classe");
+  req(d.classe, "Atividade principal");
   req(d.cpfCnpj, "CPF/CNPJ");
   const _doc = validarCpfCnpj(d.cpfCnpj);
   if (_doc.valido !== true) faltas.push("CPF/CNPJ válido");
@@ -1981,7 +1981,7 @@ const PV_DIVISOR = '<hr class="previa-divider"/>';
 // na etapa. O prefixo só aparece havendo mais de uma fonte.
 function _pvFonteGD(f, i, total) {
   const pre = total > 1 ? `F${i + 1}: ` : "";
-  const linha = (rot, val) => pvCampo(pre + rot, val, { step: 4 });
+  const linha = (rot, val) => pvCampo(pre + rot, val, { step: 5 });
   let out =
     linha("Fonte", f.fontePrimaria) +
     linha("Potência da fonte (kW)", f.potencia);
@@ -2041,7 +2041,8 @@ function renderPreviewGD() {
         "</ul></div>";
   const secoes = [];
   // Etapa 2 — Dados do proprietário (índice 1) e etapa 3 — Dados da unidade
-  // (índice 2). Instalação e Classe migraram para a etapa técnica (índice 3).
+  // (índice 2). A Instalação mora na etapa técnica (índice 3); a Atividade
+  // principal voltou para a etapa 3, então o lápis dela aponta o índice 2.
   let ident =
     pvCampo("Titular", d.titular, { step: 1 }) +
     pvCampo("CPF/CNPJ", d.cpfCnpj, { step: 1 }) +
@@ -2074,8 +2075,8 @@ function renderPreviewGD() {
           .filter(Boolean)
           .join(" · ")
       : `${d.logradouro}, ${d.numero} — ${d.bairro}, ${d.municipio}/${d.estado}`;
-  // Grupo não entra aqui: saiu da etapa 3 e já aparece em "Grupo / Classe" na
-  // seção técnica, cujo lápis leva à etapa onde ele é de fato editável.
+  // Grupo não entra aqui: não tem campo próprio (o mini é sempre "A") e já
+  // aparece em "Grupo / Atividade principal" na seção técnica.
   let uni =
     pvCampo("Zona de localização", d.localizacao, { step: 2 }) +
     pvCampo("Endereço", endereco, { full: true, step: 2 });
@@ -2103,7 +2104,9 @@ function renderPreviewGD() {
           { step: 2 },
         ) +
         pvCampo("Instalação", d.instalacao, { step: 3 }) +
-        pvCampo("Grupo / Classe", `${d.grupo} / ${d.classe}`, { step: 3 }) +
+        pvCampo("Grupo / Atividade principal", `${d.grupo} / ${d.classe}`, {
+          step: 2,
+        }) +
         pvCampo("Solicitação", d.solicitacao, { step: 3 }) +
         pvCampo(
           "Tensão de atendimento",
@@ -2129,18 +2132,18 @@ function renderPreviewGD() {
             )) +
         // A demanda é campo de card (transformador ou cubículo): a linha acima
         // já traz a soma declarada, nos dois ramos. Aqui resta a da geração.
-        pvCampo("Demanda de geração (kW)", d.demandaGeracao, { step: 4 }),
+        pvCampo("Demanda de geração (kW)", d.demandaGeracao, { step: 5 }),
     ),
   );
   secoes.push(
     pvSecao(
       "4 — Geração",
-      pvCampo("Qtd. fontes", d.qtdFontes, { step: 4 }) +
-        pvCampo("Modalidade de operação", d.modoOperacao, { step: 4 }) +
+      pvCampo("Qtd. fontes", d.qtdFontes, { step: 5 }) +
+        pvCampo("Modalidade de operação", d.modoOperacao, { step: 5 }) +
         pvCampo("Pot. Ativa Instalada (kW)", d.potAtivaInstalada, {
-          step: 4,
+          step: 5,
         }) +
-        pvCampo("Modalidade", d.modalidade, { step: 4 }) +
+        pvCampo("Modalidade", d.modalidade, { step: 5 }) +
         // Uma linha por fonte com o resumo do conjunto dela: o detalhe todo
         // (níveis de operação, critérios de risco, modelos) fica para o PDF.
         (d.fontes || [])
@@ -2290,8 +2293,10 @@ window.initFormulario = function () {
   mostrarCamposPF(gdEhCpfValido());
   // nis: o próprio <select> da etapa 2 copiada chama onNisGD() no onchange
   // (padrão do micro/MT) — um listener aqui faria o handler rodar duas vezes.
-  // A classe define o tipo de carga (residencial x não-residencial), então
-  // remonta a lista de equipamentos e recalcula os cards de resultado.
+  // A Atividade principal (state.classe) define o tipo de carga (residencial x
+  // não-residencial), então remonta a lista de equipamentos e recalcula os
+  // cards de resultado. O select vive na etapa 3 e a ilha na 5: a busca é no
+  // documento inteiro, então a distância entre as duas não importa.
   const selClasse = $(`select[data-k="classe"]`);
   if (selClasse)
     selClasse.addEventListener("change", () => {

@@ -104,7 +104,7 @@
            js/subestacao.js. -->
       <div id="blocoTecnicoIndividual" class="col-span-2" style="display: none">
         <!-- Duas colunas: a "Soma da geração (kW)" saiu junto com a potência
-             de geração por cubículo — a geração é declarada só na etapa 5. -->
+             de geração por cubículo — a geração é declarada só na etapa 6. -->
         <div id="blocoTotaisConsolidados" class="grid grid-2" style="display: none">
           <div class="bloco-cabecalho col-span-2">
             <h4 class="card-subtitle divider">Totais consolidados (cubículos)</h4>
@@ -171,33 +171,8 @@
           <div id="trafoCards" class="col-span-2"></div>
         </div>
 
-        <div id="blocoMotoresIndividual" class="grid grid-2">
-          <div class="bloco-cabecalho col-span-2">
-            <h4 class="card-subtitle divider">Motores e cargas especiais</h4>
-            <p class="card-sub">
-              Preencha os dados técnicos de todos os motores com cargas especiais,
-              caso existam, da sua propriedade.
-            </p>
-          </div>
-
-          <div class="field row-solo" id="qtdMotoresBox">
-            <label>Quantidade de motores</label>
-            <input
-              type="number"
-              min="0"
-              max="99"
-              step="1"
-              data-k="qtdMotores"
-              placeholder=" "
-              oninput="sincronizarMotores()"
-            />
-          </div>
-
-          <div id="motoresCardsContainer" class="col-span-2"></div>
-        </div>
-
         <!-- Regra 9: modelos com teto de 300 kVA indisponíveis quando a potência
-             ativa instalada de geração (etapa 5) o excede. Escrito por
+             ativa instalada de geração (etapa 6) o excede. Escrito por
              _renderAvisoExcede300GD(). -->
         <div id="avisoExcede300" style="display: none">
           <div class="cmg-aviso cmg-aviso--warn no-print">
@@ -302,7 +277,7 @@
         </select>
       </div>
 
-      <!-- 'O empreendimento será "Grid Zero"?' mudou para a etapa 5 (Dados da
+      <!-- 'O empreendimento será "Grid Zero"?' mudou para a etapa 6 (Dados da
            Geração): a resposta trava a demanda de geração em 0 e a modalidade em
            Autoconsumo Local (Regras 17/18), os dois campos de lá. -->
       <div class="field field--plain col-span-2" data-noopt>

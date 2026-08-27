@@ -1626,8 +1626,8 @@ function _atividadeCargas() {
     ? state.classe
     : "";
 }
-// Classe da UC (etapa 6): o tipo de carga — e portanto a lista de equipamentos
-// — deriva dela, como a "Atividade principal" faz no BT.
+// Atividade principal da UC (state.classe, etapa 6): o tipo de carga — e
+// portanto a lista de equipamentos — deriva dela, como no BT e no mini.
 function onClasseGD() {
   _sync("classe");
   // Sai do campo depois de escolher, como nos demais selects: o rótulo
@@ -1652,7 +1652,7 @@ function initCargas() {
     redeMono: () =>
       state.tipoRede === "Monofásica" || state.tipoRede === "Bifásica",
     atividade: _atividadeCargas,
-    // O select de classe fica logo acima: o hint seria redundante.
+    // O select da Atividade principal fica logo acima: o hint seria redundante.
     hintAtividade: false,
     aoMudar: (c) => {
       state.cargas = c;
@@ -2191,8 +2191,9 @@ function validarExportacao() {
   // aparece na etapa 5 (ver #instalacaoUCBox em onSolicitacao()).
   if (!_ehLigacaoNova()) req(d.instalacao, "Número da instalação");
   req(d.titular, "Titular da UC");
-  // Classe: fora da tela (área de não alocados), então não é exigida — cobrar
-  // um campo que não há como preencher travaria a exportação para sempre.
+  // Atividade principal: fora da tela (área de não alocados), então não é
+  // exigida — cobrar um campo que não há como preencher travaria a exportação
+  // para sempre.
   req(d.cpfCnpj, "CPF/CNPJ");
   req(d.logradouro, "Logradouro");
   req(d.numero, "Número");
@@ -2417,7 +2418,7 @@ function renderPreviewGD() {
       "1 — Identificação",
       pvCampo("Instalação", d.instalacao, { step: "atendimento" }) +
         pvCampo("Titular", d.titular, { step: "identificacao" }) +
-        pvCampo("Grupo / Classe", `${d.grupo} / ${d.classe}`, {
+        pvCampo("Grupo / Atividade principal", `${d.grupo} / ${d.classe}`, {
           step: "identificacao",
         }) +
         pvCampo("CPF/CNPJ", d.cpfCnpj, { step: "identificacao" }) +
@@ -2740,8 +2741,8 @@ window.initFormulario = function () {
   if (selFast) selFast.addEventListener("change", onFastTrack);
   const selGrupo = $(`select[data-k="grupo"]`);
   if (selGrupo) selGrupo.addEventListener("change", onGrupo);
-  // A classe da UC re-renderiza a lista de cargas pelo onchange do próprio
-  // select (onClasseGD), no fragmento da etapa 6.
+  // A Atividade principal da UC re-renderiza a lista de cargas pelo onchange
+  // do próprio select (onClasseGD), no fragmento da etapa 6.
   // tensaoAtendimento: o <select> da etapa 5 chama atualizarSE() no próprio
   // onchange (padrão da minigeração) — um listener aqui rodaria em dobro.
   // Aceite das Orientações reavalia o botão "Avançar".

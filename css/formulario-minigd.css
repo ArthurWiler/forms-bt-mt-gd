@@ -63,22 +63,13 @@ body {
    (`.cemig-form .form-header*` / `.flow-badge`). Cópias locais removidas —
    dead code sobreposto pela maior especificidade do shared. */
 
-/* ---------- LAYOUT DUAS COLUNAS (sidebar vertical) ---------- */
-.layout {
-  max-width: 1360px;
-  margin: 0 auto;
-  display: flex;
-  gap: 0;
-  align-items: flex-start;
-}
-.sidebar {
-  width: 270px;
-  flex-shrink: 0;
-  position: sticky;
-  top: 64px;
-  align-self: flex-start;
-  padding: 24px 16px 24px 20px;
-}
+/* ---------- LAYOUT DUAS COLUNAS (sidebar vertical) ----------
+   `.layout` e `.sidebar` (largura, padding e o `position:sticky; top:64px`)
+   viviam aqui e eram dead code: `.cemig-form .layout` / `.cemig-form .sidebar`
+   (0,2,0) do shared sempre venceram estes seletores (0,1,0). Removidos para
+   não parecerem a fonte da verdade — quem manda no grude da trilha é o `top`
+   de `.cemig-form .sidebar` em css/shared.css, casado com o `padding-top` do
+   `.layout` de lá. */
 .sidebar-title {
   font-size: 11px;
   font-weight: 700;

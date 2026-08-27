@@ -53,7 +53,8 @@ const GD_RAMAL = ["Aéreo", "Subterrâneo"];
 // Transformadores: campo livre (qualquer potência, inclusive > RT, ex.: 1500/2000 kVA). Sem lista fixa.
 const GD_TIPO_LIG_TRAFO = ["∆-Y", "∆-∆", "Y-∆", "Y-Y"];
 // Dispositivos de partida de motor — mesma lista do MT (mt/js/dados.js) e da
-// microgeração, usada pelos cards de "Motores e cargas especiais" da etapa 4.
+// microgeração, usada pelos cards de "Motores e cargas especiais" da etapa 5
+// (Formulário de Carga), de onde saíram os do bloco técnico da subestação.
 const GD_DISPOSITIVOS_MOTOR = [
   "Chave Série-Paralelo",
   "Partida Estrela-Triângulo",
@@ -285,7 +286,7 @@ function gdCalcularGFC(d) {
 const GD_SOLICITACAO_LIG_NOVA =
   "Ligação de Nova Unidade Consumidora COM Geração Distribuída";
 // Regra 9: teto de 300 kVA das subestações Nº 1, 3, 5, 6 e 8 — aqui medido
-// contra a POTÊNCIA ATIVA INSTALADA DE GERAÇÃO (etapa 5), que é conceito
+// contra a POTÊNCIA ATIVA INSTALADA DE GERAÇÃO (etapa 6), que é conceito
 // distinto do `maxKW` do CalculoMT (teto de DEMANDA contratada). Por isso o
 // limite sobrevive à migração para o catálogo do MT; QUAIS modelos o têm sai de
 // CalculoMT.SE_CRITERIOS (ver _tiposSEminiGD em js/subestacao.js), não de uma
