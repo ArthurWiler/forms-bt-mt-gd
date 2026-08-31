@@ -91,7 +91,7 @@
 
 .pdf-regua {
   height: var(--pdf-regua-esp);
-  margin-bottom: var(--pdf-filete-depois);
+  margin-bottom: var(--pdf-regua-depois);
   background: var(--pdf-cor-regua);
 }
 
@@ -153,6 +153,16 @@
   grid-column: span 3;
 }
 
+/* A entrelinha de 15pt vale DENTRO do parágrafo; o passo de 17pt
+   entre o rótulo e o valor sai do respiro abaixo de cada um. Ver a
+   nota do --pdf-linha em css/pdf/variables-pdf.css: escrever isto
+   como um line-height de 17 engordaria 2pt cada linha quebrada. */
+.pdf-rotulo,
+.pdf-valor {
+  line-height: var(--pdf-linha-texto);
+  margin-bottom: calc(var(--pdf-linha) - var(--pdf-linha-texto));
+}
+
 .pdf-rotulo {
   font-weight: var(--pdf-fw-rotulo);
 }
@@ -187,47 +197,90 @@
 /* ============================================================
    7. Tabela
    ------------------------------------------------------------
-   Nenhum dos SVGs de referência desenha uma tabela (os três são
-   variações da mesma página 1), então o estilo abaixo é derivado
-   dos mesmos tokens, na linguagem minimalista do resto do
-   documento: filete fino, sem zebra e sem faixa verde.
+   Desenho medido no svg_3 (a folha de cargas): moldura de 1pt com
+   raio de 8pt, faixa sólida no cabeçalho e linhas de 27pt.
+
+   `border-collapse: separate` (e não collapse) porque a moldura
+   arredondada é do elemento <table>: com bordas colapsadas o
+   Chrome ignora o raio. Os cantos de cima da faixa do cabeçalho
+   são arredondados NA CÉLULA, com o raio interno (8pt da moldura
+   − 1pt de borda), porque `overflow: hidden` não recorta nada no
+   PDF — shared/js/pdf-render.js pinta caixa por caixa e não
+   implementa clipe. É por isso que ele lê os quatro raios de cada
+   caixa, e não só o superior esquerdo. Embaixo não é preciso: as
+   células do corpo não têm fundo próprio, quem arredonda ali é o
+   fundo branco da própria tabela.
+
+   Altura da linha: 5 + 17 + 5 = 27pt no cabeçalho e
+   5 + 17 + 4 + 1 (divisor) = 27pt no corpo.
    ============================================================ */
 
 .pdf-tabela {
   width: 100%;
-  border-collapse: collapse;
-  margin-bottom: var(--pdf-campo-respiro);
+  border-collapse: separate;
+  border-spacing: 0;
+  border: var(--pdf-tabela-filete) solid var(--pdf-cor-filete);
+  border-radius: var(--pdf-tabela-raio);
+  background: #fff;
+  margin-bottom: var(--pdf-tabela-respiro);
 }
 
 .pdf-tabela th,
 .pdf-tabela td {
+  box-sizing: border-box;
+  /* Mínimo, não altura fixa: célula com texto em duas linhas cresce.
+     Declarado porque o Chrome TRUNCA border-width para px inteiro (o
+     divisor de 1pt vira 0,75pt) e, sem o piso, cada linha sairia um
+     quarto de ponto mais baixa que os 27pt do mock. */
+  height: var(--pdf-tabela-linha);
   padding: var(--pdf-tabela-pad-y) var(--pdf-tabela-pad-x);
   text-align: left;
   vertical-align: top;
-  border-bottom: var(--pdf-tabela-filete) solid var(--pdf-cor-filete);
 }
 
 .pdf-tabela th {
+  background: var(--pdf-tabela-cab-fundo);
   font-weight: var(--pdf-fw-valor);
-  color: var(--pdf-cor-marca);
+  color: var(--pdf-cor-texto);
+}
+
+/* Raio interno: o da moldura menos a espessura da borda dela. */
+.pdf-tabela thead th:first-child {
+  border-top-left-radius: calc(
+    var(--pdf-tabela-raio) - var(--pdf-tabela-filete)
+  );
+}
+.pdf-tabela thead th:last-child {
+  border-top-right-radius: calc(
+    var(--pdf-tabela-raio) - var(--pdf-tabela-filete)
+  );
 }
 
 .pdf-tabela td {
   font-weight: var(--pdf-fw-rotulo);
+  /* O divisor mora no rodapé da célula e entra na conta dos 27pt. */
+  padding-bottom: calc(var(--pdf-tabela-pad-y) - var(--pdf-tabela-filete));
+  border-bottom: var(--pdf-tabela-filete) solid var(--pdf-cor-filete);
 }
 
-/* Primeira coluna sem recuo à esquerda e última sem à direita:
-   a tabela alinha com a coluna de conteúdo, como a grade. */
-.pdf-tabela th:first-child,
-.pdf-tabela td:first-child {
-  padding-left: 0;
-}
-.pdf-tabela th:last-child,
-.pdf-tabela td:last-child {
-  padding-right: 0;
+/* Última linha: quem fecha a caixa é a moldura, não um divisor. */
+.pdf-tabela tbody tr:last-child td {
+  padding-bottom: var(--pdf-tabela-pad-y);
+  border-bottom: 0;
 }
 
-/* Colunas numéricas (carga, demanda, potência) alinhadas à direita. */
+/* Linha de fechamento DENTRO da tabela ("CARGA TOTAL: 25,36 kW").
+   É uma célula única de largura total, à direita e em negrito —
+   diferente do .pdf-total, que fecha um bloco fora de tabela. */
+.pdf-tabela-total td {
+  text-align: right;
+  font-weight: var(--pdf-fw-valor);
+}
+
+/* Colunas numéricas (carga, demanda, potência) alinhadas à direita.
+   O BT individual não marca nenhuma coluna assim — o mock alinha
+   tudo à esquerda —, mas as tabelas largas do coletivo dependem
+   disto para as colunas de kW/kVA fecharem. */
 .pdf-tabela .pdf-col-num {
   text-align: right;
 }

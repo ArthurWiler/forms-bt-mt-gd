@@ -149,6 +149,15 @@
   </table>
 </template>
 
+<!-- Linha de fechamento DENTRO da tabela ("CARGA TOTAL: 25,36 kW"
+     no mock). O colspan é o único atributo que o JS preenche: só em
+     runtime se sabe quantas colunas a tabela ficou tendo. -->
+<template id="tplPdfTabelaTotal">
+  <tr class="pdf-tabela-total">
+    <td></td>
+  </tr>
+</template>
+
 <template id="tplPdfTotal">
   <div class="pdf-total">
     <span class="pdf-total-rotulo"></span>

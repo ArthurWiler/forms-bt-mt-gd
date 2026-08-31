@@ -14,28 +14,63 @@
    As colunas variam por tabela e, sem largura declarada, o
    navegador distribui pelo conteúdo: a coluna "Ramo de atividade"
    (que traz o código CNAE) esmagava as numéricas. Percentuais
-   sobre os 523pt da coluna de conteúdo. */
+   sobre os 523pt da coluna de conteúdo.
 
-/* Equipamentos de uma UC — 4.x Cargas */
+   As três primeiras vêm medidas do svg_3, pelas fronteiras de
+   coluna do desenho; por isso `table-layout: fixed`, senão o
+   conteúdo renegocia a largura e o desenho sai de esquadro. */
+
+/* Cargas da unidade — fronteiras 36 | 370 | 451 | 496 | 559 */
+.pdf-tabela--equipamentos {
+  table-layout: fixed;
+}
 .pdf-tabela--equipamentos th:nth-child(1),
 .pdf-tabela--equipamentos td:nth-child(1) {
-  width: 55%;
+  width: 63.86%;
 }
 .pdf-tabela--equipamentos th:nth-child(2),
-.pdf-tabela--equipamentos td:nth-child(2),
-.pdf-tabela--equipamentos th:nth-child(4),
-.pdf-tabela--equipamentos td:nth-child(4) {
-  width: 17%;
+.pdf-tabela--equipamentos td:nth-child(2) {
+  width: 15.49%;
 }
 .pdf-tabela--equipamentos th:nth-child(3),
 .pdf-tabela--equipamentos td:nth-child(3) {
-  width: 11%;
+  width: 8.6%;
+}
+.pdf-tabela--equipamentos th:nth-child(4),
+.pdf-tabela--equipamentos td:nth-child(4) {
+  width: 12.05%;
 }
 
-/* Resumo por unidade consumidora */
-.pdf-tabela--resumo th:nth-child(2),
-.pdf-tabela--resumo td:nth-child(2) {
-  width: 32%;
+/* Motores — fronteiras 36 | 176 | 261 | 306 | 432.5 | 559 */
+.pdf-tabela--motores {
+  table-layout: fixed;
+}
+.pdf-tabela--motores th:nth-child(1),
+.pdf-tabela--motores td:nth-child(1) {
+  width: 26.77%;
+}
+.pdf-tabela--motores th:nth-child(2),
+.pdf-tabela--motores td:nth-child(2) {
+  width: 16.25%;
+}
+.pdf-tabela--motores th:nth-child(3),
+.pdf-tabela--motores td:nth-child(3) {
+  width: 8.6%;
+}
+.pdf-tabela--motores th:nth-child(4),
+.pdf-tabela--motores td:nth-child(4),
+.pdf-tabela--motores th:nth-child(5),
+.pdf-tabela--motores td:nth-child(5) {
+  width: 24.19%;
+}
+
+/* Gerador de emergência — fronteiras 36 | 297.5 | 559 */
+.pdf-tabela--gerador {
+  table-layout: fixed;
+}
+.pdf-tabela--gerador th:nth-child(1),
+.pdf-tabela--gerador td:nth-child(1) {
+  width: 50%;
 }
 
 /* Unidades de um bloco/torre e do agrupamento coletivo: muitas
@@ -48,16 +83,14 @@
   overflow-wrap: anywhere;
 }
 
-/* ---- Subtítulo de UC / torre (4.1, 4.2, …) ----
-   Hierarquia abaixo do título de seção: mesmo verde, mesmo corpo
-   dos campos, distinguido pelo peso e pelo filete. Não existe na
-   tela, por isso vive aqui e não no shared-pdf.css. */
+/* ---- Subtítulo de seção ("Motores", "Gerador de emergência") ----
+   Hierarquia abaixo do título de seção: mesmo verde, corpo dos
+   campos, sem negrito e sem filete — é como o svg_3 desenha. Não
+   existe na tela, por isso vive aqui e não no shared-pdf.css. */
 .pdf-subsecao {
   margin: 0 0 var(--pdf-campo-respiro);
-  padding-bottom: 3pt;
-  border-bottom: var(--pdf-tabela-filete) solid var(--pdf-cor-filete);
   font-size: var(--pdf-fs-campo);
-  font-weight: var(--pdf-fw-valor);
+  font-weight: var(--pdf-fw-rotulo);
   color: var(--pdf-cor-marca);
 }
 

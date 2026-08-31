@@ -7,10 +7,16 @@
    desenhado a partir dessa medição por shared/js/pdf-render.js.
    Nenhuma medida aqui é repetida em constante no JS.
 
-   Todos os valores abaixo foram medidos nos SVGs de referência
-   (svg_pdf_bt e svg_pdf_bt - correspondencia). A moldura do mock
-   é 595 × 842, que é exatamente A4 a 72 dpi — logo **1 unidade
-   do SVG = 1pt em CSS** e as medidas entram aqui sem conversão.
+   Todos os valores abaixo foram medidos nos SVGs de referência do
+   BT individual, exportados do Figma e guardados em
+   docs/mocks/pdf-bt-individual/ (svg_1 … svg_7 — é por esse nome
+   curto que os comentários deste arquivo, do shared-pdf.css, do
+   bt-pdf.css e do bt/js/pdf-doc.js os citam). São três cenários
+   completos e paginados: 1 UC em Conexão Nova (svg_1/2/3), a mesma
+   folha 1 em Alteração de carga (svg_4) e 3 UCs (svg_5/6/7).
+   A moldura do mock é 595 × 842, que é exatamente A4 a 72 dpi —
+   logo **1 unidade do SVG = 1pt em CSS** e as medidas entram aqui
+   sem conversão.
    É por isso que este arquivo usa `pt` e não `px`: escrito em pt,
    1 unidade do CSS é 1 unidade do PDF, e o renderizador só precisa
    converter a folha inteira por um fator único.
@@ -36,22 +42,40 @@
   --pdf-gap: 12pt;
 
   /* ---- Ritmo vertical ----
-     17pt é o passo entre linhas de texto (rótulo → valor e entre
-     as linhas de um valor que quebra). Com 8pt de respiro depois
-     do par, o passo entre campos fecha os 42pt medidos no mock.
+     17pt é o PASSO entre o rótulo e o valor de um campo, mas a
+     entrelinha DENTRO de um mesmo parágrafo é 15pt: um valor que
+     quebra em duas linhas anda 15, não 17. Medido em "Individual -
+     até 3 caixas sem proteção geral" (svg_1) e em "Distância do
+     padrão até a rede / Cemig inferior a 30m?" (svg_7) — a linha de
+     campos com três linhas fecha 57pt, não 59.
+
+     Por isso o passo é 15 de entrelinha + 2 de respiro, e não um
+     line-height de 17: escrito como line-height, cada linha extra
+     custaria 2pt a mais e a folha fecharia fora do mock.
+
+     Com 8pt de respiro depois do par, o passo entre campos de uma
+     linha fecha os 42pt medidos.
 
      Nota: a 1ª seção do mock (Dados do proprietário) usa 15/40 em
      vez de 17/42; as demais seções e a página de continuação usam
      17/42. Adotado 17/42 no documento inteiro — a alternativa
      seria reproduzir a inconsistência do desenho. */
   --pdf-linha: 17pt;
+  --pdf-linha-texto: 15pt;
   --pdf-campo-respiro: 8pt;
 
-  /* Filete entre seções: o mock mede 14pt acima e ~15pt abaixo.
-     Como o bloco anterior já contribui com os 8pt de respiro,
-     restam 6pt de margem própria acima. */
-  --pdf-filete-antes: 6pt;
-  --pdf-filete-depois: 14pt;
+  /* Filete entre seções: 14pt acima e 14pt abaixo, medidos entre as
+     caixas dos blocos vizinhos (svg_1 y=268, svg_6 y=493, svg_7
+     y=239). Margens de irmãos COLAPSAM — o respiro de 8pt do bloco
+     anterior não se soma a este, é absorvido por ele; foi o que a
+     leitura anterior (6pt + 8pt) errou. */
+  --pdf-filete-antes: 14pt;
+  --pdf-filete-depois: 19pt;
+
+  /* A régua verde do cabeçalho tem respiro próprio, menor que o do
+     filete: do fim dela (y=100,5) ao título da 1ª seção o mock mede
+     14pt, contra os 19 que separam filete e seção. */
+  --pdf-regua-depois: 14pt;
 
   /* ---- Tipografia ---- */
   --pdf-font: var(--cmg-font-family);
@@ -74,18 +98,30 @@
   --pdf-filete-esp: 2pt; /* filete entre seções */
 
   /* ---- Cartão de destaque ----
-     Confere com as alturas do mock: 2 linhas → 4 + 10 + 34 = 48pt;
-     3 linhas → 4 + 10 + 51 = 65pt. */
+     Confere com as alturas do mock: 2 linhas → 4 + 8 + 34 = 46pt;
+     3 linhas → 4 + 8 + 51 = 63pt (borda 2 + recuo 4, dos dois
+     lados). O raio é 8pt na caixa de borda — no SVG ele sai como
+     rx="7" porque o traçado é desenhado recuado meia espessura. */
   --pdf-card-borda: 2pt;
   --pdf-card-raio: 8pt;
-  --pdf-card-pad-y: 5pt;
+  --pdf-card-pad-y: 4pt;
   --pdf-card-pad-x: 10pt;
 
   /* ---- Tabela ----
-     O mock não desenha nenhuma tabela (os três SVGs são variações
-     da mesma página 1). Derivado dos tokens acima na mesma
-     linguagem minimalista: filete fino, sem zebra e sem faixa. */
+     Medida no svg_3, a folha de cargas: moldura de 1pt com raio de
+     8pt, faixa sólida no cabeçalho e linhas de 27pt (10pt de texto
+     em 17pt de entrelinha, com 5pt de recuo em cima e embaixo).
+     O divisor entre linhas é 1pt, igual à moldura — conferido por
+     varredura de pixel do render, e não pelo traçado do Figma, que
+     exporta a linha como uma faixa de duas unidades. */
   --pdf-tabela-filete: 1pt;
-  --pdf-tabela-pad-y: 4pt;
-  --pdf-tabela-pad-x: 6pt;
+  --pdf-tabela-raio: 8pt;
+  --pdf-tabela-linha: 27pt;
+  --pdf-tabela-cab-fundo: var(--pdf-cor-filete);
+  --pdf-tabela-pad-y: 5pt;
+  --pdf-tabela-pad-x: 8pt;
+  /* Respiro abaixo da tabela, maior que o dos campos: no svg_3 a
+     distância entre a moldura de uma tabela e a da seguinte é 66pt
+     (com título de seção e subseção no meio) e 37pt (só subseção). */
+  --pdf-tabela-respiro: 12pt;
 }

@@ -270,6 +270,54 @@
     ["Left", "left"],
   ];
 
+  var CANTOS = ["TopLeft", "TopRight", "BottomRight", "BottomLeft"];
+
+  /* Proporção da corda de Bézier que aproxima um quarto de círculo
+     — a mesma constante que o jsPDF usa no roundedRect. */
+  var ARCO = (4 / 3) * (Math.SQRT2 - 1);
+
+  /* O roundedRect do jsPDF aceita UM raio para os quatro cantos, e
+     o CSS pede cantos diferentes — a faixa do cabeçalho da tabela é
+     arredondada só em cima. Não dá para resolver com
+     `overflow: hidden`: este renderizador pinta caixa por caixa e
+     não recorta nada. Então o traçado do jsPDF entra aqui
+     generalizado para quatro raios; com os quatro iguais ele produz
+     exatamente o mesmo caminho que o roundedRect.
+     `r` = [sup.esq, sup.dir, inf.dir, inf.esq]. */
+  function caminhoArredondado(doc, x, y, w, h, r, estilo) {
+    var tl = r[0];
+    var tr = r[1];
+    var br = r[2];
+    var bl = r[3];
+    doc.lines(
+      [
+        [w - tl - tr, 0],
+        [tr * ARCO, 0, tr, tr - tr * ARCO, tr, tr],
+        [0, h - tr - br],
+        [0, br * ARCO, -br + br * ARCO, br, -br, br],
+        [-(w - br - bl), 0],
+        [-bl * ARCO, 0, -bl, -bl + bl * ARCO, -bl, -bl],
+        [0, -(h - bl - tl)],
+        [0, -tl * ARCO, tl - tl * ARCO, -tl, tl, -tl],
+      ],
+      x + tl,
+      y,
+      [1, 1],
+      estilo,
+      true,
+    );
+  }
+
+  /* Os quatro raios da caixa, em pt e já limitados pelo lado menor
+     — é o mesmo teto que o CSS aplica quando os raios não cabem. */
+  function raios(cs, g, escala) {
+    var teto = Math.min(g.w, g.h) / 2;
+    return CANTOS.map(function (canto) {
+      var v = parseFloat(cs["border" + canto + "Radius"]) * escala || 0;
+      return Math.min(v, teto);
+    });
+  }
+
   /* O Chrome TRUNCA border-width para px inteiro (1pt vira 1px, 2pt
      vira 2px), então nenhuma borda do layout mede o que o CSS pediu:
      sai sempre em múltiplos de 0.75pt. Sem corrigir, dois traços
@@ -289,12 +337,14 @@
 
   function pintarCaixa(doc, el, cs, g, ctx) {
     var fundo = cor(cs.backgroundColor);
-    var raio = parseFloat(cs.borderTopLeftRadius) * ctx.escala || 0;
-    if (raio) raio = Math.min(raio, g.w / 2, g.h / 2);
+    var raio = raios(cs, g, ctx.escala);
+    var arredondada = raio.some(function (v) {
+      return v > 0;
+    });
 
     if (fundo) {
       doc.setFillColor(fundo.r, fundo.g, fundo.b);
-      if (raio) doc.roundedRect(g.x, g.y, g.w, g.h, raio, raio, "F");
+      if (arredondada) caminhoArredondado(doc, g.x, g.y, g.w, g.h, raio, "F");
       else doc.rect(g.x, g.y, g.w, g.h, "F");
     }
 
@@ -312,10 +362,10 @@
     });
     if (!bordas.length) return;
 
-    /* Borda igual nos quatro lados com raio (o cartão de destaque):
-       um retângulo arredondado só. O jsPDF traça CENTRADO no
-       caminho e o CSS desenha para DENTRO da caixa, daí a meia
-       espessura de recuo. */
+    /* Borda igual nos quatro lados com raio (o cartão de destaque,
+       a moldura da tabela): um caminho arredondado só. O jsPDF traça
+       CENTRADO no caminho e o CSS desenha para DENTRO da caixa, daí
+       a meia espessura de recuo. */
     var uniforme =
       bordas.length === 4 &&
       bordas.every(function (b) {
@@ -326,17 +376,19 @@
           b.tinta.b === bordas[0].tinta.b
         );
       });
-    if (uniforme && raio) {
+    if (uniforme && arredondada) {
       var e = bordas[0].esp;
       doc.setDrawColor(bordas[0].tinta.r, bordas[0].tinta.g, bordas[0].tinta.b);
       doc.setLineWidth(e);
-      doc.roundedRect(
+      caminhoArredondado(
+        doc,
         g.x + e / 2,
         g.y + e / 2,
         g.w - e,
         g.h - e,
-        Math.max(0, raio - e / 2),
-        Math.max(0, raio - e / 2),
+        raio.map(function (v) {
+          return Math.max(0, v - e / 2);
+        }),
         "S",
       );
       return;
