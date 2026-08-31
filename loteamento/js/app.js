@@ -505,13 +505,45 @@ function pvSecao(titulo, campos) {
   );
 }
 const PV_DIVISOR = '<hr class="previa-divider"/>';
+/* Quantidade de lotes por área — no Figma da prévia é uma tabela estreita
+   (larguras pelo conteúdo), com uma coluna só para o lápis e o TOTAL no
+   <tfoot>, separado do corpo por um traço mais escuro. */
+function pvLoteLinha(faixa, valor) {
+  return (
+    `<tr><td>${faixa}</td><td>${parseInt(valor) || 0}</td>` +
+    `<td class="previa-tabela-acao"><button type="button" class="previa-edit" title="Editar" aria-label="Editar ${faixa}" onclick="goTo(3)"></button></td></tr>`
+  );
+}
+function pvSecaoLotes(total) {
+  return (
+    '<div class="previa-secao">' +
+    '<h4 class="previa-secao-titulo">Quantidade de lotes por área</h4>' +
+    '<div class="previa-tabela-wrap previa-tabela-wrap--auto">' +
+    '<table class="previa-tabela"><thead><tr>' +
+    "<th>Faixa da área</th><th>Quantidade de lotes</th>" +
+    '<th class="previa-tabela-acao"></th>' +
+    "</tr></thead><tbody>" +
+    pvLoteLinha("Até 400m²", state.lote_400) +
+    pvLoteLinha("De 401 a 600m²", state.lote_400_600) +
+    pvLoteLinha("Acima de 600m²", state.lote_600) +
+    "</tbody><tfoot><tr>" +
+    `<td>TOTAL</td><td>${total}</td>` +
+    '<td class="previa-tabela-acao"></td>' +
+    "</tr></tfoot></table></div></div>"
+  );
+}
 // Aceita tanto ISO completo (yyyy-mm-dd) quanto o mês/ano do input[type=month]
-// (yyyy-mm), usado na "Data de entrada de carga ou inauguração".
+// (yyyy-mm), usado na "Data de entrada de carga ou inauguração". O mês/ano sai
+// por extenso ("Agosto de 2027"), como no Figma da prévia; MESANO_MESES vem de
+// shared/js/mesano.js, carregado antes deste arquivo.
 function fmtData(iso) {
   if (!iso) return "";
   const [a, m, d] = String(iso).split("-");
   if (a && m && d) return `${d}/${m}/${a}`;
-  if (a && m) return `${m}/${a}`;
+  if (a && m) {
+    const nome = MESANO_MESES[Number(m) - 1];
+    return nome ? `${nome} de ${a}` : `${m}/${a}`;
+  }
   return iso;
 }
 function renderPreview() {
@@ -522,49 +554,29 @@ function renderPreview() {
   const secoes = [
     pvSecao(
       "Dados para contato",
-      pvCampo("Nome completo", state.nome, { full: true, step: 1 }) +
+      pvCampo("Nome", state.nome, { full: true, step: 1 }) +
         pvCampo("E-mail", state.email, { step: 1 }) +
         pvCampo("Celular", state.celular, { step: 1 }),
     ),
     pvSecao(
-      "Dados do Empreendimento",
-      // Mesma ordem dos campos na Etapa 3.
+      "Dados do empreendimento",
+      // Ordem do Figma da prévia, aos pares: cliente|município, área|estado,
+      // solicitante|empreendimento, e a data sozinha na última linha.
       pvCampo("Cliente / Razão Social do empreendimento", state.cliente, {
-        full: true,
         step: 2,
       }) +
+        pvCampo("Município", state.municipio, { step: 2 }) +
+        pvCampo("Área do empreendimento", state.area, { step: 2 }) +
+        pvCampo("Estado", state.estado, { step: 2 }) +
         pvCampo("Tipo de solicitante", state.tipoSolicitante, { step: 2 }) +
         pvCampo("Tipo de empreendimento", state.tipo, { step: 2 }) +
         pvCampo(
           "Data de entrada de carga ou inauguração",
           fmtData(state.dataEntrada),
           { step: 2 },
-        ) +
-        pvCampo("Área do empreendimento", state.area, { step: 2 }) +
-        pvCampo("Município", state.municipio, { step: 2 }) +
-        pvCampo("Estado", state.estado, { step: 2 }),
+        ),
     ),
-    pvSecao(
-      "Localização",
-      pvCampo(
-        "Coordenadas",
-        [state.latitude, state.longitude].filter(Boolean).join(" , "),
-        { step: 2 },
-      ) + pvCampo("Coordenada UTM", state.utm, { step: 2 }),
-    ),
-    pvSecao(
-      "Quantidade de lotes por área",
-      pvCampo("Até 400m²", state.lote_400, { step: 3 }) +
-        pvCampo("De 401 a 600m²", state.lote_400_600, { step: 3 }) +
-        pvCampo("Acima de 600m²", state.lote_600, { step: 3 }) +
-        pvCampo("Total de lotes", totalLotes),
-    ),
-    pvSecao(
-      "Declaração",
-      pvCampo("Declaração firmada", state.declaracao ? "Sim" : "Não", {
-        step: 4,
-      }),
-    ),
+    pvSecaoLotes(totalLotes),
   ];
   // Observações é campo opcional: sem texto, a seção nem aparece na prévia.
   if (String(state.observacoes || "").trim())

@@ -859,6 +859,29 @@ label.restricao-aceite input[type="checkbox"] {
 .previa-tabela td {
   color: var(--cmg-neutral-600);
 }
+/* Variante estreita: larguras pelo conteúdo, encostada à esquerda. O Figma da
+   prévia do loteamento desenha assim — a tabela de 3 colunas não estica na
+   largura do card como a de UCs da torre. */
+.previa-tabela-wrap--auto {
+  width: fit-content;
+  max-width: 100%;
+}
+.previa-tabela-wrap--auto .previa-tabela {
+  width: auto;
+}
+/* Coluna só do lápis (cabeçalho vazio): botão centrado, não à esquerda. */
+.previa-tabela .previa-tabela-acao {
+  text-align: center;
+}
+/* Linha de total no <tfoot>: negrito e separada do corpo por um traço mais
+   escuro (neutra/400). O último <tr> do tbody já perde a borda de baixo,
+   então sobra só esta. */
+.previa-tabela tfoot td {
+  font-weight: var(--cmg-fw-bold, 700);
+  color: var(--cmg-neutral-600);
+  border-top: 1px solid var(--cmg-neutral-400);
+  border-bottom: 0;
+}
 .previa-tabela-disj {
   display: flex;
   align-items: center;
