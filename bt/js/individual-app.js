@@ -891,10 +891,9 @@ const PG = { prop: 1, dados: 2, atend: 3, cargas: 4, corr: 5 };
 function renderPreviaBT() {
   const box = $("#previaConteudo");
   if (!box) return;
-  // Aquecimento do jsPDF (carga sob demanda). O PDF do formulário não usa
-  // mais a lib — sai por window.print() em js/pdf-doc.js —, mas os dois
-  // documentos auxiliares desta etapa ainda usam: Termo de Opção Grupo B e
-  // Análise de Partida de Motores.
+  // Aquecimento do jsPDF (carga sob demanda): é a lib que desenha os três
+  // documentos desta etapa — o PDF do formulário (shared/js/pdf-render.js),
+  // o Termo de Opção Grupo B e a Análise de Partida de Motores.
   window.CemigLibs.jspdf().catch(() => {});
   const p = state.prop,
     c = state.corr,
@@ -1325,9 +1324,8 @@ async function exportarPdfBT() {
     renderPreviaBT();
     return;
   }
-  // Sem jsPDF: o PDF é HTML impresso pelo navegador (bt/js/pdf-doc.js).
-  // A biblioteca segue carregada sob demanda pelos documentos auxiliares
-  // (Termo Grupo B e Análise de Partida de Motores).
+  // O documento é montado em HTML por bt/js/pdf-doc.js e baixado como PDF
+  // por shared/js/pdf-render.js — sem diálogo de impressão.
   await gerarPdfDocumento({
     multiTorres: false,
     coletivo: false,

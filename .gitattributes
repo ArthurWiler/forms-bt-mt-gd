@@ -1,5 +1,8 @@
 # Auto detect text files and perform LF normalization
 * text=auto
 
-# Fontes auto-hospedadas: binários, fora da normalização de fim de linha
+# Fontes auto-hospedadas: binários, fora da normalização de fim de linha.
+# Os .woff2 são da tela; os .ttf são embutidos no PDF por
+# shared/js/pdf-render.js (o jsPDF não lê woff2).
 *.woff2 binary
+*.ttf binary

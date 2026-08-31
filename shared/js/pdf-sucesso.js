@@ -7,9 +7,9 @@
 
    Reutiliza o componente .cmg-modal de css/shared.css (escopado em
    .cemig-form), montado no <body> e fechado por X/Esc/clique no
-   overlay. É o MESMO diálogo em todos os caminhos de exportação:
-   chamado por shared/js/gd-pdf-base.js e pelos PDFs auxiliares
-   após doc.save(), e por bt/js/pdf-doc.js no afterprint.
+   overlay. É o MESMO diálogo em todos os caminhos de exportação, e
+   em todos eles vem depois do doc.save() — o arquivo já saiu quando
+   o usuário lê "download concluído".
    ============================================================ */
 const PDF_SUCESSO_LINKS = {
   documentos:

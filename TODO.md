@@ -173,7 +173,9 @@ Rodar em cada uma das 8 páginas após o empacotamento:
 - [ ] Cálculos: demanda, dimensionamento de disjuntor, validações da ND-5.2
 - [ ] Navegação entre etapas, ida e volta, com estado preservado
 - [ ] Prévia reflete o preenchimento
-- [ ] PDF gera e sai correto — `window.print()` no BT, `doc.save()` nos demais
+- [ ] PDF gera e sai correto — `doc.save()` em todos; o BT baixa o documento
+      HTML desenhado por `shared/js/pdf-render.js`, os demais ainda desenham
+      direto no jsPDF (ou imprimem, nos casos de loteamento e desistência)
 - [ ] Termos e anexos auxiliares (Termo Grupo B, Anexo II, carta monomia)
 - [ ] Campos condicionais aparecem/somem conforme as regras
 

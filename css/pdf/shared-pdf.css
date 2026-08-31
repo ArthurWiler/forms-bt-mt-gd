@@ -14,16 +14,12 @@
    raiz de superfície de formulário, é um documento à parte.
    ============================================================ */
 
-@page {
-  size: A4;
-  /* Margem zero na folha: quem posiciona é a .pdf-pagina, que
-     reproduz os 36pt do mock. Se a margem ficasse no @page, o
-     navegador somaria as duas e o desenho encolheria. */
-  margin: 0;
-}
-
 /* ============================================================
-   1. Isolamento — o documento só existe na impressão
+   1. Isolamento — o documento nunca aparece na tela
+   ------------------------------------------------------------
+   Nada aqui é impresso pelo navegador: o documento é montado, medido
+   e desenhado em PDF por shared/js/pdf-render.js, que baixa o
+   arquivo. Por isso não há @page nem bloco @media print.
    ============================================================ */
 
 .pdf-doc {
@@ -32,40 +28,19 @@
   font-size: var(--pdf-fs-campo);
   line-height: var(--pdf-linha);
   color: var(--pdf-cor-texto);
-  /* Sem isto o Chrome descarta a régua verde e as bordas dos
-     cartões — ele remove fundos e cores na impressão por padrão. */
-  print-color-adjust: exact;
-  -webkit-print-color-adjust: exact;
 }
 
-/* Estado de medição: o JS precisa de altura real para paginar, e
-   `display:none` não gera caixa nenhuma. Fica fora da viewport em
-   vez de escondido. */
-.pdf-doc--medindo {
+/* Estado de montagem: o JS precisa de altura real para paginar e de
+   geometria real para desenhar, e `display:none` não gera caixa
+   nenhuma. Fica fora da viewport em vez de escondido. */
+.pdf-doc--montando {
   display: block;
   position: absolute;
   top: 0;
   left: -10000px;
-  /* `visibility: hidden` deixaria o leitor de tela anunciar o
-     documento inteiro durante a medição. */
+  /* Sem isto o leitor de tela anunciaria o documento inteiro
+     enquanto ele é montado. */
   visibility: hidden;
-}
-
-@media print {
-  /* `.cemig-form` é o próprio <body> nesta página, então basta
-     apagar os filhos diretos: some a topbar, a trilha, o rodapé
-     institucional e a etapa visível — inclusive o
-     `.cemig-form .page.show { display: block }` do shared.css,
-     que fica dentro de um pai oculto. */
-  body.pdf-imprimindo > *:not(.pdf-doc) {
-    display: none !important;
-  }
-  body.pdf-imprimindo .pdf-doc {
-    display: block !important;
-    position: static !important;
-    left: auto !important;
-    visibility: visible !important;
-  }
 }
 
 /* ============================================================
@@ -85,14 +60,6 @@
      quando isso acontece (scrollHeight > clientHeight) — sem esse
      aviso o erro apareceria como texto faltando, sem pista. */
   overflow: hidden;
-  break-after: page;
-  page-break-after: always;
-}
-
-/* Sem isto o navegador emite uma folha em branco no fim. */
-.pdf-pagina:last-child {
-  break-after: auto;
-  page-break-after: auto;
 }
 
 /* O corpo estica e o rodapé encosta no pé: a altura útil de cada
@@ -286,27 +253,4 @@
   padding-top: 6pt;
   border-top: var(--pdf-tabela-filete) solid var(--pdf-cor-filete);
   text-align: center;
-}
-
-/* ============================================================
-   9. Quebras
-   ------------------------------------------------------------
-   Quem decide as quebras é o paginador em bt/js/pdf-doc.js — só
-   ele sabe numerar as páginas. Estas regras são cinto de
-   segurança para o caso de o navegador repaginar por conta.
-   ============================================================ */
-
-.pdf-grade,
-.pdf-cartoes,
-.pdf-cartao,
-.pdf-total,
-.pdf-assinatura,
-.pdf-tabela tr {
-  break-inside: avoid;
-  page-break-inside: avoid;
-}
-
-.pdf-secao-titulo {
-  break-after: avoid;
-  page-break-after: avoid;
 }

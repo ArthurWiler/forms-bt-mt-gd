@@ -1,12 +1,16 @@
 /* ============================================================
-   CEMIG BT — Documento do PDF (HTML + window.print)
+   CEMIG BT — Documento do PDF (HTML montado e paginado aqui)
    ------------------------------------------------------------
    Substitui o motor jsPDF que desenhava o PDF com doc.rect/
    doc.text. Agora o documento é HTML de verdade, estilizado por
-   css/pdf/*.css e paginado aqui; quem rasteriza é o navegador.
-   Ganhos: o estilo passa a ser CSS versionado (e não constantes
-   espalhadas no JS), o texto sai selecionável e a fonte é a Open
-   Sans do projeto, não a Helvetica embutida na biblioteca.
+   css/pdf/*.css e paginado aqui; quem desenha o arquivo final é
+   shared/js/pdf-render.js, lendo estas mesmas páginas. Ganhos: o
+   estilo passa a ser CSS versionado (e não constantes espalhadas
+   no JS), o texto sai selecionável e a fonte é a Open Sans do
+   projeto, não a Helvetica embutida na biblioteca.
+
+   O documento NUNCA é impresso pelo navegador: o clique baixa o
+   .pdf direto, sem passar pelo diálogo de impressão.
 
    Usa os helpers globais do módulo BT, como o motor antigo fazia:
    fmt2, fmtW, num, prevKwUC, ucSemAlteracao, ramoParaPdf, CAT,
@@ -1014,46 +1018,68 @@ async function _pdfAguardarImagens(raiz) {
    6. Exportação
    ============================================================ */
 
+/* Mesmo padrão de nome dos demais PDFs do projeto (_nomeArqMT em
+   mt/js/pdf.js): prefixo do formulário + nome do cliente. A
+   normalização derruba o acento ANTES do filtro, senão "José"
+   viraria "Jos_". */
+function _pdfNomeArquivo(S) {
+  const nome = String((S && S.prop && S.prop.nome) || "Cliente")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "")
+    .slice(0, 30);
+  return `CEMIG_BT_${nome || "Cliente"}.pdf`;
+}
+
 async function gerarPdfDocumento(S) {
   const anterior = document.getElementById("documentoPdf");
   if (anterior) anterior.remove();
 
   const foco = document.activeElement;
+  /* A fonte do PDF é buscada na primeira exportação: sem este
+     estado o botão fica mudo por um instante. */
+  const botao = document.getElementById("btnExportarPDF");
+  const rotulo = botao && botao.textContent;
+  if (botao) {
+    botao.disabled = true;
+    botao.textContent = "Gerando PDF…";
+  }
+
   let doc = null;
   try {
     doc = _pdfMolde("tplPdfDoc");
-    doc.classList.add("pdf-doc--medindo");
+    doc.classList.add("pdf-doc--montando");
     document.body.appendChild(doc);
 
     const blocos = _pdfBlocosBT(S);
     await _pdfAguardarFontes(blocos.map((b) => b.el.textContent).join(" "));
     _pdfPaginar(doc, blocos);
     await _pdfAguardarImagens(doc);
+
+    /* O documento segue montado (fora da viewport) durante o
+       desenho: é dele que o renderizador tira as coordenadas. */
+    await renderizarPdfDoc(doc, {
+      arquivo: _pdfNomeArquivo(S),
+      titulo: "Formulário de Ligação Nova e Alteração de Carga",
+    });
   } catch (e) {
-    if (doc) doc.remove();
-    console.error("[PDF] falha ao montar o documento", e);
-    alert("Não foi possível montar o PDF. Recarregue a página e tente de novo.");
+    console.error("[PDF] falha ao gerar o documento", e);
+    alert("Não foi possível gerar o PDF. Recarregue a página e tente de novo.");
     return;
+  } finally {
+    if (doc) doc.remove();
+    if (botao) {
+      botao.disabled = false;
+      botao.textContent = rotulo;
+    }
+    if (foco && foco.focus) foco.focus();
   }
 
-  doc.classList.remove("pdf-doc--medindo");
-  document.body.classList.add("pdf-imprimindo");
-
-  /* `afterprint` dispara IGUAL se o usuário salvou o PDF ou clicou
-     em Cancelar, e não há API que separe os dois casos: o diálogo de
-     sucesso entra nos dois desfechos. Se a exportação foi cancelada,
-     basta clicar em Exportar PDF de novo. */
-  window.addEventListener(
-    "afterprint",
-    () => {
-      document.body.classList.remove("pdf-imprimindo");
-      doc.remove();
-      if (foco && foco.focus) foco.focus();
-      if (typeof mostrarModalPdfExportado === "function")
-        mostrarModalPdfExportado();
-    },
-    { once: true },
-  );
-
-  window.print();
+  /* Ao contrário do window.print(), aqui o arquivo já saiu quando
+     se chega nesta linha: o diálogo de sucesso deixou de aparecer
+     também quando o usuário cancelava a exportação. */
+  if (typeof mostrarModalPdfExportado === "function")
+    mostrarModalPdfExportado();
 }

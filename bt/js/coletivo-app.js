@@ -3957,7 +3957,8 @@ async function exportarPdfBT() {
     renderPreviaColetivo();
     return;
   }
-  // Sem jsPDF: o PDF é HTML impresso pelo navegador (bt/js/pdf-doc.js).
+  // O documento é montado em HTML por bt/js/pdf-doc.js e baixado como PDF
+  // por shared/js/pdf-render.js — sem diálogo de impressão.
   // Paridade com o React (app.js:853-872): `coletivo` é a flag runtime
   // disjGeral==="Sim" — verdadeira TAMBÉM no multiTorres (é por ela que a
   // ART de projeto sai no documento).

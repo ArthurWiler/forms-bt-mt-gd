@@ -2,16 +2,18 @@
    CEMIG — Tokens do PDF (fonte única do estilo impresso)
    ------------------------------------------------------------
    Este arquivo e os demais de css/pdf/ são o ESTILO OFICIAL DO
-   PDF. Ele é consumido de verdade: o documento é montado em HTML
-   e impresso pelo próprio motor de layout do navegador
-   (window.print + @page), não desenhado por biblioteca.
+   PDF. Ele é consumido de verdade: o documento é montado em HTML e
+   posicionado pelo motor de layout do navegador; o arquivo final é
+   desenhado a partir dessa medição por shared/js/pdf-render.js.
+   Nenhuma medida aqui é repetida em constante no JS.
 
    Todos os valores abaixo foram medidos nos SVGs de referência
    (svg_pdf_bt e svg_pdf_bt - correspondencia). A moldura do mock
    é 595 × 842, que é exatamente A4 a 72 dpi — logo **1 unidade
    do SVG = 1pt em CSS** e as medidas entram aqui sem conversão.
-   É por isso que este arquivo usa `pt` e não `px`: em `px` a
-   mesma medida dependeria do zoom e da escala de impressão.
+   É por isso que este arquivo usa `pt` e não `px`: escrito em pt,
+   1 unidade do CSS é 1 unidade do PDF, e o renderizador só precisa
+   converter a folha inteira por um fator único.
 
    As cores não são novas: o mock usa a paleta que já está em
    css/variables.css. Referenciamos os tokens --cmg-* em vez de
