@@ -165,4 +165,6 @@ function gerarTermoGrupoB(ctx) {
 
   const nomeArq = `Termo_Opcao_Atend_Baixa_Tensao_${(nome || "consumidor").replace(/\s+/g, "_")}.pdf`;
   doc.save(nomeArq);
+  if (typeof mostrarModalPdfExportado === "function")
+    mostrarModalPdfExportado();
 }

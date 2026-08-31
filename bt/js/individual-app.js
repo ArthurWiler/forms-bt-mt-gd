@@ -1305,6 +1305,8 @@ async function exportarPDFPartidaBT() {
   }
   const nomeArquivo = `Analise_Partida_Motores_${nomeCliente.replace(/\s+/g, "_") || "Cliente"}.pdf`;
   doc.save(nomeArquivo);
+  if (typeof mostrarModalPdfExportado === "function")
+    mostrarModalPdfExportado();
 }
 
 /* ===== Exportações ===== */

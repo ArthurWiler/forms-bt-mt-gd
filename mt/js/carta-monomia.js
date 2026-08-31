@@ -178,4 +178,6 @@ async function gerarCartaMonomia() {
   // Nome do arquivo padronizado
   const nomeArq = `Opcao_Faturamento_Monomia_${(nome || "consumidor").replace(/[^\w]+/g, "_")}.pdf`;
   doc.save(nomeArq);
+  if (typeof mostrarModalPdfExportado === "function")
+    mostrarModalPdfExportado();
 }

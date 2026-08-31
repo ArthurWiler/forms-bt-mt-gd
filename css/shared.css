@@ -4617,12 +4617,13 @@ label.restricao-aceite input[type="checkbox"] {
    (shared/js/pdf-sucesso.js). Ícone de confirmação + orientação e
    os dois links do portal no rodapé.
    ============================================================ */
+/* 500px de largura = 452px de conteúdo + 24px de respiro em cada lado.
+   O padding lateral vem do .cmg-modal-conteudo base; aqui só o gap muda. */
 .cemig-form .cmg-modal-sucesso {
   max-width: 500px;
 }
 .cemig-form .cmg-modal-sucesso .cmg-modal-conteudo {
   gap: var(--cmg-space-4, 16px);
-  padding: 40px 32px 24px;
 }
 .cemig-form .cmg-modal-check {
   display: flex;
@@ -4630,7 +4631,7 @@ label.restricao-aceite input[type="checkbox"] {
   color: var(--cmg-green-600, #0f6c58);
 }
 .cemig-form .cmg-modal-sucesso .cmg-modal-rodape {
-  padding: 8px 32px 32px;
+  padding: 8px 24px 32px;
 }
 /* Links do rodapé usam .btn: alinha a altura do texto ao dos botões. */
 .cemig-form .cmg-modal-rodape a.btn {

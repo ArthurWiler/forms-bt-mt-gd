@@ -1040,9 +1040,9 @@ async function gerarPdfDocumento(S) {
   document.body.classList.add("pdf-imprimindo");
 
   /* `afterprint` dispara IGUAL se o usuário salvou o PDF ou clicou
-     em Cancelar, e não há API que separe os dois casos. Por isso o
-     texto do diálogo abaixo não afirma que o download aconteceu —
-     ele serve nos dois desfechos. */
+     em Cancelar, e não há API que separe os dois casos: o diálogo de
+     sucesso entra nos dois desfechos. Se a exportação foi cancelada,
+     basta clicar em Exportar PDF de novo. */
   window.addEventListener(
     "afterprint",
     () => {
@@ -1050,14 +1050,7 @@ async function gerarPdfDocumento(S) {
       doc.remove();
       if (foco && foco.focus) foco.focus();
       if (typeof mostrarModalPdfExportado === "function")
-        mostrarModalPdfExportado({
-          icone: "documento",
-          titulo: "Conclua a exportação",
-          descricao:
-            "Ao salvar o PDF, leve-o impresso junto com o restante dos seus " +
-            "documentos até o posto de atendimento mais próximo. Se a " +
-            "exportação foi cancelada, é só clicar em Exportar PDF novamente.",
-        });
+        mostrarModalPdfExportado();
     },
     { once: true },
   );

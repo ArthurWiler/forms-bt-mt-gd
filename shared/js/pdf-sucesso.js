@@ -1,22 +1,15 @@
 /* ============================================================
    CEMIG — Modal "PDF exportado com sucesso!"
-   Exibido logo após o download do PDF do formulário. Orienta o
+   Exibido logo após a exportação do PDF do formulário. Orienta o
    usuário a levar o documento impresso ao posto de atendimento e
    oferece os dois links de apoio do portal (lista de documentos
    necessários e locais de atendimento).
 
    Reutiliza o componente .cmg-modal de css/shared.css (escopado em
    .cemig-form), montado no <body> e fechado por X/Esc/clique no
-   overlay. Chamado por shared/js/gd-pdf-base.js e pelos PDFs
-   auxiliares após doc.save().
-
-   O texto é PARAMETRIZÁVEL porque nem todo caminho de exportação
-   sabe que o arquivo foi salvo. Quem usa jsPDF chama depois de
-   doc.save() e pode afirmar o sucesso — é o padrão abaixo. Já o
-   PDF do BT (bt/js/pdf-doc.js) sai por window.print(), e o evento
-   `afterprint` dispara igual se o usuário salvou ou cancelou: lá o
-   diálogo entra com texto neutro e sem o ✓, para não afirmar um
-   download que pode não ter acontecido.
+   overlay. É o MESMO diálogo em todos os caminhos de exportação:
+   chamado por shared/js/gd-pdf-base.js e pelos PDFs auxiliares
+   após doc.save(), e por bt/js/pdf-doc.js no afterprint.
    ============================================================ */
 const PDF_SUCESSO_LINKS = {
   documentos:
@@ -24,21 +17,7 @@ const PDF_SUCESSO_LINKS = {
   atendimento: "https://www.cemig.com.br/atendimento/locais-de-atendimento/",
 };
 
-// Glifos do círculo superior: o ✓ afirma conclusão, o documento é
-// neutro. Ambos herdam a cor de .cmg-modal-check.
-const PDF_SUCESSO_ICONES = {
-  check: '<path d="M4 12.5l5.5 5.5L20 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
-  documento:
-    '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 3v5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
-};
-
-function mostrarModalPdfExportado(opts) {
-  const {
-    titulo: textoTitulo = "PDF exportado com sucesso!",
-    descricao: textoDesc = "O download do seu documento foi concluído. Agora, basta levar esse PDF impresso junto com o restante dos seus documentos até o posto de atendimento mais próximo para finalizar o processo.",
-    icone = "check",
-  } = opts || {};
-
+function mostrarModalPdfExportado() {
   // Evita empilhar diálogos quando o usuário exporta mais de uma vez.
   const anterior = document.querySelector(".cmg-modal-overlay[data-pdf-ok]");
   if (anterior) anterior.remove();
@@ -76,17 +55,20 @@ function mostrarModalPdfExportado(opts) {
   check.className = "cmg-modal-check";
   check.innerHTML =
     '<svg width="56" height="56" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
-    (PDF_SUCESSO_ICONES[icone] || PDF_SUCESSO_ICONES.check) +
+    '<path d="M4 12.5l5.5 5.5L20 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
     "</svg>";
 
   const titulo = document.createElement("h2");
   titulo.className = "cmg-modal-titulo";
   titulo.id = "cmg-modal-pdf-titulo";
-  titulo.textContent = textoTitulo;
+  titulo.textContent = "PDF exportado com sucesso!";
 
   const desc = document.createElement("p");
   desc.className = "cmg-modal-desc";
-  desc.textContent = textoDesc;
+  desc.textContent =
+    "O download do seu documento foi concluído. Agora, basta levar esse PDF " +
+    "impresso junto com o restante dos seus documentos até o posto de " +
+    "atendimento mais próximo para finalizar o processo.";
 
   const corpo = document.createElement("div");
   corpo.className = "cmg-modal-conteudo";
