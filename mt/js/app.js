@@ -121,6 +121,13 @@ const fmt = (n, d = 2) =>
         minimumFractionDigits: d,
         maximumFractionDigits: d,
       });
+// <input type="date"> guarda ISO (aaaa-mm-dd); prévia e PDF mostram dd/mm/aaaa.
+const dataBR = (s) => {
+  const m = String(s || "").match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  return m
+    ? `${m[3].padStart(2, "0")}/${m[2].padStart(2, "0")}/${m[1]}`
+    : s || "";
+};
 
 /* ============================================================
    CARDS DE SELEÇÃO — motor de renderização

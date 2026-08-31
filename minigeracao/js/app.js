@@ -18,6 +18,13 @@ let ilhaCargas = null;
 /* ===== util ===== */
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+// <input type="date"> guarda ISO (aaaa-mm-dd); prévia e PDF mostram dd/mm/aaaa.
+const dataBR = (s) => {
+  const m = String(s || "").match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  return m
+    ? `${m[3].padStart(2, "0")}/${m[2].padStart(2, "0")}/${m[1]}`
+    : s || "";
+};
 // Handlers onchange do HTML disparam ANTES do listener do bindInputs —
 // cada handler sincroniza o próprio campo no início (mesma razão do MT).
 function _sync(k) {
@@ -869,6 +876,12 @@ function initCargas() {
     abertos: _accCargas,
     // Grupo A, atendimento trifásico: não há rede mono/bifásica no mini.
     redeMono: () => false,
+    // Os motores do mini são declarados no bloco técnico desta mesma etapa
+    // (cards de motoresGD, js/subestacao.js), que traz também os dados de
+    // partida. Manter o acordeão da ilha faria o usuário declarar o mesmo
+    // motor duas vezes — aqui ele é escondido e state.cargas.mots vira
+    // derivado, por gdProjetarMotoresNaCarga().
+    semMotores: true,
     atividade: _atividadeCargas,
     aoMudar: (c) => {
       state.cargas = c;
@@ -876,6 +889,40 @@ function initCargas() {
     },
   });
   renderResultadoCargaGD();
+}
+/* Projeta os cards de motor do bloco técnico (motoresGD) em
+   state.cargas.mots — a origem única dos motores do mini. `mots` é DERIVADO,
+   nunca digitado: a ilha esconde o acordeão de motores (semMotores).
+   1 card = 1 motor (q: 1), e é a contagem de cards que motorColPorQtd() usa
+   para escolher a coluna c1..c4 da T14/T15.
+   Recalcula a ilha SEM reconstruir o DOM (ilhaCargas.recalcular), para não
+   roubar o foco de quem está digitando no card do motor. */
+function gdProjetarMotoresNaCarga() {
+  if (!state.cargas) state.cargas = {};
+  state.cargas.mots = (motoresGD || [])
+    .filter((m) => m.cv)
+    .map((m) => {
+      const linha = {
+        fase: m.fases === "Monofásico" ? "mono" : "tri",
+        cv: m.cv,
+        q: 1,
+      };
+      // Acima do teto da tabela não existe CV tabelado: o kVA declarado É a
+      // demanda unitária, sem diversidade (ver calcLinha, calc-demanda.js).
+      if (m.cv === GD_CV_ACIMA) linha.kvaDeclarado = m.kva;
+      return linha;
+    });
+  if (ilhaCargas) ilhaCargas.recalcular();
+}
+/* Motor na sentinela sem o kVA: o campo existe com [data-req], mas o
+   CemigMarcadores só cobra o que está VISÍVEL — num card colapsado ele não
+   alcança. Esta é a rede que fecha o gate de exportação. */
+function gdValidarMotoresGD() {
+  return (motoresGD || [])
+    .map((m, i) =>
+      m.cv === GD_CV_ACIMA && !m.kva ? `Motor ${i + 1}: potência (kVA)` : null,
+    )
+    .filter(Boolean);
 }
 // Cards de carga/demanda + escolha do disjuntor (mesmo bloco do BT/micro).
 function renderResultadoCargaGD() {
@@ -1862,6 +1909,9 @@ function validarExportacao() {
   // cards são construídos por JS, então esta é a rede que fecha o que o
   // CemigMarcadores não alcança. Cobre também a quantidade de cubículos.
   faltas.push(...gdValidarSubestacao());
+  // Os motores NÃO dependem do bloco técnico (gdValidarSubestacao desvia cedo
+  // quando ele não é exibido), então a cobrança do kVA vem à parte.
+  faltas.push(...gdValidarMotoresGD());
   if (GD_SOLICITACOES_FORM_CARGA.includes(d.solicitacao)) {
     const c = d.cargas || {};
     const temCarga =
@@ -2049,7 +2099,7 @@ function renderPreviewGD() {
     pvCampo("E-mail", d.email, { step: 1 }) +
     pvCampo("Celular", d.celular, { step: 1 });
   if (d.filiacao) ident += pvCampo("Filiação", d.filiacao, { step: 1 });
-  if (d.nasc) ident += pvCampo("Data de Nascimento", d.nasc, { step: 1 });
+  if (d.nasc) ident += pvCampo("Data de Nascimento", dataBR(d.nasc), { step: 1 });
   if (d.filiacao)
     ident += pvCampo(
       "Equipamentos essenciais? / NIS?",

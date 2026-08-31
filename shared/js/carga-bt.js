@@ -83,7 +83,14 @@ function _cargaToggleExclusivo(mapa, chave, abrir) {
      cfg.redeMono    () => bool (mono/bifásica → lista de disjuntores)
      cfg.atividade   () => "Residencial" | "Comercial" | "Industrial" | ""
      cfg.aoMudar     () => void, chamado a cada alteração
-   Retorna { atualizar } — re-renderiza quando a atividade muda por fora.
+     cfg.semMotores  bool|fn — oculta o acordeão "Motores e cargas
+                     especiais" da lista. Para quem já declara os motores
+                     por fora e apenas PROJETA o resultado em `data.mots`
+                     (o mini, cujo bloco técnico é a única entrada de motor).
+   Retorna { atualizar, recalcular, dados }:
+     atualizar   re-renderiza a ilha (a atividade mudou por fora);
+     recalcular  só refaz as contas e notifica — sem tocar no DOM, para
+                 quem reescreve `data.mots` de fora e não pode perder o foco.
    ------------------------------------------------------------ */
 function montarCargaAcordeao(container, cfg) {
   const opt = (v) => (typeof v === "function" ? v() : v);
@@ -274,7 +281,7 @@ function montarCargaAcordeao(container, cfg) {
       }
       lista.appendChild(acc);
     });
-    lista.appendChild(_accMotores(lista));
+    if (!opt(cfg.semMotores)) lista.appendChild(_accMotores(lista));
   }
   function _accMotores(lista) {
     const open = !!abertos._mot;
@@ -405,7 +412,7 @@ function montarCargaAcordeao(container, cfg) {
       totalEl.innerHTML = `Demanda total dos motores: <strong>${fmt2(r.rD.d)} kVA</strong>`;
   }
   render();
-  return { atualizar: render, dados: () => d };
+  return { atualizar: render, recalcular: notificar, dados: () => d };
 }
 
 /* ------------------------------------------------------------

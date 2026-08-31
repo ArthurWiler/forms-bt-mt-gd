@@ -130,12 +130,12 @@ function validacaoDisjuntoresBT() {
     msg: `Combinação válida: ${tri} tripolar(es) + ${monoBi} mono/bifásico(s) de 63 A.`,
   };
 }
-// "Disjuntor Solicitado" vinculado à carga instalada (somente leitura).
+// "Disjuntor Solicitado" derivado da carga instalada: o campo não é exibido no
+// formulário (era um select travado) — o valor fica só no state, alimentando a
+// prévia e o PDF.
 function atualizarSolicitacaoAuto() {
   const alvo = SOLICITACOES[potenciaPlacaTotalBT() > 75 ? 1 : 0];
   if (state.atend.solicitacao !== alvo) state.atend.solicitacao = alvo;
-  const sel = $(`select[data-k="atend.solicitacao"]`);
-  if (sel) sel.value = alvo;
 }
 
 /* ===== Gates de avanço específicos do fluxo (demais no core) ===== */
@@ -916,7 +916,7 @@ function renderPreviaBT() {
   if (pf) {
     html += pvCampoBT("Filiação", p.filiacao, PG.prop);
     html += pvCampoBT("RG", p.rg, PG.prop);
-    html += pvCampoBT("Data de nascimento", p.nasc, PG.prop);
+    html += pvCampoBT("Data de nascimento", dataBR(p.nasc), PG.prop);
   }
   html += `</div></div>`;
   state.ucsDet.forEach((u, ui) => {
@@ -932,7 +932,11 @@ function renderPreviaBT() {
     html += `</div><div class="previa-grid">`;
     html += pvCampoBT("Tipo de solicitação", u.solicitacao, PG.atend);
     html += pvCampoBT("Atividade principal", u.atividade);
-    html += pvCampoBT("Ramo da atividade", ramoParaPdf(u.ramo));
+    // Ramo só existe fora do Residencial — mesma condição do campo na etapa de
+    // identificação. Sem isto a prévia abria uma linha "Ramo da atividade —"
+    // para toda UC residencial, que não existe na tela-alvo.
+    if (u.atividade !== "Residencial")
+      html += pvCampoBT("Ramo da atividade", ramoParaPdf(u.ramo));
     if (cg.tipoA === "nr" && cg.catA != null)
       html += pvCampoBT("Categoria de atividade", (TABELA_11[cg.catA] || {}).d);
     html += pvCampoBT("Solicitação", state.atend.solicitacao);
@@ -993,30 +997,6 @@ function renderPreviaBT() {
   );
   html += `</div></div>`;
   box.innerHTML = html;
-  // Documentos necessários (derivados do preenchimento)
-  const docsBox = $("#docsNecessarios");
-  if (docsBox) {
-    const docs = listaDocumentosBT({
-      pessoaFisica: pf,
-      pessoaJuridica: pessoaJuridica(),
-      coletivo: false,
-      multiTorres: false,
-      hibrido: false,
-      obra: o,
-      atend: state.atend,
-      ucsDet: state.ucsDet,
-      ucBlocos: [],
-      blocos: [],
-      exibeTermoGrupoB: exibeTermoGrupoBBT(),
-      demandaTotalGeral: demandaTotalGeralBT(),
-      temMotoresPesados: motoresPesadosBT().length > 0,
-    });
-    docsBox.innerHTML = docs
-      .map(
-        (dd) => `<div class="preview-item"><span class="v">${dd}</span></div>`,
-      )
-      .join("");
-  }
   // Pendências + botão exportar
   const v = validacaoObrigatoriosBT();
   const faltasBox = $("#previaFaltas");

@@ -46,7 +46,7 @@ function gerarPdfMiniGD(d) {
     // Campos de Pessoa Física (só saem se preenchidos — CPF válido).
     ...(d.filiacao ? [["Filiação", d.filiacao]] : []),
     ...(d.rg ? [["RG / RNE / RANI", d.rg]] : []),
-    ...(d.nasc ? [["Data de Nascimento", d.nasc]] : []),
+    ...(d.nasc ? [["Data de Nascimento", dataBR(d.nasc)]] : []),
     ...(d.filiacao ? [["Equipamentos essenciais?", d.laudoMedico]] : []),
     ...(d.filiacao ? [["NIS (Tarifa Social)?", d.nis]] : []),
     ...(d.nis === "Sim" && d.numNis ? [["Número do NIS", d.numNis]] : []),
@@ -249,7 +249,7 @@ function gerarPdfMiniGD(d) {
     .map((m, i) => [
       "Motor " + (i + 1),
       m.fases || "—",
-      (m.cv || "—") + " CV",
+      gdRotuloPotenciaMotor(m),
       m.dispositivo || "—",
     ]);
   if (motoRows.length) {
@@ -293,7 +293,7 @@ function gerarPdfMiniGD(d) {
         cargaRows.push([
           `Motor ${i + 1} (${m.fase === "mono" ? "Mono" : "Tri"})`,
           String(m.q),
-          `${m.cv} CV`,
+          gdRotuloPotenciaMotor(m),
         ]);
     });
     (c.extras || []).forEach((m, i) => {
@@ -635,7 +635,9 @@ function gerarPdfAnalisePartidaGD(d) {
         const ap = ensureAnalisePartidaGD(m);
         const c = CalculoMT.calcularMotor(
           {
-            potenciaCV: m.cv,
+            // Na sentinela ("Acima de {teto} CV") o CV vem do kVA declarado —
+            // ver _cvEfetivoGD() em js/subestacao.js.
+            potenciaCV: _cvEfetivoGD(m),
             fp: m.fp,
             rendimento: m.rend,
             tensaoV: m.volts,
@@ -668,7 +670,7 @@ function gerarPdfAnalisePartidaGD(d) {
         P.gap(1);
         sec("DADOS ELÉTRICOS");
         kvPairs([
-          ["Potência do motor", un(m.cv, "CV")],
+          ["Potência do motor", m.cv ? gdRotuloPotenciaMotor(m) : ""],
           ["Tensão no motor", un(m.volts, "V")],
           [
             "Corrente de partida (sem dispositivo de partida)",

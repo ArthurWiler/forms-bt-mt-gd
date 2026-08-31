@@ -3574,12 +3574,14 @@ label.restricao-aceite input[type="checkbox"] {
   box-shadow: 0 0 0 6px rgba(15, 108, 88, 0.14);
 }
 
-/* Aceite das Orientações ("Declaro que li…") — layout do rótulo. */
+/* Aceite das Orientações ("Declaro que li…") — layout do rótulo. O
+   `margin-top` é o GAP do fim do card: mesma medida que separa a última
+   divisória da lista do aviso (ver `.orient-list + .cmg-aviso`). */
 .cemig-form .aceite-orient {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 16px;
+  margin-top: var(--cmg-space-6);
   cursor: pointer;
   font-family: var(--cmg-font-family);
   font-size: var(--cmg-fs-body-lg, 16px);
@@ -3597,11 +3599,13 @@ label.restricao-aceite input[type="checkbox"] {
      • form shells (BT/Micro/Mini): li.orient-item > span.orient-num + p
      • MT family (MT/Loteamento/Desistência): li > span.bullet + div
    The marker is a large dark-green number (no badge), top-aligned with the
-   item text, with a thin divider between items. The visible number is a CSS
-   counter (decimal-leading-zero → 01, 02…) so it is zero-padded without
-   touching the JS/HTML; the original digit in the span is hidden via
-   font-size:0 and restored on the ::before. Open Sans is loaded on every form
-   page and is the --cmg-font-family. */
+   item text. Every item sits BETWEEN dividers (Figma spec): the top one comes
+   from the item itself — the first one included — and the last item closes the
+   list with a bottom one. The visible number is a CSS counter
+   (decimal-leading-zero → 01, 02…) so it is zero-padded without touching the
+   JS/HTML; the original digit in the span is hidden via font-size:0 and
+   restored on the ::before. Open Sans is loaded on every form page and is the
+   --cmg-font-family. */
 .cemig-form .orient-list {
   counter-reset: orient;
   list-style: none;
@@ -3618,8 +3622,17 @@ label.restricao-aceite input[type="checkbox"] {
   border-radius: 0;
   background: transparent;
 }
-.cemig-form .orient-item:first-child {
-  border-top: none;
+.cemig-form .orient-item:last-child {
+  border-bottom: 1px solid var(--cmg-divider);
+}
+/* Closing divider → aviso → aceite: the gap lives HERE because `.cmg-aviso` is
+   global and keeps `margin:0` (the surrounding container always owns the
+   spacing). Same measure as the `.aceite-orient` margin-top, so the tail of the
+   card reads evenly on the forms that carry the banner (Micro, Mini,
+   Desistência) and on the ones that go straight from the last divider to the
+   checkbox (BT, MT, Loteamento). */
+.cemig-form .orient-list + .cmg-aviso {
+  margin-top: var(--cmg-space-6);
 }
 .cemig-form .orient-num {
   flex: none;

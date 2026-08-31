@@ -57,8 +57,14 @@ function calcDemandaResultados(d, redeMono) {
   const todos = [...mots, ...extras];
   const qtdTotal = todos.reduce((s, m) => s + (parseInt(m.q) || 0), 0);
   const col = motorColPorQtd(qtdTotal);
+  // `kvaDeclarado`: motor acima do teto das tabelas T14/T15, cuja potência o
+  // usuário informa em kVA. Entra como demanda unitária direta, sem fator de
+  // diversidade — igual ao que a T15 já faz de 50 CV para cima (c1..c4 iguais).
+  // Chave própria (não `kva`) porque a linha devolvida já usa `kva` para o
+  // total, e o spread de `...m` a sobrescreveria com outro significado.
   const calcLinha = (m) => {
-    const kvaUnit = motorKvaUnit(m.fase, m.cv, col);
+    const decl = parseFloat(m.kvaDeclarado);
+    const kvaUnit = isFinite(decl) ? decl : motorKvaUnit(m.fase, m.cv, col);
     return { ...m, col, kvaUnit, kva: (parseInt(m.q) || 0) * kvaUnit };
   };
   const det = mots.map(calcLinha);

@@ -53,7 +53,7 @@ function conteudoFormularioMT() {
     _c("CPF/CNPJ", state.cpfCnpj, { step: 1 }),
     _c("Filiação", state.filiacao, { step: 1 }),
     _c("RG / RNE / RANI", state.rg, { step: 1 }),
-    _c("Data de Nascimento", state.nasc, { step: 1 }),
+    _c("Data de Nascimento", dataBR(state.nasc), { step: 1 }),
     _c("Laudo médico?", state.laudoMedico, { step: 1 }),
     _c("NIS (Tarifa Social)?", state.nis, { step: 1 }),
   ];

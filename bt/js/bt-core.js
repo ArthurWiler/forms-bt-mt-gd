@@ -28,6 +28,16 @@ function _setPath(path, v) {
   for (let i = 0; i < ks.length - 1; i++) o = o[ks[i]];
   o[ks[ks.length - 1]] = v;
 }
+// <input type="date"> guarda ISO (aaaa-mm-dd); prévia e PDF mostram dd/mm/aaaa.
+// Vive aqui, e não dentro do construtor do PDF, porque as duas telas de prévia
+// (individual e coletivo) precisam do mesmo formato que o papel.
+const dataBR = (s) => {
+  const m = String(s || "").match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  return m
+    ? `${m[3].padStart(2, "0")}/${m[2].padStart(2, "0")}/${m[1]}`
+    : s || "";
+};
+
 // Handlers inline disparam ANTES do listener do bindInputs — sincroniza.
 function _sync(k) {
   const el = $(`[data-k="${k}"]`);

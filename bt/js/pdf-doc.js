@@ -255,12 +255,8 @@ function _pdfBlocosBT(S) {
 
   const B = _pdfConstrutor();
 
-  const dataBR = (s) => {
-    const m = String(s || "").match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
-    return m
-      ? `${m[3].padStart(2, "0")}/${m[2].padStart(2, "0")}/${m[1]}`
-      : s || "";
-  };
+  /* dataBR (aaaa-mm-dd → dd/mm/aaaa) mora em js/bt-core.js: a prévia mostra a
+     mesma data que o papel. */
 
   const coordFmt = () => {
     const f = (v) => {

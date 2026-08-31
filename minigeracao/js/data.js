@@ -52,6 +52,13 @@ const GD_RAMAL = ["Aéreo", "Subterrâneo"];
    abreviados ("Nº 1") que esta lista trazia. */
 // Transformadores: campo livre (qualquer potência, inclusive > RT, ex.: 1500/2000 kVA). Sem lista fixa.
 const GD_TIPO_LIG_TRAFO = ["∆-Y", "∆-∆", "Y-∆", "Y-Y"];
+/* Valor sentinela do <select> de CV do motor: "Acima de {teto} CV", onde o
+   teto é o último CV da tabela da fase (75 CV na T15 trifásica, 12,5 CV na T14
+   monofásica). Escolhido acima do teto, o CV deixa de existir nas tabelas e a
+   potência passa a ser informada em kVA no próprio card — ver _cvEfetivoGD()
+   e a projeção em state.cargas.mots (gdProjetarMotoresNaCarga). Texto, não
+   número, para nunca colidir com um CV real nem sobreviver a um parseFloat. */
+const GD_CV_ACIMA = "acima";
 // Dispositivos de partida de motor — mesma lista do MT (mt/js/dados.js) e da
 // microgeração, usada pelos cards de "Motores e cargas especiais" da etapa 5
 // (Formulário de Carga), de onde saíram os do bloco técnico da subestação.

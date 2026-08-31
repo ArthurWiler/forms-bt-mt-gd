@@ -2953,15 +2953,9 @@ function _mkUnidadeCard(bi, ui, modoCalc) {
     if (b.ucs.length > 1) f.setAttribute("data-noopt", "");
     grid.appendChild(f);
   }
-  {
-    // Múltiplas torres: o tipo de solicitação é sempre Conexão Nova (travado).
-    u.solicitacao = "Conexão Nova";
-    const sel = _selectDe(["Conexão Nova"], u.solicitacao, () => {});
-    sel.disabled = true;
-    const f = _campo("Tipo de solicitação", sel, "field--float");
-    f.setAttribute("data-noopt", "");
-    grid.appendChild(f);
-  }
+  // Múltiplas torres: o tipo de solicitação é sempre Conexão Nova. O campo não
+  // é exibido (era um select travado); só o valor vai para a prévia e o PDF.
+  u.solicitacao = "Conexão Nova";
   if (areaComumNoRender) {
     normalizarAreaComumUC(u);
   } else {
@@ -3759,7 +3753,7 @@ function renderPreviaColetivo() {
   if (!MULTI && pf) {
     html += pvCampoBT("Filiação", p.filiacao);
     html += pvCampoBT("RG", p.rg);
-    html += pvCampoBT("Data de nascimento", p.nasc);
+    html += pvCampoBT("Data de nascimento", dataBR(p.nasc));
   }
   html += `</div></div><hr class="previa-divider" />`;
   // Correspondência vai para o FIM da prévia em todos os fluxos (ordem da
@@ -3941,30 +3935,6 @@ function renderPreviaColetivo() {
       };
       renderTorreExterna();
     }
-  }
-  // Documentos necessários
-  const docsBox = $("#docsNecessarios");
-  if (docsBox) {
-    const docs = listaDocumentosBT({
-      pessoaFisica: pf,
-      pessoaJuridica: pessoaJuridica(),
-      coletivo: coletivoF(),
-      multiTorres: MULTI,
-      hibrido: hibridoF(),
-      obra: o,
-      atend: state.atend,
-      ucsDet: [],
-      ucBlocos: state.ucBlocos,
-      blocos: state.blocos,
-      exibeTermoGrupoB: false,
-      demandaTotalGeral: demandaTotalGeralF(),
-      temMotoresPesados: false,
-    });
-    docsBox.innerHTML = docs
-      .map(
-        (dd) => `<div class="preview-item"><span class="v">${dd}</span></div>`,
-      )
-      .join("");
   }
   // Pendências + botão exportar
   const v = validacaoObrigatoriosColetivo();

@@ -440,6 +440,9 @@ function novoMotorGD() {
     tipo: "Motor",
     fases: "Trifásico",
     cv: "",
+    // Potência em kVA, pedida SÓ quando cv === GD_CV_ACIMA (motor acima do
+    // teto da tabela da fase). Ver _opcoesCVGD() e _cvEfetivoGD().
+    kva: "",
     fp: "",
     rend: "",
     volts: "",
@@ -453,9 +456,64 @@ function novoMotorGD() {
    trifásico acima de 50 CV ou monofásico acima de 15 CV. Trifásico é o
    padrão, então qualquer valor diferente de "Monofásico" cai no teto de 50. */
 function motorPesadoGD(m) {
+  // A sentinela vem ANTES do parseFloat: parseFloat(GD_CV_ACIMA) é NaN e
+  // cairia em "não pesado", escondendo justamente os campos (FP, rendimento,
+  // tensão, IP/IN) de que o cálculo do motor acima do teto depende.
+  if (m.cv === GD_CV_ACIMA) return true;
   const cv = parseFloat(m.cv) || 0;
   if (!cv) return false;
   return m.fases === "Monofásico" ? cv > 15 : cv > 50;
+}
+/* Tabela de CVs da fase do motor (T14 monofásica / T15 trifásica, de
+   shared/js/load-form-data.js). Aceita as DUAS formas em que um motor
+   circula: o card do bloco técnico (`fases`: "Monofásico"/"Trifásico") e a
+   linha projetada em state.cargas.mots (`fase`: "mono"/"tri"). */
+function _tabelaCVGD(m) {
+  const mono = m.fases === "Monofásico" || m.fase === "mono";
+  return mono ? MOTOR_MONO : MOTOR_TRI;
+}
+/* Rótulo do último CV da tabela — o teto que a sentinela anuncia. */
+function _tetoCVGD(m) {
+  const tab = _tabelaCVGD(m);
+  return tab[tab.length - 1].l;
+}
+/* Opções do <select> de CV: os CVs tabelados da fase (valor = r.cv, rótulo =
+   r.l, mesmo par que a ilha de cargas usa) e, no fim, a sentinela "Acima de
+   {teto} CV", onde a potência passa a ser informada em kVA. */
+function _opcoesCVGD(m) {
+  const opts = _tabelaCVGD(m).map(
+    (r) =>
+      `<option value="${r.cv}"${String(m.cv) === String(r.cv) ? " selected" : ""}>${r.l}</option>`,
+  );
+  return (
+    '<option value=""></option>' +
+    opts.join("") +
+    `<option value="${GD_CV_ACIMA}"${m.cv === GD_CV_ACIMA ? " selected" : ""}>Acima de ${_tetoCVGD(m)} CV</option>`
+  );
+}
+/* Potência do motor como texto — tela e PDF. Fora da sentinela devolve o
+   RÓTULO da tabela ("1/6", "12,5"), não o valor cru do <option>. */
+function gdRotuloPotenciaMotor(m) {
+  if (!m || (!m.cv && m.cv !== 0)) return "—";
+  if (m.cv === GD_CV_ACIMA) {
+    const kva = m.kva || m.kvaDeclarado;
+    return `> ${_tetoCVGD(m)} CV` + (kva ? ` · ${kva} kVA` : "");
+  }
+  const row = _tabelaCVGD(m).find((r) => String(r.cv) === String(m.cv));
+  return `${row ? row.l : m.cv} CV`;
+}
+/* CV que vai ao CalculoMT. Na sentinela não há CV tabelado: inverte-se a
+   fórmula da planilha — potkVA = cv·736 / (fp·rend·1000) — para obter o CV
+   equivalente ao kVA declarado, de modo que calcularMotor() rode sem
+   alteração e devolva potkVA exatamente igual ao informado. Sem fp/rend o
+   cálculo fica em branco, como já acontece com motor incompleto. */
+function _cvEfetivoGD(m) {
+  if (m.cv !== GD_CV_ACIMA) return m.cv;
+  const kva = parseFloat(m.kva);
+  const fp = parseFloat(m.fp);
+  const rend = parseFloat(m.rend);
+  if (!kva || !fp || !rend) return "";
+  return (kva * fp * rend * 1000) / 736;
 }
 /* Ficha de partida do motor pesado — mesmo formato do MT, inclusive as três
    chaves (fpPartida, dispositivo, tap) que lá só a página "Análise de Partida"
@@ -493,6 +551,9 @@ function sincronizarMotores() {
   state.motores = motoresGD;
   if (!motoresGDAbertos.size && n) motoresGDAbertos.add(0);
   renderMotoresGD();
+  // state.cargas.mots é DERIVADO destes cards — ver gdProjetarMotoresNaCarga()
+  // (js/app.js): a ilha de cargas do mini não tem mais acordeão de motores.
+  gdProjetarMotoresNaCarga();
 }
 function toggleMotorGD(i) {
   motoresGDAbertos.has(i)
@@ -512,7 +573,7 @@ function _motorCalcHTMLGD(c) {
 function _calcMotorGD(m) {
   return CalculoMT.calcularMotor(
     {
-      potenciaCV: m.cv,
+      potenciaCV: _cvEfetivoGD(m),
       fp: m.fp,
       rendimento: m.rend,
       tensaoV: m.volts,
@@ -554,6 +615,7 @@ function renderMotoresGD() {
       (d) => `<option ${m.dispositivo === d ? "selected" : ""}>${d}</option>`,
     ).join("");
     const compensadora = m.dispositivo === "Chave Compensadora";
+    const sentinela = m.cv === GD_CV_ACIMA;
     // Motor pesado (trifásico acima de 50 CV / monofásico acima de 15 CV) exige
     // o conjunto completo de dados de partida, exibido no próprio card.
     const pesado = motorPesadoGD(m);
@@ -572,8 +634,9 @@ function renderMotoresGD() {
       </button>
       <div class="motor-card-body" id="motorGdCardBody${i}"${aberto ? "" : " hidden"}>
         <div class="motor-card-grid">
-          <div class="field"><label>Fases</label><select onchange="motoresGD[${i}].fases=this.value;renderMotoresGD()"><option ${m.fases === "Monofásico" ? "selected" : ""}>Monofásico</option><option ${m.fases !== "Monofásico" ? "selected" : ""}>Trifásico</option></select></div>
-          <div class="field"><label>CV</label><input type="number" step="any" value="${m.cv}" placeholder=" " oninput="motoresGD[${i}].cv=this.value;atualizarCalculosMotorGD(this)" onchange="atualizarCalculosMotorGD(this)"></div>
+          <div class="field"><label>Fases</label><select onchange="onFasesMotorGD(this,${i})"><option ${m.fases === "Monofásico" ? "selected" : ""}>Monofásico</option><option ${m.fases !== "Monofásico" ? "selected" : ""}>Trifásico</option></select></div>
+          <div class="field"><label>CV</label><select onchange="onCvMotorGD(this,${i})">${_opcoesCVGD(m)}</select></div>
+          <div class="field motor-kva-field" style="display:${sentinela ? "" : "none"}"><label>Potência do motor (kVA)</label><input type="number" step="any" data-req value="${_escAttrGD(m.kva)}" placeholder=" " oninput="motoresGD[${i}].kva=this.value;atualizarCalculosMotorGD(this);gdProjetarMotoresNaCarga()"></div>
           <div class="field"><label>Disp. Partida</label><select onchange="onDispositivoMotorGD(this,${i})"><option value=""></option>${dispOpts}</select></div>
           <div class="field motor-tap-field" style="display:${compensadora ? "" : "none"}"><label>Tap (%)</label><input type="number" step="any" value="${m.tap || ""}" placeholder=" " oninput="motoresGD[${i}].tap=this.value"></div>
         </div>
@@ -612,6 +675,31 @@ function atualizarCalculosMotorGD(inputEl) {
   setCalc("iNominal", _fmtGD(c.iNominal));
   setCalc("iPartida", _fmtGD(c.iPartida));
   setCalc("ipPrimario", c.ipPrimario == null ? "—" : _fmtGD(c.ipPrimario));
+}
+/* Troca de fase: a tabela de CVs muda junto (60 CV existe na T15 trifásica e
+   não na T14 monofásica). Um CV numérico que não sobrevive à tabela nova é
+   limpo — a sentinela sobrevive, só o teto do rótulo muda. */
+function onFasesMotorGD(selectEl, i) {
+  const m = motoresGD[i];
+  if (!m) return;
+  m.fases = selectEl.value;
+  if (
+    m.cv &&
+    m.cv !== GD_CV_ACIMA &&
+    !_tabelaCVGD(m).some((r) => String(r.cv) === String(m.cv))
+  )
+    m.cv = "";
+  renderMotoresGD();
+  gdProjetarMotoresNaCarga();
+}
+/* Troca de CV: reconstrói o card (a sentinela revela o campo kVA e sempre
+   marca o motor como pesado) e reprojeta os motores no formulário de carga. */
+function onCvMotorGD(selectEl, i) {
+  const m = motoresGD[i];
+  if (!m) return;
+  m.cv = selectEl.value;
+  renderMotoresGD();
+  gdProjetarMotoresNaCarga();
 }
 /* Mostra/oculta o sub-campo Tap (%) isolado no card alterado, sem reconstruir o
    contêiner geral. */
