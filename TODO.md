@@ -115,7 +115,7 @@ A página mais complexa — 22 scripts, 16 etapas. Se ela passar, as outras são
 Ordem sugerida, da menor para a maior, deixando as complexas por último:
 
 - [ ] `index.html` (3 scripts) · `desistencia/` (2) · `loteamento/` (10)
-- [ ] `mt/` (15) · `minigeracao/` (18)
+- [ ] `mt/` (17) · `minigeracao/` (18)
 - [ ] `bt/index.html` (21) · `microgeracao/` (24)
 
 ### E6 · Internalizar as bibliotecas de terceiros

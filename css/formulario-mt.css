@@ -416,98 +416,16 @@
   border-radius: var(--cmg-radius-pill);
   white-space: nowrap;
 }
-/* Status do transformador (só em finalidade ≠ Conexão Nova): distingue o
-   equipamento que entra novo daquele que substitui um existente. */
-.cemig-mtform .trafo-card-head .trafo-status,
-.cemig-microgd .trafo-card-head .trafo-status,
-.cemig-minigd .trafo-card-head .trafo-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  font-weight: var(--cmg-fw-bold);
-  line-height: 1;
-  padding: 4px 9px;
-  border-radius: var(--cmg-radius-pill);
-  white-space: nowrap;
-}
-.cemig-mtform .trafo-card-head .trafo-status::before,
-.cemig-microgd .trafo-card-head .trafo-status::before,
-.cemig-minigd .trafo-card-head .trafo-status::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-}
-.cemig-mtform .trafo-card-head .trafo-status.is-novo,
-.cemig-microgd .trafo-card-head .trafo-status.is-novo,
-.cemig-minigd .trafo-card-head .trafo-status.is-novo {
-  background: #e6f4ec;
-  color: #12784a;
-}
-.cemig-mtform .trafo-card-head .trafo-status.is-substituido,
-.cemig-microgd .trafo-card-head .trafo-status.is-substituido,
-.cemig-minigd .trafo-card-head .trafo-status.is-substituido {
-  background: #fdf3d8;
-  color: #96690a;
-}
-/* Cubículo já existente — neutro: não é "novo" nem uma troca de equipamento. */
-.cemig-mtform .trafo-card-head .trafo-status.is-existente,
-.cemig-microgd .trafo-card-head .trafo-status.is-existente,
-.cemig-minigd .trafo-card-head .trafo-status.is-existente {
-  background: var(--cmg-neutral-200);
-  color: var(--cmg-neutral-700);
-}
-/* Badge de status ao lado do título "Transformador N" dentro do cubículo. */
+/* A forma do chip de situação (Novo / Substituído / Mantido / Já existente)
+   vive no shared.css — `.cemig-form .trafo-status` —, porque a prévia usa o
+   MESMO componente fora do cabeçalho do card. Aqui fica só o ajuste de
+   posição do chip ao lado do título "Transformador N" dentro do cubículo:
+   afastamento e alinhamento à linha de texto. */
 .cemig-mtform .cub-trafo-titulo .trafo-status,
-.cemig-minigd .cub-trafo-titulo .trafo-status,
 .cemig-microgd .cub-trafo-titulo .trafo-status,
 .cemig-minigd .cub-trafo-titulo .trafo-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
   margin-left: 10px;
-  font-size: 11px;
-  font-weight: var(--cmg-fw-bold);
-  line-height: 1;
-  padding: 4px 9px;
-  border-radius: var(--cmg-radius-pill);
-  white-space: nowrap;
   vertical-align: middle;
-}
-.cemig-mtform .cub-trafo-titulo .trafo-status::before,
-.cemig-minigd .cub-trafo-titulo .trafo-status::before,
-.cemig-microgd .cub-trafo-titulo .trafo-status::before,
-.cemig-minigd .cub-trafo-titulo .trafo-status::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-}
-.cemig-mtform .cub-trafo-titulo .trafo-status.is-novo,
-.cemig-minigd .cub-trafo-titulo .trafo-status.is-novo,
-.cemig-microgd .cub-trafo-titulo .trafo-status.is-novo,
-.cemig-minigd .cub-trafo-titulo .trafo-status.is-novo {
-  background: #e6f4ec;
-  color: #12784a;
-}
-.cemig-mtform .cub-trafo-titulo .trafo-status.is-substituido,
-.cemig-minigd .cub-trafo-titulo .trafo-status.is-substituido,
-.cemig-microgd .cub-trafo-titulo .trafo-status.is-substituido,
-.cemig-minigd .cub-trafo-titulo .trafo-status.is-substituido {
-  background: #fdf3d8;
-  color: #96690a;
-}
-/* "Mantido" (3ª opção, só nos trafos de cubículo): neutro, como o badge de
-   cubículo já existente — o equipamento permanece como está. */
-.cemig-mtform .cub-trafo-titulo .trafo-status.is-existente,
-.cemig-minigd .cub-trafo-titulo .trafo-status.is-existente,
-.cemig-microgd .cub-trafo-titulo .trafo-status.is-existente,
-.cemig-minigd .cub-trafo-titulo .trafo-status.is-existente {
-  background: var(--cmg-neutral-200);
-  color: var(--cmg-neutral-700);
 }
 /* Radios "Manter / Trocar este transformador / Novo transformador" e "Cubículo
    já existente / novo": usam o componente canônico (.toggle-group/.toggle-btn em

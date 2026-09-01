@@ -770,9 +770,12 @@ label.restricao-aceite input[type="checkbox"] {
   margin-top: var(--cmg-space-1);
 }
 
-/* ---- Prévia: painel de torre (múltiplas torres) ----
+/* ---- Prévia: painel de item repetido ----
+   Nome canônico do bloco cinza que agrupa UM item de uma lista dentro da
+   prévia: torre no BT, cubículo e motor no MT. Antes chamava-se
+   `.previa-torre`, nome que só descrevia o primeiro uso.
    Figma: surface neutra/50, padding 16, gap 24 entre título, campos e tabela. */
-.previa-torre {
+.previa-painel {
   display: flex;
   flex-direction: column;
   gap: var(--cmg-space-6);
@@ -781,13 +784,13 @@ label.restricao-aceite input[type="checkbox"] {
   margin-bottom: var(--cmg-space-4);
   background: var(--cmg-neutral-50);
 }
-.previa-torre-head {
+.previa-painel-head {
   display: flex;
   align-items: center;
   gap: var(--cmg-space-2);
 }
 /* Figma: subtítulo em peso regular (400); o destaque fica no chip. */
-.previa-torre-titulo {
+.previa-painel-titulo {
   font-family: var(--cmg-font-family);
   font-size: var(--cmg-fs-subtitle);
   line-height: var(--cmg-lh-subtitle);
@@ -795,7 +798,7 @@ label.restricao-aceite input[type="checkbox"] {
   letter-spacing: var(--cmg-ls-wide);
   color: var(--cmg-text-strong);
 }
-.previa-torre-chip {
+.previa-painel-chip {
   font-family: var(--cmg-font-family);
   font-size: 12px;
   font-weight: var(--cmg-fw-bold, 700);
@@ -808,26 +811,179 @@ label.restricao-aceite input[type="checkbox"] {
 }
 /* O gap do painel já separa os campos da tabela — sem margem extra.
    Figma: campos com gutter de linha 24 e de coluna 16. */
-.previa-torre .previa-grid {
+.previa-painel .previa-grid {
   margin-bottom: 0;
   gap: var(--cmg-space-6) var(--cmg-space-4);
 }
 /* Figma: rótulo em corpo/grande (16px) e valor em neutra/600 (mesma família
    do rótulo, só o peso muda) — dentro do painel da torre. */
-.previa-torre .previa-campo-label {
+.previa-painel .previa-campo-label {
   font-size: var(--cmg-fs-body-lg);
   line-height: var(--cmg-lh-body-lg);
   color: var(--cmg-neutral-600);
 }
-.previa-torre .previa-campo-valor {
+.previa-painel .previa-campo-valor {
   color: var(--cmg-neutral-600);
 }
 /* Bloco que vem DEPOIS dos campos dentro de uma seção da prévia (a
    tabela de unidades do agrupamento coletivo, logo abaixo da grade):
    sem isto os dois se encostam. No painel da torre esse respiro já vem
-   do gap do .previa-torre, então a regra é só para a seção. */
+   do gap do .previa-painel, então a regra é só para a seção. */
 .previa-secao-bloco {
   margin-top: var(--cmg-space-6);
+}
+
+/* ---- Prévia: subtítulo dentro de uma seção ----
+   Divide uma seção longa em blocos nomeados ("Dados do proprietário",
+   "Dados dos transformadores", "Motores e cargas especiais"…), no mesmo
+   verde do título da seção, um degrau abaixo na hierarquia (16px). */
+.previa-subtitulo {
+  margin: var(--cmg-space-6) 0 var(--cmg-space-4);
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-body-lg);
+  line-height: var(--cmg-lh-body-lg);
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: var(--cmg-green-600);
+}
+/* O primeiro subtítulo vem logo abaixo do título da seção, que já traz a
+   sua margem inferior — sem isto o vão dobra. */
+.previa-secao-titulo + .previa-subtitulo {
+  margin-top: 0;
+}
+
+/* ---- Prévia: bloco de item SEM painel ----
+   Título de um item repetido que não ganha fundo próprio (o transformador
+   dentro da seção ou do painel do cubículo): rótulo + chip de situação +
+   lápis, seguido dos cartões do item. */
+.previa-bloco {
+  margin-top: var(--cmg-space-4);
+}
+.previa-bloco-titulo {
+  display: flex;
+  align-items: center;
+  gap: var(--cmg-space-2);
+  margin-bottom: var(--cmg-space-2);
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-body-lg);
+  line-height: var(--cmg-lh-body-lg);
+  letter-spacing: var(--cmg-ls-tight);
+  color: var(--cmg-text-strong);
+}
+
+/* Cartões-resumo de largura livre: em vez das 3 colunas fixas da
+   .previa-cards, o trilho é dimensionado pelo espaço disponível. `auto-fill`
+   (e não `auto-fit`) mantém a largura do cartão do Figma mesmo quando o item
+   tem só dois dados — as colunas vazias ficam vazias, sem esticar. */
+.previa-cards--auto {
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+}
+/* Linha de setas entre os cartões do estado ATUAL e os do estado NOVO
+   (transformador substituído): uma seta por coluna, alinhada aos cartões. */
+.previa-setas {
+  display: grid;
+  /* Mesmo trilho da .previa-cards--auto acima e abaixo, para cada seta cair
+     no eixo do seu par de cartões. */
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+  gap: var(--cmg-space-4);
+  margin: calc(var(--cmg-space-2) * -1) 0 var(--cmg-space-2);
+  color: var(--cmg-green-600);
+  text-align: center;
+  font-size: var(--cmg-fs-body-lg);
+  line-height: var(--cmg-lh-body-lg);
+}
+
+/* ---- Prévia: cartão de mídia (imagem escolhida pelo usuário) ----
+   Modelo de subestação e desenho do ramal de entrada. `--linha` põe a
+   imagem à esquerda do rótulo (subestação); sem modificador a imagem
+   ocupa a largura toda e a legenda vem abaixo (ramal). */
+.previa-midia {
+  border: 1px solid var(--cmg-neutral-200);
+  border-radius: var(--cmg-radius);
+  background: var(--cmg-surface);
+  overflow: hidden;
+}
+.previa-midia img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.previa-midia-legenda {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--cmg-space-2);
+  padding: var(--cmg-space-3) var(--cmg-space-4);
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-body);
+  line-height: var(--cmg-lh-body);
+  letter-spacing: var(--cmg-ls-tight);
+  color: var(--cmg-text);
+}
+.previa-midia-legenda b {
+  color: var(--cmg-text-strong);
+}
+.previa-midia-legenda .previa-edit {
+  margin-left: var(--cmg-space-1);
+}
+/* Variante em linha: miniatura à esquerda, rótulo à direita, largura pelo
+   conteúdo (o cartão não estica na largura do card da prévia). */
+.previa-midia--linha {
+  display: flex;
+  align-items: stretch;
+  width: fit-content;
+  max-width: 100%;
+}
+.previa-midia--linha img {
+  width: 168px;
+  height: 116px;
+  object-fit: contain;
+  background: var(--cmg-neutral-50);
+  flex: none;
+}
+.previa-midia--linha .previa-midia-legenda {
+  align-items: center;
+  padding: var(--cmg-space-4) var(--cmg-space-6);
+}
+/* O desenho do ramal é um traço fino sobre fundo branco: a legenda ganha um
+   filete para não colar na imagem. */
+.previa-midia:not(.previa-midia--linha) .previa-midia-legenda {
+  border-top: 1px solid var(--cmg-neutral-200);
+}
+
+/* ---- Chip de situação (Novo / Substituído / Mantido / Já existente) ----
+   Fonte única: nasceu nos cards de transformador e de cubículo do MT
+   (e das GDs) e é reusado pela prévia, então vive aqui e não em
+   `formulario-mt.css`. Ponto colorido + rótulo, em pílula. */
+.cemig-form .trafo-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: var(--cmg-fw-bold);
+  line-height: 1;
+  padding: 4px 9px;
+  border-radius: var(--cmg-radius-pill);
+  white-space: nowrap;
+}
+.cemig-form .trafo-status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.cemig-form .trafo-status.is-novo {
+  background: #e6f4ec;
+  color: #12784a;
+}
+.cemig-form .trafo-status.is-substituido {
+  background: #fdf3d8;
+  color: #96690a;
+}
+/* "Mantido" / "Já existente" — neutro: não é equipamento novo nem troca. */
+.cemig-form .trafo-status.is-existente {
+  background: var(--cmg-neutral-200);
+  color: var(--cmg-neutral-700);
 }
 
 /* Tabela de UCs da torre — rola horizontalmente em telas estreitas.
@@ -896,7 +1052,7 @@ label.restricao-aceite input[type="checkbox"] {
   gap: var(--cmg-space-2);
 }
 /* Paginação específica da tabela de UCs da torre: compacta e junto à tabela.
-   O painel .previa-torre já dá gap de 24px entre a tabela e este bloco, então
+   O painel .previa-painel já dá gap de 24px entre a tabela e este bloco, então
    a margem padrão da .paginacao é anulada e os controles ficam menores. Os
    seletores levam .cemig-form para vencer os padrões .cemig-form .paginacao*. */
 .cemig-form .previa-tabela-pag {

@@ -3077,103 +3077,12 @@ function atualizarGateExportacao() {
   return [...faltando, ...errosValidacao.map((e) => e.msg)];
 }
 
-/* ===== Prévia — padrão Figma do BT (previa-* do shared.css): seções
-   tituladas em verde, campos rótulo+valor em grade de 2 colunas e lápis
-   que volta à etapa correspondente (mesmo markup dos componentes
-   PreviaSecao/PreviaCampo do bt/js/components.js). ===== */
-function pvCampo(label, valor, opts) {
-  opts = opts || {};
-  const vazio = valor == null || valor === "";
-  const lapis =
-    opts.step != null
-      ? `<button type="button" class="previa-edit" title="Editar" aria-label="Editar ${label}" onclick="goTo(${opts.step})"></button>`
-      : "";
-  return (
-    `<div class="previa-campo${opts.full ? " previa-campo--full" : ""}">` +
-    `<div class="previa-campo-label">${label}</div>` +
-    `<div class="previa-campo-valor">${vazio ? "—" : valor}${lapis}</div></div>`
-  );
-}
-function pvSecao(titulo, campos) {
-  return (
-    `<div class="previa-secao"><h4 class="previa-secao-titulo">${titulo}</h4>` +
-    `<div class="previa-grid">${campos}</div></div>`
-  );
-}
-const PV_DIVISOR = '<hr class="previa-divider"/>';
+/* ===== Prévia =====
+   A montagem da etapa 9 vive em mt/js/previa.js (renderPreview): é HTML de
+   tela, com painéis, chips e cartões que só existem lá. Aqui ficam só as
+   funções que ela chama — syncState, atualizarGateExportacao,
+   renderIrrigacaoOpcionalCard e o alerta de motores pesados. ===== */
 
-/* ===== Prévia a partir do modelo de conteúdo =====
-   O QUE a prévia mostra vem de conteudoFormularioMT() (mt/js/conteudo.js);
-   aqui só há a tradução para HTML. O PDF (mt/js/pdf.js) renderiza o MESMO
-   modelo — então um campo criado no modelo aparece nos dois de uma vez,
-   sem a duplicação que existia quando cada saída montava seu conteúdo. */
-const _pvVal = (v) =>
-  v === undefined || v === null || String(v).trim() === "" ? "—" : v;
-
-function pvCampoModelo(c) {
-  if (c.tipo === "tabela") {
-    if (!c.rows || !c.rows.length) return "";
-    const th = c.headers.map((h) => `<th>${h}</th>`).join("");
-    const tb = c.rows
-      .map(
-        (r) =>
-          "<tr>" + r.map((v) => `<td>${_pvVal(v)}</td>`).join("") + "</tr>",
-      )
-      .join("");
-    const tf = c.rodape
-      ? "<tfoot><tr>" +
-        c.rodape.map((v) => `<td>${v === "" ? "" : _pvVal(v)}</td>`).join("") +
-        "</tr></tfoot>"
-      : "";
-    const tabela =
-      `<div class="tbl-scroll"><table class="tbl"><thead><tr>${th}</tr></thead>` +
-      `<tbody>${tb}</tbody>${tf}</table></div>`;
-    return pvCampo(c.label, tabela, { full: true, step: c.step });
-  }
-  if (c.tipo === "imagem") {
-    const img = `<img src="${c.src}" style="max-width:100%;border:1px solid var(--cmg-neutral-200);border-radius:6px;margin-bottom:6px">`;
-    return pvCampo(c.label, img + "<br>" + (c.valor || ""), {
-      full: true,
-      step: c.step,
-    });
-  }
-  const valor = c.destaque
-    ? `<span class="restricao-destaque">${c.valor}</span>`
-    : c.valor;
-  return pvCampo(c.label, valor, { full: c.full, step: c.step });
-}
-
-function renderPreview() {
-  // Aquecimento do jsPDF (carga sob demanda): chegar nesta etapa é o melhor
-  // sinal de que o PDF vem a seguir. Sem await — não bloqueia a renderização.
-  window.CemigLibs.jspdf().catch(() => {});
-  syncState();
-  $("#previewContent").innerHTML = conteudoFormularioMT()
-    .map((s) => pvSecao(s.titulo, s.campos.map(pvCampoModelo).join("")))
-    .join(PV_DIVISOR);
-
-  // A pergunta "Tarifa monômia?" saiu do formulário junto com a seção global
-  // de tarifação. A carta passa a ser oferecida por ELEGIBILIDADE: REN
-  // 1.000/2021, Art. 292, I — soma das potências ≤ 112,5 kVA (MONOMIA_MAX).
-  const btnMonomia = $("#btnCartaMonomia");
-  if (btnMonomia) {
-    const pot = parseFloat(state.potTotalTrafos) || 0;
-    const elegivel = pot > 0 && pot <= CalculoMT.limites.MONOMIA_MAX;
-    btnMonomia.style.display = elegivel ? "" : "none";
-  }
-  renderIrrigacaoOpcionalCard();
-  const alertaMotores = $("#alertaMotoresPesados");
-  if (alertaMotores) {
-    const idxs = motoresPesadosIdx();
-    alertaMotores.innerHTML = idxs.length
-      ? alertHTML(
-          "warn",
-          `A solicitação possui ${idxs.length} motor(es) pesado(s) que exige(m) mais informações, favor preencher o formulário: <button type="button" class="btn btn-primary no-print" style="margin-left:8px" onclick="abrirAnaliseMotores()">Preencher Análise de Partida</button>`,
-        )
-      : "";
-  }
-  atualizarGateExportacao();
-}
 function syncState() {
   $$("[data-k]").forEach((el) => {
     state[el.dataset.k] = el.value;

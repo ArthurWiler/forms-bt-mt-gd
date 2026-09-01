@@ -104,13 +104,28 @@ Formulário de orçamento de conexão em MT, com identidade visual compartilhada
 
 ```
 mt/
-├── assets/logo-cemig.svg
+├── assets/            logo, fotos das subestações e desenhos dos ramais
 └── js/
-    ├── dados.js                 Constantes normativas de MT
-    ├── calculo.js                Cálculo de demanda/dimensionamento
-    ├── subestacoes-b64.js        Dados de subestações (lista/coordenadas)
-    └── app.js                    Aplicação principal (React/JSX)
+    ├── dados.js             Listas e referências de assets (ramais, subestações, atividades)
+    ├── calculo.js           Trafos, motores, tipos de subestação e grupos de ramal
+    ├── subestacoes-b64.js   Imagens das subestações embutidas (base64)
+    ├── app.js               Estado, etapas, mapa, cards de trafo/cubículo/motor
+    ├── previa.js            Prévia da etapa 9 (tela) — componentes `previa-*`
+    ├── conteudo.js          Modelo de conteúdo dos PDFs (fonte única do documento)
+    ├── pdf.js               Renderização dos PDFs (jsPDF) a partir do modelo
+    ├── carta-monomia.js     Carta de opção por tarifa monômia
+    └── toggle-cards.js      Selects que viram grupos de cards de opção
 ```
+
+A etapa **Prévia & PDF** é montada por [`mt/js/previa.js`](mt/js/previa.js) a
+partir do `state`, no desenho do Figma (`docs/mocks/previa-mt-*.svg`): seções
+verdes com subtítulos, painel cinza por cubículo e por motor (com chip de
+situação), cartões de potência/inrush de cada transformador — com o par
+atual → substituto quando há troca —, tabela de demanda escalonada e cartões
+com a foto da subestação escolhida e o desenho do ramal. O PDF continua saindo
+do modelo neutro de [`mt/js/conteudo.js`](mt/js/conteudo.js), onde os mesmos
+dados aparecem em tabelas compactas: cada mídia tem a sua forma, então um campo
+novo no formulário entra nos **dois** arquivos.
 
 Aceita o parâmetro de query `?atividade=` (ex.: `Industrial`, `Irrigação`) para pré-selecionar a atividade ao chegar pelo seletor da raiz.
 

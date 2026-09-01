@@ -1,13 +1,16 @@
 /* ============================================================
-   CEMIG MT — Modelo de conteúdo dos documentos
-   Fonte ÚNICA do que cada documento contém. Descreve seções e
-   campos em estrutura neutra (sem HTML, sem jsPDF); a prévia da
-   tela e o PDF apenas RENDERIZAM este modelo.
+   CEMIG MT — Modelo de conteúdo dos DOCUMENTOS (PDF)
+   Fonte ÚNICA do que cada PDF contém — formulário principal,
+   Análise de Partida e Irrigante. Descreve seções e campos em
+   estrutura neutra (sem HTML, sem jsPDF); mt/js/pdf.js apenas
+   RENDERIZA este modelo.
 
-   Antes desta camada, o conteúdo vivia duplicado: montado em HTML
-   por renderPreview() e novamente em jsPDF na exportação — duas
-   cópias que divergiam a cada campo novo. Agora um campo criado
-   aqui aparece nos dois lugares automaticamente.
+   A PRÉVIA da tela não passa por aqui: ela vive em mt/js/previa.js
+   e lê o `state` direto, porque a etapa 9 desenha painéis, chips e
+   cartões (o Figma do formulário) que o renderizador do jsPDF não
+   sabe expressar — no documento os mesmos dados saem em tabelas
+   compactas. Cada mídia tem a sua forma; o dado é o mesmo. Ao
+   acrescentar um campo ao formulário, acrescente-o nos dois.
 
    Formato:
      secao  = { titulo, campos: [] }

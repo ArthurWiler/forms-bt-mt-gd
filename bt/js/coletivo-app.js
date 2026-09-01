@@ -3670,7 +3670,7 @@ const _previaPorAndar = (o) =>
 // torre → PG.blocos, unidades → PG.unidades.
 function _mkPreviaTorre(b, bi) {
   const painel = document.createElement("div");
-  painel.className = "previa-torre";
+  painel.className = "previa-painel";
   const ucs = b.ucs || [];
   const cb = calcBlocoMultiTorres(b);
   const demandaTorre = cb.demandaUcs + num(b.demandaIncendio);
@@ -3678,10 +3678,10 @@ function _mkPreviaTorre(b, bi) {
   // Cabeçalho: "Torre" + chip "bi+1 de N". O nome da torre não entra aqui
   // porque ele já é o primeiro campo do painel (Identificação da torre).
   const head = document.createElement("div");
-  head.className = "previa-torre-head";
+  head.className = "previa-painel-head";
   head.innerHTML =
-    `<span class="previa-torre-titulo">Torre</span>` +
-    `<span class="previa-torre-chip">${bi + 1} de ${state.blocos.length}</span>`;
+    `<span class="previa-painel-titulo">Torre</span>` +
+    `<span class="previa-painel-chip">${bi + 1} de ${state.blocos.length}</span>`;
   painel.appendChild(head);
 
   // Campos da torre, na mesma ordem da etapa de edição.
