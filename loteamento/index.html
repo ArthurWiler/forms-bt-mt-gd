@@ -19,6 +19,11 @@
     <link rel="stylesheet" href="../css/variables.css" />
     <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/formulario-loteamento.css" />
+    <!-- Estilo do documento exportado (não da tela): o PDF é HTML de
+         verdade, medido pelo navegador e desenhado por
+         shared/js/pdf-render.js. variables-pdf.css vem primeiro. -->
+    <link rel="stylesheet" href="../css/pdf/variables-pdf.css" />
+    <link rel="stylesheet" href="../css/pdf/shared-pdf.css" />
     <!-- leaflet.css saiu daqui: era render-blocking de terceiros numa página
          cujo mapa só aparece etapas adiante. Agora vem junto do leaflet.js,
          sob demanda, via shared/js/libs.js. -->
@@ -452,7 +457,11 @@
           </div>
           <div class="nav-bottom no-print">
             <button class="btn btn-ghost" onclick="goTo(5)">← Voltar</button>
-            <button class="btn btn-primary" onclick="exportarPDF()">
+            <button
+              id="btnExportarPDF"
+              class="btn btn-primary"
+              onclick="exportarPDF()"
+            >
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -491,6 +500,13 @@
     <script defer src="../shared/js/form-marcadores.js"></script>
     <script defer src="../shared/js/trilha-etapas.js"></script>
     <script defer src="../shared/js/mesano.js"></script>
+    <!-- PDF em três camadas: pdf-render.js DESENHA o documento já
+         paginado, shared/js/pdf-doc.js é o MOTOR (moldes, construtor,
+         paginador) e js/pdf-doc.js traz só o CONTEÚDO do loteamento. -->
+    <script defer src="../shared/js/pdf-render.js"></script>
+    <script defer src="../shared/js/pdf-doc.js"></script>
+    <script defer src="js/pdf-doc.js"></script>
+    <script defer src="../shared/js/pdf-sucesso.js"></script>
     <script defer src="js/app.js"></script>
   </body>
 </html>

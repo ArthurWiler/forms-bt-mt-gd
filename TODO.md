@@ -114,7 +114,7 @@ A página mais complexa — 22 scripts, 16 etapas. Se ela passar, as outras são
 
 Ordem sugerida, da menor para a maior, deixando as complexas por último:
 
-- [ ] `index.html` (3 scripts) · `desistencia/` (2) · `loteamento/` (5)
+- [ ] `index.html` (3 scripts) · `desistencia/` (2) · `loteamento/` (10)
 - [ ] `mt/` (15) · `minigeracao/` (18)
 - [ ] `bt/index.html` (21) · `microgeracao/` (24)
 
@@ -173,9 +173,10 @@ Rodar em cada uma das 8 páginas após o empacotamento:
 - [ ] Cálculos: demanda, dimensionamento de disjuntor, validações da ND-5.2
 - [ ] Navegação entre etapas, ida e volta, com estado preservado
 - [ ] Prévia reflete o preenchimento
-- [ ] PDF gera e sai correto — `doc.save()` em todos; o BT baixa o documento
-      HTML desenhado por `shared/js/pdf-render.js`, os demais ainda desenham
-      direto no jsPDF (ou imprimem, nos casos de loteamento e desistência)
+- [ ] PDF gera e sai correto — `doc.save()` em todos; o BT e o Loteamento
+      baixam o documento HTML desenhado por `shared/js/pdf-render.js`, os
+      demais ainda desenham direto no jsPDF (ou imprimem, no caso da
+      desistência)
 - [ ] Termos e anexos auxiliares (Termo Grupo B, Anexo II, carta monomia)
 - [ ] Campos condicionais aparecem/somem conforme as regras
 

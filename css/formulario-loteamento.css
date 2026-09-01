@@ -118,37 +118,9 @@
 /* A orientação acima do mapa (.mapa-hint) e o respiro da grade de
    coordenadas abaixo (.mapa-obra + .grid) são globais em shared.css. */
 
-/* ---- Impressão (Exportar PDF → window.print) ----
-   Imprime apenas o conteúdo da etapa visível (a Prévia): o shell
-   institucional, a navegação e os controles somem. */
-@media print {
-  .cemig-lote .topbar,
-  .cemig-lote .sidebar,
-  .cemig-lote .nav-bottom,
-  .cemig-lote .portal-footer,
-  .cemig-lote .form-header,
-  .cemig-lote .section-eyebrow,
-  .cemig-lote .card-title,
-  .cemig-lote .card-sub,
-  .cemig-lote .no-print,
-  .cemig-lote .previa-edit {
-    display: none !important;
-  }
-  .cemig-lote {
-    background: #fff;
-  }
-  .cemig-lote .layout {
-    display: block;
-    padding: 0;
-  }
-  .cemig-lote .card {
-    border: none;
-    padding: 0;
-  }
-  .cemig-lote .page {
-    display: none !important;
-  }
-  .cemig-lote .page.show {
-    display: block !important;
-  }
-}
+/* ---- Exportação em PDF ----
+   Não há bloco @media print: a exportação deixou de passar pelo
+   diálogo de impressão do navegador, que recebia a PRÓPRIA tela
+   maquiada. O PDF é um documento à parte, montado por
+   loteamento/js/pdf-doc.js e desenhado por shared/js/pdf-render.js —
+   o estilo dele mora em css/pdf/. */

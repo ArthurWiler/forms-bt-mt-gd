@@ -588,7 +588,7 @@ function renderPreview() {
     );
   $("#previewContent").innerHTML = secoes.join(PV_DIVISOR);
 }
-function exportarPDF() {
+async function exportarPDF() {
   // Trava: só exporta quando os obrigatórios visíveis estão preenchidos.
   if (window.CemigMarcadores) {
     const r = window.CemigMarcadores.validar(document);
@@ -610,7 +610,10 @@ function exportarPDF() {
     return;
   }
   renderPreview();
-  window.print();
+  // O documento é montado em HTML por js/pdf-doc.js e baixado como PDF
+  // por shared/js/pdf-render.js — sem diálogo de impressão. O modal de
+  // sucesso sai de dentro do motor, depois de o arquivo ter saído.
+  await gerarPdfLoteamento(state);
 }
 
 /* ===== Init ===== */

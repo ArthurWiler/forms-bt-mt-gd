@@ -122,6 +122,13 @@
   color: var(--pdf-cor-marca);
 }
 
+/* Trecho em negrito dentro do título ("Unidades com pedidos para
+   **alteração de carga**", svg_4 do coletivo). Mesmo verde e mesmo
+   corpo do título: só o peso muda. */
+.pdf-secao-forte {
+  font-weight: var(--pdf-fw-valor);
+}
+
 .pdf-filete {
   height: var(--pdf-filete-esp);
   /* 6pt aqui + os 8pt de respiro do bloco anterior fecham os 14pt
@@ -186,6 +193,14 @@
   margin-bottom: var(--pdf-campo-respiro);
 }
 
+/* Quatro cartões na linha, e não três: é o resumo de cada torre
+   (svg_3 do múltiplas torres e do coletivo), com as caixas em
+   x = 36 / 169,75 / 303,5 / 437,25. São 121,75pt cada, com o mesmo
+   gap de 12pt: 4 × 121,75 + 3 × 12 = os 523pt da coluna útil. */
+.pdf-cartoes--4col {
+  grid-template-columns: repeat(4, 1fr);
+}
+
 .pdf-cartao {
   box-sizing: border-box;
   border: var(--pdf-card-borda) solid var(--pdf-cor-filete);
@@ -223,6 +238,13 @@
   border-radius: var(--pdf-tabela-raio);
   background: #fff;
   margin-bottom: var(--pdf-tabela-respiro);
+}
+
+/* Tabela do tamanho do CONTEÚDO, e não da coluna inteira: a de
+   lotes do loteamento mede 215pt (svg_1, x de 36 a 251) e a de
+   prumadas do múltiplas torres, 229pt (svg_2, x de 36 a 265). */
+.pdf-tabela--auto {
+  width: auto;
 }
 
 .pdf-tabela th,
@@ -274,6 +296,14 @@
    diferente do .pdf-total, que fecha um bloco fora de tabela. */
 .pdf-tabela-total td {
   text-align: right;
+  font-weight: var(--pdf-fw-valor);
+}
+
+/* A OUTRA forma de fechar uma tabela: uma linha comum em negrito,
+   com as células nas colunas normais — o "TOTAL | 11" da tabela de
+   lotes do loteamento (svg_1). Herda o alinhamento da coluna, então
+   não repete o text-align acima. */
+.pdf-tabela-total-linha td {
   font-weight: var(--pdf-fw-valor);
 }
 

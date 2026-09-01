@@ -121,8 +121,15 @@ Solicitação inicial de fornecimento para loteamentos e chacreamentos, preserva
 ```
 loteamento/
 ├── assets/logo-cemig.svg
-└── js/app.js
+└── js/
+    ├── app.js       Estado, etapas, mapa e prévia
+    └── pdf-doc.js   Conteúdo do PDF (motor em shared/js/pdf-doc.js)
 ```
+
+A exportação baixa um `.pdf` montado em HTML e desenhado por
+[`shared/js/pdf-render.js`](shared/js/pdf-render.js) — o mesmo motor do BT, sem
+diálogo de impressão do navegador. O desenho de referência é
+[`docs/mocks/pdf-loteamento/`](docs/mocks/pdf-loteamento).
 
 ## Geração Distribuída (`microgeracao/` e `minigeracao/`)
 

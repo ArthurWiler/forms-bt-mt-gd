@@ -73,14 +73,23 @@
   width: 50%;
 }
 
-/* Unidades de um bloco/torre e do agrupamento coletivo: muitas
-   colunas estreitas, então o conteúdo não pode alargar nenhuma
-   além do necessário. */
-.pdf-tabela--ucs {
-  table-layout: fixed;
-}
+/* Unidades de uma torre e do agrupamento coletivo: muitas colunas
+   estreitas. Aqui NÃO entra table-layout: fixed — nos mocks as
+   fronteiras de coluna seguem o conteúdo, e não uma divisão igual
+   (a tabela do svg_3 do múltiplas torres fecha em
+   59 | 89 | 71 | 64 | 164 | 76). O que fica é a quebra dentro da
+   célula, para que um complemento ou uma atividade comprida não
+   esmague as vizinhas. */
 .pdf-tabela--ucs td {
   overflow-wrap: anywhere;
+}
+
+/* Detalhe de uma unidade em alteração de carga (svg_4 do coletivo):
+   quatro colunas EXATAMENTE iguais, de 130,75pt — 523 / 4. Aqui o
+   fixed é necessário, senão "102" e "Tripolar 63 A" negociariam
+   larguras diferentes e a caixa sairia de esquadro. */
+.pdf-tabela--uc-alterada {
+  table-layout: fixed;
 }
 
 /* ---- Subtítulo de seção ("Motores", "Gerador de emergência") ----

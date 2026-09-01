@@ -7,15 +7,26 @@
    desenhado a partir dessa medição por shared/js/pdf-render.js.
    Nenhuma medida aqui é repetida em constante no JS.
 
-   Todos os valores abaixo foram medidos nos SVGs de referência do
-   BT individual, exportados do Figma e guardados em
-   docs/mocks/pdf-bt-individual/ (svg_1 … svg_7 — é por esse nome
-   curto que os comentários deste arquivo, do shared-pdf.css, do
-   bt-pdf.css e do bt/js/pdf-doc.js os citam). São três cenários
-   completos e paginados: 1 UC em Conexão Nova (svg_1/2/3), a mesma
-   folha 1 em Alteração de carga (svg_4) e 3 UCs (svg_5/6/7).
-   A moldura do mock é 595 × 842, que é exatamente A4 a 72 dpi —
-   logo **1 unidade do SVG = 1pt em CSS** e as medidas entram aqui
+   Todos os valores abaixo foram medidos nos SVGs de referência
+   exportados do Figma e guardados em docs/mocks/ — é pelo nome
+   curto "svg_N" que os comentários deste arquivo, do
+   shared-pdf.css, do bt-pdf.css e dos <modulo>/js/pdf-doc.js os
+   citam:
+
+     · pdf-bt-individual/   svg_1 … svg_7 — três cenários completos e
+       paginados: 1 UC em Conexão Nova (svg_1/2/3), a mesma folha 1
+       em Alteração de carga (svg_4) e 3 UCs (svg_5/6/7). É deles
+       que saem quase todas as medidas abaixo.
+     · pdf-bt-multitorres/  svg_1 … svg_4 — condomínio de torres: os
+       quatro cartões de resumo por torre e a tabela de unidades.
+     · pdf-bt-coletivo/     svg_1 … svg_4 — agrupamento com proteção
+       geral: a tabela única de unidades e o detalhe das que pedem
+       alteração de carga.
+     · pdf-loteamento/      svg_1 — a tabela estreita de lotes por
+       área, fechada por uma linha TOTAL.
+
+   A moldura de todos eles é 595 × 842, que é exatamente A4 a 72 dpi
+   — logo **1 unidade do SVG = 1pt em CSS** e as medidas entram aqui
    sem conversão.
    É por isso que este arquivo usa `pt` e não `px`: escrito em pt,
    1 unidade do CSS é 1 unidade do PDF, e o renderizador só precisa

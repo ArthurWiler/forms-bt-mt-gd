@@ -1,700 +1,477 @@
 /* ============================================================
-   CEMIG BT — Documento do PDF (HTML montado e paginado aqui)
+   CEMIG BT — Conteúdo do PDF (quais seções, quais campos)
    ------------------------------------------------------------
-   Substitui o motor jsPDF que desenhava o PDF com doc.rect/
-   doc.text. Agora o documento é HTML de verdade, estilizado por
-   css/pdf/*.css e paginado aqui; quem desenha o arquivo final é
-   shared/js/pdf-render.js, lendo estas mesmas páginas. Ganhos: o
-   estilo passa a ser CSS versionado (e não constantes espalhadas
-   no JS), o texto sai selecionável e a fonte é a Open Sans do
-   projeto, não a Helvetica embutida na biblioteca.
+   A MECÂNICA do documento (moldes, construtor de blocos,
+   paginador, exportação) mora em shared/js/pdf-doc.js e é a mesma
+   em todos os formulários. Aqui fica só o que é do BT: a lista de
+   blocos de cada uma das três modalidades.
 
-   O documento NUNCA é impresso pelo navegador: o clique baixa o
-   .pdf direto, sem passar pelo diálogo de impressão.
+   Cada modalidade segue os SVGs de referência exportados do Figma
+   (creditados no cabeçalho de css/pdf/variables-pdf.css):
 
-   Usa os helpers globais do módulo BT, como o motor antigo fazia:
-   fmt2, fmtW, num, prevKwUC, ucSemAlteracao, ramoParaPdf, CAT,
-   TABELA_11, MOTOR_MONO/TRI, motorColPorQtd, motorKvaUnit,
-   calcBlocoMultiTorres, disjGeralTorreObrigatorio, utmString.
+     · individual      docs/mocks/pdf-bt-individual/svg_1 … svg_7
+     · múltiplas torres docs/mocks/pdf-bt-multitorres/svg_1 … svg_4
+     · coletivo         docs/mocks/pdf-bt-coletivo/svg_1 … svg_4
 
-   Os moldes de markup ficam em bt/etapas/07-previa.html.
+   Usa os helpers globais do módulo BT: fmt2, fmtW, num, prevKwUC,
+   ucSemAlteracao, ramoParaPdf, CAT, TABELA_11, MOTOR_MONO/TRI,
+   motorColPorQtd, motorKvaUnit, calcBlocoMultiTorres,
+   disjGeralTorreObrigatorio, utmString, dataBR.
+
+   Carregue depois de shared/js/pdf-render.js e shared/js/pdf-doc.js.
    ============================================================ */
 
 /* ============================================================
-   1. Moldes
+   1. Peças repetidas entre as modalidades
    ============================================================ */
 
-function _pdfMolde(id) {
-  const t = document.getElementById(id);
-  if (!t || !t.content) throw new Error("Molde do PDF ausente: " + id);
-  return t.content.firstElementChild.cloneNode(true);
+/* Grau decimal com 6 casas, como nos mocks ("-19.863788, -43.955397"). */
+function _pdfCoordBT(lat, lng) {
+  const f = (v) => {
+    const n = parseFloat(String(v).replace(",", "."));
+    return isNaN(n) ? null : n.toFixed(6);
+  };
+  return [f(lat), f(lng)].filter((x) => x !== null).join(", ");
 }
 
-/* Mesma regra do motor antigo: campo sem valor (ou com o travessão
-   de "não se aplica") não vai para o papel. */
-const _pdfVazio = (v) =>
-  v === undefined ||
-  v === null ||
-  String(v).trim() === "" ||
-  String(v).trim() === "—";
+/* A UTM digitada tem precedência sobre a calculada: é ela que o
+   usuário viu na tela. */
+function _pdfUtmBT(obra) {
+  return (
+    obra.utm ||
+    (typeof utmString === "function" ? utmString(obra.lat, obra.lng) : "")
+  );
+}
 
-/* ============================================================
-   2. Construtor de blocos
-   ------------------------------------------------------------
-   O documento é montado como uma LISTA PLANA de blocos, não como
-   uma árvore de seções: é o que permite ao paginador decidir onde
-   cortar. Cada bloco carrega sua política de quebra em `prende`
-   (quantos blocos seguintes têm de ficar na mesma página).
-   ============================================================ */
+/* "Dados para contato" — a mesma abertura nas três modalidades
+   (svg_1 de cada mock): o nome ocupa a linha inteira e e-mail e
+   celular dividem a seguinte. */
+function _pdfContatoBT(B, prop) {
+  B.secao("Dados para contato");
+  B.campos([["Nome", prop.nome, 3]]);
+  B.campos([
+    ["E-mail", prop.email],
+    ["Celular", prop.celular],
+  ]);
+}
 
-function _pdfConstrutor() {
-  const blocos = [];
-  let quebraPendente = false;
+/* Miolo de "Dados do empreendimento" — idêntico no coletivo e no
+   múltiplas torres a partir da razão social (svg_1 dos dois mocks).
+   Só o que vem ANTES dele (cartões de totais, tipo de solicitação e
+   modalidade) distingue as duas modalidades. */
+function _pdfEmpreendimentoBT(B, S) {
+  const { prop = {}, obra = {}, pessoaFisica } = S;
+  B.campos([["Cliente / Razão Social do empreendimento", prop.cliente, 3]]);
+  B.campos([
+    [pessoaFisica ? "CPF" : "CNPJ", prop.cpfCnpj],
+    ["Nº ART/TRT do projeto", obra.art],
+    ["Área do empreendimento", obra.localizacao],
+  ]);
+  B.campos([
+    ["CEP", obra.cep],
+    ["Endereço", obra.endereco, 2],
+  ]);
+  B.campos([
+    ["Número", obra.num],
+    ["Complemento", obra.compl],
+    ["Bairro", obra.bairro],
+  ]);
+  B.campos([
+    ["Cidade", obra.cidade],
+    ["Estado", obra.estado],
+  ]);
+  B.cartoes([
+    ["Coordenadas", _pdfCoordBT(obra.lat, obra.lng)],
+    ["Coordenada UTM", _pdfUtmBT(obra)],
+  ]);
+  B.campos([
+    ["Distância do padrão até a rede Cemig inferior a 30m?", obra.distMenor30],
+    ["O padrão está pronto para ser ligado?", obra.prontoLigar],
+    ["Tipo de rede BT que atende o local", obra.tipoRede],
+  ]);
+}
 
-  const push = (el, prende) => {
-    const bloco = { el, prende: prende || 0 };
-    if (quebraPendente) {
-      bloco.quebraAntes = true;
-      quebraPendente = false;
-    }
-    blocos.push(bloco);
-    return el;
-  };
+/* "Correspondência" — mesma seção nas três modalidades: para onde
+   vai a fatura e em que dia ela vence (svg_2 de cada mock). O
+   rótulo do destino muda com a forma escolhida, e por isso não é
+   uma lista fixa de campos. */
+function _pdfCorrespondenciaBT(B, S) {
+  const { prop = {}, corr = {}, obra = {} } = S;
+  const enderecoObra = [
+    [obra.endereco, obra.num].filter(Boolean).join(", "),
+    obra.compl,
+    obra.bairro,
+    [obra.cidade, obra.estado].filter(Boolean).join("/"),
+    obra.cep ? "CEP " + obra.cep : "",
+  ]
+    .filter(Boolean)
+    .join(" - ");
+  const enderecoNovo = [
+    [corr.rua, corr.num].filter(Boolean).join(", "),
+    corr.compl,
+    corr.bairro,
+    corr.municipio,
+    corr.estado,
+    corr.cep ? "CEP " + corr.cep : "",
+  ]
+    .filter(Boolean)
+    .join(" - ");
+  const destinoFatura =
+    corr.alternativa === "E-mail informado"
+      ? ["E-mail para receber a fatura", prop.email]
+      : corr.alternativa === "Outro e-mail"
+        ? ["E-mail para receber a fatura", corr.outroEmail]
+        : corr.alternativa === "Conta globalizada"
+          ? ["Conta globalizada", corr.contaGlobal]
+          : corr.alternativa === "Mesmo da obra"
+            ? [
+                "Endereço para receber a fatura",
+                "Mesmo da obra — " + enderecoObra,
+                3,
+              ]
+            : corr.alternativa === "Endereço novo"
+              ? ["Endereço para receber a fatura", enderecoNovo, 3]
+              : ["Forma de recebimento da fatura", corr.alternativa];
+  B.secao("Correspondência");
+  B.campos([
+    destinoFatura,
+    [
+      "Data de vencimento da fatura",
+      corr.vencimento ? "Todo dia " + corr.vencimento : "",
+    ],
+  ]);
+}
 
-  /* Abre folha nova antes do PRÓXIMO bloco. O mock quebra a página
-     antes de "Cargas da unidade" mesmo com a folha anterior quase
-     inteira livre (svg_2 → svg_3): é decisão do documento, não
-     consequência de transbordo, e o paginador sozinho nunca a
-     produziria. */
-  const quebrarPagina = () => {
-    quebraPendente = true;
-  };
-
-  /* Título de seção prende o bloco seguinte: sozinho no pé da
-     página ele viraria uma órfã. */
-  const secao = (texto) => {
-    const el = _pdfMolde("tplPdfSecao");
-    el.textContent = texto;
-    push(el, 1);
-  };
-
-  const subsecao = (texto) => {
-    const el = _pdfMolde("tplPdfSubsecao");
-    el.textContent = texto;
-    push(el, 1);
-  };
-
-  /* Prende o que vem depois: o filete só existe para anunciar a
-     seção seguinte, e sozinho no pé da folha não anuncia nada. */
-  const filete = () => push(_pdfMolde("tplPdfFilete"), 1);
-
-  /* Campos na grade de 3 colunas. `lista` = [[rótulo, valor, cols?]].
-     Cada LINHA da grade vira um bloco próprio — uma seção inteira
-     num só elemento seria um átomo maior que a página. */
-  const campos = (lista) => {
-    let linha = null;
-    let usadas = 0;
-    (lista || [])
-      .filter((c) => c && !_pdfVazio(c[1]))
-      .forEach((c) => {
-        const largura = Math.min(3, c[2] || 1);
-        if (!linha || usadas + largura > 3) {
-          linha = push(_pdfMolde("tplPdfGrade"));
-          usadas = 0;
-        }
-        const campo = _pdfMolde("tplPdfCampo");
-        /* Nomes literais, não "pdf-campo--" + n + "col": classe
-           montada por concatenação some de uma busca textual, e é
-           ela que sustenta a poda de CSS morto do projeto. */
-        if (largura === 2) campo.classList.add("pdf-campo--2col");
-        if (largura === 3) campo.classList.add("pdf-campo--3col");
-        campo.querySelector(".pdf-rotulo").textContent = c[0];
-        campo.querySelector(".pdf-valor").textContent = String(c[1]);
-        linha.appendChild(campo);
-        usadas += largura;
-      });
-  };
-
-  /* Cartões de destaque. O valor pode ser um array: cada item vira
-     uma linha dentro do cartão (é o "Bipolar 63A / Individual
-     abaixo de 75 kW" do mock). */
-  const cartoes = (lista) => {
-    const uteis = (lista || []).filter(
-      (c) => c && [].concat(c[1]).some((v) => !_pdfVazio(v)),
-    );
-    if (!uteis.length) return;
-    const linha = push(_pdfMolde("tplPdfCartoes"));
-    uteis.forEach((c) => {
-      const cartao = _pdfMolde("tplPdfCartao");
-      cartao.querySelector(".pdf-rotulo").textContent = c[0];
-      const primeiro = cartao.querySelector(".pdf-valor");
-      const valores = [].concat(c[1]).filter((v) => !_pdfVazio(v));
-      primeiro.textContent = String(valores[0]);
-      valores.slice(1).forEach((v) => {
-        const extra = primeiro.cloneNode(false);
-        extra.textContent = String(v);
-        cartao.appendChild(extra);
-      });
-      linha.appendChild(cartao);
-    });
-  };
-
-  /* `colunas` = [rótulo] ou [{ rotulo, num: true }] para as
-     numéricas, que saem alinhadas à direita. `total`, quando vem,
-     fecha a tabela com uma linha de largura inteira — é o
-     "CARGA TOTAL: 25,36 kW" do mock (svg_3). */
-  const tabela = (colunas, linhas, modificador, total) => {
-    if (!linhas || !linhas.length) return;
-    const el = _pdfMolde("tplPdfTabela");
-    if (modificador) el.classList.add(modificador);
-    const cab = el.tHead.rows[0];
-    colunas.forEach((col) => {
-      const th = document.createElement("th");
-      th.textContent = col && col.rotulo !== undefined ? col.rotulo : col;
-      if (col && col.num) th.className = "pdf-col-num";
-      cab.appendChild(th);
-    });
-    linhas.forEach((linha) => {
-      const tr = document.createElement("tr");
-      linha.forEach((celula, i) => {
-        const td = document.createElement("td");
-        td.textContent = _pdfVazio(celula) ? "—" : String(celula);
-        if (colunas[i] && colunas[i].num) td.className = "pdf-col-num";
-        tr.appendChild(td);
-      });
-      el.tBodies[0].appendChild(tr);
-    });
-    if (!_pdfVazio(total)) {
-      const tr = _pdfMolde("tplPdfTabelaTotal");
-      const td = tr.querySelector("td");
-      td.colSpan = colunas.length;
-      td.textContent = String(total);
-      el.tBodies[0].appendChild(tr);
-    }
-    push(el);
-  };
-
-  /* Herdado do motor antigo: coluna inteiramente vazia não é
-     impressa (ex.: "Inst. / UC / Medidor" quando todas as UCs são
-     Conexão Nova). A 1ª coluna, que identifica a linha, fica sempre. */
-  const tabelaAuto = (colunas, linhas, modificador, total) => {
-    if (!linhas || !linhas.length) return;
-    const manter = colunas.map(
-      (_, i) => i === 0 || linhas.some((l) => !_pdfVazio(l[i])),
-    );
-    tabela(
-      colunas.filter((_, i) => manter[i]),
-      linhas.map((l) => l.filter((_, i) => manter[i])),
-      modificador,
-      total,
-    );
-  };
-
-  const total = (rotulo, valor) => {
-    const el = _pdfMolde("tplPdfTotal");
-    el.querySelector(".pdf-total-rotulo").textContent = rotulo;
-    el.querySelector(".pdf-total-valor").textContent = valor;
-    push(el);
-  };
-
-  /* Um bloco por parágrafo: assim o corte entre páginas cai entre
-     parágrafos, e só um parágrafo isolado maior que a folha
-     precisa ser fatiado no meio. */
-  const paragrafos = (texto) => {
-    String(texto == null ? "" : texto)
-      .split(/\n+/)
-      .map((t) => t.trim())
-      .filter(Boolean)
-      .forEach((t) => {
-        const el = _pdfMolde("tplPdfObservacoes");
-        el.textContent = t;
-        push(el);
-      });
-  };
-
-  const assinatura = () => push(_pdfMolde("tplPdfAssinatura"));
-
-  /* Toda seção pode esvaziar: os campos são filtrados por _pdfVazio,
-     e há combinações (correspondência por e-mail sem dia de
-     vencimento, projeto sem nenhum nível de proteção) em que nada
-     sobra. Sem esta limpeza sobrariam um título e um filete soltos,
-     anunciando uma seção que não existe. Roda no fim, uma vez, em
-     vez de obrigar cada chamador a conferir antes de abrir a seção. */
-  const podar = () => {
-    const eh = (el, classe) => !!el && el.classList.contains(classe);
-    for (let i = blocos.length - 1; i >= 0; i -= 1) {
-      const el = blocos[i].el;
-      const proximo = blocos[i + 1] && blocos[i + 1].el;
-      /* Título de seção seguido de outro título (ou de filete, ou de
-         nada) não abre conteúdo nenhum. Uma subseção também morre
-         quando esbarra numa irmã — é o caso de "Cargas especiais"
-         sem motores nem gerador. Varrendo de trás para a frente, a
-         subseção órfã sai antes de o título da seção ser avaliado,
-         então a limpeza cascateia numa passada só. */
-      const vazia =
-        (eh(el, "pdf-secao-titulo") &&
-          (!proximo ||
-            eh(proximo, "pdf-secao-titulo") ||
-            eh(proximo, "pdf-filete"))) ||
-        (eh(el, "pdf-subsecao") &&
-          (!proximo ||
-            eh(proximo, "pdf-secao-titulo") ||
-            eh(proximo, "pdf-subsecao") ||
-            eh(proximo, "pdf-filete")));
-      /* Filete que ficou encostado noutro filete, ou que sobrou no
-         fim do documento, também sai. */
-      const filDuplo =
-        eh(el, "pdf-filete") && (!proximo || eh(proximo, "pdf-filete"));
-      if (vazia || filDuplo) {
-        /* A quebra de página pedida antes deste bloco continua
-           valendo para o que sobrou no lugar dele. */
-        if (blocos[i].quebraAntes && blocos[i + 1])
-          blocos[i + 1].quebraAntes = true;
-        blocos.splice(i, 1);
-      }
-    }
-    /* Um filete só faz sentido ENTRE seções. */
-    while (blocos.length && blocos[0].el.classList.contains("pdf-filete"))
-      blocos.shift();
-    return blocos;
-  };
-
-  return {
-    blocos,
-    podar,
-    quebrarPagina,
-    secao,
-    subsecao,
-    filete,
-    campos,
-    cartoes,
-    tabela,
-    tabelaAuto,
-    total,
-    paragrafos,
-    assinatura,
-  };
+/* "Observações" fecha os três documentos, quando há texto. É o
+   único bloco que os mocks não desenham e que mesmo assim continua
+   sendo impresso: o campo existe no formulário e o que a pessoa
+   escreveu não pode sumir do papel. */
+function _pdfObservacoesBT(B, obs) {
+  if (_pdfVazio(obs)) return;
+  B.filete();
+  B.secao("Observações");
+  B.paragrafos(obs);
 }
 
 /* ============================================================
-   3. Conteúdo — coletivo (APR Web) e condomínio de torres
+   2. Conteúdo — múltiplas torres (condomínio)
    ------------------------------------------------------------
-   Formato congelado: é o documento que o BT coletivo já emitia
-   antes dos mocks do individual (svg_1 … svg_7), que só cobrem o
-   fluxo individual. Quando chegarem os desenhos do coletivo, é
-   aqui que eles entram.
+   Segue docs/mocks/pdf-bt-multitorres/svg_1 … svg_4: folha 1 com
+   contato e empreendimento, folha 2 com o projeto (hierarquia de
+   proteção) e a correspondência, e daí uma folha por torre —
+   quatro cartões de resumo e a tabela das unidades.
+
+   Cada LINHA do mock é uma chamada de B.campos() própria, e não uma
+   lista só: como campo vazio é descartado, numa lista única o campo
+   seguinte subiria para o buraco e a linha sairia com outra
+   composição de colunas.
    ============================================================ */
 
-function _pdfBlocosColetivoBT(S) {
+function _pdfBlocosMultiTorresBT(S) {
   const {
-    multiTorres,
-    coletivo,
-    modoCalculadora,
-    atend = {},
     prop = {},
-    corr = {},
-    obra = {},
-    prevTotalKw,
-    demandaPrevTotal,
-    trocaDisjGeral,
-    hibrido,
-    ucsDet = [],
-    ucBlocos = [],
+    atend = {},
     blocos = [],
-    totalUcsEmpreendimento,
-    obs,
+    prevTotalKw,
     demandaTotalGeral,
-    pessoaFisica,
+    obs,
   } = S;
 
   const B = _pdfConstrutor();
 
-  /* dataBR (aaaa-mm-dd → dd/mm/aaaa) mora em js/bt-core.js: a prévia mostra a
-     mesma data que o papel. */
+  /* ---- Dados para contato ---- */
+  _pdfContatoBT(B, prop);
 
-  const coordFmt = () => {
-    const f = (v) => {
-      const n = parseFloat(String(v).replace(",", "."));
-      return isNaN(n) ? null : n.toFixed(6);
-    };
-    return [f(obra.lat), f(obra.lng)].filter((x) => x !== null).join(", ");
-  };
-
-  const modalidade = multiTorres
-    ? "Empreendimento com Múltiplas Torres ou Blocos"
-    : coletivo
-      ? "Coletivo - Agrupamento com Proteção Geral (APR Web)"
-      : "Individual - até 3 caixas sem proteção geral";
-
-  const ucPrincipal = ucsDet[0] || {};
-  const obraRural = obra.localizacao === "Rural";
-
-  /* No individual a carga total não vem pronta no estado (prevTotalKw
-     só é calculado no coletivo), então soma as UCs detalhadas. */
-  const cargaTotalKw =
-    coletivo || multiTorres
-      ? num(prevTotalKw)
-      : ucsDet.reduce((s, u) => s + num((u.cargas || {})._cargaKw), 0);
-
-  /* Faixa do cartão "Disjuntor adequado". Reaproveita a régua já
-     existente (exibeTermoGrupoBBT, em individual-app.js) em vez de
-     repetir o limite de 75 kW aqui — se a regra mudar, muda num
-     lugar só. A página do coletivo não define essa função. */
-  const acima75 =
-    typeof exibeTermoGrupoBBT === "function"
-      ? exibeTermoGrupoBBT()
-      : num(demandaTotalGeral) > 75;
-
-  /* ---- Dados do proprietário ---- */
-  B.secao("Dados do proprietário");
-  const camposProp = [];
-  if (multiTorres) {
-    /* Condomínio de torres: contato e razão social são campos
-       distintos e ambos vão para o papel. */
-    camposProp.push(
-      ["Nome para contato", prop.nome, 3],
-      ["Cliente / Razão Social", prop.cliente, 3],
-    );
-  } else {
-    camposProp.push([pessoaFisica ? "Nome" : "Razão social", prop.nome, 3]);
-  }
-  camposProp.push(
-    ["E-mail", prop.email],
-    ["Celular", prop.celular],
-    [pessoaFisica ? "CPF" : "CNPJ", prop.cpfCnpj],
-  );
-  if (pessoaFisica) {
-    camposProp.push(
-      ["Filiação", prop.filiacao],
-      ["RG/RNE/RANI", prop.rg],
-      ["Data de nascimento", dataBR(prop.nasc)],
-      ["Laudo médico", prop.laudoMedico],
-      ["NIS Tarifa Social", prop.nis === "Sim" ? prop.numNis : "Não"],
-    );
-  }
-  camposProp.push(["Telefone fixo", prop.fixo]);
-  B.campos(camposProp);
-
-  /* ---- Dados da unidade consumidora ---- */
+  /* ---- Dados do empreendimento ---- */
   B.filete();
-  B.secao("Dados da unidade consumidora");
+  B.secao("Dados do empreendimento");
   B.cartoes([
-    ["Demanda total", fmt2(demandaTotalGeral) + " kVA"],
-    ["Carga total", fmt2(cargaTotalKw) + " kW"],
+    ["Demanda total de todas as torres", fmt2(demandaTotalGeral) + " kVA"],
+    ["Carga total de todas as torres", fmt2(prevTotalKw) + " kW"],
+  ]);
+  B.campos([
+    ["Tipo de solicitação", atend.escopo],
     [
-      "Disjuntor adequado",
-      [
-        multiTorres
-          ? atend.disjEmpreendimento
-          : coletivo
-            ? atend.disjuntorGeral
-            : ucPrincipal.disjEscolhido ||
-              ((ucPrincipal.cargas || {})._disjuntores || [])[0],
-        coletivo || multiTorres
-          ? ""
-          : acima75
-            ? "Individual acima de 75 kW"
-            : "Individual abaixo de 75 kW",
-      ],
+      "Modalidade",
+      /* "14 torres" no mock; o singular existe porque o
+         empreendimento pode ter uma torre só. */
+      `Múltiplas torres - ${blocos.length} ` +
+        (blocos.length === 1 ? "torre" : "torres"),
     ],
   ]);
+  _pdfEmpreendimentoBT(B, S);
 
+  /* ---- Dados do projeto, em folha nova ----
+     A quebra é do documento, não do transbordo: no mock a folha 1
+     termina com bastante espaço livre e o projeto abre limpo
+     (svg_1 → svg_2). */
+  B.quebrarPagina();
+  B.secao("Dados do projeto");
   B.campos([
     [
-      "Tipo de solicitação",
-      coletivo || multiTorres ? atend.escopo : ucPrincipal.solicitacao,
-    ],
-    ["Modalidade", modalidade],
-    ["Atividade principal", ucPrincipal.atividade],
-    ["Possui disjuntor geral?", atend.disjGeral],
-    [
-      "Nº de unidades consumidoras",
-      multiTorres ? totalUcsEmpreendimento : atend.nUCs,
-    ],
-    [coletivo ? "Tipo do Atendimento" : "Disjuntor solicitado", atend.solicitacao],
-  ]);
-
-  if (obraRural) {
-    B.campos([
-      ["Cidade", obra.cidade],
-      ["Estado", obra.estado],
-      ["Distrito/Comunidade", obra.distritoComunidade],
-      ["Nome da propriedade", obra.nomePropriedade],
-      ["Ponto de referência", obra.pontoRef, 2],
-      ["Instalação mais próxima", obra.instProxima],
-    ]);
-  } else {
-    B.campos([
-      ["CEP", obra.cep],
-      ["Endereço", obra.endereco, 2],
-      ["Número", obra.num],
-      ["Complemento", obra.compl],
-      ["Bairro", obra.bairro],
-      ["Cidade", obra.cidade],
-      ["Estado", obra.estado],
-    ]);
-  }
-
-  B.cartoes([
-    ["Coordenadas", coordFmt()],
-    [
-      "Coordenada UTM",
-      obra.utm ||
-        (typeof utmString === "function" ? utmString(obra.lat, obra.lng) : ""),
-    ],
-  ]);
-
-  B.campos([
-    ["Distância do padrão até a rede Cemig inferior a 30m?", obra.distMenor30],
-    ["O padrão está pronto para ser ligado?", obra.prontoLigar],
-    ["O padrão precisa ser mudado de local?", ucPrincipal.mudancaLocal],
-    ["Tipo de rede BT que atende o local", obra.tipoRede],
-    ["Localização", obra.localizacao],
-    ["Transformador próximo", obra.transformador],
-    coletivo ? ["Nº ART/TRT de Projeto", obra.art] : null,
-    obra.restricaoAmbiental === "Sim"
-      ? ["Restrições ambientais", obra.restricoesTexto, 3]
-      : null,
-  ]);
-
-  /* ---- Correspondência e fatura ---- */
-  B.filete();
-  B.secao("Correspondência e fatura");
-  const camposCorr = [
-    ["Forma de recebimento da fatura", corr.alternativa],
-    ["Dia de vencimento", corr.vencimento ? "Dia " + corr.vencimento : ""],
-  ];
-  if (corr.alternativa === "Conta globalizada")
-    camposCorr.push(["Conta globalizada", corr.contaGlobal]);
-  if (corr.alternativa === "E-mail informado") {
-    camposCorr.push(["E-mail para envio da fatura", prop.email, 2]);
-  } else if (corr.alternativa === "Outro e-mail") {
-    camposCorr.push(["E-mail alternativo para a fatura", corr.outroEmail, 2]);
-  } else if (corr.alternativa === "Mesmo da obra") {
-    const endO = [
-      [obra.endereco, obra.num].filter(Boolean).join(", "),
-      obra.compl,
-      obra.bairro,
-      [obra.cidade, obra.estado].filter(Boolean).join("/"),
-      obra.cep ? "CEP " + obra.cep : "",
-    ]
-      .filter(Boolean)
-      .join(" - ");
-    camposCorr.push([
-      "Endereço de correspondência",
-      "Mesmo da obra — " + endO,
+      "Onde a energia deverá ser disponibilizada no empreendimento?",
+      atend.disponibilizacaoEnergia,
       3,
-    ]);
-  } else if (corr.alternativa === "Endereço novo") {
-    const endC = [
-      [corr.rua, corr.num].filter(Boolean).join(", "),
-      corr.compl,
-      corr.bairro,
-      corr.municipio,
-      corr.estado,
-      corr.cep ? "CEP " + corr.cep : "",
-    ]
-      .filter(Boolean)
-      .join(" - ");
-    camposCorr.push(["Endereço de correspondência", endC, 3]);
-  }
-  B.campos(camposCorr);
+    ],
+  ]);
+  B.cartoes([
+    ["Disjuntor geral do condomínio", atend.disjCondominio],
+    ["Disjuntor geral do empreendimento", atend.disjEmpreendimento],
+  ]);
+  B.campos([
+    ["O condomínio tem disjuntor de prumada?", atend.temPrumada, 3],
+  ]);
+  if (atend.temPrumada === "Sim")
+    B.tabela(
+      ["Torre inicial", "Torre final", "Disjuntor"],
+      (atend.prumadas || []).map((p) => [p.torreIni, p.torreFim, p.disj]),
+      "pdf-tabela--auto",
+    );
 
-  /* ---- Unidades consumidoras (varia por modalidade) ---- */
-  if (multiTorres) {
-    B.filete();
-    B.secao("Empreendimento com múltiplas torres");
-    B.campos([
-      ["Atendimento a", "Torre"],
-      ["Nº de torres", blocos.length],
-      ["Total de UCs do empreendimento", totalUcsEmpreendimento],
-    ]);
+  /* ---- Correspondência ---- */
+  B.filete();
+  _pdfCorrespondenciaBT(B, S);
+
+  /* ---- Uma folha por torre ----
+     Também decisão do documento: no mock a torre 1 abre folha nova
+     com a anterior ainda meio vazia (svg_2 → svg_3). */
+  blocos.forEach((b, bi) => {
+    const ucs = b.ucs || [];
+    if (!ucs.length) return;
+    const cb = calcBlocoMultiTorres(b);
+
+    B.quebrarPagina();
+    B.secao(`Dados da torre ${b.nome || bi + 1}`);
+    B.cartoes(
+      [
+        [
+          "Demanda do condomínio",
+          num(b.demandaIncendio) ? fmt2(b.demandaIncendio) + " kVA" : "",
+        ],
+        ["Disjuntor do condomínio", b.disjIncendio],
+        [
+          "Demanda da torre",
+          fmt2(cb.demandaUcs + num(b.demandaIncendio)) + " kVA",
+        ],
+        /* Torre que dispensa o geral imprime "Dispensado". */
+        [
+          "Disjuntor da torre",
+          disjGeralTorreObrigatorio(b) ? b.disjGeral : "Dispensado",
+        ],
+      ],
+      "pdf-cartoes--4col",
+    );
+    /* Sem as colunas "Solicitação" e "Inst. / UC / Medidor" do
+       documento anterior: no múltiplas torres a solicitação é
+       sempre Conexão Nova (bt/js/coletivo-app.js), logo o número de
+       instalação nunca é preenchido e a coluna sairia vazia. */
     B.tabela(
       [
-        "Bloco",
-        "Disjuntor geral",
-        { rotulo: "Dem. UCs (kVA)", num: true },
-        { rotulo: "Qtd UCs", num: true },
-        "Disj. cond./incêndio",
-        { rotulo: "Dem. cond. (kVA)", num: true },
-      ],
-      blocos.map((b) => [
-        b.nome,
-        /* Torre que dispensa o geral imprime "Dispensado". */
-        disjGeralTorreObrigatorio(b) ? b.disjGeral : "Dispensado",
-        fmt2(calcBlocoMultiTorres(b).demandaUcs),
-        b.qtdUCs,
-        b.disjIncendio,
-        b.demandaIncendio,
-      ]),
-    );
-    B.total("Demanda total do empreendimento", `${fmt2(demandaTotalGeral)} kVA`);
-
-    blocos.forEach((b, bi) => {
-      const ucs = b.ucs || [];
-      if (!ucs.length) return;
-      B.subsecao(`Torre ${b.nome || bi + 1} — unidades consumidoras`);
-      const cb = calcBlocoMultiTorres(b);
-      const modoCalcTorre = cb.modoCalculadora;
-      B.tabelaAuto(
-        [
-          "Unidade",
-          "Compl.",
-          "Inst. / UC / Medidor",
-          "Solicitação",
-          "Disjuntor",
-          { rotulo: "Carga (kW)", num: true },
-          { rotulo: "Dem. (kVA)", num: true },
-        ],
-        ucs.map((u, ui) => [
-          u.identificacao || `UC ${ui + 1}`,
-          u.complemento,
-          u.solicitacao !== "Conexão Nova" ? u.instalacao : "",
-          u.solicitacao,
-          u.disjPara,
-          ucSemAlteracao(u)
-            ? ""
-            : modoCalcTorre
-              ? fmt2(num((u.cargas || {})._cargaKw))
-              : fmt2(prevKwUC(u)),
-          ucSemAlteracao(u) || !modoCalcTorre
-            ? ""
-            : fmt2(num((u.cargas || {})._demanda)),
-        ]),
-        "pdf-tabela--ucs",
-      );
-      B.campos([
-        !modoCalcTorre
-          ? [
-              "Demanda residencial (ND-5.2)",
-              `${fmt2(cb.demResidencial)} kVA (${cb.qtdApart} ap. · área méd. ${fmt2(cb.areaMedia)} m²)`,
-              2,
-            ]
-          : null,
-        !modoCalcTorre && cb.temNaoResidencial
-          ? ["Demanda não residencial", `${fmt2(cb.demNaoResidencial)} kVA`]
-          : null,
-        modoCalcTorre
-          ? ["Demanda das UCs (cargas detalhadas)", `${fmt2(cb.demandaUcs)} kVA`]
-          : null,
-        num(b.demandaIncendio)
-          ? ["Demanda combate a incêndio", `${fmt2(num(b.demandaIncendio))} kVA`]
-          : null,
-        [
-          "Demanda total da torre",
-          `${fmt2(cb.demandaUcs + num(b.demandaIncendio))} kVA`,
-        ],
-      ]);
-    });
-
-    /* Hierarquia de proteção: só imprime os níveis configurados. */
-    if (
-      atend.disponibilizacaoEnergia ||
-      atend.disjEmpreendimento ||
-      atend.disjCondominio ||
-      atend.temPrumada === "Sim"
-    ) {
-      B.filete();
-      B.secao("Dados do projeto");
-      B.campos([
-        ["Disponibilização da energia", atend.disponibilizacaoEnergia],
-        ["Disjuntor geral do empreendimento", atend.disjEmpreendimento],
-        ["Disjuntor geral do condomínio", atend.disjCondominio],
-        ["Possui disjuntor de prumada?", atend.temPrumada],
-      ]);
-      const prumadas = atend.temPrumada === "Sim" ? atend.prumadas || [] : [];
-      B.tabela(
-        ["Prumada", "Torre inicial", "Torre final", "Disjuntor"],
-        prumadas.map((p, i) => [
-          `Prumada ${i + 1}`,
-          p.torreIni,
-          p.torreFim,
-          p.disj,
-        ]),
-      );
-    }
-  } else if (coletivo) {
-    B.filete();
-    B.secao("Unidades consumidoras");
-    B.tabelaAuto(
-      [
         "Unidade",
-        "Nº predial",
-        "Compl.",
-        "Inst. / UC / Medidor",
-        "Solicitação",
+        "Complemento",
+        "Atividade",
+        "Área (m²)",
+        "Carga prevista (kW)",
         "Disjuntor",
       ],
-      ucBlocos.map((u, ui) => [
-        u.identificacao || "UC " + (ui + 1),
-        hibrido && u.nd === "5.1" ? u.nPredial : obra.num,
+      ucs.map((u, ui) => [
+        u.identificacao || `UC ${ui + 1}`,
         u.complemento,
-        u.solicitacao !== "Conexão Nova" ? u.instalacao : "",
-        u.solicitacao,
+        u.atividade,
+        u.area,
+        ucSemAlteracao(u)
+          ? ""
+          : cb.modoCalculadora
+            ? fmt2(num((u.cargas || {})._cargaKw))
+            : fmt2(prevKwUC(u)),
         u.disjPara,
       ]),
       "pdf-tabela--ucs",
     );
-    B.tabela(
+  });
+
+  _pdfObservacoesBT(B, obs);
+
+  return B.podar();
+}
+
+/* ============================================================
+   3. Conteúdo — coletivo (agrupamento com proteção geral)
+   ------------------------------------------------------------
+   Segue docs/mocks/pdf-bt-coletivo/svg_1 … svg_4: folha 1 com
+   contato e empreendimento, folha 2 com a correspondência e folha 3
+   com o resumo do agrupamento, seguido das unidades AGRUPADAS POR
+   TIPO DE PEDIDO — uma seção para cada, com a conexão nova em
+   tabela e a alteração de carga em um bloco por unidade.
+
+   O agrupamento do coletivo é guardado em blocos[0] — a etapa
+   "Dados da torre" reaproveita o mesmo card do condomínio, sem a
+   identificação da torre (ver bt/js/coletivo-app.js).
+   ============================================================ */
+
+function _pdfBlocosColetivoBT(S) {
+  const {
+    prop = {},
+    atend = {},
+    ucBlocos = [],
+    blocos = [],
+    hibrido,
+    modoCalculadora,
+    prevTotalKw,
+    demandaTotalGeral,
+    obs,
+  } = S;
+
+  const B = _pdfConstrutor();
+  const agrupamento = blocos[0] || {};
+
+  /* Carga da UC: no método 5.2 vem do campo "Carga prevista"; no
+     modo calculadora, do total das cargas detalhadas. */
+  const cargaUC = (u) =>
+    ucSemAlteracao(u)
+      ? ""
+      : (modoCalculadora
+          ? fmt2(num((u.cargas || {})._cargaKw))
+          : fmt2(prevKwUC(u))) + " kW";
+
+  /* ---- Dados para contato ---- */
+  _pdfContatoBT(B, prop);
+
+  /* ---- Dados do empreendimento ---- */
+  B.filete();
+  B.secao("Dados do empreendimento");
+  B.cartoes([
+    ["Demanda total de todas as unidades", fmt2(demandaTotalGeral) + " kVA"],
+    ["Carga total de todas as unidades", fmt2(prevTotalKw) + " kW"],
+    ["Disjuntor geral do agrupamento", atend.disjuntorGeral],
+  ]);
+  B.campos([
+    ["Tipo de solicitação", atend.escopo],
+    [
+      "Modalidade",
+      "Coletivo — Agrupamento com Proteção Geral (APR Web)" +
+        (atend.solicitacao ? " · " + atend.solicitacao : ""),
+      2,
+    ],
+  ]);
+  _pdfEmpreendimentoBT(B, S);
+
+  /* ---- Correspondência, em folha nova (svg_1 → svg_2) ---- */
+  B.quebrarPagina();
+  _pdfCorrespondenciaBT(B, S);
+
+  /* ---- Dados da torre (o agrupamento), em folha nova ---- */
+  B.quebrarPagina();
+  B.secao("Dados da torre");
+  B.cartoes(
+    [
       [
-        "Unidade",
-        "Norma",
-        "Caixa",
-        "Atividade principal",
-        "Ramo de atividade",
-        { rotulo: "Carga (kW)", num: true },
-        { rotulo: "Dem. (kVA)", num: true },
+        "Demanda do condomínio",
+        num(agrupamento.demandaIncendio)
+          ? fmt2(agrupamento.demandaIncendio) + " kVA"
+          : "",
       ],
-      ucBlocos.map((u, ui) => [
-        u.identificacao || "UC " + (ui + 1),
-        hibrido ? `ND ${u.nd}` : "",
-        u.caixa,
-        u.atividade,
-        ramoParaPdf(u.ramo),
-        ucSemAlteracao(u)
-          ? ""
-          : modoCalculadora
-            ? fmt2(num((u.cargas || {})._cargaKw))
-            : fmt2(prevKwUC(u)),
-        /* Demanda por UC só existe no modo calculadora (ND-5.1 por
-           UC); no método 5.2 ela é agregada. */
-        ucSemAlteracao(u) || !modoCalculadora
-          ? ""
-          : fmt2(num((u.cargas || {})._demanda)),
-      ]),
-      "pdf-tabela--ucs",
-    );
-    B.total(
-      `Carga total ${fmt2(prevTotalKw)} kW · Demanda`,
-      `${fmt2(demandaTotalGeral)} kVA`,
-    );
+      ["Disjuntor do condomínio", agrupamento.disjIncendio],
+      ["Demanda da torre", fmt2(demandaTotalGeral) + " kVA"],
+      ["Disjuntor da torre", atend.disjuntorGeral],
+    ],
+    "pdf-cartoes--4col",
+  );
 
-    if (atend.disjuntorGeral || trocaDisjGeral) {
-      B.filete();
-      B.secao("Disjuntor geral");
-      if (trocaDisjGeral) {
-        B.campos([
-          ["Disjuntor geral existente", atend.disjGeralAtual],
-          ["Disjuntor geral novo", atend.disjuntorGeral],
-          ["Demanda atual (kVA)", atend.demandaAtual],
-          ["Demanda futura (kVA)", fmt2(demandaPrevTotal)],
-        ]);
-      } else {
-        B.campos([
-          ["Disjuntor geral do agrupamento", atend.disjuntorGeral, 2],
-        ]);
-      }
-    }
-  }
+  /* ---- Unidades consumidoras, agrupadas por tipo de pedido ----
+     Uma seção por tipo (svg_3/svg_4), na ordem em que a etapa das
+     UCs os oferece — e não uma tabela só com uma coluna
+     "Solicitação": misturar conexão nova e alteração de carga na
+     mesma lista esconde que são pedidos diferentes, com campos
+     diferentes. O tipo sai do título, então não vira coluna.
 
-  /* ---- Fechamento ---- */
-  if (!_pdfVazio(obs)) {
+     A alteração de carga não cabe numa linha de tabela: ela traz
+     nº da instalação, ramo de atividade e o disjuntor que está lá
+     hoje. Por isso ganha um bloco por unidade, e não uma lista. */
+  const GRUPOS_UC = [
+    { tipo: "Conexão Nova", prefixo: "Unidades com pedidos para ", forte: "conexão nova" },
+    {
+      tipo: "Alteração de Carga",
+      prefixo: "Unidades com pedidos para ",
+      forte: "alteração de carga",
+      detalhe: true,
+    },
+    {
+      tipo: "Caixa Existente sem Alteração",
+      prefixo: "Unidades em ",
+      forte: "caixa existente sem alteração",
+    },
+  ];
+
+  GRUPOS_UC.forEach((g) => {
+    const doGrupo = ucBlocos
+      .map((u, ui) => ({ u, ui }))
+      .filter(({ u }) => u.solicitacao === g.tipo);
+    if (!doGrupo.length) return;
+
     B.filete();
-    B.secao("Observações");
-    B.paragrafos(obs);
-  }
-  B.total("Demanda total do atendimento", `${fmt2(demandaTotalGeral)} kVA`);
-  B.assinatura();
+    B.secaoDestaque(g.prefixo, g.forte);
+
+    if (!g.detalhe) {
+      /* tabelaAuto derruba a coluna que ficou vazia no GRUPO: o nº
+         da instalação não existe em conexão nova, e a caixa
+         existente sem alteração não tem carga nem disjuntor novo —
+         cada tabela sai com as colunas que aquele tipo preenche. */
+      B.tabelaAuto(
+        [
+          "Unidade",
+          "Comp.",
+          hibrido ? "Norma" : null,
+          "Inst. / UC / Medidor",
+          "Atividade",
+          "Carga prevista",
+          "Disjuntor",
+        ].filter(Boolean),
+        doGrupo.map(({ u, ui }) =>
+          [
+            u.identificacao || `UC ${ui + 1}`,
+            u.complemento,
+            hibrido ? `ND ${u.nd}` : null,
+            u.instalacao,
+            u.atividade,
+            cargaUC(u),
+            u.disjPara,
+          ].filter((c) => c !== null),
+        ),
+        "pdf-tabela--ucs",
+      );
+      return;
+    }
+
+    /* Um bloco por UC: a tabelinha de quatro colunas com o que muda
+       e, abaixo, os campos que só existem em alteração. Os quatro
+       campos vão numa lista só porque é assim que o mock se
+       comporta — sem ramo de atividade (UC residencial), o disjuntor
+       atual sobe para a primeira linha (svg_4). */
+    doGrupo.forEach(({ u, ui }) => {
+      B.subsecao(`Unidade consumidora ${ui + 1}`);
+      B.tabela(
+        ["Comp.", "Área", "Carga prevista", "Disjuntor novo"],
+        [
+          [
+            u.complemento,
+            _pdfVazio(u.area) ? "" : u.area + "m²",
+            cargaUC(u),
+            u.disjPara,
+          ],
+        ],
+        "pdf-tabela--uc-alterada",
+      );
+      B.campos([
+        ["Nº da unidade/instalação", u.instalacao],
+        ["Atividade principal", u.atividade],
+        ["Ramo da atividade", ramoParaPdf(u.ramo)],
+        ["Disjuntor atual", u.disjDe],
+      ]);
+    });
+  });
+
+  _pdfObservacoesBT(B, obs);
 
   return B.podar();
 }
@@ -702,10 +479,9 @@ function _pdfBlocosColetivoBT(S) {
 /* ============================================================
    4. Conteúdo — individual (até 3 caixas sem proteção geral)
    ------------------------------------------------------------
-   Segue os SVGs de referência svg_1 … svg_7 (creditados no
-   cabeçalho de css/pdf/variables-pdf.css): uma seção por unidade
-   consumidora, "Correspondência" e — em folha nova — "Cargas da
-   unidade" e "Cargas especiais da unidade".
+   Segue docs/mocks/pdf-bt-individual/svg_1 … svg_7: uma seção por
+   unidade consumidora, "Correspondência" e — em folha nova —
+   "Cargas da unidade" e "Cargas especiais da unidade".
 
    Cada LINHA do mock é uma chamada de B.campos() própria, e não uma
    lista só: como campo vazio é descartado, numa lista única o campo
@@ -718,7 +494,6 @@ const _PDF_MODALIDADE_IND = "Individual - até 3 caixas sem proteção geral";
 function _pdfBlocosIndividualBT(S) {
   const {
     prop = {},
-    corr = {},
     obra = {},
     ucsDet = [],
     obs,
@@ -733,14 +508,6 @@ function _pdfBlocosIndividualBT(S) {
   /* Sem número quando há uma só UC, numerada a partir daí — é a
      diferença entre o svg_1 e o svg_5. */
   const nomeUC = (i) => "unidade consumidora" + (varias ? " " + (i + 1) : "");
-
-  const coord = (lat, lng) => {
-    const f = (v) => {
-      const n = parseFloat(String(v).replace(",", "."));
-      return isNaN(n) ? null : n.toFixed(6);
-    };
-    return [f(lat), f(lng)].filter((x) => x !== null).join(", ");
-  };
 
   /* Faixa do cartão "Disjuntor adequado". Reaproveita a régua já
      existente (exibeTermoGrupoBBT, em individual-app.js) em vez de
@@ -856,18 +623,10 @@ function _pdfBlocosIndividualBT(S) {
       [
         "Coordenadas",
         novoPadrao
-          ? coord(u.padraoLat, u.padraoLng)
-          : coord(obra.lat, obra.lng),
+          ? _pdfCoordBT(u.padraoLat, u.padraoLng)
+          : _pdfCoordBT(obra.lat, obra.lng),
       ],
-      [
-        "Coordenada UTM",
-        novoPadrao
-          ? u.padraoUtm
-          : obra.utm ||
-            (typeof utmString === "function"
-              ? utmString(obra.lat, obra.lng)
-              : ""),
-      ],
+      ["Coordenada UTM", novoPadrao ? u.padraoUtm : _pdfUtmBT(obra)],
     ]);
 
     B.campos([
@@ -885,49 +644,7 @@ function _pdfBlocosIndividualBT(S) {
 
   /* ---- Correspondência ---- */
   B.filete();
-  B.secao("Correspondência");
-  const enderecoObra = [
-    [obra.endereco, obra.num].filter(Boolean).join(", "),
-    obra.compl,
-    obra.bairro,
-    [obra.cidade, obra.estado].filter(Boolean).join("/"),
-    obra.cep ? "CEP " + obra.cep : "",
-  ]
-    .filter(Boolean)
-    .join(" - ");
-  const enderecoNovo = [
-    [corr.rua, corr.num].filter(Boolean).join(", "),
-    corr.compl,
-    corr.bairro,
-    corr.municipio,
-    corr.estado,
-    corr.cep ? "CEP " + corr.cep : "",
-  ]
-    .filter(Boolean)
-    .join(" - ");
-  const destinoFatura =
-    corr.alternativa === "E-mail informado"
-      ? ["E-mail para receber a fatura", prop.email]
-      : corr.alternativa === "Outro e-mail"
-        ? ["E-mail para receber a fatura", corr.outroEmail]
-        : corr.alternativa === "Conta globalizada"
-          ? ["Conta globalizada", corr.contaGlobal]
-          : corr.alternativa === "Mesmo da obra"
-            ? [
-                "Endereço para receber a fatura",
-                "Mesmo da obra — " + enderecoObra,
-                3,
-              ]
-            : corr.alternativa === "Endereço novo"
-              ? ["Endereço para receber a fatura", enderecoNovo, 3]
-              : ["Forma de recebimento da fatura", corr.alternativa];
-  B.campos([
-    destinoFatura,
-    [
-      "Data de vencimento da fatura",
-      corr.vencimento ? "Todo dia " + corr.vencimento : "",
-    ],
-  ]);
+  _pdfCorrespondenciaBT(B, S);
 
   /* ---- Cargas, em folha nova ----
      A quebra é do documento, não do transbordo: no mock as cargas
@@ -1012,12 +729,7 @@ function _pdfBlocosIndividualBT(S) {
     }
   });
 
-  /* ---- Observações ---- */
-  if (!_pdfVazio(obs)) {
-    B.filete();
-    B.secao("Observações");
-    B.paragrafos(obs);
-  }
+  _pdfObservacoesBT(B, obs);
 
   return B.podar();
 }
@@ -1025,353 +737,28 @@ function _pdfBlocosIndividualBT(S) {
 /* ============================================================
    5. Despacho
    ------------------------------------------------------------
-   Só o individual segue os mocks; coletivo e condomínio de torres
-   continuam emitindo o documento anterior enquanto não houver
-   desenho para eles.
-
    O despacho NÃO pode olhar só para `coletivo`: essa flag é
    disjGeral === "Sim" (bt/js/coletivo-app.js), e fica falsa no
-   agrupamento que dispensa a proteção geral. Quem separa os dois
+   agrupamento que dispensa a proteção geral. Quem separa os
    documentos de verdade é a forma do estado — a página do
    individual preenche `ucsDet`, a do coletivo manda `ucsDet` vazio
-   e as unidades em `ucBlocos`/`blocos`.
+   e as unidades em `ucBlocos`/`blocos` —, e o condomínio se anuncia
+   pela própria flag `multiTorres`.
    ============================================================ */
 
 function _pdfBlocosBT(S) {
-  const individual =
-    !S.coletivo && !S.multiTorres && (S.ucsDet || []).length > 0;
+  if (S.multiTorres) return _pdfBlocosMultiTorresBT(S);
+  const individual = !S.coletivo && (S.ucsDet || []).length > 0;
   return individual ? _pdfBlocosIndividualBT(S) : _pdfBlocosColetivoBT(S);
 }
 
 /* ============================================================
-   6. Paginação
-   ------------------------------------------------------------
-   O Chrome não suporta margin boxes de @page nem counter(pages),
-   então não há como paginar em CSS puro e ainda carimbar "n/N".
-   Medimos dentro de uma .pdf-pagina de verdade (mesma largura,
-   mesma tipografia) e decidimos as quebras aqui.
+   6. Exportação
    ============================================================ */
-
-function _pdfPaginador(doc) {
-  /* `secao` é o título da seção em curso e `repetido`, a cópia dele
-     no topo da folha atual. */
-  const P = {
-    doc,
-    paginas: [],
-    corpo: null,
-    util: 0,
-    secao: null,
-    repetido: null,
-  };
-
-  /* Seção partida entre folhas repete o título na continuação — é o
-     que o mock faz quando a UC 3 atravessa a página (svg_6 → svg_7).
-     `repetir: false` para a folha que já começa pelo próprio título:
-     repetir ali seria imprimi-lo duas vezes.
-
-     A cópia entra ANTES de qualquer medição, senão P.cabe() decide
-     pela altura errada e o conteúdo transborda ao receber o título. */
-  P.novaPagina = (repetir) => {
-    const pagina = _pdfMolde("tplPdfPagina");
-    doc.appendChild(pagina);
-    P.paginas.push(pagina);
-    P.corpo = pagina.querySelector(".pdf-corpo");
-    /* Altura útil lida do próprio layout, em vez de repetir os
-       770pt como constante: .pdf-corpo é o que sobra da folha
-       depois da margem e do rodapé. */
-    P.util = P.corpo.clientHeight;
-    P.repetido =
-      repetir !== false && P.secao
-        ? P.corpo.appendChild(P.secao.cloneNode(true))
-        : null;
-    return pagina;
-  };
-  P.por = (el) => P.corpo.appendChild(el);
-  P.cabe = () => P.corpo.scrollHeight <= P.util;
-  /* O título repetido não conta como conteúdo: quem pergunta se a
-     folha está vazia quer saber se abrir outra adiantaria alguma
-     coisa, e uma folha só com o título continua limpa. */
-  P.vazia = () => {
-    const filhos = P.corpo.children;
-    return !filhos.length || (filhos.length === 1 && filhos[0] === P.repetido);
-  };
-
-  return P;
-}
-
-/* Fatia uma tabela entre páginas repetindo o cabeçalho. */
-function _pdfDividirTabela(P, tabela) {
-  const linhas = Array.from(tabela.tBodies[0].rows);
-  if (linhas.length < 2) return false;
-  linhas.forEach((tr) => tr.remove());
-
-  const fatias = [];
-  const novaFatia = () => {
-    const fatia = tabela.cloneNode(true);
-    Array.from(fatia.tBodies[0].rows).forEach((tr) => tr.remove());
-    P.por(fatia);
-    fatias.push(fatia);
-    return fatia;
-  };
-
-  let fatia = novaFatia();
-  linhas.forEach((tr) => {
-    fatia.tBodies[0].appendChild(tr);
-    if (P.cabe()) return;
-    tr.remove();
-    P.novaPagina();
-    fatia = novaFatia();
-    fatia.tBodies[0].appendChild(tr);
-  });
-
-  /* Viúva: uma única linha numa folha nova, sob um cabeçalho
-     repetido, lê como erro. Puxa uma da fatia anterior — que tem
-     folga, já que acabou de recusar esta. */
-  const ultima = fatias[fatias.length - 1];
-  const anterior = fatias[fatias.length - 2];
-  if (
-    anterior &&
-    ultima.tBodies[0].rows.length === 1 &&
-    anterior.tBodies[0].rows.length > 2
-  ) {
-    const corpoAnt = anterior.tBodies[0];
-    ultima.tBodies[0].insertBefore(
-      corpoAnt.rows[corpoAnt.rows.length - 1],
-      ultima.tBodies[0].rows[0],
-    );
-  }
-  return true;
-}
-
-/* Fatia um parágrafo entre páginas, por busca binária do maior
-   prefixo que ainda cabe. */
-function _pdfDividirTexto(P, el) {
-  const palavras = String(el.textContent).split(/\s+/).filter(Boolean);
-  if (palavras.length < 2) return false;
-  let restantes = palavras;
-  while (restantes.length) {
-    const fatia = el.cloneNode(false);
-    P.por(fatia);
-    let baixo = 1;
-    let alto = restantes.length;
-    let melhor = 0;
-    while (baixo <= alto) {
-      const meio = Math.floor((baixo + alto) / 2);
-      fatia.textContent = restantes.slice(0, meio).join(" ");
-      if (P.cabe()) {
-        melhor = meio;
-        baixo = meio + 1;
-      } else {
-        alto = meio - 1;
-      }
-    }
-    if (!melhor) {
-      fatia.remove();
-      /* Numa folha já limpa nem a primeira palavra coube: não há o
-         que fatiar, devolve para o chamador tratar. */
-      if (P.vazia()) return false;
-      P.novaPagina();
-      continue;
-    }
-    fatia.textContent = restantes.slice(0, melhor).join(" ");
-    restantes = restantes.slice(melhor);
-    if (restantes.length) P.novaPagina();
-  }
-  return true;
-}
-
-function _pdfDividir(P, el) {
-  if (el.matches("table.pdf-tabela")) return _pdfDividirTabela(P, el);
-  if (el.matches(".pdf-observacoes")) return _pdfDividirTexto(P, el);
-  return false;
-}
-
-/* Grupo mais alto que uma folha limpa. Sem este tratamento o laço
-   principal abriria página após página sem nunca encaixar, ou o
-   `overflow: hidden` da .pdf-pagina comeria o conteúdo em silêncio. */
-function _pdfEstourar(P, els) {
-  els.forEach((el) => {
-    P.por(el);
-    if (P.cabe()) return;
-    el.remove();
-    if (!P.vazia()) {
-      P.novaPagina();
-      P.por(el);
-      if (P.cabe()) return;
-      el.remove();
-    }
-    if (_pdfDividir(P, el)) return;
-    /* Último recurso: entra inteiro e transborda. Falha visível é
-       melhor que corte silencioso — o aviso abaixo e a checagem
-       final apontam a página. */
-    P.por(el);
-    console.warn("[PDF] bloco maior que a página e indivisível:", el);
-  });
-}
-
-function _pdfPaginar(doc, blocos) {
-  const P = _pdfPaginador(doc);
-  P.novaPagina();
-  /* Cabeçalho só na 1ª folha: nas seguintes o mock começa direto
-     no título da seção, a 36pt do topo. */
-  P.por(_pdfMolde("tplPdfCabecalho"));
-
-  for (let i = 0; i < blocos.length; ) {
-    /* keep-with-next transitivo: o título prende o 1º bloco, que
-       pode prender o seguinte. */
-    const grupo = [blocos[i]];
-    let j = i;
-    while (grupo[grupo.length - 1].prende && j + 1 < blocos.length) {
-      j += 1;
-      grupo.push(blocos[j]);
-    }
-    const els = grupo.map((b) => b.el);
-    /* Grupo que traz o próprio título de seção não repete o título
-       anterior na folha nova — e passa a ser a seção corrente. */
-    const titulo =
-      els.find((el) => el.classList.contains("pdf-secao-titulo")) || null;
-    if (grupo[0].quebraAntes && !P.vazia()) P.novaPagina(!titulo);
-    if (titulo) P.secao = titulo;
-
-    els.forEach(P.por);
-    if (!P.cabe()) {
-      els.forEach((el) => el.remove());
-      if (!P.vazia()) {
-        P.novaPagina(!titulo);
-        els.forEach(P.por);
-      }
-      if (!P.cabe()) {
-        els.forEach((el) => el.remove());
-        _pdfEstourar(P, els);
-      }
-    }
-    i = j + 1;
-  }
-
-  /* Filete que caiu no topo de uma folha não separa nada do que veio
-     antes: o mock abre a página de continuação direto no título
-     (svg_2). Sai depois de paginado — remover só libera altura, então
-     nenhuma folha passa a transbordar por causa disto. */
-  P.paginas.forEach((pagina) => {
-    const primeiro = pagina.querySelector(".pdf-corpo").firstElementChild;
-    if (primeiro && primeiro.classList.contains("pdf-filete"))
-      primeiro.remove();
-  });
-
-  const total = P.paginas.length;
-  P.paginas.forEach((pagina, i) => {
-    pagina.querySelector(".pdf-rodape").textContent = `${i + 1}/${total}`;
-    /* A .pdf-pagina corta o excesso, então um erro de paginação
-       apareceria como texto faltando, sem pista nenhuma. */
-    const corpo = pagina.querySelector(".pdf-corpo");
-    if (corpo.scrollHeight > corpo.clientHeight)
-      console.warn(`[PDF] conteúdo transbordou na página ${i + 1}`, corpo);
-  });
-  return total;
-}
-
-/* ============================================================
-   7. Pré-requisitos da medição
-   ============================================================ */
-
-/* A paginação é feita medindo altura, e css/variables.css declara
-   Open Sans com font-display: swap. Medir antes de a fonte chegar
-   pagina em Segoe UI — quebras no lugar errado e "n/N" incoerente.
-   `document.fonts.ready` sozinha não basta: ela só resolve as
-   faces JÁ solicitadas, e o peso 700 pode nunca ter sido pedido
-   pela tela. Passar o texto real ainda faz o navegador escolher o
-   unicode-range certo (latin × latin-ext). */
-async function _pdfAguardarFontes(texto) {
-  if (!document.fonts) return;
-  try {
-    await Promise.all([
-      document.fonts.load('400 10pt "Open Sans"', texto),
-      document.fonts.load('700 10pt "Open Sans"', texto),
-    ]);
-    await document.fonts.ready;
-  } catch (e) {
-    /* Cache frio sem rede: sai com a fonte de fallback, que é
-       melhor que um botão que não responde. */
-    console.warn("[PDF] fontes não confirmadas; paginando assim mesmo", e);
-  }
-}
-
-/* O logo é um <img> externo: se ainda não decodificou quando a
-   impressão começa, a folha sai sem a marca. */
-async function _pdfAguardarImagens(raiz) {
-  await Promise.all(
-    Array.from(raiz.querySelectorAll("img")).map((img) =>
-      img.decode ? img.decode().catch(() => {}) : Promise.resolve(),
-    ),
-  );
-}
-
-/* ============================================================
-   8. Exportação
-   ============================================================ */
-
-/* Mesmo padrão de nome dos demais PDFs do projeto (_nomeArqMT em
-   mt/js/pdf.js): prefixo do formulário + nome do cliente. A
-   normalização derruba o acento ANTES do filtro, senão "José"
-   viraria "Jos_". */
-function _pdfNomeArquivo(S) {
-  const nome = String((S && S.prop && S.prop.nome) || "Cliente")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9]/g, "_")
-    .replace(/_+/g, "_")
-    .replace(/^_|_$/g, "")
-    .slice(0, 30);
-  return `CEMIG_BT_${nome || "Cliente"}.pdf`;
-}
 
 async function gerarPdfDocumento(S) {
-  const anterior = document.getElementById("documentoPdf");
-  if (anterior) anterior.remove();
-
-  const foco = document.activeElement;
-  /* A fonte do PDF é buscada na primeira exportação: sem este
-     estado o botão fica mudo por um instante. */
-  const botao = document.getElementById("btnExportarPDF");
-  const rotulo = botao && botao.textContent;
-  if (botao) {
-    botao.disabled = true;
-    botao.textContent = "Gerando PDF…";
-  }
-
-  let doc = null;
-  try {
-    doc = _pdfMolde("tplPdfDoc");
-    doc.classList.add("pdf-doc--montando");
-    document.body.appendChild(doc);
-
-    const blocos = _pdfBlocosBT(S);
-    await _pdfAguardarFontes(blocos.map((b) => b.el.textContent).join(" "));
-    _pdfPaginar(doc, blocos);
-    await _pdfAguardarImagens(doc);
-
-    /* O documento segue montado (fora da viewport) durante o
-       desenho: é dele que o renderizador tira as coordenadas. */
-    await renderizarPdfDoc(doc, {
-      arquivo: _pdfNomeArquivo(S),
-      titulo: "Formulário de Ligação Nova e Alteração de Carga",
-    });
-  } catch (e) {
-    console.error("[PDF] falha ao gerar o documento", e);
-    alert("Não foi possível gerar o PDF. Recarregue a página e tente de novo.");
-    return;
-  } finally {
-    if (doc) doc.remove();
-    if (botao) {
-      botao.disabled = false;
-      botao.textContent = rotulo;
-    }
-    if (foco && foco.focus) foco.focus();
-  }
-
-  /* Ao contrário do window.print(), aqui o arquivo já saiu quando
-     se chega nesta linha: o diálogo de sucesso deixou de aparecer
-     também quando o usuário cancelava a exportação. */
-  if (typeof mostrarModalPdfExportado === "function")
-    mostrarModalPdfExportado();
+  await _pdfMontarEBaixar(() => _pdfBlocosBT(S), {
+    arquivo: _pdfNomeArquivo("BT", S && S.prop && S.prop.nome),
+    titulo: "Formulário de Ligação Nova e Alteração de Carga",
+  });
 }

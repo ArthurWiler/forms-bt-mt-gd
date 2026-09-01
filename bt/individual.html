@@ -24,9 +24,10 @@
     <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/formulario-bt.css" />
     <!-- Estilo do PDF. É o documento do PDF que consome este CSS
-         (bt/js/pdf-doc.js monta o HTML e shared/js/pdf-render.js o
-         desenha), então ele precisa estar na página — não é folha de
-         impressão da tela. -->
+         (shared/js/pdf-doc.js monta o HTML, com o conteúdo de
+         bt/js/pdf-doc.js, e shared/js/pdf-render.js o desenha), então
+         ele precisa estar na página — não é folha de impressão da
+         tela. -->
     <link rel="stylesheet" href="../css/pdf/variables-pdf.css" />
     <link rel="stylesheet" href="../css/pdf/shared-pdf.css" />
     <link rel="stylesheet" href="../css/pdf/bt-pdf.css" />
@@ -185,9 +186,12 @@
          js/model.js, que deixou de defini-los. Compartilhado com a Microgeracao. -->
     <script defer src="../shared/js/complementos.js"></script>
     <script defer src="js/model.js"></script>
-    <!-- Desenha o PDF a partir do documento HTML paginado por
-         js/pdf-doc.js, que chama renderizarPdfDoc: vem antes dele. -->
+    <!-- PDF em três camadas: pdf-render.js DESENHA o documento já
+         paginado, shared/js/pdf-doc.js é o MOTOR (moldes, construtor,
+         paginador) e js/pdf-doc.js traz só o CONTEÚDO do BT. Cada um
+         usa o anterior, então a ordem importa. -->
     <script defer src="../shared/js/pdf-render.js"></script>
+    <script defer src="../shared/js/pdf-doc.js"></script>
     <script defer src="js/pdf-doc.js"></script>
     <script defer src="js/termo-grupo-b.js"></script>
 
