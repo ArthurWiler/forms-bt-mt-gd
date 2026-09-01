@@ -822,6 +822,14 @@ label.restricao-aceite input[type="checkbox"] {
 .previa-torre .previa-campo-valor {
   color: var(--cmg-neutral-600);
 }
+/* Bloco que vem DEPOIS dos campos dentro de uma seção da prévia (a
+   tabela de unidades do agrupamento coletivo, logo abaixo da grade):
+   sem isto os dois se encostam. No painel da torre esse respiro já vem
+   do gap do .previa-torre, então a regra é só para a seção. */
+.previa-secao-bloco {
+  margin-top: var(--cmg-space-6);
+}
+
 /* Tabela de UCs da torre — rola horizontalmente em telas estreitas.
    Corpo branco sobre o painel neutra/50; o overflow-x recorta o cabeçalho
    cinza dentro do raio arredondado. */

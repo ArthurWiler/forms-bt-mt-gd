@@ -88,8 +88,8 @@ let _uniAbertaInicial = false;
 const ITENS_POR_PAGINA = 10;
 let _torrePagina = 0; // página da lista de torres (etapa Dados das torres)
 let _uniTorre = 0; // torre selecionada na etapa Dados das unidades
+const _previaTorrePag = {}; // página da tabela de unidades de cada torre, na prévia
 const _uniPagina = {}; // página da lista de unidades, por torre
-const _previaTorrePag = {}; // página da tabela de UCs de cada torre, na prévia
 let _previaTorreExterna = 0; // torre exibida na prévia (paginação externa)
 
 /* ===== flags de fluxo (paridade com app.js:67-68) ===== */
@@ -3619,10 +3619,55 @@ function validacaoObrigatoriosColetivo() {
     );
   return { ok: faltando.length === 0, faltando };
 }
-// Painel de uma torre na prévia (múltiplas torres): cabeçalho "Torre X (n de N)",
-// os campos da torre (identificação, quantidades, complemento, demanda/disjuntor
-// do condomínio e da torre) e a tabela de UCs paginada. Os lápis levam de volta
-// às etapas de edição — dados da torre → PG.blocos, UCs → PG.unidades.
+// Tabela de unidades da prévia — a MESMA nas duas modalidades
+// (docs/mocks/previa-bt-coletivo.svg e previa-bt-multitorres.svg):
+// identificação, complemento, tipo de pedido, atividade, carga prevista e
+// disjuntor, com o lápis levando de volta à etapa de edição.
+// `inicio` é o deslocamento da página em curso: sem ele a numeração de
+// reserva ("UC n") recomeçaria do 1 a cada bloco paginado.
+function _mkPreviaTabelaUCs(ucs, etapa, inicio) {
+  const base = inicio || 0;
+  const wrap = document.createElement("div");
+  wrap.className = "previa-tabela-wrap";
+  const linhas = ucs
+    .map((u, i) => {
+      const rotulo = u.identificacao || `UC ${base + i + 1}`;
+      const carga = _preenchido(u.cargaPrevista)
+        ? fmt2(u.cargaPrevista) + " kW"
+        : "—";
+      return (
+        `<tr>` +
+        `<td>${rotulo}</td>` +
+        `<td>${u.complemento || "—"}</td>` +
+        `<td>${u.solicitacao || "—"}</td>` +
+        `<td>${u.atividade || "—"}</td>` +
+        `<td>${carga}</td>` +
+        `<td class="previa-tabela-disj">${u.disjPara || "—"}` +
+        `<button type="button" class="previa-edit" title="Editar" aria-label="Editar ${rotulo}" onclick="goTo(${etapa}, true)"></button>` +
+        `</td>` +
+        `</tr>`
+      );
+    })
+    .join("");
+  wrap.innerHTML =
+    `<table class="previa-tabela"><thead><tr>` +
+    `<th>Unidade</th><th>Complemento</th><th>Solicitação</th><th>Atividade</th>` +
+    `<th>Carga prevista</th><th>Disjuntor</th>` +
+    `</tr></thead><tbody>${linhas}</tbody></table>`;
+  return wrap;
+}
+
+// "Quantidade de unidades por andar" quando a composição foi customizada por
+// faixa de pavimento: o número único dá lugar a "Customizado", e as faixas
+// aparecem logo abaixo nos mesmos cards só-leitura da etapa de edição.
+const _previaPorAndar = (o) =>
+  (o.aptosPorAndarFaixas || []).length ? "Customizado" : o.aptosPorAndar;
+
+// Painel de uma torre na prévia (múltiplas torres): cabeçalho "Torre" + chip
+// "n de N", os campos da torre (identificação, quantidades, complemento,
+// composição por pavimento, demanda/disjuntor do condomínio e da torre) e a
+// tabela de unidades. Os lápis levam de volta às etapas de edição — dados da
+// torre → PG.blocos, unidades → PG.unidades.
 function _mkPreviaTorre(b, bi) {
   const painel = document.createElement("div");
   painel.className = "previa-torre";
@@ -3630,25 +3675,16 @@ function _mkPreviaTorre(b, bi) {
   const cb = calcBlocoMultiTorres(b);
   const demandaTorre = cb.demandaUcs + num(b.demandaIncendio);
 
-  // Cabeçalho: "Torre <nome>" + chip "bi+1 de N"
+  // Cabeçalho: "Torre" + chip "bi+1 de N". O nome da torre não entra aqui
+  // porque ele já é o primeiro campo do painel (Identificação da torre).
   const head = document.createElement("div");
   head.className = "previa-torre-head";
   head.innerHTML =
-    `<span class="previa-torre-titulo">Torre ${b.nome || bi + 1}</span>` +
+    `<span class="previa-torre-titulo">Torre</span>` +
     `<span class="previa-torre-chip">${bi + 1} de ${state.blocos.length}</span>`;
   painel.appendChild(head);
 
-  // Cards de resumo da torre (mesmo trio da seção "Dados do empreendimento"):
-  // Modalidade, Unidades consumidoras e Demanda total.
-  const cards = document.createElement("div");
-  cards.className = "previa-cards";
-  cards.innerHTML =
-    pvCardBT("Modalidade", `Torre · ${ucs.length} unidade(s)`) +
-    pvCardBT("Unidades consumidoras", String(ucs.length)) +
-    pvCardBT("Demanda total", fmt2(demandaTorre) + " kVA");
-  painel.appendChild(cards);
-
-  // Campos da torre (mesma ordem da etapa de edição).
+  // Campos da torre, na mesma ordem da etapa de edição.
   const grid = document.createElement("div");
   grid.className = "previa-grid";
   grid.innerHTML =
@@ -3658,7 +3694,11 @@ function _mkPreviaTorre(b, bi) {
       String(b.qtdUCs || ucs.length || 0),
       PG.blocos,
     ) +
-    pvCampoBT("Quantidade de unidades por andar", b.aptosPorAndar, PG.blocos) +
+    pvCampoBT(
+      "Quantidade de unidades por andar",
+      _previaPorAndar(b),
+      PG.blocos,
+    ) +
     pvCampoBT("Primeiro complemento", b.complInicial, PG.blocos) +
     pvCampoBT(
       "Demanda do condomínio",
@@ -3673,11 +3713,21 @@ function _mkPreviaTorre(b, bi) {
       disjGeralTorreObrigatorio(b) ? b.disjGeral : "Dispensado",
       PG.blocos,
     );
+  // Composição por pavimento, quando customizada: entra ENTRE o primeiro
+  // complemento (que ela detalha) e a proteção do condomínio, e reaproveita
+  // os cards só-leitura da etapa das torres — não há segunda implementação.
+  if ((b.aptosPorAndarFaixas || []).length)
+    grid.insertBefore(
+      _faixasComposicao(b.aptosPorAndarFaixas),
+      grid.children[4],
+    );
   painel.appendChild(grid);
 
-  // Tabela de UCs paginada.
-  const tabelaWrap = document.createElement("div");
-  tabelaWrap.className = "previa-tabela-wrap";
+  // Tabela de unidades paginada em blocos de 10 — é a paginação de DENTRO
+  // do painel. A de fora, montada em renderPreviaColetivo, troca a torre
+  // exibida: com dezenas de torres de dezenas de unidades cada, uma
+  // paginação só não dá conta de navegar as duas dimensões.
+  const mount = document.createElement("div");
   const pag = document.createElement("div");
   pag.className = "previa-tabela-pag";
   const renderTabela = () => {
@@ -3685,33 +3735,14 @@ function _mkPreviaTorre(b, bi) {
     let atual = _previaTorrePag[bi] || 0;
     if (atual >= totalPag) atual = _previaTorrePag[bi] = totalPag - 1;
     const ini = atual * ITENS_POR_PAGINA;
-    const linhas = ucs
-      .slice(ini, ini + ITENS_POR_PAGINA)
-      .map((u, k) => {
-        const idx = ini + k;
-        const carga =
-          u.cargaPrevista != null && String(u.cargaPrevista).trim() !== ""
-            ? fmt2(u.cargaPrevista)
-            : "—";
-        return (
-          `<tr>` +
-          `<td>${u.identificacao || `UC ${idx + 1}`}</td>` +
-          `<td>${u.complemento || "—"}</td>` +
-          `<td>${u.solicitacao || "—"}</td>` +
-          `<td>${u.atividade || "—"}</td>` +
-          `<td>${carga}</td>` +
-          `<td class="previa-tabela-disj">${u.disjPara || "—"}` +
-          `<button type="button" class="previa-edit" title="Editar" aria-label="Editar UC ${idx + 1}" onclick="goTo(${PG.unidades}, true)"></button>` +
-          `</td>` +
-          `</tr>`
-        );
-      })
-      .join("");
-    tabelaWrap.innerHTML =
-      `<table class="previa-tabela"><thead><tr>` +
-      `<th>Unidade</th><th>Complemento</th><th>Solicitação</th><th>Atividade</th>` +
-      `<th>Carga prevista (kW)</th><th>Disjuntor</th>` +
-      `</tr></thead><tbody>${linhas}</tbody></table>`;
+    mount.innerHTML = "";
+    mount.appendChild(
+      _mkPreviaTabelaUCs(
+        ucs.slice(ini, ini + ITENS_POR_PAGINA),
+        PG.unidades,
+        ini,
+      ),
+    );
     pag.innerHTML = "";
     pag.appendChild(
       _mkPaginacao(totalPag, atual, (pp) => {
@@ -3721,7 +3752,7 @@ function _mkPreviaTorre(b, bi) {
     );
   };
   renderTabela();
-  painel.append(tabelaWrap, pag);
+  painel.append(mount, pag);
   return painel;
 }
 function renderPreviaColetivo() {
@@ -3741,27 +3772,19 @@ function renderPreviaColetivo() {
       : c.alternativa === "Outro e-mail"
         ? c.outroEmail
         : c.alternativa;
+  const ag = _coletivoAgr();
   const modalidadeTexto = MULTI
-    ? `Múltiplas Torres · ${state.blocos.length} torre(s)`
-    : "Coletivo — Agrupamento com Proteção Geral (APR Web)";
-  let html = `<div class="previa-secao"><h4 class="previa-secao-titulo">${MULTI ? "Dados para contato" : "Dados do proprietário"}</h4><div class="previa-grid">`;
-  html += pvCampoBT("Nome", p.nome, PG.tipo, true);
-  html += pvCampoBT("E-mail", p.email, PG.tipo);
-  html += pvCampoBT("Celular", p.celular, PG.tipo);
-  // No múltiplas torres, CPF/CNPJ é mostrado em "Dados do empreendimento".
-  if (!MULTI) html += pvCampoBT(pf ? "CPF" : "CNPJ", p.cpfCnpj, PG.empr);
-  if (!MULTI && pf) {
-    html += pvCampoBT("Filiação", p.filiacao);
-    html += pvCampoBT("RG", p.rg);
-    html += pvCampoBT("Data de nascimento", dataBR(p.nasc));
-  }
-  html += `</div></div><hr class="previa-divider" />`;
+    ? `Múltiplas Torres/Blocos - ${state.blocos.length} torre(s)`
+    : ["Coletivo — Agrupamento com Proteção Geral (APR Web)"]
+        .concat(state.atend.solicitacao || [], state.atend.escopo || [])
+        .join(" · ");
+
   // Correspondência vai para o FIM da prévia em todos os fluxos (ordem da
   // tela-alvo); montada aqui e anexada ao final do html mais abaixo.
   const corrHtml =
     `<div class="previa-secao"><h4 class="previa-secao-titulo">Correspondência</h4><div class="previa-grid">` +
     pvCampoBT(
-      "E-mail para receber a fatura da torre/condomínio",
+      "E-mail para receber a fatura do condomínio",
       emailFatura,
       PG.corr,
     ) +
@@ -3771,91 +3794,78 @@ function renderPreviaColetivo() {
       PG.corr,
     ) +
     `</div></div>`;
-  // Resumo do atendimento
-  const modalidadeCard =
-    modalidadeTexto +
-    (!MULTI
-      ? ` · ${state.atend.solicitacao || "—"} · ${state.atend.escopo || "—"}`
-      : "") +
-    (!MULTI && state.atend.disjuntorGeral
-      ? ` · Disjuntor geral: ${state.atend.disjuntorGeral}`
-      : "");
-  html += `<div class="previa-secao"><h4 class="previa-secao-titulo">${MULTI ? "Dados do empreendimento" : "Resumo do atendimento"}</h4><div class="previa-cards">`;
-  html += pvCardBT("Modalidade", modalidadeCard);
-  html += pvCardBT(
-    "Unidades consumidoras",
-    String(MULTI ? totalUcsEmpreendimentoF() : state.ucBlocos.length),
+
+  /* ---- Dados para contato ----
+     Só a pessoa de contato: o documento e os dados do titular ficam em
+     "Dados do empreendimento", como nos dois mocks da prévia. */
+  let html = `<div class="previa-secao"><h4 class="previa-secao-titulo">Dados para contato</h4><div class="previa-grid">`;
+  html += pvCampoBT("Nome", p.nome, PG.tipo, true);
+  html += pvCampoBT("E-mail", p.email, PG.tipo);
+  html += pvCampoBT("Celular", p.celular, PG.tipo);
+  html += `</div></div><hr class="previa-divider" />`;
+
+  /* ---- Dados do empreendimento ----
+     Mesma lista nas duas modalidades: os mocks da prévia só divergem daqui
+     para baixo, na seção das torres/unidades. */
+  html += `<div class="previa-secao"><h4 class="previa-secao-titulo">Dados do empreendimento</h4><div class="previa-grid">`;
+  html += pvCampoBT(
+    "Cliente / Razão Social do empreendimento",
+    p.cliente,
+    PG.empr,
   );
-  html += pvCardBT("Demanda total", fmt2(demandaTotalGeralF()) + " kVA");
-  html += `</div><div class="previa-grid">`;
+  html += pvCampoBT(pf ? "CPF" : "CNPJ", p.cpfCnpj, PG.empr);
+  html += pvCampoBT("Nº ART/TRT do projeto", o.art, PG.empr);
+  html += pvCampoBT("Área do empreendimento", o.localizacao, PG.empr);
+  html += pvCampoBT("CEP", o.cep, PG.empr);
+  html += pvCampoBT("Endereço", o.endereco, PG.empr);
+  html += pvCampoBT("Número", o.num, PG.empr);
+  html += pvCampoBT("Bairro", o.bairro, PG.empr);
+  html += pvCampoBT("Cidade / Município", o.cidade, PG.empr);
+  html += pvCampoBT("Estado", o.estado, PG.empr);
+  html += pvCampoBT(
+    "Distância do padrão até a rede Cemig inferior a 30m?",
+    o.distMenor30,
+    PG.empr,
+  );
+  html += pvCampoBT(
+    "O padrão está pronto para ser ligado?",
+    o.prontoLigar,
+    PG.empr,
+  );
+  html += pvCampoBT("Tipo de rede BT que atende o local", o.tipoRede, PG.empr);
+  html += `</div></div><hr class="previa-divider" />`;
+
+  /* ---- Os três cartões de resumo ----
+     Abrem a seção das torres/unidades nas duas modalidades. */
+  const cards =
+    `<div class="previa-cards">` +
+    pvCardBT("Modalidade", modalidadeTexto) +
+    pvCardBT(
+      "Unidades consumidoras",
+      String(MULTI ? totalUcsEmpreendimentoF() : state.ucBlocos.length),
+    ) +
+    pvCardBT("Demanda total", fmt2(demandaTotalGeralF()) + " kVA") +
+    `</div>`;
+
   if (MULTI) {
-    // Múltiplas torres: campos do empreendimento como na prévia-alvo (razão
-    // social/CNPJ, ART, endereço completo, e as perguntas de rede/padrão).
-    html += pvCampoBT(
-      "Cliente / Razão Social do empreendimento",
-      p.cliente,
-      PG.empr,
-      true,
-    );
-    html += pvCampoBT(pf ? "CPF" : "CNPJ", p.cpfCnpj, PG.empr);
-    html += pvCampoBT("Nº ART/TRT do projeto", o.art, PG.empr);
-    html += pvCampoBT("Área do empreendimento", o.localizacao, PG.empr);
-    html += pvCampoBT("CEP", o.cep, PG.empr);
-    html += pvCampoBT("Endereço", o.endereco, PG.empr);
-    html += pvCampoBT("Número", o.num, PG.empr);
-    html += pvCampoBT("Bairro", o.bairro, PG.empr);
-    html += pvCampoBT("Cidade / Município", o.cidade, PG.empr);
-    html += pvCampoBT("Estado", o.estado, PG.empr);
-    html += pvCampoBT(
-      "Distância do padrão até a rede Cemig inferior a 30m?",
-      o.distMenor30,
-      PG.empr,
-    );
-    html += pvCampoBT(
-      "O padrão está pronto para ser ligado?",
-      o.prontoLigar,
-      PG.empr,
-    );
-    html += pvCampoBT(
-      "Tipo de rede BT que atende o local",
-      o.tipoRede,
-      PG.empr,
-    );
-  } else {
-    html += pvCampoBT(
-      "Endereço",
-      `${o.endereco || "—"}, ${o.num || "s/n"}`,
-      PG.empr,
-    );
-    html += pvCampoBT(
-      "Cidade / UF",
-      `${o.cidade || "—"} / ${o.estado || "—"}`,
-      PG.empr,
-    );
-    html += pvCampoBT("Localização", o.localizacao, PG.empr);
-    html += pvCampoBT(
-      "Coordenada",
-      [o.lat, o.lng].filter(Boolean).join(", "),
-      PG.empr,
-    );
-  }
-  html += `</div></div>`;
-  if (MULTI) {
-    // Seção "Dados das torres": card "Quantidade de torres" + um painel por
-    // torre (campos + tabela paginada de UCs). Montada como DOM depois de fixar
-    // o innerHTML, pois a tabela de cada torre pagina interativamente.
-    html += `<hr class="previa-divider" /><div class="previa-secao"><h4 class="previa-secao-titulo">Dados das torres</h4><div class="previa-grid">`;
+    /* ---- Dados das torres ----
+       Cartões, quantidade de torres e UM painel por vez, trocado pela
+       paginação montada logo abaixo do painel (o DOM é anexado depois de
+       fixar o innerHTML). */
+    html += `<div class="previa-secao"><h4 class="previa-secao-titulo">Dados das torres</h4>${cards}<div class="previa-grid">`;
     html += pvCampoBT(
       "Quantidade de torres",
       String(state.blocos.length),
       PG.blocos,
     );
     html += `</div><div id="previaTorresMount"></div></div>`;
-    // Seção "Dados do projeto": disponibilização da energia, disjuntores gerais
-    // e prumadas — só os níveis efetivamente configurados.
+
+    /* ---- Dados do projeto ----
+       Disponibilização da energia, disjuntores gerais e prumadas — só os
+       níveis efetivamente configurados. */
     html += `<hr class="previa-divider" /><div class="previa-secao"><h4 class="previa-secao-titulo">Dados do projeto</h4><div class="previa-grid">`;
     html += pvCampoBT(
-      "Onde a energia deverá ser disponibilizada",
+      "Onde a energia deverá ser disponibilizada no empreendimento?",
       state.atend.disponibilizacaoEnergia,
       PG.projeto,
       true,
@@ -3871,49 +3881,75 @@ function renderPreviaColetivo() {
       PG.projeto,
     );
     html += pvCampoBT(
-      "Disjuntor de prumada?",
+      "O condomínio tem disjuntor de prumada?",
       state.atend.temPrumada,
       PG.projeto,
+      true,
     );
     html += `</div>`;
     if (state.atend.temPrumada === "Sim") {
       const linhasPrumada = (state.atend.prumadas || [])
-        .map((p, i) => {
-          const faixa =
-            p.torreIni && p.torreFim
-              ? `Torres ${p.torreIni} a ${p.torreFim}`
-              : "—";
-          return (
-            `<tr><td>Prumada ${i + 1}</td><td>${faixa}</td>` +
-            `<td class="previa-tabela-disj">${p.disj || "—"}` +
+        .map(
+          (pr, i) =>
+            `<tr><td>${pr.torreIni || "—"}</td><td>${pr.torreFim || "—"}</td>` +
+            `<td class="previa-tabela-disj">${pr.disj || "—"}` +
             `<button type="button" class="previa-edit" title="Editar" aria-label="Editar prumada ${i + 1}" onclick="goTo(${PG.projeto}, true)"></button>` +
-            `</td></tr>`
-          );
-        })
+            `</td></tr>`,
+        )
         .join("");
       html +=
         `<div class="previa-tabela-wrap"><table class="previa-tabela"><thead><tr>` +
-        `<th>Prumada</th><th>Torres</th><th>Disjuntor</th>` +
+        `<th>Torre inicial</th><th>Torre final</th><th>Disjuntor</th>` +
         `</tr></thead><tbody>${linhasPrumada}</tbody></table></div>`;
     }
     html += `</div>`;
-    // Correspondência ao fim (ordem da tela-alvo).
     html += `<hr class="previa-divider" />` + corrHtml;
   } else {
-    html += `<hr class="previa-divider" /><div class="previa-secao"><h4 class="previa-secao-titulo">Previsão de carga e UCs</h4>`;
-    html += `<div class="preview-item"><span class="v">Total ${fmt2(prevTotalKwF())} kW · Demanda ${fmt2(demandaTotalGeralF())} kVA</span></div>`;
-    state.ucBlocos.forEach((u, ui) => {
-      html += `<div class="preview-item" style="display:flex;justify-content:space-between"><span class="v">${u.identificacao || `UC ${ui + 1}`} · ${u.atividade || "—"} · ${u.solicitacao} ${u.complemento ? "· " + u.complemento : ""}</span><span style="color:var(--verde);font-weight:700">${u.disjPara || "—"}</span></div>`;
-    });
-    html += `</div>`;
-    // Correspondência ao fim (ordem da tela-alvo).
+    /* ---- Dados da torre e unidades ----
+       O coletivo tem um agrupamento só, então os campos da torre vêm
+       direto na seção (sem o painel/paginação do condomínio) e a tabela
+       lista as unidades do agrupamento. */
+    html += `<div class="previa-secao"><h4 class="previa-secao-titulo">Dados da torre e unidades</h4>${cards}<div class="previa-grid" id="previaAgrupamentoGrid">`;
+    html += pvCampoBT(
+      "Quantidade de unidades na torre",
+      String(state.ucBlocos.length),
+      PG.ucs,
+    );
+    html += pvCampoBT(
+      "Quantidade de unidades por andar",
+      _previaPorAndar(ag),
+      PG.ucs,
+    );
+    /* Linha inteira: sem a "Identificação da torre" do condomínio, o
+       agrupamento tem um campo a menos e o complemento fecharia par com a
+       demanda do condomínio — no mock ele fica sozinho na linha, e é ele
+       que a composição por pavimento detalha logo abaixo. */
+    html += pvCampoBT("Primeiro complemento", ag.complInicial, PG.ucs, true);
+    html += pvCampoBT(
+      "Demanda do condomínio",
+      ag.demandaIncendio ? fmt2(ag.demandaIncendio) + " kVA" : "",
+      PG.ucs,
+    );
+    html += pvCampoBT("Disjuntor do condomínio", ag.disjIncendio, PG.ucs);
+    html += pvCampoBT(
+      "Demanda da torre",
+      fmt2(demandaTotalGeralF()) + " kVA",
+      PG.cargas,
+    );
+    html += pvCampoBT(
+      "Disjuntor da torre",
+      state.atend.disjuntorGeral,
+      PG.cargas,
+    );
+    html += `</div><div id="previaUcsMount" class="previa-secao-bloco"></div></div>`;
     html += `<hr class="previa-divider" />` + corrHtml;
   }
   box.innerHTML = html;
-  // Painéis das torres (múltiplas torres): DUAS paginações — a externa troca a
-  // torre exibida (uma por vez); a interna (dentro do painel) pagina as UCs da
-  // torre em blocos de 10 (ver _mkPreviaTorre).
+
   if (MULTI) {
+    /* Uma torre por vez, com DUAS paginações: esta, abaixo do painel,
+       troca a torre exibida; a de dentro do painel corre as unidades
+       daquela torre em blocos de 10 (ver _mkPreviaTorre). */
     const mount = $("#previaTorresMount");
     if (mount) {
       const nTorres = state.blocos.length;
@@ -3923,11 +3959,11 @@ function renderPreviaColetivo() {
         const bi = _previaTorreExterna;
         mount.innerHTML = "";
         mount.appendChild(_mkPreviaTorre(state.blocos[bi], bi));
-        // Paginação externa (troca de torre) abaixo do painel.
         const pagExt = document.createElement("div");
+        pagExt.className = "previa-tabela-pag";
         pagExt.appendChild(
-          _mkPaginacao(nTorres, bi, (p) => {
-            _previaTorreExterna = p;
+          _mkPaginacao(nTorres, bi, (pg) => {
+            _previaTorreExterna = pg;
             renderTorreExterna();
           }),
         );
@@ -3935,7 +3971,20 @@ function renderPreviaColetivo() {
       };
       renderTorreExterna();
     }
+  } else {
+    // Composição por pavimento do agrupamento: entre o primeiro
+    // complemento e a proteção do condomínio, como no painel da torre.
+    const gridAgr = $("#previaAgrupamentoGrid");
+    if (gridAgr && (ag.aptosPorAndarFaixas || []).length)
+      gridAgr.insertBefore(
+        _faixasComposicao(ag.aptosPorAndarFaixas),
+        gridAgr.children[3],
+      );
+    const mountUcs = $("#previaUcsMount");
+    if (mountUcs)
+      mountUcs.appendChild(_mkPreviaTabelaUCs(state.ucBlocos, PG.cargas));
   }
+
   // Pendências + botão exportar
   const v = validacaoObrigatoriosColetivo();
   const faltasBox = $("#previaFaltas");
