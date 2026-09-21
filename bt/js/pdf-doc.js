@@ -564,7 +564,12 @@ function _pdfBlocosIndividualBT(S) {
       ]);
 
     B.campos([
-      ["Tipo de solicitação", u.solicitacao],
+      [
+        "Tipo de solicitação",
+        u.mudaComplemento
+          ? "Alteração de Carga com mudança no complemento"
+          : u.solicitacao,
+      ],
       ["Modalidade", _PDF_MODALIDADE_IND],
       alteracao
         ? ["Disjuntor atual", u.disjDe]
@@ -608,6 +613,8 @@ function _pdfBlocosIndividualBT(S) {
         ["Complemento", u.complemento || obra.compl],
         ["Bairro", obra.bairro],
       ]);
+      if (u.mudaComplemento)
+        B.campos([["Novo complemento do endereço", u.novoComplemento, 3]]);
       B.campos([
         ["Cidade", obra.cidade],
         ["Estado", obra.estado],

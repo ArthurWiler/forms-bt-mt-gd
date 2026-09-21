@@ -2,19 +2,19 @@
 
 <div class="card">
   <div class="section-eyebrow">Etapa 5</div>
-  <h3 class="card-title">Correspondência e Fatura</h3>
+  <h3 class="card-title">Conta de luz</h3>
   <p class="card-sub">
     Escolha como e quando você deseja receber a conta de energia.
   </p>
   <div class="grid grid-2" id="correspNaoBox">
     <div class="field" data-noopt>
-      <label>Como deseja receber a fatura?</label>
+      <label>Como você deseja receber a fatura?</label>
       <select data-k="corr.alternativa" onchange="onCorrAlternativaBT()">
         <option value="">Selecione</option>
         <option value="E-mail informado">E-mail informado</option>
+        <option value="Outro e-mail">Novo e-mail</option>
         <option value="Endereço novo">Novo endereço</option>
         <option value="Mesmo da obra">Endereço da obra</option>
-        <option value="Outro e-mail">Outro e-mail</option>
         <option value="Conta globalizada">
           Conta globalizada (poder público)
         </option>
@@ -135,7 +135,7 @@
     </div>
 
     <div class="field field--plain col-span-2">
-      <label>Data de Vencimento da Fatura</label>
+      <label>Data de vencimento da fatura <span class="opt">(opcional)</span></label>
       <div data-toggle="corr.vencimento"></div>
       <select data-k="corr.vencimento" style="display: none" aria-hidden="true">
         <option value=""></option>

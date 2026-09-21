@@ -172,6 +172,9 @@ window.btCorrOk = () => {
 
 /* ===== navegação ===== */
 let pagina = 0;
+// Etapas concluídas: a etapa deixada ao avançar fica marcada e o check
+// persiste ao voltar para uma etapa anterior (não depende da posição atual).
+const _etapasConcluidas = new Set();
 function goTo(n, livre) {
   const paginas = $$("section.page");
   const passos = $$(".vstep");
@@ -183,17 +186,22 @@ function goTo(n, livre) {
       return;
     }
   }
+  if (n > pagina) _etapasConcluidas.add(pagina);
   pagina = n;
   paginas.forEach((p, i) => p.classList.toggle("show", i === n));
   passos.forEach((s, i) => {
+    const feita = i !== n && _etapasConcluidas.has(i);
     s.classList.toggle("active", i === n);
-    s.classList.toggle("done", i < n);
+    s.classList.toggle("done", feita);
     const num = s.querySelector(".vstep-num");
     // Etapas concluídas: o check vem do CSS (ícone SVG mascarado em
     // .cemig-form .vstep.done .vstep-num::after), não do glifo "✓" da fonte.
     // Zeramos o texto para não competir com o ícone; não-concluídas mostram o nº.
-    if (num) num.textContent = i < n ? "" : String(i + 1);
+    if (num) num.textContent = feita ? "" : String(i + 1);
   });
+  // Descrição do form-header só na primeira etapa (Informações).
+  const descHeader = $(".form-header p");
+  if (descHeader) descHeader.style.display = n === 0 ? "" : "none";
   // Conteúdo dinâmico por presença (lição do MT). O mapa é do core; os
   // demais hooks são do fluxo e vivem em window.onPaginaAtiva.
   if (paginas[n].querySelector("#map")) {
@@ -250,6 +258,11 @@ function bindInputs() {
       });
     });
   });
+}
+// Observações: contador de caracteres (limite via maxlength do textarea).
+function onObsBT(el) {
+  const cont = $("#obsContador");
+  if (cont) cont.textContent = `${el.value.length}/${el.maxLength} caracteres`;
 }
 function onMascara(el, fn) {
   el.value = fn(el.value);

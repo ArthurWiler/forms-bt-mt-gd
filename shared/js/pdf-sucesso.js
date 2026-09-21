@@ -13,7 +13,7 @@
    ============================================================ */
 const PDF_SUCESSO_LINKS = {
   documentos:
-    "https://www.cemig.com.br/duvida-frequente/quais-sao-as-informacoes-complementares-e-outros-documentos-necessarios-que-preciso-ter-para-solicitar-ligacao-nova-ou-alteracao-de-carga/",
+    "https://www.cemig.com.br/como-solicitar-os-principais-servicos/ligacao-nova-e-aumento-de-carga/documentacoes-necessarias/",
   atendimento: "https://www.cemig.com.br/atendimento/locais-de-atendimento/",
 };
 

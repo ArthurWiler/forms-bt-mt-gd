@@ -4,7 +4,9 @@
   <div class="section-eyebrow">Etapa 3</div>
   <h3 class="card-title">Dados da unidade consumidora</h3>
   <p class="card-sub">
-    Preencha os dados de identificação das unidades consumidoras.
+    Preencha os dados de identificação e o tipo de atendimento da unidade
+    consumidora. Caso exista mais de uma unidade no mesmo endereço, informe o
+    tipo de atendimento de cada uma de forma separada.
   </p>
 
   <div class="grid grid-2">
@@ -47,7 +49,7 @@
       />
     </div>
     <div class="field">
-      <label>Nº <span class="req">*</span></label>
+      <label>Número <span class="req">*</span></label>
       <input
         type="text"
         data-k="obra.num"
@@ -75,7 +77,35 @@
     </div>
     <div class="field">
       <label>Estado <span class="req">*</span></label>
-      <input type="text" data-k="obra.estado" placeholder=" " />
+      <select data-k="obra.estado" data-sem-vazio>
+        <option>AC</option>
+        <option>AL</option>
+        <option>AP</option>
+        <option>AM</option>
+        <option>BA</option>
+        <option>CE</option>
+        <option>DF</option>
+        <option>ES</option>
+        <option>GO</option>
+        <option>MA</option>
+        <option>MT</option>
+        <option>MS</option>
+        <option>MG</option>
+        <option>PA</option>
+        <option>PB</option>
+        <option>PR</option>
+        <option>PE</option>
+        <option>PI</option>
+        <option>RJ</option>
+        <option>RN</option>
+        <option>RS</option>
+        <option>RO</option>
+        <option>RR</option>
+        <option>SC</option>
+        <option>SP</option>
+        <option>SE</option>
+        <option>TO</option>
+      </select>
     </div>
   </div>
 
@@ -90,7 +120,35 @@
     </div>
     <div class="field">
       <label>Estado <span class="req">*</span></label>
-      <input type="text" data-k="obra.estado" data-k-espelho placeholder=" " />
+      <select data-k="obra.estado" data-k-espelho data-sem-vazio>
+        <option>AC</option>
+        <option>AL</option>
+        <option>AP</option>
+        <option>AM</option>
+        <option>BA</option>
+        <option>CE</option>
+        <option>DF</option>
+        <option>ES</option>
+        <option>GO</option>
+        <option>MA</option>
+        <option>MT</option>
+        <option>MS</option>
+        <option>MG</option>
+        <option>PA</option>
+        <option>PB</option>
+        <option>PR</option>
+        <option>PE</option>
+        <option>PI</option>
+        <option>RJ</option>
+        <option>RN</option>
+        <option>RS</option>
+        <option>RO</option>
+        <option>RR</option>
+        <option>SC</option>
+        <option>SP</option>
+        <option>SE</option>
+        <option>TO</option>
+      </select>
     </div>
     <div class="field">
       <label>Distrito / Comunidade / Região</label>
@@ -107,6 +165,44 @@
     <div class="field">
       <label>Nº instalação / UC / medidor mais próxima</label>
       <input type="text" data-k="obra.instProxima" placeholder=" " />
+    </div>
+  </div>
+
+  <div class="divider">
+    <h4 class="secao-titulo">Tipo de atendimento</h4>
+    <p class="secao-texto">
+      Selecione o tipo de atendimento desejado para a unidade consumidora. Caso
+      precise solicitar atendimento para <strong>mais de uma unidade</strong>,
+      clique em <strong>"Adicionar nova unidade"</strong> e escolha o tipo de
+      atendimento correspondente a cada uma, limitado a no máximo 3 unidades.
+    </p>
+    <div class="modalidade-card">
+      <span class="modalidade-card-label">Modalidade</span>
+      <span class="modalidade-card-valor"
+        >Individual - até 3 caixas sem proteção geral</span
+      >
+    </div>
+    <div id="ucsIdentBox"></div>
+    <div class="acao-central" id="ucAddRow">
+      <button
+        type="button"
+        class="btn btn-ghost btn-outlined-acao btn-add-uc"
+        onclick="adicionarUcBT()"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="20"
+          height="20"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        Adicionar nova unidade
+      </button>
     </div>
   </div>
 
@@ -152,6 +248,93 @@
     style="margin-top: 14px; display: none"
   >
     <div id="restricaoAmbientalConteudo"></div>
+  </div>
+
+  <div class="divider">
+    <h4 class="secao-titulo">Padrão de energia</h4>
+    <div class="grid grid-2">
+      <div class="field" data-noopt>
+        <label>Tipo de rede</label>
+        <select data-k="obra.tipoRede" data-sem-vazio onchange="onTipoRedeBT()">
+          <option>Monofásica</option>
+          <option>Bifásica</option>
+          <option>Trifásica</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Código transformador mais próximo</label>
+        <input type="text" data-k="obra.transformador" placeholder=" " />
+      </div>
+      <div class="field field--plain" data-noopt>
+        <label>Distância do padrão até a rede Cemig inferior a 30m?</label>
+        <div data-toggle="obra.distMenor30"></div>
+        <select
+          data-k="obra.distMenor30"
+          style="display: none"
+          aria-hidden="true"
+        >
+          <option>Sim</option>
+          <option>Não</option>
+        </select>
+      </div>
+      <div class="field field--plain" data-noopt>
+        <label>O padrão está pronto para ser ligado?</label>
+        <div
+          data-toggle="obra.prontoLigar"
+          data-toggle-onchange="onProntoLigarBT"
+        ></div>
+        <select
+          data-k="obra.prontoLigar"
+          style="display: none"
+          aria-hidden="true"
+        >
+          <option>Sim</option>
+          <option>Não</option>
+        </select>
+      </div>
+      <div
+        class="cmg-aviso no-print col-span-2"
+        id="prontoSimAviso"
+        style="display: none"
+      >
+        <div class="cmg-aviso-icon" aria-hidden="true"></div>
+        <p class="cmg-aviso-texto">
+          Como o padrão já está pronto para ligar, o pedido de vistoria e
+          ligação será disparado automaticamente após a conclusão das etapas do
+          orçamento de conexão.
+        </p>
+      </div>
+      <div
+        class="cmg-aviso cmg-aviso--warn no-print col-span-2"
+        id="prontoNaoAviso"
+        style="display: none"
+      >
+        <div class="cmg-aviso-icon" aria-hidden="true"></div>
+        <p class="cmg-aviso-texto">
+          Solicite o pedido de vistoria e ligação em até 120 dias após a
+          conclusão das etapas do orçamento de conexão. O orçamento pode ser
+          cancelado após duas reprovações pelo mesmo motivo, e há cobrança de
+          taxa a partir do segundo serviço realizado.
+        </p>
+      </div>
+      <!-- "Mudado de local" vale para o padrão (um só por endereço) e é
+           replicado em cada UC (u.mudancaLocal) — PDF e mapa do novo local. -->
+      <div class="field field--plain" data-noopt>
+        <label>O padrão precisa ser mudado de local?</label>
+        <div
+          data-toggle="obra.mudancaLocal"
+          data-toggle-onchange="onMudancaLocalBT"
+        ></div>
+        <select
+          data-k="obra.mudancaLocal"
+          style="display: none"
+          aria-hidden="true"
+        >
+          <option>Sim</option>
+          <option>Não</option>
+        </select>
+      </div>
+    </div>
   </div>
 </div>
 <div class="nav-bottom no-print">
