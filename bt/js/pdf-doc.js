@@ -126,7 +126,7 @@ function _pdfCorrespondenciaBT(B, S) {
           : corr.alternativa === "Mesmo da obra"
             ? [
                 "Endereço para receber a fatura",
-                "Mesmo da obra — " + enderecoObra,
+                "Mesmo da unidade — " + enderecoObra,
                 3,
               ]
             : corr.alternativa === "Endereço novo"
@@ -466,7 +466,6 @@ function _pdfBlocosColetivoBT(S) {
         ["Nº da unidade/instalação", u.instalacao],
         ["Atividade principal", u.atividade],
         ["Ramo da atividade", ramoParaPdf(u.ramo)],
-        ["Disjuntor atual", u.disjDe],
       ]);
     });
   });
@@ -566,17 +565,10 @@ function _pdfBlocosIndividualBT(S) {
     B.campos([
       ["Tipo de solicitação", u.solicitacao],
       ["Modalidade", _PDF_MODALIDADE_IND],
-      alteracao
-        ? ["Disjuntor atual", u.disjDe]
-        : ["Atividade principal", u.atividade],
+      ["Atividade principal", u.atividade],
     ]);
-    /* Em alteração de carga o disjuntor atual toma a 3ª coluna e a
-       atividade desce uma linha, junto do nº da instalação (svg_4). */
     if (alteracao)
-      B.campos([
-        ["Nº da unidade/instalação", u.instalacao],
-        ["Atividade principal", u.atividade],
-      ]);
+      B.campos([["Nº da unidade/instalação", u.instalacao]]);
     /* Categoria da Tabela 11 só existe em atividade não residencial —
        no exemplo residencial do mock ela não aparece por estar vazia,
        não por ter sido retirada. */

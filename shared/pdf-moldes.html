@@ -13,8 +13,9 @@
      runtime, a partir do que foi preenchido.
 
      Ficam num fragmento compartilhado (e não na página de cada
-     formulário) porque são os MESMOS componentes no BT e no
-     Loteamento, estilizados pelo mesmo css/pdf/shared-pdf.css.
+     formulário) porque são os MESMOS componentes no BT, no
+     Loteamento e no MT, estilizados pelo mesmo
+     css/pdf/shared-pdf.css.
      shared/js/pdf-doc.js busca este arquivo uma única vez, na
      primeira exportação, e o injeta no <body>.
      ============================================================ -->
@@ -59,6 +60,65 @@
 </template>
 
 <template id="tplPdfSubsecao"><h3 class="pdf-subsecao"></h3></template>
+
+<!-- Subseção com chip de situação: "Transformador 2 ● Substituído"
+     e "Cubículo 1 ● Já existente" (pdf-mt-alteracao/svg_2 e
+     pdf-mt-alteracao-compartilhada/svg_2). Molde próprio porque o
+     textContent do `subsecao` apagaria o chip. A raiz mantém a
+     classe .pdf-subsecao, então a poda de subseções órfãs vale
+     também para ela. -->
+<template id="tplPdfSubsecaoChip">
+  <h3 class="pdf-subsecao pdf-subsecao--chip">
+    <span class="pdf-subsecao-texto"></span
+    ><span class="pdf-chip"></span>
+  </h3>
+</template>
+
+<!-- Fileira de setas entre os cartões do equipamento ATUAL e os do
+     substituto (pdf-mt-alteracao/svg_2). Uma seta por coluna de
+     cartão: o JS clona o <span> conforme a quantidade. -->
+<template id="tplPdfSetas">
+  <div class="pdf-setas" aria-hidden="true"><span class="pdf-seta">↓</span></div>
+</template>
+
+<!-- Cartão de mídia: a foto do modelo de subestação escolhido e a
+     legenda ao lado (pdf-mt-nova/svg_2). Vêm sempre dentro de um
+     .pdf-midias, que é uma linha de duas colunas — em alteração de
+     carga o mock põe "Subestação atual" e "Nova subestação" lado a
+     lado (pdf-mt-alteracao/svg_3). -->
+<template id="tplPdfMidias"><div class="pdf-midias"></div></template>
+<template id="tplPdfMidia">
+  <div class="pdf-midia">
+    <h3 class="pdf-subsecao pdf-midia-titulo"></h3>
+    <div class="pdf-midia-cartao">
+      <img class="pdf-midia-foto" alt="" />
+      <div class="pdf-midia-legenda"></div>
+    </div>
+  </div>
+</template>
+
+<!-- Caixa do ramal de entrada: o desenho ocupa a faixa de cima e a
+     legenda vem abaixo, uma linha por item, com o valor em negrito
+     (pdf-mt-nova/svg_3). O ícone à direita é o mesmo info.svg dos
+     avisos da tela. -->
+<template id="tplPdfRamal">
+  <div class="pdf-ramal">
+    <img class="pdf-ramal-desenho" alt="" />
+    <div class="pdf-ramal-legenda">
+      <p class="pdf-ramal-linha">
+        <span class="pdf-ramal-rotulo"></span
+        ><strong class="pdf-ramal-valor"></strong>
+      </p>
+    </div>
+    <img
+      class="pdf-ramal-icone"
+      src="../imgs/info.svg"
+      alt=""
+      width="16"
+      height="16"
+    />
+  </div>
+</template>
 <template id="tplPdfFilete"><div class="pdf-filete"></div></template>
 
 <template id="tplPdfGrade"><div class="pdf-grade"></div></template>

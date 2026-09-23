@@ -91,22 +91,3 @@
 .pdf-tabela--uc-alterada {
   table-layout: fixed;
 }
-
-/* ---- Subtítulo de seção ("Motores", "Gerador de emergência") ----
-   Hierarquia abaixo do título de seção: mesmo verde, corpo dos
-   campos, sem negrito e sem filete — é como o svg_3 desenha. Não
-   existe na tela, por isso vive aqui e não no shared-pdf.css. */
-.pdf-subsecao {
-  margin: 0 0 var(--pdf-campo-respiro);
-  font-size: var(--pdf-fs-campo);
-  font-weight: var(--pdf-fw-rotulo);
-  color: var(--pdf-cor-marca);
-}
-
-/* ---- Observações ----
-   Bloco de texto corrido: é o único que o paginador pode fatiar
-   entre linhas, por isso não leva `break-inside: avoid`. */
-.pdf-observacoes {
-  margin: 0 0 var(--pdf-campo-respiro);
-  white-space: pre-wrap;
-}

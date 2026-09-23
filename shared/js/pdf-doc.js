@@ -102,8 +102,13 @@ function _pdfConstrutor() {
   const blocos = [];
   let quebraPendente = false;
 
-  const push = (el, prende) => {
+  /* `cabecalho` diz o que a folha de continuação repete no topo:
+     true  → este elemento passa a ser o cabeçalho repetido;
+     false → nada mais se repete a partir daqui;
+     undefined → não mexe no que já valia. */
+  const push = (el, prende, cabecalho) => {
     const bloco = { el, prende: prende || 0 };
+    if (cabecalho !== undefined) bloco.cabecalho = cabecalho;
     if (quebraPendente) {
       bloco.quebraAntes = true;
       quebraPendente = false;
@@ -122,11 +127,17 @@ function _pdfConstrutor() {
   };
 
   /* Título de seção prende o bloco seguinte: sozinho no pé da
-     página ele viraria uma órfã. */
-  const secao = (texto) => {
+     página ele viraria uma órfã.
+
+     Por padrão ele é o cabeçalho que a folha de continuação
+     repete. `{ repete: false }` desliga isso para o documento em
+     que o mock NÃO repete o título — é o caso do MT, em que a
+     seção "Dados técnicos" atravessa a folha sem se reanunciar
+     (pdf-mt-alteracao/svg_3) e quem se repete é o cubículo. */
+  const secao = (texto, opcoes) => {
     const el = _pdfMolde("tplPdfSecao");
     el.textContent = texto;
-    push(el, 1);
+    push(el, 1, !(opcoes && opcoes.repete === false));
   };
 
   /* Título de seção com um trecho em negrito ("Unidades com pedidos
@@ -142,10 +153,31 @@ function _pdfConstrutor() {
     push(el, 1);
   };
 
-  const subsecao = (texto) => {
+  /* Subseção. `{ repete }` a promove (ou a tira) de cabeçalho de
+     continuação — ver `secao`. */
+  const subsecao = (texto, opcoes) => {
     const el = _pdfMolde("tplPdfSubsecao");
     el.textContent = texto;
-    push(el, 1);
+    push(el, 1, opcoes && opcoes.repete);
+  };
+
+  /* Subseção com chip de situação: "Transformador 2 ● Substituído",
+     "Cubículo 1 ● Já existente". `tom` é o modificador do chip —
+     escrito por extenso, e não montado por concatenação, porque é
+     a busca textual pela classe que sustenta a poda de CSS morto. */
+  const CHIP_TONS = {
+    novo: "pdf-chip--novo",
+    substituido: "pdf-chip--substituido",
+    mantido: "pdf-chip--mantido",
+  };
+  const subsecaoChip = (texto, chip, tom, opcoes) => {
+    if (_pdfVazio(chip)) return subsecao(texto, opcoes);
+    const el = _pdfMolde("tplPdfSubsecaoChip");
+    el.querySelector(".pdf-subsecao-texto").textContent = texto;
+    const marca = el.querySelector(".pdf-chip");
+    marca.textContent = chip;
+    marca.classList.add(CHIP_TONS[tom] || CHIP_TONS.novo);
+    push(el, 1, opcoes && opcoes.repete);
   };
 
   /* Prende o que vem depois: o filete só existe para anunciar a
@@ -183,12 +215,12 @@ function _pdfConstrutor() {
      uma linha dentro do cartão (é o "Bipolar 63A / Individual
      abaixo de 75 kW" do mock do individual). `modificador` troca a
      grade — "pdf-cartoes--4col" nos quatro cartões por torre. */
-  const cartoes = (lista, modificador) => {
+  const cartoes = (lista, modificador, prende) => {
     const uteis = (lista || []).filter(
       (c) => c && [].concat(c[1]).some((v) => !_pdfVazio(v)),
     );
     if (!uteis.length) return;
-    const linha = push(_pdfMolde("tplPdfCartoes"));
+    const linha = push(_pdfMolde("tplPdfCartoes"), prende);
     if (modificador) linha.classList.add(modificador);
     uteis.forEach((c) => {
       const cartao = _pdfMolde("tplPdfCartao");
@@ -203,6 +235,65 @@ function _pdfConstrutor() {
       });
       linha.appendChild(cartao);
     });
+  };
+
+  /* Fileira de setas entre os cartões do equipamento ATUAL e os do
+     substituto (pdf-mt-alteracao/svg_2). Uma seta por coluna de
+     cartão, e prende o que vem depois: sozinha no pé da folha ela
+     apontaria para o nada. */
+  const setas = (n) => {
+    const el = _pdfMolde("tplPdfSetas");
+    const primeira = el.firstElementChild;
+    for (let i = 1; i < (n || 1); i += 1)
+      el.appendChild(primeira.cloneNode(true));
+    push(el, 1);
+  };
+
+  /* Linha de cartões de mídia: a foto do modelo de subestação
+     escolhido com a legenda ao lado. `lista` = [[título, src,
+     legenda]]. São até dois — na alteração de carga o mock põe
+     "Subestação atual" e "Nova subestação" lado a lado
+     (pdf-mt-alteracao/svg_3) —, e cada um traz o próprio título,
+     por isso a linha inteira é UM bloco: título e cartão nunca se
+     separam entre folhas. */
+  const midias = (lista) => {
+    const uteis = (lista || []).filter((m) => m && !_pdfVazio(m[2]));
+    if (!uteis.length) return;
+    const linha = push(_pdfMolde("tplPdfMidias"));
+    uteis.forEach((m) => {
+      const cel = _pdfMolde("tplPdfMidia");
+      cel.querySelector(".pdf-midia-titulo").textContent = m[0];
+      const foto = cel.querySelector(".pdf-midia-foto");
+      /* Sem imagem o <img> sairia como caixa quebrada: some, e a
+         legenda encosta na borda esquerda do cartão. */
+      if (_pdfVazio(m[1])) foto.remove();
+      else foto.src = m[1];
+      cel.querySelector(".pdf-midia-legenda").textContent = m[2];
+      linha.appendChild(cel);
+    });
+  };
+
+  /* Caixa do ramal de entrada: o desenho escolhido e, abaixo dele,
+     uma linha por item da legenda, com o valor em negrito
+     (pdf-mt-nova/svg_3). `partes` = [[rótulo, valor]]. */
+  const ramal = (src, partes) => {
+    const el = _pdfMolde("tplPdfRamal");
+    const desenho = el.querySelector(".pdf-ramal-desenho");
+    if (_pdfVazio(src)) desenho.remove();
+    else desenho.src = src;
+    const legenda = el.querySelector(".pdf-ramal-legenda");
+    const modelo = el.querySelector(".pdf-ramal-linha");
+    modelo.remove();
+    (partes || []).forEach((par) => {
+      const linha = modelo.cloneNode(true);
+      /* Rótulo e valor moram no mesmo parágrafo (é uma frase só,
+         "Ramal de conexão: Aéreo"), então o dois-pontos e o espaço
+         entram no rótulo. */
+      linha.querySelector(".pdf-ramal-rotulo").textContent = par[0] + ": ";
+      linha.querySelector(".pdf-ramal-valor").textContent = par[1];
+      legenda.appendChild(linha);
+    });
+    push(el);
   };
 
   /* `colunas` = [rótulo] ou [{ rotulo, num: true }] para as
@@ -319,10 +410,17 @@ function _pdfConstrutor() {
       const filDuplo =
         eh(el, "pdf-filete") && (!proximo || eh(proximo, "pdf-filete"));
       if (vazia || filDuplo) {
-        /* A quebra de página pedida antes deste bloco continua
+        /* A quebra de página pedida antes deste bloco, e a marca de
+           cabeçalho de continuação que ele carregava, continuam
            valendo para o que sobrou no lugar dele. */
-        if (blocos[i].quebraAntes && blocos[i + 1])
-          blocos[i + 1].quebraAntes = true;
+        if (blocos[i + 1]) {
+          if (blocos[i].quebraAntes) blocos[i + 1].quebraAntes = true;
+          if (
+            blocos[i].cabecalho !== undefined &&
+            blocos[i + 1].cabecalho === undefined
+          )
+            blocos[i + 1].cabecalho = blocos[i].cabecalho;
+        }
         blocos.splice(i, 1);
       }
     }
@@ -339,9 +437,13 @@ function _pdfConstrutor() {
     secao,
     secaoDestaque,
     subsecao,
+    subsecaoChip,
     filete,
     campos,
     cartoes,
+    setas,
+    midias,
+    ramal,
     tabela,
     tabelaAuto,
     total,
@@ -360,8 +462,9 @@ function _pdfConstrutor() {
    ============================================================ */
 
 function _pdfPaginador(doc) {
-  /* `secao` é o título da seção em curso e `repetido`, a cópia dele
-     no topo da folha atual. */
+  /* `secao` é o cabeçalho de continuação em curso (o título da
+     seção no BT e no Loteamento, o cubículo no MT) e `repetido`, a
+     cópia dele no topo da folha atual. */
   const P = {
     doc,
     paginas: [],
@@ -371,10 +474,12 @@ function _pdfPaginador(doc) {
     repetido: null,
   };
 
-  /* Seção partida entre folhas repete o título na continuação — é o
-     que o mock faz quando a UC 3 atravessa a página (svg_6 → svg_7).
-     `repetir: false` para a folha que já começa pelo próprio título:
-     repetir ali seria imprimi-lo duas vezes.
+  /* Bloco partido entre folhas repete o cabeçalho na continuação —
+     é o que o mock faz quando a UC 3 do BT atravessa a página
+     (svg_6 → svg_7) e quando o cubículo 2 do MT atravessa
+     (pdf-mt-alteracao-compartilhada/svg_2 → svg_3).
+     `repetir: false` para a folha que já começa pelo próprio
+     cabeçalho: repetir ali seria imprimi-lo duas vezes.
 
      A cópia entra ANTES de qualquer medição, senão P.cabe() decide
      pela altura errada e o conteúdo transborda ao receber o título. */
@@ -595,12 +700,14 @@ function _pdfPaginar(doc, blocos) {
       grupo.push(blocos[j]);
     }
     const els = grupo.map((b) => b.el);
-    /* Grupo que traz o próprio título de seção não repete o título
-       anterior na folha nova — e passa a ser a seção corrente. */
-    const titulo =
-      els.find((el) => el.classList.contains("pdf-secao-titulo")) || null;
-    if (grupo[0].quebraAntes && !P.vazia()) P.novaPagina(!titulo);
-    if (titulo) P.secao = titulo;
+    /* Grupo que traz o próprio cabeçalho não repete o anterior na
+       folha nova — e passa a ser o cabeçalho corrente. Quem é o
+       cabeçalho vem marcado no bloco (ver `push` no construtor):
+       no BT e no Loteamento é o título de seção; no MT é o
+       cubículo, e a seção não se repete. */
+    const marca = grupo.find((b) => b.cabecalho !== undefined) || null;
+    if (grupo[0].quebraAntes && !P.vazia()) P.novaPagina(!marca);
+    if (marca) P.secao = marca.cabecalho ? marca.el : null;
 
     /* Põe o grupo inteiro e diz se coube; quando não cabe, desfaz e
        deixa a folha como estava. */
@@ -623,7 +730,7 @@ function _pdfPaginar(doc, blocos) {
            partir de onde estávamos. */
         let coube = false;
         if (!P.vazia()) {
-          P.novaPagina(!titulo);
+          P.novaPagina(!marca);
           coube = encaixar();
           if (!coube) P.desfazerPagina();
         }

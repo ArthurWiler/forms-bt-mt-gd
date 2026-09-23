@@ -311,7 +311,7 @@ function _mkUcColapsavel(u, ui, aberta, aoAlternar, montarCorpo) {
   return bloco;
 }
 // Etapa "Tipo de atendimento": identificação por UC (solicitação, atividade,
-// ramo, complemento, UC/instalação/medidor, disjuntor atual, mudança de local).
+// ramo, complemento, UC/instalação/medidor, mudança de local).
 // Os campos de carga e o disjuntor novo ficam na etapa "Cargas das UCs".
 function renderUcsIdentBT() {
   const box = $("#ucsIdentBox");
@@ -390,7 +390,7 @@ function renderUcsBT() {
   }
 }
 // Mudar Solicitação/Atividade na etapa de identificação re-renderiza esta etapa
-// (campos condicionais: Ramo, UC, Instalação, Disjuntor atual, Mudança de local)
+// (campos condicionais: Ramo, UC, Instalação, Mudança de local)
 // e também a etapa de cargas (o tipoA das cargas deriva da atividade).
 function _aoMudarUcIdent() {
   renderUcsIdentBT();
@@ -486,13 +486,6 @@ function _ucIdentificacao(u, ui) {
         inpInst,
       ),
     );
-    const selDisj = _selectDe(
-      DISJ.map((d) => d.fx),
-      u.disjDe,
-      (v) => (u.disjDe = v),
-      true,
-    );
-    grid.appendChild(_campo("Disjuntor atual", selDisj, "field--float"));
     if (
       u.solicitacao === "Alteração de Carga" ||
       u.solicitacao === "Caixa Existente sem Alteração"

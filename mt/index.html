@@ -16,6 +16,12 @@
     <link rel="stylesheet" href="../css/variables.css" />
     <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/formulario-mt.css" />
+    <!-- Estilo do documento exportado (não da tela): o PDF é HTML de
+         verdade, medido pelo navegador e desenhado por
+         shared/js/pdf-render.js. variables-pdf.css vem primeiro. -->
+    <link rel="stylesheet" href="../css/pdf/variables-pdf.css" />
+    <link rel="stylesheet" href="../css/pdf/shared-pdf.css" />
+    <link rel="stylesheet" href="../css/pdf/mt-pdf.css" />
     <!-- leaflet.css saiu daqui: era render-blocking de terceiros numa página
          cujo mapa só aparece etapas adiante. Agora vem junto do leaflet.js,
          sob demanda, via shared/js/libs.js. -->
@@ -1901,6 +1907,14 @@
     <script defer src="js/dados.js"></script>
     <script defer src="js/conteudo.js"></script>
     <script defer src="js/pdf.js"></script>
+    <!-- PDF do formulário em três camadas: pdf-render.js DESENHA o
+         documento já paginado, shared/js/pdf-doc.js é o MOTOR (moldes,
+         construtor, paginador) e js/pdf-doc.js traz só o CONTEÚDO do MT.
+         Os documentos complementares (Análise de Partida, Irrigante)
+         continuam saindo do js/pdf.js acima. -->
+    <script defer src="../shared/js/pdf-render.js"></script>
+    <script defer src="../shared/js/pdf-doc.js"></script>
+    <script defer src="js/pdf-doc.js"></script>
     <script defer src="js/app.js"></script>
     <script defer src="js/previa.js"></script>
     <script defer src="js/carta-monomia.js"></script>

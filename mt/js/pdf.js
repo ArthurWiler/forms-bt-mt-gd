@@ -1,39 +1,17 @@
 /* ============================================================
-   CEMIG MT — Geração dos PDFs (jsPDF)
-   Substitui a exportação via window.print(): saída determinística,
-   independente do navegador e das margens escolhidas pelo usuário,
-   e visualmente igual aos formulários BT/Micro/Mini (mesmo chassi
-   shared/js/gd-pdf-base.js).
+   CEMIG MT — Geração dos PDFs COMPLEMENTARES (jsPDF)
+   Análise de Partida de Motores e Solicitação de Desconto para
+   Irrigante. Saída determinística, independente do navegador e das
+   margens escolhidas pelo usuário, e visualmente igual aos
+   formulários Micro/Mini (mesmo chassi shared/js/gd-pdf-base.js).
+
+   O FORMULÁRIO principal não sai mais daqui: ele é HTML de verdade,
+   montado em mt/js/pdf-doc.js e desenhado por
+   shared/js/pdf-render.js, seguindo os mocks docs/mocks/pdf-mt-*.
 
    Este módulo é só RENDERIZAÇÃO. O que cada documento contém vem de
-   mt/js/conteudo.js — a mesma fonte que alimenta a prévia da tela.
+   mt/js/conteudo.js.
    ============================================================ */
-
-/* Carrega uma imagem local e devolve dataURL + dimensões (jsPDF não
-   aceita caminho de arquivo). Resolve com null se falhar: o PDF sai
-   sem o desenho em vez de não sair. */
-function _carregarImagemPdfMT(src) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      try {
-        const cv = document.createElement("canvas");
-        cv.width = img.naturalWidth;
-        cv.height = img.naturalHeight;
-        cv.getContext("2d").drawImage(img, 0, 0);
-        resolve({
-          url: cv.toDataURL("image/png"),
-          w: img.naturalWidth,
-          h: img.naturalHeight,
-        });
-      } catch (e) {
-        resolve(null);
-      }
-    };
-    img.onerror = () => resolve(null);
-    img.src = src;
-  });
-}
 
 /* Texto corrido sem rótulo (notas, avisos). Usar P.fullLine("", …) sairia
    com um ":" solto, então desenha direto com quebra automática. */
@@ -47,13 +25,12 @@ function _paragrafoPdfMT(P, texto) {
   P.state.cy += 2 + linhas.length * 4.2;
 }
 
-/* Desenha uma lista de campos do modelo de conteúdo. `imagens` é um
-   mapa src->{url,w,h} pré-carregado (jsPDF é síncrono). */
-function _renderCamposPdfMT(P, campos, imagens) {
+/* Desenha uma lista de campos do modelo de conteúdo. */
+function _renderCamposPdfMT(P, campos) {
   const vazio = (v) =>
     v === undefined || v === null || String(v).trim() === "";
-  // Campos curtos consecutivos vão em 2 colunas (kvPairs); os `full`,
-  // tabelas e imagens ocupam a linha inteira. Acumula os curtos e
+  // Campos curtos consecutivos vão em 2 colunas (kvPairs); os `full`
+  // e as tabelas ocupam a linha inteira. Acumula os curtos e
   // descarrega ao encontrar um campo largo.
   let buffer = [];
   const descarregar = () => {
@@ -74,21 +51,6 @@ function _renderCamposPdfMT(P, campos, imagens) {
       const rows = c.rodape ? c.rows.concat([c.rodape]) : c.rows;
       P.tabela(c.headers, c.widths, rows);
       P.gap(3);
-      return;
-    }
-    if (c.tipo === "imagem") {
-      descarregar();
-      const im = imagens && imagens[c.src];
-      if (im) {
-        // Escala para caber na coluna preservando a proporção.
-        const maxW = Math.min(P.CW, 120);
-        const w = maxW;
-        const h = (im.h / im.w) * w;
-        P.checkSpace(h + 6);
-        P.doc.addImage(im.url, "PNG", P.MG + 1, P.state.cy, w, h);
-        P.state.cy += h + 3;
-      }
-      if (!vazio(c.valor)) P.fullLine(c.label, c.valor);
       return;
     }
     // texto
@@ -120,41 +82,7 @@ function _dataExtensoMT() {
 }
 
 /* ============================================================
-   1. Formulário principal
-   ============================================================ */
-async function gerarPdfFormularioMT() {
-  if (!window.jspdf) {
-    alert("Biblioteca jsPDF não carregada.");
-    return;
-  }
-  syncState();
-  const secoes = conteudoFormularioMT();
-
-  // Pré-carrega as imagens referenciadas (o desenho do ramal).
-  const imagens = {};
-  for (const s of secoes)
-    for (const c of s.campos)
-      if (c.tipo === "imagem" && c.src && !imagens[c.src])
-        imagens[c.src] = await _carregarImagemPdfMT(c.src);
-
-  const P = criarPdfGD(
-    "FORMULÁRIO DE LIGAÇÃO NOVA E ALTERAÇÃO DE CARGA",
-    "Média Tensão" + (state.atividade ? " — " + state.atividade : ""),
-  );
-  secoes.forEach((s) => {
-    P.sec(s.titulo.toUpperCase());
-    _renderCamposPdfMT(P, s.campos, imagens);
-    P.gap(2);
-  });
-  P.gap(4);
-  P.assinatura(
-    "Local e data / Assinatura do proprietário ou representante legal",
-  );
-  P.save(_nomeArqMT("CEMIG_MT"));
-}
-
-/* ============================================================
-   2. Análise de Partida de Motores — uma página por motor
+   1. Análise de Partida de Motores — uma página por motor
    ============================================================ */
 function gerarPdfAnalisePartidaMT() {
   if (!window.jspdf) {
@@ -176,7 +104,7 @@ function gerarPdfAnalisePartidaMT() {
     }
     folha.secoes.forEach((s) => {
       P.sec(s.titulo);
-      _renderCamposPdfMT(P, s.campos, null);
+      _renderCamposPdfMT(P, s.campos);
       P.gap(1);
     });
     P.gap(2);
@@ -191,7 +119,7 @@ function gerarPdfAnalisePartidaMT() {
 }
 
 /* ============================================================
-   3. Solicitação de Desconto para Irrigante / Aquicultor
+   2. Solicitação de Desconto para Irrigante / Aquicultor
    ============================================================ */
 function gerarPdfIrriganteMT() {
   if (!window.jspdf) {
@@ -205,7 +133,7 @@ function gerarPdfIrriganteMT() {
   );
   conteudoIrrigante().forEach((s) => {
     P.sec(s.titulo);
-    _renderCamposPdfMT(P, s.campos, null);
+    _renderCamposPdfMT(P, s.campos);
     P.gap(1);
   });
   P.gap(2);

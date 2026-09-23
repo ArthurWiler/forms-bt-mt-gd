@@ -24,6 +24,15 @@
        alteração de carga.
      · pdf-loteamento/      svg_1 — a tabela estreita de lotes por
        área, fechada por uma linha TOTAL.
+     · pdf-mt-nova/                     svg_1 … svg_3
+       pdf-mt-nova-compartilhada/       svg_1 … svg_3
+       pdf-mt-alteracao/                svg_1 … svg_4
+       pdf-mt-alteracao-compartilhada/  svg_1 … svg_4 — os quatro
+       documentos de Média Tensão, um por combinação de tipo de
+       solicitação (conexão nova × aumento de demanda) e de
+       subestação (própria × compartilhada). Deles saem o chip de
+       situação, a fileira de setas do equipamento substituído, o
+       cartão de mídia dos modelos de subestação e a caixa do ramal.
 
    A moldura de todos eles é 595 × 842, que é exatamente A4 a 72 dpi
    — logo **1 unidade do SVG = 1pt em CSS** e as medidas entram aqui
@@ -135,4 +144,54 @@
      distância entre a moldura de uma tabela e a da seguinte é 66pt
      (com título de seção e subseção no meio) e 37pt (só subseção). */
   --pdf-tabela-respiro: 12pt;
+
+  /* ---- Chip de situação ----
+     "Novo" / "Substituído" / "Mantido" ao lado do subtítulo do
+     transformador, e "Já existente" / "Novo" ao lado do cubículo.
+     Medido nos mocks do MT (pdf-mt-alteracao/svg_2): caixa de 20pt
+     de altura e raio 4, ponto de 6pt a 7pt da borda e o texto 9pt
+     depois dele — "Novo" fecha 52pt de largura, "Mantido" 67 e
+     "Substituído" 81, o que confirma os 9pt de corpo.
+
+     O texto é sempre o cinza do documento; quem carrega a cor é o
+     PONTO, como no chip da tela (.trafo-status, css/shared.css).
+     Os tons não são os mesmos da tela: o mock do PDF usa verde e
+     âmbar mais claros no fundo, então ficam aqui em vez de
+     referenciar os tokens --cmg-*. */
+  --pdf-chip-altura: 20pt;
+  --pdf-chip-raio: 4pt;
+  --pdf-chip-ponto: 6pt;
+  --pdf-chip-pad-x: 7pt;
+  --pdf-chip-gap: 9pt;
+  --pdf-chip-fs: 9pt;
+  --pdf-chip-novo-fundo: #e9fff4;
+  --pdf-chip-novo-ponto: var(--cmg-green-600); /* #0F6C58 */
+  --pdf-chip-substituido-fundo: #fff9e6;
+  --pdf-chip-substituido-ponto: #ffc107;
+  --pdf-chip-mantido-fundo: var(--pdf-cor-filete);
+  --pdf-chip-mantido-ponto: var(--pdf-cor-texto);
+
+  /* Seta entre o equipamento atual e o substituto: o glifo mede
+     9,33pt de altura no mock (pdf-mt-alteracao/svg_2, y de 589,33 a
+     598,67), maior que o corpo do texto ao redor. */
+  --pdf-seta-fs: 13pt;
+
+  /* ---- Cartão de mídia (modelo de subestação) ----
+     Duas caixas de 255,5pt com o mesmo gap de 12pt da grade
+     (pdf-mt-alteracao/svg_3: x de 36 a 291 e de 303,5 a 559). A
+     foto é MAIOR que a caixa e transborda em cima e embaixo — é
+     assim no mock, e não um erro de medida: 110pt de lado contra
+     os 86 de altura do cartão. */
+  --pdf-midia-altura: 86pt;
+  --pdf-midia-foto: 110pt;
+
+  /* ---- Caixa do ramal de entrada ----
+     523 × 280pt com raio 8 e borda de 1pt num cinza mais escuro
+     que o filete (pdf-mt-nova/svg_3). O desenho ocupa a faixa de
+     cima, encostado no topo e nas laterais (521 × 187), e as
+     linhas da legenda vêm abaixo. */
+  --pdf-ramal-borda: #8c9895;
+  --pdf-ramal-desenho: 187pt;
+  --pdf-ramal-pad: 10pt;
+  --pdf-ramal-icone: 16pt;
 }

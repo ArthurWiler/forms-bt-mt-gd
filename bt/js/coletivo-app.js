@@ -195,8 +195,7 @@ const maiorCorrenteUCF = () =>
   MULTI
     ? 0
     : state.ucBlocos.reduce(
-        (mx, u) =>
-          Math.max(mx, correnteDisj(u.disjPara), correnteDisj(u.disjDe)),
+        (mx, u) => Math.max(mx, correnteDisj(u.disjPara)),
         0,
       );
 // app.js:635-638
@@ -1158,20 +1157,6 @@ function renderUcsColetivo() {
         );
         f.setAttribute("data-noopt", "");
         grid.appendChild(f);
-        grid.appendChild(
-          _campo(
-            "Disjuntor atual",
-            _selectDe(
-              DISJ.map((d) => d.fx),
-              u.disjDe,
-              (v) => {
-                u.disjDe = v;
-              },
-              true,
-            ),
-            "field--float",
-          ),
-        );
       }
       const semAlt = ucSemAlteracao(u);
       // Carga prevista (kW) — substitui a antiga tabela de previsão de carga;

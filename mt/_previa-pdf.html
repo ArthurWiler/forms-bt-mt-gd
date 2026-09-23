@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Conferência do PDF de MT contra os mocks</title>
+    <link rel="stylesheet" href="../css/variables.css" />
+    <link rel="stylesheet" href="../css/pdf/variables-pdf.css" />
+    <link rel="stylesheet" href="../css/pdf/shared-pdf.css" />
+    <link rel="stylesheet" href="../css/pdf/mt-pdf.css" />
+    <style>
+      body {
+        margin: 0;
+        background: #888;
+      }
+      /* Mostra o documento em vez de escondê-lo fora da viewport. */
+      .pdf-doc {
+        display: block !important;
+      }
+      .pdf-pagina {
+        outline: 1px solid #f0f;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="../shared/js/mesano.js"></script>
+    <script src="../shared/js/ramo-atividade.js"></script>
+    <script src="js/calculo.js"></script>
+    <script src="js/dados.js"></script>
+    <script>
+      /* Dublês dos globais que mt/js/pdf-doc.js lê do app. */
+      const fmt = (n, d = 2) =>
+        n == null || isNaN(n)
+          ? "—"
+          : Number(n).toLocaleString("pt-BR", {
+              minimumFractionDigits: d,
+              maximumFractionDigits: d,
+            });
+      const dataBR = (s) => s || "";
+      function syncState() {}
+      function permiteTrocaTrafo() {
+        return !!state.finalidade && state.finalidade !== "Conexão Nova";
+      }
+      function situacaoTrafo(t) {
+        return t.situacao || (t.substituir ? "troca" : "novo");
+      }
+      function temInstalacaoCubiculo() {
+        return state.subestacaoExistente === "Subestação já existente";
+      }
+      function demandaRepresentativaInstalacao() {
+        return state.modalidade === "Azul"
+          ? (parseFloat(state.demandaPontaContratada) || 0) +
+              (parseFloat(state.demandaForaPontaContratada) || 0)
+          : parseFloat(state.demandaContratada) || 0;
+      }
+      let state = {};
+      let trafos = [];
+      let cubiculos = [];
+      let motores = [];
+      let escalonadaInstalacao = [];
+    </script>
+    <script src="../shared/js/pdf-render.js"></script>
+    <script src="../shared/js/pdf-doc.js"></script>
+    <script src="js/pdf-doc.js"></script>
+    <script src="_previa-pdf-cenarios.js"></script>
+  </body>
+</html>

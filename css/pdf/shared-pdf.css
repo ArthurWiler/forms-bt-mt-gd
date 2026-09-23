@@ -137,6 +137,94 @@
   background: var(--pdf-cor-filete);
 }
 
+/* Subtítulo de seção ("Motores", "Gerador de emergência",
+   "Transformador 2"). Hierarquia abaixo do título de seção: mesmo
+   verde, corpo dos campos, sem negrito e sem filete — é como o
+   svg_3 do BT individual e os mocks do MT desenham.
+
+   Morava em bt-pdf.css; subiu para cá quando o MT passou a usá-lo.
+   O Loteamento, que carrega só este arquivo, já dependia da subida
+   irmã do .pdf-observacoes. */
+.pdf-subsecao {
+  margin: 0 0 var(--pdf-campo-respiro);
+  font-size: var(--pdf-fs-campo);
+  font-weight: var(--pdf-fw-rotulo);
+  color: var(--pdf-cor-marca);
+}
+
+/* Bloco de texto corrido (observações). É o único que o paginador
+   pode fatiar entre linhas, por isso não leva `break-inside`. */
+.pdf-observacoes {
+  margin: 0 0 var(--pdf-campo-respiro);
+  white-space: pre-wrap;
+}
+
+/* ============================================================
+   4.1 Chip de situação
+   ------------------------------------------------------------
+   "Novo" / "Substituído" / "Mantido" ao lado do subtítulo do
+   transformador; "Já existente" / "Novo" ao lado do cubículo.
+   Mesmo componente do card da tela (.trafo-status, css/shared.css)
+   nas proporções do papel — ver as medidas em variables-pdf.css.
+
+   A subseção que o carrega vira uma linha flex: o chip é mais alto
+   que a entrelinha do título, e sem isto ele empurraria a linha
+   de baixo.
+   ============================================================ */
+
+.pdf-subsecao--chip {
+  display: flex;
+  align-items: center;
+  gap: var(--pdf-gap);
+  /* A caixa passa a ter a altura do chip; o respiro até os cartões
+     é o mesmo dos demais campos. */
+  min-height: var(--pdf-chip-altura);
+}
+
+.pdf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pdf-chip-gap);
+  box-sizing: border-box;
+  height: var(--pdf-chip-altura);
+  padding: 0 var(--pdf-chip-pad-x);
+  border-radius: var(--pdf-chip-raio);
+  font-size: var(--pdf-chip-fs);
+  /* O texto do chip é o cinza do documento em todos os tons; quem
+     carrega a cor da situação é o ponto. */
+  color: var(--pdf-cor-texto);
+  white-space: nowrap;
+}
+
+/* O ponto é o único que muda de cor com a situação; o texto do
+   chip fica no cinza do documento. Por isso a cor vem de uma
+   variável própria, e não de `currentColor`. */
+.pdf-chip::before {
+  content: "";
+  flex: 0 0 auto;
+  width: var(--pdf-chip-ponto);
+  height: var(--pdf-chip-ponto);
+  border-radius: 50%;
+  background: var(--pdf-chip-ponto-cor);
+}
+
+.pdf-chip--novo {
+  background: var(--pdf-chip-novo-fundo);
+  --pdf-chip-ponto-cor: var(--pdf-chip-novo-ponto);
+}
+
+.pdf-chip--substituido {
+  background: var(--pdf-chip-substituido-fundo);
+  --pdf-chip-ponto-cor: var(--pdf-chip-substituido-ponto);
+}
+
+/* "Mantido" / "Já existente" — neutro: não é equipamento novo nem
+   troca. */
+.pdf-chip--mantido {
+  background: var(--pdf-chip-mantido-fundo);
+  --pdf-chip-ponto-cor: var(--pdf-chip-mantido-ponto);
+}
+
 /* ============================================================
    5. Grade de campos
    ------------------------------------------------------------
@@ -207,6 +295,124 @@
   border-radius: var(--pdf-card-raio);
   padding: var(--pdf-card-pad-y) var(--pdf-card-pad-x);
   background: #fff;
+}
+
+/* Setas entre a linha de cartões do equipamento ATUAL e a do
+   substituto (pdf-mt-alteracao/svg_2). Mesma grade dos cartões,
+   para que cada seta caia no eixo da sua coluna. */
+.pdf-setas {
+  display: grid;
+  grid-template-columns: repeat(var(--pdf-colunas), 1fr);
+  column-gap: var(--pdf-gap);
+  margin-bottom: var(--pdf-campo-respiro);
+  font-size: var(--pdf-seta-fs);
+  color: var(--pdf-cor-marca);
+  text-align: center;
+}
+
+/* ============================================================
+   6.1 Cartão de mídia
+   ------------------------------------------------------------
+   A foto do modelo de subestação escolhido, com a legenda ao lado
+   (pdf-mt-nova/svg_2). Duas colunas porque a alteração de carga
+   mostra o par "Subestação atual" / "Nova subestação" lado a lado
+   (pdf-mt-alteracao/svg_3); com um cartão só, ele ocupa a coluna
+   da esquerda, como no mock.
+
+   A foto é MAIOR que a caixa e transborda em cima e embaixo — é o
+   desenho do mock, não um descuido de medida. Por isso ela sai do
+   fluxo: no fluxo, ela esticaria o cartão para os seus 110pt.
+   ============================================================ */
+
+.pdf-midias {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  column-gap: var(--pdf-gap);
+  align-items: stretch;
+  margin-bottom: var(--pdf-campo-respiro);
+}
+
+/* O rótulo verde fica DENTRO da célula, e não numa subseção de
+   largura inteira: na alteração de carga "Subestação atual" e
+   "Nova subestação" saem lado a lado, cada um sobre o seu cartão
+   (pdf-mt-alteracao/svg_3). */
+.pdf-midia-titulo {
+  margin: 0 0 var(--pdf-campo-respiro);
+}
+
+.pdf-midia-cartao {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  min-height: var(--pdf-midia-altura);
+  /* Abre à esquerda o vão da foto, que é desenhada por cima. */
+  padding: var(--pdf-card-pad-y) var(--pdf-card-pad-x)
+    var(--pdf-card-pad-y) calc(var(--pdf-midia-foto) + var(--pdf-gap));
+  border: var(--pdf-tabela-filete) solid var(--pdf-cor-filete);
+  border-radius: var(--pdf-card-raio);
+  background: #fff;
+}
+
+/* Largura fixa e altura livre: shared/js/pdf-render.js desenha a
+   imagem esticada na caixa que o layout deu (não implementa
+   object-fit), então a proporção tem de vir do próprio elemento. */
+.pdf-midia-foto {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: var(--pdf-midia-foto);
+  height: auto;
+}
+
+/* ============================================================
+   6.2 Caixa do ramal de entrada
+   ------------------------------------------------------------
+   O desenho do ramal escolhido ocupa a faixa de cima, encostado no
+   topo e nas laterais, e a legenda vem abaixo — uma linha por
+   item, com o valor em negrito (pdf-mt-nova/svg_3). A borda é um
+   cinza mais escuro que o filete, como no mock.
+   ============================================================ */
+
+.pdf-ramal {
+  position: relative;
+  box-sizing: border-box;
+  border: var(--pdf-tabela-filete) solid var(--pdf-ramal-borda);
+  border-radius: var(--pdf-card-raio);
+  background: #fff;
+  margin-bottom: var(--pdf-campo-respiro);
+  overflow: hidden;
+}
+
+.pdf-ramal-desenho {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-bottom: var(--pdf-tabela-filete) solid var(--pdf-ramal-borda);
+}
+
+.pdf-ramal-legenda {
+  /* Espaço à direita para o ícone, que é desenhado por cima. */
+  padding: var(--pdf-ramal-pad) calc(var(--pdf-ramal-icone) + var(--pdf-gap) * 2)
+    var(--pdf-ramal-pad) var(--pdf-card-pad-x);
+}
+
+.pdf-ramal-linha {
+  margin: 0;
+  line-height: var(--pdf-linha);
+}
+
+.pdf-ramal-valor {
+  font-weight: var(--pdf-fw-valor);
+}
+
+.pdf-ramal-icone {
+  position: absolute;
+  right: var(--pdf-gap);
+  bottom: var(--pdf-gap);
+  width: var(--pdf-ramal-icone);
+  height: var(--pdf-ramal-icone);
 }
 
 /* ============================================================

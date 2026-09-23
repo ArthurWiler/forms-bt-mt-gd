@@ -3222,17 +3222,17 @@ async function onCEP(prefixo) {
 }
 
 /* ===== Exportar PDF =====
-   Gerado por jsPDF (mt/js/pdf.js), não mais pela impressão do navegador:
-   a saída não depende das margens/opções do usuário e o modal de sucesso
-   dispara no momento certo (o afterprint não distinguia salvar de cancelar). */
+   O documento é montado em HTML por mt/js/pdf-doc.js e baixado como PDF
+   por shared/js/pdf-render.js — sem diálogo de impressão. A saída não
+   depende das margens/opções do navegador, e o modal de sucesso dispara
+   no momento certo (o afterprint não distinguia salvar de cancelar).
+   O jsPDF é carregado lá dentro, junto da fonte embutida. */
 async function exportarPDF() {
   if (atualizarGateExportacao().length) {
     goTo(8);
     return;
   }
-  // jsPDF sob demanda; o guard do gerador alerta se a carga falhar.
-  await window.CemigLibs.jspdf().catch(() => {});
-  gerarPdfFormularioMT();
+  await gerarPdfFormularioMT();
 }
 
 /* ===== Modal Anexo II ===== */

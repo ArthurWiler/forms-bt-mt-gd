@@ -1,0 +1,29 @@
+/* ============================================================
+   CEMIG — PDF do formulário de Média Tensão
+   ------------------------------------------------------------
+   Só o que é exclusivo do MT. Tudo o que os módulos compartilham
+   (página, cabeçalho, grade, cartões, chip de situação, cartão de
+   mídia, caixa do ramal, tabela) mora em css/pdf/shared-pdf.css e
+   NÃO deve ser repetido nem sobrescrito aqui — mesma regra do
+   css/shared.css na tela, documentada em docs/css-architecture.md.
+
+   Carregue depois de variables-pdf.css e shared-pdf.css.
+   ============================================================ */
+
+/* ---- Larguras das tabelas do MT ----
+   Nas duas o mock divide a coluna útil em partes IGUAIS, e não
+   pelo conteúdo — daí o `table-layout: fixed`, que sem largura
+   declarada distribui as colunas por igual. Sem ele, "1.251,63"
+   negociaria mais largura que "6" e o desenho sairia de esquadro.
+
+   Motores: 8 colunas de 65,375pt (523 / 8), medidas nas fronteiras
+   do cabeçalho em pdf-mt-nova/svg_2 — x em 36, 101,375, 166,75,
+   232,125, 297,5, 362,875, 428,25 e 493,625.
+
+   Demanda escalonada: 3 colunas de 174,333pt (523 / 3) na
+   modalidade Azul, medidas no mesmo desenho; na Verde a tabela cai
+   para 2 colunas e o mesmo `fixed` as divide ao meio. */
+.pdf-tabela--motores-mt,
+.pdf-tabela--escalonada {
+  table-layout: fixed;
+}
