@@ -83,7 +83,7 @@ function montarSecao(sec) {
 }
 
 const secoesBox = document.getElementById("secoes");
-MODALIDADES_SECOES.forEach((sec) =>
+MODALIDADES_SECOES.filter((sec) => !sec.oculta).forEach((sec) =>
   secoesBox.appendChild(montarSecao(sec)),
 );
 document.getElementById("footerCopy").textContent =

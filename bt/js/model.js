@@ -442,6 +442,8 @@ const SEC_BT_EMPREENDIMENTOS = {
 };
 const SEC_BT_ESPECIAIS = {
   titulo: "Baixa Tensão - Atendimentos Especiais",
+  // Oculta da homepage (os cards seguem aqui para a busca por id do bt-core).
+  oculta: true,
   cards: [
     {
       id: "remocao-rede",
