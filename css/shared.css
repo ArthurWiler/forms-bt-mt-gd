@@ -2164,7 +2164,8 @@ label.restricao-aceite input[type="checkbox"] {
   display: flex;
   flex-direction: column;
   gap: var(--cmg-space-3);
-  margin-top: var(--cmg-space-3);
+  /* respiro entre o campo de busca e a lista de equipamentos */
+  margin-top: var(--cmg-space-6);
 }
 .cemig-form .carga-acc {
   border: 1px solid var(--cmg-green-600);
@@ -4910,4 +4911,205 @@ label.restricao-aceite input[type="checkbox"] {
   bottom: -20px;
   padding: 0 var(--cmg-space-4);
   margin-top: 0;
+}
+
+/* ============================================================
+   BT individual — ajustes do Figma (Informações, Dados da unidade com
+   Tipo de atendimento, Cargas, Observações).
+   ============================================================ */
+/* Cabeçalho da UC (BT individual, spec Figma): título + tag lime da
+   atividade à esquerda; "Excluir unidade" (vermelho) + chevron à direita. */
+.cemig-form .uc-colapsavel-titulo {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--cmg-space-3);
+}
+.cemig-form .uc-tag-atividade {
+  font-family: var(--cmg-font-family);
+  letter-spacing: var(--cmg-ls-tight);
+}
+.cemig-form .uc-head-acoes {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cmg-space-8);
+  flex: none;
+}
+.cemig-form .uc-excluir {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cmg-space-2);
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-body-lg);
+  font-weight: var(--cmg-fw-semibold, 600);
+  letter-spacing: var(--cmg-ls-tight);
+  color: var(--cmg-error-500);
+}
+.cemig-form .uc-excluir:hover {
+  text-decoration: underline;
+}
+.cemig-form .uc-colapsavel-head:focus-visible {
+  outline: 2px solid var(--cmg-green-600);
+  outline-offset: 2px;
+  border-radius: var(--cmg-radius);
+}
+.cemig-form .uc-aviso-endereco {
+  margin-bottom: var(--cmg-space-6);
+}
+.cemig-form .uc-colapsavel-corpo .endereco-bloco {
+  margin-bottom: var(--cmg-space-6);
+}
+/* Subseções dentro do card da etapa ("Tipo de atendimento", "Padrão de
+   energia"): título 20px + texto corpo/grande. */
+.cemig-form .secao-titulo {
+  margin: 0 0 var(--cmg-space-3);
+  font-family: var(--cmg-font-family);
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: var(--cmg-fw-regular);
+  letter-spacing: var(--cmg-ls-tight);
+  color: var(--cmg-text-strong);
+}
+.cemig-form .secao-titulo + .grid {
+  margin-top: var(--cmg-space-4);
+}
+.cemig-form .secao-texto {
+  margin: 0 0 var(--cmg-space-6);
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-body-lg);
+  line-height: var(--cmg-lh-body-lg);
+  letter-spacing: var(--cmg-ls-tight);
+  color: var(--cmg-text);
+}
+.cemig-form .secao-texto strong {
+  font-weight: var(--cmg-fw-bold);
+  color: var(--cmg-text-strong);
+}
+/* Modalidade (somente leitura) acima dos blocos de UC */
+.cemig-form .modalidade-card {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--cmg-space-1);
+  min-width: min(100%, 392px);
+  box-sizing: border-box;
+  margin-bottom: var(--cmg-space-6);
+  padding: var(--cmg-space-3) var(--cmg-space-5, 20px);
+  background: var(--cmg-surface);
+  border: 1px solid var(--cmg-neutral-200);
+  border-radius: var(--cmg-radius);
+  font-family: var(--cmg-font-family);
+  letter-spacing: var(--cmg-ls-tight);
+}
+.cemig-form .modalidade-card-label {
+  font-size: var(--cmg-fs-body-lg);
+  line-height: var(--cmg-lh-body-lg);
+  color: var(--cmg-text);
+}
+.cemig-form .modalidade-card-valor {
+  font-size: var(--cmg-fs-body-lg);
+  line-height: var(--cmg-lh-body-lg);
+  font-weight: var(--cmg-fw-bold);
+  color: var(--cmg-text-strong);
+}
+.cemig-form #ucsIdentBox + .acao-central {
+  margin-top: var(--cmg-space-6);
+}
+.cemig-form .btn-add-uc {
+  gap: var(--cmg-space-2);
+}
+/* Contador de caracteres das Observações */
+.cemig-form .obs-contador {
+  display: block;
+  margin-top: var(--cmg-space-1);
+  text-align: right;
+}
+.cemig-form .card-title .opt {
+  font-style: italic;
+  color: var(--cmg-text-muted);
+}
+/* Documentação necessária (Etapa 1 do BT, spec Figma): título no tamanho do
+   card-title, seções 20px, grupos 16px e listas com marcador verde. A lista
+   numerada acima termina com um divisor, como na referência. */
+.cemig-form .orient-list:has(+ #orientColetivoBox),
+.cemig-form .orient-list:has(+ .orient-docs) {
+  border-bottom: 1px solid var(--cmg-divider);
+}
+.cemig-form .orient-docs {
+  margin: var(--cmg-space-8) 0;
+  font-family: var(--cmg-font-family);
+  color: var(--cmg-text);
+}
+.cemig-form .orient-docs-titulo {
+  margin: 0 0 var(--cmg-space-6);
+  font-size: var(--cmg-fs-subtitle-lg, 26px);
+  line-height: 38px;
+  font-weight: var(--cmg-fw-regular);
+  letter-spacing: var(--cmg-ls-wide);
+  color: var(--cmg-text-strong);
+}
+.cemig-form .orient-docs-secao {
+  margin: var(--cmg-space-8) 0 var(--cmg-space-3);
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: var(--cmg-fw-regular);
+  letter-spacing: var(--cmg-ls-tight);
+  color: var(--cmg-text-strong);
+}
+.cemig-form .orient-docs-titulo + .orient-docs-secao {
+  margin-top: 0;
+}
+.cemig-form .orient-docs-grupo {
+  margin: var(--cmg-space-4) 0 var(--cmg-space-2);
+  font-size: var(--cmg-fs-body-lg);
+  line-height: var(--cmg-lh-body-lg);
+  font-weight: var(--cmg-fw-regular);
+  letter-spacing: var(--cmg-ls-tight);
+  color: var(--cmg-text-strong);
+}
+.cemig-form .orient-docs-texto,
+.cemig-form .orient-docs-nota {
+  margin: 0 0 var(--cmg-space-2);
+  font-size: var(--cmg-fs-body-lg);
+  line-height: var(--cmg-lh-body-lg);
+  letter-spacing: var(--cmg-ls-tight);
+}
+.cemig-form .orient-docs-nota {
+  font-size: var(--cmg-fs-body);
+  line-height: var(--cmg-lh-body);
+}
+.cemig-form .orient-docs-texto strong {
+  font-weight: var(--cmg-fw-bold);
+  color: var(--cmg-text-strong);
+}
+.cemig-form .orient-bullets {
+  list-style: none;
+  margin: 0 0 var(--cmg-space-2);
+  padding: 0;
+}
+.cemig-form .orient-bullets li {
+  position: relative;
+  padding: var(--cmg-space-2) 0 var(--cmg-space-2) var(--cmg-space-8);
+  font-size: var(--cmg-fs-body-lg);
+  line-height: var(--cmg-lh-body-lg);
+  letter-spacing: var(--cmg-ls-tight);
+}
+.cemig-form .orient-bullets li::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: var(--cmg-green-600);
+}
+.cmg-aviso-link {
+  color: var(--cmg-green-600);
+  font-weight: var(--cmg-fw-bold);
+  text-decoration: underline;
 }

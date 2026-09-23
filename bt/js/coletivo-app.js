@@ -3767,7 +3767,7 @@ function renderPreviaColetivo() {
   // Correspondência vai para o FIM da prévia em todos os fluxos (ordem da
   // tela-alvo); montada aqui e anexada ao final do html mais abaixo.
   const corrHtml =
-    `<div class="previa-secao"><h4 class="previa-secao-titulo">Correspondência</h4><div class="previa-grid">` +
+    `<div class="previa-secao"><h4 class="previa-secao-titulo">Conta de luz</h4><div class="previa-grid">` +
     pvCampoBT(
       "E-mail para receber a fatura do condomínio",
       emailFatura,
