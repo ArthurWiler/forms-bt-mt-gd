@@ -70,10 +70,15 @@ function montarSecao(sec) {
     body.className = "modalidade-card-body";
     const nome = document.createElement("strong");
     nome.textContent = card.nome;
-    const sub = document.createElement("span");
-    sub.className = "modalidade-sub";
-    sub.textContent = card.sub;
-    body.append(nome, sub);
+    body.appendChild(nome);
+    // Linha de apoio só onde o card tem uma (hoje: Microgeração/Minigeração).
+    // Criar o <span> vazio nos demais deixaria o `gap` do corpo sobrando.
+    if (card.sub) {
+      const sub = document.createElement("span");
+      sub.className = "modalidade-sub";
+      sub.textContent = card.sub;
+      body.appendChild(sub);
+    }
     btn.append(imgBox, body);
     grid.appendChild(btn);
   });

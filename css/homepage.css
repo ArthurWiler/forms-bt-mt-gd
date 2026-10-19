@@ -71,7 +71,8 @@ body {
   flex-direction: column;
   align-items: flex-start;
   padding: 0px;
-  gap: 32px;
+  /* O `gap` vem de shared.css (16px, medida do Figma) — o 32px que havia aqui
+     era sombreado por ele, mesma limpeza já feita nas demais declarações. */
   /* Fluid: was a fixed `width: 862px` that overflowed below ~862px
      (every tablet/mobile width). The gutter container handles centering. */
   width: 100%;

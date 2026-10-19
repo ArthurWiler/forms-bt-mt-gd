@@ -42,14 +42,28 @@ Cada módulo é uma SPA independente (próprio `index.html`, CSS e JS), mas vár
 
 ## Homepage — seletor de modalidades
 
-A homepage (`index.html`) renderiza o portal reutilizando `MODALIDADES_SECOES` (`bt/js/model.js`) e os componentes de `bt/js/components.js`. Apresenta cards agrupados por seção, nesta ordem:
+A homepage (`index.html`) renderiza o portal a partir de `MODALIDADES_SECOES` (`bt/js/model.js`), montado por `js/homepage.js`. São três seções colapsáveis, nesta ordem:
 
-- **Média Tensão**: indústria, outros estabelecimentos e irrigante — todos `status: "link"` para `mt/` (com `?atividade=` quando aplicável).
+- **Baixa Tensão**: urbano (residência, comércio e indústria), rural (idem), condomínio de torres, atendimento coletivo e loteamento. Os três primeiros entram no fluxo BT interno; loteamento é `status: "link"` → `loteamento/`.
+- **Média Tensão**: card único "Indústria, comércio, irrigação e outros" — `status: "link"` para `mt/`.
 - **Geração Distribuída**: microgeração (`microgeracao/`) e minigeração (`minigeracao/`) — ambos `status: "link"`.
-- **Residencial · Comercial · Rural — Baixa Tensão**: casa até 50 m², casa até 100 m², casa > 100 m², comércio, indústria BT, rural — entram no fluxo BT interno, já pré-preenchido conforme o card escolhido (`prefill`).
-- **Empreendimentos — Baixa Tensão**: loteamento (`status: "link"` → `loteamento/`), condomínio de torres e atendimento coletivo (fluxo BT interno).
 
-Cards com `status: "ok"` aplicam o pré-preenchimento do card na inicialização: os de `formType: "individual"` abrem o formulário vanilla `bt/individual.html?mod=<id>` (`bt/js/individual-app.js`); os de coletivo/condomínio abrem a SPA React `bt/?mod=<id>` (`bt/js/app.js`). Cards com `status: "link"` navegam para a subpasta do módulo correspondente.
+Cards com `status: "ok"` aplicam o pré-preenchimento do card na inicialização: os de `formType: "individual"` abrem o formulário vanilla `bt/individual.html?mod=<id>` (`bt/js/individual-app.js`); os de coletivo/condomínio abrem `bt/?mod=<id>` (`bt/js/app.js`). Cards com `status: "link"` navegam para a subpasta do módulo correspondente.
+
+O card **urbano** é a porta de entrada única dos atendimentos individuais urbanos: não trava a "Atividade principal" nem pré-preenche cargas — a atividade (Residencial/Comercial/Industrial) é escolha do usuário no bloco da UC (etapa "Dados da unidade"), e dela deriva o tipo de carga. Os antigos cards por área/atividade (`casa50`, `casa100`, `casaluxo`, `comercio`, `industriabt`) continuam existindo em `SEC_BT_INDIVIDUAIS_LEGADO`, marcada com `oculta: true`: somem da homepage, mas `btResolverCard` (`bt/js/bt-core.js`) varre **todas** as seções, então os deep links `bt/individual.html?mod=casa50` e companhia seguem abrindo o formulário com o prefill de sempre. Mesmo mecanismo de `SEC_BT_ESPECIAIS`.
+
+O layout segue o export do Figma, que tem dois frames de referência:
+
+| frame | recuo lateral | coluna | grade |
+| --- | --- | --- | --- |
+| 1366 — `sg1.svg`–`sg4.svg` (os quatro estados do acordeão) | 252px | 862px | 3 cards de 260,67 × 287 |
+| 1024 — `sg5.svg` (tablet) | 195px | 634px | 2 cards de 288 |
+
+Entre os dois o layout **reflui** (não escala): divisórias de 56px, padding de grade 8/16/24 e gap de 24 são os mesmos nos dois frames; o que muda é o recuo e, com ele, a largura da coluna e dos cards. `.cmg-container--gutter` interpola linearmente entre os dois pontos — `195px + (100% − 1024px) / 6`, já que (252 − 195)/(1366 − 1024) = 1/6 —, com teto de 252px acima de 1366 e um degrau de 12px em ≤600px. Os degraus fixos que havia antes (252px acima de 1024, 195px abaixo) acertavam os dois frames e erravam tudo entre eles: num monitor de 1280 a coluna virava 776px e a grade caía para 2 cards de 360px, mais largos que os 288 do próprio tablet.
+
+O título da barra verde ("Formulário de Ligação Nova e Alteração de Carga") fica **sempre alinhado** com o h1 "Selecione uma modalidade": o espaço que o empurra (`gap` do `.topbar-inner`) é o mesmo recuo menos o bloco do logo — 32px de recuo + 112px de largura = 144px, que também é o piso do recuo. Dá os 108px do Figma a 1366 e 51px a 1024, e acompanha a interpolação no meio. **Isso vale só no portal**: nos formulários o miolo começa depois da barra de etapas, que é fixa em 32..236px, então lá o conteúdo fica em 252px em qualquer largura e o `gap` continua fixo.
+
+A grade é `auto-fill` com trilhas de no mínimo 220px, e o teto de 288px (o maior card do Figma) fica no **card**, não na trilha — `minmax(240px, 288px)` não serve porque o `auto-fill` conta quantas trilhas cabem pelo máximo delas e a grade inteira cai para duas colunas. Com `justify-items: start` a primeira coluna fica alinhada com o h1 e com as divisórias em qualquer largura. Todos os valores que fecham essa geometria estão comentados em `css/shared.css` (bloco `.modalidade-screen`).
 
 ### Fast Track (art. 73-A) e Grid Zero
 

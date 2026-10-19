@@ -248,8 +248,105 @@ function cargasQtdsPorNome(itens) {
   return qtds;
 }
 
-const SEC_BT_RESIDENCIAL = {
-  titulo: "Baixa Tensão - Residencial, Comercial, Industrial e Rural",
+// Seção única de Baixa Tensão (Figma): uma porta de entrada por card —
+// urbano, rural, condomínio de torres, atendimento coletivo e loteamento.
+const SEC_BT = {
+  titulo: "Baixa Tensão",
+  cards: [
+    {
+      id: "urbano",
+      formType: "individual",
+      nome: "Urbano - Residência, Comércio e Indústria",
+      img: "imgs/img_casa1.webp",
+      status: "ok",
+      // Porta de entrada única dos atendimentos individuais urbanos. Sem
+      // `prefill.atividade`: Residencial/Comercial/Industrial é escolha do
+      // usuário no bloco da UC (Dados da unidade) e o tipo de carga deriva
+      // dela — mesmo comportamento do card rural. Sem `travaZonaRural`
+      // o ramo `else` de individual-app.js fixa a zona em Urbana e oculta o
+      // seletor — por isso não há flag nova aqui.
+      solicitacoesPermitidas: SOLICITACOES_INDIVIDUAIS,
+      prefill: {
+        atend: {
+          disjGeral: "Não",
+          solicitacao: SOLICITACOES[0],
+          escopo: "Ligação Nova",
+        },
+        obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
+      },
+    },
+    {
+      id: "rural",
+      formType: "individual",
+      nome: "Rural - Residência, Comércio e Indústria",
+      img: "imgs/img_rural.webp",
+      status: "ok",
+      travaZonaRural: true, // zona de localização fixa em Rural (não editável)
+      // A categoria Rural NÃO trava nem força a "Atividade principal": o usuário
+      // escolhe livremente entre Residencial/Comercial/Industrial e o tipo de
+      // carga deriva sempre da atividade (res ou nr + categoria da Tabela 11).
+      // Zona travada em Rural e limite de 2 UCs — a 2ª sempre de irrigação.
+      solicitacoesPermitidas: SOLICITACOES_INDIVIDUAIS,
+      prefill: {
+        atend: {
+          disjGeral: "Não",
+          solicitacao: SOLICITACOES[0],
+          escopo: "Ligação Nova",
+        },
+        obra: { tipoRede: "Trifásica", localizacao: "Rural" },
+      },
+    },
+    {
+      id: "condominiotorres",
+      formType: "condominio",
+      nome: "Condomínio de torres",
+      img: "imgs/img_condominio.webp",
+      status: "ok",
+      prefill: {
+        atividade: "Residencial",
+        atend: {
+          disjGeral: "Sim",
+          solicitacao: SOLICITACOES[4],
+          escopo: "Ligação Nova",
+          nBlocos: 2,
+        },
+        obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
+      },
+    },
+    {
+      id: "coletivo",
+      formType: "coletivo",
+      nome: "Atendimento coletivo",
+      img: "imgs/img_coletivo.webp",
+      status: "ok",
+      prefill: {
+        atividade: "Residencial",
+        atend: {
+          disjGeral: "Sim",
+          solicitacao: SOLICITACOES[2],
+          escopo: "Ligação Nova",
+          nUCs: 2,
+        },
+        obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
+      },
+    },
+    {
+      id: "loteamento",
+      nome: "Loteamento",
+      img: "imgs/img_loteamento.webp",
+      status: "link",
+      href: "loteamento/",
+    },
+  ],
+};
+// Cards individuais por área/atividade. Deixaram de ser cards da homepage: a
+// porta de entrada urbana agora é o card único `urbano`, que não trava a
+// atividade. Seguem aqui (ocultos) porque btResolverCard varre TODAS as
+// seções — os deep links ?mod=casa50|casa100|casaluxo|comercio|industriabt
+// continuam abrindo individual.html com o prefill de sempre.
+const SEC_BT_INDIVIDUAIS_LEGADO = {
+  titulo: "Baixa Tensão - Residencial, Comercial e Industrial",
+  oculta: true,
   cards: [
     {
       id: "casa50",
@@ -367,77 +464,6 @@ const SEC_BT_RESIDENCIAL = {
         obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
       },
     },
-    {
-      id: "rural",
-      formType: "individual",
-      nome: "Rural",
-      sub: "Baixa Tensão (BT)",
-      img: "imgs/img_rural.webp",
-      status: "ok",
-      travaZonaRural: true, // zona de localização fixa em Rural (não editável)
-      // A categoria Rural NÃO trava nem força a "Atividade principal": o usuário
-      // escolhe livremente entre Residencial/Comercial/Industrial e o tipo de
-      // carga deriva sempre da atividade (res ou nr + categoria da Tabela 11).
-      // Zona travada em Rural e limite de 2 UCs — a 2ª sempre de irrigação.
-      solicitacoesPermitidas: SOLICITACOES_INDIVIDUAIS,
-      prefill: {
-        atend: {
-          disjGeral: "Não",
-          solicitacao: SOLICITACOES[0],
-          escopo: "Ligação Nova",
-        },
-        obra: { tipoRede: "Trifásica", localizacao: "Rural" },
-      },
-    },
-  ],
-};
-const SEC_BT_EMPREENDIMENTOS = {
-  titulo: "Baixa Tensão - Empreendimentos",
-  cards: [
-    {
-      id: "loteamento",
-      nome: "Loteamento",
-      sub: "Baixa Tensão (BT)",
-      img: "imgs/img_loteamento.webp",
-      status: "link",
-      href: "loteamento/",
-    },
-    {
-      id: "condominiotorres",
-      formType: "condominio",
-      nome: "Condomínio de torres",
-      sub: "Baixa Tensão (BT)",
-      img: "imgs/img_condominio.webp",
-      status: "ok",
-      prefill: {
-        atividade: "Residencial",
-        atend: {
-          disjGeral: "Sim",
-          solicitacao: SOLICITACOES[4],
-          escopo: "Ligação Nova",
-          nBlocos: 2,
-        },
-        obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
-      },
-    },
-    {
-      id: "coletivo",
-      formType: "coletivo",
-      nome: "Atendimento coletivo",
-      sub: "Baixa Tensão (BT)",
-      img: "imgs/img_coletivo.webp",
-      status: "ok",
-      prefill: {
-        atividade: "Residencial",
-        atend: {
-          disjGeral: "Sim",
-          solicitacao: SOLICITACOES[2],
-          escopo: "Ligação Nova",
-          nUCs: 2,
-        },
-        obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
-      },
-    },
   ],
 };
 const SEC_BT_ESPECIAIS = {
@@ -501,7 +527,6 @@ const SEC_MT = {
     {
       id: "mt-outros",
       nome: "Indústria, comércio, irrigação e outros",
-      sub: "Média Tensão (MT)",
       img: "imgs/img_outros_mt.webp",
       status: "link",
       href: "mt/",
@@ -518,7 +543,7 @@ const SEC_GD = {
     {
       id: "gd-micro",
       nome: "Microgeração",
-      sub: "Baixa Tensão (BT)",
+      sub: "Potência menor que 75kW",
       img: "imgs/mod-gd-micro.webp",
       status: "link",
       href: "microgeracao/",
@@ -526,7 +551,7 @@ const SEC_GD = {
     {
       id: "gd-mini",
       nome: "Minigeração",
-      sub: "Média Tensão (MT)",
+      sub: "Potência superior a 75kW",
       img: "imgs/mod-gd-mini.webp",
       status: "link",
       href: "minigeracao/",
@@ -534,8 +559,8 @@ const SEC_GD = {
   ],
 };
 const MODALIDADES_SECOES = [
-  SEC_BT_RESIDENCIAL,
-  SEC_BT_EMPREENDIMENTOS,
+  SEC_BT,
+  SEC_BT_INDIVIDUAIS_LEGADO,
   SEC_BT_ESPECIAIS,
   SEC_MT,
   SEC_GD,

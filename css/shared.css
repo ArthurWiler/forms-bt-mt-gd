@@ -132,13 +132,29 @@ html {
   max-width: var(--cmg-area-max);
   margin-inline: auto;
 }
+/* O recuo lateral INTERPOLA entre os dois frames que o Figma define:
+     1366px (sg1–sg4) → 252px de recuo, coluna de 862px, 3 cards de 260,67
+     1024px (sg5)     → 195px de recuo, coluna de 634px, 2 cards de 288
+   A reta que liga os dois pontos tem inclinação (252−195)/(1366−1024) = 1/6,
+   daí `195px + (100% − 1024px) / 6`. Os degraus fixos que havia aqui (252px
+   acima de 1024, 195px abaixo) acertavam os dois frames e erravam tudo entre
+   eles: num monitor de 1280 a coluna virava 776px e a grade caía para 2 cards
+   de 360px — mais largos que os 288 do próprio tablet. O percentual é da
+   largura do PAI (a faixa inteira), e não `100vw`, para não embutir a barra de
+   rolagem. Acima de 1366 o teto de 252px assume e `.cmg-container` centra a
+   área útil; o degrau de ≤600px continua abaixo, para o recuo não comer a tela
+   no celular.
+   O PISO de 144px é o recuo do logo (32px) mais a largura dele (112px): é onde
+   o título da barra verde encosta no logo e não pode andar mais para a
+   esquerda. Como esse título fica alinhado com o h1 "Selecione uma modalidade"
+   (ver `.topbar-inner` adiante), parar os dois aqui mantém o alinhamento até o
+   degrau de ≤600px, onde a barra empilha e ambos vão para 12px. */
 .cmg-container--gutter {
-  padding-inline: var(--cmg-area-gutter); /* 252px */
-}
-@media (max-width: 1024px) {
-  .cmg-container--gutter {
-    padding-inline: 195px;
-  }
+  padding-inline: clamp(
+    144px,
+    calc(195px + (100% - 1024px) / 6),
+    var(--cmg-area-gutter)
+  );
 }
 @media (max-width: 600px) {
   .cmg-container--gutter {
@@ -206,7 +222,6 @@ html {
   flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
-  gap: 108px;
   padding: 0 var(--cmg-space-8); /* 0 32px */
   min-height: var(--cmg-header-height);
   /* Pin the topbar frame to the design token so it matches the content
@@ -216,6 +231,33 @@ html {
      off the side-panel/body. */
   width: 100%;
   max-width: var(--cmg-area-max);
+}
+/* ---- Eixo do título da barra verde ----
+   O que empurra o título é o recuo da coluna de conteúdo menos o bloco do logo
+   (32px de recuo + 112px de largura = 144px). Só que as duas famílias de página
+   ancoram esse recuo em coisas diferentes:
+
+   · PORTAL — o conteúdo é a coluna de `.cmg-container--gutter`, que interpola
+     entre os frames do Figma (252px a 1366, 195px a 1024). O gap acompanha, e
+     o título fica alinhado com o h1 "Selecione uma modalidade" em qualquer
+     largura. Os `+ 64px` compensam a referência: `100%` num `gap` é a caixa de
+     conteúdo do flex (largura − 2 × 32px de padding), enquanto no
+     `padding-inline` da coluna é a faixa inteira — sem isso os dois eixos
+     ficariam ~11px fora.
+   · FORMULÁRIOS — o conteúdo começa depois da barra de etapas, que é FIXA em
+     32..236px. O miolo fica em 252px em toda largura, então o gap aqui também
+     é fixo (os 108px do Figma), senão o título sairia andando sozinho. */
+.cemig-portal .topbar-inner {
+  gap: calc(
+    clamp(
+        144px,
+        calc(195px + (100% + 64px - 1024px) / 6),
+        var(--cmg-area-gutter)
+      ) - 144px
+  );
+}
+.cemig-form .topbar-inner {
+  gap: 108px;
 }
 .cemig-portal .topbar-left,
 .cemig-form .topbar-left {
@@ -265,7 +307,8 @@ html {
   line-height: var(--cmg-lh-display);
 }
 @media (max-width: 1024px) {
-  .cemig-portal .topbar-inner,
+  /* Só os formulários mantêm o degrau: no portal o calc acima já entrega 51px
+     a 1024 e, diferente do degrau, acompanha o recuo nas larguras do meio. */
   .cemig-form .topbar-inner {
     gap: 51px;
   }
@@ -350,12 +393,16 @@ html {
    4. Portal — modality selector cards & accordion
    (scoped to `.modalidade-screen`)
    ============================================================ */
+/* Espaçamentos conferidos contra o export do Figma (sg1–sg4): com 24px de
+   padding no topo da tela (ver `.modalidade-screen` no fim do arquivo), 16px
+   entre h1 e parágrafo, parágrafo em 16/24 e 40px até o acordeão, a primeira
+   divisória cai em y=270 e as seguintes em 326/382 — onde o SVG as desenha. */
 .modalidade-screen .modalidade-head {
   text-align: left;
-  margin-bottom: var(--cmg-space-12);
+  margin-bottom: 40px;
   display: flex;
   flex-direction: column;
-  gap: var(--cmg-space-8);
+  gap: var(--cmg-space-4);
 }
 .modalidade-screen .modalidade-head h1 {
   font-size: var(--cmg-fs-title);
@@ -368,7 +415,8 @@ html {
   max-width: none;
   margin: 0;
   font-size: var(--cmg-fs-body-lg);
-  line-height: var(--cmg-lh-body-lg);
+  /* 24px, não os 26 do token: o passo entre as três linhas no Figma é 24. */
+  line-height: 24px;
   letter-spacing: var(--cmg-ls-tight);
   color: var(--cmg-text);
 }
@@ -1091,7 +1139,10 @@ label.restricao-aceite input[type="checkbox"] {
   text-transform: none;
   color: var(--cmg-text);
   margin: 0;
-  padding: var(--cmg-space-4);
+  /* Linha de 56px no Figma = 1 (border-top) + 15 + 25 + 15. O line-height
+     foge do token (--cmg-lh-subtitle, 26px) só para fechar esse passo. */
+  line-height: 25px;
+  padding: 15px var(--cmg-space-4);
   border: none;
   border-top: 1px solid var(--cmg-divider);
   background: transparent;
@@ -1116,6 +1167,10 @@ label.restricao-aceite input[type="checkbox"] {
 .modalidade-screen .modalidade-secao-chevron {
   color: var(--cmg-neutral-600);
   font-size: 18px;
+  /* 24px de caixa → o glifo (6→18 no viewBox de 24) sai com 12px de largura,
+     a medida do Figma. Não altera a altura da linha (24 < 25). */
+  width: 24px;
+  height: 24px;
 }
 .modalidade-screen .modalidade-secao.is-collapsed .modalidade-secao-chevron {
   transform: none;
@@ -1128,7 +1183,7 @@ label.restricao-aceite input[type="checkbox"] {
 
 /* ---- Expanded panel ---- */
 .modalidade-screen .modalidade-secao-corpo > .modalidade-grid {
-  padding: var(--cmg-space-4) var(--cmg-space-4) var(--cmg-space-6);
+  padding: var(--cmg-space-2) var(--cmg-space-4) var(--cmg-space-6);
 }
 .modalidade-screen
   .modalidade-secao.is-collapsed
@@ -1137,10 +1192,26 @@ label.restricao-aceite input[type="checkbox"] {
   padding-top: 0;
   padding-bottom: 0;
 }
+/* Uma única regra de grade para todas as larguras: trilhas de no mínimo 220px.
+   Nos dois frames de referência o resultado é o do Figma — 830px de grade dão
+   3 × 260,67 a 1366 (sg2) e 602px dão 2 × 288 a 1024 (sg5). O mínimo é 220 e
+   não 240 para a grade segurar as três colunas até ~1140px; com 240 ela caía
+   para duas já em ~1290, e aí cada card esticava até 371px, mais largo que os
+   288 do tablet e crescendo conforme a tela ENCOLHE.
+   O teto de 288px (a maior largura de card do Figma) fica no CARD, não na
+   trilha: `minmax(240px, 288px)` não serve porque o `auto-fill` conta quantas
+   trilhas cabem pelo MÁXIMO delas, e a grade inteira caía para 2 colunas.
+   Com `justify-items: start` o card encosta na esquerda da trilha, então a
+   primeira coluna fica alinhada com o h1 e com as divisórias — a sobra, quando
+   existe, vai para a direita. */
 .modalidade-screen .modalidade-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  justify-items: start;
   gap: var(--cmg-space-6);
+}
+.modalidade-screen .modalidade-card {
+  max-width: 288px;
 }
 
 /* ---- Modality card ---- */
@@ -1169,9 +1240,14 @@ label.restricao-aceite input[type="checkbox"] {
   object-fit: cover;
 }
 .modalidade-screen .modalidade-card-body {
-  /* Figma: texto a 16px da borda; título e subtítulo próximos (~4px). */
-  padding: var(--cmg-space-6) var(--cmg-space-4);
+  /* Figma: 16px acima, 12px nas laterais; título e subtítulo a 4px. O corpo
+     tem 85px (e não os 87 do frame) porque o card do Figma embute o contorno:
+     1 (borda) + 200 (imagem) + 85 + 1 (borda) = os 287px do card. Os 15px
+     embaixo fecham a mesma conta no único card com subtítulo (GD), onde o
+     conteúdo — 16 + 26 (título) + 4 + 24 (subtítulo) + 15 — dá exatamente 85. */
+  padding: var(--cmg-space-4) var(--cmg-space-3) 15px;
   gap: var(--cmg-space-1);
+  min-height: 85px;
   background: var(--cmg-surface);
   transition: background 0.15s ease;
 }
@@ -1207,12 +1283,14 @@ label.restricao-aceite input[type="checkbox"] {
    5. Portal — desktop layout (scoped to `.modalidade-screen`)
    ============================================================ */
 .modalidade-screen {
-  padding-block: var(--cmg-space-8) var(--cmg-space-15); /* 32px / 60px */
+  padding-block: var(--cmg-space-6) var(--cmg-space-15); /* 24px / 60px */
   margin-block: 0;
 }
-@media (max-width: 1024px) {
-  .modalidade-screen .modalidade-grid {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+/* No celular a grade é de uma coluna só: o teto de 288px deixaria uma sobra à
+   direita sem motivo, então o card ocupa a largura inteira. */
+@media (max-width: 600px) {
+  .modalidade-screen .modalidade-card {
+    max-width: none;
   }
 }
 
