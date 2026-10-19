@@ -199,26 +199,43 @@
             <h3 class="card-title">Dados do Solicitante</h3>
             <div class="grid grid-2">
               <div class="field col-span-2">
-                <label>Nome Completo <span class="req">*</span></label>
+                <label>Nome completo <span class="req">*</span></label>
                 <input
                   type="text"
                   data-k="nome"
                   placeholder="Nome completo do solicitante ou representante legal"
                 />
               </div>
-              <div class="field">
-                <label>CPF / CNPJ <span class="req">*</span></label>
-                <input
-                  type="text"
-                  data-k="cpfCnpj"
-                  placeholder=" "
-                  onblur="onCpfCnpj()"
-                />
+              <!-- Documento do solicitante: o checkbox "Pessoa estrangeira"
+                   e o campo que ele comanda formam UMA célula do grid
+                   (`.doc-titular`), como na referência do Figma do BT. -->
+              <div class="doc-titular row-solo">
+                <label class="cmg-check">
+                  <input
+                    type="checkbox"
+                    id="propEstrangeiro"
+                    onchange="onEstrangeiroDesist(this)"
+                  />
+                  Pessoa estrangeira
+                </label>
+                <div class="field" id="docCpfCnpjBox">
+                  <label>CPF / CNPJ <span class="req">*</span></label>
+                  <input
+                    type="text"
+                    data-k="cpfCnpj"
+                    placeholder=" "
+                    onblur="onCpfCnpj()"
+                  />
+                </div>
+                <div class="field" id="docRneBox" style="display: none">
+                  <label>Nº do RNE/RNM <span class="req">*</span></label>
+                  <input type="text" data-k="rne" placeholder=" " />
+                </div>
               </div>
             </div>
             <div class="grid grid-2" style="margin-top: 16px">
               <div class="field">
-                <label>RG/RNE/RANI</label>
+                <label>RG / RANI</label>
                 <input
                   type="text"
                   data-k="rg"

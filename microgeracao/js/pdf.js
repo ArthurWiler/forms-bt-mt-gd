@@ -58,7 +58,8 @@ function gerarPdfMicroGD(d) {
     ["Titular", d.titular],
     ["Grupo", d.grupo],
     ["Atividade principal", d.classe],
-    ["CPF/CNPJ", d.cpfCnpj],
+    // Pessoa estrangeira não tem CPF/CNPJ: o documento é o RNE/RNM.
+    d.estrangeiro ? ["Nº do RNE/RNM", d.rne] : ["CPF/CNPJ", d.cpfCnpj],
     ["Fast Track (art. 73-A)", d.fastTrack],
   ];
   idPairs.push(

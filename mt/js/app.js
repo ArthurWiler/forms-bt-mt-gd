@@ -443,11 +443,23 @@ function onRgInput(el) {
 // NIS) — visíveis SÓ quando o documento é um CPF COMPLETO e VÁLIDO (igual ao
 // BT). Ao ocultar, limpa os valores p/ não travar a validação de obrigatórios.
 function mostrarCamposPF(pf) {
+  const estr = !!state.estrangeiro;
+  pf = pf && !estr;
   $$(".pf-campo").forEach((el) => {
     el.style.display = pf ? "" : "none";
   });
+  // Data de nascimento: é de pessoa física tanto com CPF quanto com RNE/RNM.
+  $$(".nasc-campo").forEach((el) => {
+    el.style.display = pf || estr ? "" : "none";
+  });
+  const cpfBox = $("#docCpfCnpjBox");
+  if (cpfBox) cpfBox.style.display = estr ? "none" : "";
+  const rneBox = $("#docRneBox");
+  if (rneBox) rneBox.style.display = estr ? "" : "none";
   if (!pf) {
-    ["filiacao", "rg", "nasc", "laudoMedico", "nis", "numNis"].forEach((k) => {
+    const zerar = ["filiacao", "rg", "laudoMedico", "nis", "numNis"];
+    if (!estr) zerar.push("nasc");
+    zerar.forEach((k) => {
       const c = $(`[data-k="${k}"]`);
       if (c) {
         c.value = "";
@@ -461,6 +473,33 @@ function mostrarCamposPF(pf) {
   }
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
+// Pessoa estrangeira: no lugar do CPF/CNPJ entra o nº do RNE/RNM, e dos campos
+// exclusivos de CPF sobra só a data de nascimento.
+function onEstrangeiroMT(el) {
+  state.estrangeiro = !!el.checked;
+  if (state.estrangeiro) {
+    ["cpfCnpj", "filiacao", "rg", "laudoMedico", "nis", "numNis"].forEach(
+      (k) => {
+        state[k] = "";
+        const c = $(`[data-k="${k}"]`);
+        if (c) c.value = "";
+      },
+    );
+    const doc = $("#f_cpfcnpj");
+    if (doc) doc.classList.remove("is-invalid");
+    const msg = $("#cpfMsg");
+    if (msg) {
+      msg.textContent = "";
+      msg.className = "field-hint";
+    }
+  } else {
+    state.rne = "";
+    const c = $('[data-k="rne"]');
+    if (c) c.value = "";
+  }
+  mostrarCamposPF(false);
+}
+window.onEstrangeiroMT = onEstrangeiroMT;
 // Número do NIS só quando "Possui NIS" = Sim.
 function onNisMT() {
   const nis = $('[data-k="nis"]');

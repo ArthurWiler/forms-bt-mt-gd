@@ -216,6 +216,27 @@ function onCpfCnpj() {
   state.cpfCnpj = el.value;
 }
 
+// Pessoa estrangeira: no lugar do CPF/CNPJ entra o nº do RNE/RNM.
+function onEstrangeiroDesist(el) {
+  state.estrangeiro = !!el.checked;
+  if (state.estrangeiro) {
+    state.cpfCnpj = "";
+    state.tipoPessoa = "";
+    const c = $('[data-k="cpfCnpj"]');
+    if (c) c.value = "";
+  } else {
+    state.rne = "";
+    const c = $('[data-k="rne"]');
+    if (c) c.value = "";
+  }
+  const cpfBox = $("#docCpfCnpjBox");
+  if (cpfBox) cpfBox.style.display = state.estrangeiro ? "none" : "";
+  const rneBox = $("#docRneBox");
+  if (rneBox) rneBox.style.display = state.estrangeiro ? "" : "none";
+  if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
+}
+window.onEstrangeiroDesist = onEstrangeiroDesist;
+
 /* ===== Validação leve de telefone/e-mail (feedback visual) ===== */
 function _validarTelefone(v) {
   return soDigitos(v).length >= 10;
@@ -413,7 +434,9 @@ function renderPreview() {
       "Solicitante",
       pvCampo("Nome completo", state.nome, { full: true, step: 2 }) +
         pvCampo("Tipo de pessoa", state.tipoPessoa, { step: 2 }) +
-        pvCampo("CPF/CNPJ", state.cpfCnpj, { step: 2 }) +
+        (state.estrangeiro
+          ? pvCampo("Nº do RNE/RNM", state.rne, { step: 2 })
+          : pvCampo("CPF/CNPJ", state.cpfCnpj, { step: 2 })) +
         pvCampo("RG/RNE/RANI", state.rg, { step: 2 }) +
         pvCampo("Órgão emissor", state.orgaoEmissor, { step: 2 }) +
         pvCampo("Estado emissor", state.ufEmissor, { step: 2 }) +
@@ -476,8 +499,10 @@ function renderDocumentoImpressao() {
 
   h += `<div class="doc-sec">2 — DADOS DO SOLICITANTE</div>`;
   h += _docKV("Nome completo", state.nome);
-  h += _docKV(state.tipoPessoa === "CNPJ" ? "CNPJ" : "CPF", state.cpfCnpj);
-  h += _docKV("RG/RNE/RANI", [state.rg, state.orgaoEmissor, state.ufEmissor, state.dataExpedicao].filter(Boolean).join(" · "));
+  h += state.estrangeiro
+    ? _docKV("Nº do RNE/RNM", state.rne)
+    : _docKV(state.tipoPessoa === "CNPJ" ? "CNPJ" : "CPF", state.cpfCnpj);
+  h += _docKV("RG / RANI", [state.rg, state.orgaoEmissor, state.ufEmissor, state.dataExpedicao].filter(Boolean).join(" · "));
   h += _docKV("Telefones", [state.telFixo, state.telCelular].filter(Boolean).join(" / "));
   h += _docKV("E-mail", state.email);
 

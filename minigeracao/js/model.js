@@ -98,6 +98,9 @@ function gdEstadoInicial() {
     grupo: "A",
     classe: "",
     cpfCnpj: "",
+    // Pessoa estrangeira: no lugar do CPF/CNPJ entra o nº do RNE/RNM.
+    estrangeiro: false,
+    rne: "",
     // Campos de Pessoa Física (só aparecem com CPF válido)
     // Selects com opção vazia "—" na etapa 2 (padrão do microGD): começam sem
     // escolha, para que o obrigatório não passe sem o usuário ter respondido.

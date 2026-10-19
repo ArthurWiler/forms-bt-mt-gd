@@ -42,6 +42,14 @@
         >.
       </p>
     </li>
+    <li class="orient-item">
+      <span class="orient-num">5</span>
+      <p>
+        Para preencher o formulário, tenha em mãos seus documentos pessoais, a
+        lista de equipamentos da propriedade (antigos e novos) e os documentos
+        que comprovem a regularidade e a posse ou propriedade do imóvel.
+      </p>
+    </li>
   </ul>
 
   <div id="orientColetivoBox">
@@ -85,85 +93,95 @@
   <div class="orient-docs">
     <h4 class="orient-docs-titulo">Documentação necessária</h4>
 
-    <h5 class="orient-docs-secao">Documentos pessoais</h5>
-    <h6 class="orient-docs-grupo">Pessoa Física</h6>
-    <ul class="orient-bullets">
-      <li>CPF e documento oficial com foto</li>
-    </ul>
-    <h6 class="orient-docs-grupo">Pessoa Jurídica</h6>
-    <ul class="orient-bullets">
-      <li>Contrato social, requerimento de empresário ou CCMEI</li>
-      <li>Registro na junta comercial</li>
-    </ul>
-    <h6 class="orient-docs-grupo">Pessoa Jurídica (poder público)</h6>
-    <ul class="orient-bullets">
-      <li>CPF e documento oficial com foto do representante legal</li>
-    </ul>
-    <h6 class="orient-docs-grupo">Responsável técnico (caso exista)</h6>
-    <ul class="orient-bullets">
-      <li>CPF e documento oficial com foto</li>
-      <li>Procuração para solicitação em nome de terceiros</li>
-    </ul>
+    <details class="cmg-acordeao">
+      <summary class="cmg-acordeao-titulo">Documentos pessoais</summary>
+      <div class="cmg-acordeao-corpo">
+        <ul class="orient-docs-lista">
+          <li>
+            <strong>Pessoa Física</strong>
+            <em>CPF e documento oficial com foto</em>
+          </li>
+          <li>
+            <strong>Pessoa Jurídica</strong>
+            <em>
+              Contrato social, requerimento de empresário ou CCMEI; Registro
+              na Junta Comercial
+            </em>
+          </li>
+          <li>
+            <strong>Pessoa Jurídica (poder público)</strong>
+            <em>CPF e documento oficial com foto do representante legal</em>
+          </li>
+          <li>
+            <strong>Responsável técnico (caso exista)</strong>
+            <em>
+              CPF, documento oficial com foto, Procuração para solicitação em
+              nome de terceiros
+            </em>
+          </li>
+        </ul>
+      </div>
+    </details>
 
-    <h5 class="orient-docs-secao">Lista de equipamentos</h5>
-    <p class="orient-docs-nota">
-      Será necessário declarar todos os equipamentos (existentes e novos) e
-      suas respectivas potências da propriedade.
-    </p>
-
-    <h5 class="orient-docs-secao">Documentos do Imóvel</h5>
-    <h6 class="orient-docs-grupo">
-      Documentos de Regularidade (comprova a localização do imóvel)
-    </h6>
-    <p class="orient-docs-texto">
-      Apresentar <strong>um</strong> dos documentos a seguir:
-    </p>
-    <ul class="orient-bullets">
-      <li>Certidão de Número, Habite-se ou similar</li>
-      <li>IPTU</li>
-      <li>Escritura Pública ou Registro do Imóvel</li>
-      <li>Alvará de construção ou de licença de localização</li>
-      <li>Planta de Arquitetura aprovada pela prefeitura</li>
-      <li>
-        Licença/declaração de órgão competente (se área protegida por
-        legislação ambiental ou territórios indígenas/quilombolas)
-      </li>
-    </ul>
-    <p class="orient-docs-texto">
-      <strong>Exceções</strong>: não é exigido para o município de Juiz de
-      Fora, nem para clientes do poder público (que devem apresentar
-      contrato/estatuto social, se autarquia).
-    </p>
-    <h6 class="orient-docs-grupo">
-      Documentos de Posse ou Propriedade (original ou cópia autenticada, com
-      endereço completo em nome do interessado)
-    </h6>
-    <p class="orient-docs-texto">
-      Apresentar <strong>um</strong> dos documentos a seguir:
-    </p>
-    <ul class="orient-bullets">
-      <li>Escritura Pública ou Registro do Imóvel</li>
-      <li>Contrato de compra e venda</li>
-      <li>Contrato de locação, arrendamento ou comodato</li>
-      <li>Termo de doação ou permissão de uso</li>
-      <li>Formal de partilha</li>
-      <li>IPTU (somente do ano vigente ou anterior)</li>
-      <li>REURB (protocolo com endereço completo, quando aplicável)</li>
-    </ul>
-    <h6 class="orient-docs-grupo">Requisitos de Validade dos Contratos</h6>
-    <ul class="orient-bullets">
-      <li>Assinatura de todas as partes (contratante e contratado)</li>
-      <li>CPF das partes envolvidas</li>
-      <li>Data de celebração</li>
-      <li>
-        Endereço completo do imóvel (logradouro, número, bairro, cidade)
-      </li>
-      <li>Assinatura das testemunhas/avalistas, apenas se citados no contrato</li>
-      <li>
-        Em caso de falecimento do proprietário: cônjuge ou filhos podem figurar
-        como novo interessado, mediante certidão de óbito
-      </li>
-    </ul>
+    <details class="cmg-acordeao">
+      <summary class="cmg-acordeao-titulo">Documentos do Imóvel</summary>
+      <div class="cmg-acordeao-corpo">
+        <h6 class="orient-docs-grupo">
+          Documentos de Regularidade (comprova a localização do imóvel)
+        </h6>
+        <p class="orient-docs-texto">
+          Apresentar <strong>um</strong> dos documentos a seguir:
+        </p>
+        <ul class="orient-bullets">
+          <li>Certidão de Número, Habite-se ou similar</li>
+          <li>IPTU</li>
+          <li>Escritura Pública ou Registro do Imóvel</li>
+          <li>Alvará de construção ou de licença de localização</li>
+          <li>Planta de Arquitetura aprovada pela prefeitura</li>
+          <li>
+            Licença/declaração de órgão competente (se área protegida por
+            legislação ambiental ou territórios indígenas/quilombolas)
+          </li>
+        </ul>
+        <p class="orient-docs-texto">
+          <strong>Exceções</strong>: não é exigido para o município de Juiz de
+          Fora, nem para clientes do poder público (que devem apresentar
+          contrato/estatuto social, se autarquia).
+        </p>
+        <h6 class="orient-docs-grupo">
+          Documentos de Posse ou Propriedade (original ou cópia autenticada,
+          com endereço completo em nome do interessado)
+        </h6>
+        <p class="orient-docs-texto">
+          Apresentar <strong>um</strong> dos documentos a seguir:
+        </p>
+        <ul class="orient-bullets">
+          <li>Escritura Pública ou Registro do Imóvel</li>
+          <li>Contrato de compra e venda</li>
+          <li>Contrato de locação, arrendamento ou comodato</li>
+          <li>Termo de doação ou permissão de uso</li>
+          <li>Formal de partilha</li>
+          <li>IPTU (somente do ano vigente ou anterior)</li>
+          <li>REURB (protocolo com endereço completo, quando aplicável)</li>
+        </ul>
+        <h6 class="orient-docs-grupo">Requisitos de Validade dos Contratos</h6>
+        <ul class="orient-bullets">
+          <li>Assinatura de todas as partes (contratante e contratado)</li>
+          <li>CPF das partes envolvidas</li>
+          <li>Data de celebração</li>
+          <li>
+            Endereço completo do imóvel (logradouro, número, bairro, cidade)
+          </li>
+          <li>
+            Assinatura das testemunhas/avalistas, apenas se citados no contrato
+          </li>
+          <li>
+            Em caso de falecimento do proprietário: cônjuge ou filhos podem
+            figurar como novo interessado, mediante certidão de óbito
+          </li>
+        </ul>
+      </div>
+    </details>
   </div>
 
   <div class="cmg-aviso">
@@ -172,13 +190,6 @@
       <span>
         Outros documentos e informações complementares poderão ser solicitadas
         posteriormente.
-        <a
-          class="cmg-aviso-link"
-          href="https://www.cemig.com.br/como-solicitar-os-principais-servicos/ligacao-nova-e-aumento-de-carga/documentacoes-necessarias/"
-          target="_blank"
-          rel="noopener noreferrer"
-          >Saiba mais</a
-        >
       </span>
     </p>
   </div>

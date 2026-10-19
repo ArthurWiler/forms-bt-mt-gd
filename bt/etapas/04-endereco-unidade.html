@@ -2,11 +2,10 @@
 
 <div class="card">
   <div class="section-eyebrow">Etapa 3</div>
-  <h3 class="card-title">Dados da unidade consumidora</h3>
+  <h3 class="card-title">Endereço da unidade</h3>
   <p class="card-sub">
-    Preencha os dados de identificação e o tipo de atendimento da unidade
-    consumidora. Caso exista mais de uma unidade no mesmo endereço, informe o
-    tipo de atendimento de cada uma de forma separada.
+    Informe o endereço onde o atendimento será feito e confirme a
+    localização da unidade no mapa.
   </p>
 
   <div class="grid grid-2">
@@ -168,44 +167,6 @@
     </div>
   </div>
 
-  <div class="divider">
-    <h4 class="secao-titulo">Tipo de atendimento</h4>
-    <p class="secao-texto">
-      Selecione o tipo de atendimento desejado para a unidade consumidora. Caso
-      precise solicitar atendimento para <strong>mais de uma unidade</strong>,
-      clique em <strong>"Adicionar nova unidade"</strong> e escolha o tipo de
-      atendimento correspondente a cada uma, limitado a no máximo 3 unidades.
-    </p>
-    <div class="modalidade-card">
-      <span class="modalidade-card-label">Modalidade</span>
-      <span class="modalidade-card-valor"
-        >Individual - até 3 caixas sem proteção geral</span
-      >
-    </div>
-    <div id="ucsIdentBox"></div>
-    <div class="acao-central" id="ucAddRow">
-      <button
-        type="button"
-        class="btn btn-ghost btn-outlined-acao btn-add-uc"
-        onclick="adicionarUcBT()"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          width="20"
-          height="20"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          aria-hidden="true"
-        >
-          <path d="M12 5v14M5 12h14" />
-        </svg>
-        Adicionar nova unidade
-      </button>
-    </div>
-  </div>
-
   <div class="mapa-obra divider">
     <p class="mapa-hint">
       Confirme a localização da unidade no mapa. Se o pin estiver incorreto,
@@ -250,101 +211,8 @@
     <div id="restricaoAmbientalConteudo"></div>
   </div>
 
-  <div class="divider">
-    <h4 class="secao-titulo">Padrão de energia</h4>
-    <div class="grid grid-2">
-      <div class="field" data-noopt>
-        <label>Tipo de rede</label>
-        <select data-k="obra.tipoRede" data-sem-vazio onchange="onTipoRedeBT()">
-          <option>Monofásica</option>
-          <option>Bifásica</option>
-          <option>Trifásica</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Código transformador mais próximo</label>
-        <input type="text" data-k="obra.transformador" placeholder=" " />
-      </div>
-      <div class="field field--plain" data-noopt>
-        <label>Distância do padrão até a rede Cemig inferior a 30m?</label>
-        <div data-toggle="obra.distMenor30"></div>
-        <select
-          data-k="obra.distMenor30"
-          style="display: none"
-          aria-hidden="true"
-        >
-          <option>Sim</option>
-          <option>Não</option>
-        </select>
-      </div>
-      <div class="field field--plain" data-noopt>
-        <label>O padrão está pronto para ser ligado?</label>
-        <div
-          data-toggle="obra.prontoLigar"
-          data-toggle-onchange="onProntoLigarBT"
-        ></div>
-        <select
-          data-k="obra.prontoLigar"
-          style="display: none"
-          aria-hidden="true"
-        >
-          <option>Sim</option>
-          <option>Não</option>
-        </select>
-      </div>
-      <div
-        class="cmg-aviso no-print col-span-2"
-        id="prontoSimAviso"
-        style="display: none"
-      >
-        <div class="cmg-aviso-icon" aria-hidden="true"></div>
-        <p class="cmg-aviso-texto">
-          Como o padrão de entrada de energia já está pronto para ser ligado,
-          o pedido de vistoria, solicitação para que a Cemig verifique se a
-          instalação está de acordo com as normas técnicas, e o pedido de
-          ligação serão disparados automaticamente assim que você concluir
-          todas as etapas do formulário de atendimento. Não é necessário fazer
-          nenhuma solicitação adicional.
-        </p>
-      </div>
-      <div
-        class="cmg-aviso cmg-aviso--warn no-print col-span-2"
-        id="prontoNaoAviso"
-        style="display: none"
-      >
-        <div class="cmg-aviso-icon" aria-hidden="true"></div>
-        <p class="cmg-aviso-texto">
-          Como o padrão de entrada de energia não está pronto para ser ligado,
-          você deverá solicitar o pedido de vistoria, solicitação para que a
-          Cemig verifique se a instalação está de acordo com as normas técnicas,
-          e o pedido de ligação em até 120 dias após a conclusão das etapas
-          deste formulário de atendimento. Após esse prazo, a solicitação poderá
-          ser cancelada.
-        </p>
-      </div>
-      <!-- "Mudado de local" vale para o padrão (um só por endereço) e é
-           replicado em cada UC (u.mudancaLocal) — PDF e mapa do novo local. -->
-      <div class="field field--plain" data-noopt>
-        <label>O padrão precisa ser mudado de local?</label>
-        <div
-          data-toggle="obra.mudancaLocal"
-          data-toggle-onchange="onMudancaLocalBT"
-        ></div>
-        <select
-          data-k="obra.mudancaLocal"
-          style="display: none"
-          aria-hidden="true"
-        >
-          <option>Sim</option>
-          <option>Não</option>
-        </select>
-      </div>
-    </div>
-  </div>
 </div>
 <div class="nav-bottom no-print">
   <button class="btn btn-ghost" data-nav="prev">← Voltar</button>
-  <button class="btn btn-primary" data-nav="next" data-gate="btDadosOk">
-    Avançar →
-  </button>
+  <button class="btn btn-primary" data-nav="next">Avançar →</button>
 </div>

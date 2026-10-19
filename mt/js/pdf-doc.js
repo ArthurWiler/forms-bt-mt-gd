@@ -70,7 +70,9 @@ const _pdfMesAnoMT = (v) =>
 
 /* Campos de pessoa física só existem para CPF válido (mesma regra
    de mostrarCamposPF): num CNPJ eles estão limpos. */
-const _pdfEhPFMT = () => CalculoMT.soDigitos(state.cpfCnpj || "").length === 11;
+const _pdfEhPFMT = () =>
+  !state.estrangeiro &&
+  CalculoMT.soDigitos(state.cpfCnpj || "").length === 11;
 
 /* Há conteúdo nesta lista de campos? O construtor descarta os
    vazios, então perguntar antes evita abrir um filete que não
@@ -165,19 +167,24 @@ function _pdfContatoMT(B) {
   B.campos([
     ["E-mail", state.emailCliente],
     ["Celular", state.telCliente],
-    ["CPF/CNPJ", state.cpfCnpj],
+    // Pessoa estrangeira não tem CPF/CNPJ: o documento é o RNE/RNM.
+    state.estrangeiro
+      ? ["Nº do RNE/RNM", state.rne]
+      : ["CPF/CNPJ", state.cpfCnpj],
   ]);
   /* Os campos de pessoa física não aparecem no mock, que desenha um
      CNPJ — mas o que a pessoa preencheu não pode sumir do papel. */
+  if (state.estrangeiro)
+    B.campos([["Data de Nascimento", dataBR(state.nasc)]]);
   if (_pdfEhPFMT()) {
     B.campos([
       ["Filiação (Mãe ou Pai)", state.filiacao],
-      ["RG / RNE / RANI", state.rg],
+      ["RG / RANI", state.rg],
       ["Data de Nascimento", dataBR(state.nasc)],
     ]);
     B.campos([
-      ["Possui equipamentos essenciais?", state.laudoMedico],
-      ["Possui NIS para Tarifa Social?", state.nis],
+      ["Possui equipamento essencial à vida?", state.laudoMedico],
+      ["Possui NIS (Número de Identificação Social) para Tarifa Social?", state.nis],
       ["Número do NIS", state.nis === "Sim" ? state.numNis : ""],
     ]);
   }

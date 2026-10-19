@@ -527,15 +527,59 @@ function gdEhCpfValido() {
 }
 // Gate de avanço da etapa 2 (espelha btPropDocOk do BT): o documento precisa
 // estar COMPLETO e VÁLIDO — não basta o campo obrigatório estar preenchido.
-window.gdPropDocOk = () => validarCpfCnpj(state.cpfCnpj).valido === true;
+window.gdPropDocOk = () =>
+  gdEstrangeiro()
+    ? String(state.rne || "").trim() !== ""
+    : validarCpfCnpj(state.cpfCnpj).valido === true;
+// Pessoa estrangeira: no lugar do CPF/CNPJ entra o nº do RNE/RNM. Enquanto
+// marcado, os campos exclusivos de CPF (filiação, RG, equipamento essencial,
+// NIS) não valem — só a data de nascimento, que é de pessoa física nos dois
+// documentos.
+function gdEstrangeiro() {
+  return !!state.estrangeiro;
+}
+function onEstrangeiroGD(el) {
+  state.estrangeiro = !!el.checked;
+  if (state.estrangeiro) {
+    ["cpfCnpj", "filiacao", "rg", "laudoMedico", "nis", "numNis"].forEach(
+      (k) => {
+        state[k] = "";
+        const c = $(`[data-k="${k}"]`);
+        if (c) c.value = "";
+      },
+    );
+    const doc = $("#f_cpfcnpj");
+    if (doc) doc.classList.remove("is-invalid");
+    setHint("status-cnpj", "");
+  } else {
+    state.rne = "";
+    const c = $('[data-k="rne"]');
+    if (c) c.value = "";
+  }
+  mostrarCamposPF(gdEhCpfValido());
+}
+window.onEstrangeiroGD = onEstrangeiroGD;
+
 function mostrarCamposPF(pf) {
+  const estr = gdEstrangeiro();
+  pf = pf && !estr;
   $$(".pf-campo").forEach((el) => {
     el.style.display = pf ? "" : "none";
   });
+  // Data de nascimento: vale para CPF e para RNE/RNM.
+  $$(".nasc-campo").forEach((el) => {
+    el.style.display = pf || estr ? "" : "none";
+  });
+  const cpfBox = $("#docCpfCnpjBox");
+  if (cpfBox) cpfBox.style.display = estr ? "none" : "";
+  const rneBox = $("#docRneBox");
+  if (rneBox) rneBox.style.display = estr ? "" : "none";
   if (!pf) {
     // Espelha o MT: os campos PF ocultos são zerados, inclusive laudo/NIS —
     // aqui são <select> com opção vazia "—", e não mais cards Sim/Não.
-    ["filiacao", "rg", "nasc", "laudoMedico", "nis", "numNis"].forEach((k) => {
+    const zerar = ["filiacao", "rg", "laudoMedico", "nis", "numNis"];
+    if (!estr) zerar.push("nasc");
+    zerar.forEach((k) => {
       const c = $(`[data-k="${k}"]`);
       if (c) c.value = "";
       state[k] = "";
@@ -2194,7 +2238,8 @@ function validarExportacao() {
   // Atividade principal: fora da tela (área de não alocados), então não é
   // exigida — cobrar um campo que não há como preencher travaria a exportação
   // para sempre.
-  req(d.cpfCnpj, "CPF/CNPJ");
+  if (d.estrangeiro) req(d.rne, "Nº do RNE/RNM");
+  else req(d.cpfCnpj, "CPF/CNPJ");
   req(d.logradouro, "Logradouro");
   req(d.numero, "Número");
   req(d.bairro, "Bairro");
@@ -2421,7 +2466,9 @@ function renderPreviewGD() {
         pvCampo("Grupo / Atividade principal", `${d.grupo} / ${d.classe}`, {
           step: "identificacao",
         }) +
-        pvCampo("CPF/CNPJ", d.cpfCnpj, { step: "identificacao" }) +
+        (d.estrangeiro
+          ? pvCampo("Nº do RNE/RNM", d.rne, { step: "identificacao" })
+          : pvCampo("CPF/CNPJ", d.cpfCnpj, { step: "identificacao" })) +
         pvCampo(
           "Endereço",
           `${d.logradouro}, ${d.numero} ${d.complemento} — ${d.bairro}, ${d.municipio}/${d.estado}`,

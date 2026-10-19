@@ -163,7 +163,9 @@ function pvMidia(src, legenda, step, linha) {
 
 /* Campos de pessoa física só existem para CPF válido (mesma regra de
    mostrarCamposPF): num CNPJ eles são limpos e não devem virar "—" na tela. */
-const _pvEhPF = () => CalculoMT.soDigitos(state.cpfCnpj || "").length === 11;
+const _pvEhPF = () =>
+  !state.estrangeiro &&
+  CalculoMT.soDigitos(state.cpfCnpj || "").length === 11;
 
 function _pvContato() {
   const E = PV_ETAPA.contato;
@@ -174,16 +176,26 @@ function _pvContato() {
     }) +
     pvCampo("E-mail", state.emailCliente, { step: E }) +
     pvCampo("Celular", state.telCliente, { step: E }) +
-    pvCampo("CPF/CNPJ", state.cpfCnpj, { step: E });
+    (state.estrangeiro
+      ? pvCampo("Nº do RNE/RNM", state.rne, { step: E })
+      : pvCampo("CPF/CNPJ", state.cpfCnpj, { step: E }));
   if (_pvEhPF()) {
     prop +=
       pvCampo("Filiação (Mãe ou Pai)", state.filiacao, { step: E }) +
-      pvCampo("RG / RNE / RANI", state.rg, { step: E }) +
-      pvCampo("Data de Nascimento", dataBR(state.nasc), { step: E }) +
-      pvCampo("Possui equipamentos essenciais?", state.laudoMedico, {
+      pvCampo("RG / RANI", state.rg, { step: E });
+  }
+  if (_pvEhPF() || state.estrangeiro)
+    prop += pvCampo("Data de Nascimento", dataBR(state.nasc), { step: E });
+  if (_pvEhPF()) {
+    prop +=
+      pvCampo("Possui equipamento essencial à vida?", state.laudoMedico, {
         step: E,
       }) +
-      pvCampo("Possui NIS para Tarifa Social?", state.nis, { step: E });
+      pvCampo(
+        "Possui NIS (Número de Identificação Social) para Tarifa Social?",
+        state.nis,
+        { step: E },
+      );
     if (state.nis === "Sim")
       prop += pvCampo("Número do NIS", state.numNis, { step: E });
   }

@@ -256,7 +256,7 @@ const SEC_BT = {
     {
       id: "urbano",
       formType: "individual",
-      nome: "Urbano - Residência, Comércio e Indústria",
+      nome: "Urbano | Residencial, Comercial, Industrial",
       img: "imgs/img_casa1.webp",
       status: "ok",
       // Porta de entrada única dos atendimentos individuais urbanos. Sem
@@ -278,7 +278,7 @@ const SEC_BT = {
     {
       id: "rural",
       formType: "individual",
-      nome: "Rural - Residência, Comércio e Indústria",
+      nome: "Rural | Residencial, Comercial, Industrial",
       img: "imgs/img_rural.webp",
       status: "ok",
       travaZonaRural: true, // zona de localização fixa em Rural (não editável)

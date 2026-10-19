@@ -146,6 +146,13 @@
   --cmg-shadow-card-hover: 0 6px 18px rgba(4, 30, 24, 0.1);
   --cmg-shadow-elevated: 0 12px 32px rgba(4, 30, 24, 0.16);
 
+  /* ---- Ícones de interface (máscaras CSS) ----
+     Chevron "para baixo" do Figma: traço de 2px com pontas arredondadas num
+     viewBox de 24 → desenhado a 12px dentro de uma caixa de 24. Usado como
+     `mask` para que o glifo herde a cor de quem o desenha (currentColor),
+     p.ex. no :hover do cabeçalho do acordeão. */
+  --cmg-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+
   /* ---- Spacing scale (4px grid) ---- */
   --cmg-space-1: 4px;
   --cmg-space-2: 8px;

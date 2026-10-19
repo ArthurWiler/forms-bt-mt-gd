@@ -50,7 +50,7 @@ const state = {
   corr: corrPadrao(),
   obra: Object.assign(
     obraPadrao(),
-    // "O padrão precisa ser mudado de local?" (Padrão de energia, Etapa 3)
+    // "O padrão precisa ser mudado de local?" (Padrão de energia, Etapa 4)
     { mudancaLocal: "" },
     (CARD.prefill && CARD.prefill.obra) || {},
   ),
@@ -62,7 +62,7 @@ window.state = state;
 // Abertura dos blocos de UC (minimizados por padrão, como no React).
 const _ucAberta = {};
 // Abertura dos cards colapsáveis de identificação (etapa "Tipo de atendimento"),
-// independente da abertura dos cards de cargas (etapa "Cargas das UCs").
+// independente da abertura dos cards de cargas (etapa "Cargas dos imóveis").
 const _ucIdentAberta = {};
 // Sem chave registrada, a UC 1 abre por padrão (btToggleExclusivo grava false
 // nas fechadas, então o usuário pode fechá-la depois).
@@ -161,7 +161,7 @@ window.onPaginaAtiva = function (sec) {
   }
 };
 
-/* ===== Etapa 3 — Dados da unidade (zona/avisos/coordenadas) ===== */
+/* ===== Etapa 3 — Endereço da unidade (zona/avisos/coordenadas) ===== */
 function onZonaBT() {
   const o = state.obra;
   const rural = ruralBT();
@@ -385,7 +385,7 @@ function _mkUcColapsavel(u, ui, aberta, aoAlternar, montarCorpo, opts) {
 }
 // Etapa "Tipo de atendimento": identificação por UC (solicitação, atividade,
 // ramo, complemento, UC/instalação/medidor, mudança de local).
-// Os campos de carga e o disjuntor novo ficam na etapa "Cargas das UCs".
+// Os campos de carga e o disjuntor novo ficam na etapa "Cargas dos imóveis".
 function renderUcsIdentBT() {
   const box = $("#ucsIdentBox");
   if (!box) return;
@@ -416,7 +416,7 @@ function renderUcsIdentBT() {
     CemigMarcadores.atualizarAvancar();
   }
 }
-// Etapa "Cargas das UCs": só as cargas, o gerador e o resultado (disjuntor novo).
+// Etapa "Cargas dos imóveis": só as cargas, o gerador e o resultado (disjuntor novo).
 function renderUcsBT() {
   const box = $("#ucsBox");
   if (!box) return;
@@ -915,7 +915,7 @@ function _renderResultadoUC(box, u, ui, multi) {
    ============================================================ */
 
 /* ============================================================
-   Etapa 7 — Prévia & PDF
+   Etapa 8 — Prévia & PDF
    ============================================================ */
 // Validação global (porte de validacaoObrigatorios do React, ramo individual;
 // o endereço urbano só é exigido fora da zona Rural — critério de
@@ -932,7 +932,8 @@ function validacaoObrigatoriosBT() {
     p.nome,
     pessoaFisica() ? "Nome completo do proprietário" : "Razão social",
   );
-  req(p.cpfCnpj, "CPF/CNPJ");
+  if (p.estrangeiro) req(p.rne, "Nº do RNE/RNM");
+  else req(p.cpfCnpj, "CPF/CNPJ");
   req(p.email, "E-mail");
   req(p.celular, "Celular");
   if (c.alternativa === "Outro e-mail")
@@ -976,13 +977,13 @@ function validacaoObrigatoriosBT() {
   return { ok: faltando.length === 0, faltando };
 }
 // Índices das etapas para os lápis da prévia (ordem real do
-// bt/individual.html: orient=0, prop=1, dados=2, atend=3, corr=4).
-// Índices de página para os lápis de edição da prévia. A etapa de atendimento
-// (selects) e a etapa de cargas (cards por-UC) são separadas: atend=3, cargas=4,
-// e correspondência passa a 5.
-// "Tipo de atendimento" voltou para dentro de Dados da unidade (spec Figma):
-// atend e dados apontam para a mesma etapa; cargas=3, correspondência=4.
-const PG = { prop: 1, dados: 2, atend: 2, cargas: 3, corr: 4 };
+// Índices de página para os lápis de edição da prévia — a ordem das
+// `section.page` em bt/individual.html: orientações=0, dados pessoais=1,
+// endereço da unidade=2, imóveis e atendimento=3, cargas dos imóveis=4,
+// conta de luz=5, observações=6, prévia=7. "Tipo de atendimento" voltou a ser
+// uma etapa própria (referência do Figma da trilha, com 8 passos), separada do
+// endereço — daí `dados` e `atend` apontarem para etapas diferentes.
+const PG = { prop: 1, dados: 2, atend: 3, cargas: 4, corr: 5 };
 function renderPreviaBT() {
   const box = $("#previaConteudo");
   if (!box) return;
@@ -1006,12 +1007,14 @@ function renderPreviaBT() {
   html += pvCampoBT("Nome", p.nome, PG.prop, true);
   html += pvCampoBT("E-mail", p.email, PG.prop);
   html += pvCampoBT("Celular", p.celular, PG.prop);
-  html += pvCampoBT(pf ? "CPF" : "CNPJ", p.cpfCnpj, PG.prop);
-  if (pf) {
+  html += p.estrangeiro
+    ? pvCampoBT("Nº do RNE/RNM", p.rne, PG.prop)
+    : pvCampoBT(pf ? "CPF" : "CNPJ", p.cpfCnpj, PG.prop);
+  if (pf && !p.estrangeiro) {
     html += pvCampoBT("Filiação", p.filiacao, PG.prop);
     html += pvCampoBT("RG", p.rg, PG.prop);
-    html += pvCampoBT("Data de nascimento", dataBR(p.nasc), PG.prop);
   }
+  if (pf) html += pvCampoBT("Data de nascimento", dataBR(p.nasc), PG.prop);
   html += `</div></div>`;
   state.ucsDet.forEach((u, ui) => {
     const cg = u.cargas || {};
@@ -1455,9 +1458,14 @@ window.initFormulario = function () {
   const h1 = $("#formTitulo");
   if (h1) h1.textContent = "Baixa Tensão" + (subtipo ? " - " + subtipo : "");
   btRenumerarEtapas();
-  // Cards restritos (casa50/casa100): sem bloco coletivo nas orientações
+  // O bloco "Agrupamento com proteção geral, atendimento híbrido ou múltiplas
+  // torres/blocos" é do fluxo COLETIVO (bt/index.html, que carrega o mesmo
+  // fragmento). Na referência do Figma do atendimento individual ele não
+  // existe — a lista vai direto da orientação 05 para "Documentação
+  // necessária" —, e de fato nenhuma das situações que ele descreve é
+  // possível aqui (individual = até 3 caixas sem proteção geral).
   const orientColetivo = $("#orientColetivoBox");
-  if (orientColetivo && restrito) orientColetivo.style.display = "none";
+  if (orientColetivo) orientColetivo.remove();
   bindInputs();
   montarToggles();
   // Zona travada (card Rural): toggle desabilitado

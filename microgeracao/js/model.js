@@ -50,6 +50,9 @@ function gdEstadoInicial() {
     grupo: "B",
     classe: "",
     cpfCnpj: "",
+    // Pessoa estrangeira: no lugar do CPF/CNPJ entra o nº do RNE/RNM.
+    estrangeiro: false,
+    rne: "",
     // Campos de Pessoa Física (só aparecem com CPF válido — ver views.js)
     filiacao: "",
     rg: "",

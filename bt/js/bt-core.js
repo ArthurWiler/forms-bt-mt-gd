@@ -88,6 +88,9 @@ function propPadrao() {
     celular: "",
     fixo: "",
     cpfCnpj: "",
+    // Pessoa estrangeira: no lugar do CPF/CNPJ entra o nº do RNE/RNM.
+    estrangeiro: false,
+    rne: "",
     laudoMedico: "Não",
     nis: "Não",
     numNis: "",
@@ -142,16 +145,25 @@ function obraPadrao() {
 
 /* ===== derivados de documento ===== */
 const docInfo = () => validarCpfCnpj(window.state.prop.cpfCnpj);
-const pessoaFisica = () => docInfo().tipo === "CPF";
-const pessoaJuridica = () => docInfo().tipo === "CNPJ";
+const estrangeiroBT = () => !!window.state.prop.estrangeiro;
+// Quem se declara estrangeiro é pessoa física para todo efeito do formulário
+// (rótulos da prévia/PDF, campos de nascimento): só o DOCUMENTO muda, de CPF
+// para RNE/RNM.
+const pessoaFisica = () => estrangeiroBT() || docInfo().tipo === "CPF";
+const pessoaJuridica = () => !estrangeiroBT() && docInfo().tipo === "CNPJ";
 const redeMonoBT = () =>
   window.state.obra.tipoRede === "Monofásica" ||
   window.state.obra.tipoRede === "Bifásica";
 const ruralBT = () => window.state.obra.localizacao === "Rural";
 
 /* ===== Gates de avanço (form-marcadores data-gate) ===== */
-// Proprietário: exige CPF/CNPJ COMPLETO e VÁLIDO (docValido do React).
-window.btPropDocOk = () => docInfo().valido === true;
+// Proprietário: exige CPF/CNPJ COMPLETO e VÁLIDO (docValido do React) — ou,
+// para pessoa estrangeira, o nº do RNE/RNM preenchido (não há dígito
+// verificador a conferir nesse documento).
+window.btPropDocOk = () =>
+  estrangeiroBT()
+    ? String(window.state.prop.rne || "").trim() !== ""
+    : docInfo().valido === true;
 // Correspondência: condicionais (CAMPOS_OBRIGATORIOS.corr do React) — toggles
 // usam select oculto (invisível p/ marcadores), daí o gate. A data de
 // vencimento NÃO entra: informá-la é opcional.
@@ -328,10 +340,20 @@ const btToggleExclusivo = cmgToggleExclusivo;
 /* ===== Proprietário (PF/CNPJ) ===== */
 function mostrarCamposPFBT() {
   const info = docInfo();
-  const pf = info.tipo === "CPF" && info.valido === true;
+  const estr = estrangeiroBT();
+  // .pf-campo = exclusivo de quem tem CPF (filiação, RG, equipamento
+  // essencial, NIS). .nasc-campo = data de nascimento, comum a CPF e RNE/RNM.
+  const pf = !estr && info.tipo === "CPF" && info.valido === true;
   $$(".pf-campo").forEach((el) => {
     el.style.display = pf ? "" : "none";
   });
+  $$(".nasc-campo").forEach((el) => {
+    el.style.display = pf || estr ? "" : "none";
+  });
+  const cpfBox = $("#docCpfCnpjBox");
+  if (cpfBox) cpfBox.style.display = estr ? "none" : "";
+  const rneBox = $("#docRneBox");
+  if (rneBox) rneBox.style.display = estr ? "" : "none";
   const nisBox = $("#numNisBox");
   if (nisBox)
     nisBox.style.display = pf && window.state.prop.nis === "Sim" ? "" : "none";
@@ -339,6 +361,44 @@ function mostrarCamposPFBT() {
   CemigMarcadores.atualizarAvancar();
 }
 window.onNisBT = mostrarCamposPFBT;
+// "Pessoa estrangeira": limpa o documento que deixa de valer (um titular tem
+// CPF/CNPJ OU RNE/RNM, nunca os dois) e, ao voltar para o CPF, zera também os
+// campos de PF — o mesmo que onCpfCnpjBT faz na virada para CNPJ.
+function onEstrangeiroBT(el) {
+  const estr = !!el.checked;
+  const p = window.state.prop;
+  p.estrangeiro = estr;
+  if (estr) {
+    Object.assign(p, {
+      cpfCnpj: "",
+      filiacao: "",
+      rg: "",
+      laudoMedico: "Não",
+      nis: "Não",
+      numNis: "",
+    });
+  } else {
+    p.rne = "";
+  }
+  ["prop.cpfCnpj", "prop.rne", "prop.filiacao", "prop.rg", "prop.numNis"].forEach(
+    (k) => {
+      const c = $(`[data-k="${k}"]`);
+      if (c) c.value = _get(window.state, k) || "";
+    },
+  );
+  // Os toggles Sim/Não se redesenham ouvindo o `change` do select-fonte.
+  ["prop.laudoMedico", "prop.nis"].forEach((k) => {
+    const sel = $(`select[data-k="${k}"]`);
+    if (!sel) return;
+    sel.value = _get(window.state, k) || "Não";
+    sel.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  const doc = $('[data-k="prop.cpfCnpj"]');
+  if (doc) doc.classList.remove("is-invalid");
+  setStatus("cnpjStatus", "");
+  mostrarCamposPFBT();
+}
+window.onEstrangeiroBT = onEstrangeiroBT;
 let _cnpjBuscado = "";
 function onCpfCnpjBT(el) {
   el.value = mascararCpfCnpj(el.value);

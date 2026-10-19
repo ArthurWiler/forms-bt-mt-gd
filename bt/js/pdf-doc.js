@@ -522,13 +522,16 @@ function _pdfBlocosIndividualBT(S) {
     [pessoaFisica ? "Nome" : "Razão social", prop.nome, 3],
     ["E-mail", prop.email],
     ["Celular", prop.celular],
-    [pessoaFisica ? "CPF" : "CNPJ", prop.cpfCnpj],
+    // Pessoa estrangeira não tem CPF/CNPJ: o documento é o RNE/RNM.
+    prop.estrangeiro
+      ? ["Nº do RNE/RNM", prop.rne]
+      : [pessoaFisica ? "CPF" : "CNPJ", prop.cpfCnpj],
   ];
-  if (pessoaFisica)
+  if (pessoaFisica) camposProp.push(["Data de nascimento", dataBR(prop.nasc)]);
+  if (pessoaFisica && !prop.estrangeiro)
     camposProp.push(
       ["Filiação", prop.filiacao],
       ["RG", prop.rg],
-      ["Data de nascimento", dataBR(prop.nasc)],
       ["Laudo médico", prop.laudoMedico],
       /* Só sai quando a pergunta foi respondida: um "Não" fabricado
          acrescentaria à folha um campo que o mock não tem. */

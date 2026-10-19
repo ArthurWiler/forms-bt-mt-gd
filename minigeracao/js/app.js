@@ -308,15 +308,59 @@ function gdEhCpfValido() {
 }
 // Gate de avanço da etapa 2 (espelha gdPropDocOk do micro): o documento
 // precisa estar COMPLETO e VÁLIDO — não basta o obrigatório estar preenchido.
-window.gdPropDocOk = () => validarCpfCnpj(state.cpfCnpj).valido === true;
+window.gdPropDocOk = () =>
+  gdEstrangeiro()
+    ? String(state.rne || "").trim() !== ""
+    : validarCpfCnpj(state.cpfCnpj).valido === true;
+// Pessoa estrangeira: no lugar do CPF/CNPJ entra o nº do RNE/RNM. Enquanto
+// marcado, os campos exclusivos de CPF (filiação, RG, equipamento essencial,
+// NIS) não valem — só a data de nascimento, que é de pessoa física nos dois
+// documentos.
+function gdEstrangeiro() {
+  return !!state.estrangeiro;
+}
+function onEstrangeiroGD(el) {
+  state.estrangeiro = !!el.checked;
+  if (state.estrangeiro) {
+    ["cpfCnpj", "filiacao", "rg", "laudoMedico", "nis", "numNis"].forEach(
+      (k) => {
+        state[k] = "";
+        const c = $(`[data-k="${k}"]`);
+        if (c) c.value = "";
+      },
+    );
+    const doc = $("#f_cpfcnpj");
+    if (doc) doc.classList.remove("is-invalid");
+    setHint("status-cnpj", "");
+  } else {
+    state.rne = "";
+    const c = $('[data-k="rne"]');
+    if (c) c.value = "";
+  }
+  mostrarCamposPF(gdEhCpfValido());
+}
+window.onEstrangeiroGD = onEstrangeiroGD;
+
 function mostrarCamposPF(pf) {
+  const estr = gdEstrangeiro();
+  pf = pf && !estr;
   $$(".pf-campo").forEach((el) => {
     el.style.display = pf ? "" : "none";
   });
+  // Data de nascimento: vale para CPF e para RNE/RNM.
+  $$(".nasc-campo").forEach((el) => {
+    el.style.display = pf || estr ? "" : "none";
+  });
+  const cpfBox = $("#docCpfCnpjBox");
+  if (cpfBox) cpfBox.style.display = estr ? "none" : "";
+  const rneBox = $("#docRneBox");
+  if (rneBox) rneBox.style.display = estr ? "" : "none";
   if (!pf) {
     // Espelha o micro: os campos PF ocultos são zerados, inclusive laudo/NIS —
     // na etapa 2 copiada são <select> com opção vazia "—", não cards Sim/Não.
-    ["filiacao", "rg", "nasc", "laudoMedico", "nis", "numNis"].forEach((k) => {
+    const zerar = ["filiacao", "rg", "laudoMedico", "nis", "numNis"];
+    if (!estr) zerar.push("nasc");
+    zerar.forEach((k) => {
       const c = $(`[data-k="${k}"]`);
       if (c) c.value = "";
       state[k] = "";
@@ -1856,15 +1900,20 @@ function validarExportacao() {
   if (!_ehLigacaoNova()) req(d.instalacao, "Número da instalação");
   req(d.titular, "Titular da UC");
   req(d.classe, "Atividade principal");
-  req(d.cpfCnpj, "CPF/CNPJ");
-  const _doc = validarCpfCnpj(d.cpfCnpj);
-  if (_doc.valido !== true) faltas.push("CPF/CNPJ válido");
-  if (_doc.tipo === "CPF" && _doc.valido === true) {
-    req(d.filiacao, "Filiação");
+  if (d.estrangeiro) {
+    req(d.rne, "Nº do RNE/RNM");
     req(d.nasc, "Data de Nascimento");
-    req(d.laudoMedico, "Possui equipamentos essenciais?");
-    req(d.nis, "Possui NIS?");
-    if (d.nis === "Sim") req(d.numNis, "Número do NIS");
+  } else {
+    req(d.cpfCnpj, "CPF/CNPJ");
+    const _doc = validarCpfCnpj(d.cpfCnpj);
+    if (_doc.valido !== true) faltas.push("CPF/CNPJ válido");
+    if (_doc.tipo === "CPF" && _doc.valido === true) {
+      req(d.filiacao, "Filiação");
+      req(d.nasc, "Data de Nascimento");
+      req(d.laudoMedico, "Possui equipamento essencial à vida?");
+      req(d.nis, "Possui NIS?");
+      if (d.nis === "Sim") req(d.numNis, "Número do NIS");
+    }
   }
   req(d.celular, "Celular");
   req(d.email, "E-mail");
@@ -2095,7 +2144,9 @@ function renderPreviewGD() {
   // principal voltou para a etapa 3, então o lápis dela aponta o índice 2.
   let ident =
     pvCampo("Titular", d.titular, { step: 1 }) +
-    pvCampo("CPF/CNPJ", d.cpfCnpj, { step: 1 }) +
+    (d.estrangeiro
+      ? pvCampo("Nº do RNE/RNM", d.rne, { step: 1 })
+      : pvCampo("CPF/CNPJ", d.cpfCnpj, { step: 1 })) +
     pvCampo("E-mail", d.email, { step: 1 }) +
     pvCampo("Celular", d.celular, { step: 1 });
   if (d.filiacao) ident += pvCampo("Filiação", d.filiacao, { step: 1 });

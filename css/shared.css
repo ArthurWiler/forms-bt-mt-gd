@@ -3229,7 +3229,11 @@ label.restricao-aceite input[type="checkbox"] {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--cmg-space-4);
+  /* Sem vão entre os passos: no Figma a trilha é uma pilha CONTÍNUA de linhas
+     de 40px (os retângulos da pílula saem em 112, 152, 192, …), e é a pílula
+     do passo ativo que separa um do outro. O respiro de 8px entre chips vale
+     só na fita horizontal do mobile, declarada na media query. */
+  gap: 0;
 }
 .cemig-form .sidebar-title {
   display: none;
@@ -5190,4 +5194,177 @@ label.restricao-aceite input[type="checkbox"] {
   color: var(--cmg-green-600);
   font-weight: var(--cmg-fw-bold);
   text-decoration: underline;
+}
+
+/* ============================================================
+   Acordeão canônico dos formulários (`<details class="cmg-acordeao">`)
+   ------------------------------------------------------------
+   Mesma régua do acordeão de seções da homepage (.modalidade-secao):
+   linha de 56px = 1 (border-top) + 15 + 25 (line-height) + 15, rótulo
+   subtítulo/18px em negrito na neutra/600, chevron de 24px à direita que
+   gira 180° quando aberto, e a divisória de FECHO no último item.
+   Aqui o mecanismo é o <details> nativo em vez do par botão+JS: estes
+   acordeões aparecem em fragmentos de etapa carregados por fetch, que não
+   têm script próprio — o nativo dispensa qualquer boot e já entrega
+   teclado, foco e semântica de expansão. O corpo não anima por isso.
+   ============================================================ */
+.cemig-form .cmg-acordeao {
+  border-top: 1px solid var(--cmg-divider);
+}
+.cemig-form .cmg-acordeao:last-of-type {
+  border-bottom: 1px solid var(--cmg-divider);
+}
+.cemig-form .cmg-acordeao-titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  /* list-style/::marker: tira o triângulo nativo do <summary> (Firefox usa
+     ::marker, WebKit o pseudo proprietário abaixo). */
+  list-style: none;
+  cursor: pointer;
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-subtitle);
+  line-height: 25px;
+  font-weight: var(--cmg-fw-bold);
+  letter-spacing: var(--cmg-ls-wide);
+  color: var(--cmg-text);
+  padding: 15px var(--cmg-space-4);
+}
+.cemig-form .cmg-acordeao-titulo::marker,
+.cemig-form .cmg-acordeao-titulo::-webkit-details-marker {
+  display: none;
+  content: "";
+}
+.cemig-form .cmg-acordeao-titulo:hover {
+  color: var(--cmg-green-600);
+}
+.cemig-form .cmg-acordeao-titulo:focus-visible {
+  outline: 2px solid var(--cmg-green-600);
+  outline-offset: -2px;
+}
+/* Chevron: caixa de 24px (não estica a linha de 25px) com o glifo de 12px,
+   desenhado por máscara para herdar a cor do :hover do rótulo. */
+.cemig-form .cmg-acordeao-titulo::after {
+  content: "";
+  flex: none;
+  width: 24px;
+  height: 24px;
+  background-color: currentColor;
+  /* A máscara cobre a caixa inteira (24px): o glifo ocupa 12 das 24 unidades
+     do viewBox, então sai desenhado com os 12px do Figma. */
+  -webkit-mask: var(--cmg-chevron) center / 24px 24px no-repeat;
+  mask: var(--cmg-chevron) center / 24px 24px no-repeat;
+  transition: transform 0.15s ease;
+}
+.cemig-form .cmg-acordeao[open] > .cmg-acordeao-titulo::after {
+  transform: rotate(180deg);
+}
+.cemig-form .cmg-acordeao-corpo {
+  /* Sem respiro em cima (a linha de 56px do cabeçalho já o dá) e 12px em
+     baixo: é o que fecha os 348px medidos no SVG entre a divisória de cima
+     e a de baixo do painel "Documentos pessoais" aberto. */
+  padding: 0 var(--cmg-space-4) var(--cmg-space-3);
+}
+
+/* ---- Lista "termo + descrição" dos acordeões de documentação ----
+   Marcador verde de 6px centrado na PRIMEIRA linha do termo (negrito,
+   corpo/grande) e a descrição logo abaixo, itálica em corpo/médio. */
+.cemig-form .orient-docs-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.cemig-form .orient-docs-lista > li {
+  position: relative;
+  /* 19px = recuo do texto medido no SVG (marcador em 2px + 6px + 11px). */
+  padding-left: 19px;
+  margin-bottom: var(--cmg-space-4);
+}
+.cemig-form .orient-docs-lista > li:last-child {
+  margin-bottom: 0;
+}
+.cemig-form .orient-docs-lista > li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 10px; /* (26 - 6) / 2 → centrado na primeira linha do termo */
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cmg-green-600);
+}
+.cemig-form .orient-docs-lista strong {
+  display: block;
+  font-size: var(--cmg-fs-body-lg);
+  line-height: var(--cmg-lh-body-lg);
+  font-weight: var(--cmg-fw-bold);
+  letter-spacing: var(--cmg-ls-tight);
+  color: var(--cmg-text);
+}
+.cemig-form .orient-docs-lista em {
+  display: block;
+  margin-top: var(--cmg-space-2);
+  font-style: italic;
+  font-size: var(--cmg-fs-body);
+  line-height: var(--cmg-lh-body);
+  letter-spacing: var(--cmg-ls-tight);
+  color: var(--cmg-text-muted);
+}
+/* Dentro do acordeão o conteúdo herdado do bloco antigo (grupos, textos e
+   `.orient-bullets`) não repete a margem superior do primeiro elemento: o
+   respiro já vem do padding do corpo. */
+.cemig-form .cmg-acordeao-corpo > :first-child,
+.cemig-form .cmg-acordeao-corpo > :first-child > :first-child {
+  margin-top: 0;
+}
+
+/* ---- Checkbox com rótulo em linha (canônico) ----
+   Mesma caixa do aceite das orientações: a forma de 18px fica com 7px de
+   folga de cada lado (compõe a área de toque de 32px do Figma sem mexer no
+   fluxo) e o rótulo vem a 6px dela. Serve a qualquer "ligue/desligue" solto
+   num `.field` ("Pessoa estrangeira", aceites, opções inline). */
+.cemig-form .cmg-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-body-lg, 16px);
+  line-height: var(--cmg-lh-body-lg, 26px);
+  letter-spacing: var(--cmg-ls-tight);
+  color: var(--cmg-text);
+}
+.cemig-form .cmg-check input[type="checkbox"] {
+  margin: 0 7px;
+}
+
+/* ---- Documento do titular (checkbox "Pessoa estrangeira" + campo) ----
+   Uma célula do grid com os dois: o checkbox na área de toque de 32px do
+   Figma e, 8px abaixo, o campo do documento (CPF/CNPJ ou RNE/RNM, um de cada
+   vez). O respiro para o campo de CIMA continua sendo o `gap` do grid. */
+.cemig-form .doc-titular > .cmg-check {
+  min-height: 32px;
+}
+.cemig-form .doc-titular > .field {
+  margin-top: var(--cmg-space-2);
+}
+
+/* ---- Exemplo/esclarecimento sob o rótulo de uma pergunta ----
+   Segunda linha do <label>, em itálico e na mesma cor e corpo do rótulo
+   ("(ex.: gerador de oxigênio, respirador, bomba infusora)"). Diferente de
+   `.opt`, que marca "(opcional)" em itálico NA MESMA linha e na cor suave. */
+.cemig-form label .label-ex {
+  display: block;
+  font-style: italic;
+  /* 15px, e não os 16px do rótulo: o projeto auto-hospeda só a Open Sans
+     ROMANA (css/variables.css), então o browser SINTETIZA o itálico a partir
+     dela — e a oblíqua sintética mantém as larguras da romana, ~7% mais
+     larga que a Open Sans Italic de verdade usada no Figma. No maior destes
+     textos ("(ex.: gerador de oxigênio, respirador, bomba infusora)") esses
+     7% são a diferença entre caber na coluna, como na referência, e quebrar
+     em duas linhas — o que desalinharia os rádios das duas perguntas lado a
+     lado. A 15px a linha mede 395px contra os 391px do Figma. Some esta
+     exceção no dia em que a itálica entrar em fonts/. */
+  font-size: 15px;
 }

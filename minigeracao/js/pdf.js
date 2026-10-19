@@ -42,12 +42,13 @@ function gerarPdfMiniGD(d) {
     ["Titular", d.titular],
     ["E-mail", d.email],
     ["Celular", d.celular],
-    ["CPF/CNPJ", d.cpfCnpj],
+    // Pessoa estrangeira não tem CPF/CNPJ: o documento é o RNE/RNM.
+    d.estrangeiro ? ["Nº do RNE/RNM", d.rne] : ["CPF/CNPJ", d.cpfCnpj],
     // Campos de Pessoa Física (só saem se preenchidos — CPF válido).
     ...(d.filiacao ? [["Filiação", d.filiacao]] : []),
-    ...(d.rg ? [["RG / RNE / RANI", d.rg]] : []),
+    ...(d.rg ? [["RG / RANI", d.rg]] : []),
     ...(d.nasc ? [["Data de Nascimento", dataBR(d.nasc)]] : []),
-    ...(d.filiacao ? [["Equipamentos essenciais?", d.laudoMedico]] : []),
+    ...(d.filiacao ? [["Equipamento essencial à vida?", d.laudoMedico]] : []),
     ...(d.filiacao ? [["NIS (Tarifa Social)?", d.nis]] : []),
     ...(d.nis === "Sim" && d.numNis ? [["Número do NIS", d.numNis]] : []),
     // Responsável técnico pelo empreendimento.
