@@ -214,19 +214,23 @@ function _pdfBlocosMultiTorresBT(S) {
       3,
     ],
   ]);
-  B.cartoes([
-    ["Disjuntor geral do condomínio", atend.disjCondominio],
-    ["Disjuntor geral do empreendimento", atend.disjEmpreendimento],
-  ]);
-  B.campos([
-    ["O condomínio tem disjuntor de prumada?", atend.temPrumada, 3],
-  ]);
-  if (atend.temPrumada === "Sim")
-    B.tabela(
-      ["Torre inicial", "Torre final", "Disjuntor"],
-      (atend.prumadas || []).map((p) => [p.torreIni, p.torreFim, p.disj]),
-      "pdf-tabela--auto",
-    );
+  /* Disjuntores gerais e prumadas só existem com a energia apenas na
+     portaria do condomínio (etapa "Dados do projeto"). */
+  if (atend.disponibilizacaoEnergia === "Apenas na portaria do condomínio") {
+    B.cartoes([
+      ["Disjuntor geral do condomínio", atend.disjCondominio],
+      ["Disjuntor geral do empreendimento", atend.disjEmpreendimento],
+    ]);
+    B.campos([
+      ["O condomínio tem disjuntor de prumada?", atend.temPrumada, 3],
+    ]);
+    if (atend.temPrumada === "Sim")
+      B.tabela(
+        ["Torre inicial", "Torre final", "Disjuntor"],
+        (atend.prumadas || []).map((p) => [p.torreIni, p.torreFim, p.disj]),
+        "pdf-tabela--auto",
+      );
+  }
 
   /* ---- Correspondência ---- */
   B.filete();

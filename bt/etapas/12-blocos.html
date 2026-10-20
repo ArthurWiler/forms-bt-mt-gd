@@ -5,11 +5,20 @@
   <h3 class="card-title">Dados das torres</h3>
   <p class="card-sub">
     Preencha os dados das torres do empreendimento. Para agilizar o
-    preenchimento, use o botão “Replicar dados” para copiar os dados de uma
-    torre para as demais.
+    preenchimento, você deve selecionar quais torres compartilham os mesmos
+    dados. Caso o condomínio tenha mais de um conjunto de torres com dados
+    distintos, adicione quantos agrupamentos forem necessários.
   </p>
+  <div class="cmg-exemplo">
+    <strong>Exemplo</strong>: as torres 1 a 7 têm 40 unidades consumidoras
+    cada. Já as torres 8 a 14 têm apenas 30 unidades cada. Essa situação
+    configura 2 agrupamentos de torres.
+  </div>
 
-  <div class="grid grid-2" style="margin-bottom: 14px">
+  <!-- Cada card abaixo é um GRUPO de torres (renderBlocos): os checkboxes
+       "Selecione quais torres compartilham os mesmos dados" definem quem faz
+       parte de cada um. -->
+  <div class="grid grid-2 blocos-qtd">
     <div class="field" data-noopt>
       <label>Quantidade de torres <span class="req">*</span></label>
       <input
@@ -19,11 +28,6 @@
         placeholder=" "
       />
     </div>
-    <!-- "Replicar dados para todas as torres" na 2ª coluna do grid: o campo
-         mantém a largura padrão dos demais fields (1fr). O botão fica centrado
-         na altura do campo (spec Figma: align-items center). Preenchido por
-         renderBlocos() só quando há mais de uma torre. -->
-    <div id="blocosReplicarAcao" class="field-acao-lateral"></div>
   </div>
 
   <div id="blocosBox"></div>

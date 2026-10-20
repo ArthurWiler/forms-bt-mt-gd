@@ -877,3 +877,85 @@ function montarCargasBT(container, u, ui, aoMudar) {
   });
 }
 
+/* ===== Modais (padrão .cmg-modal — ver shared/js/pdf-sucesso.js) ===== */
+function _modalPerfilBT(classe, tituloTxt, montarCorpo, botoes) {
+  const overlay = document.createElement("div");
+  overlay.className = "cmg-modal-overlay";
+  const dialog = document.createElement("div");
+  dialog.className = "cmg-modal cmg-modal-perfil " + classe;
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-modal", "true");
+  const idTitulo = "cmg-modal-perfil-titulo";
+  dialog.setAttribute("aria-labelledby", idTitulo);
+  const anteriorFoco = document.activeElement;
+  const fechar = () => {
+    document.removeEventListener("keydown", onKey);
+    overlay.remove();
+    if (anteriorFoco && anteriorFoco.focus && anteriorFoco.isConnected)
+      anteriorFoco.focus();
+  };
+  const onKey = (e) => {
+    if (e.key === "Escape") fechar();
+  };
+  const btnX = document.createElement("button");
+  btnX.type = "button";
+  btnX.className = "cmg-modal-fechar";
+  btnX.setAttribute("aria-label", "Fechar");
+  btnX.innerHTML =
+    '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+  btnX.addEventListener("click", fechar);
+  const corpo = document.createElement("div");
+  corpo.className = "cmg-modal-conteudo";
+  const titulo = document.createElement("h2");
+  titulo.className = "cmg-modal-titulo";
+  titulo.id = idTitulo;
+  titulo.textContent = tituloTxt;
+  corpo.appendChild(titulo);
+  montarCorpo(corpo);
+  const rodape = document.createElement("div");
+  rodape.className = "cmg-modal-rodape";
+  botoes.forEach((b) => {
+    const el = document.createElement("button");
+    el.type = "button";
+    el.className = "btn btn-outlined-acao " + b.classe;
+    el.innerHTML = b.html;
+    el.addEventListener("click", () => {
+      fechar();
+      if (b.acao) b.acao();
+    });
+    rodape.appendChild(el);
+  });
+  dialog.append(btnX, corpo, rodape);
+  overlay.appendChild(dialog);
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) fechar();
+  });
+  document.addEventListener("keydown", onKey);
+  document.body.appendChild(overlay);
+  btnX.focus();
+  return { dialog, fechar };
+}
+// "Mais opções de disjuntores" (svg14): select com as opções válidas.
+function abrirModalDisjuntoresBT(lista, atual, aoConfirmar) {
+  let sel = null;
+  _modalPerfilBT(
+    "cmg-modal-disj",
+    "Mais opções de disjuntores",
+    (corpo) => {
+      sel = document.createElement("select");
+      sel.innerHTML = lista
+        .map((dj) => `<option value="${dj}">${dj}</option>`)
+        .join("");
+      sel.value = atual || lista[0] || "";
+      corpo.appendChild(cmgCampo("Disjuntor", sel, "field--float"));
+    },
+    [
+      { classe: "btn-ghost", html: "Voltar" },
+      {
+        classe: "btn-primary",
+        html: "Confirmar",
+        acao: () => aoConfirmar(sel.value),
+      },
+    ],
+  );
+}

@@ -2417,49 +2417,7 @@ label.restricao-aceite input[type="checkbox"] {
   justify-content: center;
   margin-top: var(--cmg-space-6);
 }
-/* "Replicar dados para todas unidades de todas as torres" (etapa "Dados das
-   unidades"): alinhado à ESQUERDA logo abaixo dos chips de torre. A ação abre a
-   etapa e vale para o empreendimento inteiro — não é uma ação de fim de card
-   como as de .acao-central, daí não ser centrada. */
-.cemig-form .unidades-replicar-acao {
-  display: flex;
-  justify-content: flex-start;
-  margin-bottom: var(--cmg-space-6);
-}
-@media (max-width: 720px) {
-  /* Estreito: o rótulo é longo e o botão passa a ocupar a linha inteira. */
-  .cemig-form .unidades-replicar-acao > .btn {
-    width: 100%;
-  }
-}
-/* Ação ao lado de um campo do grid ("Replicar dados para todas as torres" ao
-   lado de "Quantidade de torres"). O campo permanece na 1ª coluna com a largura
-   padrão dos demais fields (1fr do .grid-2); esta é a 2ª célula. A célula ocupa
-   a altura da linha, deixando o botão de 40px alinhado ao MEIO do campo de 56px
-   (spec Figma: align-items center) e não pela base. Na horizontal o botão
-   encosta no INÍCIO da coluna (flex-start), logo após o gap do grid.
-   Largura do botão: 304px da spec, limitada à coluna em telas menores. */
-.cemig-form .field-acao-lateral {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  /* `.cemig-form .grid` usa align-items:start (cada campo guarda seus 56px).
-     Herdando isso, esta célula encolheria para os 40px do botão e ficaria no
-     TOPO da linha — o botão subia ~8px em relação ao campo. O align-self
-     devolve a altura da linha só a esta célula, sem mexer na regra do grid,
-     e aí o align-items:center centra o botão na altura do campo. */
-  align-self: stretch;
-}
-.cemig-form .field-acao-lateral > .btn {
-  width: 304px;
-  max-width: 100%;
-}
-@media (max-width: 720px) {
-  /* Grid empilhado: o botão deixa de ficar "ao lado" e ocupa a linha. */
-  .cemig-form .field-acao-lateral > .btn {
-    width: 100%;
-  }
-}
+
 /* Ferramentas da torre acima da lista de unidades (gerar complementos,
    replicar UC 1) */
 .cemig-form .unidades-toolbar {
@@ -4433,202 +4391,6 @@ label.restricao-aceite input[type="checkbox"] {
   }
 }
 
-/* ------------------------------------------------------------
-   Modal "Replicar dados" — gerenciador de replicações entre torres
-   Variante do .cmg-modal com duas telas (lista das regras e o
-   formulário origem/destinos). Montado por
-   abrirGerenciadorReplicacao() em bt/js/coletivo-app.js.
-   ------------------------------------------------------------ */
-/* Largura: o spec do Figma dá 750px de diálogo (702px de conteúdo dentro do
-   padding lateral de 24px), que é o mesmo max-width do .cmg-modal base — daí
-   não haver override aqui. */
-/* Lista das replicações já configuradas — mesma caixa da tabela de faixas. */
-.cemig-form .cmg-replic-lista {
-  width: 100%;
-  border: 1px solid var(--cmg-border, #d1d4d3);
-  border-radius: 8px;
-  overflow: hidden;
-}
-.cemig-form .cmg-replic-linha {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 16px;
-  font-family: var(--cmg-font-family);
-  font-size: 16px;
-  line-height: 24px;
-  color: var(--cmg-text-strong, #041e18);
-}
-.cemig-form .cmg-replic-linha + .cmg-replic-linha {
-  border-top: 1px solid var(--cmg-border, #d1d4d3);
-}
-.cemig-form .cmg-replic-rotulo {
-  min-width: 0;
-}
-/* ============================================================
-   Tabela de replicações entre torres (spec Figma "tabela"): cabeçalho
-   neutra/200, células de 64px mín. com divisória neutra/200, e por linha
-   origem (select) → seta → destinos (multiselect) → excluir.
-   As regras abaixo ficam ESCOPADAS em .cmg-replic-tabela porque
-   .cmg-replic-linha continua servindo à lista do modal de UNIDADES.
-   ============================================================ */
-/* width:100% porque .cmg-modal-conteudo alinha os filhos ao centro
-   (align-items:center), o que encolheria a tabela ao tamanho do conteúdo em
-   vez dos 702px do spec. Mesma razão do width em .cmg-replic-lista.
-   SEM overflow:hidden aqui — ele recortaria o painel do multiselect de
-   destinos, que é absoluto e ultrapassa a última linha. Os cantos são
-   arredondados nas pontas (cabeçalho e última linha) em vez de recortados. */
-.cemig-form .cmg-replic-tabela {
-  width: 100%;
-  border: 1px solid var(--cmg-neutral-200, #d1d4d3);
-  border-radius: 8px;
-}
-.cemig-form .cmg-replic-cab:first-child {
-  border-radius: 8px 8px 0 0;
-}
-.cemig-form .cmg-replic-cab {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 12px;
-  background: var(--cmg-neutral-200, #d1d4d3);
-}
-/* As duas colunas do cabeçalho acompanham a largura das células da linha:
-   origem (163px) + gap (12px) + seta (24px) = 199px antes dos destinos. */
-.cemig-form .cmg-replic-cab-rotulo {
-  font-family: var(--cmg-font-family);
-  font-weight: 700;
-  font-size: 14px;
-  line-height: 24px;
-  letter-spacing: 0.2px;
-  color: var(--cmg-neutral-600, #364b46);
-}
-.cemig-form .cmg-replic-cab-rotulo:first-child {
-  flex: none;
-  width: 199px;
-}
-.cemig-form .cmg-replic-tabela .cmg-replic-linha {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  min-height: 64px;
-  background: var(--cmg-neutral-0, #fff);
-  border-bottom: 1px solid var(--cmg-neutral-200, #d1d4d3);
-}
-.cemig-form .cmg-replic-tabela .cmg-replic-cel {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-}
-/* 187px de coluna no spec, menos o padding de 12px da linha e o gap de 12px
-   até a seta. */
-.cemig-form .cmg-replic-cel--origem {
-  flex: none;
-  width: 163px;
-}
-.cemig-form .cmg-replic-cel--seta {
-  flex: none;
-  width: 24px;
-  justify-content: center;
-  color: var(--cmg-neutral-700, #041e18);
-}
-.cemig-form .cmg-replic-cel--destinos {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.cemig-form .cmg-replic-cel--acao {
-  flex: none;
-  width: 48px;
-  justify-content: center;
-}
-/* ---- Variante de UNIDADES (.cmg-replic-tabela--uc) ----
-   Mesma tabela do gerenciador de torres com uma coluna a mais entre a origem e
-   a seta: "Unidade de origem". A regra parte de UMA unidade — por isso a torre
-   sozinha não basta para identificá-la. A coluna repete a largura da origem
-   (163px) para as duas caixas ficarem iguais, como no spec. */
-.cemig-form .cmg-replic-cel--uc {
-  flex: none;
-  width: 163px;
-}
-/* Rótulos do cabeçalho alinhados às células: origem (163) + gap (12) = 175px
-   até a unidade, e unidade (163) + gap (12) + seta (24) + gap (12) = 211px até
-   os destinos. O 3º rótulo ocupa o resto (flex padrão). */
-.cemig-form .cmg-replic-tabela--uc .cmg-replic-cab-rotulo:first-child {
-  width: 175px;
-}
-.cemig-form .cmg-replic-tabela--uc .cmg-replic-cab-rotulo:nth-child(2) {
-  flex: none;
-  width: 211px;
-}
-/* A coluna de destinos aqui é ~130px mais estreita que a do gerenciador de
-   torres (a coluna "Unidade de origem" comeu esse espaço). As 3 colunas do
-   painel de checkboxes não cabem mais: "Torre 1" quebraria em duas linhas e a
-   3ª coluna ficaria cortada, com barra horizontal. Duas colunas cabem inteiras,
-   e o painel continua com a LARGURA DO CAMPO (left/right herdados do bloco
-   base) — dropdown mais largo que o próprio campo lê como outro elemento. */
-.cemig-form .cmg-replic-tabela--uc .cmg-multi-grade {
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-/* Sem quebrar "Torre 14" em duas linhas dentro da coluna estreita. */
-.cemig-form .cmg-replic-tabela--uc .cmg-multi-item {
-  white-space: nowrap;
-}
-/* O padding de 16px do painel base tira largura útil das 2 colunas; 12px dá o
-   espaço que os rótulos precisam sem alargar o painel além do campo. */
-.cemig-form .cmg-replic-tabela--uc .cmg-multi-painel {
-  padding: 12px;
-}
-/* Select da origem: mesma caixa de 48px do campo padrão, sem rótulo flutuante. */
-.cemig-form .cmg-replic-select {
-  width: 100%;
-  height: 48px;
-  padding: 4px 8px 4px 16px;
-  border: 1px solid var(--cmg-neutral-400, #8c9895);
-  border-radius: 4px;
-  background: var(--cmg-neutral-0, #fff);
-  font-family: var(--cmg-font-family);
-  font-size: 16px;
-  line-height: 26px;
-  letter-spacing: 0.2px;
-  color: var(--cmg-neutral-600, #364b46);
-}
-.cemig-form .cmg-replic-select:focus {
-  outline: none;
-  border-color: var(--cmg-neutral-600, #364b46);
-}
-/* Excluir: icon button 40px, ícone erro/600. */
-.cemig-form .cmg-replic-excluir {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  padding: 8px;
-  border: none;
-  border-radius: 100px;
-  background: transparent;
-  color: var(--cmg-danger-600, #c8303f);
-  cursor: pointer;
-}
-.cemig-form .cmg-replic-excluir:hover {
-  background: var(--cmg-danger-50, #fdecea);
-}
-/* Linha do "Adicionar replicação": sem divisória (é a última da tabela) e
-   fechando os cantos de baixo, conforme o spec. */
-.cemig-form .cmg-replic-add-linha {
-  display: flex;
-  justify-content: center;
-  padding: 12px 0;
-  background: var(--cmg-neutral-0, #fff);
-  border-radius: 0 0 8px 8px;
-}
-/* 205px no spec; como min-width para o rótulo não cortar se a fonte crescer. */
-.cemig-form .cmg-replic-add-linha .cmg-pav-adicionar {
-  min-width: 205px;
-}
 /* ---- Multiselect de destinos ---- */
 .cemig-form .cmg-multi {
   position: relative;
@@ -4721,161 +4483,16 @@ label.restricao-aceite input[type="checkbox"] {
   color: var(--cmg-neutral-600, #364b46);
 }
 @media (max-width: 720px) {
-  /* Estreito: a linha vira bloco e os destinos ocupam a largura toda. */
-  .cemig-form .cmg-replic-tabela .cmg-replic-linha {
-    flex-wrap: wrap;
-  }
-  .cemig-form .cmg-replic-cel--destinos {
-    flex: 1 1 100%;
-  }
-  /* Os 163px do spec são de desktop: aqui a origem divide a primeira faixa
-     com a seta e o excluir em vez de forçar a largura fixa. */
-  .cemig-form .cmg-replic-cel--origem,
-  .cemig-form .cmg-replic-cel--uc {
-    flex: 1 1 auto;
-    width: auto;
-  }
-  /* Com a linha quebrada em blocos, os rótulos fixos do cabeçalho da variante
-     de unidades deixam de corresponder às células — voltam a ser fluidos. */
-  .cemig-form .cmg-replic-tabela--uc .cmg-replic-cab-rotulo:first-child,
-  .cemig-form .cmg-replic-tabela--uc .cmg-replic-cab-rotulo:nth-child(2) {
-    flex: 1 1 auto;
-    width: auto;
-  }
-  .cemig-form .cmg-replic-add-linha .cmg-pav-adicionar {
-    min-width: 0;
-    width: 100%;
-  }
+  
+  
+  
+  
+  
+  
+  
+  
   .cemig-form .cmg-multi-grade {
     grid-template-columns: repeat(2, 1fr);
-  }
-}
-/* Replicação de UNIDADES: a regra ocupa duas linhas — a UC modelo e, abaixo,
-   o que ela faz (completar a torre de origem + torres de destino). */
-.cemig-form .cmg-replic-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-.cemig-form .cmg-replic-alvos {
-  font-size: 14px;
-  line-height: 20px;
-  color: var(--cmg-neutral-600, #364b46);
-}
-.cemig-form .cmg-replic-acoes {
-  display: flex;
-  flex: none;
-  gap: 4px;
-}
-/* Editar / Excluir: links de ação compactos, sem a caixa do .btn. */
-.cemig-form .cmg-replic-acao {
-  min-width: 0;
-  min-height: 0;
-  padding: 4px 8px;
-  font-size: 14px;
-  line-height: 24px;
-  text-decoration: underline;
-}
-.cemig-form .cmg-replic-vazio {
-  margin: 0;
-  padding: 16px;
-  text-align: center;
-  font-family: var(--cmg-font-family);
-  font-size: 14px;
-  line-height: 24px;
-  color: var(--cmg-neutral-600, #364b46);
-}
-/* Formulário de adicionar/editar: Origem (select) + Destinos (checkboxes) */
-.cemig-form .cmg-replic-campo {
-  width: 100%;
-}
-.cemig-form .cmg-replic-campo + .cmg-replic-campo {
-  margin-top: var(--cmg-space-4, 16px);
-}
-.cemig-form .cmg-replic-label {
-  display: block;
-  margin-bottom: 8px;
-  font-family: var(--cmg-font-family);
-  font-weight: var(--cmg-fw-bold, 700);
-  font-size: 14px;
-  line-height: 24px;
-  letter-spacing: 0.2px;
-  color: var(--cmg-neutral-600, #364b46);
-}
-.cemig-form .cmg-replic-campo select {
-  width: 100%;
-  box-sizing: border-box;
-  height: 48px;
-  padding: 4px 40px 4px 16px;
-  border: 1px solid var(--cmg-neutral-400, #8c9895);
-  border-radius: 4px;
-  background-color: var(--cmg-surface);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M6 9l6 6 6-6' stroke='%23364b46' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  font-family: var(--cmg-font-family);
-  font-size: 16px;
-  color: var(--cmg-text);
-  cursor: pointer;
-}
-.cemig-form .cmg-replic-campo select:focus {
-  outline: none;
-  border-color: var(--cmg-neutral-600, #364b46);
-}
-/* Destinos: grade de checkboxes rolável (empreendimentos com muitas torres). */
-.cemig-form .cmg-replic-destinos {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 4px 16px;
-  max-height: 240px;
-  overflow-y: auto;
-  padding: 12px 16px;
-  border: 1px solid var(--cmg-border, #d1d4d3);
-  border-radius: 8px;
-}
-.cemig-form .cmg-replic-destino {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 0;
-  cursor: pointer;
-  font-family: var(--cmg-font-family);
-  font-size: 16px;
-  line-height: 24px;
-  color: var(--cmg-text-strong, #041e18);
-}
-/* Torre que já é destino de outra replicação: marcação bloqueada. */
-.cemig-form .cmg-replic-destino.is-ocupada {
-  cursor: not-allowed;
-  color: var(--cmg-neutral-500, #5b6b67);
-}
-.cemig-form .cmg-replic-destino.is-ocupada input[type="checkbox"] {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-/* Conflito de destino / regra sem destino, acima do rodapé. */
-.cemig-form .cmg-replic-erro {
-  margin: 0;
-  width: 100%;
-  min-height: 24px;
-  font-family: var(--cmg-font-family);
-  font-size: 14px;
-  line-height: 24px;
-  letter-spacing: 0.2px;
-  color: var(--cmg-danger-500, #c0392b);
-}
-@media (max-width: 640px) {
-  .cemig-form .cmg-replic-linha {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
-  .cemig-form .cmg-replic-acoes {
-    margin-left: -8px;
   }
 }
 
@@ -5927,4 +5544,158 @@ html:not([data-zona="rural"]) [data-so-zona="rural"] {
    davam 45. */
 .cemig-form .atend-pedido + .divider {
   padding-top: 25px;
+}
+
+/* ============================================================
+   BT Condomínio de torres + Coletivo (specs svg1–15)
+   ------------------------------------------------------------
+   Etapa 4: cards de GRUPO de torres com os checkboxes "Selecione
+   quais torres compartilham os mesmos dados" e a composição por
+   pavimento numa caixa só. Etapa 5: faixas de unidades + rodapé
+   (carga/demanda + disjuntor adequado) e as perguntas do padrão.
+   ============================================================ */
+/* Exemplo → Quantidade de torres → 1º card: 32px cada (svg3). */
+.cemig-form .cmg-exemplo + .blocos-qtd {
+  margin-top: var(--cmg-space-8);
+}
+.cemig-form .blocos-qtd + #blocosBox:not(:empty) {
+  margin-top: var(--cmg-space-8);
+}
+/* Paginação sem páginas (lista de uma página só) não deixa margem. */
+.cemig-form .paginacao:empty {
+  display: none;
+}
+/* Checkboxes das torres: divisória 24px abaixo do endereço, título a 24px
+   dela e grade de 7 colunas (passo de 113px no spec) com linhas de 48px. */
+.cemig-form .torres-selecao.divider {
+  margin-top: 0;
+  padding-top: 26px;
+  margin-bottom: var(--cmg-space-8);
+}
+.cemig-form .torres-selecao-titulo {
+  margin: 0 0 10px;
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-body-lg);
+  line-height: 24px;
+  letter-spacing: var(--cmg-ls-tight);
+  color: var(--cmg-text);
+}
+.cemig-form .torres-selecao-lista {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  row-gap: var(--cmg-space-4);
+}
+.cemig-form .torres-selecao-lista .cmg-check {
+  min-height: 32px;
+  white-space: nowrap;
+}
+@media (max-width: 720px) {
+  .cemig-form .torres-selecao-lista {
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  }
+}
+/* Composição por pavimento: uma caixa branca, uma linha por faixa
+   (Andar inicial | Andar final | Unidades por andar) com divisória. */
+.cemig-form .faixas-composicao {
+  display: block;
+  padding: 0 var(--cmg-space-5, 20px);
+  background: var(--cmg-surface);
+  border: 1px solid var(--cmg-neutral-200);
+  border-radius: var(--cmg-radius);
+}
+.cemig-form .faixas-composicao-linha {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: var(--cmg-space-4);
+  padding: 12px 0 14px;
+}
+.cemig-form .faixas-composicao-linha + .faixas-composicao-linha {
+  border-top: 1px solid var(--cmg-divider);
+}
+.cemig-form .faixas-composicao-cel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cemig-form .faixas-composicao .faixa-card-label {
+  font-size: var(--cmg-fs-body);
+  line-height: 22px;
+  color: var(--cmg-text-strong);
+}
+.cemig-form .faixas-composicao .faixa-card-valor {
+  font-size: var(--cmg-fs-body-lg);
+  line-height: 24px;
+  font-weight: var(--cmg-fw-bold);
+}
+/* Identificador por unidade dentro da faixa (coletivo: instalação/predial). */
+.cemig-form .faixa-por-unidade > .grid {
+  row-gap: var(--cmg-space-8);
+}
+/* Rodapé das unidades (svg8): 34px abaixo da lista, sem divisória; KPIs
+   (391px) | disjuntor (422px), cards de 75px. */
+.cemig-form .resultado-unidades {
+  margin-top: 34px;
+  grid-template-columns: minmax(0, 391fr) minmax(0, 422fr);
+  column-gap: 17px;
+}
+.cemig-form .resultado-unidades .resultado-kpis {
+  gap: 17px;
+}
+.cemig-form .resultado-unidades .resultado-card {
+  padding: 11px 19px;
+}
+.cemig-form .resultado-unidades .resultado-card-valor {
+  margin-top: 4px;
+  font-size: var(--cmg-fs-body-lg);
+  line-height: 24px;
+}
+.cemig-form .resultado-unidades .resultado-disjuntor .resultado-card-label {
+  margin-bottom: 0;
+}
+@media (max-width: 720px) {
+  .cemig-form .resultado-unidades {
+    grid-template-columns: 1fr;
+  }
+}
+/* Perguntas do padrão no fim da etapa: divisória 32px abaixo do rodapé e
+   rótulo a 38px dela (como o tipo de rede do individual). */
+.cemig-form .unidades-padrao.divider {
+  padding-top: 25px;
+  row-gap: 26px;
+}
+/* "Distância do padrão até a rede Cemig inferior a 30m?" cabe numa linha da
+   coluna no spec; com o tracking de 0.2px a Open Sans passava 0.3px e
+   quebrava. */
+.cemig-form .unidades-padrao > .field > label {
+  letter-spacing: 0;
+}
+/* Cards de grupo/faixa (svg3, svg8): 16px entre cards, endereço 8px abaixo
+   do cabeçalho e 32px de respiro no fim do corpo. */
+.cemig-form :is(#blocosBox, #unidadesBox, #ucsColetivoBox)
+  > .uc-colapsavel
+  + .uc-colapsavel {
+  margin-top: var(--cmg-space-4);
+}
+.cemig-form :is(#blocosBox, #unidadesBox, #ucsColetivoBox)
+  .uc-colapsavel-corpo {
+  padding-bottom: var(--cmg-space-8);
+}
+.cemig-form :is(#blocosBox, #unidadesBox, #ucsColetivoBox)
+  .uc-colapsavel-corpo
+  > .endereco-bloco {
+  margin-top: var(--cmg-space-2);
+}
+/* "Quantidade de unidades por andar" + Customizar: mesma altura (56px) dos
+   campos vizinhos da linha (svg5) — o padding vertical somava 60. min-width:
+   o rótulo sem quebra alargava a coluna do grid no celular. */
+.cemig-form .field--com-acao {
+  box-sizing: border-box;
+  min-width: 0;
+  height: 56px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+/* "Onde a energia deverá ser disponibilizada": opções a cada 40px (svg12). */
+.cemig-form #projetoDisponibilizacao.toggle-group--stack {
+  gap: var(--cmg-space-2);
 }

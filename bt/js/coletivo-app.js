@@ -44,12 +44,12 @@ const state = {
   ),
   prop: propPadrao(),
   corr: corrPadrao(),
-  // Paridade com o app React: distMenor30 "Sim" e prontoLigar "Não" são os
-  // valores iniciais do coletivo; a zona é SEMPRE "Urbano" neste fluxo
-  // (grafia do React em views/empreendimento.js — não "Urbana").
+  // Distância e "pronto para ligar" começam sem resposta (radios vazios no
+  // spec); a zona é SEMPRE "Urbano" neste fluxo (grafia do React em
+  // views/empreendimento.js — não "Urbana").
   obra: Object.assign(
     obraPadrao(),
-    { distMenor30: "Sim", prontoLigar: "Não" },
+    { distMenor30: "", prontoLigar: "" },
     (CARD.prefill && CARD.prefill.obra) || {},
     { localizacao: "Urbano" },
   ),
@@ -57,17 +57,12 @@ const state = {
   ucsDet: [],
   ucBlocos: [novaUcBloco(0)],
   blocos: [novaTorre(0)],
-  // Regras de replicação entre torres (gerenciador do botão "Replicar dados").
-  // Cada regra é { origem, destinos: [] } com ÍNDICES de state.blocos. As regras
-  // ficam guardadas para que o usuário possa revisá-las/editá-las depois; só são
-  // aplicadas quando ele confirma no modal (ver aplicarReplicacoes).
-  replicacoes: [],
-  // Regras de replicação de UNIDADES (botão "Replicar dados para todas
-  // unidades de todas as torres").
-  // Cada regra é { torreOrigem, ucOrigem, torresDestino: [] } com ÍNDICES —
-  // a UC modelo completa a própria torre e preenche todas as UCs das torres
-  // de destino (ver aplicarReplicacoesUC).
-  replicacoesUC: [],
+  // Grupos de torres da etapa "Dados das torres" (checkboxes "Selecione quais
+  // torres compartilham os mesmos dados"): partição dos ÍNDICES de
+  // state.blocos — ex.: [[0,…,6],[7],[8,…,13]]. O líder de cada grupo (menor
+  // índice) é a fonte de verdade; _espelharGrupos copia os dados dele para os
+  // demais membros, então cálculo, prévia e PDF continuam torre a torre.
+  gruposTorres: [],
   logoPDF: null,
 };
 window.state = state;
@@ -76,20 +71,23 @@ window.state = state;
 // informar o número. state.blocos mantém 1 torre como armazém interno; é o
 // nBlocos vazio que segura a renderização (ver renderBlocos/renderUnidadesTorres).
 if (MULTI) state.atend.nBlocos = "";
+// "Onde a energia deverá ser disponibilizada" começa sem resposta (spec da
+// etapa "Dados do projeto"); o Avançar exige a escolha.
+if (MULTI) state.atend.disponibilizacaoEnergia = "";
 // Abertura dos acordeões (fora do estado do formulário, como no React)
-const _ucAberta = {};
-const _torreAberta = {};
-const _uniAberta = {}; // unidades da etapa Dados das unidades ("bi:ui")
+const _ucAberta = {}; // faixas de unidades do coletivo (índice da faixa)
+const _torreAberta = {}; // grupos de torres, pelo índice do líder
+const _uniAberta = {}; // faixas de unidades das torres ("líder:faixa")
 // Marcam a abertura automática do primeiro card (torre 1 / unidade 1 da torre
 // 1), feita uma única vez — depois a abertura é só por clique do usuário.
 let _torreAbertaInicial = false;
 let _uniAbertaInicial = false;
 // Paginação e torre selecionada das etapas do condomínio (UI apenas)
 const ITENS_POR_PAGINA = 10;
-let _torrePagina = 0; // página da lista de torres (etapa Dados das torres)
-let _uniTorre = 0; // torre selecionada na etapa Dados das unidades
+let _torrePagina = 0; // página da lista de grupos (etapa Dados das torres)
+let _uniGrupo = 0; // grupo de torres selecionado na etapa Dados das unidades
 const _previaTorrePag = {}; // página da tabela de unidades de cada torre, na prévia
-const _uniPagina = {}; // página da lista de unidades, por torre
+const _uniPagina = {}; // página da lista de faixas de unidades, por líder
 let _previaTorreExterna = 0; // torre exibida na prévia (paginação externa)
 
 /* ===== flags de fluxo (paridade com app.js:67-68) ===== */
@@ -239,16 +237,24 @@ const demandaTotalGeralF = () =>
     : demandaPrevTotalF();
 
 /* ===== derivados da etapa "Dados do projeto" (múltiplas torres) ===== */
+// Opções de "Onde a energia deverá ser disponibilizada no empreendimento?".
+const OPCS_DISP = [
+  "Na portaria e no interior do condomínio (alimentação das torres e áreas comuns)",
+  "Apenas na portaria do condomínio",
+];
+// Disjuntores gerais e prumadas só existem com a energia apenas na portaria.
+const soPortariaF = () => state.atend.disponibilizacaoEnergia === OPCS_DISP[1];
+const usaPrumadaF = () => soPortariaF() && state.atend.temPrumada === "Sim";
 // Carga total de TODAS as torres (kW): soma da carga de cada torre.
 const cargaTotalEmpreendimentoF = () =>
   state.blocos.reduce((s, b) => s + cargaTotalTorre(b), 0);
 // Maior corrente (A) entre os disjuntores das torres — piso do disjuntor de
 // prumada (ou, sem prumadas, do disjuntor geral do empreendimento).
 const maiorCorrenteTorresF = () => maiorCorrenteTorres(state.blocos, null);
-// Prumadas efetivas: só quando "temPrumada" = Sim (senão a hierarquia pula o
-// nível). Faixas incompletas/inválidas ainda entram na lista para validação.
-const prumadasAtivasF = () =>
-  state.atend.temPrumada === "Sim" ? state.atend.prumadas || [] : [];
+// Prumadas efetivas: só com a energia apenas na portaria e "temPrumada" = Sim
+// (senão a hierarquia pula o nível). Faixas incompletas/inválidas ainda entram
+// na lista para validação.
+const prumadasAtivasF = () => (usaPrumadaF() ? state.atend.prumadas || [] : []);
 // Maior corrente (A) do disjuntor de prumada configurado — piso do disjuntor
 // geral do empreendimento quando há prumadas.
 const maiorCorrentePrumadaF = () =>
@@ -256,7 +262,7 @@ const maiorCorrentePrumadaF = () =>
 // Piso do disjuntor geral do empreendimento: maior prumada se houver, senão a
 // maior torre (a hierarquia ignora os níveis inexistentes).
 const pisoDisjEmpreendimentoF = () =>
-  state.atend.temPrumada === "Sim" && prumadasAtivasF().length
+  prumadasAtivasF().length
     ? maiorCorrentePrumadaF()
     : maiorCorrenteTorresF();
 // Opções sugeridas (menor válido primeiro) de cada disjuntor da hierarquia.
@@ -281,7 +287,7 @@ const opcoesDisjPrumadaF = (p) =>
 // disjuntor que o campo não mostra. Mesma regra de autoSelecionarDisjCondominio.
 function autoSelecionarDisjProjeto() {
   if (!MULTI) return;
-  if (state.atend.temPrumada === "Sim") {
+  if (usaPrumadaF()) {
     (state.atend.prumadas || []).forEach((p) => {
       const ops = opcoesDisjPrumadaF(p);
       if (!ops.length) p.disj = "";
@@ -401,35 +407,16 @@ function autoSelecionarDisjCondominio(ag) {
     ag.disjIncendio = ops[0];
 }
 
-/* ===== replicações (portes de app.js) ===== */
-// app.js:344-361
-function replicarUC1Coletivo() {
-  const base = state.ucBlocos[0];
-  if (!base) return;
-  state.ucBlocos = state.ucBlocos.map((u, k) =>
-    k === 0
-      ? u
-      : Object.assign({}, base, {
-          cargas: JSON.parse(JSON.stringify(base.cargas || {})),
-          _acc: {},
-          identificacao: u.identificacao || `UC ${k + 1}`,
-          nPredial: u.nPredial,
-          complemento: u.complemento,
-          caixa: u.caixa,
-          instalacao: u.instalacao,
-        }),
-  );
-  renderUcsColetivo();
-}
-/* ===== vínculo entre torres (replicação contínua) =====
-   Uma regra de replicação não é um copiar/colar de uma vez só: enquanto ela
-   existir, a torre de origem é a fonte de verdade e cada campo de DADOS DA
-   TORRE preenchido nela propaga para os destinos ao sair do campo (blur).
-   Os dados das UNIDADES não entram aqui — têm o gerenciador próprio
-   (abrirGerenciadorReplicacaoUC).
-   Exceção: um campo editado à mão num destino "trava" e para de receber a
-   propagação; os demais campos daquela torre seguem vinculados. O registro
-   desses campos travados fica em b._travados (Set de chaves). */
+/* ===== grupos de torres (dados compartilhados) =====
+   Etapa "Dados das torres": cada acordeão é um GRUPO de torres que
+   compartilham os mesmos dados (checkboxes "Selecione quais torres
+   compartilham os mesmos dados"). Os cards editam o LÍDER do grupo (menor
+   índice) e _espelharGrupos copia os dados dele para os demais membros antes
+   de qualquer leitura derivada (cálculo, gates, prévia, PDF) — por isso
+   calc.js e pdf-doc.js continuam lendo torre a torre, sem mudança.
+   Substitui o antigo gerenciador "Replicar dados" (regras origem → destinos). */
+// Campos da torre copiados do líder. A identificação (b.nome) é de cada torre;
+// as unidades vão junto em _copiarDadosTorre.
 const CAMPOS_TORRE = [
   "qtdUCs",
   "aptosPorAndar",
@@ -438,188 +425,147 @@ const CAMPOS_TORRE = [
   "tipoComplemento",
   "demandaIncendio",
   "disjIncendio",
+  "disjGeral",
 ];
-// A identificação da torre (b.nome) NÃO propaga: é o que distingue um card do
-// outro, e _copiarTorre sempre a preservou.
-
-// Regra cuja origem é `bi`, se houver (uma torre é origem de no máximo uma).
-function _regraDaOrigem(bi) {
-  return (state.replicacoes || []).find(
-    (r) => r.origem === bi && (r.destinos || []).length,
-  );
+const _clone = (v) =>
+  v && typeof v === "object" ? JSON.parse(JSON.stringify(v)) : v;
+// Copia os dados da torre `oi` (campos + unidades) para a torre `di`.
+function _copiarDadosTorre(oi, di) {
+  const o = state.blocos[oi];
+  const d = state.blocos[di];
+  if (!o || !d || o === d) return;
+  CAMPOS_TORRE.forEach((c) => (d[c] = _clone(o[c])));
+  d.ucs = (o.ucs || []).map((u) => Object.assign(_clone(u), { _acc: {} }));
 }
-// Marca `campo` da torre `bi` como editado à mão — para de receber propagação.
-function _travarCampo(bi, campo) {
-  const b = state.blocos[bi];
-  if (!b) return;
-  if (!b._travados) b._travados = [];
-  if (!b._travados.includes(campo)) b._travados.push(campo);
-}
-function _campoTravado(bi, campo) {
-  const b = state.blocos[bi];
-  return !!(b && b._travados && b._travados.includes(campo));
-}
-// Propaga UM campo da torre de origem para os destinos da sua regra. Chamado no
-// blur do campo, e não a cada tecla, para não reescrever o destino no meio da
-// digitação. Retorna true se algo mudou (o chamador decide re-renderizar).
-function propagarCampoTorre(bi, campo) {
-  const regra = _regraDaOrigem(bi);
-  if (!regra || !CAMPOS_TORRE.includes(campo)) return false;
-  const base = state.blocos[bi];
-  if (!base) return false;
-  const valor = base[campo];
-  let mudou = false;
-  regra.destinos.forEach((di) => {
-    const d = state.blocos[di];
-    // Um campo travado no destino foi digitado à mão: preservar.
-    if (!d || _campoTravado(di, campo)) return;
-    if (d[campo] === valor) return;
-    d[campo] = typeof valor === "object" && valor !== null
-      ? JSON.parse(JSON.stringify(valor))
-      : valor;
-    // Quantidade de unidades muda a lista de UCs da torre de destino.
-    if (campo === "qtdUCs") sincronizarUCsTorre(di, valor);
-    mudou = true;
+// Normaliza a partição contra a quantidade atual de torres: descarta índices
+// que não existem mais, junta as torres novas como grupos de uma torre e
+// ordena (membros em ordem crescente; grupos pelo líder).
+function _gruposTorres() {
+  const n = state.blocos.length;
+  const vistos = new Set();
+  const grupos = [];
+  (state.gruposTorres || []).forEach((g) => {
+    const m = (g || []).filter(
+      (i) => Number.isInteger(i) && i >= 0 && i < n && !vistos.has(i),
+    );
+    m.forEach((i) => vistos.add(i));
+    if (m.length) grupos.push(m.sort((a, b) => a - b));
   });
-  if (mudou) {
-    regra.destinos.forEach((di) => autoGerarComplementosTorre(di));
-    autoSelecionarDisjTorres();
+  for (let i = 0; i < n; i++) if (!vistos.has(i)) grupos.push([i]);
+  grupos.sort((a, b) => a[0] - b[0]);
+  state.gruposTorres = grupos;
+  return grupos;
+}
+// Espelha o líder de cada grupo nos demais membros e, dentro do líder, a 1ª
+// unidade de cada faixa nas outras unidades da faixa. Idempotente.
+function _espelharGrupos() {
+  if (!MULTI) return;
+  _gruposTorres().forEach((g) => {
+    const lider = state.blocos[g[0]];
+    if (!lider) return;
+    _espelharFaixas(lider.ucs || [], _faixasDaTorre(lider));
+    g.slice(1).forEach((bi) => _copiarDadosTorre(g[0], bi));
+  });
+}
+// Números das torres (1-based) de uma lista de índices: "1 a 7", "8",
+// "1, 3 e 5", "1 a 4 e 9". Dois consecutivos saem separados ("1 e 2").
+function _rotuloTorres(indices) {
+  const ord = (indices || []).slice().sort((a, b) => a - b);
+  const partes = [];
+  for (let k = 0; k < ord.length; ) {
+    let j = k;
+    while (j + 1 < ord.length && ord[j + 1] === ord[j] + 1) j++;
+    if (j - k >= 2) partes.push(`${ord[k] + 1} a ${ord[j] + 1}`);
+    else for (let i = k; i <= j; i++) partes.push(String(ord[i] + 1));
+    k = j + 1;
   }
-  return mudou;
+  if (partes.length < 2) return partes[0] || "";
+  return partes.slice(0, -1).join(", ") + " e " + partes[partes.length - 1];
 }
-// Rótulos dos campos de torre, para avisar o usuário em português.
-const ROTULO_CAMPO_TORRE = {
-  qtdUCs: "quantidade de unidades",
-  aptosPorAndar: "unidades por andar",
-  aptosPorAndarFaixas: "composição por pavimento",
-  complInicial: "primeiro complemento",
-  tipoComplemento: "tipo de complemento",
-  demandaIncendio: "demanda do condomínio",
-  disjIncendio: "disjuntor do condomínio",
-};
-function _vazio(v) {
-  if (v == null) return true;
-  if (Array.isArray(v)) return v.length === 0;
-  return String(v).trim() === "";
-}
-// Torres de destino que perderiam dados ao aplicar as regras: campo preenchido
-// e diferente do valor da origem. Usado para confirmar antes de sobrescrever.
-function _conflitosReplicacao(regras) {
-  const out = [];
-  (regras || []).forEach((r) => {
-    const origem = state.blocos[r.origem];
-    if (!origem) return;
-    (r.destinos || []).forEach((di) => {
-      const d = state.blocos[di];
-      if (!d) return;
-      const campos = CAMPOS_TORRE.filter(
-        (c) =>
-          !_vazio(d[c]) && JSON.stringify(d[c]) !== JSON.stringify(origem[c]),
-      ).map((c) => ROTULO_CAMPO_TORRE[c] || c);
-      if (campos.length) out.push({ torre: di, campos: campos });
+// "Torre" ou "Torres", conforme o tamanho do grupo.
+const _nomeGrupo = (g) => (g.length > 1 ? "Torres" : "Torre");
+// Checkbox da torre `bi` no card do grupo de líder `lider`. Marcar tira a
+// torre do grupo em que estava e a junta a este, já com os dados do grupo;
+// desmarcar a solta num grupo próprio, com os dados que ela tinha no grupo.
+// O único membro de um grupo não pode ser desmarcado.
+function alternarTorreNoGrupo(lider, bi, marcar) {
+  _espelharGrupos();
+  const grupos = _gruposTorres();
+  const alvo = grupos.find((g) => g[0] === lider);
+  if (!alvo) return;
+  let ancora = lider;
+  if (marcar) {
+    if (alvo.includes(bi)) return;
+    // A torre pode virar a nova líder (índice menor): recebe antes os dados.
+    _copiarDadosTorre(lider, bi);
+    grupos.forEach((g) => {
+      const k = g.indexOf(bi);
+      if (k >= 0) g.splice(k, 1);
     });
-  });
-  return out;
-}
-// Propaga TODOS os campos de torre da origem `bi` de uma vez.
-function propagarTorre(bi) {
-  let mudou = false;
-  CAMPOS_TORRE.forEach((c) => {
-    if (propagarCampoTorre(bi, c)) mudou = true;
-  });
-  return mudou;
-}
-// Copia os DADOS DA TORRE de `oi` para `di` (os campos de CAMPOS_TORRE). A
-// identificação (nome) é do destino, e o conteúdo das UNIDADES não vem junto —
-// as UCs têm o gerenciador próprio (abrirGerenciadorReplicacaoUC). A lista de
-// UCs do destino é apenas redimensionada para a quantidade da origem.
-function _copiarTorre(oi, di) {
-  const base = state.blocos[oi];
-  const destino = state.blocos[di];
-  if (!base || !destino) return;
-  CAMPOS_TORRE.forEach((c) => {
-    const v = base[c];
-    destino[c] =
-      typeof v === "object" && v !== null ? JSON.parse(JSON.stringify(v)) : v;
-  });
-  // Aplicar a regra é uma decisão explícita: a torre volta a acompanhar a
-  // origem em todos os campos.
-  destino._travados = [];
-  sincronizarUCsTorre(di, base.qtdUCs);
-}
-// Aplica TODAS as regras de replicação de uma vez (botão "Aplicar" do modal).
-// As origens são lidas antes de qualquer escrita — assim uma torre que seja
-// origem de uma regra e destino de outra não propaga dados já sobrescritos.
-function aplicarReplicacoes(regras) {
-  const validas = (regras || []).filter(
-    (r) => state.blocos[r.origem] && (r.destinos || []).length,
-  );
-  if (!validas.length) return;
-  // Congela as origens: cada regra copia o estado ORIGINAL da sua torre-origem.
-  const origens = validas.map((r) =>
-    JSON.parse(JSON.stringify(state.blocos[r.origem])),
-  );
-  validas.forEach((r, k) => {
-    const guardada = state.blocos[r.origem];
-    state.blocos[r.origem] = origens[k];
-    r.destinos.forEach((di) => _copiarTorre(r.origem, di));
-    state.blocos[r.origem] = guardada;
-  });
-  // Replicar a torre copia o primeiro complemento/aptos por andar; reaplica a
-  // geração de complementos em cada torre para que as UCs fiquem numeradas.
-  state.blocos.forEach((_, i) => autoGerarComplementosTorre(i));
+    alvo.push(bi);
+  } else {
+    if (!alvo.includes(bi) || alvo.length < 2) return;
+    alvo.splice(alvo.indexOf(bi), 1);
+    grupos.push([bi]);
+    if (bi === lider) ancora = alvo[0];
+  }
+  state.gruposTorres = grupos;
+  const g = _gruposTorres().find((x) => x.includes(ancora));
+  if (g) btToggleExclusivo(_torreAberta, g[0], true);
   autoSelecionarDisjTorres();
   renderBlocos();
 }
-// Resume uma lista de índices de torre em intervalos legíveis, agrupando os
-// consecutivos: [1,2,3,5,7,8] (0-based) → "2–4, 6, 8–9".
-function _resumirTorres(indices) {
-  const ord = (indices || []).slice().sort((a, b) => a - b);
-  if (!ord.length) return "";
-  const partes = [];
-  let ini = ord[0];
-  let fim = ord[0];
-  const fechar = () => {
-    // Faixa de 2 sai como "2, 3" — um intervalo só compensa a partir de 3.
-    if (fim - ini >= 2) partes.push(`${ini + 1}–${fim + 1}`);
-    else for (let i = ini; i <= fim; i++) partes.push(String(i + 1));
-  };
-  for (let k = 1; k < ord.length; k++) {
-    if (ord[k] === fim + 1) {
-      fim = ord[k];
-      continue;
-    }
-    fechar();
-    ini = fim = ord[k];
-  }
-  fechar();
-  return partes.join(", ");
+
+/* ===== faixas de unidades (etapa "Dados das unidades") =====
+   As unidades são preenchidas por FAIXA: uma por faixa da composição por
+   pavimento ("Customizar"), na ordem dos andares — (fim − ini + 1) ×
+   unidades UCs cada. Se as faixas somarem menos que o total, a sobra vira a
+   última faixa; se somarem mais, o excesso é cortado. Sem composição
+   customizada, uma faixa só com todas as unidades. Uma unidade diferente
+   (loja, academia) ganha uma faixa própria no "Customizar". */
+// [{ ini, fim }] com índices de UC (inclusivos).
+function _faixasUnidades(total, faixasPav) {
+  const n = Math.max(0, parseInt(total) || 0);
+  const out = [];
+  let pos = 0;
+  normalizarFaixasPavimento(faixasPav).forEach((f) => {
+    if (pos >= n) return;
+    const fim = Math.min(n, pos + (f.fim - f.ini + 1) * f.unidades) - 1;
+    out.push({ ini: pos, fim });
+    pos = fim + 1;
+  });
+  if (pos < n) out.push({ ini: pos, fim: n - 1 });
+  return out;
 }
-// Rótulo de uma regra na lista do modal: "Torre 1 → Torres 2–8".
-function _rotuloReplicacao(regra) {
-  const destinos = _resumirTorres(regra.destinos);
-  const plural = (regra.destinos || []).length > 1 ? "Torres" : "Torre";
-  return `Torre ${regra.origem + 1} → ${plural} ${destinos}`;
+const _faixasDaTorre = (b) =>
+  _faixasUnidades((b.ucs || []).length, b.aptosPorAndarFaixas);
+const _faixasColetivo = () =>
+  _faixasUnidades(state.ucBlocos.length, _coletivoAgr().aptosPorAndarFaixas);
+// A 1ª UC de cada faixa é a modelo: as demais recebem os campos configuráveis
+// dela (_copiarUC preserva complemento, instalação, nº predial e caixa).
+function _espelharFaixas(ucs, faixas) {
+  faixas.forEach((f) => {
+    const modelo = ucs[f.ini];
+    if (!modelo) return;
+    for (let j = f.ini + 1; j <= f.fim; j++)
+      if (ucs[j]) ucs[j] = _copiarUC(modelo, ucs[j], j);
+  });
 }
-// Valida uma regra contra as demais. Uma torre não pode ser origem e destino da
-// MESMA regra, nem destino de mais de uma regra — nesse caso o salvamento é
-// barrado apontando a torre em conflito. Regra sem destino também não salva.
-// `idx` é a posição da regra em edição (-1 ao adicionar), ignorada na busca.
-function _validarReplicacao(regra, regras, idx) {
-  if (!(regra.destinos || []).length)
-    return "Selecione ao menos uma torre de destino.";
-  if (regra.destinos.includes(regra.origem))
-    return `A Torre ${regra.origem + 1} não pode ser origem e destino da mesma replicação.`;
-  for (let k = 0; k < regras.length; k++) {
-    if (k === idx) continue;
-    const conflito = regra.destinos.find((d) =>
-      (regras[k].destinos || []).includes(d),
-    );
-    if (conflito != null)
-      return `A Torre ${conflito + 1} já é destino da replicação “${_rotuloReplicacao(regras[k])}”.`;
-  }
-  return "";
+// Coletivo: espelha as faixas das UCs do agrupamento (state.ucBlocos).
+function _espelharColetivo() {
+  if (MULTI) return;
+  _espelharFaixas(state.ucBlocos, _faixasColetivo());
 }
+// Complementos de uma faixa: "101 a 604" (ou o único, se for uma UC só).
+function _complementoFaixa(ucs, f) {
+  const a = (ucs[f.ini] || {}).complemento || "";
+  const b = (ucs[f.fim] || {}).complemento || "";
+  if (f.ini === f.fim || !a || !b) return a || b;
+  return `${a} a ${b}`;
+}
+// Badge da faixa: "1 a 24" ou "25".
+const _rotuloFaixa = (f) =>
+  f.ini === f.fim ? String(f.ini + 1) : `${f.ini + 1} a ${f.fim + 1}`;
 // app.js:377-391 (aceita valor bruto durante a digitação)
 function sincronizarUCsTorre(bi, qtd) {
   const b = state.blocos[bi];
@@ -673,25 +619,6 @@ function autoGerarComplementosColetivo() {
   // Reflete os complementos gerados nos cabeçalhos/campos das UCs abaixo.
   renderUcsColetivo();
 }
-// app.js:450-473 (preserva complemento/instalação/nº UC de cada unidade)
-function replicarUC1Torre(bi) {
-  const b = state.blocos[bi];
-  if (!b || !(b.ucs || []).length) return;
-  const base = b.ucs[0];
-  b.ucs = b.ucs.map((u, k) =>
-    k === 0
-      ? u
-      : Object.assign({}, base, {
-          cargas: JSON.parse(JSON.stringify(base.cargas || {})),
-          _acc: {},
-          identificacao: `UC ${k + 1}`,
-          complemento: u.complemento,
-          instalacao: u.instalacao,
-        }),
-  );
-  autoSelecionarDisjTorres();
-  renderUnidadesTorreAtual();
-}
 // Cópia canônica de uma UC: devolve uma nova unidade com os campos
 // CONFIGURÁVEIS de `origem` e os identificadores próprios de `destino`
 // (identificação, complemento, nº de instalação e nº predial nunca são
@@ -705,54 +632,9 @@ function _copiarUC(origem, destino, j) {
     complemento: destino.complemento,
     instalacao: destino.instalacao,
     nPredial: destino.nPredial,
+    caixa: destino.caixa,
   });
 }
-// Copia a UC `origem` para TODAS as unidades da torre `bi`. `pularUi` preserva
-// a própria unidade modelo quando a torre é a de origem da regra.
-function _preencherTorreComUC(bi, origem, pularUi) {
-  const b = state.blocos[bi];
-  if (!b) return;
-  b.ucs = (b.ucs || []).map((u, j) =>
-    j === pularUi ? u : _copiarUC(origem, u, j),
-  );
-}
-// Aplica TODAS as regras de replicação de unidades (botão "Aplicar" do modal).
-// Cada regra usa a UC modelo para (1) completar a própria torre de origem e
-// (2) preencher todas as UCs de cada torre de destino. As UCs modelo são lidas
-// antes de qualquer escrita — assim uma torre que seja origem de uma regra e
-// destino de outra não propaga dados já sobrescritos.
-function aplicarReplicacoesUC(regras) {
-  const validas = (regras || []).filter(
-    (r) =>
-      ((state.blocos[r.torreOrigem] || {}).ucs || [])[r.ucOrigem] &&
-      (r.torresDestino || []).length,
-  );
-  if (!validas.length) return;
-  // Congela as UCs modelo: cada regra copia o estado ORIGINAL da sua UC.
-  const modelos = validas.map((r) =>
-    JSON.parse(JSON.stringify(state.blocos[r.torreOrigem].ucs[r.ucOrigem])),
-  );
-  validas.forEach((r, k) => {
-    _preencherTorreComUC(r.torreOrigem, modelos[k], r.ucOrigem);
-    (r.torresDestino || []).forEach((di) => {
-      // A torre de origem pode constar entre os destinos ("Torre 1 → Torres 1 a
-      // 7"): ela já foi preenchida acima, e repetir aqui sem `pularUi`
-      // sobrescreveria a própria UC modelo (perdendo complemento/instalação).
-      if (di === r.torreOrigem) return;
-      _preencherTorreComUC(di, modelos[k], -1);
-    });
-  });
-  autoSelecionarDisjTorres();
-  renderUnidadesTorreAtual();
-}
-// A validação de conflitos entre regras de unidades (_validarReplicacaoUC) e o
-// rótulo textual de cada regra (_rotuloReplicacaoUC) saíram junto com a tela de
-// "adicionar/editar" do modal: na tabela de tela única cada regra é uma linha
-// com selects, e as torres já usadas por outra regra simplesmente não são
-// oferecidas (ver origensDisponiveis/destinosDisponiveis em
-// abrirGerenciadorReplicacaoUC). O conflito passou a ser impossível por
-// construção, em vez de detectado depois.
-
 /* ===== Gate da etapa Empreendimento ===== */
 // Campos próprios (cliente + doc válido + ART) e o endereço urbano completo
 // (_reqEnderecoObra do React com s.coletivo: art, cep, endereco, num, bairro,
@@ -824,17 +706,19 @@ function normalizarAreaComumUC(u) {
   if (!_preenchido(u.ramo)) u.ramo = u.complemento;
   return true;
 }
-// Etapa "Dados das torres": Identificação, Qtd de unidades, e — quando a torre
-// tem mais de uma UC — Qtd por andar e Primeiro complemento (mesma condição
-// ucsLen() > 1 do render). Demanda e Disjuntor do condomínio são obrigatórios.
+// Etapa "Dados das torres" (um card por grupo — basta checar o líder): Qtd de
+// unidades e, quando a torre tem mais de uma UC, Qtd por andar e Primeiro
+// complemento (mesma condição ucsLen() > 1 do render). Demanda e Disjuntor do
+// condomínio são obrigatórios. O complemento da torre de uma unidade é
+// digitado na etapa seguinte.
 window.btBlocosOk = function () {
   if (!MULTI) return true;
-  const blocos = state.blocos || [];
-  if (!blocos.length) return false;
-  return blocos.every((b) => {
-    if (!_preenchido(b.nome)) return false;
+  if (!(state.blocos || []).length) return false;
+  _espelharGrupos();
+  return _gruposTorres().every((g) => {
+    const b = state.blocos[g[0]];
     const nUcs = (b.ucs || []).length;
-    if (!(parseInt(b.qtdUCs) > 0) && !(nUcs > 0)) return false;
+    if (!(parseInt(b.qtdUCs) > 0)) return false;
     if (nUcs > 1) {
       if (
         !_preenchido(b.aptosPorAndar) &&
@@ -842,9 +726,6 @@ window.btBlocosOk = function () {
       )
         return false;
       if (!_preenchido(b.complInicial)) return false;
-    } else if (nUcs === 1) {
-      // Torre de uma unidade: no lugar do primeiro complemento, o tipo dela.
-      if (!_preenchido(b.tipoComplemento)) return false;
     }
     // Demanda e Disjuntor do condomínio da torre são obrigatórios.
     if (!(num(b.demandaIncendio) > 0)) return false;
@@ -864,15 +745,18 @@ window.btAgrupamentoColetivoOk = function () {
 // Etapa "Dados das unidades": cada UC ativa da torre precisa de Complemento,
 // Atividade e Disjuntor; Área (residencial) ou Ramo (não residencial); e, no
 // método ND-5.2, Carga prevista (torre com 4+ UCs) ou Demanda não residencial.
-// Espelha exatamente as condições de visibilidade de _mkUnidadeCard.
+// Espelha exatamente as condições de visibilidade de _corpoFaixaTorre.
 window.btUnidadesTorresOk = function () {
   if (!MULTI) return true;
+  _espelharGrupos();
   return (state.blocos || []).every((b) => {
     const modoCalc = calcBlocoMultiTorres(b).modoCalculadora;
     const ucs = b.ucs || [];
     return ucs.every((u) => {
       if (ucSemAlteracao(u)) return true;
-      if (ucs.length > 1 && !_preenchido(u.complemento)) return false;
+      // Também na torre de uma unidade: o complemento dela (Academia,
+      // Portaria…) é digitado nesta etapa.
+      if (!_preenchido(u.complemento)) return false;
       // Área comum (portaria, academia…): o card não pergunta a atividade —
       // normaliza aqui para valer também nas unidades ainda não abertas.
       normalizarAreaComumUC(u);
@@ -911,8 +795,9 @@ window.btUnidadesTorresOk = function () {
 function validacaoHierarquiaProjeto() {
   const erros = [];
   if (!MULTI) return erros;
+  _espelharGrupos();
   const nBlocos = state.blocos.length;
-  const usaPrumada = state.atend.temPrumada === "Sim";
+  const usaPrumada = usaPrumadaF();
   const prumadas = usaPrumada ? state.atend.prumadas || [] : [];
   const maiorTorre = maiorCorrenteTorresF();
   // Prumadas: faixa válida + disjuntor > maior torre da faixa.
@@ -948,9 +833,9 @@ function validacaoHierarquiaProjeto() {
         );
     });
   }
-  // Disjuntor geral do empreendimento (opcional): > maior prumada (se houver)
-  // ou > maior torre (se não houver prumadas).
-  if (_preenchido(state.atend.disjEmpreendimento)) {
+  // Disjuntor geral do empreendimento (opcional, só com a energia apenas na
+  // portaria): > maior prumada (se houver) ou > maior torre (sem prumadas).
+  if (soPortariaF() && _preenchido(state.atend.disjEmpreendimento)) {
     const piso = pisoDisjEmpreendimentoF();
     const nivel =
       usaPrumada && prumadas.length
@@ -968,6 +853,7 @@ function validacaoHierarquiaProjeto() {
 // de prumada incompletas/sobrepostas também travam. Nada preenchido = libera.
 window.btDadosProjetoOk = function () {
   if (!MULTI) return true;
+  if (!_preenchido(state.atend.disponibilizacaoEnergia)) return false;
   return validacaoHierarquiaProjeto().length === 0;
 };
 
@@ -1002,249 +888,353 @@ function renderHibridoAlertas() {
     ? '<div class="alert alert-ok" style="margin-bottom:14px">Classificação ND 5.1 / ND 5.2 das UCs está consistente.</div>'
     : `<div class="alert alert-warn" style="margin-bottom:14px"><strong>Atendimento híbrido — pendências:</strong><ul style="margin:6px 0 0;padding-left:18px">${v.erros.map((e) => `<li>${e}</li>`).join("")}</ul></div>`;
 }
+// ---- Faixa de unidades: peças comuns a torres e coletivo ----
+// Acordeão de uma faixa ("Unidades consumidoras 1 a 24" / "Unidade
+// consumidora"), com o endereço (obra + complementos da faixa) no topo do
+// corpo. `eyebrow` é o grupo de torres (vazio no coletivo); a badge só aparece
+// quando há mais de uma unidade. `montarCorpo(corpo)` só roda com o card aberto.
+function _mkFaixaCard(o) {
+  const { ucs, f, aberta, eyebrow, aoAlternar, montarCorpo } = o;
+  const bloco = document.createElement("div");
+  bloco.className = "uc-colapsavel" + (aberta ? " is-open" : "");
+  const head = document.createElement("button");
+  head.type = "button";
+  head.className = "uc-colapsavel-head";
+  head.setAttribute("aria-expanded", aberta ? "true" : "false");
+  const titulo = f.ini === f.fim ? "Unidade consumidora" : "Unidades consumidoras";
+  const badge =
+    ucs.length > 1 ? ` <span class="carga-acc-badge">${_rotuloFaixa(f)}</span>` : "";
+  head.innerHTML =
+    `<span class="uc-head-info">` +
+    (eyebrow ? `<span class="uc-head-eyebrow">${eyebrow}</span>` : "") +
+    `<span class="uc-colapsavel-titulo">${titulo}${badge}</span></span>` +
+    `<span class="carga-acc-chevron uc-colapsavel-chevron" aria-hidden="true"></span>`;
+  head.addEventListener("click", aoAlternar);
+  bloco.appendChild(head);
+  if (!aberta) return bloco;
+  const corpo = document.createElement("div");
+  corpo.className = "uc-colapsavel-corpo";
+  corpo.appendChild(_blocoEndereco(_complementoFaixa(ucs, f)));
+  montarCorpo(corpo);
+  bloco.appendChild(corpo);
+  return bloco;
+}
+// Complemento da faixa: com várias unidades, só-leitura ("101 a 604", gerado
+// pelo primeiro complemento da etapa anterior); com uma, editável — é ele que
+// diz se a unidade é área comum (academia, portaria…), o que re-renderiza ao
+// SAIR do campo (`aoSair`), não a cada tecla.
+function _campoComplementoFaixa(ucs, f, corpo, aoSair) {
+  if (f.ini !== f.fim) {
+    const inp = _inp(_complementoFaixa(ucs, f), () => {});
+    inp.readOnly = true;
+    const c = _campo("Complemento das unidades", inp);
+    c.setAttribute("data-noopt", "");
+    return c;
+  }
+  const u = ucs[f.ini];
+  const inp = _inp(
+    u.complemento,
+    (v) => {
+      u.complemento = v;
+      const end = corpo.querySelector(".uc-head-endereco");
+      if (end) end.textContent = enderecoObraTxt(v);
+    },
+    { placeholder: "Ex: 101 ou Academia" },
+  );
+  const areaAntes = ehAreaComum(u.complemento);
+  inp.addEventListener("blur", () => {
+    if (ehAreaComum(u.complemento) !== areaAntes) aoSair();
+  });
+  const c = _campo("Complemento da unidade", inp);
+  c.setAttribute("data-noopt", "");
+  return c;
+}
+// Select com rótulo diferente do valor guardado: pares [valor, rótulo].
+function _selectRotulos(pares, valor, onChange) {
+  const s = document.createElement("select");
+  s.innerHTML = pares
+    .map(([v, l]) => `<option value="${v}">${l}</option>`)
+    .join("");
+  s.value = valor || pares[0][0];
+  s.addEventListener("change", () => onChange(s.value));
+  return s;
+}
+// Identificador próprio de cada unidade de uma faixa (nº de instalação, nº
+// predial): o resto da faixa é preenchido uma vez, mas este campo é um por
+// UC — uma linha "Rótulo — complemento" por unidade, na largura toda.
+function _mkListaPorUnidade(rotulo, ucs, f, mkInput) {
+  const box = document.createElement("div");
+  box.className = "col-span-2 faixa-por-unidade";
+  const grid = document.createElement("div");
+  grid.className = "grid grid-2";
+  for (let j = f.ini; j <= f.fim; j++) {
+    const u = ucs[j];
+    const c = _campo(`${rotulo} — ${u.complemento || `UC ${j + 1}`}`, mkInput(u));
+    c.setAttribute("data-noopt", "");
+    grid.appendChild(c);
+  }
+  box.appendChild(grid);
+  return box;
+}
+// Rodapé das unidades (torres e coletivo): KPIs de carga e demanda totais à
+// esquerda; à direita o disjuntor adequado (valor + "Mais opções" quando há
+// alternativas) ou "Disjuntor geral da torre / -" enquanto não há o que
+// calcular. `disj` nulo = disjuntor geral dispensado (card oculto).
+// disj = { opcoes, valor, aoEscolher, erroHtml }.
+function _mkRodapeUnidades(cargaKw, demandaKva, disj) {
+  const wrap = document.createElement("div");
+  wrap.className = "resultado-cargas resultado-unidades";
+  const kpis = document.createElement("div");
+  kpis.className = "resultado-kpis";
+  const val = (v, un) => (v > 0 ? `${fmt2(v)} ${un}` : "-");
+  kpis.append(
+    _mkKpiCard(
+      "Carga total das unidades da torre",
+      val(cargaKw, "kW"),
+      "A carga total é a soma da carga estimada para todos os apartamentos mais a carga necessária para as áreas de uso comum (como elevadores e iluminação externa).",
+    ),
+    _mkKpiCard(
+      "Demanda total das unidades da torre",
+      val(demandaKva, "kVA"),
+      "O cálculo da demanda total da torre é feito cruzando o tamanho médio das moradias com o número total de unidades.",
+    ),
+  );
+  wrap.appendChild(kpis);
+  if (!disj) return wrap;
+  const card = document.createElement("div");
+  card.className =
+    "resultado-card resultado-disjuntor" +
+    (disj.erroHtml ? " resultado-card--error" : "");
+  const atual = disj.valor || "";
+  card.innerHTML = atual
+    ? `<div class="resultado-card-label">Disjuntor adequado calculado para este imóvel</div>` +
+      `<div class="resultado-card-valor">${atual}</div>`
+    : `<div class="resultado-card-label">Disjuntor geral da torre</div>` +
+      `<div class="resultado-card-valor">-</div>`;
+  if (disj.opcoes.length > 1) {
+    const mais = document.createElement("button");
+    mais.type = "button";
+    mais.className = "perfil-calc-mais";
+    mais.textContent = "Mais opções";
+    mais.addEventListener("click", () =>
+      abrirModalDisjuntoresBT(disj.opcoes, atual, disj.aoEscolher),
+    );
+    card.appendChild(mais);
+  }
+  if (disj.erroHtml) card.insertAdjacentHTML("beforeend", disj.erroHtml);
+  wrap.appendChild(card);
+  return wrap;
+}
+// Coletivo — "Dados das unidades": uma faixa de unidades por acordeão (ver
+// _faixasUnidades); os campos editam a 1ª UC da faixa e _espelharColetivo
+// copia para as demais. Nº de instalação (alteração/caixa existente) e nº
+// predial (híbrido ND 5.1) continuam um por unidade.
+const SOLICITACOES_UC_COLETIVO = [
+  ["Conexão Nova", "Ligação nova"],
+  ["Alteração de Carga", "Alteração de carga"],
+  ["Caixa Existente sem Alteração", "Caixa existente sem alteração"],
+];
 function renderUcsColetivo() {
   const box = $("#ucsColetivoBox");
   if (!box) return;
   sincronizarUcBlocos();
+  _espelharColetivo();
   renderHibridoAlertas();
   const hibrido = hibridoF();
   const modoCalc = modoCalculadoraF();
+  const ucs = state.ucBlocos;
   box.innerHTML = "";
-  state.ucBlocos.forEach((u, ui) => {
-    const aberta = _ucAberta[ui] === true;
-    const bloco = document.createElement("div");
-    bloco.className = "uc-colapsavel" + (aberta ? " is-open" : "");
-    const head = document.createElement("button");
-    head.type = "button";
-    head.className = "uc-colapsavel-head";
-    head.setAttribute("aria-expanded", aberta ? "true" : "false");
-    head.innerHTML =
-      `<span class="uc-head-info"><span class="uc-colapsavel-titulo">Unidade consumidora ` +
-      `<span class="carga-acc-badge">${ui + 1} de ${state.ucBlocos.length}</span></span></span>` +
-      `<span class="carga-acc-chevron uc-colapsavel-chevron" aria-hidden="true"></span>`;
-    head.addEventListener("click", () => {
-      btToggleExclusivo(_ucAberta, ui, !aberta);
-      renderUcsColetivo();
-    });
-    bloco.appendChild(head);
-    if (aberta) {
-      const corpo = document.createElement("div");
-      corpo.className = "uc-colapsavel-corpo";
-      const endereco = _blocoEndereco(u.complemento);
-      corpo.appendChild(endereco);
-      const grid = document.createElement("div");
-      grid.className = "grid grid-2";
-      if (modoCalc && !ucSemAlteracao(u)) grid.style.marginBottom = "24px";
-      // Norma de atendimento (só híbrido)
-      if (hibrido) {
-        grid.appendChild(
-          _campo(
-            "Norma de atendimento",
-            _selectDe(["ND 5.1", "ND 5.2"], "ND " + u.nd, (v) => {
-              u.nd = v.replace("ND ", "");
-              renderUcsColetivo();
-            }),
-            "field--float",
-          ),
-        );
-      }
-      // Nº Predial: só aparece no híbrido ND 5.1, onde validacaoHibridoF()
-      // exige um número distinto por UC. Fora daí o predial é o da obra
-      // (obra.num) e o campo não é editável — por isso não é exibido.
-      if (hibrido && u.nd === "5.1") {
-        const f = _campo(
-          "Nº Predial",
-          _inp(u.nPredial, (v) => (u.nPredial = v)),
-        );
-        f.setAttribute("data-noopt", "");
-        const hint = document.createElement("span");
-        hint.className = "field-hint";
-        hint.textContent = "Distinto entre as UCs";
-        f.appendChild(hint);
-        grid.appendChild(f);
-      }
-      // Complemento (obrigatório com 2+ UCs — visual; não trava o avanço)
-      {
-        const f = _campo(
-          "Complemento da unidade",
-          _inp(
-            u.complemento,
-            (v) => {
-              u.complemento = v;
-              endereco.querySelector(".uc-head-endereco").textContent =
-                enderecoObraTxt(v);
-            },
-            { placeholder: "Ex: 101" },
-          ),
-        );
-        if (state.ucBlocos.length > 1) f.setAttribute("data-noopt", "");
-        grid.appendChild(f);
-      }
-      // Solicitação (estrutural: campos aparecem/somem)
-      {
-        const f = _campo(
-          "Tipo de solicitação",
-          _selectDe(
-            [
-              "Conexão Nova",
-              "Alteração de Carga",
-              "Caixa Existente sem Alteração",
-            ],
-            u.solicitacao,
-            (v) => {
-              u.solicitacao = v;
-              renderUcsColetivo();
-            },
-          ),
-          "field--float",
-        );
-        f.setAttribute("data-noopt", "");
-        grid.appendChild(f);
-      }
-      // Atividade principal (estrutural: Ramo × Área)
-      {
-        const f = _campo(
-          "Atividade principal",
-          _selectDe(
-            ["Residencial", "Comercial", "Industrial", "Rural"],
-            u.atividade,
-            (v) => {
-              u.atividade = v;
-              aplicarPresetResidencial();
-              renderUcsColetivo();
-            },
-            true,
-          ),
-          "field--float",
-        );
-        f.setAttribute("data-noopt", "");
-        grid.appendChild(f);
-      }
-      if (u.atividade !== "Residencial") {
-        const f = _campo(
-          "Ramo de atividade",
-          _inpRamo(u.ramo, (v) => (u.ramo = v)),
-        );
-        f.setAttribute("data-noopt", "");
-        grid.appendChild(f);
-      } else {
-        const f = _campo(
-          "Área privativa (m²)",
-          _inp(
-            u.area,
-            (v) => {
-              u.area = v;
-              // A área não muda o método (só o valor A do ND-5.2) —
-              // atualiza apenas os calculados, sem re-render (mantém o foco).
-              atualizarCargasColetivo();
-            },
-            {
-              type: "number",
-              placeholder: "Ex: 65",
-            },
-          ),
-        );
-        f.setAttribute("data-noopt", "");
-        grid.appendChild(f);
-      }
-      if (u.solicitacao !== "Conexão Nova") {
-        // Um só campo para o número que identifica a UC existente (instalação,
-        // unidade consumidora ou medidor) — antes havia um campo "Unidade
-        // Consumidora" separado duplicando esta informação.
-        const f = _campo(
-          "Instalação / Unidade Consumidora / Medidor",
-          _inpInstalacao(u.instalacao, (v) => (u.instalacao = v)),
-        );
-        f.setAttribute("data-noopt", "");
-        grid.appendChild(f);
-      }
-      const semAlt = ucSemAlteracao(u);
-      // Carga prevista (kW) — substitui a antiga tabela de previsão de carga;
-      // aparece no método 5.2 quando o agrupamento tem mais de 3 UCs.
-      if (!modoCalc && state.ucBlocos.length > 3 && !semAlt) {
-        const f = _campo(
-          "Carga prevista da unidade (kW)",
-          _inp(
-            u.cargaPrevista,
-            (v) => {
-              u.cargaPrevista = v;
-              atualizarCargasColetivo();
-            },
-            { type: "number", placeholder: "0,0" },
-          ),
-        );
-        f.setAttribute("data-noopt", "");
-        grid.appendChild(f);
-      }
-      // Disjuntor da UC (mesma regra do multi-torres — ver _mkUnidadeCard):
-      //  • Método ND-5.2 (4+ UCs): escolha manual na lista DISJ_COL, já que
-      //    não há cargas detalhadas para calcular.
-      //  • Modo calculadora (até 3 UCs): calculado a partir das cargas
-      //    declaradas, igual ao BT individual — radio com a lista adequada
-      //    (cargas._disjuntores), renderizado abaixo das cargas (disjBox).
-      if (!modoCalc || semAlt) {
-        grid.appendChild(
-          _campo(
-            "Disjuntor da unidade",
-            _selectDe(
-              DISJ_COL.map((d) => d.fx),
-              u.disjPara,
-              (v) => {
-                u.disjPara = v;
-                // O preset de carga prevista depende do disjuntor escolhido —
-                // re-renderiza para o campo refletir o novo valor.
-                aplicarPresetResidencial();
-                renderUcsColetivo();
-                atualizarCargasColetivo();
-              },
-              true,
-            ),
-            "field--float",
-          ),
-        );
-      }
-      corpo.appendChild(grid);
-      // ND-5.2 não calcula → a UC detalha as cargas como no BT individual
-      // (mesma ilha montarCargasBT; demanda/carga da UC saem do cálculo). O
-      // disjuntor da UC também é calculado pelas cargas (disjBox abaixo).
-      if (modoCalc && !semAlt) {
-        const divisor = document.createElement("div");
-        divisor.className = "divider";
-        const titulo = document.createElement("span");
-        titulo.className = "subbox-title";
-        titulo.textContent = "Cargas da unidade";
-        divisor.appendChild(titulo);
-        corpo.appendChild(divisor);
-        const cargasBox = document.createElement("div");
-        corpo.appendChild(cargasBox);
-        const disjBox = document.createElement("div");
-        corpo.appendChild(disjBox);
-        // atualizarCargasColetivo() já reajusta o disjuntor geral.
-        montarCargasBT(cargasBox, u, ui, () => {
-          renderDisjUnidadeCalc(disjBox, u, atualizarCargasColetivo);
-          atualizarCargasColetivo();
-        });
-        renderDisjUnidadeCalc(disjBox, u, atualizarCargasColetivo);
-      }
-      // Replicar UC 1 para as demais — dentro da própria UC 1.
-      if (ui === 0 && state.ucBlocos.length > 1) {
-        const row = document.createElement("div");
-        row.className = "acao-central";
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "btn btn-ghost btn-outlined-acao";
-        btn.textContent = "Replicar dados para todas unidades";
-        btn.addEventListener("click", () => replicarUC1Coletivo());
-        row.appendChild(btn);
-        corpo.appendChild(row);
-      }
-      bloco.appendChild(corpo);
-    }
-    box.appendChild(bloco);
+  _faixasColetivo().forEach((f, fi) => {
+    const aberta = _ucAberta[fi] === true;
+    box.appendChild(
+      _mkFaixaCard({
+        ucs,
+        f,
+        aberta,
+        eyebrow: "",
+        aoAlternar: () => {
+          btToggleExclusivo(_ucAberta, fi, !aberta);
+          renderUcsColetivo();
+        },
+        montarCorpo: (corpo) => _corpoFaixaColetivo(corpo, ucs, f, hibrido, modoCalc),
+      }),
+    );
   });
   if (window.CemigMarcadores) {
     CemigMarcadores.aplicar(box);
     CemigMarcadores.atualizarAvancar();
+  }
+}
+function _corpoFaixaColetivo(corpo, ucs, f, hibrido, modoCalc) {
+  const u = ucs[f.ini];
+  const varias = f.ini !== f.fim;
+  // Mudanças estruturais (campos aparecem/somem) espelham e re-renderizam.
+  const refazer = () => {
+    _espelharColetivo();
+    renderUcsColetivo();
+    atualizarCargasColetivo();
+  };
+  const grid = document.createElement("div");
+  grid.className = "grid grid-2";
+  if (modoCalc && !ucSemAlteracao(u)) grid.style.marginBottom = "24px";
+  grid.appendChild(_campoComplementoFaixa(ucs, f, corpo, refazer));
+  {
+    const fs = _campo(
+      "Tipo de solicitação",
+      _selectRotulos(SOLICITACOES_UC_COLETIVO, u.solicitacao, (v) => {
+        u.solicitacao = v;
+        refazer();
+      }),
+      "field--float",
+    );
+    fs.setAttribute("data-noopt", "");
+    grid.appendChild(fs);
+  }
+  // Norma de atendimento (só híbrido)
+  if (hibrido)
+    grid.appendChild(
+      _campo(
+        "Norma de atendimento",
+        _selectDe(["ND 5.1", "ND 5.2"], "ND " + u.nd, (v) => {
+          u.nd = v.replace("ND ", "");
+          refazer();
+        }),
+        "field--float",
+      ),
+    );
+  {
+    const fa = _campo(
+      "Tipo de propriedade",
+      _selectDe(
+        ["Residencial", "Comercial", "Industrial", "Rural"],
+        u.atividade,
+        (v) => {
+          u.atividade = v;
+          aplicarPresetResidencial();
+          refazer();
+        },
+        true,
+      ),
+      "field--float",
+    );
+    fa.setAttribute("data-noopt", "");
+    grid.appendChild(fa);
+  }
+  if (u.atividade !== "Residencial") {
+    const fr = _campo(
+      "Ramo de atividade",
+      _inpRamo(u.ramo, (v) => {
+        u.ramo = v;
+        _espelharColetivo();
+      }),
+    );
+    fr.setAttribute("data-noopt", "");
+    grid.appendChild(fr);
+  } else {
+    const fr = _campo(
+      "Área privativa (m²)",
+      _inp(
+        u.area,
+        (v) => {
+          u.area = v;
+          // A área não muda o método (só o valor A do ND-5.2) — atualiza
+          // apenas os calculados, sem re-render (mantém o foco).
+          _espelharColetivo();
+          atualizarCargasColetivo();
+        },
+        { type: "number", placeholder: "Ex: 65" },
+      ),
+    );
+    fr.setAttribute("data-noopt", "");
+    grid.appendChild(fr);
+  }
+  const semAlt = ucSemAlteracao(u);
+  // Carga prevista (kW) — método 5.2 quando o agrupamento tem mais de 3 UCs.
+  if (!modoCalc && ucs.length > 3 && !semAlt) {
+    const fc = _campo(
+      "Carga prevista da unidade (kW)",
+      _inp(
+        u.cargaPrevista,
+        (v) => {
+          u.cargaPrevista = v;
+          _espelharColetivo();
+          atualizarCargasColetivo();
+        },
+        { type: "number", placeholder: "0,0" },
+      ),
+    );
+    fc.setAttribute("data-noopt", "");
+    grid.appendChild(fc);
+  }
+  // Disjuntor da UC: escolha manual no método 5.2 (ou sem alteração); no modo
+  // calculadora vem das cargas declaradas (disjBox abaixo).
+  if (!modoCalc || semAlt)
+    grid.appendChild(
+      _campo(
+        "Disjuntor da unidade",
+        _selectDe(
+          DISJ_COL.map((d) => d.fx),
+          u.disjPara,
+          (v) => {
+            u.disjPara = v;
+            // O preset de carga prevista depende do disjuntor escolhido.
+            aplicarPresetResidencial();
+            refazer();
+          },
+          true,
+        ),
+        "field--float",
+      ),
+    );
+  // Identificadores por unidade: nº de instalação fora da ligação nova e nº
+  // predial no híbrido ND 5.1 (validacaoHibridoF exige um distinto por UC).
+  const comInstalacao = u.solicitacao !== "Conexão Nova";
+  const comPredial = hibrido && u.nd === "5.1";
+  const campoInst = (x) => _inpInstalacao(x.instalacao, (v) => (x.instalacao = v));
+  const campoPredial = (x) => _inp(x.nPredial, (v) => (x.nPredial = v));
+  if (!varias) {
+    if (comPredial) {
+      const fp = _campo("Nº Predial", campoPredial(u));
+      fp.setAttribute("data-noopt", "");
+      grid.appendChild(fp);
+    }
+    if (comInstalacao) {
+      const fi2 = _campo("Instalação / Unidade Consumidora / Medidor", campoInst(u));
+      fi2.setAttribute("data-noopt", "");
+      grid.appendChild(fi2);
+    }
+  } else {
+    if (comPredial)
+      grid.appendChild(_mkListaPorUnidade("Nº Predial", ucs, f, campoPredial));
+    if (comInstalacao)
+      grid.appendChild(
+        _mkListaPorUnidade("Instalação / UC / Medidor", ucs, f, campoInst),
+      );
+  }
+  corpo.appendChild(grid);
+  // Modo calculadora: a faixa detalha as cargas como no BT individual (mesma
+  // ilha montarCargasBT); o disjuntor da UC sai das cargas (disjBox).
+  if (modoCalc && !semAlt) {
+    const divisor = document.createElement("div");
+    divisor.className = "divider";
+    const titulo = document.createElement("span");
+    titulo.className = "subbox-title";
+    titulo.textContent = varias ? "Cargas de cada unidade" : "Cargas da unidade";
+    divisor.appendChild(titulo);
+    corpo.appendChild(divisor);
+    const cargasBox = document.createElement("div");
+    corpo.appendChild(cargasBox);
+    const disjBox = document.createElement("div");
+    corpo.appendChild(disjBox);
+    const aoMudar = () => {
+      _espelharColetivo();
+      atualizarCargasColetivo();
+    };
+    montarCargasBT(cargasBox, u, f.ini, () => {
+      renderDisjUnidadeCalc(disjBox, u, aoMudar);
+      aoMudar();
+    });
+    renderDisjUnidadeCalc(disjBox, u, aoMudar);
   }
 }
 
@@ -1263,6 +1253,7 @@ function renderCargasColetivo() {
 // não é mais exibido em aviso próprio — a demanda calculada já aparece no KPI
 // do rodapé desta etapa.
 function atualizarCargasColetivo() {
+  _espelharColetivo();
   // Demanda geral não residencial: só no método 5.2 (quando o ND-5.2 calcula
   // a parte residencial); no modo calculadora as UCs não residenciais também
   // detalham as próprias cargas.
@@ -1337,71 +1328,28 @@ function renderDisjGeralColetivo() {
   geralBox.innerHTML = "";
   if (!mostrar) return;
 
-  const wrap = document.createElement("div");
-  wrap.className = "resultado-cargas divider";
-  const kpis = document.createElement("div");
-  kpis.className = "resultado-kpis";
-  kpis.append(
-    _mkKpiCard(
-      "Total Carga Instalada",
-      `${fmt2(prevTotalKwF())} kW`,
-      "Soma da carga prevista de todas as unidades consumidoras do agrupamento.",
-    ),
-    _mkKpiCard(
-      "Demanda do atendimento",
-      `${fmt2(demandaTotalGeralF())} kVA`,
-      "Demanda total do agrupamento (parte residencial pelo ND-5.2 mais a demanda não residencial, ou a soma das demandas calculadas pelas UCs). É ela que dimensiona o disjuntor geral do agrupamento.",
-    ),
-  );
-  wrap.appendChild(kpis);
-
-  if (!disjGeralColetivoObrigatorio()) {
-    // Igual ao multi-torres (renderUnidadesResultado): sem bipolar > 63 A e com
-    // no máximo uma UC tripolar, o agrupamento dispensa o disjuntor geral. O
-    // valor fica em branco e o card é apenas ocultado (sem aviso) — restam os
-    // KPIs, que passam a ocupar a largura toda (ver .resultado-cargas no CSS).
-    state.atend.disjuntorGeral = "";
-    geralBox.appendChild(wrap);
-    if (window.CemigMarcadores) CemigMarcadores.aplicar(geralBox);
-    return;
-  }
-  const invalido =
-    state.atend.disjuntorGeral && !opcoes.includes(state.atend.disjuntorGeral);
-  const card = document.createElement("div");
-  card.className =
-    "resultado-card resultado-disjuntor" + (invalido ? " resultado-card--error" : "");
-  card.innerHTML = `<div class="resultado-card-label">Disjuntor geral do agrupamento</div>`;
-  if (opcoes.length) {
-    const tg = document.createElement("div");
-    tg.className = "toggle-group";
-    opcoes.forEach((dj) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "toggle-btn" + (state.atend.disjuntorGeral === dj ? " on" : "");
-      btn.textContent = dj;
-      btn.addEventListener("click", () => {
-        state.atend.disjuntorGeral = dj;
+  // Agrupamento que dispensa o disjuntor geral (sem bipolar > 63 A e no máximo
+  // uma UC tripolar — mesma regra das torres): valor em branco e card oculto.
+  let disj = null;
+  if (disjGeralColetivoObrigatorio()) {
+    const invalido =
+      state.atend.disjuntorGeral &&
+      !opcoes.includes(state.atend.disjuntorGeral);
+    disj = {
+      opcoes,
+      valor: state.atend.disjuntorGeral || opcoes[0] || "",
+      aoEscolher: (v) => {
+        state.atend.disjuntorGeral = v;
         renderDisjGeralColetivo();
-      });
-      tg.appendChild(btn);
-    });
-    card.appendChild(tg);
-  } else {
-    const hint = document.createElement("div");
-    hint.className = "field-hint";
-    hint.textContent =
-      "Preencha os disjuntores e a previsão de carga das unidades para ver o disjuntor adequado.";
-    card.appendChild(hint);
-  }
-  if (invalido) {
-    const aviso = document.createElement("div");
-    aviso.className = "cmg-aviso cmg-aviso--error";
-    aviso.style.cssText = "margin-top:10px;margin-bottom:0";
-    aviso.innerHTML = `<div class="cmg-aviso-icon" aria-hidden="true"></div><p class="cmg-aviso-texto"><span>Esse disjuntor não atende à seletividade (faixa superior ao maior disjuntor das UCs, ${maior} A) e/ou à capacidade para a demanda total (${fmt2(dem)} kVA).</span></p></div>`;
-    card.appendChild(aviso);
-  }
-  wrap.appendChild(card);
-  geralBox.appendChild(wrap);
+      },
+      erroHtml: invalido
+        ? `<div class="cmg-aviso cmg-aviso--error" style="margin-top:10px;margin-bottom:0"><div class="cmg-aviso-icon" aria-hidden="true"></div><p class="cmg-aviso-texto"><span>Esse disjuntor não atende à seletividade (faixa superior ao maior disjuntor das UCs, ${maior} A) e/ou à capacidade para a demanda total (${fmt2(dem)} kVA).</span></p></div>`
+        : "",
+    };
+  } else state.atend.disjuntorGeral = "";
+  geralBox.appendChild(
+    _mkRodapeUnidades(prevTotalKwF(), demandaTotalGeralF(), disj),
+  );
   if (window.CemigMarcadores) CemigMarcadores.aplicar(geralBox);
 }
 
@@ -1419,6 +1367,7 @@ function onNBlocos(el) {
   renderBlocos();
 }
 function atualizarBlocosKpis() {
+  _espelharGrupos();
   const dem = demandaTotalGeralF();
   const kTot = $("#kpiTotalUcs");
   if (kTot) kTot.textContent = String(totalUcsEmpreendimentoF());
@@ -1446,16 +1395,15 @@ function enderecoObraTxt(complemento) {
 }
 // _mkKpiCard: ver shared/js/campos.js (cmgKpiCard).
 const _mkKpiCard = cmgKpiCard;
+// Endereço readonly no topo dos cards de torre/unidade: só o valor, em negrito
+// (sem o rótulo "Endereço" — spec das torres).
 function _blocoEndereco(complemento) {
   const box = document.createElement("div");
   box.className = "endereco-bloco";
-  const lbl = document.createElement("span");
-  lbl.className = "uc-head-endereco-label";
-  lbl.textContent = "Endereço";
   const val = document.createElement("span");
   val.className = "uc-head-endereco";
   val.textContent = enderecoObraTxt(complemento);
-  box.append(lbl, val);
+  box.appendChild(val);
   return box;
 }
 // Paginação (torres e unidades): « ‹ [n] de N › »
@@ -1498,73 +1446,45 @@ function _mkPaginacao(totalPaginas, atual, aoIr) {
   );
   return nav;
 }
-// Botão "Replicar dados para todas as torres", ao lado de "Quantidade de
-// torres". Fica SEMPRE visível (para o usuário saber que a ação existe) e
-// desabilitado enquanto não houver mais de uma torre para replicar — ou seja,
-// com a quantidade em branco/0/1. `disabled` já traz o estilo de .btn:disabled.
-function renderBotaoReplicarTorres(habilitado) {
-  const slot = $("#blocosReplicarAcao");
-  if (!slot) return;
-  slot.innerHTML = "";
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "btn btn-ghost btn-outlined-acao";
-  btn.textContent = "Replicar dados para todas as torres";
-  btn.disabled = !habilitado;
-  if (!habilitado)
-    btn.title = "Informe a quantidade de torres (2 ou mais) para replicar.";
-  btn.addEventListener("click", () => abrirGerenciadorReplicacao());
-  slot.appendChild(btn);
-}
 function renderBlocos() {
   const box = $("#blocosBox");
   if (!box) return;
   // Enquanto "Quantidade de torres" estiver em branco, não apresentar os cards
-  // das torres.
+  // das torres (nem texto de apoio — a orientação já está na descrição).
   const nBlocosVazio =
     String(state.atend.nBlocos == null ? "" : state.atend.nBlocos).trim() ===
     "";
   if (nBlocosVazio) {
-    // Sem quantidade informada não há cards de torre — e nenhum texto de apoio
-    // abaixo do campo (a orientação já está na descrição da etapa).
     box.innerHTML = "";
     const pagVazio = $("#blocosPag");
     if (pagVazio) pagVazio.innerHTML = "";
-    // Sem quantidade informada não há o que replicar: o botão continua visível,
-    // porém desabilitado.
-    renderBotaoReplicarTorres(false);
     atualizarBlocosKpis();
     if (window.CemigMarcadores) CemigMarcadores.atualizarAvancar();
     return;
   }
   sincronizarBlocos();
+  _espelharGrupos();
   autoSelecionarDisjTorres();
-  // Informada a quantidade, a Torre 1 já nasce ABERTA e as demais fechadas —
-  // o usuário começa a preencher sem um clique extra. Só na primeira montagem
-  // dos cards: depois disso quem manda é o clique no acordeão.
+  const grupos = _gruposTorres();
+  // Informada a quantidade, o 1º grupo já nasce ABERTO e os demais fechados —
+  // só na primeira montagem; depois quem manda é o clique no acordeão.
   if (!_torreAbertaInicial) {
     _torreAbertaInicial = true;
     btToggleExclusivo(_torreAberta, 0, true);
   }
-  const total = state.blocos.length;
-  const totalPag = Math.max(1, Math.ceil(total / ITENS_POR_PAGINA));
+  const totalPag = Math.max(1, Math.ceil(grupos.length / ITENS_POR_PAGINA));
   if (_torrePagina >= totalPag) _torrePagina = totalPag - 1;
   box.innerHTML = "";
   const ini = _torrePagina * ITENS_POR_PAGINA;
-  state.blocos.slice(ini, ini + ITENS_POR_PAGINA).forEach((b, k) => {
-    box.appendChild(_mkTorreCard(ini + k, total));
-  });
-  // Abre o gerenciador de replicações entre torres — as regras valem para o
-  // empreendimento inteiro, por isso o botão fica ao lado de "Quantidade de
-  // torres" (slot #blocosReplicarAcao), e não dentro de cada card. Só há o que
-  // replicar com 2+ torres; com 1 o botão aparece desabilitado.
-  renderBotaoReplicarTorres(total > 1);
+  grupos
+    .slice(ini, ini + ITENS_POR_PAGINA)
+    .forEach((g) => box.appendChild(_mkGrupoTorresCard(g)));
   const pag = $("#blocosPag");
   if (pag) {
     pag.innerHTML = "";
     pag.appendChild(
-      _mkPaginacao(totalPag, _torrePagina, (p) => {
-        _torrePagina = p;
+      _mkPaginacao(totalPag, _torrePagina, (pp) => {
+        _torrePagina = pp;
         renderBlocos();
       }),
     );
@@ -1606,801 +1526,33 @@ function _campoComAcao(labelTxt, controle, botao) {
 // não há pavimento válido). Overlay + diálogo montados no <body>, fechados por
 // Cancelar/X/Esc/clique no overlay.
 // ============================================================
-// ============================================================
-// Popup "Replicar dados" — gerenciador de replicações entre torres
-// O usuário monta uma ou mais regras "torre de origem → torres de destino"
-// (ex.: Torre 1 → Torres 2–8, Torre 9 → Torres 10–15) e todas são aplicadas
-// juntas ao confirmar. O modal tem duas telas na mesma caixa: a LISTA das
-// regras já configuradas e o FORMULÁRIO de adicionar/editar uma regra.
-// As regras ficam em state.replicacoes mesmo depois de aplicadas, para que o
-// usuário possa revisá-las ao reabrir. Overlay + diálogo montados no <body>,
-// fechados por Cancelar/X/Esc/clique no overlay.
-// ============================================================
-function abrirGerenciadorReplicacao() {
-  const total = state.blocos.length;
-  if (total < 2) return;
-  // Cópia de trabalho: Cancelar descarta tudo, Aplicar é que grava em state.
-  let regras = (state.replicacoes || []).map((r) => ({
-    origem: r.origem,
-    destinos: (r.destinos || []).slice(),
-  }));
-
-  const overlay = document.createElement("div");
-  overlay.className = "cmg-modal-overlay";
-
-  const dialog = document.createElement("div");
-  dialog.className = "cmg-modal cmg-modal-replic";
-  dialog.setAttribute("role", "dialog");
-  dialog.setAttribute("aria-modal", "true");
-  dialog.setAttribute("aria-labelledby", "cmg-modal-titulo");
-
-  const fechar = () => {
-    document.removeEventListener("keydown", onKey);
-    overlay.remove();
-  };
-  const onKey = (e) => {
-    if (e.key === "Escape") fechar();
-  };
-
-  const btnX = document.createElement("button");
-  btnX.type = "button";
-  btnX.className = "cmg-modal-fechar";
-  btnX.setAttribute("aria-label", "Fechar");
-  btnX.innerHTML =
-    '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
-  btnX.addEventListener("click", fechar);
-
-  const corpo = document.createElement("div");
-  corpo.className = "cmg-modal-conteudo";
-  const rodape = document.createElement("div");
-  rodape.className = "cmg-modal-rodape";
-
-  const nomeTorre = (i) => `Torre ${(state.blocos[i] || {}).nome || i + 1}`;
-
-  // Resumo dos destinos no campo fechado: "Torres 2 a 7" quando a seleção é uma
-  // faixa contínua, senão a lista ("Torres 2, 5 e 9"). Vazio → placeholder.
-  const resumoDestinos = (destinos) => {
-    const d = (destinos || []).slice().sort((a, b) => a - b);
-    if (!d.length) return "";
-    if (d.length === 1) return nomeTorre(d[0]);
-    const continua = d.every((v, k) => k === 0 || v === d[k - 1] + 1);
-    if (continua)
-      return `Torres ${d[0] + 1} a ${d[d.length - 1] + 1}`;
-    const nums = d.map((i) => i + 1);
-    return `Torres ${nums.slice(0, -1).join(", ")} e ${nums[nums.length - 1]}`;
-  };
-
-  // Torres que a linha `idx` pode oferecer como destino: exclui a própria
-  // origem e as que já são destino de OUTRA regra (cada torre pertence a uma
-  // única replicação, então o conflito é impossível por construção).
-  const destinosDisponiveis = (idx) => {
-    const r = regras[idx];
-    const ocupadas = new Set();
-    regras.forEach((o, k) => {
-      if (k !== idx) (o.destinos || []).forEach((d) => ocupadas.add(d));
-    });
-    const livres = [];
-    state.blocos.forEach((_, i) => {
-      if (i === r.origem) return;
-      if (ocupadas.has(i)) return;
-      livres.push(i);
-    });
-    return livres;
-  };
-
-  // Origens que a linha `idx` pode assumir: qualquer torre que não seja destino
-  // de outra regra (nem origem de outra), para não haver duas regras na mesma.
-  const origensDisponiveis = (idx) => {
-    const usadas = new Set();
-    regras.forEach((o, k) => {
-      if (k === idx) return;
-      usadas.add(o.origem);
-      (o.destinos || []).forEach((d) => usadas.add(d));
-    });
-    const livres = [];
-    state.blocos.forEach((_, i) => {
-      if (!usadas.has(i)) livres.push(i);
-    });
-    return livres;
-  };
-
-  // ---- Tela única: tabela com uma linha por replicação ----
-  const renderLista = () => {
-    corpo.innerHTML = "";
-    rodape.innerHTML = "";
-
-    const titulo = document.createElement("h2");
-    titulo.className = "cmg-modal-titulo";
-    titulo.id = "cmg-modal-titulo";
-    titulo.textContent = "Replicar dados para todas as torres";
-
-    const desc = document.createElement("p");
-    desc.className = "cmg-modal-desc";
-    desc.textContent =
-      "Esta ferramenta permite a replicação de dados entre as torres. Informe a torre de origem e selecione as torres de destino para colar as informações correspondentes. Caso o condomínio tenha mais de um conjunto de torres com dados distintos, adicione quantas replicações forem necessárias.";
-
-    // Tabela: cabeçalho + uma linha por regra + linha do "Adicionar replicação".
-    // Sem nenhuma regra os rótulos não têm o que rotular: no lugar do cabeçalho
-    // entra o mesmo aviso de lista vazia usado no gerenciador de unidades.
-    const tabela = document.createElement("div");
-    tabela.className = "cmg-replic-tabela";
-
-    if (regras.length) {
-      const cab = document.createElement("div");
-      cab.className = "cmg-replic-cab";
-      const cabOrigem = document.createElement("span");
-      cabOrigem.className = "cmg-replic-cab-rotulo";
-      cabOrigem.textContent = "Torre de origem";
-      const cabDest = document.createElement("span");
-      cabDest.className = "cmg-replic-cab-rotulo";
-      cabDest.textContent = "Torres de destino";
-      cab.append(cabOrigem, cabDest);
-      tabela.appendChild(cab);
-    } else {
-      const vazio = document.createElement("p");
-      vazio.className = "cmg-replic-vazio";
-      vazio.textContent = "Nenhuma replicação configurada.";
-      tabela.appendChild(vazio);
-    }
-
-    regras.forEach((r, idx) => {
-      const linha = document.createElement("div");
-      linha.className = "cmg-replic-linha";
-
-      // --- Célula 1: origem (select nativo) ---
-      const celOrigem = document.createElement("div");
-      celOrigem.className = "cmg-replic-cel cmg-replic-cel--origem";
-      const selOrigem = document.createElement("select");
-      selOrigem.className = "cmg-replic-select";
-      selOrigem.setAttribute("aria-label", "Torre de origem");
-      const opcoesOrigem = origensDisponiveis(idx);
-      if (!opcoesOrigem.includes(r.origem)) opcoesOrigem.push(r.origem);
-      opcoesOrigem
-        .sort((a, b) => a - b)
-        .forEach((i) => {
-          const o = document.createElement("option");
-          o.value = String(i);
-          o.textContent = nomeTorre(i);
-          selOrigem.appendChild(o);
-        });
-      selOrigem.value = String(r.origem);
-      selOrigem.addEventListener("change", () => {
-        r.origem = parseInt(selOrigem.value, 10) || 0;
-        // A nova origem não pode continuar como destino dela mesma.
-        r.destinos = (r.destinos || []).filter((d) => d !== r.origem);
-        renderLista();
-      });
-      celOrigem.appendChild(selOrigem);
-
-      // --- Célula 2: seta ---
-      const celSeta = document.createElement("div");
-      celSeta.className = "cmg-replic-cel cmg-replic-cel--seta";
-      celSeta.innerHTML =
-        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12h15m0 0l-6-6m6 6l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-
-      // --- Célula 3: destinos (multiselect com checkboxes) ---
-      const celDest = document.createElement("div");
-      celDest.className = "cmg-replic-cel cmg-replic-cel--destinos";
-      celDest.appendChild(mkMultiDestinos(idx, r));
-
-      // --- Célula 4: excluir ---
-      const celAcao = document.createElement("div");
-      celAcao.className = "cmg-replic-cel cmg-replic-cel--acao";
-      const btnDel = document.createElement("button");
-      btnDel.type = "button";
-      btnDel.className = "cmg-replic-excluir";
-      btnDel.setAttribute("aria-label", `Excluir replicação ${idx + 1}`);
-      btnDel.innerHTML =
-        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-      btnDel.addEventListener("click", () => {
-        regras.splice(idx, 1);
-        renderLista();
-      });
-      celAcao.appendChild(btnDel);
-
-      linha.append(celOrigem, celSeta, celDest, celAcao);
-      tabela.appendChild(linha);
-    });
-
-    // Linha final: adicionar replicação. Desabilita quando não há mais torre
-    // livre para servir de origem (todas já pertencem a alguma regra).
-    const addWrap = document.createElement("div");
-    addWrap.className = "cmg-replic-add-linha";
-    const btnAdd = document.createElement("button");
-    btnAdd.type = "button";
-    btnAdd.className = "btn btn-ghost btn-outlined-acao cmg-pav-adicionar";
-    btnAdd.innerHTML =
-      '<span class="cmg-pav-mais" aria-hidden="true">+</span> Adicionar replicação';
-    const livresParaNova = origensDisponiveis(-1);
-    btnAdd.disabled = livresParaNova.length < 2;
-    if (btnAdd.disabled)
-      btnAdd.title = "Não há torres livres suficientes para uma nova replicação.";
-    btnAdd.addEventListener("click", () => {
-      regras.push({ origem: livresParaNova[0], destinos: [] });
-      renderLista();
-    });
-    addWrap.appendChild(btnAdd);
-    tabela.appendChild(addWrap);
-
-    corpo.append(titulo, desc, tabela);
-
-    const btnCancelar = document.createElement("button");
-    btnCancelar.type = "button";
-    btnCancelar.className = "btn btn-ghost";
-    btnCancelar.textContent = "Cancelar";
-    btnCancelar.addEventListener("click", fechar);
-    const btnSalvar = document.createElement("button");
-    btnSalvar.type = "button";
-    btnSalvar.className = "btn btn-primary";
-    btnSalvar.textContent = "Salvar";
-    btnSalvar.addEventListener("click", () => {
-      // Regras sem destino são descartadas em silêncio (linha só começada).
-      const validas = regras.filter((r) => (r.destinos || []).length);
-      // Só avisa quando a replicação vai REALMENTE apagar algo: destino com
-      // campo preenchido e diferente da origem. Destino em branco é o caso
-      // comum e passa direto.
-      const conflitos = _conflitosReplicacao(validas);
-      if (conflitos.length) {
-        const lista = conflitos
-          .map((c) => `Torre ${c.torre + 1} (${c.campos.join(", ")})`)
-          .join("; ");
-        const ok = window.confirm(
-          `Estas torres já têm dados preenchidos que serão substituídos pelos da torre de origem: ${lista}.\n\nDeseja substituir?`,
-        );
-        if (!ok) return;
-        // Substituir é a decisão do usuário: destrava os campos para que a
-        // origem volte a mandar neles.
-        conflitos.forEach((c) => {
-          const d = state.blocos[c.torre];
-          if (d) d._travados = [];
-        });
-      }
-      state.replicacoes = validas;
-      aplicarReplicacoes(validas);
-      fechar();
-    });
-    rodape.append(btnCancelar, btnSalvar);
-  };
-
-  // Multiselect de destinos: campo fechado com o resumo + painel de checkboxes
-  // (Selecionar todas + uma por torre livre). Fecha ao clicar fora ou com Esc.
-  function mkMultiDestinos(idx, regra) {
-    const wrap = document.createElement("div");
-    wrap.className = "cmg-multi";
-
-    const campo = document.createElement("button");
-    campo.type = "button";
-    campo.className = "cmg-multi-campo";
-    campo.setAttribute("aria-haspopup", "true");
-    campo.setAttribute("aria-expanded", "false");
-    const texto = document.createElement("span");
-    texto.className = "cmg-multi-texto";
-    const pintarTexto = () => {
-      const resumo = resumoDestinos(regra.destinos);
-      texto.textContent = resumo || "Selecione as torres";
-      texto.classList.toggle("is-placeholder", !resumo);
-    };
-    pintarTexto();
-    const seta = document.createElement("span");
-    seta.className = "cmg-multi-seta";
-    seta.setAttribute("aria-hidden", "true");
-    seta.innerHTML =
-      '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-    campo.append(texto, seta);
-
-    const painel = document.createElement("div");
-    painel.className = "cmg-multi-painel";
-    painel.hidden = true;
-
-    const opcoes = destinosDisponiveis(idx);
-
-    const mkItem = (rotuloTxt, marcada, onToggle, classe) => {
-      const item = document.createElement("label");
-      item.className = "cmg-multi-item" + (classe ? " " + classe : "");
-      const chk = document.createElement("input");
-      chk.type = "checkbox";
-      chk.className = "cmg-multi-chk";
-      chk.checked = marcada;
-      chk.addEventListener("change", () => onToggle(chk.checked));
-      const txt = document.createElement("span");
-      txt.textContent = rotuloTxt;
-      item.append(chk, txt);
-      return item;
-    };
-
-    const repintar = () => {
-      painel.innerHTML = "";
-      const todas =
-        opcoes.length > 0 && opcoes.every((i) => regra.destinos.includes(i));
-      painel.appendChild(
-        mkItem(
-          "Selecionar todas",
-          todas,
-          (marcar) => {
-            regra.destinos = marcar ? opcoes.slice() : [];
-            repintar();
-            pintarTexto();
-          },
-          "cmg-multi-item--todas",
-        ),
-      );
-      const grade = document.createElement("div");
-      grade.className = "cmg-multi-grade";
-      opcoes.forEach((i) => {
-        grade.appendChild(
-          mkItem(nomeTorre(i), regra.destinos.includes(i), (marcar) => {
-            if (marcar) regra.destinos.push(i);
-            else regra.destinos = regra.destinos.filter((d) => d !== i);
-            repintar();
-            pintarTexto();
-          }),
-        );
-      });
-      painel.appendChild(grade);
-      if (!opcoes.length) {
-        const vazio = document.createElement("p");
-        vazio.className = "cmg-multi-vazio";
-        vazio.textContent = "Nenhuma torre disponível.";
-        painel.appendChild(vazio);
-      }
-    };
-    repintar();
-
-    const fecharPainel = () => {
-      painel.hidden = true;
-      campo.setAttribute("aria-expanded", "false");
-      wrap.classList.remove("is-aberto");
-    };
-    const foraClique = (e) => {
-      if (!wrap.contains(e.target)) fecharPainel();
-    };
-    campo.addEventListener("click", () => {
-      const abrir = painel.hidden;
-      // Só um painel aberto por vez dentro do modal.
-      dialog
-        .querySelectorAll(".cmg-multi.is-aberto")
-        .forEach((o) => o !== wrap && o.querySelector(".cmg-multi-campo").click());
-      painel.hidden = !abrir;
-      campo.setAttribute("aria-expanded", abrir ? "true" : "false");
-      wrap.classList.toggle("is-aberto", abrir);
-      if (abrir) document.addEventListener("mousedown", foraClique);
-      else document.removeEventListener("mousedown", foraClique);
-    });
-    wrap.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && !painel.hidden) {
-        e.stopPropagation();
-        fecharPainel();
-      }
-    });
-
-    wrap.append(campo, painel);
-    return wrap;
-  }
-
-  renderLista();
-  dialog.append(btnX, corpo, rodape);
-  overlay.appendChild(dialog);
-  overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) fechar();
-  });
-  document.addEventListener("keydown", onKey);
-  document.body.appendChild(overlay);
-}
-// ============================================================
-// Popup "Replicar dados para todas as torres" — gerenciador de replicações de UC
-// MESMA tela única do gerenciador de torres (abrirGerenciadorReplicacao): uma
-// tabela com uma linha por regra e a linha final "Adicionar replicação", tudo
-// aplicado junto no "Salvar". A diferença é a coluna extra "Unidade de origem"
-// — a regra parte de UMA unidade, não da torre inteira — e o que ela faz: a UC
-// modelo COMPLETA a própria torre de origem e ainda preenche todas as UCs das
-// torres de destino, de modo que o usuário preencha uma UC por padrão de torre
-// e nada mais.
-// ============================================================
-function abrirGerenciadorReplicacaoUC() {
-  const total = state.blocos.length;
-  if (!total) return;
-  // Cópia de trabalho: Cancelar descarta tudo, Aplicar é que grava em state.
-  let regras = (state.replicacoesUC || []).map((r) => ({
-    torreOrigem: r.torreOrigem,
-    ucOrigem: r.ucOrigem,
-    torresDestino: (r.torresDestino || []).slice(),
-  }));
-
-  const overlay = document.createElement("div");
-  overlay.className = "cmg-modal-overlay";
-
-  const dialog = document.createElement("div");
-  dialog.className = "cmg-modal cmg-modal-replic";
-  dialog.setAttribute("role", "dialog");
-  dialog.setAttribute("aria-modal", "true");
-  dialog.setAttribute("aria-labelledby", "cmg-modal-titulo");
-
-  const fechar = () => {
-    document.removeEventListener("keydown", onKey);
-    overlay.remove();
-  };
-  const onKey = (e) => {
-    if (e.key === "Escape") fechar();
-  };
-
-  const btnX = document.createElement("button");
-  btnX.type = "button";
-  btnX.className = "cmg-modal-fechar";
-  btnX.setAttribute("aria-label", "Fechar");
-  btnX.innerHTML =
-    '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
-  btnX.addEventListener("click", fechar);
-
-  const corpo = document.createElement("div");
-  corpo.className = "cmg-modal-conteudo";
-  const rodape = document.createElement("div");
-  rodape.className = "cmg-modal-rodape";
-
-  const nomeTorre = (i) => `Torre ${(state.blocos[i] || {}).nome || i + 1}`;
-  const ucsDa = (i) => (state.blocos[i] || {}).ucs || [];
-  const nomeUC = (bi, j) => {
-    const u = ucsDa(bi)[j];
-    return (u && u.identificacao) || `Unidade ${j + 1}`;
-  };
-
-  // Resumo dos destinos no campo fechado: "Torres 2 a 7" quando a seleção é uma
-  // faixa contínua, senão a lista ("Torres 2, 5 e 9"). Vazio → placeholder.
-  const resumoDestinos = (destinos) => {
-    const d = (destinos || []).slice().sort((a, b) => a - b);
-    if (!d.length) return "";
-    if (d.length === 1) return nomeTorre(d[0]);
-    const continua = d.every((v, k) => k === 0 || v === d[k - 1] + 1);
-    if (continua) return `Torres ${d[0] + 1} a ${d[d.length - 1] + 1}`;
-    const nums = d.map((i) => i + 1);
-    return `Torres ${nums.slice(0, -1).join(", ")} e ${nums[nums.length - 1]}`;
-  };
-
-  // Torres que a linha `idx` pode oferecer como destino: exclui apenas as que já
-  // são destino de OUTRA regra, para que cada torre seja preenchida por uma
-  // única replicação. A torre de ORIGEM continua na lista: a regra usa a UC
-  // modelo para completar as demais unidades da própria torre, então "Torre 1 →
-  // Torres 1 a 7" é uma seleção válida (e é o caso do spec).
-  const destinosDisponiveis = (idx) => {
-    const ocupadas = new Set();
-    regras.forEach((o, k) => {
-      if (k !== idx) (o.torresDestino || []).forEach((d) => ocupadas.add(d));
-    });
-    const livres = [];
-    state.blocos.forEach((_, i) => {
-      if (ocupadas.has(i)) return;
-      livres.push(i);
-    });
-    return livres;
-  };
-
-  // Torres que a linha `idx` pode assumir como origem: TODAS. Ao contrário do
-  // gerenciador de torres, a origem aqui não é consumida — a regra apenas LÊ uma
-  // UC modelo dela, então a mesma torre pode ser origem de várias regras (ex.:
-  // Torre 1 → Torres 1 a 7 e Torre 1 → Torres 8 a 14, dividindo um condomínio
-  // grande em faixas). Só os DESTINOS são exclusivos (ver destinosDisponiveis).
-  const origensDisponiveis = () => state.blocos.map((_, i) => i);
-
-  // ---- Tela única: tabela com uma linha por replicação ----
-  const renderLista = () => {
-    corpo.innerHTML = "";
-    rodape.innerHTML = "";
-
-    const titulo = document.createElement("h2");
-    titulo.className = "cmg-modal-titulo";
-    titulo.id = "cmg-modal-titulo";
-    titulo.textContent = "Replicar dados para todas as torres";
-
-    const desc = document.createElement("p");
-    desc.className = "cmg-modal-desc";
-    desc.textContent =
-      "Esta ferramenta permite a replicação de dados de uma unidade específica. Primeiro, indique a torre e a unidade de origem que contêm as informações já preenchidas. Em seguida, selecione as torres de destino que receberão esses mesmos dados.";
-
-    // Tabela: cabeçalho + uma linha por regra + linha do "Adicionar replicação".
-    // Sem nenhuma regra os rótulos não têm o que rotular: no lugar do cabeçalho
-    // entra o aviso de lista vazia.
-    const tabela = document.createElement("div");
-    tabela.className = "cmg-replic-tabela cmg-replic-tabela--uc";
-
-    if (regras.length) {
-      const cab = document.createElement("div");
-      cab.className = "cmg-replic-cab";
-      ["Torre de origem", "Unidade de origem", "Torres de destino"].forEach(
-        (txt) => {
-          const c = document.createElement("span");
-          c.className = "cmg-replic-cab-rotulo";
-          c.textContent = txt;
-          cab.appendChild(c);
-        },
-      );
-      tabela.appendChild(cab);
-    } else {
-      const vazio = document.createElement("p");
-      vazio.className = "cmg-replic-vazio";
-      vazio.textContent = "Nenhuma replicação configurada.";
-      tabela.appendChild(vazio);
-    }
-
-    regras.forEach((r, idx) => {
-      const linha = document.createElement("div");
-      linha.className = "cmg-replic-linha";
-
-      // --- Célula 1: torre de origem ---
-      const celTorre = document.createElement("div");
-      celTorre.className = "cmg-replic-cel cmg-replic-cel--origem";
-      const selTorre = document.createElement("select");
-      selTorre.className = "cmg-replic-select";
-      selTorre.setAttribute("aria-label", "Torre de origem");
-      origensDisponiveis().forEach((i) => {
-        const o = document.createElement("option");
-        o.value = String(i);
-        o.textContent = nomeTorre(i);
-        selTorre.appendChild(o);
-      });
-      selTorre.value = String(r.torreOrigem);
-      selTorre.addEventListener("change", () => {
-        r.torreOrigem = parseInt(selTorre.value, 10) || 0;
-        // A unidade escolhida pode não existir na torre nova (o nº de UCs varia
-        // entre torres). Os destinos ficam como estão — a própria origem pode
-        // ser destino dela mesma.
-        if (r.ucOrigem >= ucsDa(r.torreOrigem).length) r.ucOrigem = 0;
-        renderLista();
-      });
-      celTorre.appendChild(selTorre);
-
-      // --- Célula 2: unidade de origem (UCs da torre escolhida) ---
-      const celUC = document.createElement("div");
-      celUC.className = "cmg-replic-cel cmg-replic-cel--uc";
-      const selUC = document.createElement("select");
-      selUC.className = "cmg-replic-select";
-      selUC.setAttribute("aria-label", "Unidade de origem");
-      const ucs = ucsDa(r.torreOrigem);
-      ucs.forEach((_, j) => {
-        const o = document.createElement("option");
-        o.value = String(j);
-        o.textContent = nomeUC(r.torreOrigem, j);
-        selUC.appendChild(o);
-      });
-      selUC.value = String(r.ucOrigem);
-      selUC.disabled = !ucs.length;
-      selUC.addEventListener("change", () => {
-        r.ucOrigem = parseInt(selUC.value, 10) || 0;
-      });
-      celUC.appendChild(selUC);
-
-      // --- Célula 3: seta ---
-      const celSeta = document.createElement("div");
-      celSeta.className = "cmg-replic-cel cmg-replic-cel--seta";
-      celSeta.innerHTML =
-        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12h15m0 0l-6-6m6 6l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-
-      // --- Célula 4: torres de destino (multiselect com checkboxes) ---
-      const celDest = document.createElement("div");
-      celDest.className = "cmg-replic-cel cmg-replic-cel--destinos";
-      celDest.appendChild(mkMultiDestinos(idx, r));
-
-      // --- Célula 5: excluir ---
-      const celAcao = document.createElement("div");
-      celAcao.className = "cmg-replic-cel cmg-replic-cel--acao";
-      const btnDel = document.createElement("button");
-      btnDel.type = "button";
-      btnDel.className = "cmg-replic-excluir";
-      btnDel.setAttribute("aria-label", `Excluir replicação ${idx + 1}`);
-      btnDel.innerHTML =
-        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-      btnDel.addEventListener("click", () => {
-        regras.splice(idx, 1);
-        renderLista();
-      });
-      celAcao.appendChild(btnDel);
-
-      linha.append(celTorre, celUC, celSeta, celDest, celAcao);
-      tabela.appendChild(linha);
-    });
-
-    // Linha final: adicionar replicação. Como a origem não é exclusiva, o que
-    // esgota o modal é o DESTINO: desabilita só quando toda torre já é destino
-    // de alguma regra e uma nova linha não teria o que preencher.
-    const addWrap = document.createElement("div");
-    addWrap.className = "cmg-replic-add-linha";
-    const btnAdd = document.createElement("button");
-    btnAdd.type = "button";
-    btnAdd.className = "btn btn-ghost btn-outlined-acao cmg-pav-adicionar";
-    btnAdd.innerHTML =
-      '<span class="cmg-pav-mais" aria-hidden="true">+</span> Adicionar replicação';
-    const jaDestino = new Set();
-    regras.forEach((o) => (o.torresDestino || []).forEach((d) => jaDestino.add(d)));
-    btnAdd.disabled = jaDestino.size >= state.blocos.length;
-    if (btnAdd.disabled)
-      btnAdd.title = "Todas as torres já são destino de alguma replicação.";
-    btnAdd.addEventListener("click", () => {
-      regras.push({ torreOrigem: 0, ucOrigem: 0, torresDestino: [] });
-      renderLista();
-    });
-    addWrap.appendChild(btnAdd);
-    tabela.appendChild(addWrap);
-
-    corpo.append(titulo, desc, tabela);
-
-    const btnCancelar = document.createElement("button");
-    btnCancelar.type = "button";
-    btnCancelar.className = "btn btn-ghost";
-    btnCancelar.textContent = "Cancelar";
-    btnCancelar.addEventListener("click", fechar);
-    const btnSalvar = document.createElement("button");
-    btnSalvar.type = "button";
-    btnSalvar.className = "btn btn-primary";
-    btnSalvar.textContent = "Salvar";
-    btnSalvar.addEventListener("click", () => {
-      // Regras sem destino são descartadas em silêncio (linha só começada).
-      const validas = regras.filter((r) => (r.torresDestino || []).length);
-      state.replicacoesUC = validas;
-      aplicarReplicacoesUC(validas);
-      fechar();
-    });
-    rodape.append(btnCancelar, btnSalvar);
-  };
-
-  // Multiselect de destinos: campo fechado com o resumo + painel de checkboxes
-  // (Selecionar todas + uma por torre livre). Fecha ao clicar fora ou com Esc.
-  function mkMultiDestinos(idx, regra) {
-    const wrap = document.createElement("div");
-    wrap.className = "cmg-multi";
-
-    const campo = document.createElement("button");
-    campo.type = "button";
-    campo.className = "cmg-multi-campo";
-    campo.setAttribute("aria-haspopup", "true");
-    campo.setAttribute("aria-expanded", "false");
-    const texto = document.createElement("span");
-    texto.className = "cmg-multi-texto";
-    const pintarTexto = () => {
-      const resumo = resumoDestinos(regra.torresDestino);
-      texto.textContent = resumo || "Selecione as torres";
-      texto.classList.toggle("is-placeholder", !resumo);
-    };
-    pintarTexto();
-    const seta = document.createElement("span");
-    seta.className = "cmg-multi-seta";
-    seta.setAttribute("aria-hidden", "true");
-    seta.innerHTML =
-      '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-    campo.append(texto, seta);
-
-    const painel = document.createElement("div");
-    painel.className = "cmg-multi-painel";
-    painel.hidden = true;
-
-    const opcoes = destinosDisponiveis(idx);
-
-    const mkItem = (rotuloTxt, marcada, onToggle, classe) => {
-      const item = document.createElement("label");
-      item.className = "cmg-multi-item" + (classe ? " " + classe : "");
-      const chk = document.createElement("input");
-      chk.type = "checkbox";
-      chk.className = "cmg-multi-chk";
-      chk.checked = marcada;
-      chk.addEventListener("change", () => onToggle(chk.checked));
-      const txt = document.createElement("span");
-      txt.textContent = rotuloTxt;
-      item.append(chk, txt);
-      return item;
-    };
-
-    const repintar = () => {
-      painel.innerHTML = "";
-      const todas =
-        opcoes.length > 0 &&
-        opcoes.every((i) => (regra.torresDestino || []).includes(i));
-      painel.appendChild(
-        mkItem(
-          "Selecionar todas",
-          todas,
-          (marcar) => {
-            regra.torresDestino = marcar ? opcoes.slice() : [];
-            repintar();
-            pintarTexto();
-          },
-          "cmg-multi-item--todas",
-        ),
-      );
-      const grade = document.createElement("div");
-      grade.className = "cmg-multi-grade";
-      opcoes.forEach((i) => {
-        grade.appendChild(
-          mkItem(nomeTorre(i), (regra.torresDestino || []).includes(i), (marcar) => {
-            if (marcar) regra.torresDestino.push(i);
-            else
-              regra.torresDestino = regra.torresDestino.filter((d) => d !== i);
-            repintar();
-            pintarTexto();
-          }),
-        );
-      });
-      painel.appendChild(grade);
-      if (!opcoes.length) {
-        const vazio = document.createElement("p");
-        vazio.className = "cmg-multi-vazio";
-        vazio.textContent = "Nenhuma torre disponível.";
-        painel.appendChild(vazio);
-      }
-    };
-    repintar();
-
-    const fecharPainel = () => {
-      painel.hidden = true;
-      campo.setAttribute("aria-expanded", "false");
-      wrap.classList.remove("is-aberto");
-    };
-    const foraClique = (e) => {
-      if (!wrap.contains(e.target)) fecharPainel();
-    };
-    campo.addEventListener("click", () => {
-      const abrir = painel.hidden;
-      // Só um painel aberto por vez dentro do modal.
-      dialog
-        .querySelectorAll(".cmg-multi.is-aberto")
-        .forEach(
-          (o) => o !== wrap && o.querySelector(".cmg-multi-campo").click(),
-        );
-      painel.hidden = !abrir;
-      campo.setAttribute("aria-expanded", abrir ? "true" : "false");
-      wrap.classList.toggle("is-aberto", abrir);
-      if (abrir) document.addEventListener("mousedown", foraClique);
-      else document.removeEventListener("mousedown", foraClique);
-    });
-    wrap.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && !painel.hidden) {
-        e.stopPropagation();
-        fecharPainel();
-      }
-    });
-
-    wrap.append(campo, painel);
-    return wrap;
-  }
-
-  renderLista();
-  dialog.append(btnX, corpo, rodape);
-  overlay.appendChild(dialog);
-  overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) fechar();
-  });
-  document.addEventListener("keydown", onKey);
-  document.body.appendChild(overlay);
-}
 // _preservandoFoco: ver shared/js/campos.js (cmgPreservandoFoco).
 const _preservandoFoco = cmgPreservandoFoco;
-// Card só-leitura de exibição (rótulo fixo em cima + valor embaixo). Card
-// estático (sem <input>), no visual da spec do Figma (.faixa-card): padding
-// 20px, borda neutra/200, radius 8px. field--plain sai do rótulo flutuante e
-// data-noopt tira a marca de opcional.
-function _campoLeitura(labelTxt, valor) {
-  const f = document.createElement("div");
-  f.className = "field field--plain faixa-card";
-  f.setAttribute("data-noopt", "");
-  const lbl = document.createElement("span");
-  lbl.className = "faixa-card-label";
-  lbl.textContent = labelTxt;
-  const val = document.createElement("span");
-  val.className = "faixa-card-valor";
-  val.textContent = valor;
-  f.append(lbl, val);
-  return f;
-}
-// Composição por pavimento (só-leitura): uma linha por faixa customizada, cada
-// uma com Andar inicial | Andar final | Unidades por andar. Ocupa a largura
-// toda do grid do card (col-span-2) e organiza os três campos em .grid-3.
+// Composição por pavimento (só-leitura): UMA caixa branca com uma linha por
+// faixa customizada — Andar inicial | Andar final | Unidades por andar —
+// separadas por divisória (spec das torres). Ocupa a largura toda do grid.
 function _faixasComposicao(faixas) {
   const box = document.createElement("div");
   box.className = "col-span-2 faixas-composicao";
   faixas.forEach((f) => {
     const linha = document.createElement("div");
-    linha.className = "grid grid-3";
-    linha.append(
-      _campoLeitura("Andar inicial", String(f.ini)),
-      _campoLeitura("Andar final", String(f.fim)),
-      _campoLeitura("Unidades por andar", String(f.unidades)),
-    );
+    linha.className = "faixas-composicao-linha";
+    [
+      ["Andar inicial", f.ini],
+      ["Andar final", f.fim],
+      ["Unidades por andar", f.unidades],
+    ].forEach(([rotulo, valor]) => {
+      const cel = document.createElement("div");
+      cel.className = "faixas-composicao-cel";
+      const l = document.createElement("span");
+      l.className = "faixa-card-label";
+      l.textContent = rotulo;
+      const v = document.createElement("span");
+      v.className = "faixa-card-valor";
+      v.textContent = String(valor);
+      cel.append(l, v);
+      linha.appendChild(cel);
+    });
     box.appendChild(linha);
   });
   return box;
@@ -2408,11 +1560,14 @@ function _faixasComposicao(faixas) {
 // Campos do agrupamento compartilhados entre torre (condomínio) e coletivo. O
 // LAYOUT é o mesmo dos dois; a origem/destino de cada campo varia por fluxo e
 // vem no adaptador `cfg` (ver _cfgAgrupamentoTorre / _cfgAgrupamentoColetivo).
-// Ordem-alvo (imagem) — todo campo tem a largura de uma coluna do grid-2:
-//   Quantidade de unidades            (sozinha na linha no fluxo coletivo)
-//   Unidades por andar (+ Customizar) | Primeiro complemento (i)
-//   Demanda do condomínio             | Disjuntor do condomínio
-// A "Identificação da torre" (exclusiva do condomínio) é montada por quem chama.
+// Ordem do spec (todo campo com a largura de uma coluna do grid-2):
+//   até 1 unidade:  Quantidade | Demanda do condomínio
+//                   Disjuntor do condomínio
+//   2+ unidades:    Quantidade | Unidades por andar (+ Customizar)
+//                   [composição por pavimento, se customizada]
+//                   Primeiro complemento (i) | Demanda do condomínio
+//                   Disjuntor do condomínio
+// O complemento da torre de uma unidade é digitado na etapa seguinte.
 function _mkAgrupamentoCampos(grid, cfg) {
   {
     const inpQtd = _inp(cfg.qtd(), (v) => cfg.setQtd(v), {
@@ -2424,36 +1579,24 @@ function _mkAgrupamentoCampos(grid, cfg) {
     inpQtd.setAttribute("data-foco", cfg.focoQtdId || "qtd-agrupamento");
     const f = _campo(cfg.qtdLabel || "Quantidade de unidades na torre", inpQtd);
     f.setAttribute("data-noopt", "");
-    // Sem "Identificação da torre" ao lado (fluxo coletivo), a Quantidade fica
-    // sozinha na linha — com a largura de uma coluna, sem esticar — para os
-    // pares abaixo (Andar|Complemento, Demanda|Disjuntor) ficarem alinhados.
-    if (cfg.qtdSozinhaNaLinha) f.classList.add("row-solo");
     grid.appendChild(f);
   }
-  // Torre com UMA unidade: não há sequência de complementos a gerar, mas o
-  // usuário ainda precisa dizer QUE tipo de complemento é aquela unidade
-  // (Apartamento, Casa, Loja, Portaria…) — o valor vira o complemento da UC.
-  if (cfg.ucsLen() === 1) {
-    const sel = _selectDe(
-      TIPOS_COMPLEMENTO,
-      cfg.tipoCompl ? cfg.tipoCompl() : "",
-      (v) => {
-        if (cfg.setTipoCompl) cfg.setTipoCompl(v);
-      },
-      true,
+  const mkDemanda = () =>
+    _campo(
+      "Demanda do condomínio (kVA)",
+      _inp(cfg.demanda(), (v) => cfg.setDemanda(v), {
+        type: "number",
+        placeholder: "0",
+      }),
     );
-    const f = _campo("Tipo de complemento", sel, "field--float");
-    f.setAttribute("data-noopt", "");
-    grid.appendChild(f);
-  }
   // Geração de complementos das unidades: ao preencher o primeiro complemento
   // (e, opcionalmente, unidades por andar) os complementos das UCs são
   // preenchidos automaticamente (ver cfg.gerarComplementos).
   if (cfg.ucsLen() > 1) {
     const maxAptos = cfg.ucsLen();
     // Faixas customizadas (popup "Composição por pavimento"): quando existem, o
-    // campo "por andar" vira só-leitura "Customizado" e a composição aparece em
-    // cards abaixo (uma linha Andar inicial/final/Unidades por faixa).
+    // campo "por andar" vira só-leitura "Customizado" e a composição aparece
+    // logo abaixo (uma linha Andar inicial/final/Unidades por faixa).
     const faixasCustom = normalizarFaixasPavimento(cfg.faixas());
     const custom = faixasCustom.length > 0;
     const inpAndar = _inp(
@@ -2475,7 +1618,7 @@ function _mkAgrupamentoCampos(grid, cfg) {
       custom ? { type: "text" } : { type: "number", placeholder: "Ex: 4" },
     );
     if (custom) {
-      // Só-leitura: o valor real está nas faixas (cards abaixo); editar é pelo
+      // Só-leitura: o valor real está nas faixas (abaixo); editar é pelo
       // botão "Customizar". Um clique no campo também abre o popup.
       inpAndar.readOnly = true;
     } else {
@@ -2501,7 +1644,7 @@ function _mkAgrupamentoCampos(grid, cfg) {
             cfg.setAndar(String(faixas[0].unidades));
           }
           cfg.gerarComplementos();
-          // Re-render para (des)montar os cards das faixas e alternar o campo
+          // Re-render para (des)montar a composição e alternar o campo
           // "por andar" entre editável e "Customizado".
           if (cfg.rerender) cfg.rerender();
         },
@@ -2510,14 +1653,13 @@ function _mkAgrupamentoCampos(grid, cfg) {
     };
     btnCustom.addEventListener("click", abrirCustom);
     if (custom) inpAndar.addEventListener("click", abrirCustom);
-    const fAndar = _campoComAcao(
-      "Quantidade de unidades por andar",
-      inpAndar,
-      btnCustom,
+    grid.appendChild(
+      _campoComAcao("Quantidade de unidades por andar", inpAndar, btnCustom),
     );
-    grid.appendChild(fAndar);
+    // Composição por pavimento (só-leitura), na largura toda do grid.
+    if (custom) grid.appendChild(_faixasComposicao(faixasCustom));
     const fCompl = _campo(
-      'Primeiro complemento <span class="cmg-hint" tabindex="0" role="img" aria-label="Ajuda: primeiro complemento" data-hint="Esse campo gera automaticamente a lista de complementos das suas unidades."><img class="field-info" src="../imgs/info.svg" alt="" aria-hidden="true" /></span>',
+      'Primeiro complemento <span class="cmg-hint" tabindex="0" role="img" aria-label="Ajuda: primeiro complemento" data-hint="Esse campo gera automaticamente a lista de complementos das suas unidades na etapa seguinte."><img class="field-info" src="../imgs/info.svg" alt="" aria-hidden="true" /></span>',
       _inp(
         cfg.compl(),
         (v) => {
@@ -2529,20 +1671,8 @@ function _mkAgrupamentoCampos(grid, cfg) {
     );
     fCompl.setAttribute("data-noopt", "");
     grid.appendChild(fCompl);
-    // Composição por pavimento (só-leitura): uma linha por faixa, com os três
-    // valores calculados (Andar inicial | Andar final | Unidades por andar),
-    // no mesmo visual dos demais campos. Ocupa a largura toda do grid.
-    if (custom) grid.appendChild(_faixasComposicao(faixasCustom));
   }
-  grid.appendChild(
-    _campo(
-      "Demanda do condomínio (kVA)",
-      _inp(cfg.demanda(), (v) => cfg.setDemanda(v), {
-        type: "number",
-        placeholder: "0",
-      }),
-    ),
-  );
+  grid.appendChild(mkDemanda());
   {
     const sel = _selectDe(
       cfg.disjOpts(),
@@ -2575,17 +1705,6 @@ function _cfgAgrupamentoTorre(b, bi) {
     rerender: () => renderBlocos(),
     compl: () => b.complInicial,
     setCompl: (v) => (b.complInicial = v),
-    // Torre de uma unidade: o tipo escolhido vira o complemento daquela UC.
-    tipoCompl: () => b.tipoComplemento,
-    setTipoCompl: (v) => {
-      b.tipoComplemento = v;
-      const uc = (b.ucs || [])[0];
-      if (uc) {
-        uc.complemento = v;
-        normalizarAreaComumUC(uc);
-      }
-      renderBlocos();
-    },
     gerarComplementos: () => autoGerarComplementosTorre(bi),
     demanda: () => b.demandaIncendio,
     setDemanda: (v) => {
@@ -2610,8 +1729,6 @@ function _cfgAgrupamentoTorre(b, bi) {
 function _cfgAgrupamentoColetivo() {
   const ag = _coletivoAgr();
   return {
-    // Coletivo não tem "Identificação da torre": Quantidade fica só na linha.
-    qtdSozinhaNaLinha: true,
     disjId: "disjCondominio-coletivo",
     qtdLabel: "Quantidade de unidades",
     focoQtdId: "qtd-coletivo",
@@ -2641,17 +1758,6 @@ function _cfgAgrupamentoColetivo() {
     rerender: () => renderAgrupamentoColetivo(),
     compl: () => ag.complInicial,
     setCompl: (v) => (ag.complInicial = v),
-    tipoCompl: () => ag.tipoComplemento,
-    setTipoCompl: (v) => {
-      ag.tipoComplemento = v;
-      const uc = state.ucBlocos[0];
-      if (uc) {
-        uc.complemento = v;
-        normalizarAreaComumUC(uc);
-      }
-      renderAgrupamentoColetivo();
-      renderUcsColetivo();
-    },
     gerarComplementos: () => autoGerarComplementosColetivo(),
     demanda: () => ag.demandaIncendio,
     setDemanda: (v) => {
@@ -2691,7 +1797,12 @@ function renderAgrupamentoColetivo() {
     CemigMarcadores.atualizarAvancar();
   }
 }
-function _mkTorreCard(bi, total) {
+// Card de um GRUPO de torres (etapa "Dados das torres"): cabeçalho "Torre 8"
+// ou "Torres 1 a 7"; no corpo, o endereço da obra, os checkboxes que definem
+// quem faz parte do grupo e os campos — editados no líder (g[0]) e espelhados
+// nos demais membros por _espelharGrupos.
+function _mkGrupoTorresCard(g) {
+  const bi = g[0];
   const b = state.blocos[bi];
   const aberta = _torreAberta[bi] === true;
   const bloco = document.createElement("div");
@@ -2701,7 +1812,7 @@ function _mkTorreCard(bi, total) {
   head.className = "uc-colapsavel-head";
   head.setAttribute("aria-expanded", aberta ? "true" : "false");
   head.innerHTML =
-    `<span class="uc-colapsavel-titulo">Torre <span class="carga-acc-badge">${bi + 1} de ${total}</span></span>` +
+    `<span class="uc-colapsavel-titulo">${_nomeGrupo(g)} <span class="carga-acc-badge">${_rotuloTorres(g)}</span></span>` +
     `<span class="carga-acc-chevron uc-colapsavel-chevron" aria-hidden="true"></span>`;
   head.addEventListener("click", () => {
     btToggleExclusivo(_torreAberta, bi, !aberta);
@@ -2712,50 +1823,43 @@ function _mkTorreCard(bi, total) {
   const corpo = document.createElement("div");
   corpo.className = "uc-colapsavel-corpo";
   corpo.appendChild(_blocoEndereco(""));
+  if (state.blocos.length > 1) corpo.appendChild(_mkSelecaoTorres(g));
   const grid = document.createElement("div");
   grid.className = "grid grid-2";
-  // Ordem-alvo do card (identidade da torre é o único campo exclusivo do
-  // condomínio; ver _mkAgrupamentoCampos, compartilhado com o coletivo):
-  //   Identificação | Quantidade de unidades
-  //   Unidades por andar (+ Customizar) | Primeiro complemento (i)
-  //   Demanda do condomínio | Disjuntor do condomínio
-  grid.appendChild(
-    _campo(
-      "Identificação da torre",
-      _inp(b.nome, (v) => (b.nome = v), { placeholder: `${bi + 1}` }),
-    ),
-  );
   _mkAgrupamentoCampos(grid, _cfgAgrupamentoTorre(b, bi));
   corpo.appendChild(grid);
-  // Vínculo de replicação: ao sair de qualquer campo do card, a torre de origem
-  // propaga os dados para os seus destinos; num destino, o campo mexido à mão
-  // trava e deixa de acompanhar a origem. Um único listener no card (fase de
-  // captura, porque blur não borbulha) evita tocar nos construtores de campo,
-  // que são compartilhados com o fluxo individual.
-  corpo.addEventListener(
-    "blur",
-    () => {
-      if (_regraDaOrigem(bi)) {
-        if (propagarTorre(bi)) _preservandoFoco(renderBlocos);
-        return;
-      }
-      const dono = (state.replicacoes || []).find((r) =>
-        (r.destinos || []).includes(bi),
-      );
-      if (!dono) return;
-      // Destino: trava os campos que já divergem da origem — foram digitados
-      // aqui, e a origem não deve mais sobrescrevê-los.
-      const origem = state.blocos[dono.origem];
-      if (!origem) return;
-      CAMPOS_TORRE.forEach((c) => {
-        if (JSON.stringify(b[c]) !== JSON.stringify(origem[c]))
-          _travarCampo(bi, c);
-      });
-    },
-    true,
-  );
   bloco.appendChild(corpo);
   return bloco;
+}
+// "Selecione quais torres compartilham os mesmos dados": um checkbox por torre
+// do empreendimento; marcadas = membros deste grupo (alternarTorreNoGrupo).
+function _mkSelecaoTorres(g) {
+  const box = document.createElement("div");
+  box.className = "torres-selecao divider";
+  const titulo = document.createElement("p");
+  titulo.className = "torres-selecao-titulo";
+  titulo.textContent = "Selecione quais torres compartilham os mesmos dados";
+  const lista = document.createElement("div");
+  lista.className = "torres-selecao-lista";
+  state.blocos.forEach((t, ti) => {
+    const lbl = document.createElement("label");
+    lbl.className = "cmg-check";
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = g.includes(ti);
+    cb.addEventListener("change", () => {
+      // O único membro do grupo não sai dele (toda torre pertence a um grupo).
+      if (!cb.checked && g.length === 1) {
+        cb.checked = true;
+        return;
+      }
+      alternarTorreNoGrupo(g[0], ti, cb.checked);
+    });
+    lbl.append(cb, document.createTextNode(`Torre ${ti + 1}`));
+    lista.appendChild(lbl);
+  });
+  box.append(titulo, lista);
+  return box;
 }
 // Reapresenta as opções do Disjuntor do condomínio quando a demanda muda
 // (sem re-render do card — mantém o foco no campo de demanda). Reflete o valor
@@ -2790,12 +1894,10 @@ function renderUnidadesTorres() {
     "";
   if (nBlocosVazio) {
     chips.innerHTML = "";
-    ["unidadesTopo", "unidadesBox", "unidadesPag", "unidadesResultado"].forEach(
-      (id) => {
-        const el = $("#" + id);
-        if (el) el.innerHTML = "";
-      },
-    );
+    ["unidadesBox", "unidadesPag", "unidadesResultado"].forEach((id) => {
+      const el = $("#" + id);
+      if (el) el.innerHTML = "";
+    });
     const box = $("#unidadesBox");
     if (box)
       box.innerHTML =
@@ -2804,51 +1906,72 @@ function renderUnidadesTorres() {
     return;
   }
   sincronizarBlocos();
+  _espelharGrupos();
   autoSelecionarDisjTorres();
-  if (_uniTorre >= state.blocos.length) _uniTorre = 0;
+  const grupos = _gruposTorres();
+  if (_uniGrupo >= grupos.length) _uniGrupo = 0;
+  // Um chip por grupo de torres ("Torres 1 a 7", "Torre 8"…).
   chips.innerHTML = "";
-  state.blocos.forEach((b, bi) => {
+  grupos.forEach((g, gi) => {
     const c = document.createElement("button");
     c.type = "button";
-    c.className = "torre-chip" + (bi === _uniTorre ? " on" : "");
-    c.textContent = `Torre ${b.nome || bi + 1}`;
+    c.className = "torre-chip" + (gi === _uniGrupo ? " on" : "");
+    c.textContent = `${_nomeGrupo(g)} ${_rotuloTorres(g)}`;
     c.addEventListener("click", () => {
-      _uniTorre = bi;
+      _uniGrupo = gi;
       renderUnidadesTorres();
     });
     chips.appendChild(c);
   });
   renderUnidadesTorreAtual();
 }
-// Re-render estrutural da torre selecionada (topo, acordeões, rodapé).
+// Grupo selecionado nos chips e a torre líder dele (a que os cards editam).
+const _grupoUni = () => _gruposTorres()[_uniGrupo] || [0];
+// Re-render estrutural do grupo selecionado (faixas e rodapé).
 function renderUnidadesTorreAtual() {
   const box = $("#unidadesBox");
-  const bi = _uniTorre;
+  const g = _grupoUni();
+  const bi = g[0];
   const b = state.blocos[bi];
   if (!box || !b) return;
+  _espelharGrupos();
   const ucs = b.ucs || [];
+  const faixas = _faixasDaTorre(b);
   const modoCalc = calcBlocoMultiTorres(b).modoCalculadora;
-  // A unidade 1 da torre 1 já nasce ABERTA e as demais fechadas — uma única vez,
-  // na primeira montagem; depois quem manda é o clique no acordeão.
+  // A 1ª faixa do 1º grupo já nasce ABERTA — uma única vez, na primeira
+  // montagem; depois quem manda é o clique no acordeão.
   if (!_uniAbertaInicial && ucs.length) {
     _uniAbertaInicial = true;
     btToggleExclusivo(_uniAberta, `${bi}:0`, true);
   }
-  renderUnidadesTopo(bi);
-  const totalPag = Math.max(1, Math.ceil(ucs.length / ITENS_POR_PAGINA));
+  const totalPag = Math.max(1, Math.ceil(faixas.length / ITENS_POR_PAGINA));
   let pagAtual = _uniPagina[bi] || 0;
   if (pagAtual >= totalPag) pagAtual = _uniPagina[bi] = totalPag - 1;
   box.innerHTML = "";
   const ini = pagAtual * ITENS_POR_PAGINA;
-  ucs.slice(ini, ini + ITENS_POR_PAGINA).forEach((u, k) => {
-    box.appendChild(_mkUnidadeCard(bi, ini + k, modoCalc));
+  faixas.slice(ini, ini + ITENS_POR_PAGINA).forEach((f, k) => {
+    const chave = `${bi}:${ini + k}`;
+    const aberta = _uniAberta[chave] === true;
+    box.appendChild(
+      _mkFaixaCard({
+        ucs,
+        f,
+        aberta,
+        eyebrow: `${_nomeGrupo(g)} ${_rotuloTorres(g)}`,
+        aoAlternar: () => {
+          btToggleExclusivo(_uniAberta, chave, !aberta);
+          renderUnidadesTorreAtual();
+        },
+        montarCorpo: (corpo) => _corpoFaixaTorre(corpo, b, f, modoCalc),
+      }),
+    );
   });
   const pag = $("#unidadesPag");
   if (pag) {
     pag.innerHTML = "";
     pag.appendChild(
-      _mkPaginacao(totalPag, pagAtual, (p) => {
-        _uniPagina[bi] = p;
+      _mkPaginacao(totalPag, pagAtual, (pp) => {
+        _uniPagina[bi] = pp;
         renderUnidadesTorreAtual();
       }),
     );
@@ -2859,93 +1982,37 @@ function renderUnidadesTorreAtual() {
     CemigMarcadores.atualizarAvancar();
   }
 }
-// Ferramentas acima da lista de unidades. Aptos por andar / primeiro
-// complemento e a geração de complementos vivem na etapa "Dados das torres"; a
-// demanda não residencial é preenchida por UC (ver _mkUnidadeCard). Sobra aqui
-// o botão "Replicar dados para todas unidades de todas as torres", que abre o
-// gerenciador de regras — elas valem para o empreendimento inteiro, por isso o
-// botão fica acima da lista (e não dentro de cada unidade, como na versão
-// anterior).
-function renderUnidadesTopo(bi) {
-  const topo = $("#unidadesTopo");
-  const b = state.blocos[bi];
-  if (!topo || !b) return;
-  topo.innerHTML = "";
-  if (totalUcsEmpreendimentoF() > 1) {
-    // Alinhado à ESQUERDA, logo abaixo dos chips de torre: a ação vale para o
-    // empreendimento inteiro e abre a etapa, em vez de fechá-la como as ações
-    // centradas dentro dos cards (.acao-central).
-    const row = document.createElement("div");
-    row.className = "unidades-replicar-acao";
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "btn btn-ghost btn-outlined-acao";
-    btn.textContent = "Replicar dados para todas unidades de todas as torres";
-    btn.addEventListener("click", () => abrirGerenciadorReplicacaoUC());
-    row.appendChild(btn);
-    topo.appendChild(row);
-  }
-}
-function _mkUnidadeCard(bi, ui, modoCalc) {
-  const b = state.blocos[bi];
-  const u = b.ucs[ui];
-  const chave = `${bi}:${ui}`;
-  const aberta = _uniAberta[chave] === true;
-  const bloco = document.createElement("div");
-  bloco.className = "uc-colapsavel" + (aberta ? " is-open" : "");
-  const head = document.createElement("button");
-  head.type = "button";
-  head.className = "uc-colapsavel-head";
-  head.setAttribute("aria-expanded", aberta ? "true" : "false");
-  head.innerHTML =
-    `<span class="uc-head-info"><span class="uc-head-eyebrow">Torre ${b.nome || bi + 1}</span>` +
-    `<span class="uc-colapsavel-titulo">Unidade consumidora <span class="carga-acc-badge">${ui + 1} de ${b.ucs.length}</span></span></span>` +
-    `<span class="carga-acc-chevron uc-colapsavel-chevron" aria-hidden="true"></span>`;
-  head.addEventListener("click", () => {
-    btToggleExclusivo(_uniAberta, chave, !aberta);
-    renderUnidadesTorreAtual();
-  });
-  bloco.appendChild(head);
-  if (!aberta) return bloco;
-  const corpo = document.createElement("div");
-  corpo.className = "uc-colapsavel-corpo";
-  const endereco = _blocoEndereco(u.complemento);
-  corpo.appendChild(endereco);
+// Campos de uma faixa de unidades da torre `b` (líder do grupo): editam a 1ª
+// UC da faixa; _espelharGrupos copia para o resto da faixa e para as demais
+// torres do grupo.
+function _corpoFaixaTorre(corpo, b, f, modoCalc) {
+  const ucs = b.ucs;
+  const u = ucs[f.ini];
   const grid = document.createElement("div");
   grid.className = "grid grid-2";
   if (modoCalc && !ucSemAlteracao(u)) grid.style.marginBottom = "24px";
-  // Área comum do condomínio (academia, portaria, salão…), decidida pelo
-  // complemento: "atividade principal" não se aplica e o campo não é montado.
-  const areaComumNoRender = ehAreaComum(u.complemento);
-  {
-    const inpCompl = _inp(
-      u.complemento,
-      (v) => {
-        u.complemento = v;
-        endereco.querySelector(".uc-head-endereco").textContent =
-          enderecoObraTxt(v);
-      },
-      { placeholder: "Ex: 101" },
-    );
-    // O complemento decide se a unidade é área comum (e some o campo
-    // "Atividade principal"): re-renderiza ao SAIR do campo, não a cada tecla —
-    // digitar "Portaria" não pode remontar o card no meio da palavra.
-    inpCompl.addEventListener("blur", () => {
-      if (ehAreaComum(u.complemento) !== areaComumNoRender)
-        renderUnidadesTorreAtual();
-    });
-    const f = _campo("Complemento da unidade", inpCompl);
-    if (b.ucs.length > 1) f.setAttribute("data-noopt", "");
-    grid.appendChild(f);
-  }
-  // Múltiplas torres: o tipo de solicitação é sempre Conexão Nova. O campo não
-  // é exibido (era um select travado); só o valor vai para a prévia e o PDF.
+  grid.appendChild(
+    _campoComplementoFaixa(ucs, f, corpo, () => renderUnidadesTorreAtual()),
+  );
+  // Múltiplas torres: o tipo de solicitação é sempre ligação nova (valor
+  // interno "Conexão Nova"); o select aparece com essa única opção.
   u.solicitacao = "Conexão Nova";
-  if (areaComumNoRender) {
+  {
+    const fs = _campo(
+      "Tipo de solicitação",
+      _selectRotulos([["Conexão Nova", "Ligação nova"]], u.solicitacao, () => {}),
+      "field--float",
+    );
+    fs.setAttribute("data-noopt", "");
+    grid.appendChild(fs);
+  }
+  // Área comum do condomínio (academia, portaria…), decidida pelo
+  // complemento: o tipo de propriedade não se aplica e o campo não é montado.
+  if (ehAreaComum(u.complemento)) {
     normalizarAreaComumUC(u);
   } else {
-    const f = _campo(
-      "Atividade principal",
+    const fa = _campo(
+      "Tipo de propriedade",
       _selectDe(
         ["Residencial", "Comercial", "Industrial", "Rural"],
         u.atividade,
@@ -2957,11 +2024,11 @@ function _mkUnidadeCard(bi, ui, modoCalc) {
       ),
       "field--float",
     );
-    f.setAttribute("data-noopt", "");
-    grid.appendChild(f);
+    fa.setAttribute("data-noopt", "");
+    grid.appendChild(fa);
   }
   if (u.atividade === "Residencial") {
-    const f = _campo(
+    const fr = _campo(
       "Área privativa (m²)",
       _inp(
         u.area,
@@ -2974,17 +2041,17 @@ function _mkUnidadeCard(bi, ui, modoCalc) {
         { type: "number", placeholder: "Ex: 65" },
       ),
     );
-    f.setAttribute("data-noopt", "");
-    grid.appendChild(f);
+    fr.setAttribute("data-noopt", "");
+    grid.appendChild(fr);
   } else {
-    const f = _campo(
+    const fr = _campo(
       "Ramo de atividade",
       _inpRamo(u.ramo, (v) => (u.ramo = v)),
     );
-    f.setAttribute("data-noopt", "");
-    grid.appendChild(f);
+    fr.setAttribute("data-noopt", "");
+    grid.appendChild(fr);
     // Método ND-5.2 (torre com 4+ apartamentos residenciais): a demanda de cada
-    // UC não residencial é informada individualmente pelo RT e somada na torre.
+    // UC não residencial é informada pelo RT e somada na torre.
     if (!modoCalc && !ucSemAlteracao(u)) {
       const fd = _campo(
         "Demanda não residencial (kVA)",
@@ -3001,19 +2068,10 @@ function _mkUnidadeCard(bi, ui, modoCalc) {
       grid.appendChild(fd);
     }
   }
-  if (u.solicitacao !== "Conexão Nova") {
-    const f = _campo(
-      "Instalação / Unidade Consumidora / Medidor",
-      _inpInstalacao(u.instalacao, (v) => (u.instalacao = v)),
-    );
-    f.setAttribute("data-noopt", "");
-    grid.appendChild(f);
-  }
   const semAlt = ucSemAlteracao(u);
-  // Carga prevista (kW) — substitui a antiga tabela de previsão de carga;
-  // aparece no método 5.2 quando a torre tem mais de 3 UCs.
-  if (!modoCalc && b.ucs.length > 3 && !semAlt) {
-    const f = _campo(
+  // Carga prevista (kW): método 5.2 quando a torre tem mais de 3 UCs.
+  if (!modoCalc && ucs.length > 3 && !semAlt) {
+    const fc = _campo(
       "Carga prevista da unidade (kW)",
       _inp(
         u.cargaPrevista,
@@ -3024,16 +2082,12 @@ function _mkUnidadeCard(bi, ui, modoCalc) {
         { type: "number", placeholder: "0,0" },
       ),
     );
-    f.setAttribute("data-noopt", "");
-    grid.appendChild(f);
+    fc.setAttribute("data-noopt", "");
+    grid.appendChild(fc);
   }
-  // Disjuntor da UC:
-  //  • Método ND-5.2 (torre com 4+ apartamentos): escolha manual limitada ao
-  //    Tripolar 250 A (não há cargas detalhadas para calcular).
-  //  • Modo calculadora (até 3 UCs): calculado a partir das cargas declaradas,
-  //    igual ao BT individual — radio com a lista adequada (cargas._disjuntores),
-  //    renderizado abaixo das cargas (ver disjBox).
-  if (!modoCalc || semAlt) {
+  // Disjuntor da UC: escolha manual no método ND-5.2; no modo calculadora (até
+  // 3 apartamentos) sai das cargas declaradas, como no BT individual.
+  if (!modoCalc || semAlt)
     grid.appendChild(
       _campo(
         "Disjuntor da unidade",
@@ -3049,24 +2103,18 @@ function _mkUnidadeCard(bi, ui, modoCalc) {
         "field--float",
       ),
     );
-  }
   corpo.appendChild(grid);
-  // ND-5.2 não calcula → a UC detalha as cargas como no BT individual
-  // (mesma ilha montarCargasBT; demanda/carga da UC saem do cálculo). O
-  // disjuntor da UC também é calculado pelas cargas (disjBox abaixo).
   if (modoCalc && !semAlt) {
     const cargasBox = document.createElement("div");
     corpo.appendChild(cargasBox);
     const disjBox = document.createElement("div");
     corpo.appendChild(disjBox);
-    montarCargasBT(cargasBox, u, ui, () => {
+    montarCargasBT(cargasBox, u, f.ini, () => {
       renderDisjUnidadeCalc(disjBox, u);
       atualizarUnidadesCalc();
     });
     renderDisjUnidadeCalc(disjBox, u);
   }
-  bloco.appendChild(corpo);
-  return bloco;
 }
 // Disjuntor da UC no modo calculadora (até 3 UCs): calculado pelas cargas
 // declaradas, exatamente como no BT individual. Radio com a lista adequada
@@ -3128,74 +2176,43 @@ function renderDisjUnidadeCalc(box, u, aoMudar) {
 // Atualiza SÓ os derivados da torre selecionada (rodapé, KPIs, avisos) —
 // mudanças estruturais (solicitação/atividade/qtd) re-renderizam a torre.
 function atualizarUnidadesCalc() {
+  _espelharGrupos();
   autoSelecionarDisjTorres();
   renderUnidadesResultado();
   atualizarBlocosKpis();
 }
-// Rodapé da torre: Carga total + Demanda total + Disjuntor da torre (radio).
+// Rodapé do grupo selecionado (valores de UMA torre — as do grupo são iguais):
+// Carga total + Demanda total das unidades + disjuntor adequado da torre.
 function renderUnidadesResultado() {
   const box = $("#unidadesResultado");
-  const b = state.blocos[_uniTorre];
+  const b = state.blocos[_grupoUni()[0]];
   if (!box || !b) return;
-  const calcTorre = calcBlocoMultiTorres(b);
   box.innerHTML = "";
-  const wrap = document.createElement("div");
-  wrap.className = "resultado-cargas divider";
-  const kpis = document.createElement("div");
-  kpis.className = "resultado-kpis";
-  kpis.append(
-    _mkKpiCard(
-      "Carga total da Torre",
-      `${fmt2(cargaTotalTorre(b))} kW`,
-      "A carga total é a soma da carga estimada para todos os apartamentos mais a carga necessária para as áreas de uso comum (como elevadores e iluminação externa).",
-    ),
-    _mkKpiCard(
-      "Demanda das UCs da torre",
-      `${fmt2(calcTorre.demandaUcs)} kVA`,
-      "Demanda das unidades consumidoras da torre (cruzando o tamanho médio das moradias com o número de unidades). É esta demanda que dimensiona o disjuntor da torre. O combate a incêndio/condomínio tem demanda e disjuntor próprios, informados na etapa das torres.",
+  let disj = null;
+  if (disjGeralTorreRegra(b).obrigatorio) {
+    const ops = opcoesDisjGeralTorre(b);
+    disj = {
+      opcoes: ops,
+      valor: b.disjGeral && ops.includes(b.disjGeral) ? b.disjGeral : ops[0] || "",
+      aoEscolher: (v) => {
+        b.disjGeral = v;
+        _espelharGrupos();
+        renderUnidadesResultado();
+      },
+    };
+  } else {
+    // Regra de disjuntor: no modo calculadora, sem bipolar > 63 A e com no
+    // máximo uma UC tripolar, a torre dispensa o disjuntor geral — o valor
+    // fica em branco e o card é apenas ocultado (restam os KPIs).
+    b.disjGeral = "";
+  }
+  box.appendChild(
+    _mkRodapeUnidades(
+      cargaTotalTorre(b),
+      calcBlocoMultiTorres(b).demandaUcs,
+      disj,
     ),
   );
-  wrap.appendChild(kpis);
-  const regra = disjGeralTorreRegra(b);
-  if (!regra.obrigatorio) {
-    // Regra de disjuntor: no modo calculadora, sem bipolar > 63 A e com no
-    // máximo uma UC tripolar, a torre dispensa o disjuntor geral (proteção
-    // coletiva). O disjuntor da torre fica em branco (b.disjGeral = "") e a
-    // etapa não o exige. Sem disjuntor obrigatório, o card é apenas ocultado
-    // (nada de aviso) — restam só os KPIs.
-    b.disjGeral = "";
-    box.appendChild(wrap);
-    return;
-  }
-  const card = document.createElement("div");
-  card.className = "resultado-card resultado-disjuntor";
-  card.innerHTML = `<div class="resultado-card-label">Disjuntor da torre adequado de acordo com a seleção</div>`;
-  const ops = opcoesDisjGeralTorre(b);
-  if (ops.length) {
-    const tg = document.createElement("div");
-    tg.className = "toggle-group";
-    ops.forEach((dj) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className =
-        "toggle-btn" + ((b.disjGeral || ops[0]) === dj ? " on" : "");
-      btn.textContent = dj;
-      btn.addEventListener("click", () => {
-        b.disjGeral = dj;
-        renderUnidadesResultado();
-      });
-      tg.appendChild(btn);
-    });
-    card.appendChild(tg);
-  } else {
-    const hint = document.createElement("div");
-    hint.className = "field-hint";
-    hint.textContent =
-      "Informe os disjuntores e a previsão de carga das unidades para ver o disjuntor adequado.";
-    card.appendChild(hint);
-  }
-  wrap.appendChild(card);
-  box.appendChild(wrap);
 }
 
 /* ============================================================
@@ -3255,14 +2272,7 @@ function renderDadosProjeto() {
       );
   }
 
-  // Onde a energia deverá ser disponibilizada (radio empilhado).
-  const OPCS_DISP = [
-    "Na portaria e no interior do condomínio (alimentação das torres e áreas comuns)",
-    "Apenas na portaria do condomínio",
-  ];
-  // Default: primeira opção marcada.
-  if (!state.atend.disponibilizacaoEnergia)
-    state.atend.disponibilizacaoEnergia = OPCS_DISP[0];
+  // Onde a energia deverá ser disponibilizada (radio empilhado, sem default).
   const disp = $("#projetoDisponibilizacao");
   if (disp)
     _radioGrupo(
@@ -3280,7 +2290,7 @@ function renderDadosProjeto() {
   const gerais = $("#projetoDisjGerais");
   if (gerais) {
     gerais.innerHTML = "";
-    const soPortaria = state.atend.disponibilizacaoEnergia === OPCS_DISP[1];
+    const soPortaria = soPortariaF();
     gerais.style.display = soPortaria ? "" : "none";
     if (soPortaria) {
     const fEmpr = _campo(
@@ -3313,8 +2323,11 @@ function renderDadosProjeto() {
     }
   }
 
-  // O condomínio tem disjuntor de prumada? (Sim/Não)
+  // O condomínio tem disjuntor de prumada? (Sim/Não) — só com a energia
+  // apenas na portaria do condomínio, como os disjuntores gerais.
   const temP = $("#projetoTemPrumada");
+  const campoPrumada = temP && temP.closest(".field");
+  if (campoPrumada) campoPrumada.style.display = soPortariaF() ? "" : "none";
   if (temP)
     _radioGrupo(temP, ["Sim", "Não"], state.atend.temPrumada, (v) => {
       state.atend.temPrumada = v;
@@ -3327,7 +2340,7 @@ function renderDadosProjeto() {
 
   // Tabela de prumadas (só quando "Sim").
   box.innerHTML = "";
-  if (state.atend.temPrumada === "Sim") {
+  if (usaPrumadaF()) {
     const intro = document.createElement("p");
     intro.className = "card-sub";
     intro.style.marginTop = "12px";
@@ -3491,6 +2504,8 @@ const PG = MULTI
   ? { tipo: 1, empr: 2, blocos: 3, unidades: 4, projeto: 5, corr: 6 }
   : { tipo: 1, empr: 2, ucs: 3, cargas: 4, corr: 5 };
 function validacaoObrigatoriosColetivo() {
+  _espelharGrupos();
+  _espelharColetivo();
   const faltando = [];
   const req = (v, label) => {
     if (!String(v == null ? "" : v).trim()) faltando.push(label);
@@ -3660,8 +2675,7 @@ function _mkPreviaTorre(b, bi) {
   const cb = calcBlocoMultiTorres(b);
   const demandaTorre = cb.demandaUcs + num(b.demandaIncendio);
 
-  // Cabeçalho: "Torre" + chip "bi+1 de N". O nome da torre não entra aqui
-  // porque ele já é o primeiro campo do painel (Identificação da torre).
+  // Cabeçalho: "Torre" + chip "bi+1 de N".
   const head = document.createElement("div");
   head.className = "previa-painel-head";
   head.innerHTML =
@@ -3673,7 +2687,6 @@ function _mkPreviaTorre(b, bi) {
   const grid = document.createElement("div");
   grid.className = "previa-grid";
   grid.innerHTML =
-    pvCampoBT("Identificação da torre", b.nome || String(bi + 1), PG.blocos) +
     pvCampoBT(
       "Quantidade de unidades na torre",
       String(b.qtdUCs || ucs.length || 0),
@@ -3704,7 +2717,7 @@ function _mkPreviaTorre(b, bi) {
   if ((b.aptosPorAndarFaixas || []).length)
     grid.insertBefore(
       _faixasComposicao(b.aptosPorAndarFaixas),
-      grid.children[4],
+      grid.children[3],
     );
   painel.appendChild(grid);
 
@@ -3743,6 +2756,8 @@ function _mkPreviaTorre(b, bi) {
 function renderPreviaColetivo() {
   const box = $("#previaConteudo");
   if (!box) return;
+  _espelharGrupos();
+  _espelharColetivo();
   /* O aquecimento do jsPDF saiu daqui: o PDF do formulário agora é HTML
      impresso pelo navegador (js/pdf-doc.js) e o fluxo coletivo não tem
      documento auxiliar em jsPDF — baixar a lib nesta etapa seria ~350 kB
@@ -3807,17 +2822,19 @@ function renderPreviaColetivo() {
   html += pvCampoBT("Bairro", o.bairro, PG.empr);
   html += pvCampoBT("Cidade / Município", o.cidade, PG.empr);
   html += pvCampoBT("Estado", o.estado, PG.empr);
+  // Perguntas do padrão: respondidas no fim da etapa "Dados das unidades".
+  const pgUni = MULTI ? PG.unidades : PG.cargas;
   html += pvCampoBT(
     "Distância do padrão até a rede Cemig inferior a 30m?",
     o.distMenor30,
-    PG.empr,
+    pgUni,
   );
   html += pvCampoBT(
     "O padrão está pronto para ser ligado?",
     o.prontoLigar,
-    PG.empr,
+    pgUni,
   );
-  html += pvCampoBT("Tipo de rede BT que atende o local", o.tipoRede, PG.empr);
+  html += pvCampoBT("Tipo de rede BT que atende o local", o.tipoRede, pgUni);
   html += `</div></div><hr class="previa-divider" />`;
 
   /* ---- Os três cartões de resumo ----
@@ -3855,24 +2872,27 @@ function renderPreviaColetivo() {
       PG.projeto,
       true,
     );
-    html += pvCampoBT(
-      "Disjuntor geral do empreendimento",
-      state.atend.disjEmpreendimento,
-      PG.projeto,
-    );
-    html += pvCampoBT(
-      "Disjuntor geral do condomínio",
-      state.atend.disjCondominio,
-      PG.projeto,
-    );
-    html += pvCampoBT(
-      "O condomínio tem disjuntor de prumada?",
-      state.atend.temPrumada,
-      PG.projeto,
-      true,
-    );
+    // Disjuntores gerais e prumadas: só com a energia apenas na portaria.
+    if (soPortariaF()) {
+      html += pvCampoBT(
+        "Disjuntor geral do empreendimento",
+        state.atend.disjEmpreendimento,
+        PG.projeto,
+      );
+      html += pvCampoBT(
+        "Disjuntor geral do condomínio",
+        state.atend.disjCondominio,
+        PG.projeto,
+      );
+      html += pvCampoBT(
+        "O condomínio tem disjuntor de prumada?",
+        state.atend.temPrumada,
+        PG.projeto,
+        true,
+      );
+    }
     html += `</div>`;
-    if (state.atend.temPrumada === "Sim") {
+    if (usaPrumadaF()) {
       const linhasPrumada = (state.atend.prumadas || [])
         .map(
           (pr, i) =>
@@ -3986,6 +3006,7 @@ function renderPreviaColetivo() {
   if (btn) btn.disabled = !v.ok;
 }
 async function exportarPdfBT() {
+  // validacaoObrigatoriosColetivo já espelha grupos de torres e faixas.
   const v = validacaoObrigatoriosColetivo();
   if (!v.ok) {
     renderPreviaColetivo();

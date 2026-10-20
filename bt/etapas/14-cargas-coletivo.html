@@ -4,10 +4,7 @@
 <div class="card">
   <div class="section-eyebrow">Etapa 5</div>
   <h3 class="card-title" id="ucsColetivoTitulo">Dados das unidades</h3>
-  <p class="card-sub">
-    Preencha os dados de cada UC. Campos com valor padrão já vêm preenchidos.
-    Em Conexão Nova não há disjuntor 'De' (a instalação ainda não existe).
-  </p>
+  <p class="card-sub">Preencha os dados gerais das unidades.</p>
   <div id="ucsColetivoBox"></div>
 
   <div
@@ -34,6 +31,79 @@
   <!-- Rodapé: KPIs (carga/demanda) + Disjuntor geral do agrupamento em botões,
        no mesmo padrão do rodapé de "Dados das unidades" do multi-torres. -->
   <div id="disjGeralBox"></div>
+
+  <!-- Perguntas do padrão (spec das unidades): radios lado a lado, avisos do
+       "pronto para ligar" logo abaixo e o tipo de rede em linha própria.
+       `divider` separa do rodapé de carga/demanda logo acima. -->
+  <div class="grid grid-2 divider unidades-padrao">
+    <div class="field field--plain" data-noopt>
+      <label>Distância do padrão até a rede Cemig inferior a 30m?</label>
+      <div data-toggle="obra.distMenor30"></div>
+      <select
+        data-k="obra.distMenor30"
+        style="display: none"
+        aria-hidden="true"
+      >
+        <option>Sim</option>
+        <option>Não</option>
+      </select>
+    </div>
+    <div class="field field--plain" data-noopt>
+      <label>O padrão está pronto para ser ligado?</label>
+      <div
+        data-toggle="obra.prontoLigar"
+        data-toggle-onchange="onProntoLigarBT"
+      ></div>
+      <select data-k="obra.prontoLigar" style="display: none" aria-hidden="true">
+        <option>Sim</option>
+        <option>Não</option>
+      </select>
+    </div>
+    <div
+      class="cmg-aviso no-print col-span-2"
+      id="prontoSimAviso"
+      style="display: none"
+    >
+      <div class="cmg-aviso-icon" aria-hidden="true"></div>
+      <p class="cmg-aviso-texto">
+        Como o padrão de entrada de energia já está pronto para ser ligado, o
+        pedido de vistoria, solicitação para que a Cemig verifique se a
+        instalação está de acordo com as normas técnicas, e o pedido de ligação
+        serão disparados automaticamente assim que você concluir todas as
+        etapas do formulário de atendimento. Não é necessário fazer nenhuma
+        solicitação adicional.
+      </p>
+    </div>
+    <div
+      class="cmg-aviso cmg-aviso--warn no-print col-span-2"
+      id="prontoNaoAviso"
+      style="display: none"
+    >
+      <div class="cmg-aviso-icon" aria-hidden="true"></div>
+      <p class="cmg-aviso-texto">
+        Como o padrão de entrada de energia não está pronto para ser ligado,
+        você deverá solicitar o pedido de vistoria, solicitação para que a Cemig
+        verifique se a instalação está de acordo com as normas técnicas, e o
+        pedido de ligação em até 120 dias após a conclusão das etapas deste
+        formulário de atendimento. Após esse prazo, a solicitação poderá ser
+        cancelada.
+      </p>
+    </div>
+    <div class="field field--plain col-span-2" data-noopt>
+      <label>Tipo de rede que atende o local</label>
+      <div data-toggle="obra.tipoRede"></div>
+      <select
+        data-k="obra.tipoRede"
+        data-sem-vazio
+        style="display: none"
+        aria-hidden="true"
+      >
+        <option>Monofásica</option>
+        <option>Bifásica</option>
+        <option>Trifásica</option>
+      </select>
+    </div>
+  </div>
 </div>
 
 <div class="card" id="trocaDisjBox" style="display: none">

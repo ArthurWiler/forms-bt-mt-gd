@@ -6,30 +6,14 @@
   <p class="card-sub">Preencha os dados gerais das unidades.</p>
 
   <div id="unidadesChips" class="torre-chips"></div>
-  <div id="unidadesTopo"></div>
   <div id="unidadesBox"></div>
   <div id="unidadesPag"></div>
   <div id="unidadesResultado"></div>
 
-  <!-- Características do atendimento das unidades (vindas da etapa
-       "Dados do empreendimento", onde não pertenciam). Ficam ABAIXO do rodapé
-       da torre (#unidadesResultado): valem para o empreendimento inteiro, não
-       para a torre selecionada, então fecham a etapa em vez de abri-la.
-       `divider` separa do rodapé da torre logo acima — .grid não tem margem
-       própria e encostaria nos cards de KPI. -->
-  <div class="grid grid-2 divider">
-    <div class="field">
-      <label>Tipo de rede BT que atende o local</label>
-      <select data-k="obra.tipoRede" data-sem-vazio>
-        <option>Monofásica</option>
-        <option>Bifásica</option>
-        <option>Trifásica</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Código do transformador mais próximo</label>
-      <input type="text" data-k="obra.transformador" placeholder=" " />
-    </div>
+  <!-- Perguntas do padrão (spec das unidades): radios lado a lado, avisos do
+       "pronto para ligar" logo abaixo e o tipo de rede em linha própria.
+       `divider` separa do rodapé de carga/demanda logo acima. -->
+  <div class="grid grid-2 divider unidades-padrao">
     <div class="field field--plain" data-noopt>
       <label>Distância do padrão até a rede Cemig inferior a 30m?</label>
       <div data-toggle="obra.distMenor30"></div>
@@ -53,8 +37,6 @@
         <option>Não</option>
       </select>
     </div>
-    <!-- Aviso do campo "pronto para ligar" logo abaixo dele (col-span-2 mantém
-         a largura total; alterna por id via onProntoLigarBT). -->
     <div
       class="cmg-aviso no-print col-span-2"
       id="prontoSimAviso"
@@ -84,6 +66,20 @@
         formulário de atendimento. Após esse prazo, a solicitação poderá ser
         cancelada.
       </p>
+    </div>
+    <div class="field field--plain col-span-2" data-noopt>
+      <label>Tipo de rede que atende o local</label>
+      <div data-toggle="obra.tipoRede"></div>
+      <select
+        data-k="obra.tipoRede"
+        data-sem-vazio
+        style="display: none"
+        aria-hidden="true"
+      >
+        <option>Monofásica</option>
+        <option>Bifásica</option>
+        <option>Trifásica</option>
+      </select>
     </div>
   </div>
 
