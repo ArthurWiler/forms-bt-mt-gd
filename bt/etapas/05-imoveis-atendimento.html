@@ -2,24 +2,39 @@
 
 <div class="card">
   <div class="section-eyebrow">Etapa 4</div>
-  <h3 class="card-title">Imóveis e atendimento</h3>
+  <h3 class="card-title">
+    <span data-so-zona="urbana">Imóveis e atendimento</span
+    ><span data-so-zona="rural">Imóvel e atendimento</span>
+  </h3>
   <p class="card-sub">
-    Escolha o tipo de atendimento do imóvel. Cada imóvel com medidor de energia
-    próprio é um atendimento separado, mesmo que eles fiquem localizado no
-    mesmo terreno. Máximo de <span id="atendMax">3</span> imóveis por pedido.
+    <span data-so-zona="urbana"
+      >Escolha o tipo de atendimento do imóvel. Cada imóvel com medidor de
+      energia próprio é um atendimento separado, mesmo que eles fiquem
+      localizado no mesmo terreno. Máximo de 3 imóveis por pedido.</span
+    ><span data-so-zona="rural"
+      >Escolha o tipo de atendimento. Em área rural, cada solicitação atende
+      apenas 1 imóvel. Para atender outros imóveis, abra uma nova
+      solicitação.</span
+    >
   </p>
 
   <!-- Contadores por tipo de solicitação (spec Figma svg1): cada unidade
-       contada vira um card "Imóvel N de M" em #ucsIdentBox, com a
-       identificação e o padrão de energia daquele imóvel. Tudo renderizado
-       por individual-app.js (renderUcsIdentBT). -->
+       contada vira um card "Imóvel N de M" em #ucsIdentBox. No rural há
+       também a linha "Irrigação" (1 pedido + 1 de irrigação). Tudo
+       renderizado por individual-app.js (renderUcsIdentBT). -->
   <div class="atend-pedido">
     <h4 class="secao-titulo">O que você precisa neste endereço?</h4>
     <p class="atend-endereco" id="atendEndereco"></p>
-    <div class="cmg-exemplo">
+    <div class="cmg-exemplo" data-so-zona="urbana">
       <strong>Exemplo</strong>: modernizar aparelhos em uma casa já ligada +
       salão de beleza novo no mesmo terreno = 1 alteração de carga + 1 ligação
       nova.
+    </div>
+    <div class="cmg-exemplo" data-so-zona="rural">
+      <strong>Exemplo</strong>: um sítio já ligado, com casa de morador e
+      pequena produção de leite, que vai instalar um resfriador de leite e uma
+      bomba d’água mais potente para irrigar a horta. Como o imóvel já tem
+      medidor e só muda a carga, é uma alteração de carga.
     </div>
     <div class="atend-contadores" id="atendContadores"></div>
     <div id="ucsIdentBox"></div>

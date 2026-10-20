@@ -2,10 +2,19 @@
 
 <div class="card">
   <div class="section-eyebrow">Etapa 3</div>
-  <h3 class="card-title">Endereço da unidade</h3>
+  <!-- Textos por zona (spec Figma rural svg1): html[data-zona] escolhe o par. -->
+  <h3 class="card-title">
+    <span data-so-zona="urbana">Endereço da unidade</span
+    ><span data-so-zona="rural">Endereço da unidade consumidora</span>
+  </h3>
   <p class="card-sub">
-    Informe o endereço onde o atendimento será feito e confirme a
-    localização da unidade no mapa.
+    <span data-so-zona="urbana"
+      >Informe o endereço onde o atendimento será feito e confirme a
+      localização da unidade no mapa.</span
+    ><span data-so-zona="rural"
+      >Preencha os dados do endereço da unidade consumidora e confirme a
+      localização no mapa.</span
+    >
   </p>
 
   <div class="grid grid-2">
@@ -108,62 +117,62 @@
     </div>
   </div>
 
-  <div
-    class="grid grid-2"
-    id="endRuralBox"
-    style="margin-top: 14px; display: none"
-  >
-    <div class="field">
-      <label>Município <span class="req">*</span></label>
-      <input type="text" data-k="obra.cidade" data-k-espelho placeholder=" " />
+  <div id="endRuralBox" style="margin-top: 14px; display: none">
+    <div class="grid grid-3">
+      <div class="field col-span-2">
+        <label>Município <span class="req">*</span></label>
+        <input type="text" data-k="obra.cidade" data-k-espelho placeholder=" " />
+      </div>
+      <div class="field">
+        <label>Estado <span class="req">*</span></label>
+        <select data-k="obra.estado" data-k-espelho data-sem-vazio>
+          <option>AC</option>
+          <option>AL</option>
+          <option>AP</option>
+          <option>AM</option>
+          <option>BA</option>
+          <option>CE</option>
+          <option>DF</option>
+          <option>ES</option>
+          <option>GO</option>
+          <option>MA</option>
+          <option>MT</option>
+          <option>MS</option>
+          <option>MG</option>
+          <option>PA</option>
+          <option>PB</option>
+          <option>PR</option>
+          <option>PE</option>
+          <option>PI</option>
+          <option>RJ</option>
+          <option>RN</option>
+          <option>RS</option>
+          <option>RO</option>
+          <option>RR</option>
+          <option>SC</option>
+          <option>SP</option>
+          <option>SE</option>
+          <option>TO</option>
+        </select>
+      </div>
     </div>
-    <div class="field">
-      <label>Estado <span class="req">*</span></label>
-      <select data-k="obra.estado" data-k-espelho data-sem-vazio>
-        <option>AC</option>
-        <option>AL</option>
-        <option>AP</option>
-        <option>AM</option>
-        <option>BA</option>
-        <option>CE</option>
-        <option>DF</option>
-        <option>ES</option>
-        <option>GO</option>
-        <option>MA</option>
-        <option>MT</option>
-        <option>MS</option>
-        <option>MG</option>
-        <option>PA</option>
-        <option>PB</option>
-        <option>PR</option>
-        <option>PE</option>
-        <option>PI</option>
-        <option>RJ</option>
-        <option>RN</option>
-        <option>RS</option>
-        <option>RO</option>
-        <option>RR</option>
-        <option>SC</option>
-        <option>SP</option>
-        <option>SE</option>
-        <option>TO</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Distrito / Comunidade / Região</label>
-      <input type="text" data-k="obra.distritoComunidade" placeholder=" " />
-    </div>
-    <div class="field">
-      <label>Nome da propriedade</label>
-      <input type="text" data-k="obra.nomePropriedade" placeholder=" " />
-    </div>
-    <div class="field">
-      <label>Ponto de referência</label>
-      <input type="text" data-k="obra.pontoRef" placeholder=" " />
-    </div>
-    <div class="field">
-      <label>Nº instalação / UC / medidor mais próxima</label>
-      <input type="text" data-k="obra.instProxima" placeholder=" " />
+    <div class="grid grid-2">
+      <div class="field">
+        <label>Distrito / Comunidade / Região</label>
+        <input type="text" data-k="obra.distritoComunidade" placeholder=" " />
+      </div>
+      <div class="field">
+        <label>Nome da propriedade</label>
+        <input type="text" data-k="obra.nomePropriedade" placeholder=" " />
+      </div>
+      <div class="field">
+        <label>Ponto de referência</label>
+        <input type="text" data-k="obra.pontoRef" placeholder=" " />
+      </div>
+      <div class="field">
+        <label>Nº instalação mais próxima</label>
+        <input type="text" data-k="obra.instProxima" placeholder=" " />
+      </div>
     </div>
   </div>
 

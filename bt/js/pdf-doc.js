@@ -573,8 +573,10 @@ function _pdfBlocosIndividualBT(S) {
           : u.solicitacao,
       ],
       ["Modalidade", _PDF_MODALIDADE_IND],
-      ["Tipo de propriedade", u.atividade],
+      /* Rural: tipo sempre "Rural" e o ramo é a atividade (specs rurais). */
+      ["Tipo de propriedade", rural ? "Rural" : u.atividade],
     ]);
+    if (rural) B.campos([["Ramo da atividade", u.atividade, 3]]);
     if (alteracao)
       B.campos([["Nº da unidade/instalação", u.instalacao]]);
     /* Perfil de carga escolhido na Etapa 5 (perfis-carga.js). */
@@ -601,6 +603,15 @@ function _pdfBlocosIndividualBT(S) {
         ["Ponto de referência", obra.pontoRef, 2],
         ["Instalação mais próxima", obra.instProxima],
       ]);
+      B.campos([
+        [
+          u.mudaComplemento ? "Complemento atual" : "Complemento",
+          u.complemento,
+          u.mudaComplemento ? 1 : 3,
+        ],
+      ].concat(
+        u.mudaComplemento ? [["Novo complemento", u.novoComplemento, 2]] : [],
+      ));
     } else {
       B.campos([
         ["CEP", obra.cep],

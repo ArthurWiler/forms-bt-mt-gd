@@ -5906,3 +5906,25 @@ label.restricao-aceite input[type="checkbox"] {
     width: 100%;
   }
 }
+
+/* ============================================================
+   BT individual — zona rural (specs rurais svg1–5)
+   ------------------------------------------------------------
+   html[data-zona] (onZonaBT) escolhe o texto de cada par
+   [data-so-zona]: trilha, títulos, subtítulos e exemplo. A Etapa 4
+   rural usa os mesmos contadores/cards do urbano (+ linha Irrigação).
+   ============================================================ */
+html[data-zona="rural"] [data-so-zona="urbana"],
+html:not([data-zona="rural"]) [data-so-zona="rural"] {
+  display: none !important;
+}
+/* Etapa 3: Município (2/3) + Estado (1/3) e, abaixo, a grade de 2. */
+.cemig-form #endRuralBox > .grid + .grid {
+  margin-top: var(--cmg-space-8);
+}
+/* "Tipo de rede que atende o local": no spec rural (svg3) o rótulo fica a
+   38px da divisória — o padding padrão (32) + a entrelinha do rótulo
+   davam 45. */
+.cemig-form .atend-pedido + .divider {
+  padding-top: 25px;
+}

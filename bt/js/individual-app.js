@@ -176,6 +176,9 @@ window.onPaginaAtiva = function (sec) {
 function onZonaBT() {
   const o = state.obra;
   const rural = ruralBT();
+  // Textos das etapas por zona: html[data-zona] mostra o par certo de cada
+  // [data-so-zona] (trilha, títulos, subtítulos e exemplo — specs rurais).
+  document.documentElement.dataset.zona = rural ? "rural" : "urbana";
   // Troca de zona limpa os campos da zona oposta (React trocarZona)
   if (rural) {
     Object.assign(o, { cep: "", endereco: "", num: "", compl: "", bairro: "" });
@@ -228,6 +231,9 @@ function atualizarCoordRural() {
     const lb = document.getElementById(id);
     if (!lb) return;
     const opt = lb.querySelector(".opt");
+    // data-noopt impede o marcador de devolver o "(opcional)" no próximo
+    // CemigMarcadores.aplicar().
+    lb.closest(".field").toggleAttribute("data-noopt", rural);
     if (rural) {
       if (opt) opt.remove();
     } else if (!opt) {
@@ -253,8 +259,8 @@ function onTipoRedeBT() {
    única fonte de verdade — os contadores são derivados dele e
    atend.nUCs só o acompanha (PDF/termo leem o array).
    ============================================================ */
-// Máximo de imóveis do pedido: 3 em zona urbana; 2 em zona rural, onde o 2º
-// existe apenas para irrigação (o 1º mantém a atividade de livre escolha).
+// Máximo de imóveis do pedido: 3 em zona urbana; 2 em zona rural (1 pedido
+// de qualquer tipo + 1 de irrigação — ver _podeAdicionarBT).
 function maxUcsBT() {
   return ruralBT() ? 2 : 3;
 }
@@ -298,6 +304,42 @@ const tipoSolicitacaoBT = (u) =>
       ? "caixa"
       : "nova";
 const _tipoBT = (id) => TIPOS_SOLICITACAO_BT.find((t) => t.id === id);
+// Rural: os mesmos contadores do urbano + a linha "Irrigação". Regras do
+// rural: no máximo 1 imóvel entre os 4 tipos (cada solicitação atende 1
+// imóvel) e no máximo 1 de irrigação. O imóvel de irrigação é o que tem a
+// atividade fixa "Irrigação"; a solicitação dele (ligação nova, alteração…)
+// é trocada pelo lápis do card, sem sair da linha de irrigação.
+const CONTADOR_IRRIGACAO_BT = {
+  id: "irr",
+  l: "Irrigação",
+  desc: "Imóvel com medidor próprio, só para a irrigação da propriedade",
+};
+const _ehIrrigacaoBT = (u) => u.atividade === ATIVIDADE_IRRIGACAO;
+// Linhas de contador da zona atual e a linha em que cada imóvel é contado.
+const contadoresBT = () =>
+  ruralBT()
+    ? TIPOS_SOLICITACAO_BT.concat([CONTADOR_IRRIGACAO_BT])
+    : TIPOS_SOLICITACAO_BT;
+const contadorDoImovelBT = (u) =>
+  ruralBT() && _ehIrrigacaoBT(u) ? "irr" : tipoSolicitacaoBT(u);
+// Ordena os imóveis pela ordem das linhas de contador.
+function _ordenarUcsBT() {
+  const ordem = contadoresBT().map((t) => t.id);
+  state.ucsDet.sort(
+    (a, b) =>
+      ordem.indexOf(contadorDoImovelBT(a)) -
+      ordem.indexOf(contadorDoImovelBT(b)),
+  );
+}
+// "+" da linha: limite total do pedido e, no rural, 1 por grupo (pedido ×
+// irrigação).
+function _podeAdicionarBT(id) {
+  const arr = state.ucsDet;
+  if (arr.length >= maxUcsBT()) return false;
+  if (!ruralBT()) return true;
+  const irr = arr.filter(_ehIrrigacaoBT).length;
+  return id === "irr" ? irr === 0 : arr.length - irr === 0;
+}
 const solicitacaoRotuloBT = (u) => _tipoBT(tipoSolicitacaoBT(u)).l;
 function _aplicarTipoBT(u, t) {
   u.solicitacao = t.sol;
@@ -321,21 +363,23 @@ const _zerarAberturasBT = () =>
 // − remove o último imóvel daquele tipo.
 function alterarContadorBT(id, delta) {
   const arr = state.ucsDet;
-  const ordem = TIPOS_SOLICITACAO_BT.map((t) => t.id);
+  const ordem = contadoresBT().map((t) => t.id);
   if (delta > 0) {
-    if (arr.length >= maxUcsBT()) return;
+    if (!_podeAdicionarBT(id)) return;
     const u = novaUcDet();
-    _aplicarTipoBT(u, _tipoBT(id));
+    // Irrigação nasce como ligação nova; o lápis do card troca o tipo.
+    _aplicarTipoBT(u, _tipoBT(id === "irr" ? "nova" : id));
+    if (id === "irr") u.atividade = ATIVIDADE_IRRIGACAO;
     let pos = 0;
     arr.forEach((x, i) => {
-      if (ordem.indexOf(tipoSolicitacaoBT(x)) <= ordem.indexOf(id))
+      if (ordem.indexOf(contadorDoImovelBT(x)) <= ordem.indexOf(id))
         pos = i + 1;
     });
     arr.splice(pos, 0, u);
   } else {
     let ult = -1;
     arr.forEach((x, i) => {
-      if (tipoSolicitacaoBT(x) === id) ult = i;
+      if (contadorDoImovelBT(x) === id) ult = i;
     });
     if (ult < 0) return;
     arr.splice(ult, 1);
@@ -344,18 +388,14 @@ function alterarContadorBT(id, delta) {
   Object.keys(_editorPerfil).forEach((k) => delete _editorPerfil[k]);
   _aoMudarUcIdent();
 }
-// Zona/limite: corta o excedente e mantém a regra do 2º imóvel rural.
+// Zona/limite: corta o excedente; irrigação só existe no rural.
 function _sincronizarUcs() {
   const arr = state.ucsDet;
   if (arr.length > maxUcsBT()) arr.length = maxUcsBT();
-  if (ruralBT()) {
-    // Rural: o 2º imóvel é sempre irrigação (atividade fixa, não editável);
-    // um imóvel que deixa a 2ª posição perde a atividade fixa.
-    arr.forEach((u, i) => {
-      if (i === 1) u.atividade = ATIVIDADE_IRRIGACAO;
-      else if (u.atividade === ATIVIDADE_IRRIGACAO) u.atividade = "";
+  if (!ruralBT())
+    arr.forEach((u) => {
+      if (_ehIrrigacaoBT(u)) u.atividade = "";
     });
-  }
   state.atend.nUCs = arr.length;
 }
 // Perfil escolhido numa família que não vale mais (tipo/ramo mudou): a
@@ -394,15 +434,19 @@ function _enderecoAtendTxt() {
   const o = state.obra;
   const j = (xs, sep) => xs.filter((x) => String(x || "").trim()).join(sep);
   const cidadeUf = j([o.cidade, o.estado], "/");
+  // Rural (spec rural svg2): "Município, Distrito, UF, Propriedade".
   if (ruralBT())
-    return j([o.nomePropriedade, o.distritoComunidade, cidadeUf], ", ");
+    return j(
+      [o.cidade, o.distritoComunidade, o.estado, o.nomePropriedade],
+      ", ",
+    );
   return j([j([o.endereco, o.num], ", "), j([o.bairro, cidadeUf], ", ")], " - ");
 }
 // Endereço do imóvel na Etapa 5: rua, nº e o complemento (o novo, quando muda).
 function _enderecoUCTxt(u) {
   const o = state.obra;
   const partes = ruralBT()
-    ? [o.nomePropriedade, o.distritoComunidade, o.cidade]
+    ? [o.cidade, o.distritoComunidade, o.estado, o.nomePropriedade]
     : [o.endereco, o.num];
   partes.push(u.mudaComplemento ? u.novoComplemento : u.complemento);
   return partes.filter((x) => String(x || "").trim()).join(", ") || "—";
@@ -444,11 +488,10 @@ function renderContadoresBT() {
   const box = $("#atendContadores");
   if (!box) return;
   const n = {};
-  TIPOS_SOLICITACAO_BT.forEach((t) => (n[t.id] = 0));
-  state.ucsDet.forEach((u) => n[tipoSolicitacaoBT(u)]++);
-  const cheio = state.ucsDet.length >= maxUcsBT();
+  contadoresBT().forEach((t) => (n[t.id] = 0));
+  state.ucsDet.forEach((u) => n[contadorDoImovelBT(u)]++);
   box.innerHTML = "";
-  TIPOS_SOLICITACAO_BT.forEach((t) => {
+  contadoresBT().forEach((t) => {
     const linha = document.createElement("div");
     linha.className = "atend-contador";
     linha.innerHTML =
@@ -456,7 +499,7 @@ function renderContadoresBT() {
       `<div class="qtd-ctrl qtd-ctrl--atend">` +
       `<button type="button" class="minus" aria-label="Remover ${t.l}"${n[t.id] ? "" : " disabled"}>${_ICONE_MENOS_BT}</button>` +
       `<input type="text" value="${n[t.id]}" readonly tabindex="-1" aria-label="Quantidade de ${t.l}" />` +
-      `<button type="button" class="plus" aria-label="Adicionar ${t.l}"${cheio ? " disabled" : ""}>${_ICONE_MAIS_BT}</button>` +
+      `<button type="button" class="plus" aria-label="Adicionar ${t.l}"${_podeAdicionarBT(t.id) ? "" : " disabled"}>${_ICONE_MAIS_BT}</button>` +
       `</div>`;
     linha
       .querySelector(".minus")
@@ -475,8 +518,6 @@ function renderUcsIdentBT() {
   atualizarSolicitacaoAuto();
   const end = $("#atendEndereco");
   if (end) end.textContent = _enderecoAtendTxt();
-  const max = $("#atendMax");
-  if (max) max.textContent = maxUcsBT();
   renderContadoresBT();
   box.innerHTML = "";
   state.ucsDet.forEach((u, ui) => {
@@ -577,12 +618,7 @@ function _ucSolicitacao(u, ui) {
     sel.addEventListener("change", () => {
       _aplicarTipoBT(u, _tipoBT(sel.value));
       // Reposiciona o imóvel no grupo do novo tipo (ordem dos contadores).
-      const ordem = TIPOS_SOLICITACAO_BT.map((t) => t.id);
-      state.ucsDet.sort(
-        (a, b) =>
-          ordem.indexOf(tipoSolicitacaoBT(a)) -
-          ordem.indexOf(tipoSolicitacaoBT(b)),
-      );
+      _ordenarUcsBT();
       _zerarAberturasBT();
       _aoMudarUcIdent();
     });
@@ -607,7 +643,7 @@ function _ucIdentificacao(u, ui) {
   grid.className = "grid grid-2";
   // Só o 1º imóvel fica preso ao tipo principal do formulário (cards
   // restritos); exceção rural: o 2º só existe para irrigação.
-  const irrigacaoFixa = ruralBT() && ui === 1;
+  const irrigacaoFixa = ruralBT() && _ehIrrigacaoBT(u);
   const atividadeBloqueada =
     irrigacaoFixa || ((restrito || atividadeTravada) && ui === 0);
   const inpTexto = (v, aoDigitar) => {
@@ -652,14 +688,29 @@ function _ucIdentificacao(u, ui) {
     true,
   );
   selAtiv.disabled = atividadeBloqueada;
-  grid.appendChild(
-    _campo(
-      'Tipo de propriedade <span class="req">*</span>',
-      selAtiv,
-      "field--float",
-    ),
-  );
-  if (u.atividade && u.atividade !== "Residencial") {
+  if (ruralBT()) {
+    // Rural (specs rurais svg3–5): o tipo de propriedade é sempre "Rural" e
+    // o ramo diz se o imóvel é residencial, comercial ou industrial — é ele
+    // que vai para u.atividade (tipo de carga e perfis). Sem CNAE no rural.
+    const selTipo = _selectDe(["Rural"], "Rural", () => {});
+    selTipo.disabled = true;
+    grid.appendChild(_campo("Tipo de propriedade", selTipo, "field--float"));
+    grid.appendChild(
+      _campo(
+        'Ramo da atividade <span class="req">*</span>',
+        selAtiv,
+        "field--float",
+      ),
+    );
+  } else
+    grid.appendChild(
+      _campo(
+        'Tipo de propriedade <span class="req">*</span>',
+        selAtiv,
+        "field--float",
+      ),
+    );
+  if (!ruralBT() && u.atividade && u.atividade !== "Residencial") {
     const inp = document.createElement("input");
     inp.type = "text";
     inp.placeholder = " ";
@@ -1399,7 +1450,10 @@ function validacaoObrigatoriosBT() {
   if (vd.ok === false) faltando.push("Combinação de disjuntores inválida");
   state.ucsDet.forEach((u, ui) => {
     const im = `Imóvel ${ui + 1}`;
-    if (!u.atividade) faltando.push(`${im}: Tipo de propriedade`);
+    if (!u.atividade)
+      faltando.push(
+        `${im}: ${ruralBT() ? "Ramo da atividade" : "Tipo de propriedade"}`,
+      );
     if (!ucSemAlteracao(u) && !u.perfil)
       faltando.push(`${im}: Perfil de carga`);
     // Número de instalação/UC fora do padrão (REN ANEEL 1.095/2024): os
@@ -1426,6 +1480,15 @@ function validacaoObrigatoriosBT() {
 // uma etapa própria (referência do Figma da trilha, com 8 passos), separada do
 // endereço — daí `dados` e `atend` apontarem para etapas diferentes.
 const PG = { prop: 1, dados: 2, atend: 3, cargas: 4, corr: 5 };
+// Rural: o tipo de propriedade é sempre "Rural" e o ramo é a atividade
+// (Residencial/Comercial/Industrial/Irrigação); no urbano, o ramo é o CNAE.
+const tipoPropriedadeBT = (u) => (ruralBT() ? "Rural" : u.atividade);
+function ramoRotuloBT(u) {
+  if (ruralBT()) return u.atividade;
+  return u.atividade && u.atividade !== "Residencial"
+    ? ramoParaPdf(u.ramo)
+    : "";
+}
 // Rótulo do perfil escolhido para a prévia e o PDF.
 function perfilRotuloUcBT(u) {
   if (u.perfil === "personalizado") {
@@ -1476,21 +1539,17 @@ function renderPreviaBT() {
     );
     html += `</div><div class="previa-grid">`;
     html += pvCampoBT("Tipo de solicitação", solicitacaoRotuloBT(u), PG.atend);
-    html += pvCampoBT("Tipo de propriedade", u.atividade, PG.atend);
-    // Ramo só existe fora do Residencial — mesma condição do campo na etapa de
-    // identificação. Sem isto a prévia abria uma linha "Ramo da atividade —"
-    // para toda UC residencial, que não existe na tela-alvo.
-    if (u.atividade && u.atividade !== "Residencial")
-      html += pvCampoBT("Ramo da atividade", ramoParaPdf(u.ramo), PG.atend);
+    html += pvCampoBT("Tipo de propriedade", tipoPropriedadeBT(u), PG.atend);
+    // Ramo: no urbano só fora do Residencial (mesma condição do campo na
+    // etapa); no rural é sempre exibido, pois é ele que traz a atividade.
+    if (rural || (u.atividade && u.atividade !== "Residencial"))
+      html += pvCampoBT("Ramo da atividade", ramoRotuloBT(u), PG.atend);
     if (!ucSemAlteracao(u))
       html += pvCampoBT("Perfil de carga", perfilRotuloUcBT(u), PG.cargas);
     if (cg.tipoA === "nr" && cg.catA != null)
       html += pvCampoBT("Categoria de atividade", (TABELA_11[cg.catA] || {}).d);
     html += pvCampoBT("Solicitação", state.atend.solicitacao);
-    if (!rural) {
-      html += pvCampoBT("CEP", o.cep, PG.dados, true);
-      html += pvCampoBT("Endereço", o.endereco, PG.dados);
-      html += pvCampoBT("Número", o.num, PG.dados);
+    const complementos = () => {
       html += pvCampoBT(
         u.mudaComplemento ? "Complemento atual" : "Complemento",
         u.complemento,
@@ -1498,6 +1557,12 @@ function renderPreviaBT() {
       );
       if (u.mudaComplemento)
         html += pvCampoBT("Novo complemento", u.novoComplemento, PG.atend);
+    };
+    if (!rural) {
+      html += pvCampoBT("CEP", o.cep, PG.dados, true);
+      html += pvCampoBT("Endereço", o.endereco, PG.dados);
+      html += pvCampoBT("Número", o.num, PG.dados);
+      complementos();
       html += pvCampoBT("Bairro", o.bairro, PG.dados);
     } else {
       html += pvCampoBT(
@@ -1507,6 +1572,7 @@ function renderPreviaBT() {
       );
       html += pvCampoBT("Nome da propriedade", o.nomePropriedade, PG.dados);
       html += pvCampoBT("Ponto de referência", o.pontoRef, PG.dados);
+      complementos();
     }
     html += pvCampoBT("Cidade", o.cidade, PG.dados);
     html += pvCampoBT("Estado", o.estado, PG.dados);
@@ -1924,6 +1990,13 @@ window.initFormulario = function () {
       sel.disabled = true;
       sel.dispatchEvent(new Event("change", { bubbles: true }));
     }
+    // Zona fixa em Rural: o seletor (desabilitado) também sai da tela, como
+    // no urbano (spec rural svg1).
+    const zonaToggle = $(`[data-toggle="obra.localizacao"]`);
+    const zonaGrid = zonaToggle && zonaToggle.closest(".grid");
+    if (zonaGrid) zonaGrid.style.display = "none";
+    const endRural = $("#endRuralBox");
+    if (endRural) endRural.style.marginTop = "0";
   } else {
     // Cards não-rurais (residencial/comercial/industrial…): sem opção urbano/
     // rural — a zona fica fixa em Urbana e o seletor é ocultado. Rural só existe
