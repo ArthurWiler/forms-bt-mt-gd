@@ -1726,20 +1726,17 @@ label.restricao-aceite input[type="checkbox"] {
    Campo de data (input[type=date]): o ícone de calendário reusa o
    MESMO padrão do (i) de ajuda — um <img class="field-hint-icon">
    ancorado ao campo e sempre visível (ver bloco .field-hint-icon).
-   O <img> é decorativo (pointer-events:none); o indicador NATIVO fica
-   invisível por baixo dele, cobrindo a mesma área, para que o clique
-   ali ainda abra o seletor de data do sistema.
+   Clicar no CAMPO apenas põe o cursor para DIGITAR a data (dd/mm/aaaa);
+   o calendário abre SÓ pelo ícone, que é quem recebe o clique e chama
+   showPicker() (shared/js/form-marcadores.js). Por isso o indicador
+   nativo é removido: ele ocupava uma faixa invisível de 44px à direita
+   e abria o seletor em cliques que deveriam ser só de digitação.
    ============================================================ */
 .cemig-form input[type="date"]::-webkit-calendar-picker-indicator,
 .cemig-form input[type="month"]::-webkit-calendar-picker-indicator {
-  position: absolute;
-  right: 0;
-  width: 44px;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  opacity: 0;
-  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
 }
 .cemig-form input[type="date"]::-webkit-inner-spin-button,
 .cemig-form input[type="date"]::-webkit-clear-button,
@@ -1747,8 +1744,8 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form input[type="month"]::-webkit-clear-button {
   display: none;
 }
-/* Ícone de calendário: maior que o (i) padrão e apenas decorativo — cliques
-   atravessam (pointer-events:none) para o indicador nativo por baixo.
+/* Ícone de calendário: maior que o (i) padrão e CLICÁVEL — é o único jeito
+   de abrir o seletor de data (o indicador nativo foi removido acima).
    Ancorado a 6px da borda (e não aos 16px do (i)): o arquivo traz o slot de
    40px do Figma com ~11px de folga em volta do traço, então o traço fica a
    17px da borda — a mesma medida do campo mês/ano. As reservas de espaço do
@@ -1764,7 +1761,8 @@ label.restricao-aceite input[type="checkbox"] {
   flex: none;
   object-fit: contain;
   object-position: center;
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: pointer;
 }
 /* ============================================================
    Campo mês/ano (.mesano-*) — seletor próprio, ver shared/js/mesano.js

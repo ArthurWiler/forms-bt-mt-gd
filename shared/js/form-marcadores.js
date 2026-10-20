@@ -24,8 +24,9 @@
   // Campos de data (input[type=date]) mostram um placeholder nativo
   // "dd/mm/aaaa" que não pode ser removido via atributo `placeholder`.
   // Convenção do projeto: enquanto vazio/sem foco, mostrar SÓ o rótulo
-  // (nenhum placeholder). O seletor de data (com o formato dd/mm/aaaa) só
-  // aparece quando o usuário interage. Truque: manter o controle como
+  // (nenhum placeholder). Clicar no campo apenas habilita a DIGITAÇÃO da data
+  // (dd/mm/aaaa); o calendário abre só pelo ícone à direita. Truque: manter o
+  // controle como
   // `type="text"` (rótulo isolado) e trocar para `type="date"` no foco;
   // reverter no blur se continuar vazio. O valor persiste em ISO
   // (yyyy-mm-dd), idêntico ao input date nativo, então o bind por data-k
@@ -44,12 +45,40 @@
     // Guarda o type original para restaurá-lo no foco (date ou month).
     el.setAttribute("data-cmg-date", el.type); // marca/idempotência
     if (!el.value) _paraTextoVazio(el); // vazio → esconde o dd/mm/aaaa nativo
+    // Foco (clique ou Tab) devolve o type original: o campo fica digitável,
+    // segmento a segmento, SEM abrir o calendário.
     el.addEventListener("focus", function () {
-      const tipo = el.getAttribute("data-cmg-date") || "date";
-      if (el.type !== tipo) {
-        el.type = tipo;
-        el.removeAttribute("placeholder"); // date/month ignoram placeholder
-      }
+      _comoData(el);
+    });
+    el.addEventListener("blur", function () {
+      if (!el.value) _paraTextoVazio(el); // vazio → volta a mostrar só o rótulo
+    });
+    _ligarIconeCalendario(el);
+  }
+  // Volta ao type original (date/month): habilita a digitação segmentada e
+  // guarda o valor em ISO.
+  function _comoData(el) {
+    const tipo = el.getAttribute("data-cmg-date") || "date";
+    if (el.type !== tipo) {
+      el.type = tipo;
+      el.removeAttribute("placeholder"); // date/month ignoram placeholder
+    }
+  }
+  // O calendário abre SÓ pelo ícone (<img class="field-cal-icon">) — o
+  // indicador nativo, que abria o seletor numa faixa invisível à direita do
+  // campo, está removido em css/shared.css. O mousedown é cancelado para o
+  // clique não roubar a seleção do campo antes do showPicker().
+  function _ligarIconeCalendario(el) {
+    const campo = el.closest(".field");
+    const icone = campo && campo.querySelector("img.field-cal-icon");
+    if (!icone || icone.hasAttribute("data-cmg-date-btn")) return;
+    icone.setAttribute("data-cmg-date-btn", ""); // idempotência
+    icone.addEventListener("mousedown", function (ev) {
+      ev.preventDefault();
+    });
+    icone.addEventListener("click", function () {
+      _comoData(el);
+      el.focus();
       if (typeof el.showPicker === "function") {
         try {
           el.showPicker();
@@ -57,9 +86,6 @@
           /* showPicker exige gesto do usuário em alguns browsers */
         }
       }
-    });
-    el.addEventListener("blur", function () {
-      if (!el.value) _paraTextoVazio(el); // vazio → volta a mostrar só o rótulo
     });
   }
   // Campo vazio como texto: um placeholder " " (espaço) mantém o estado
