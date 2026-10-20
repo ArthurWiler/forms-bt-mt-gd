@@ -38,7 +38,7 @@ const CARGA_CATS_BT = [
   { id: "b3", label: "Forno, fogão e grill", match: (c) => c.g === "b3" },
   {
     id: "b4",
-    label: "Lavadoras, secadores e ferro",
+    label: "Lavanderia",
     match: (c) => c.g === "b4",
   },
   { id: "refri", label: "Refrigeração", match: _ehRefri },

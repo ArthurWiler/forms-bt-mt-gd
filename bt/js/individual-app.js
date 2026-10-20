@@ -39,6 +39,18 @@ function novaUcDet() {
   uc.cargas = _cargasPadrao
     ? JSON.parse(JSON.stringify(_cargasPadrao))
     : Object.assign({}, uc.cargas, { tipoA: _prefTipoA });
+  // Cards legados com cargas pré-definidas (?mod=casa50…): a sugestão do card
+  // entra como "Perfil personalizado" já escolhido — editável na Etapa 5.
+  if (_cargasPadrao) {
+    uc.perfilPers = {
+      base: "",
+      cargas: JSON.parse(JSON.stringify(_cargasPadrao)),
+      gerador: Object.assign({}, uc.gerador),
+      disjEscolhido: "",
+    };
+    uc.perfil = "personalizado";
+    uc.perfilFamilia = familiaPerfisBT(uc);
+  }
   return uc;
 }
 const state = {
@@ -50,24 +62,15 @@ const state = {
   corr: corrPadrao(),
   obra: Object.assign(
     obraPadrao(),
-    // "O padrão precisa ser mudado de local?" (Padrão de energia, Etapa 4)
-    { mudancaLocal: "" },
     (CARD.prefill && CARD.prefill.obra) || {},
   ),
   obs: "",
-  ucsDet: [novaUcDet()],
+  // A Etapa 4 começa sem imóveis (os contadores em 0, spec svg1); só os cards
+  // legados que já trazem a UC (atividade/cargas pré-definidas) começam com 1.
+  ucsDet: _prefAtividade || _cargasPadrao ? [novaUcDet()] : [],
   logoPDF: null,
 };
 window.state = state;
-// Abertura dos blocos de UC (minimizados por padrão, como no React).
-const _ucAberta = {};
-// Abertura dos cards colapsáveis de identificação (etapa "Tipo de atendimento"),
-// independente da abertura dos cards de cargas (etapa "Cargas dos imóveis").
-const _ucIdentAberta = {};
-// Sem chave registrada, a UC 1 abre por padrão (btToggleExclusivo grava false
-// nas fechadas, então o usuário pode fechá-la depois).
-const _ucEstaAberta = (mapa, ui) =>
-  ui in mapa ? mapa[ui] === true : ui === 0 && !Object.keys(mapa).length;
 
 /* ===== derivados (docInfo/pessoaFisica/redeMonoBT/ruralBT no core) ===== */
 function demandaTotalGeralBT() {
@@ -148,8 +151,16 @@ function atualizarSolicitacaoAuto() {
 }
 
 /* ===== Gates de avanço específicos do fluxo (demais no core) ===== */
-// Etapa 4: combinação de disjuntores válida (2+ UCs).
-window.btCargasOk = () => validacaoDisjuntoresBT().ok !== false;
+// Etapa 4: pelo menos um imóvel, cada um com o tipo de propriedade (é ele que
+// escolhe os perfis de carga da Etapa 5).
+window.btImoveisOk = () =>
+  state.ucsDet.length > 0 && state.ucsDet.every((u) => !!u.atividade);
+// Etapa 5: todo imóvel com carga tem um perfil escolhido, nenhum editor de
+// perfil ficou aberto e a combinação de disjuntores é válida (2+ imóveis).
+window.btCargasOk = () =>
+  state.ucsDet.every((u) => ucSemAlteracao(u) || !!u.perfil) &&
+  !Object.keys(_editorPerfil).length &&
+  validacaoDisjuntoresBT().ok !== false;
 
 /* ===== hooks por página (chamados pelo goTo do core) ===== */
 window.onPaginaAtiva = function (sec) {
@@ -198,8 +209,7 @@ function onZonaBT() {
   atualizarCoordRural();
   // Rural: até 2 UCs (a 2ª é sempre de irrigação) e sem disjuntor geral.
   if (rural) state.atend.disjGeral = "Não";
-  atualizarOpcoesNUCsBT();
-  // A troca de zona pode cortar a 3ª UC e fixa a atividade da 2ª — as duas
+  // A troca de zona pode cortar o 3º imóvel e fixa a atividade do 2º — as duas
   // etapas por UC precisam refletir isso (os renders ignoram etapas ausentes).
   renderUcsIdentBT();
   renderUcsBT();
@@ -230,73 +240,141 @@ function atualizarCoordRural() {
 }
 function onTipoRedeBT() {
   _sync("obra.tipoRede");
-  // redeMono muda a lista de disjuntores das UCs
+  // redeMono muda a lista de disjuntores dos imóveis (e dos perfis)
   renderUcsBT();
 }
 
 /* ============================================================
-   Etapa 4 — Atendimento: blocos colapsáveis por UC
-   (identificação + cargas em acordeões + gerador + resultado)
+   Etapa 4 — Imóveis e atendimento (spec Figma svg1–8)
+   ------------------------------------------------------------
+   "O que você precisa neste endereço?": um contador por tipo de
+   solicitação. Cada unidade contada vira um card "Imóvel N de M" com a
+   identificação e o padrão de energia DESTE imóvel. state.ucsDet é a
+   única fonte de verdade — os contadores são derivados dele e
+   atend.nUCs só o acompanha (PDF/termo leem o array).
    ============================================================ */
-// Máximo de UCs do pedido: 3 em zona urbana; 2 em zona rural, onde a 2ª UC
-// existe apenas para irrigação (a 1ª mantém a atividade de livre escolha).
+// Máximo de imóveis do pedido: 3 em zona urbana; 2 em zona rural, onde o 2º
+// existe apenas para irrigação (o 1º mantém a atividade de livre escolha).
 function maxUcsBT() {
   return ruralBT() ? 2 : 3;
 }
-// A lista do seletor acompanha o máximo da zona; se a zona virar rural com 3
-// UCs escolhidas, o excedente é descartado.
-function atualizarOpcoesNUCsBT() {
-  const max = maxUcsBT();
-  if ((Number(state.atend.nUCs) || 1) > max) state.atend.nUCs = max;
-  // "Adicionar nova unidade" some ao atingir o máximo da zona.
-  const addRow = $("#ucAddRow");
-  if (addRow)
-    addRow.style.display =
-      (Number(state.atend.nUCs) || 1) >= max ? "none" : "";
+// Linhas de contadores. "Alteração de carga com mudança no complemento" é
+// gravada como "Alteração de Carga" + u.mudaComplemento — o PDF agrupa as UCs
+// pelo valor exato da solicitação. "Caixa existente sem alteração" não está
+// no Figma: segue disponível por decisão do negócio.
+const TIPOS_SOLICITACAO_BT = [
+  {
+    id: "nova",
+    l: "Ligação nova",
+    desc: "Imóvel que ainda não tem medidor de energia",
+    sol: "Conexão Nova",
+  },
+  {
+    id: "alt",
+    l: "Alteração de carga",
+    desc: "Imóvel já ligado, com alteração de carga",
+    sol: "Alteração de Carga",
+  },
+  {
+    id: "alt-compl",
+    l: "Alteração de carga com mudança no complemento",
+    desc: "Imóvel já ligado à energia, com alteração de carga e em que o complemento do endereço também altera <em>(por exemplo: Casa para Loja 1)</em>",
+    sol: "Alteração de Carga",
+    compl: true,
+  },
+  {
+    id: "caixa",
+    l: "Caixa existente sem alteração",
+    desc: "Imóvel já ligado à energia, sem alteração de carga",
+    sol: "Caixa Existente sem Alteração",
+  },
+];
+const tipoSolicitacaoBT = (u) =>
+  u.solicitacao === "Alteração de Carga"
+    ? u.mudaComplemento
+      ? "alt-compl"
+      : "alt"
+    : u.solicitacao === "Caixa Existente sem Alteração"
+      ? "caixa"
+      : "nova";
+const _tipoBT = (id) => TIPOS_SOLICITACAO_BT.find((t) => t.id === id);
+const solicitacaoRotuloBT = (u) => _tipoBT(tipoSolicitacaoBT(u)).l;
+function _aplicarTipoBT(u, t) {
+  u.solicitacao = t.sol;
+  u.mudaComplemento = !!t.compl;
+  if (!t.compl) u.novoComplemento = "";
+  // Ligação nova não tem instalação existente nem padrão a mudar de lugar.
+  if (t.id === "nova") {
+    u.instalacao = "";
+    u.mudancaLocal = "";
+  }
 }
-// Etapa 3 (spec Figma): UCs entram por "Adicionar nova unidade" e saem por
-// "Excluir unidade" no cabeçalho do card — atend.nUCs acompanha a lista.
-function adicionarUcBT() {
-  const n = Number(state.atend.nUCs) || 1;
-  if (n >= maxUcsBT()) return;
-  state.atend.nUCs = n + 1;
-  btToggleExclusivo(_ucIdentAberta, n, true);
-  _aoMudarUcIdent();
-}
-function excluirUcBT(ui) {
-  if (state.ucsDet.length <= 1) return;
-  state.ucsDet.splice(ui, 1);
-  state.atend.nUCs = state.ucsDet.length;
-  [_ucIdentAberta, _ucAberta].forEach((m) =>
+// Cards abertos por padrão (o Figma mostra todos expandidos); o mapa guarda só
+// os que o usuário fechou. Mudou a lista, os índices mudam: o mapa zera.
+const _ucIdentFechada = {};
+const _ucCargaFechada = {};
+const _zerarAberturasBT = () =>
+  [_ucIdentFechada, _ucCargaFechada].forEach((m) =>
     Object.keys(m).forEach((k) => delete m[k]),
   );
+// + insere no fim do grupo do tipo (os cards seguem a ordem dos contadores);
+// − remove o último imóvel daquele tipo.
+function alterarContadorBT(id, delta) {
+  const arr = state.ucsDet;
+  const ordem = TIPOS_SOLICITACAO_BT.map((t) => t.id);
+  if (delta > 0) {
+    if (arr.length >= maxUcsBT()) return;
+    const u = novaUcDet();
+    _aplicarTipoBT(u, _tipoBT(id));
+    let pos = 0;
+    arr.forEach((x, i) => {
+      if (ordem.indexOf(tipoSolicitacaoBT(x)) <= ordem.indexOf(id))
+        pos = i + 1;
+    });
+    arr.splice(pos, 0, u);
+  } else {
+    let ult = -1;
+    arr.forEach((x, i) => {
+      if (tipoSolicitacaoBT(x) === id) ult = i;
+    });
+    if (ult < 0) return;
+    arr.splice(ult, 1);
+  }
+  _zerarAberturasBT();
+  Object.keys(_editorPerfil).forEach((k) => delete _editorPerfil[k]);
   _aoMudarUcIdent();
 }
-// A mudança de local é do padrão (um por endereço): replica em todas as UCs,
-// que é onde o PDF e o mapa do novo local (rural) a leem.
-function onMudancaLocalBT() {
-  state.ucsDet.forEach((u) => (u.mudancaLocal = state.obra.mudancaLocal));
-  renderUcsIdentBT();
-}
-function onNUCsBT() {
-  _sync("atend.nUCs");
-  state.atend.nUCs = Math.min(parseInt(state.atend.nUCs, 10) || 1, maxUcsBT());
-  // Nº de UCs afeta as duas etapas: identificação (Tipo de atendimento) e cargas.
-  renderUcsIdentBT();
-  renderUcsBT();
-}
+// Zona/limite: corta o excedente e mantém a regra do 2º imóvel rural.
 function _sincronizarUcs() {
-  const n = Math.min(Math.max(1, Number(state.atend.nUCs) || 1), maxUcsBT());
   const arr = state.ucsDet;
-  while (arr.length < n) arr.push(novaUcDet());
-  while (arr.length > n) arr.pop();
-  // Rural: a 2ª UC é sempre irrigação (atividade fixa, não editável).
-  if (ruralBT() && arr[1]) arr[1].atividade = ATIVIDADE_IRRIGACAO;
-  arr.forEach((u) => (u.mudancaLocal = state.obra.mudancaLocal));
+  if (arr.length > maxUcsBT()) arr.length = maxUcsBT();
+  if (ruralBT()) {
+    // Rural: o 2º imóvel é sempre irrigação (atividade fixa, não editável);
+    // um imóvel que deixa a 2ª posição perde a atividade fixa.
+    arr.forEach((u, i) => {
+      if (i === 1) u.atividade = ATIVIDADE_IRRIGACAO;
+      else if (u.atividade === ATIVIDADE_IRRIGACAO) u.atividade = "";
+    });
+  }
+  state.atend.nUCs = arr.length;
+}
+// Perfil escolhido numa família que não vale mais (tipo/ramo mudou): a
+// escolha e o personalizado caem e a carga volta a zero.
+function _revalidarPerfisBT() {
+  state.ucsDet.forEach((u) => {
+    if (!u.perfil && !u.perfilPers) return;
+    if (u.perfilFamilia === familiaPerfisBT(u)) return;
+    u.perfil = "";
+    u.perfilPers = null;
+    u.perfilFamilia = "";
+    u.disjEscolhido = "";
+    u.cargas = { qtds: CAT.map(() => 0), tipoA: "", catA: null, mots: [] };
+  });
 }
 // Recalcula os derivados de carga/demanda/disjuntor de todas as UCs (usado por
-// ambas as etapas, mesmo com o card fechado — o preset já conta na demanda).
+// ambas as etapas — a escolha de perfil já conta na demanda).
 function _recalcularCargasUcs() {
+  _revalidarPerfisBT();
   state.ucsDet.forEach((u) => {
     if (ucSemAlteracao(u)) return;
     const d = Object.assign(
@@ -311,50 +389,37 @@ function _recalcularCargasUcs() {
     u.cargas = d;
   });
 }
-// Card colapsável da UC reutilizado pelas duas etapas (spec Figma): cabeçalho
-// "Unidade consumidora" + tag da atividade principal (+ "Excluir unidade" na
-// identificação com 2+ UCs) e, no corpo, o endereço da UC antes do conteúdo.
-// `montarCorpo(corpo, u, ui)` preenche o corpo quando o card está aberto.
+// Endereço do topo da etapa ("Rua Exemplo, 100 - Centro, Belo Horizonte/MG").
+function _enderecoAtendTxt() {
+  const o = state.obra;
+  const j = (xs, sep) => xs.filter((x) => String(x || "").trim()).join(sep);
+  const cidadeUf = j([o.cidade, o.estado], "/");
+  if (ruralBT())
+    return j([o.nomePropriedade, o.distritoComunidade, cidadeUf], ", ");
+  return j([j([o.endereco, o.num], ", "), j([o.bairro, cidadeUf], ", ")], " - ");
+}
+// Endereço do imóvel na Etapa 5: rua, nº e o complemento (o novo, quando muda).
 function _enderecoUCTxt(u) {
   const o = state.obra;
   const partes = ruralBT()
     ? [o.nomePropriedade, o.distritoComunidade, o.cidade]
     : [o.endereco, o.num];
-  partes.push(u.complemento);
+  partes.push(u.mudaComplemento ? u.novoComplemento : u.complemento);
   return partes.filter((x) => String(x || "").trim()).join(", ") || "—";
 }
-function _mkUcColapsavel(u, ui, aberta, aoAlternar, montarCorpo, opts) {
-  opts = opts || {};
+// Card "Imóvel N de M" das duas etapas: caixa cinza com cabeçalho clicável
+// (título + badge + chevron) e o corpo, montado só quando aberto.
+function _mkUcColapsavel(ui, aberta, aoAlternar, montarCorpo) {
   const bloco = document.createElement("div");
-  bloco.className = "uc-colapsavel" + (aberta ? " is-open" : "");
+  bloco.className = "uc-colapsavel uc-imovel" + (aberta ? " is-open" : "");
   const head = document.createElement("div");
   head.className = "uc-colapsavel-head";
   head.setAttribute("role", "button");
   head.tabIndex = 0;
   head.setAttribute("aria-expanded", aberta ? "true" : "false");
   head.innerHTML =
-    '<span class="uc-colapsavel-titulo">Unidade consumidora' +
-    (u.atividade
-      ? ` <span class="carga-acc-badge uc-tag-atividade">${u.atividade}</span>`
-      : "") +
-    '</span><span class="uc-head-acoes"></span>';
-  const acoes = head.lastChild;
-  if (opts.excluir) {
-    const del = document.createElement("button");
-    del.type = "button";
-    del.className = "uc-excluir";
-    del.innerHTML =
-      '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>Excluir unidade';
-    del.addEventListener("click", (e) => {
-      e.stopPropagation();
-      excluirUcBT(ui);
-    });
-    acoes.appendChild(del);
-  }
-  const chev = document.createElement("span");
-  chev.className = "carga-acc-chevron uc-colapsavel-chevron";
-  chev.setAttribute("aria-hidden", "true");
-  acoes.appendChild(chev);
+    `<span class="uc-colapsavel-titulo">Imóvel <span class="carga-acc-badge">${ui + 1} de ${state.ucsDet.length}</span></span>` +
+    '<span class="carga-acc-chevron uc-colapsavel-chevron" aria-hidden="true"></span>';
   head.addEventListener("click", aoAlternar);
   head.addEventListener("keydown", (e) => {
     if (e.target !== head || (e.key !== "Enter" && e.key !== " ")) return;
@@ -365,98 +430,66 @@ function _mkUcColapsavel(u, ui, aberta, aoAlternar, montarCorpo, opts) {
   if (aberta) {
     const corpo = document.createElement("div");
     corpo.className = "uc-colapsavel-corpo";
-    if (opts.aviso) {
-      const aviso = document.createElement("div");
-      aviso.className = "cmg-aviso cmg-aviso--warn uc-aviso-endereco";
-      aviso.innerHTML =
-        '<div class="cmg-aviso-icon" aria-hidden="true"></div><p class="cmg-aviso-texto"><span>Todas as unidades deste pedido devem estar no <b>mesmo endereço exato</b> (rua, número, bairro, cidade e UF), mudando <b>apenas o complemento</b> (ex: casa, apto, bloco). Se houver qualquer outra diferença, como o número do imóvel, é necessário abrir uma nova solicitação de atendimento.</span></p>';
-      corpo.appendChild(aviso);
-    }
-    const end = document.createElement("div");
-    end.className = "endereco-bloco";
-    end.innerHTML =
-      '<span class="uc-head-endereco-label">Endereço</span><span class="uc-head-endereco"></span>';
-    end.lastChild.textContent = _enderecoUCTxt(u);
-    corpo.appendChild(end);
-    montarCorpo(corpo, u, ui);
+    montarCorpo(corpo);
     bloco.appendChild(corpo);
   }
   return bloco;
 }
-// Etapa "Tipo de atendimento": identificação por UC (solicitação, atividade,
-// ramo, complemento, UC/instalação/medidor, mudança de local).
-// Os campos de carga e o disjuntor novo ficam na etapa "Cargas dos imóveis".
+// Contadores (− N +) — mesmo componente .qtd-ctrl da lista de equipamentos.
+const _ICONE_MENOS_BT =
+  '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg>';
+const _ICONE_MAIS_BT =
+  '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg>';
+function renderContadoresBT() {
+  const box = $("#atendContadores");
+  if (!box) return;
+  const n = {};
+  TIPOS_SOLICITACAO_BT.forEach((t) => (n[t.id] = 0));
+  state.ucsDet.forEach((u) => n[tipoSolicitacaoBT(u)]++);
+  const cheio = state.ucsDet.length >= maxUcsBT();
+  box.innerHTML = "";
+  TIPOS_SOLICITACAO_BT.forEach((t) => {
+    const linha = document.createElement("div");
+    linha.className = "atend-contador";
+    linha.innerHTML =
+      `<div class="atend-contador-texto"><strong>${t.l}</strong><span>${t.desc}</span></div>` +
+      `<div class="qtd-ctrl qtd-ctrl--atend">` +
+      `<button type="button" class="minus" aria-label="Remover ${t.l}"${n[t.id] ? "" : " disabled"}>${_ICONE_MENOS_BT}</button>` +
+      `<input type="text" value="${n[t.id]}" readonly tabindex="-1" aria-label="Quantidade de ${t.l}" />` +
+      `<button type="button" class="plus" aria-label="Adicionar ${t.l}"${cheio ? " disabled" : ""}>${_ICONE_MAIS_BT}</button>` +
+      `</div>`;
+    linha
+      .querySelector(".minus")
+      .addEventListener("click", () => alterarContadorBT(t.id, -1));
+    linha
+      .querySelector(".plus")
+      .addEventListener("click", () => alterarContadorBT(t.id, 1));
+    box.appendChild(linha);
+  });
+}
 function renderUcsIdentBT() {
   const box = $("#ucsIdentBox");
   if (!box) return;
   _sincronizarUcs();
   _recalcularCargasUcs();
   atualizarSolicitacaoAuto();
+  const end = $("#atendEndereco");
+  if (end) end.textContent = _enderecoAtendTxt();
+  const max = $("#atendMax");
+  if (max) max.textContent = maxUcsBT();
+  renderContadoresBT();
   box.innerHTML = "";
-  const multi = state.ucsDet.length > 1;
   state.ucsDet.forEach((u, ui) => {
-    const aberta = _ucEstaAberta(_ucIdentAberta, ui);
+    const aberta = !_ucIdentFechada[ui];
     box.appendChild(
       _mkUcColapsavel(
-        u,
         ui,
         aberta,
         () => {
-          btToggleExclusivo(_ucIdentAberta, ui, !aberta);
+          _ucIdentFechada[ui] = aberta;
           renderUcsIdentBT();
         },
         (corpo) => corpo.appendChild(_ucIdentificacao(u, ui)),
-        { excluir: multi, aviso: true },
-      ),
-    );
-  });
-  atualizarOpcoesNUCsBT();
-  if (window.CemigMarcadores) {
-    CemigMarcadores.aplicar(box);
-    CemigMarcadores.atualizarAvancar();
-  }
-}
-// Etapa "Cargas dos imóveis": só as cargas, o gerador e o resultado (disjuntor novo).
-function renderUcsBT() {
-  const box = $("#ucsBox");
-  if (!box) return;
-  _sincronizarUcs();
-  // Resultados sempre atualizados, mesmo com o bloco da UC fechado (o preset
-  // do card já conta na demanda/validação sem o usuário precisar abrir).
-  _recalcularCargasUcs();
-  atualizarSolicitacaoAuto();
-  box.innerHTML = "";
-  const multi = state.ucsDet.length > 1;
-  state.ucsDet.forEach((u, ui) => {
-    const aberta = _ucEstaAberta(_ucAberta, ui);
-    box.appendChild(
-      _mkUcColapsavel(
-        u,
-        ui,
-        aberta,
-        () => {
-          btToggleExclusivo(_ucAberta, ui, !aberta);
-          renderUcsBT();
-        },
-        (corpo) => {
-          if (ucSemAlteracao(u)) {
-            const info = document.createElement("div");
-            info.className = "alert alert-info";
-            info.innerHTML =
-              "Esta UC foi marcada como <strong>Caixa Existente sem Alteração</strong>. O preenchimento de cargas foi omitido; ela aparecerá apenas no resumo do PDF.";
-            corpo.appendChild(info);
-            return;
-          }
-          const cargasBox = document.createElement("div");
-          corpo.appendChild(cargasBox);
-          corpo.appendChild(_ucGerador(u, ui));
-          const resultadoBox = document.createElement("div");
-          corpo.appendChild(resultadoBox);
-          montarCargasBT(cargasBox, u, ui, () =>
-            _renderResultadoUC(resultadoBox, u, ui, multi),
-          );
-          _renderResultadoUC(resultadoBox, u, ui, multi);
-        },
       ),
     );
   });
@@ -465,59 +498,148 @@ function renderUcsBT() {
     CemigMarcadores.atualizarAvancar();
   }
 }
-// Mudar Solicitação/Atividade na etapa de identificação re-renderiza esta etapa
-// (campos condicionais: Ramo, UC, Instalação, Mudança de local)
-// e também a etapa de cargas (o tipoA das cargas deriva da atividade).
+// Mudar solicitação/tipo/ramo re-renderiza esta etapa (campos condicionais)
+// e a de cargas (os perfis e o tipoA derivam da atividade e do ramo).
 function _aoMudarUcIdent() {
   renderUcsIdentBT();
   renderUcsBT();
 }
-// Tipo de solicitação (spec Figma). "Alteração de carga com mudança no
-// complemento" é gravada como "Alteração de Carga" + u.mudaComplemento — o PDF
-// agrupa as UCs pelo valor exato da solicitação.
-const OPCOES_SOLICITACAO_UC = [
-  { v: "Conexão Nova", l: "Ligação nova" },
-  { v: "Alteração de Carga", l: "Alteração de carga" },
-  { v: "alt-compl", l: "Alteração de carga com mudança no complemento" },
-  { v: "Caixa Existente sem Alteração", l: "Caixa existente sem alteração" },
-];
-const solicitacaoRotuloBT = (u) =>
-  u.solicitacao === "Alteração de Carga" && u.mudaComplemento
-    ? OPCOES_SOLICITACAO_UC[2].l
-    : (OPCOES_SOLICITACAO_UC.find((o) => o.v === u.solicitacao) || {}).l ||
-      u.solicitacao;
-// Identificação da UC (spec Figma): Complemento · Atividade principal ·
-// [Ramo da atividade] · Tipo de solicitação · [Novo complemento] ·
-// [Nº da unidade/instalação].
+// Pergunta Sim/Não por imóvel (mesmo radio .toggle-btn dos demais Sim/Não).
+function _simNaoBT(label, valor, aoMudar) {
+  const f = document.createElement("div");
+  f.className = "field field--plain";
+  f.setAttribute("data-noopt", "");
+  const l = document.createElement("label");
+  l.textContent = label;
+  const tg = document.createElement("div");
+  tg.className = "toggle-group";
+  tg.setAttribute("role", "radiogroup");
+  ["Sim", "Não"].forEach((v) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "toggle-btn" + (valor === v ? " on" : "");
+    b.setAttribute("role", "radio");
+    b.setAttribute("aria-checked", valor === v ? "true" : "false");
+    b.textContent = v;
+    b.addEventListener("click", () => {
+      tg.querySelectorAll(".toggle-btn").forEach((x) => {
+        x.classList.toggle("on", x === b);
+        x.setAttribute("aria-checked", x === b ? "true" : "false");
+      });
+      aoMudar(v);
+    });
+    tg.appendChild(b);
+  });
+  f.append(l, tg);
+  return f;
+}
+// Avisos do "padrão pronto para ser ligado?" (antes globais, agora do imóvel).
+const _AVISO_PRONTO_BT = {
+  Sim: [
+    "cmg-aviso",
+    "Como o padrão de entrada de energia já está pronto para ser ligado, o pedido de vistoria, solicitação para que a Cemig verifique se a instalação está de acordo com as normas técnicas, e o pedido de ligação serão disparados automaticamente assim que você concluir todas as etapas do formulário de atendimento. Não é necessário fazer nenhuma solicitação adicional.",
+  ],
+  Não: [
+    "cmg-aviso cmg-aviso--warn",
+    "Como o padrão de entrada de energia não está pronto para ser ligado, você deverá solicitar o pedido de vistoria, solicitação para que a Cemig verifique se a instalação está de acordo com as normas técnicas, e o pedido de ligação em até 120 dias após a conclusão das etapas deste formulário de atendimento. Após esse prazo, a solicitação poderá ser cancelada.",
+  ],
+};
+function _avisoProntoBT(box, v) {
+  box.innerHTML = "";
+  const a = _AVISO_PRONTO_BT[v];
+  box.style.display = a ? "" : "none";
+  if (!a) return;
+  box.innerHTML = `<div class="${a[0]} no-print"><div class="cmg-aviso-icon" aria-hidden="true"></div><p class="cmg-aviso-texto">${a[1]}</p></div>`;
+}
+// "Solicitação de atendimento": rótulo + lápis; o lápis troca o rótulo por um
+// select com os tipos — mudar o tipo move o imóvel de contador.
+function _ucSolicitacao(u, ui) {
+  const wrap = document.createElement("div");
+  wrap.className = "uc-solicitacao";
+  const rot = document.createElement("span");
+  rot.className = "uc-solicitacao-rotulo";
+  rot.textContent = "Solicitação de atendimento";
+  const linha = document.createElement("div");
+  linha.className = "uc-solicitacao-valor";
+  const valor = document.createElement("strong");
+  valor.textContent = solicitacaoRotuloBT(u);
+  const lapis = document.createElement("button");
+  lapis.type = "button";
+  lapis.className = "previa-edit uc-solicitacao-editar";
+  lapis.title = "Alterar";
+  lapis.setAttribute("aria-label", "Alterar a solicitação de atendimento");
+  lapis.addEventListener("click", () => {
+    const sel = document.createElement("select");
+    sel.innerHTML = TIPOS_SOLICITACAO_BT.map(
+      (t) => `<option value="${t.id}">${t.l}</option>`,
+    ).join("");
+    sel.value = tipoSolicitacaoBT(u);
+    sel.addEventListener("change", () => {
+      _aplicarTipoBT(u, _tipoBT(sel.value));
+      // Reposiciona o imóvel no grupo do novo tipo (ordem dos contadores).
+      const ordem = TIPOS_SOLICITACAO_BT.map((t) => t.id);
+      state.ucsDet.sort(
+        (a, b) =>
+          ordem.indexOf(tipoSolicitacaoBT(a)) -
+          ordem.indexOf(tipoSolicitacaoBT(b)),
+      );
+      _zerarAberturasBT();
+      _aoMudarUcIdent();
+    });
+    sel.addEventListener("blur", () => {
+      if (sel.isConnected) renderUcsIdentBT();
+    });
+    const campo = _campo("Solicitação de atendimento", sel, "field--float");
+    campo.classList.add("row-solo");
+    wrap.replaceWith(campo);
+    sel.focus();
+  });
+  linha.append(valor, lapis);
+  wrap.append(rot, linha);
+  return wrap;
+}
+// Corpo do card na Etapa 4 (svg3–8): solicitação · complemento(s) · tipo de
+// propriedade · [ramo] · [nº da instalação] · padrão de energia do imóvel.
 function _ucIdentificacao(u, ui) {
+  const wrap = document.createElement("div");
+  wrap.appendChild(_ucSolicitacao(u, ui));
   const grid = document.createElement("div");
   grid.className = "grid grid-2";
-  grid.style.marginBottom = "24px";
-  // Só a UC 1 fica presa ao tipo principal do formulário; UCs 2/3 são livres.
-  // Exceção rural: a 2ª UC só existe para irrigação, então a atividade dela
-  // fica fixa em "Irrigação" (a 1ª segue de livre escolha).
+  // Só o 1º imóvel fica preso ao tipo principal do formulário (cards
+  // restritos); exceção rural: o 2º só existe para irrigação.
   const irrigacaoFixa = ruralBT() && ui === 1;
   const atividadeBloqueada =
     irrigacaoFixa || ((restrito || atividadeTravada) && ui === 0);
-  // Complemento (obrigatório com 2+ UCs); atualiza o endereço do card ao vivo
-  const inpCompl = document.createElement("input");
-  inpCompl.type = "text";
-  inpCompl.placeholder = " ";
-  inpCompl.value = u.complemento || "";
-  inpCompl.addEventListener("input", () => {
-    u.complemento = inpCompl.value;
-    const corpo = grid.closest(".uc-colapsavel-corpo");
-    const end = corpo && corpo.querySelector(".uc-head-endereco");
-    if (end) end.textContent = _enderecoUCTxt(u);
-  });
-  grid.appendChild(
-    _campo(
-      "Complemento do endereço" +
-        (state.ucsDet.length > 1 ? ' <span class="req">*</span>' : ""),
-      inpCompl,
-    ),
-  );
-  // Atividade principal
+  const inpTexto = (v, aoDigitar) => {
+    const inp = document.createElement("input");
+    inp.type = "text";
+    inp.placeholder = " ";
+    inp.value = v || "";
+    inp.addEventListener("input", () => aoDigitar(inp.value));
+    return inp;
+  };
+  if (u.mudaComplemento) {
+    grid.appendChild(
+      _campo(
+        'Complemento atual <span class="req">*</span>',
+        inpTexto(u.complemento, (v) => (u.complemento = v)),
+      ),
+    );
+    grid.appendChild(
+      _campo(
+        'Novo complemento <span class="req">*</span>',
+        inpTexto(u.novoComplemento, (v) => (u.novoComplemento = v)),
+      ),
+    );
+  } else {
+    // Sem data-k o marcador não acrescenta o "(opcional)" — vai no rótulo.
+    grid.appendChild(
+      _campo(
+        'Complemento <span class="opt">(opcional)</span>',
+        inpTexto(u.complemento, (v) => (u.complemento = v)),
+      ),
+    );
+  }
   const selAtiv = _selectDe(
     irrigacaoFixa
       ? [ATIVIDADE_IRRIGACAO]
@@ -532,85 +654,89 @@ function _ucIdentificacao(u, ui) {
   selAtiv.disabled = atividadeBloqueada;
   grid.appendChild(
     _campo(
-      'Atividade principal <span class="req">*</span>',
+      'Tipo de propriedade <span class="req">*</span>',
       selAtiv,
       "field--float",
     ),
   );
-  // Ramo (não residencial)
-  if (u.atividade !== "Residencial") {
+  if (u.atividade && u.atividade !== "Residencial") {
     const inp = document.createElement("input");
     inp.type = "text";
     inp.placeholder = " ";
     // O campo mostra só a descrição; u.ramo guarda "código - descrição"
-    // (o código sai no PDF).
+    // (o código sai no PDF e escolhe os perfis de salão de beleza).
     inp.value = ramoDescricao(u.ramo);
     inp.disabled = restrito && ui === 0;
-    ramoAtivAttach(inp, (v) => (u.ramo = v));
+    ramoAtivAttach(inp, (v) => {
+      const antes = familiaPerfisBT(u);
+      u.ramo = v;
+      if (familiaPerfisBT(u) !== antes) renderUcsBT();
+    });
     grid.appendChild(
       _campo('Ramo da atividade <span class="req">*</span>', inp),
     );
   }
-  // Tipo de solicitação por UC
-  const selSol = document.createElement("select");
-  selSol.innerHTML = OPCOES_SOLICITACAO_UC.map(
-    (o) => `<option value="${o.v}">${o.l}</option>`,
-  ).join("");
-  selSol.value =
-    u.solicitacao === "Alteração de Carga" && u.mudaComplemento
-      ? "alt-compl"
-      : u.solicitacao;
-  selSol.addEventListener("change", () => {
-    const v = selSol.value;
-    u.mudaComplemento = v === "alt-compl";
-    u.solicitacao = u.mudaComplemento ? "Alteração de Carga" : v;
-    if (!u.mudaComplemento) u.novoComplemento = "";
-    _aoMudarUcIdent();
-  });
-  grid.appendChild(
-    _campo(
-      'Tipo de solicitação <span class="req">*</span>',
-      selSol,
-      "field--float",
-    ),
-  );
-  if (u.mudaComplemento) {
-    const inpNovo = document.createElement("input");
-    inpNovo.type = "text";
-    inpNovo.placeholder = " ";
-    inpNovo.value = u.novoComplemento || "";
-    inpNovo.addEventListener("input", () => (u.novoComplemento = inpNovo.value));
-    grid.appendChild(
-      _campo('Novo complemento do endereço <span class="req">*</span>', inpNovo),
-    );
-  }
   if (u.solicitacao !== "Conexão Nova") {
     // Um único campo para o número que identifica a UC existente: a Cemig
-    // aceita instalação, unidade consumidora ou medidor.
+    // aceita instalação, unidade consumidora ou medidor. Instalação (10
+    // dígitos, inicia por 3) ou UC nova (15 dígitos, "018" antes do
+    // verificador) — REN ANEEL 1.095/2024.
     const inpInst = document.createElement("input");
     inpInst.type = "text";
     inpInst.placeholder = " ";
     inpInst.value = u.instalacao || "";
-    // Instalação (10 dígitos, inicia por 3) ou UC nova (15 dígitos, "018"
-    // antes do verificador) — REN ANEEL 1.095/2024.
     inpInst.setAttribute("data-fmt", "fmtInstalacaoUC");
     inpInst.addEventListener("input", () => {
       inpInst.value = mascararInstalacaoUC(inpInst.value);
       u.instalacao = inpInst.value;
     });
     grid.appendChild(
-      _campo('Nº da unidade/instalação<span class="req">*</span>', inpInst),
+      _campo('Nº da unidade/instalação <span class="req">*</span>', inpInst),
     );
   }
-  // Novo local do padrão: em zona rural, quando a UC pede mudança de local,
-  // apresenta mapa + coordenadas para escolher o ponto do padrão (Etapa 4).
+  wrap.appendChild(grid);
+  // Padrão de energia deste imóvel
+  const padrao = document.createElement("div");
+  padrao.className = "divider uc-padrao";
+  padrao.innerHTML = '<h5 class="uc-padrao-titulo">Padrão de energia deste imóvel</h5>';
+  const gp = document.createElement("div");
+  gp.className = "grid grid-2";
+  gp.appendChild(
+    _simNaoBT(
+      "Distância do padrão até o poste inferior a 30m?",
+      u.distMenor30,
+      (v) => (u.distMenor30 = v),
+    ),
+  );
+  const avisoPronto = document.createElement("div");
+  avisoPronto.className = "col-span-2";
+  const fPronto = _simNaoBT(
+    "O padrão está pronto para ser ligado?",
+    u.prontoLigar,
+    (v) => {
+      u.prontoLigar = v;
+      _avisoProntoBT(avisoPronto, v);
+    },
+  );
+  if (u.solicitacao !== "Conexão Nova") {
+    gp.appendChild(
+      _simNaoBT("O padrão precisa ser mudado de local?", u.mudancaLocal, (v) => {
+        u.mudancaLocal = v;
+        // Rural: "Sim" abre o mapa do novo local do padrão neste card.
+        if (ruralBT()) renderUcsIdentBT();
+      }),
+    );
+  }
+  gp.append(fPronto, avisoPronto);
+  _avisoProntoBT(avisoPronto, u.prontoLigar);
+  padrao.appendChild(gp);
+  wrap.appendChild(padrao);
+  // Novo local do padrão: em zona rural, quando o imóvel pede mudança de
+  // local, mapa + coordenadas para escolher o ponto do padrão.
   const novoLocal =
-    ruralBT() &&
-    u.mudancaLocal === "Sim" &&
-    (u.solicitacao === "Alteração de Carga" ||
-      u.solicitacao === "Caixa Existente sem Alteração");
-  if (novoLocal) return _ucIdentComNovoLocal(grid, u, ui);
-  return grid;
+    ruralBT() && u.mudancaLocal === "Sim" && u.solicitacao !== "Conexão Nova";
+  if (novoLocal) return _ucIdentComNovoLocal(wrap, u, ui);
+  return wrap;
 }
 // Envolve a grade de identificação e anexa a seção "Novo local do padrão"
 // (mapa Leaflet clicável/arrastável + latitude/longitude + UTM). Cada UC tem
@@ -768,9 +894,9 @@ function _ucGerador(u, ui) {
   };
   u.gerador = ger;
   const wrap = document.createElement("div");
-  wrap.style.marginTop = "24px";
+  wrap.className = "uc-gerador";
   const f = document.createElement("div");
-  f.className = "field field--plain";
+  f.className = "field field--plain uc-gerador-campo";
   f.setAttribute("data-noopt", "");
   const l = document.createElement("label");
   l.textContent = "Possui gerador de emergência?";
@@ -830,31 +956,288 @@ function _ucGerador(u, ui) {
   renderDetalhe();
   return wrap;
 }
+/* ============================================================
+   Etapa 5 — Cargas dos imóveis: perfis de carga (spec Figma svg9–14)
+   ------------------------------------------------------------
+   Cada imóvel escolhe um perfil pronto (bt/js/perfis-carga.js) ou um
+   "Perfil personalizado". Escolher só PREENCHE u.cargas; o editor
+   ("Personalizar perfil") é a calculadora de sempre (montarCargasBT)
+   sobre um rascunho — Cancelar descarta, Confirmar vira o personalizado.
+   ============================================================ */
+// Editores abertos, por índice de imóvel: { base, draft } — fora do state
+// (é estado de tela; o que vale é u.perfilPers depois de confirmar).
+const _editorPerfil = {};
+const _geradorPadraoBT = () => ({
+  possui: "Não",
+  potencia: "",
+  fonte: "",
+  descricao: "",
+});
+const _cloneBT = (o) => JSON.parse(JSON.stringify(o));
+// Sem os derivados (_demanda/_cargaKw/_disjuntores): são recalculados.
+const _cargasLimpasBT = (c) => ({
+  qtds: CAT.map((_, i) => (c.qtds || [])[i] || 0),
+  tipoA: c.tipoA || "",
+  catA: c.catA == null ? null : c.catA,
+  mots: _cloneBT(c.mots || []),
+});
+function selecionarPerfilBT(u, id) {
+  if (id === "personalizado") {
+    const pp = u.perfilPers;
+    if (!pp) return;
+    u.cargas = _cargasLimpasBT(pp.cargas);
+    u.gerador = _cloneBT(pp.gerador || _geradorPadraoBT());
+    u.disjEscolhido = pp.disjEscolhido || "";
+  } else {
+    const p = perfilPorIdBT(id);
+    if (!p) return;
+    u.cargas = cargasDoPerfilBT(p, u);
+    u.gerador = _geradorPadraoBT();
+    u.disjEscolhido = "";
+  }
+  u.perfil = id;
+  u.perfilFamilia = familiaPerfisBT(u);
+  renderUcsBT();
+}
+function abrirEditorPerfilBT(u, ui, origem) {
+  let base, cargas, gerador, disj;
+  if (origem === "personalizado" && u.perfilPers) {
+    base = u.perfilPers.base;
+    cargas = _cargasLimpasBT(u.perfilPers.cargas);
+    gerador = _cloneBT(u.perfilPers.gerador || _geradorPadraoBT());
+    disj = u.perfilPers.disjEscolhido || "";
+  } else {
+    const p = perfilPorIdBT(origem);
+    if (!p) return;
+    base = origem;
+    cargas = cargasDoPerfilBT(p, u);
+    gerador = _geradorPadraoBT();
+    disj = "";
+  }
+  // O rascunho imita o imóvel no que montarCargasBT/_ucGerador leem.
+  _editorPerfil[ui] = {
+    base,
+    draft: {
+      atividade: u.atividade,
+      cargas,
+      gerador,
+      disjEscolhido: disj,
+      _acc: {},
+    },
+  };
+  _ucCargaFechada[ui] = false;
+  renderUcsBT();
+  const card = document.querySelectorAll("#ucsBox > .uc-imovel")[ui];
+  if (card) card.scrollIntoView({ block: "start", behavior: "smooth" });
+}
+function fecharEditorPerfilBT(ui, confirmar) {
+  const ed = _editorPerfil[ui];
+  const u = state.ucsDet[ui];
+  delete _editorPerfil[ui];
+  if (confirmar && ed && u) {
+    u.perfilPers = {
+      base: ed.base,
+      cargas: _cargasLimpasBT(ed.draft.cargas),
+      gerador: _cloneBT(ed.draft.gerador),
+      disjEscolhido: ed.draft.disjEscolhido || "",
+    };
+    selecionarPerfilBT(u, "personalizado");
+  } else renderUcsBT();
+}
+const _kwBT = (v) =>
+  (Number(v) || 0).toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+// Linha com pontilhado entre o rótulo e o valor da direita (card de perfil).
+function _linhaPerfilBT(htmlEsq, txtDir) {
+  const l = document.createElement("div");
+  l.className = "perfil-linha";
+  l.innerHTML =
+    `<span class="perfil-linha-nome">${htmlEsq}</span>` +
+    (txtDir == null
+      ? ""
+      : `<span class="perfil-linha-pontos" aria-hidden="true"></span><span class="perfil-linha-qtd"></span>`);
+  if (txtDir != null) l.lastChild.textContent = txtDir;
+  return l;
+}
+const _escBT = (s) =>
+  String(s == null ? "" : s).replace(
+    /[&<>"]/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
+  );
+// Card de perfil (svg9–12): rádio + título, descrição, 5 equipamentos,
+// "Todos os equipamentos", resumo (carga/demanda/disjuntor) e "Personalizar".
+function _perfilCardBT(o) {
+  const card = document.createElement("div");
+  card.className = "perfil-card" + (o.selecionado ? " is-selected" : "");
+  const radio = document.createElement("button");
+  radio.type = "button";
+  radio.className = "toggle-btn perfil-card-radio" + (o.selecionado ? " on" : "");
+  radio.setAttribute("role", "radio");
+  radio.setAttribute("aria-checked", o.selecionado ? "true" : "false");
+  radio.textContent = o.titulo;
+  const desc = document.createElement("p");
+  desc.className = "perfil-card-desc";
+  desc.textContent = o.desc;
+  const tab = document.createElement("div");
+  tab.className = "perfil-card-tabela";
+  const cab = document.createElement("div");
+  cab.className = "perfil-linha perfil-linha--cab";
+  cab.innerHTML = "<span>Equipamentos</span><span>Quantidade</span>";
+  tab.appendChild(cab);
+  o.linhas.slice(0, 5).forEach((l) =>
+    tab.appendChild(
+      _linhaPerfilBT(
+        `<strong>${_escBT(l.nome)}</strong>${l.pot ? " " + _escBT(l.pot) : ""}`,
+        l.qtd,
+      ),
+    ),
+  );
+  const todos = document.createElement("button");
+  todos.type = "button";
+  todos.className = "btn btn-ghost perfil-card-todos";
+  todos.textContent = "Todos os equipamentos";
+  todos.addEventListener("click", () =>
+    abrirModalEquipamentosBT(o.linhas, o.aoPersonalizar),
+  );
+  const resumo = document.createElement("div");
+  resumo.className = "perfil-card-resumo";
+  resumo.append(
+    _linhaPerfilBT(
+      `<strong>Carga total</strong> aprox. ${_kwBT(o.resumo.kw)} kW`,
+      `aprox. ${o.resumo.n}`,
+    ),
+    _linhaPerfilBT(
+      `<strong>Demanda total</strong> aprox. ${_kwBT(o.resumo.kva)} kVA`,
+    ),
+    _linhaPerfilBT(
+      `<strong>Disjuntor adequado</strong> ${_escBT(o.resumo.disj || "—")}`,
+    ),
+  );
+  const pers = document.createElement("button");
+  pers.type = "button";
+  pers.className = "perfil-card-personalizar";
+  pers.innerHTML = ICONE_LAPIS_BT + "Personalizar perfil";
+  pers.addEventListener("click", o.aoPersonalizar);
+  card.append(radio, desc, tab, todos, resumo, pers);
+  // O card inteiro escolhe o perfil (menos os botões de dentro).
+  card.addEventListener("click", (e) => {
+    if (e.target.closest("button") && e.target.closest("button") !== radio)
+      return;
+    if (!o.selecionado) o.aoSelecionar();
+  });
+  return card;
+}
+function _perfisGradeBT(u, ui) {
+  const grade = document.createElement("div");
+  grade.className = "perfil-grid";
+  const perfis = perfisDoImovel(u);
+  const pp = u.perfilPers;
+  if (pp) {
+    const nBase = perfis.findIndex((p) => p.id === pp.base);
+    const r = resumoCargasBT(pp.cargas);
+    grade.appendChild(
+      _perfilCardBT({
+        titulo: "Perfil personalizado",
+        desc:
+          nBase >= 0
+            ? `Baseado no Perfil ${nBase + 1}, com os equipamentos e o disjuntor que você ajustou.`
+            : "Com os equipamentos e o disjuntor que você ajustou.",
+        linhas: linhasCargasBT(pp.cargas),
+        resumo: Object.assign(r, {
+          disj: pp.disjEscolhido || r.disjuntores[0],
+        }),
+        selecionado: u.perfil === "personalizado",
+        aoSelecionar: () => selecionarPerfilBT(u, "personalizado"),
+        aoPersonalizar: () => abrirEditorPerfilBT(u, ui, "personalizado"),
+      }),
+    );
+  }
+  perfis.forEach((p, i) => {
+    const r = resumoCargasBT(cargasDoPerfilBT(p, u));
+    grade.appendChild(
+      _perfilCardBT({
+        titulo: `Perfil ${i + 1}: ${p.titulo}`,
+        desc: p.desc,
+        linhas: linhasPerfilBT(p),
+        resumo: Object.assign(r, { disj: r.disjuntores[0] }),
+        selecionado: u.perfil === p.id,
+        aoSelecionar: () => selecionarPerfilBT(u, p.id),
+        aoPersonalizar: () => abrirEditorPerfilBT(u, ui, p.id),
+      }),
+    );
+  });
+  return grade;
+}
+// Editor "Perfil personalizado" (svg11) dentro do card do imóvel.
+function _perfilEditorBT(u, ui) {
+  const ed = _editorPerfil[ui];
+  const d = ed.draft;
+  const box = document.createElement("div");
+  box.className = "perfil-editor";
+  const voltar = document.createElement("button");
+  voltar.type = "button";
+  voltar.className = "perfil-editor-voltar";
+  voltar.innerHTML =
+    '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8l-4 4 4 4M16 12H8"/></svg>Voltar';
+  voltar.addEventListener("click", () => fecharEditorPerfilBT(ui, false));
+  const tit = document.createElement("div");
+  tit.className = "perfil-editor-titulo";
+  tit.textContent = "Perfil personalizado";
+  const txt = document.createElement("p");
+  txt.className = "perfil-editor-texto";
+  txt.textContent =
+    "Adicione ou remova equipamentos para personalizar o perfil adequado ao seu imóvel.";
+  const cargasBox = document.createElement("div");
+  const calcBox = document.createElement("div");
+  box.append(voltar, tit, txt, cargasBox, _ucGerador(d, ui), calcBox);
+  montarCargasBT(cargasBox, d, ui, () => _perfilCalcBT(calcBox, d));
+  _perfilCalcBT(calcBox, d);
+  const acoes = document.createElement("div");
+  acoes.className = "perfil-editor-acoes";
+  const cancelar = document.createElement("button");
+  cancelar.type = "button";
+  cancelar.className = "btn btn-ghost";
+  cancelar.textContent = "Cancelar";
+  cancelar.addEventListener("click", () => fecharEditorPerfilBT(ui, false));
+  const confirmar = document.createElement("button");
+  confirmar.type = "button";
+  confirmar.className = "btn btn-primary";
+  confirmar.textContent = "Confirmar";
+  confirmar.addEventListener("click", () => fecharEditorPerfilBT(ui, true));
+  acoes.append(cancelar, confirmar);
+  box.appendChild(acoes);
+  return box;
+}
 // Ícone (i) com dica flutuante (.cmg-hint) nos cards de carga e demanda.
 function _infoKpiBT(label, texto) {
   return `<span class="resultado-card-info cmg-hint" tabindex="0" role="img" aria-label="${label}: ajuda" data-hint="${texto}"><img class="field-info" src="../imgs/info.svg" alt="" aria-hidden="true" /></span>`;
 }
-// Resultado da UC: cards carga/demanda + seleção do disjuntor (radio .toggle)
-function _renderResultadoUC(box, u, ui, multi) {
-  const c = u.cargas || {};
+// "Informações calculadas de acordo com a seleção de equipamentos": carga e
+// demanda do rascunho + disjuntor adequado ("Mais opções" abre o modal).
+function _perfilCalcBT(box, d) {
+  const c = d.cargas || {};
   const cargaKw = c._cargaKw || 0;
-  const inval =
-    multi && (c._disjuntores || []).length > 0 && !validacaoDisjuntoresBT().ok;
+  const lista = c._disjuntores || [];
+  if (d.disjEscolhido && !lista.includes(d.disjEscolhido)) d.disjEscolhido = "";
+  const atual = d.disjEscolhido || lista[0] || "";
   box.innerHTML = "";
   const wrap = document.createElement("div");
-  wrap.className = "resultado-cargas divider";
+  wrap.className = "perfil-calc divider";
+  wrap.innerHTML =
+    '<div class="perfil-calc-titulo">Informações calculadas de acordo com a seleção de equipamentos</div>';
+  const grade = document.createElement("div");
+  grade.className = "perfil-calc-grade";
   const kpis = document.createElement("div");
-  kpis.className = "resultado-kpis";
+  kpis.className = "perfil-calc-kpis";
   const cardCarga = document.createElement("div");
   cardCarga.className =
     "resultado-card" + (cargaKw > 75 ? " resultado-card--warn" : "");
   cardCarga.innerHTML =
     _infoKpiBT(
-      "Carga total",
-      "Soma das potências de todos os equipamentos e motores declarados nesta unidade consumidora.",
+      "Carga total calculada",
+      "Soma das potências de todos os equipamentos e motores declarados neste imóvel.",
     ) +
-    `<div class="resultado-card-label">Carga total</div>` +
-    `<div class="resultado-card-valor">${fmt2(cargaKw)} kW</div>` +
+    `<div class="resultado-card-label">Carga total calculada</div>` +
+    `<div class="resultado-card-valor">${_kwBT(cargaKw)} kW</div>` +
     (cargaKw > 75
       ? `<div class="cmg-aviso cmg-aviso--warn" style="margin-bottom:0"><div class="cmg-aviso-icon" aria-hidden="true"></div><p class="cmg-aviso-texto">Sua carga instalada ultrapassa 75 kW, é obrigatório anexar a ART/TRT de projeto paga, planta situação, e formulário preenchido no APR Web.</p></div>`
       : "");
@@ -866,46 +1249,97 @@ function _renderResultadoUC(box, u, ui, multi) {
       "Estimativa da potência máxima usada ao mesmo tempo, calculada a partir da carga total com os fatores de demanda da norma Cemig ND-5.1. É ela que define o disjuntor adequado.",
     ) +
     `<div class="resultado-card-label">Demanda total calculada</div>` +
-    `<div class="resultado-card-valor">${fmt2(c._demanda || 0)} kVA</div>`;
+    `<div class="resultado-card-valor">${_kwBT(c._demanda || 0)} kVA</div>`;
   kpis.append(cardCarga, cardDem);
   const cardDisj = document.createElement("div");
-  cardDisj.className =
-    "resultado-card resultado-disjuntor" +
-    (inval ? " resultado-card--error" : "");
-  cardDisj.innerHTML = `<div class="resultado-card-label">Disjuntor adequado de acordo com a seleção</div>`;
-  const lista = c._disjuntores || [];
-  if (lista.length) {
-    const atual = u.disjEscolhido || lista[0];
-    const tg = document.createElement("div");
-    tg.className = "toggle-group";
-    lista.forEach((dj) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "toggle-btn" + (atual === dj ? " on" : "");
-      b.textContent = dj;
-      b.addEventListener("click", () => {
-        u.disjEscolhido = dj;
-        _renderResultadoUC(box, u, ui, multi);
-        CemigMarcadores.atualizarAvancar();
-      });
-      tg.appendChild(b);
-    });
-    cardDisj.appendChild(tg);
-  } else {
+  cardDisj.className = "resultado-card perfil-calc-disj";
+  cardDisj.innerHTML =
+    '<div class="resultado-card-label">Disjuntor adequado calculado para este imóvel</div>' +
+    `<div class="resultado-card-valor">${atual ? _escBT(atual) : "—"}</div>`;
+  if (lista.length > 1) {
+    const mais = document.createElement("button");
+    mais.type = "button";
+    mais.className = "perfil-calc-mais";
+    mais.textContent = "Mais opções";
+    mais.addEventListener("click", () =>
+      abrirModalDisjuntoresBT(lista, atual, (v) => {
+        d.disjEscolhido = v;
+        _perfilCalcBT(box, d);
+      }),
+    );
+    cardDisj.appendChild(mais);
+  } else if (!lista.length) {
     const hint = document.createElement("div");
     hint.className = "field-hint";
-    hint.textContent = "Detalhe as cargas para ver o disjuntor adequado.";
+    hint.textContent = "Adicione equipamentos para ver o disjuntor adequado.";
     cardDisj.appendChild(hint);
   }
-  if (inval) {
-    const aviso = document.createElement("div");
-    aviso.className = "cmg-aviso cmg-aviso--error";
-    aviso.style.cssText = "margin-top:8px;margin-bottom:0";
-    aviso.innerHTML = `<div class="cmg-aviso-icon" aria-hidden="true"></div><p class="cmg-aviso-texto"><span><b>Combinação de disjuntores inválida:</b> ${validacaoDisjuntoresBT().msg}</span></p>`;
-    cardDisj.appendChild(aviso);
-  }
-  wrap.append(kpis, cardDisj);
+  grade.append(kpis, cardDisj);
+  wrap.appendChild(grade);
   box.appendChild(wrap);
+}
+function renderUcsBT() {
+  const box = $("#ucsBox");
+  if (!box) return;
+  _sincronizarUcs();
+  // Resultados sempre atualizados, mesmo com o card fechado.
+  _recalcularCargasUcs();
+  atualizarSolicitacaoAuto();
+  box.innerHTML = "";
+  state.ucsDet.forEach((u, ui) => {
+    const aberta = !_ucCargaFechada[ui];
+    box.appendChild(
+      _mkUcColapsavel(
+        ui,
+        aberta,
+        () => {
+          _ucCargaFechada[ui] = aberta;
+          renderUcsBT();
+        },
+        (corpo) => {
+          const res = document.createElement("div");
+          res.className = "uc-imovel-resumo";
+          res.innerHTML = "<strong></strong><span></span>";
+          res.firstChild.textContent = _enderecoUCTxt(u);
+          res.lastChild.textContent = solicitacaoRotuloBT(u);
+          corpo.appendChild(res);
+          if (ucSemAlteracao(u)) {
+            const info = document.createElement("div");
+            info.className = "alert alert-info";
+            info.innerHTML =
+              "Este imóvel foi marcado como <strong>Caixa existente sem alteração</strong>. O preenchimento de cargas foi omitido; ele aparecerá apenas no resumo do PDF.";
+            corpo.appendChild(info);
+            return;
+          }
+          if (_editorPerfil[ui]) {
+            corpo.appendChild(_perfilEditorBT(u, ui));
+            return;
+          }
+          if (!perfisDoImovel(u).length && !u.perfilPers) {
+            const hint = document.createElement("div");
+            hint.className = "cmg-aviso cmg-aviso--warn";
+            hint.innerHTML =
+              '<div class="cmg-aviso-icon" aria-hidden="true"></div><p class="cmg-aviso-texto">Escolha o <b>tipo de propriedade</b> deste imóvel na etapa Imóveis e atendimento para ver os perfis de carga.</p>';
+            corpo.appendChild(hint);
+            return;
+          }
+          corpo.appendChild(_perfisGradeBT(u, ui));
+        },
+      ),
+    );
+  });
+  // Combinação de disjuntores entre os imóveis (2+ sem proteção geral).
+  const vd = validacaoDisjuntoresBT();
+  if (!vd.ok) {
+    const aviso = document.createElement("div");
+    aviso.className = "cmg-aviso cmg-aviso--error perfil-aviso-combinacao";
+    aviso.innerHTML = `<div class="cmg-aviso-icon" aria-hidden="true"></div><p class="cmg-aviso-texto"><span><b>Combinação de disjuntores inválida:</b> ${vd.msg}</span></p>`;
+    box.appendChild(aviso);
+  }
+  if (window.CemigMarcadores) {
+    CemigMarcadores.aplicar(box);
+    CemigMarcadores.atualizarAvancar();
+  }
 }
 
 /* ============================================================
@@ -957,20 +1391,28 @@ function validacaoObrigatoriosBT() {
   const coordPreenchida = !!String(o.lat).trim() && !!String(o.lng).trim();
   if (coordObrigatoria && !coordPreenchida)
     faltando.push("Coordenada (latitude/longitude) da obra");
-  if (!(demandaTotalGeralBT() > 0))
-    faltando.push("Previsão de carga / demanda das UCs");
+  if (!state.ucsDet.length) faltando.push("Pelo menos um imóvel");
+  const temCarga = state.ucsDet.some((u) => !ucSemAlteracao(u));
+  if (temCarga && !(demandaTotalGeralBT() > 0))
+    faltando.push("Previsão de carga / demanda dos imóveis");
   const vd = validacaoDisjuntoresBT();
   if (vd.ok === false) faltando.push("Combinação de disjuntores inválida");
-  // Número de instalação/UC fora do padrão (REN ANEEL 1.095/2024): as UCs
-  // são re-renderizadas, então o gate do data-fmt não basta na exportação.
   state.ucsDet.forEach((u, ui) => {
+    const im = `Imóvel ${ui + 1}`;
+    if (!u.atividade) faltando.push(`${im}: Tipo de propriedade`);
+    if (!ucSemAlteracao(u) && !u.perfil)
+      faltando.push(`${im}: Perfil de carga`);
+    // Número de instalação/UC fora do padrão (REN ANEEL 1.095/2024): os
+    // cards são re-renderizados, então o gate do data-fmt não basta.
     const r = validarInstalacaoUC(u.instalacao);
     if (!r.valido)
-      faltando.push(`UC ${ui + 1}: Instalação / UC / Medidor — ${r.msg}`);
-  });
-  state.ucsDet.forEach((u, ui) => {
-    if (u.mudaComplemento && !String(u.novoComplemento || "").trim())
-      faltando.push(`UC ${ui + 1}: Novo complemento do endereço`);
+      faltando.push(`${im}: Instalação / UC / Medidor — ${r.msg}`);
+    if (u.mudaComplemento) {
+      if (!String(u.complemento || "").trim())
+        faltando.push(`${im}: Complemento atual`);
+      if (!String(u.novoComplemento || "").trim())
+        faltando.push(`${im}: Novo complemento`);
+    }
   });
   if (o.restricaoAmbiental === "Sim" && !o.restricaoAceite)
     faltando.push("Declaração de ciência da restrição ambiental");
@@ -984,6 +1426,14 @@ function validacaoObrigatoriosBT() {
 // uma etapa própria (referência do Figma da trilha, com 8 passos), separada do
 // endereço — daí `dados` e `atend` apontarem para etapas diferentes.
 const PG = { prop: 1, dados: 2, atend: 3, cargas: 4, corr: 5 };
+// Rótulo do perfil escolhido para a prévia e o PDF.
+function perfilRotuloUcBT(u) {
+  if (u.perfil === "personalizado") {
+    const base = u.perfilPers && rotuloPerfilBT(u, u.perfilPers.base);
+    return "Perfil personalizado" + (base ? ` (baseado no ${base})` : "");
+  }
+  return rotuloPerfilBT(u, u.perfil);
+}
 function renderPreviaBT() {
   const box = $("#previaConteudo");
   if (!box) return;
@@ -1002,7 +1452,6 @@ function renderPreviaBT() {
       : c.alternativa === "Outro e-mail"
         ? c.outroEmail
         : c.alternativa;
-  const modalidadeTexto = "Individual - até 3 caixas sem proteção geral";
   let html = `<div class="previa-secao"><h4 class="previa-secao-titulo">Dados pessoais</h4><div class="previa-grid">`;
   html += pvCampoBT("Nome", p.nome, PG.prop, true);
   html += pvCampoBT("E-mail", p.email, PG.prop);
@@ -1020,7 +1469,6 @@ function renderPreviaBT() {
     const cg = u.cargas || {};
     html += `<hr class="previa-divider" /><div class="previa-secao"><h4 class="previa-secao-titulo">Dados da unidade consumidora ${ui + 1}</h4>`;
     html += `<div class="previa-cards">`;
-    html += pvCardBT("Modalidade", modalidadeTexto);
     html += pvCardBT("Demanda total", fmt2(cg._demanda || 0) + " kVA");
     html += pvCardBT(
       "Disjuntor adequado",
@@ -1028,12 +1476,14 @@ function renderPreviaBT() {
     );
     html += `</div><div class="previa-grid">`;
     html += pvCampoBT("Tipo de solicitação", solicitacaoRotuloBT(u), PG.atend);
-    html += pvCampoBT("Atividade principal", u.atividade);
+    html += pvCampoBT("Tipo de propriedade", u.atividade, PG.atend);
     // Ramo só existe fora do Residencial — mesma condição do campo na etapa de
     // identificação. Sem isto a prévia abria uma linha "Ramo da atividade —"
     // para toda UC residencial, que não existe na tela-alvo.
-    if (u.atividade !== "Residencial")
-      html += pvCampoBT("Ramo da atividade", ramoParaPdf(u.ramo));
+    if (u.atividade && u.atividade !== "Residencial")
+      html += pvCampoBT("Ramo da atividade", ramoParaPdf(u.ramo), PG.atend);
+    if (!ucSemAlteracao(u))
+      html += pvCampoBT("Perfil de carga", perfilRotuloUcBT(u), PG.cargas);
     if (cg.tipoA === "nr" && cg.catA != null)
       html += pvCampoBT("Categoria de atividade", (TABELA_11[cg.catA] || {}).d);
     html += pvCampoBT("Solicitação", state.atend.solicitacao);
@@ -1041,13 +1491,13 @@ function renderPreviaBT() {
       html += pvCampoBT("CEP", o.cep, PG.dados, true);
       html += pvCampoBT("Endereço", o.endereco, PG.dados);
       html += pvCampoBT("Número", o.num, PG.dados);
-      html += pvCampoBT("Complemento", u.complemento, PG.atend);
+      html += pvCampoBT(
+        u.mudaComplemento ? "Complemento atual" : "Complemento",
+        u.complemento,
+        PG.atend,
+      );
       if (u.mudaComplemento)
-        html += pvCampoBT(
-          "Novo complemento do endereço",
-          u.novoComplemento,
-          PG.atend,
-        );
+        html += pvCampoBT("Novo complemento", u.novoComplemento, PG.atend);
       html += pvCampoBT("Bairro", o.bairro, PG.dados);
     } else {
       html += pvCampoBT(
@@ -1060,21 +1510,24 @@ function renderPreviaBT() {
     }
     html += pvCampoBT("Cidade", o.cidade, PG.dados);
     html += pvCampoBT("Estado", o.estado, PG.dados);
+    if (u.solicitacao !== "Conexão Nova" && u.instalacao)
+      html += pvCampoBT("Nº da unidade/instalação", u.instalacao, PG.atend);
     html += pvCampoBT(
-      "Distância do padrão até a rede Cemig inferior a 30m?",
-      o.distMenor30,
+      "Distância do padrão até o poste inferior a 30m?",
+      u.distMenor30,
       PG.atend,
     );
     html += pvCampoBT(
       "O padrão está pronto para ser ligado?",
-      o.prontoLigar,
+      u.prontoLigar,
       PG.atend,
     );
-    html += pvCampoBT(
-      "O padrão precisa ser mudado de local?",
-      u.mudancaLocal,
-      PG.atend,
-    );
+    if (u.solicitacao !== "Conexão Nova")
+      html += pvCampoBT(
+        "O padrão precisa ser mudado de local?",
+        u.mudancaLocal,
+        PG.atend,
+      );
     if (rural && u.mudancaLocal === "Sim" && (u.padraoLat || u.padraoLng)) {
       html += pvCampoBT(
         "Novo local do padrão (lat/long)",
@@ -1083,11 +1536,7 @@ function renderPreviaBT() {
       );
       html += pvCampoBT("Novo local do padrão (UTM)", u.padraoUtm, PG.atend);
     }
-    html += pvCampoBT(
-      "Tipo de rede",
-      o.tipoRede,
-      PG.atend,
-    );
+    html += pvCampoBT("Tipo de rede que atende o local", o.tipoRede, PG.atend);
     html += `</div></div>`;
   });
   // Correspondência ao fim da prévia (ordem da tela-alvo).
@@ -1495,7 +1944,6 @@ window.initFormulario = function () {
   }
   onZonaBT();
   onReceberEmailBT();
-  onProntoLigarBT();
   mostrarCamposPFBT();
   onCoordBT(true);
   renderUcsIdentBT();

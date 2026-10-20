@@ -573,10 +573,13 @@ function _pdfBlocosIndividualBT(S) {
           : u.solicitacao,
       ],
       ["Modalidade", _PDF_MODALIDADE_IND],
-      ["Atividade principal", u.atividade],
+      ["Tipo de propriedade", u.atividade],
     ]);
     if (alteracao)
       B.campos([["Nº da unidade/instalação", u.instalacao]]);
+    /* Perfil de carga escolhido na Etapa 5 (perfis-carga.js). */
+    if (!semAlteracao && typeof perfilRotuloUcBT === "function")
+      B.campos([["Perfil de carga", perfilRotuloUcBT(u), 3]]);
     /* Categoria da Tabela 11 só existe em atividade não residencial —
        no exemplo residencial do mock ela não aparece por estar vazia,
        não por ter sido retirada. */
@@ -605,11 +608,14 @@ function _pdfBlocosIndividualBT(S) {
       ]);
       B.campos([
         ["Número", u.nPredial || obra.num],
-        ["Complemento", u.complemento || obra.compl],
+        [
+          u.mudaComplemento ? "Complemento atual" : "Complemento",
+          u.complemento || obra.compl,
+        ],
         ["Bairro", obra.bairro],
       ]);
       if (u.mudaComplemento)
-        B.campos([["Novo complemento do endereço", u.novoComplemento, 3]]);
+        B.campos([["Novo complemento", u.novoComplemento, 3]]);
       B.campos([
         ["Cidade", obra.cidade],
         ["Estado", obra.estado],
@@ -631,14 +637,19 @@ function _pdfBlocosIndividualBT(S) {
       ["Coordenada UTM", novoPadrao ? u.padraoUtm : _pdfUtmBT(obra)],
     ]);
 
-    B.campos([
-      [
-        "Distância do padrão até a rede Cemig inferior a 30m?",
-        obra.distMenor30,
-      ],
-      ["O padrão está pronto para ser ligado?", obra.prontoLigar],
-      ["O padrão precisa ser mudado de local?", u.mudancaLocal],
-    ]);
+    /* Padrão de energia: no individual cada imóvel responde por si
+       (Etapa 4, spec Figma svg3–8). Ligação nova não pergunta mudança de
+       local — não há padrão existente para mudar. */
+    const camposPadrao = [
+      ["Distância do padrão até o poste inferior a 30m?", u.distMenor30],
+      ["O padrão está pronto para ser ligado?", u.prontoLigar],
+    ];
+    if (u.solicitacao !== "Conexão Nova")
+      camposPadrao.push([
+        "O padrão precisa ser mudado de local?",
+        u.mudancaLocal,
+      ]);
+    B.campos(camposPadrao);
     B.campos([["Tipo de rede BT que atende o local", obra.tipoRede]]);
     if (obra.restricaoAmbiental === "Sim")
       B.campos([["Restrições ambientais", obra.restricoesTexto, 3]]);

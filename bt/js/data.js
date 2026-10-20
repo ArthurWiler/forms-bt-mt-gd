@@ -186,6 +186,11 @@ const CAT = [
   { n: "Raio X (dentista)", w: 1200, g: "f" },
   { n: "Raio X (hospital)", w: 12100, g: "f" },
   { n: "Raio X (25kW)", w: 25000, g: "f" },
+  // Acrescentados no FIM (os índices de CAT são a chave de cargas.qtds) para
+  // os perfis de salão de beleza do BT individual (bt/js/perfis-carga.js).
+  // Mesma lista de shared/js/load-form-data.js — manter as duas iguais.
+  { n: "Chapinha", w: 200, g: "b5" },
+  { n: "Secador de cabelo profissional", w: 2200, g: "b5" },
 ];
 
 const GL = {

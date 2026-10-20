@@ -172,10 +172,24 @@ const ucDetalhadaPadrao = () => ({
   complemento: "",
   caixa: "",
   instalacao: "",
+  // Padrão de energia DESTE imóvel (Etapa 4, spec Figma svg3–8): cada imóvel
+  // responde por si. O coletivo segue com as perguntas únicas em obra.*.
+  distMenor30: "",
+  prontoLigar: "",
   mudancaLocal: "",
   disjDe: "",
   disjPara: "",
   disjEscolhido: "",
+  // Perfil de carga escolhido na Etapa 5 (bt/js/perfis-carga.js): id do perfil
+  // pronto ou "personalizado". `cargas` abaixo é SEMPRE a carga ativa — o
+  // perfil só a preenche. `perfilPers` guarda o personalizado confirmado
+  // ({ base, cargas, gerador, disjEscolhido }) para ele continuar disponível
+  // quando o usuário voltar a um perfil pronto.
+  perfil: "",
+  perfilPers: null,
+  // Família de perfis em que a escolha foi feita (familiaPerfisBT): se o tipo
+  // de propriedade/ramo mudar depois, a escolha deixa de valer.
+  perfilFamilia: "",
   // Novo local do padrão (só em zona Rural com "Mudança de local" = Sim):
   // coordenada escolhida no mapa da etapa "Tipo de atendimento".
   padraoLat: "",

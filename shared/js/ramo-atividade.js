@@ -2429,6 +2429,13 @@ const RAMO_ATIVIDADE = [
     "9529199",
     "REPARAÇÃO E MANUTENÇÃO DE OUTROS OBJETOS E EQUIPAMENTOS PESSOAIS E DOMÉSTICOS NÃO ESPECIFICADOS",
   ],
+  // CNAE 9602-5 (salão de beleza): o perfil de carga "Salão" do BT
+  // individual (bt/js/perfis-carga.js) é escolhido por estes códigos.
+  ["9602501", "CABELEIREIROS, MANICURE E PEDICURE"],
+  [
+    "9602502",
+    "ATIVIDADES DE ESTÉTICA E OUTROS SERVIÇOS DE CUIDADOS COM A BELEZA",
+  ],
   ["990401", "ATIVIDADES DE APOIO À EXTRAÇÃO DE MINÉRIO DE FERRO"],
   [
     "990402",
