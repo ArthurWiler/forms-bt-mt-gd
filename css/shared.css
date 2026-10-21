@@ -5699,3 +5699,22 @@ html:not([data-zona="rural"]) [data-so-zona="rural"] {
 .cemig-form #projetoDisponibilizacao.toggle-group--stack {
   gap: var(--cmg-space-2);
 }
+/* Coletivo — "Selecione quais unidades compartilham os mesmos dados": 5
+   colunas a cada 162px (svg7); a última fica com o resto da linha. */
+.cemig-form .torres-selecao--5 .torres-selecao-lista {
+  grid-template-columns: repeat(4, 162px) minmax(0, 1fr);
+}
+@media (max-width: 720px) {
+  .cemig-form .torres-selecao--5 .torres-selecao-lista {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+}
+/* Etapa "Dados da torre" do coletivo (svg3/svg4): endereço 43px abaixo do
+   subtítulo e a pergunta do disjuntor vinculado 33px abaixo da linha de
+   demanda/disjuntor (o gap do grid daria 50 e 39). */
+.cemig-form #agrupamentoColetivoEndereco {
+  margin-top: -7px;
+}
+.cemig-form .grid > .disj-vinculado {
+  margin-top: -6px;
+}

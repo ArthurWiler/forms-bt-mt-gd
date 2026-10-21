@@ -381,6 +381,16 @@ function _pdfBlocosColetivoBT(S) {
     ],
     "pdf-cartoes--4col",
   );
+  B.campos([
+    [
+      "Disjuntor do condomínio vinculado a unidade/instalação existente",
+      agrupamento.disjVinculado,
+      2,
+    ],
+    agrupamento.disjVinculado === "Sim"
+      ? ["Nº da unidade/instalação", agrupamento.disjVinculadoInstalacao]
+      : null,
+  ].filter(Boolean));
 
   /* ---- Unidades consumidoras, agrupadas por tipo de pedido ----
      Uma seção por tipo (svg_3/svg_4), na ordem em que a etapa das
@@ -428,6 +438,7 @@ function _pdfBlocosColetivoBT(S) {
           hibrido ? "Norma" : null,
           "Inst. / UC / Medidor",
           "Atividade",
+          "Área",
           "Carga prevista",
           "Disjuntor",
         ].filter(Boolean),
@@ -438,6 +449,7 @@ function _pdfBlocosColetivoBT(S) {
             hibrido ? `ND ${u.nd}` : null,
             u.instalacao,
             u.atividade,
+            _pdfVazio(u.area) ? "" : u.area + "m²",
             cargaUC(u),
             u.disjPara,
           ].filter((c) => c !== null),
@@ -471,6 +483,13 @@ function _pdfBlocosColetivoBT(S) {
         ["Atividade principal", u.atividade],
         ["Ramo da atividade", ramoParaPdf(u.ramo)],
       ]);
+      /* Alteração com mudança no complemento (mesma gravação do
+         individual): o complemento da tabela é o atual. */
+      if (u.mudaComplemento)
+        B.campos([
+          ["Tipo de solicitação", "Alteração de Carga com mudança no complemento"],
+          ["Novo complemento", u.novoComplemento],
+        ]);
     });
   });
 
