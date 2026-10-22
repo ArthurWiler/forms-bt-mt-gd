@@ -518,7 +518,12 @@ function gdRenderUcs() {
         const f = cmgCampo(
           "Tipo de solicitação",
           cmgSelectDe(
-            ["Conexão Nova", "Alteração de Carga", "Caixa Existente sem Alteração"],
+            [
+              "Conexão Nova",
+              "Alteração de Carga",
+              // Valor normativo gravado; o rótulo segue o Figma do BT.
+              ["Caixa Existente sem Alteração", "Imóvel existente sem alteração"],
+            ],
             u.solicitacao,
             (v) => {
               u.solicitacao = v;
@@ -532,15 +537,16 @@ function gdRenderUcs() {
         grid.appendChild(f);
       }
 
-      // Atividade principal (estrutural: Ramo × Área)
+      // Tipo de propriedade (estrutural: Ramo × Área) — Residencial ou uma
+      // categoria da Tabela 11, que define o cálculo de demanda da unidade.
       {
         const f = cmgCampo(
-          "Atividade principal",
+          "Tipo de propriedade",
           cmgSelectDe(
-            ["Residencial", "Comercial", "Industrial", "Rural"],
-            u.atividade,
+            tiposPropriedade(),
+            tipoPropriedadeDe(u),
             (v) => {
-              u.atividade = v;
+              aplicarTipoPropriedade(u, v);
               gdAplicarPresetResidencial();
               gdRenderUcs();
               gdAtualizarCargasColetivo();
@@ -671,6 +677,7 @@ function gdRenderUcs() {
           redeMono: () =>
             state.tipoRede === "Monofásica" || state.tipoRede === "Bifásica",
           atividade: () => u.atividade || "",
+          categoria: () => infoTipoPropriedade(tipoPropriedadeDe(u)).catA,
           hintAtividade: false,
           aoMudar: () => {
             gdRenderResultadoUC(disjBox, u);
@@ -793,6 +800,9 @@ function gdValidarColetivo() {
     faltas.push("Dados das unidades (nenhuma unidade a considerar)");
     return faltas;
   }
+  const semTipo = ucs.filter((u) => !tipoPropriedadeDe(u));
+  if (semTipo.length)
+    faltas.push(`Tipo de propriedade de ${semTipo.length} unidade(s)`);
   const info = gdNd52Info();
   if (gdModoCalculadora()) {
     // Menos de 4 apartamentos: cada UC precisa declarar as próprias cargas.

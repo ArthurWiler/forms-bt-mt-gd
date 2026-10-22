@@ -412,8 +412,8 @@ function _pdfBlocosColetivoBT(S) {
     },
     {
       tipo: "Caixa Existente sem Alteração",
-      prefixo: "Unidades em ",
-      forte: "caixa existente sem alteração",
+      prefixo: "Unidades ",
+      forte: "existentes sem alteração",
     },
   ];
 
@@ -480,7 +480,7 @@ function _pdfBlocosColetivoBT(S) {
       );
       B.campos([
         ["Nº da unidade/instalação", u.instalacao],
-        ["Atividade principal", u.atividade],
+        ["Tipo de propriedade", tipoPropriedadeDe(u)],
         ["Ramo da atividade", ramoParaPdf(u.ramo)],
       ]);
       /* Alteração com mudança no complemento (mesma gravação do
@@ -555,12 +555,11 @@ function _pdfBlocosIndividualBT(S) {
     camposProp.push(
       ["Filiação", prop.filiacao],
       ["RG", prop.rg],
-      ["Laudo médico", prop.laudoMedico],
       /* Só sai quando a pergunta foi respondida: um "Não" fabricado
          acrescentaria à folha um campo que o mock não tem. */
       ["NIS Tarifa Social", prop.nis === "Sim" ? prop.numNis : prop.nis],
+      ["Laudo médico", prop.laudoMedico],
     );
-  camposProp.push(["Telefone fixo", prop.fixo]);
   B.campos(camposProp);
 
   /* ---- Dados da unidade consumidora (uma seção por UC) ---- */
@@ -593,13 +592,20 @@ function _pdfBlocosIndividualBT(S) {
         "Tipo de solicitação",
         u.mudaComplemento
           ? "Alteração de Carga com mudança no complemento"
-          : u.solicitacao,
+          : semAlteracao
+            ? "Imóvel existente sem alteração"
+            : u.solicitacao,
       ],
       ["Modalidade", _PDF_MODALIDADE_IND],
-      /* Rural: tipo sempre "Rural" e o ramo é a atividade (specs rurais). */
-      ["Tipo de propriedade", rural ? "Rural" : u.atividade],
+      /* Residencial ou a categoria da Tabela 11 (urbano e rural). */
+      ["Tipo de propriedade", tipoPropriedadeDe(u)],
     ]);
-    if (rural) B.campos([["Ramo da atividade", u.atividade, 3]]);
+    if (
+      u.atividade &&
+      u.atividade !== "Residencial" &&
+      u.atividade !== ATIVIDADE_IRRIGACAO
+    )
+      B.campos([["Ramo da atividade", ramoParaPdf(u.ramo), 3]]);
     if (alteracao)
       B.campos([["Nº da unidade/instalação", u.instalacao]]);
     /* Perfil de carga escolhido na Etapa 5 (perfis-carga.js). */

@@ -20,7 +20,8 @@
 
    Requer: shared/js/load-form-data.js (CAT, MOTOR_MONO/MOTOR_TRI),
    shared/js/calc.js (fmt2, fmtW), shared/js/calc-demanda.js
-   (calcDemandaResultados), shared/js/ramo-atividade.js (ramoCodigo),
+   (calcDemandaResultados), shared/js/carga-bt.js (tipoPropriedadeDe,
+   infoTipoPropriedade), shared/js/ramo-atividade.js (ramoCodigo),
    bt/js/model.js (cargasQtdsPorNome) e bt/js/bt-core.js (redeMonoBT).
    ============================================================ */
 
@@ -57,7 +58,7 @@ const PERFIS_CARGA = {
       ],
     },
   ],
-  // Comercial com ramo de salão de beleza (CNAE 9602-5).
+  // Tipo de propriedade "Barbearia, salões de beleza" (Tabela 11).
   salao: [
     {
       id: "salao-pequeno",
@@ -170,10 +171,13 @@ const PERFIS_CARGA = {
   ],
 };
 
-// Salão de beleza: CNAE 9602-5/01 e 9602-5/02 (shared/js/ramo-atividade.js).
-const _ehSalaoBT = (u) => /^96025/.test(ramoCodigo(u.ramo || ""));
+// Salão de beleza: Tipo de propriedade "Barbearia, salões de beleza"
+// (TABELA_11[4]). Rascunhos de antes guardavam o CNAE 9602-5/01|02 no ramo.
+const _ehSalaoBT = (u) =>
+  infoTipoPropriedade(tipoPropriedadeDe(u)).catA === 4 ||
+  (!u.tipoPropriedade && /^96025/.test(ramoCodigo(u.ramo || "")));
 
-// Família de perfis do imóvel, pela atividade (Tipo de propriedade) e ramo.
+// Família de perfis do imóvel, pelo Tipo de propriedade.
 function familiaPerfisBT(u) {
   const a = u.atividade || "";
   if (a === "Residencial") return "residencial";
@@ -202,14 +206,17 @@ const faixaPerfilBT = (it) =>
 // Tipo de carga da parcela a) — mesma regra do aplicarAtividade da ilha.
 const _tipoAPerfilBT = (u) => (u.atividade === "Residencial" ? "res" : "nr");
 
-// Objeto de cargas (shape de u.cargas) que o perfil representa.
+// Objeto de cargas (shape de u.cargas) que o perfil representa. A categoria
+// da Tabela 11 é a do Tipo de propriedade; o catA do perfil só vale quando
+// o tipo não define uma.
 function cargasDoPerfilBT(p, u) {
+  const catTipo = infoTipoPropriedade(tipoPropriedadeDe(u)).catA;
   return {
     qtds: cargasQtdsPorNome(
       p.itens.map((it) => ({ n: it.n, q: qtdPerfilBT(it) })),
     ),
     tipoA: _tipoAPerfilBT(u),
-    catA: p.catA == null ? null : p.catA,
+    catA: catTipo != null ? catTipo : p.catA == null ? null : p.catA,
     mots: (p.mots || []).map((m) => ({
       fase: m.fase,
       cv: m.cv,

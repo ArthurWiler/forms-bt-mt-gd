@@ -183,9 +183,9 @@ function _pdfContatoMT(B) {
       ["Data de Nascimento", dataBR(state.nasc)],
     ]);
     B.campos([
-      ["Possui equipamento essencial à vida?", state.laudoMedico],
       ["Possui NIS (Número de Identificação Social) para Tarifa Social?", state.nis],
       ["Número do NIS", state.nis === "Sim" ? state.numNis : ""],
+      ["Possui equipamento essencial à vida?", state.laudoMedico],
     ]);
   }
   B.subsecao("Dados do responsável técnico");

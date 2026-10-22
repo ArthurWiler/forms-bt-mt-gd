@@ -668,6 +668,23 @@ function _areasRestricao(res) {
   }
   return out;
 }
+// Camadas base de TODOS os mapas dos formulários: Ruas (OSM) abre por padrão
+// e Satélite (Esri World Imagery, mesma fonte usada pelo Sisema) fica no
+// seletor. A Esri não usa subdomínio {s} e a ordem dos eixos é {z}/{y}/{x}.
+function camadasBaseMapa(map) {
+  const L = window.L;
+  const ruas = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "© OpenStreetMap",
+  });
+  const satelite = L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    { maxZoom: 19, attribution: "" },
+  );
+  ruas.addTo(map);
+  L.control.layers({ Ruas: ruas, Satélite: satelite }).addTo(map);
+  return { ruas, satelite };
+}
 // Legenda ABAIXO do mapa: um item por ÁREA intersectada, na MESMA cor do
 // contorno desenhado (cor por índice global de área, via _areasRestricao, como
 // desenharRestricoesNoMapa e detalhesRestricoes). O elemento .mapa-legenda

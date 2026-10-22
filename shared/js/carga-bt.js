@@ -18,6 +18,49 @@
 // Vive aqui porque a derivação do tipo de carga (aplicarAtividade) precisa
 // reconhecê-la como não residencial.
 const ATIVIDADE_IRRIGACAO = "Irrigação";
+
+/* ---- Tipo de propriedade = "Residencial" + categorias da Tabela 11 ----
+   É ele que define o cálculo de demanda: Residencial → carga residencial;
+   uma categoria da Tabela 11 → não residencial com aquela categoria (catA).
+   O imóvel guarda o texto escolhido em `tipoPropriedade`; `atividade`
+   (Residencial/Comercial/Industrial) passa a ser DERIVADA dele, para o PDF,
+   o método ND-5.2 e as famílias de perfil seguirem lendo a mesma chave.
+   O ramo da atividade virou texto livre e não entra na conta. */
+// Opções do select; `classe` restringe aos tipos de um card travado.
+function tiposPropriedade(classe) {
+  const t11 = TABELA_11.map((c) => c.d);
+  if (classe === "Residencial") return ["Residencial"];
+  if (classe === "Industrial") return [t11[0]];
+  if (classe === "Comercial") return t11.slice(1);
+  return ["Residencial"].concat(t11);
+}
+// { atividade, catA } de um tipo de propriedade. A irrigação (2º imóvel
+// rural) é não residencial na categoria de oficinas/indústrias, a mesma dos
+// perfis de irrigação.
+function infoTipoPropriedade(tipo) {
+  if (tipo === "Residencial") return { atividade: "Residencial", catA: null };
+  if (tipo === ATIVIDADE_IRRIGACAO)
+    return { atividade: ATIVIDADE_IRRIGACAO, catA: 0 };
+  const i = TABELA_11.findIndex((c) => c.d === tipo);
+  if (i < 0) return { atividade: "", catA: null };
+  return { atividade: i === 0 ? "Industrial" : "Comercial", catA: i };
+}
+// Tipo de propriedade do imóvel, com a leitura de rascunhos anteriores à
+// mudança (só `atividade`): Residencial, Irrigação e Industrial têm um tipo
+// único correspondente; Comercial não, e fica para o usuário escolher.
+function tipoPropriedadeDe(u) {
+  if (!u) return "";
+  if (u.tipoPropriedade) return u.tipoPropriedade;
+  if (u.atividade === "Residencial" || u.atividade === ATIVIDADE_IRRIGACAO)
+    return u.atividade;
+  if (u.atividade === "Industrial") return TABELA_11[0].d;
+  return "";
+}
+// Grava o tipo escolhido e a atividade derivada.
+function aplicarTipoPropriedade(u, tipo) {
+  u.tipoPropriedade = tipo || "";
+  u.atividade = infoTipoPropriedade(tipo).atividade;
+}
 const _REFRI = new Set([
   "Geladeira comum",
   "Geladeira duplex",
@@ -87,6 +130,10 @@ function _cargaToggleExclusivo(mapa, chave, abrir) {
                      especiais" da lista. Para quem já declara os motores
                      por fora e apenas PROJETA o resultado em `data.mots`
                      (o mini, cujo bloco técnico é a única entrada de motor).
+     cfg.categoria   () => índice da TABELA_11 | null — a categoria vem de
+                     fora (do Tipo de propriedade): a ilha a grava em
+                     `data.catA` e não monta o select "Categoria de
+                     atividade". Sem ela, o select continua na ilha.
    Retorna { atualizar, recalcular, dados }:
      atualizar   re-renderiza a ilha (a atividade mudou por fora);
      recalcular  só refaz as contas e notifica — sem tocar no DOM, para
@@ -139,9 +186,10 @@ function montarCargaAcordeao(container, cfg) {
   }
   function render() {
     aplicarAtividade();
+    if (cfg.categoria) d.catA = d.tipoA === "nr" ? cfg.categoria() : null;
     notificar();
     container.innerHTML = "";
-    if (d.tipoA === "nr") {
+    if (d.tipoA === "nr" && !cfg.categoria) {
       container.appendChild(_fieldCategoria());
     }
     container.appendChild(_busca());

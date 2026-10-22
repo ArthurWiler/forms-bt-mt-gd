@@ -775,12 +775,14 @@ function onEmprGate() {
    ============================================================ */
 const _preenchido = (v) => String(v == null ? "" : v).trim() !== "";
 // Unidade de área comum do condomínio (complemento tipo "Portaria", "Academia"…):
-// o formulário não pergunta a atividade principal dela — assume Comercial e usa o
-// próprio complemento como ramo. Idempotente; chamado tanto ao montar o card
+// o formulário não pergunta o tipo de propriedade dela — assume "Áreas comuns e
+// condomínios" (Tabela 11, não residencial) e usa o próprio complemento como
+// ramo. Idempotente; chamado tanto ao montar o card
 // quanto na validação (unidades ainda fechadas também precisam ficar coerentes).
 function normalizarAreaComumUC(u) {
   if (!u || !ehAreaComum(u.complemento)) return false;
-  if (u.atividade !== "Comercial") u.atividade = "Comercial";
+  const areaComum = TABELA_11[12].d; // "Áreas comuns e condomínios"
+  if (u.tipoPropriedade !== areaComum) aplicarTipoPropriedade(u, areaComum);
   if (!_preenchido(u.ramo)) u.ramo = u.complemento;
   return true;
 }
@@ -836,6 +838,7 @@ window.btAgrupamentoColetivoOk = function () {
 // Espelha exatamente as condições de visibilidade de _corpoFaixaTorre.
 window.btUnidadesTorresOk = function () {
   if (!MULTI) return true;
+  if (!window.btTipoRedeOk()) return false;
   _espelharGrupos();
   return (state.blocos || []).every((b) => {
     const modoCalc = calcBlocoMultiTorres(b).modoCalculadora;
@@ -848,7 +851,7 @@ window.btUnidadesTorresOk = function () {
       // Área comum (portaria, academia…): o card não pergunta a atividade —
       // normaliza aqui para valer também nas unidades ainda não abertas.
       normalizarAreaComumUC(u);
-      if (!_preenchido(u.atividade)) return false;
+      if (!_preenchido(tipoPropriedadeDe(u))) return false;
       if (u.atividade === "Residencial") {
         if (!_preenchido(u.area)) return false;
       } else {
@@ -953,16 +956,11 @@ window.btDadosProjetoOk = function () {
 // _inp / _inpInstalacao: ver shared/js/campos.js (cmgInp / cmgInpInstalacao).
 const _inp = cmgInp;
 const _inpInstalacao = cmgInpInstalacao;
-// Campo "Ramo de atividade": input com lista filtrada (shared/js/ramo-atividade.js).
-// Exibe só a descrição; o valor guardado é "código - descrição" (o código
-// não é escolhido pelo usuário, mas sai no PDF).
+// Campo "Ramo de atividade": texto livre ("Salão de beleza", "Padaria"…). A
+// categoria do cálculo vem do Tipo de propriedade, não do ramo. Rascunhos
+// antigos com "código - descrição" mostram só a descrição.
 function _inpRamo(valor, onChange) {
-  const i = document.createElement("input");
-  i.type = "text";
-  i.placeholder = "Obrigatório";
-  i.value = ramoDescricao(valor);
-  ramoAtivAttach(i, onChange);
-  return i;
+  return _inp(ramoDescricao(valor), onChange, { placeholder: "Obrigatório" });
 }
 function renderHibridoAlertas() {
   const box = $("#hibridoAlertas");
@@ -1138,7 +1136,7 @@ const SOLICITACOES_UC_COLETIVO = [
   ["Conexão Nova", "Ligação nova"],
   ["Alteração de Carga", "Alteração de carga"],
   [SOL_MUDA_COMPLEMENTO, "Alteração de carga com mudança no complemento"],
-  ["Caixa Existente sem Alteração", "Caixa existente sem alteração"],
+  ["Caixa Existente sem Alteração", "Imóvel existente sem alteração"],
 ];
 const _mudaComplemento = (u) =>
   u.solicitacao === "Alteração de Carga" && !!u.mudaComplemento;
@@ -1272,10 +1270,10 @@ function _corpoGrupoColetivo(corpo, ucs, g, hibrido, modoCalc) {
   add(
     "Tipo de propriedade",
     _selectDe(
-      ["Residencial", "Comercial", "Industrial", "Rural"],
-      u.atividade,
+      tiposPropriedade(),
+      tipoPropriedadeDe(u),
       (v) => {
-        u.atividade = v;
+        aplicarTipoPropriedade(u, v);
         aplicarPresetResidencial();
         refazer();
       },
@@ -2232,10 +2230,10 @@ function _corpoFaixaTorre(corpo, b, f, modoCalc) {
     const fa = _campo(
       "Tipo de propriedade",
       _selectDe(
-        ["Residencial", "Comercial", "Industrial", "Rural"],
-        u.atividade,
+        tiposPropriedade(),
+        tipoPropriedadeDe(u),
         (v) => {
-          u.atividade = v;
+          aplicarTipoPropriedade(u, v);
           renderUnidadesTorreAtual();
         },
         true,
@@ -2756,6 +2754,7 @@ function validacaoObrigatoriosColetivo() {
   req(o.cidade, "Cidade da obra");
   req(o.cep, "CEP da obra");
   req(o.art, "Nº ART/TRT de Projeto");
+  req(o.tipoRede, "Tipo de rede que atende o local");
   if (!(demandaTotalGeralF() > 0)) faltando.push("Demanda das UCs");
   // Demanda geral não residencial: exigida apenas no método 5.2 (no modo
   // calculadora as UCs não residenciais detalham as próprias cargas).
@@ -2792,7 +2791,10 @@ function validacaoObrigatoriosColetivo() {
       );
     state.ucBlocos.forEach((u, ui) => {
       const rotulo = u.identificacao || `UC ${ui + 1}`;
-      if (!ucSemAlteracao(u)) req(u.area, `Área privativa da ${rotulo}`);
+      if (!ucSemAlteracao(u)) {
+        req(tipoPropriedadeDe(u), `Tipo de propriedade da ${rotulo}`);
+        req(u.area, `Área privativa da ${rotulo}`);
+      }
       if (_mudaComplemento(u))
         req(u.novoComplemento, `Novo complemento da ${rotulo}`);
     });

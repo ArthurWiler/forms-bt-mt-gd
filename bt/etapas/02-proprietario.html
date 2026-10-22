@@ -25,15 +25,6 @@
         oninput="onMascara(this, mascararCelular)"
       />
     </div>
-    <div class="field">
-      <label>Telefone Fixo</label>
-      <input
-        type="text"
-        data-k="prop.fixo"
-        placeholder=" "
-        oninput="onMascara(this, mascararFixo)"
-      />
-    </div>
     <!-- Documento do titular: o checkbox "Pessoa estrangeira" e o campo que
          ele comanda são UMA célula do grid (`.doc-titular`) — é o que põe o
          documento sozinho na linha, com o checkbox colado nele, como na
@@ -93,6 +84,16 @@
     </div>
     <div class="field field--plain pf-campo" style="display: none" data-noopt>
       <label>
+        Possui NIS (Número de Identificação Social) para Tarifa Social?
+      </label>
+      <div data-toggle="prop.nis" data-toggle-onchange="onNisBT"></div>
+      <select data-k="prop.nis" style="display: none" aria-hidden="true">
+        <option>Sim</option>
+        <option>Não</option>
+      </select>
+    </div>
+    <div class="field field--plain pf-campo" style="display: none" data-noopt>
+      <label>
         Possui equipamento essencial à vida?
         <span class="label-ex"
           >(ex.: gerador de oxigênio, respirador, bomba infusora)</span
@@ -108,17 +109,7 @@
         <option>Não</option>
       </select>
     </div>
-    <div class="field field--plain pf-campo" style="display: none" data-noopt>
-      <label>
-        Possui NIS (Número de Identificação Social) para Tarifa Social?
-      </label>
-      <div data-toggle="prop.nis" data-toggle-onchange="onNisBT"></div>
-      <select data-k="prop.nis" style="display: none" aria-hidden="true">
-        <option>Sim</option>
-        <option>Não</option>
-      </select>
-    </div>
-    <div class="field col-span-2 pf-campo" id="numNisBox" style="display: none">
+    <div class="field row-solo pf-campo" id="numNisBox" style="display: none">
       <label>Número do NIS <span class="req">*</span></label>
       <input type="text" data-k="prop.numNis" placeholder=" " />
     </div>

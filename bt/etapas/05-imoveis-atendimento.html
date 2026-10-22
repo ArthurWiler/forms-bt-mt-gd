@@ -2,19 +2,17 @@
 
 <div class="card">
   <div class="section-eyebrow">Etapa 4</div>
-  <h3 class="card-title">
-    <span data-so-zona="urbana">Imóveis e atendimento</span
-    ><span data-so-zona="rural">Imóvel e atendimento</span>
-  </h3>
+  <h3 class="card-title">Imóveis e atendimento</h3>
   <p class="card-sub">
     <span data-so-zona="urbana"
-      >Escolha o tipo de atendimento do imóvel. Cada imóvel com medidor de
-      energia próprio é um atendimento separado, mesmo que eles fiquem
-      localizado no mesmo terreno. Máximo de 3 imóveis por pedido.</span
+      >Informe todos os imóveis do terreno, mesmo os que não vão mudar. Cada um
+      com medidor de energia próprio é um atendimento separado, e você escolhe
+      o tipo de atendimento de cada um. Máximo de 3 imóveis por pedido.</span
     ><span data-so-zona="rural"
-      >Escolha o tipo de atendimento. Em área rural, cada solicitação atende
-      apenas 1 imóvel. Para atender outros imóveis, abra uma nova
-      solicitação.</span
+      >Escolha o tipo de atendimento de todos os imóveis do terreno, mesmo os
+      que não vão mudar. Em área rural, cada solicitação atende apenas 1
+      imóvel. Para atender outros imóveis, abra uma nova solicitação. Exceto se
+      o segundo atendimento tiver a finalidade exclusiva de irrigação.</span
     >
   </p>
 
@@ -26,15 +24,33 @@
     <h4 class="secao-titulo">O que você precisa neste endereço?</h4>
     <p class="atend-endereco" id="atendEndereco"></p>
     <div class="cmg-exemplo" data-so-zona="urbana">
-      <strong>Exemplo</strong>: modernizar aparelhos em uma casa já ligada +
-      salão de beleza novo no mesmo terreno = 1 alteração de carga + 1 ligação
-      nova.
+      <strong>Exemplos</strong>:
+      <ol class="cmg-exemplo-lista">
+        <li>
+          Modernizar aparelhos em uma casa já ligada + salão de beleza novo no
+          mesmo terreno = 1 alteração de carga (casa) + 1 ligação nova (salão).
+        </li>
+        <li>
+          Casa existente sem alteração + abrir um salão de beleza novo no mesmo
+          terreno = 1 Imóvel existente sem alteração (casa) + 1 ligação nova
+          (salão)
+        </li>
+      </ol>
     </div>
     <div class="cmg-exemplo" data-so-zona="rural">
-      <strong>Exemplo</strong>: um sítio já ligado, com casa de morador e
-      pequena produção de leite, que vai instalar um resfriador de leite e uma
-      bomba d’água mais potente para irrigar a horta. Como o imóvel já tem
-      medidor e só muda a carga, é uma alteração de carga.
+      <strong>Exemplos</strong>:
+      <ol class="cmg-exemplo-lista">
+        <li>
+          Um sítio já ligado, com casa de morador e pequena produção de leite,
+          que vai instalar um resfriador de leite e uma bomba d’água mais
+          potente para irrigar a horta. Como o imóvel já tem medidor e só muda
+          a carga, é uma alteração de carga.
+        </li>
+        <li>
+          Casa residencial sem alteração + instalação de irrigação = 1 imóvel
+          sem alteração (casa) + 1 irrigação
+        </li>
+      </ol>
     </div>
     <div class="atend-contadores" id="atendContadores"></div>
     <div id="ucsIdentBox"></div>
@@ -42,18 +58,19 @@
 
   <!-- Uma resposta para o endereço inteiro: a rede que atende o local. Rádios
        sobre o select oculto (data-toggle) — onTipoRedeBT recalcula os
-       disjuntores dos imóveis. -->
-  <div class="divider">
+       disjuntores dos imóveis. Nada vem marcado, e o bloco só aparece
+       depois que algum atendimento é escolhido (renderUcsIdentBT). -->
+  <div class="divider" id="tipoRedeBox" style="display: none">
     <div class="field field--plain" data-noopt>
       <label>Tipo de rede que atende o local</label>
       <div data-toggle="obra.tipoRede"></div>
       <select
         data-k="obra.tipoRede"
-        data-sem-vazio
         onchange="onTipoRedeBT()"
         style="display: none"
         aria-hidden="true"
       >
+        <option value=""></option>
         <option>Monofásica</option>
         <option>Bifásica</option>
         <option>Trifásica</option>

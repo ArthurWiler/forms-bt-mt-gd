@@ -136,6 +136,9 @@ const ucBlocoPadrao = (i) => ({
   caixa: "",
   solicitacao: "Conexão Nova",
   mudancaLocal: "",
+  // Tipo de propriedade (Residencial ou categoria da Tabela 11) — define o
+  // cálculo de demanda; `atividade` é derivada dele (shared/js/carga-bt.js).
+  tipoPropriedade: "",
   atividade: "",
   ramo: "",
   area: "", // área privativa (m²) — usada no cálculo ND-5.2 quando Residencial
@@ -166,6 +169,9 @@ const prevKwUC = (u) =>
 // UC detalhada (individual) — identificação + calculadora
 const ucDetalhadaPadrao = () => ({
   solicitacao: "Conexão Nova",
+  // Tipo de propriedade (Residencial ou categoria da Tabela 11) — define o
+  // cálculo de demanda; `atividade` é derivada dele (shared/js/carga-bt.js).
+  tipoPropriedade: "",
   atividade: "",
   ramo: "",
   nPredial: "",
@@ -207,6 +213,9 @@ const ucTorrePadrao = (i) => ({
   complemento: "",
   caixa: "",
   solicitacao: "Conexão Nova",
+  // Tipo de propriedade (Residencial ou categoria da Tabela 11) — define o
+  // cálculo de demanda; `atividade` é derivada dele (shared/js/carga-bt.js).
+  tipoPropriedade: "",
   atividade: "",
   ramo: "",
   area: "", // área privativa (m²) — usada no cálculo ND-5.2 por torre
@@ -286,7 +295,7 @@ const SEC_BT = {
           solicitacao: SOLICITACOES[0],
           escopo: "Ligação Nova",
         },
-        obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
+        obra: { localizacao: "Urbana" },
       },
     },
     {
@@ -307,7 +316,7 @@ const SEC_BT = {
           solicitacao: SOLICITACOES[0],
           escopo: "Ligação Nova",
         },
-        obra: { tipoRede: "Trifásica", localizacao: "Rural" },
+        obra: { localizacao: "Rural" },
       },
     },
     {
@@ -324,7 +333,7 @@ const SEC_BT = {
           escopo: "Ligação Nova",
           nBlocos: 2,
         },
-        obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
+        obra: { localizacao: "Urbana" },
       },
     },
     {
@@ -341,7 +350,7 @@ const SEC_BT = {
           escopo: "Ligação Nova",
           nUCs: 2,
         },
-        obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
+        obra: { localizacao: "Urbana" },
       },
     },
     {
@@ -378,7 +387,7 @@ const SEC_BT_INDIVIDUAIS_LEGADO = {
           escopo: "Ligação Nova",
           nUCs: 1,
         },
-        obra: { tipoRede: "Monofásica", localizacao: "Urbana" },
+        obra: { localizacao: "Urbana" },
         cargas: {
           tipoA: "res",
           qtds: cargasQtdsPorNome([
@@ -407,7 +416,7 @@ const SEC_BT_INDIVIDUAIS_LEGADO = {
           escopo: "Ligação Nova",
           nUCs: 1,
         },
-        obra: { tipoRede: "Bifásica", localizacao: "Urbana" },
+        obra: { localizacao: "Urbana" },
         cargas: {
           tipoA: "res",
           qtds: cargasQtdsPorNome([
@@ -437,7 +446,7 @@ const SEC_BT_INDIVIDUAIS_LEGADO = {
           solicitacao: SOLICITACOES[0],
           escopo: "Ligação Nova",
         },
-        obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
+        obra: { localizacao: "Urbana" },
       },
     },
     {
@@ -456,7 +465,7 @@ const SEC_BT_INDIVIDUAIS_LEGADO = {
           solicitacao: SOLICITACOES[0],
           escopo: "Ligação Nova",
         },
-        obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
+        obra: { localizacao: "Urbana" },
       },
     },
     {
@@ -475,7 +484,7 @@ const SEC_BT_INDIVIDUAIS_LEGADO = {
           solicitacao: SOLICITACOES[0],
           escopo: "Ligação Nova",
         },
-        obra: { tipoRede: "Trifásica", localizacao: "Urbana" },
+        obra: { localizacao: "Urbana" },
       },
     },
   ],

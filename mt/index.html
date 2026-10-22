@@ -267,6 +267,18 @@
                    inteiro, inclusive a linha de exemplo. -->
               <div class="field field--plain pf-campo" style="display: none">
                 <label>
+                  Possui NIS (Número de Identificação Social) para Tarifa
+                  Social?
+                  <span class="req">*</span>
+                </label>
+                <select data-k="nis" onchange="onNisMT()">
+                  <option value="">—</option>
+                  <option>Sim</option>
+                  <option>Não</option>
+                </select>
+              </div>
+              <div class="field field--plain pf-campo" style="display: none">
+                <label>
                   Possui equipamento essencial à vida?
                   <span class="label-ex"
                     >(ex.: gerador de oxigênio, respirador, bomba
@@ -280,20 +292,8 @@
                   <option>Não</option>
                 </select>
               </div>
-              <div class="field field--plain pf-campo" style="display: none">
-                <label>
-                  Possui NIS (Número de Identificação Social) para Tarifa
-                  Social?
-                  <span class="req">*</span>
-                </label>
-                <select data-k="nis" onchange="onNisMT()">
-                  <option value="">—</option>
-                  <option>Sim</option>
-                  <option>Não</option>
-                </select>
-              </div>
               <div
-                class="field pf-campo col-span-2"
+                class="field pf-campo row-solo"
                 id="numNisBoxMT"
                 style="display: none"
               >
@@ -1384,7 +1384,7 @@
               <textarea
                 data-k="observacoes"
                 rows="6"
-                placeholder="Inclua informações relevantes: justificativa de disjuntor, atendimento híbrido, geração já conectada, etc."
+                placeholder="Inclua informações relevantes, por exemplo: ponto de referência do imóvel, situação do padrão de energia, motivo da alteração de carga, necessidade de atendimento especial, etc."
               ></textarea>
             </div>
           </div>

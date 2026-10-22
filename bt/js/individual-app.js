@@ -154,7 +154,9 @@ function atualizarSolicitacaoAuto() {
 // Etapa 4: pelo menos um imóvel, cada um com o tipo de propriedade (é ele que
 // escolhe os perfis de carga da Etapa 5).
 window.btImoveisOk = () =>
-  state.ucsDet.length > 0 && state.ucsDet.every((u) => !!u.atividade);
+  state.ucsDet.length > 0 &&
+  state.ucsDet.every((u) => !!tipoPropriedadeDe(u)) &&
+  window.btTipoRedeOk();
 // Etapa 5: todo imóvel com carga tem um perfil escolhido, nenhum editor de
 // perfil ficou aberto e a combinação de disjuntores é válida (2+ imóveis).
 window.btCargasOk = () =>
@@ -266,8 +268,8 @@ function maxUcsBT() {
 }
 // Linhas de contadores. "Alteração de carga com mudança no complemento" é
 // gravada como "Alteração de Carga" + u.mudaComplemento — o PDF agrupa as UCs
-// pelo valor exato da solicitação. "Caixa existente sem alteração" não está
-// no Figma: segue disponível por decisão do negócio.
+// pelo valor exato da solicitação. "Imóvel existente sem alteração" grava o
+// valor normativo "Caixa Existente sem Alteração" (é ele que o PDF agrupa).
 const TIPOS_SOLICITACAO_BT = [
   {
     id: "nova",
@@ -290,7 +292,7 @@ const TIPOS_SOLICITACAO_BT = [
   },
   {
     id: "caixa",
-    l: "Caixa existente sem alteração",
+    l: "Imóvel existente sem alteração",
     desc: "Imóvel já ligado à energia, sem alteração de carga",
     sol: "Caixa Existente sem Alteração",
   },
@@ -312,7 +314,7 @@ const _tipoBT = (id) => TIPOS_SOLICITACAO_BT.find((t) => t.id === id);
 const CONTADOR_IRRIGACAO_BT = {
   id: "irr",
   l: "Irrigação",
-  desc: "Imóvel com medidor próprio, só para a irrigação da propriedade",
+  desc: "Imóvel com medidor de energia próprio usado exclusivamente para irrigação da propriedade",
 };
 const _ehIrrigacaoBT = (u) => u.atividade === ATIVIDADE_IRRIGACAO;
 // Linhas de contador da zona atual e a linha em que cada imóvel é contado.
@@ -369,7 +371,7 @@ function alterarContadorBT(id, delta) {
     const u = novaUcDet();
     // Irrigação nasce como ligação nova; o lápis do card troca o tipo.
     _aplicarTipoBT(u, _tipoBT(id === "irr" ? "nova" : id));
-    if (id === "irr") u.atividade = ATIVIDADE_IRRIGACAO;
+    if (id === "irr") aplicarTipoPropriedade(u, ATIVIDADE_IRRIGACAO);
     let pos = 0;
     arr.forEach((x, i) => {
       if (ordem.indexOf(contadorDoImovelBT(x)) <= ordem.indexOf(id))
@@ -394,7 +396,7 @@ function _sincronizarUcs() {
   if (arr.length > maxUcsBT()) arr.length = maxUcsBT();
   if (!ruralBT())
     arr.forEach((u) => {
-      if (_ehIrrigacaoBT(u)) u.atividade = "";
+      if (_ehIrrigacaoBT(u)) aplicarTipoPropriedade(u, "");
     });
   state.atend.nUCs = arr.length;
 }
@@ -422,6 +424,10 @@ function _recalcularCargasUcs() {
       u.cargas || {},
     );
     d.qtds = CAT.map((_, i) => d.qtds[i] || 0);
+    // A categoria segue o Tipo de propriedade atual (trocar de "Restaurantes"
+    // para "Escritórios" não muda a família de perfis, mas muda a conta).
+    const cat = infoTipoPropriedade(tipoPropriedadeDe(u)).catA;
+    if (d.tipoA === "nr" && cat != null) d.catA = cat;
     const r = calcDemandaResultados(d, redeMonoBT());
     d._demanda = r.demandaTotal;
     d._cargaKw = r.cargaInstalada;
@@ -519,6 +525,8 @@ function renderUcsIdentBT() {
   const end = $("#atendEndereco");
   if (end) end.textContent = _enderecoAtendTxt();
   renderContadoresBT();
+  const rede = $("#tipoRedeBox");
+  if (rede) rede.style.display = state.ucsDet.length ? "" : "none";
   box.innerHTML = "";
   state.ucsDet.forEach((u, ui) => {
     const aberta = !_ucIdentFechada[ui];
@@ -676,53 +684,37 @@ function _ucIdentificacao(u, ui) {
       ),
     );
   }
-  const selAtiv = _selectDe(
-    irrigacaoFixa
-      ? [ATIVIDADE_IRRIGACAO]
-      : ["Residencial", "Comercial", "Industrial"],
-    u.atividade,
+  // Tipo de propriedade = Residencial + categorias da Tabela 11 (urbano e
+  // rural): é ele que define o cálculo de demanda (shared/js/carga-bt.js).
+  // Card travado numa classe só oferece os tipos dela; com um tipo único o
+  // select já vem escolhido e bloqueado. A irrigação rural é fixa.
+  const opcoesTipo = irrigacaoFixa
+    ? [ATIVIDADE_IRRIGACAO]
+    : tiposPropriedade(atividadeBloqueada ? _prefAtividade : "");
+  if (opcoesTipo.length === 1 && tipoPropriedadeDe(u) !== opcoesTipo[0])
+    aplicarTipoPropriedade(u, opcoesTipo[0]);
+  const selTipo = _selectDe(
+    opcoesTipo,
+    tipoPropriedadeDe(u),
     (v) => {
-      u.atividade = v;
+      aplicarTipoPropriedade(u, v);
       _aoMudarUcIdent();
     },
     true,
   );
-  selAtiv.disabled = atividadeBloqueada;
-  if (ruralBT()) {
-    // Rural (specs rurais svg3–5): o tipo de propriedade é sempre "Rural" e
-    // o ramo diz se o imóvel é residencial, comercial ou industrial — é ele
-    // que vai para u.atividade (tipo de carga e perfis). Sem CNAE no rural.
-    const selTipo = _selectDe(["Rural"], "Rural", () => {});
-    selTipo.disabled = true;
-    grid.appendChild(_campo("Tipo de propriedade", selTipo, "field--float"));
-    grid.appendChild(
-      _campo(
-        'Ramo da atividade <span class="req">*</span>',
-        selAtiv,
-        "field--float",
-      ),
-    );
-  } else
-    grid.appendChild(
-      _campo(
-        'Tipo de propriedade <span class="req">*</span>',
-        selAtiv,
-        "field--float",
-      ),
-    );
-  if (!ruralBT() && u.atividade && u.atividade !== "Residencial") {
-    const inp = document.createElement("input");
-    inp.type = "text";
-    inp.placeholder = " ";
-    // O campo mostra só a descrição; u.ramo guarda "código - descrição"
-    // (o código sai no PDF e escolhe os perfis de salão de beleza).
-    inp.value = ramoDescricao(u.ramo);
+  selTipo.disabled = opcoesTipo.length === 1;
+  grid.appendChild(
+    _campo(
+      'Tipo de propriedade <span class="req">*</span>',
+      selTipo,
+      "field--float",
+    ),
+  );
+  // Ramo da atividade: texto livre ("Salão de beleza", "Padaria"…), só
+  // informativo — não entra no cálculo.
+  if (u.atividade && u.atividade !== "Residencial" && !irrigacaoFixa) {
+    const inp = inpTexto(ramoDescricao(u.ramo), (v) => (u.ramo = v));
     inp.disabled = restrito && ui === 0;
-    ramoAtivAttach(inp, (v) => {
-      const antes = familiaPerfisBT(u);
-      u.ramo = v;
-      if (familiaPerfisBT(u) !== antes) renderUcsBT();
-    });
     grid.appendChild(
       _campo('Ramo da atividade <span class="req">*</span>', inp),
     );
@@ -887,16 +879,7 @@ function _initPadraoMapa(ui, u) {
     _padraoMaps[ui] = null;
   }
   const map = window.L.map(div).setView([-19.9167, -43.9345], 12);
-  const ruas = window.L.tileLayer(
-    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    { maxZoom: 19, attribution: "© OpenStreetMap" },
-  );
-  const satelite = window.L.tileLayer(
-    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    { maxZoom: 19, attribution: "" },
-  );
-  satelite.addTo(map);
-  window.L.control.layers({ Satélite: satelite, Ruas: ruas }).addTo(map);
+  camadasBaseMapa(map);
   const marker = { ref: null };
   const colocar = (lat, lng, centralizar) => {
     const ll = window.L.latLng(lat, lng);
@@ -1069,6 +1052,7 @@ function abrirEditorPerfilBT(u, ui, origem) {
   _editorPerfil[ui] = {
     base,
     draft: {
+      tipoPropriedade: tipoPropriedadeDe(u),
       atividade: u.atividade,
       cargas,
       gerador,
@@ -1358,7 +1342,7 @@ function renderUcsBT() {
             const info = document.createElement("div");
             info.className = "alert alert-info";
             info.innerHTML =
-              "Este imóvel foi marcado como <strong>Caixa existente sem alteração</strong>. O preenchimento de cargas foi omitido; ele aparecerá apenas no resumo do PDF.";
+              "Este imóvel foi marcado como <strong>Imóvel existente sem alteração</strong>. O preenchimento de cargas foi omitido; ele aparecerá apenas no resumo do PDF.";
             corpo.appendChild(info);
             return;
           }
@@ -1443,6 +1427,7 @@ function validacaoObrigatoriosBT() {
   if (coordObrigatoria && !coordPreenchida)
     faltando.push("Coordenada (latitude/longitude) da obra");
   if (!state.ucsDet.length) faltando.push("Pelo menos um imóvel");
+  req(o.tipoRede, "Tipo de rede que atende o local");
   const temCarga = state.ucsDet.some((u) => !ucSemAlteracao(u));
   if (temCarga && !(demandaTotalGeralBT() > 0))
     faltando.push("Previsão de carga / demanda dos imóveis");
@@ -1450,10 +1435,9 @@ function validacaoObrigatoriosBT() {
   if (vd.ok === false) faltando.push("Combinação de disjuntores inválida");
   state.ucsDet.forEach((u, ui) => {
     const im = `Imóvel ${ui + 1}`;
-    if (!u.atividade)
-      faltando.push(
-        `${im}: ${ruralBT() ? "Ramo da atividade" : "Tipo de propriedade"}`,
-      );
+    if (!tipoPropriedadeDe(u)) faltando.push(`${im}: Tipo de propriedade`);
+    else if (temRamoBT(u) && !String(u.ramo || "").trim())
+      faltando.push(`${im}: Ramo da atividade`);
     if (!ucSemAlteracao(u) && !u.perfil)
       faltando.push(`${im}: Perfil de carga`);
     // Número de instalação/UC fora do padrão (REN ANEEL 1.095/2024): os
@@ -1482,13 +1466,14 @@ function validacaoObrigatoriosBT() {
 const PG = { prop: 1, dados: 2, atend: 3, cargas: 4, corr: 5 };
 // Rural: o tipo de propriedade é sempre "Rural" e o ramo é a atividade
 // (Residencial/Comercial/Industrial/Irrigação); no urbano, o ramo é o CNAE.
-const tipoPropriedadeBT = (u) => (ruralBT() ? "Rural" : u.atividade);
-function ramoRotuloBT(u) {
-  if (ruralBT()) return u.atividade;
-  return u.atividade && u.atividade !== "Residencial"
-    ? ramoParaPdf(u.ramo)
-    : "";
-}
+const tipoPropriedadeBT = (u) => tipoPropriedadeDe(u);
+// Ramo (texto livre) só existe nos imóveis não residenciais — a irrigação
+// rural não pergunta.
+const temRamoBT = (u) =>
+  !!u.atividade &&
+  u.atividade !== "Residencial" &&
+  u.atividade !== ATIVIDADE_IRRIGACAO;
+const ramoRotuloBT = (u) => (temRamoBT(u) ? ramoParaPdf(u.ramo) : "");
 // Rótulo do perfil escolhido para a prévia e o PDF.
 function perfilRotuloUcBT(u) {
   if (u.perfil === "personalizado") {
@@ -1540,14 +1525,11 @@ function renderPreviaBT() {
     html += `</div><div class="previa-grid">`;
     html += pvCampoBT("Tipo de solicitação", solicitacaoRotuloBT(u), PG.atend);
     html += pvCampoBT("Tipo de propriedade", tipoPropriedadeBT(u), PG.atend);
-    // Ramo: no urbano só fora do Residencial (mesma condição do campo na
-    // etapa); no rural é sempre exibido, pois é ele que traz a atividade.
-    if (rural || (u.atividade && u.atividade !== "Residencial"))
+    // Ramo: só fora do Residencial (mesma condição do campo na etapa).
+    if (temRamoBT(u))
       html += pvCampoBT("Ramo da atividade", ramoRotuloBT(u), PG.atend);
     if (!ucSemAlteracao(u))
       html += pvCampoBT("Perfil de carga", perfilRotuloUcBT(u), PG.cargas);
-    if (cg.tipoA === "nr" && cg.catA != null)
-      html += pvCampoBT("Categoria de atividade", (TABELA_11[cg.catA] || {}).d);
     html += pvCampoBT("Solicitação", state.atend.solicitacao);
     const complementos = () => {
       html += pvCampoBT(

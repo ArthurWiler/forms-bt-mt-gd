@@ -286,13 +286,12 @@ function reaplicarMarcadores() {
 function bindInputs() {
   $$("[data-k]").forEach((el) => {
     const k = el.dataset.k;
-    // Ramo de atividade: lista com filtro de digitação. O campo mostra só a
-    // descrição; state.ramoAtividade guarda "código - descrição" (o código
-    // não é escolhido pelo usuário, mas sai no PDF).
+    // Ramo de atividade: texto livre ("Salão de beleza", "Padaria"…). Um
+    // rascunho antigo com "código - descrição" mostra só a descrição.
     if (k === "ramoAtividade") {
       el.value = ramoDescricao(state[k]);
-      ramoAtivAttach(el, (v) => {
-        state[k] = v;
+      el.addEventListener("input", () => {
+        state[k] = el.value;
         atualizarCascataUC();
         if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
       });
@@ -1328,25 +1327,7 @@ function _criarMapa(seletor, aoMover) {
   const div = $(seletor);
   if (!div || !window.L) return null;
   const mapa = window.L.map(div).setView([-19.9167, -43.9345], 12);
-  // Camadas base alternáveis: Ruas (OSM, padrão) e Satélite (Esri World
-  // Imagery — mesma fonte usada pelo Sisema). Esri não usa subdomínio {s}
-  // e a ordem dos eixos é {z}/{y}/{x}.
-  const ruas = window.L.tileLayer(
-    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    {
-      maxZoom: 19,
-      attribution: "© OpenStreetMap",
-    },
-  );
-  const satelite = window.L.tileLayer(
-    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    {
-      maxZoom: 19,
-      attribution: "",
-    },
-  );
-  satelite.addTo(mapa);
-  window.L.control.layers({ Satélite: satelite, Ruas: ruas }).addTo(mapa);
+  camadasBaseMapa(mapa);
   mapa.on("click", (e) => aoMover(e.latlng.lat, e.latlng.lng));
   setTimeout(() => mapa.invalidateSize(), 200);
   // O Leaflet mede o container na criação. Se a etapa ainda estiver oculta

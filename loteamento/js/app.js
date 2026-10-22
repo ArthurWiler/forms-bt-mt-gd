@@ -324,16 +324,7 @@ function initMapaObra() {
     return;
   }
   mapaObra = window.L.map(div).setView([-19.9167, -43.9345], 12);
-  const ruas = window.L.tileLayer(
-    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    { maxZoom: 19, attribution: "© OpenStreetMap" },
-  );
-  const satelite = window.L.tileLayer(
-    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    { maxZoom: 19, attribution: "" },
-  );
-  satelite.addTo(mapaObra);
-  window.L.control.layers({ Satélite: satelite, Ruas: ruas }).addTo(mapaObra);
+  camadasBaseMapa(mapaObra);
   mapaObra.on("click", (e) => _aplicarCoordDoMapa(e.latlng.lat, e.latlng.lng));
   setTimeout(() => mapaObra.invalidateSize(), 200);
   const lat = parseFloat(String(state.latitude || "").replace(",", ".")),

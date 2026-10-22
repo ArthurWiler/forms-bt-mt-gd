@@ -16,6 +16,9 @@ function gdUcPadrao(i) {
   return {
     complemento: "",
     solicitacao: "Conexão Nova",
+    // Tipo de propriedade (Residencial ou categoria da Tabela 11) e a
+    // atividade derivada dele (shared/js/carga-bt.js).
+    tipoPropriedade: "Residencial",
     atividade: "Residencial",
     // Área privativa (m²): entra na área média ponderada do ND-5.2.
     area: "",

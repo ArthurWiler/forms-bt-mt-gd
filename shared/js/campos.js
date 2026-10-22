@@ -35,12 +35,16 @@ function cmgCampo(labelHtml, controle, cls) {
   return f;
 }
 
+// Opção = texto, ou [valor, rótulo] quando o valor gravado difere do exibido.
 function cmgSelectDe(opcoes, valor, onchange, comVazio) {
+  const par = (o) => (Array.isArray(o) ? o : [o, o]);
   const s = document.createElement("select");
   s.innerHTML =
     (comVazio ? '<option value=""></option>' : "") +
-    opcoes.map((o) => `<option value="${o}">${o}</option>`).join("");
-  s.value = valor || (comVazio ? "" : opcoes[0]);
+    opcoes
+      .map((o) => `<option value="${par(o)[0]}">${par(o)[1]}</option>`)
+      .join("");
+  s.value = valor || (comVazio ? "" : par(opcoes[0])[0]);
   s.addEventListener("change", () => onchange(s.value));
   return s;
 }

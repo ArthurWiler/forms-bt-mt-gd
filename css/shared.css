@@ -2625,20 +2625,18 @@ label.restricao-aceite input[type="checkbox"] {
   opacity: 1;
   visibility: visible;
 }
-/* Tooltip dos cards de resultado (Carga/Demanda total da torre e do
-   empreendimento): texto CENTRALIZADO no balão. O ícone fica no canto direito
-   do card, então o balão ancora pela direita — centralizá-lo sobre o ícone o
-   jogaria para fora do card. */
+/* Tooltip dos cards de resultado (Carga/Demanda total do imóvel, da torre e
+   do empreendimento): o balão abre CENTRALIZADO sobre o card, com o texto
+   centralizado. O (i) deixa de ser o contêiner posicionado (static), então o
+   balão (e a seta) ancoram no próprio card. */
+.cemig-form .resultado-card:has(> .resultado-card-info.cmg-hint) {
+  position: relative;
+}
+.cemig-form .resultado-card > .resultado-card-info.cmg-hint {
+  position: static;
+}
 .cemig-form .resultado-card-info.cmg-hint::after {
   text-align: center;
-  left: auto;
-  right: 0;
-  transform: none;
-}
-.cemig-form .resultado-card-info.cmg-hint::before {
-  left: auto;
-  right: 6px;
-  transform: none;
 }
 /* Variante ancorada à direita: usada quando o ícone fica no canto direito
    do campo (ex.: (i) do "Primeiro complemento"). Centralizar o balão sobre
@@ -4537,42 +4535,6 @@ label.restricao-aceite input[type="checkbox"] {
 }
 
 /* ============================================================
-   14. Ramo de atividade — lista com filtro de digitação
-   (shared/js/ramo-atividade.js; BT individual/coletivo e MT)
-   O campo mostra só a descrição — o código CNAE fica no valor
-   guardado e aparece apenas no PDF.
-   ============================================================ */
-.cemig-form .ramo-ativ-lista {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 120;
-  max-height: 280px;
-  overflow-y: auto;
-  margin-top: 2px;
-  background: var(--cmg-surface);
-  border: 1px solid var(--cmg-border);
-  border-radius: 4px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
-}
-.cemig-form .ramo-ativ-item {
-  padding: 10px var(--cmg-space-4);
-  font-family: var(--cmg-font-family);
-  font-size: var(--cmg-fs-body);
-  line-height: var(--cmg-lh-body);
-  color: var(--cmg-text-strong);
-  cursor: pointer;
-}
-.cemig-form .ramo-ativ-item + .ramo-ativ-item {
-  border-top: 1px solid var(--cmg-border);
-}
-.cemig-form .ramo-ativ-item.is-ativo,
-.cemig-form .ramo-ativ-item:hover {
-  background: var(--cmg-surface-disabled);
-}
-
-/* ============================================================
    15. Erro de FORMATO (data-fmt) — mensagem específica abaixo do campo
    ------------------------------------------------------------
    O ::after genérico da seção de campos escreve "Campo obrigatório" para
@@ -4748,63 +4710,6 @@ label.restricao-aceite input[type="checkbox"] {
   letter-spacing: var(--cmg-ls-wide);
   color: var(--cmg-text-strong);
 }
-.cemig-form .orient-docs-secao {
-  margin: var(--cmg-space-8) 0 var(--cmg-space-3);
-  font-size: 20px;
-  line-height: 28px;
-  font-weight: var(--cmg-fw-regular);
-  letter-spacing: var(--cmg-ls-tight);
-  color: var(--cmg-text-strong);
-}
-.cemig-form .orient-docs-titulo + .orient-docs-secao {
-  margin-top: 0;
-}
-.cemig-form .orient-docs-grupo {
-  margin: var(--cmg-space-4) 0 var(--cmg-space-2);
-  font-size: var(--cmg-fs-body-lg);
-  line-height: var(--cmg-lh-body-lg);
-  font-weight: var(--cmg-fw-regular);
-  letter-spacing: var(--cmg-ls-tight);
-  color: var(--cmg-text-strong);
-}
-.cemig-form .orient-docs-texto,
-.cemig-form .orient-docs-nota {
-  margin: 0 0 var(--cmg-space-2);
-  font-size: var(--cmg-fs-body-lg);
-  line-height: var(--cmg-lh-body-lg);
-  letter-spacing: var(--cmg-ls-tight);
-}
-.cemig-form .orient-docs-nota {
-  font-size: var(--cmg-fs-body);
-  line-height: var(--cmg-lh-body);
-}
-.cemig-form .orient-docs-texto strong {
-  font-weight: var(--cmg-fw-bold);
-  color: var(--cmg-text-strong);
-}
-.cemig-form .orient-bullets {
-  list-style: none;
-  margin: 0 0 var(--cmg-space-2);
-  padding: 0;
-}
-.cemig-form .orient-bullets li {
-  position: relative;
-  padding: var(--cmg-space-2) 0 var(--cmg-space-2) var(--cmg-space-8);
-  font-size: var(--cmg-fs-body-lg);
-  line-height: var(--cmg-lh-body-lg);
-  letter-spacing: var(--cmg-ls-tight);
-}
-.cemig-form .orient-bullets li::before {
-  content: "";
-  position: absolute;
-  left: 4px;
-  top: 50%;
-  width: 8px;
-  height: 8px;
-  margin-top: -4px;
-  border-radius: 50%;
-  background: var(--cmg-green-600);
-}
 .cmg-aviso-link {
   color: var(--cmg-green-600);
   font-weight: var(--cmg-fw-bold);
@@ -4926,6 +4831,36 @@ label.restricao-aceite input[type="checkbox"] {
   letter-spacing: var(--cmg-ls-tight);
   color: var(--cmg-text-muted);
 }
+/* "Documentos do Imóvel": entre o termo e a lista corrida entra uma frase de
+   introdução em corpo/grande ("Apresentar **apenas um**…") e, no 1º item, a
+   nota de exceções em corpo/médio romano. Os blocos de várias linhas do Figma
+   correm a 22px (medido no svg2), não aos 24px do corpo/médio. */
+.cemig-form .orient-docs-intro {
+  margin: var(--cmg-space-2) 0 0;
+  font-size: var(--cmg-fs-body-lg);
+  line-height: var(--cmg-lh-body-lg);
+  letter-spacing: var(--cmg-ls-tight);
+  color: var(--cmg-text);
+}
+.cemig-form .orient-docs-intro + em {
+  line-height: 22px;
+}
+/* Painel termina numa lista corrida de 22px: 8px até a divisória fecham os
+   599px do svg2 entre a divisória do título e a de baixo. */
+.cemig-form .cmg-acordeao-corpo:has(.orient-docs-intro) {
+  padding-bottom: var(--cmg-space-2);
+}
+.cemig-form .orient-docs-nota {
+  margin: 6px 0 0;
+  font-size: var(--cmg-fs-body);
+  line-height: 22px;
+  letter-spacing: var(--cmg-ls-tight);
+  color: var(--cmg-text);
+}
+.cemig-form .orient-docs-intro b,
+.cemig-form .orient-docs-nota b {
+  font-weight: var(--cmg-fw-bold);
+}
 /* Dentro do acordeão o conteúdo herdado do bloco antigo (grupos, textos e
    `.orient-bullets`) não repete a margem superior do primeiro elemento: o
    respiro já vem do padding do corpo. */
@@ -5031,6 +4966,15 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .cmg-exemplo strong {
   font-weight: var(--cmg-fw-bold);
   color: var(--cmg-text-strong);
+}
+/* "Exemplos:" com lista numerada (Etapa 4 do BT individual): o número fica
+   recuado 5px do título e o texto a 21px dele. */
+.cemig-form .cmg-exemplo-lista {
+  margin: 7px 0 0;
+  padding-left: 21px;
+}
+.cemig-form .cmg-exemplo-lista > li {
+  padding-left: 0;
 }
 .cemig-form .atend-contadores {
   margin-top: var(--cmg-space-6);

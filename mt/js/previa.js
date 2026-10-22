@@ -187,17 +187,18 @@ function _pvContato() {
   if (_pvEhPF() || state.estrangeiro)
     prop += pvCampo("Data de Nascimento", dataBR(state.nasc), { step: E });
   if (_pvEhPF()) {
-    prop +=
-      pvCampo("Possui equipamento essencial à vida?", state.laudoMedico, {
-        step: E,
-      }) +
-      pvCampo(
-        "Possui NIS (Número de Identificação Social) para Tarifa Social?",
-        state.nis,
-        { step: E },
-      );
+    prop += pvCampo(
+      "Possui NIS (Número de Identificação Social) para Tarifa Social?",
+      state.nis,
+      { step: E },
+    );
     if (state.nis === "Sim")
       prop += pvCampo("Número do NIS", state.numNis, { step: E });
+    prop += pvCampo(
+      "Possui equipamento essencial à vida?",
+      state.laudoMedico,
+      { step: E },
+    );
   }
   const rt =
     pvCampo("Nome completo ou Razão Social", state.rtNome, {

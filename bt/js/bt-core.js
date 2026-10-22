@@ -134,7 +134,7 @@ function obraPadrao() {
     lng: "",
     utm: "",
     distMenor30: "",
-    tipoRede: "Trifásica",
+    tipoRede: "",
     transformador: "",
     pontoRef: "",
     nomePropriedade: "",
@@ -164,6 +164,9 @@ window.btPropDocOk = () =>
   estrangeiroBT()
     ? String(window.state.prop.rne || "").trim() !== ""
     : docInfo().valido === true;
+// Tipo de rede que atende o local: nada vem marcado, escolher é obrigatório
+// (rádios sobre select oculto, invisíveis para os marcadores).
+window.btTipoRedeOk = () => !!window.state.obra.tipoRede;
 // Correspondência: condicionais (CAMPOS_OBRIGATORIOS.corr do React) — toggles
 // usam select oculto (invisível p/ marcadores), daí o gate. A data de
 // vencimento NÃO entra: informá-la é opcional.
@@ -463,9 +466,7 @@ async function buscarCNPJ(doc) {
     if (temCliente) p.cliente = razao || p.cliente;
     else p.nome = razao || p.nome;
     p.email = dd.email || p.email;
-    if (dd.ddd_telefone_1 && !p.fixo)
-      p.fixo = mascararTelefone(dd.ddd_telefone_1);
-    ["prop.cliente", "prop.nome", "prop.email", "prop.fixo"].forEach((k) => {
+    ["prop.cliente", "prop.nome", "prop.email"].forEach((k) => {
       const el = $(`[data-k="${k}"]`);
       if (el) el.value = _get(window.state, k) || "";
     });
@@ -615,19 +616,7 @@ function initMapaObra() {
     return;
   }
   mapaObra = window.L.map(div).setView([-19.9167, -43.9345], 12);
-  const ruas = window.L.tileLayer(
-    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    { maxZoom: 19, attribution: "© OpenStreetMap" },
-  );
-  const satelite = window.L.tileLayer(
-    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    {
-      maxZoom: 19,
-      attribution: "",
-    },
-  );
-  satelite.addTo(mapaObra);
-  window.L.control.layers({ Satélite: satelite, Ruas: ruas }).addTo(mapaObra);
+  camadasBaseMapa(mapaObra);
   mapaObra.on("click", (e) => _aplicarCoordDoMapa(e.latlng.lat, e.latlng.lng));
   setTimeout(() => mapaObra.invalidateSize(), 200);
   const lat = parseFloat(String(window.state.obra.lat).replace(",", ".")),
@@ -867,6 +856,8 @@ function montarCargasBT(container, u, ui, aoMudar) {
     abertos: (u._acc = u._acc || {}),
     redeMono: redeMonoBT,
     atividade: () => u.atividade || "",
+    // A categoria da Tabela 11 é o próprio Tipo de propriedade do imóvel.
+    categoria: () => infoTipoPropriedade(tipoPropriedadeDe(u)).catA,
     aoMudar: () => {
       // Hook do fluxo individual (disjuntor solicitado automático); o
       // coletivo/múltiplas torres não o define.

@@ -180,13 +180,6 @@ function mascararCNPJ(v) {
   if (d.length > 2) return d.replace(/(\d{2})(\d{1,3})/, "$1.$2");
   return d;
 }
-function mascararFixo(v) {
-  const d = soDigitos(v).slice(0, 10);
-  if (d.length > 6) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
-  if (d.length > 2) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
-  if (d.length > 0) return `(${d.slice(0)}`;
-  return d;
-}
 function mascararCelular(v) {
   const d = soDigitos(v).slice(0, 11);
   if (d.length > 7) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
@@ -262,7 +255,7 @@ function _feedbackCampo(el, spanId, valido, msgErr) {
 }
 function onTel(k) {
   const el = $(`[data-k="${k}"]`);
-  el.value = k === "telFixo" ? mascararFixo(el.value) : mascararCelular(el.value);
+  el.value = mascararCelular(el.value);
   state[k] = el.value;
   _feedbackCampo(el, "status-" + k, _validarTelefone(el.value), "telefone inválido");
 }
@@ -441,7 +434,6 @@ function renderPreview() {
         pvCampo("Órgão emissor", state.orgaoEmissor, { step: 2 }) +
         pvCampo("Estado emissor", state.ufEmissor, { step: 2 }) +
         pvCampo("Data de expedição", fmtData(state.dataExpedicao), { step: 2 }) +
-        pvCampo("Telefone fixo", state.telFixo, { step: 2 }) +
         pvCampo("Telefone celular", state.telCelular, { step: 2 }) +
         pvCampo("E-mail", state.email, { step: 2 }),
     ),
@@ -503,7 +495,7 @@ function renderDocumentoImpressao() {
     ? _docKV("Nº do RNE/RNM", state.rne)
     : _docKV(state.tipoPessoa === "CNPJ" ? "CNPJ" : "CPF", state.cpfCnpj);
   h += _docKV("RG / RANI", [state.rg, state.orgaoEmissor, state.ufEmissor, state.dataExpedicao].filter(Boolean).join(" · "));
-  h += _docKV("Telefones", [state.telFixo, state.telCelular].filter(Boolean).join(" / "));
+  h += _docKV("Telefone celular", state.telCelular);
   h += _docKV("E-mail", state.email);
 
   h += `<div class="doc-sec">3 — ENDEREÇO DO IMÓVEL/OBRA</div>`;
