@@ -2067,6 +2067,13 @@ function pvSecao(titulo, campos) {
   );
 }
 const PV_DIVISOR = '<hr class="previa-divider"/>';
+// Texto livre das Observações na prévia: em negrito e sem rótulo (Figma
+// svg_previa do BT). `previa-campo--full` ocupa a linha inteira da grade.
+const pvTextoLivre = (txt) =>
+  `<p class="previa-texto previa-campo--full">${String(txt)
+    .trim()
+    .replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c])
+    .replace(/\n/g, "<br>")}</p>`;
 // Resumo de UMA fonte na prévia — o conjunto muda com a fonte primária, como
 // na etapa. O prefixo só aparece havendo mais de uma fonte.
 function _pvFonteGD(f, i, total) {
@@ -2277,13 +2284,7 @@ function renderPreviewGD() {
   // um "—" solto não acrescenta nada à conferência.
   if ((d.obs || "").trim())
     secoes.push(
-      pvSecao(
-        "Observações",
-        pvCampo("Informações adicionais", d.obs.replace(/\n/g, "<br>"), {
-          full: true,
-          step: 8,
-        }),
-      ),
+      pvSecao("Observações", pvTextoLivre(d.obs)),
     );
   const content = $("#previewContent");
   if (content) content.innerHTML = secoes.join(PV_DIVISOR);

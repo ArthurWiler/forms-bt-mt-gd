@@ -97,9 +97,8 @@ let _ucAbertaInicial = false;
 const ITENS_POR_PAGINA = 10;
 let _torrePagina = 0; // página da lista de grupos (etapa Dados das torres)
 let _uniGrupo = 0; // grupo de torres selecionado na etapa Dados das unidades
-const _previaTorrePag = {}; // página da tabela de unidades de cada torre, na prévia
 const _uniPagina = {}; // página da lista de faixas de unidades, por líder
-let _previaTorreExterna = 0; // torre exibida na prévia (paginação externa)
+let _previaTorreExterna = 0; // torre exibida na prévia (aba selecionada)
 let _ucPagina = 0; // página da lista de grupos de unidades do coletivo
 
 /* ===== flags de fluxo (paridade com app.js:67-68) ===== */
@@ -118,8 +117,8 @@ const trocaDisjGeralF = () =>
 // valor A dentro do ND-5.2):
 //  • 4+ apartamentos residenciais → método 5.2 (Carga prevista por UC +
 //    demanda geral não residencial informada pelo RT);
-//  • menos de 4 (ou nenhuma UC residencial) → TODAS as UCs detalham as
-//    cargas como no BT individual (montarCargasBT / ND-5.1).
+//  • menos de 4 (ou nenhuma UC residencial) → TODAS as UCs escolhem um
+//    perfil de carga como no BT individual (perfis-carga.js / ND-5.1).
 const modoCalculadoraF = () => nd52InfoF().quantidadeApartamentos < 4;
 // Carga instalada total (kW): campo Carga prevista no método 5.2; soma das
 // cargas detalhadas (calculadora) quando o ND-5.2 não calcula.
@@ -281,10 +280,35 @@ const pisoDisjEmpreendimentoF = () =>
 const opcoesDisjEmpreendimentoF = () =>
   disjEmpreendimentoAcima(pisoDisjEmpreendimentoF(), demandaTotalGeralF());
 const opcoesDisjCondominioF = () =>
-  disjEmpreendimentoAcima(
-    0,
-    state.blocos.reduce((s, b) => s + num(b.demandaIncendio), 0),
-  );
+  disjEmpreendimentoAcima(0, demandaCondominioF());
+// Demanda do condomínio (soma das torres) que o disjuntor geral do condomínio
+// precisa suportar.
+const demandaCondominioF = () =>
+  state.blocos.reduce((s, b) => s + num(b.demandaIncendio), 0);
+// Maior disjuntor geral trifásico da tabela: acima da capacidade dele (d, kVA)
+// nenhum disjuntor geral atende e a lista de opções fica vazia.
+const _maiorDisjGeral = () =>
+  DISJ_GER.filter((d) => d.tipo === "tri").reduce((m, d) => (d.d > m.d ? d : m));
+// Pendências de capacidade dos disjuntores gerais (só com a energia apenas na
+// portaria): demanda acima do maior disjuntor disponível. Aparecem no lugar
+// do select vazio e travam o avanço (validacaoHierarquiaProjeto).
+function errosCapacidadeDisjGeraisF() {
+  if (!soPortariaF()) return [];
+  const maior = _maiorDisjGeral();
+  const limite = `(${maior.fx} — ${maior.d.toLocaleString("pt-BR")} kVA)`;
+  const erros = [];
+  if (!opcoesDisjEmpreendimentoF().length)
+    erros.push({
+      campo: "empreendimento",
+      msg: `A demanda total do empreendimento (${fmt2(demandaTotalGeralF())} kVA) excede a capacidade do maior disjuntor geral disponível ${limite}. Revise as demandas das torres.`,
+    });
+  if (!opcoesDisjCondominioF().length)
+    erros.push({
+      campo: "condominio",
+      msg: `A demanda total do condomínio (${fmt2(demandaCondominioF())} kVA) excede a capacidade do maior disjuntor geral disponível ${limite}. Revise as demandas do condomínio das torres.`,
+    });
+  return erros;
+}
 const opcoesDisjPrumadaF = (p) =>
   disjEmpreendimentoAcima(
     maiorCorrenteTorres(state.blocos, torresDaPrumada(p, state.blocos.length)),
@@ -704,6 +728,9 @@ function autoGerarComplementosColetivo() {
 function _copiarUC(origem, destino, j) {
   return Object.assign({}, origem, {
     cargas: JSON.parse(JSON.stringify(origem.cargas || {})),
+    perfilPers: origem.perfilPers
+      ? JSON.parse(JSON.stringify(origem.perfilPers))
+      : null,
     _acc: {},
     identificacao: destino.identificacao || `UC ${j + 1}`,
     complemento: destino.complemento,
@@ -839,6 +866,8 @@ window.btAgrupamentoColetivoOk = function () {
 window.btUnidadesTorresOk = function () {
   if (!MULTI) return true;
   if (!window.btTipoRedeOk()) return false;
+  // Editor "Personalizar perfil" aberto: confirmar ou cancelar antes.
+  if (editorPerfilAbertoBT()) return false;
   _espelharGrupos();
   return (state.blocos || []).every((b) => {
     const modoCalc = calcBlocoMultiTorres(b).modoCalculadora;
@@ -862,8 +891,9 @@ window.btUnidadesTorresOk = function () {
       // Carga prevista (kW): método 5.2 com torre de mais de 3 UCs.
       if (!modoCalc && ucs.length > 3 && !_preenchido(u.cargaPrevista))
         return false;
-      // Modo calculadora: a demanda calculada das cargas detalhadas.
-      if (modoCalc && !(num((u.cargas || {})._demanda) > 0)) return false;
+      // Modo calculadora: um perfil de carga escolhido, com demanda.
+      if (modoCalc && !(u.perfil && num((u.cargas || {})._demanda) > 0))
+        return false;
       // Disjuntor da UC: no modo calculadora ele é calculado pelas cargas
       // (disjUCTorre resolve disjPara → cargas._disjuntores[0]); no método 5.2
       // é escolhido manualmente (disjPara). Exige um disjuntor válido nos dois.
@@ -871,6 +901,22 @@ window.btUnidadesTorresOk = function () {
       return true;
     });
   });
+};
+
+// Etapa "Dados das unidades" do coletivo: tipo de rede, o tipo de solicitação
+// de cada unidade (sem padrão) e, no modo calculadora, um perfil de carga por
+// unidade ativa, sem editor de perfil aberto.
+window.btUnidadesColetivoOk = function () {
+  if (MULTI) return true;
+  if (!window.btTipoRedeOk()) return false;
+  if (editorPerfilAbertoBT()) return false;
+  _espelharColetivo();
+  const modoCalc = modoCalculadoraF();
+  return state.ucBlocos.every(
+    (u) =>
+      _preenchido(u.solicitacao) &&
+      (!modoCalc || ucSemAlteracao(u) || !!u.perfil),
+  );
 };
 
 /* ============================================================
@@ -924,6 +970,8 @@ function validacaoHierarquiaProjeto() {
         );
     });
   }
+  // Demanda acima do maior disjuntor geral: não há opção a escolher.
+  errosCapacidadeDisjGeraisF().forEach((e) => erros.push(e.msg));
   // Disjuntor geral do empreendimento (opcional, só com a energia apenas na
   // portaria): > maior prumada (se houver) ou > maior torre (sem prumadas).
   if (soPortariaF() && _preenchido(state.atend.disjEmpreendimento)) {
@@ -1241,18 +1289,25 @@ function _corpoGrupoColetivo(corpo, ucs, g, hibrido, modoCalc) {
     grid.appendChild(f);
     return f;
   };
+  // Sem padrão: a unidade nasce sem tipo de solicitação (opção vazia) e o
+  // gate da etapa exige a escolha.
   add(
     "Tipo de solicitação",
-    _selectRotulos(SOLICITACOES_UC_COLETIVO, _solicitacaoUC(u), (v) => {
-      _definirSolicitacao(ucs, g, v);
-      refazer();
-    }),
+    _selectDe(
+      SOLICITACOES_UC_COLETIVO,
+      _solicitacaoUC(u),
+      (v) => {
+        _definirSolicitacao(ucs, g, v);
+        refazer();
+      },
+      true,
+    ),
     "field--float col-span-2",
   );
   // Identificadores por unidade: nº de instalação fora da ligação nova, novo
   // complemento na mudança de complemento e nº predial no híbrido ND 5.1
   // (validacaoHibridoF exige um distinto por UC).
-  const comInstalacao = u.solicitacao !== "Conexão Nova";
+  const comInstalacao = !!u.solicitacao && u.solicitacao !== "Conexão Nova";
   const muda = _mudaComplemento(u);
   const comPredial = hibrido && u.nd === "5.1";
   const campoInst = (x) =>
@@ -1360,30 +1415,51 @@ function _corpoGrupoColetivo(corpo, ucs, g, hibrido, modoCalc) {
       grid.appendChild(_mkListaPorUnidade("Nº Predial", ucs, g, campoPredial));
   }
   corpo.appendChild(grid);
-  // Modo calculadora: o grupo detalha as cargas como no BT individual (mesma
-  // ilha montarCargasBT); o disjuntor da UC sai das cargas (disjBox).
-  if (modoCalc && !semAlt) {
-    const divisor = document.createElement("div");
-    divisor.className = "divider";
-    const titulo = document.createElement("span");
-    titulo.className = "subbox-title";
-    titulo.textContent = varias ? "Cargas de cada unidade" : "Cargas da unidade";
-    divisor.appendChild(titulo);
-    corpo.appendChild(divisor);
-    const cargasBox = document.createElement("div");
-    corpo.appendChild(cargasBox);
-    const disjBox = document.createElement("div");
-    corpo.appendChild(disjBox);
-    const aoMudar = () => {
-      _espelharColetivo();
-      atualizarCargasColetivo();
-    };
-    montarCargasBT(cargasBox, u, g[0], () => {
-      renderDisjUnidadeCalc(disjBox, u, aoMudar);
+  // Modo calculadora: o grupo escolhe um perfil de carga como no BT
+  // individual; o disjuntor da UC é o do perfil.
+  if (modoCalc && !semAlt)
+    _mkPerfisUnidade(corpo, u, `c${g[0]}`, varias, refazer);
+}
+// Modo calculadora (menos de 4 aptos residenciais), coletivo e torres: a UC
+// (ou o grupo/faixa, editado pelo líder) escolhe um perfil de carga — mesma
+// grade e editor "Personalizar perfil" do BT individual (montarPerfisBT, em
+// bt/js/perfis-carga.js). Escolher só preenche u.cargas; `aoMudar` é o
+// re-render do fluxo que chamou.
+function _mkPerfisUnidade(corpo, u, chave, varias, aoMudar) {
+  // Tipo de propriedade mudou de família: a escolha cai (e o editor aberto
+  // com ela). Na mesma família, a categoria pode mudar a conta.
+  if (revalidarPerfilBT(u)) delete _editorPerfil[chave];
+  if (u.perfil) recalcularCargasBT(u);
+  _aplicarDisjPerfil(u);
+  const divisor = document.createElement("div");
+  divisor.className = "divider";
+  const titulo = document.createElement("span");
+  titulo.className = "subbox-title";
+  titulo.textContent = varias
+    ? "Perfil de carga das unidades"
+    : "Perfil de carga da unidade";
+  divisor.appendChild(titulo);
+  corpo.appendChild(divisor);
+  montarPerfisBT(corpo, u, {
+    chave,
+    comGerador: false,
+    avisoSemTipo: `Escolha o <b>tipo de propriedade</b> ${varias ? "das unidades" : "da unidade"} acima para ver os perfis de carga.`,
+    aoMudar: () => {
+      _aplicarDisjPerfil(u);
       aoMudar();
-    });
-    renderDisjUnidadeCalc(disjBox, u, aoMudar);
-  }
+    },
+  });
+}
+// Disjuntor da UC no modo calculadora: o escolhido no perfil personalizado
+// ("Mais opções") ou, num perfil pronto, o menor adequado às cargas. Sem
+// perfil, fica vazio — o gate da etapa exige a escolha.
+function _aplicarDisjPerfil(u) {
+  const lista = (u.cargas && u.cargas._disjuntores) || [];
+  u.disjPara = !u.perfil
+    ? ""
+    : u.disjEscolhido && lista.includes(u.disjEscolhido)
+      ? u.disjEscolhido
+      : lista[0] || "";
 }
 
 /* ============================================================
@@ -2320,74 +2396,17 @@ function _corpoFaixaTorre(corpo, b, f, modoCalc) {
       ),
     );
   corpo.appendChild(grid);
-  if (modoCalc && !semAlt) {
-    const cargasBox = document.createElement("div");
-    corpo.appendChild(cargasBox);
-    const disjBox = document.createElement("div");
-    corpo.appendChild(disjBox);
-    montarCargasBT(cargasBox, u, f.ini, () => {
-      renderDisjUnidadeCalc(disjBox, u);
-      atualizarUnidadesCalc();
-    });
-    renderDisjUnidadeCalc(disjBox, u);
-  }
-}
-// Disjuntor da UC no modo calculadora (até 3 UCs): calculado pelas cargas
-// declaradas, exatamente como no BT individual. Radio com a lista adequada
-// (u.cargas._disjuntores); a escolha vai para u.disjPara. Se o valor guardado
-// não estiver mais na lista (as cargas mudaram), volta ao menor adequado.
-// `aoMudar` é o recalculo do fluxo que chamou (multi-torres ou coletivo).
-function renderDisjUnidadeCalc(box, u, aoMudar) {
-  const atualizar = aoMudar || atualizarUnidadesCalc;
-  const lista = (u.cargas && u.cargas._disjuntores) || [];
-  if (!(u.disjPara && lista.includes(u.disjPara))) u.disjPara = lista[0] || "";
-  box.innerHTML = "";
-  const wrap = document.createElement("div");
-  wrap.className = "resultado-cargas divider";
-  // Carga e demanda calculadas da própria UC, ao lado da escolha do disjuntor
-  // (mesmo par de KPIs do rodapé da torre/agrupamento, na escala da unidade).
-  const kpis = document.createElement("div");
-  kpis.className = "resultado-kpis";
-  kpis.append(
-    _mkKpiCard(
-      "Carga instalada da unidade",
-      `${fmt2(num((u.cargas || {})._cargaKw))} kW`,
-      "Soma da carga instalada declarada nas cargas desta unidade consumidora.",
-    ),
-    _mkKpiCard(
-      "Demanda da unidade",
-      `${fmt2(num((u.cargas || {})._demanda))} kVA`,
-      "Demanda calculada a partir das cargas detalhadas desta unidade consumidora. É ela que dimensiona o disjuntor da unidade.",
-    ),
-  );
-  wrap.appendChild(kpis);
-  const card = document.createElement("div");
-  card.className = "resultado-card resultado-disjuntor";
-  card.innerHTML = `<div class="resultado-card-label">Disjuntor da unidade adequado de acordo com a seleção</div>`;
-  if (lista.length) {
-    const tg = document.createElement("div");
-    tg.className = "toggle-group";
-    lista.forEach((dj) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "toggle-btn" + (u.disjPara === dj ? " on" : "");
-      btn.textContent = dj;
-      btn.addEventListener("click", () => {
-        u.disjPara = dj;
-        renderDisjUnidadeCalc(box, u, aoMudar);
-        atualizar();
-      });
-      tg.appendChild(btn);
-    });
-    card.appendChild(tg);
-  } else {
-    const hint = document.createElement("div");
-    hint.className = "field-hint";
-    hint.textContent = "Detalhe as cargas para ver o disjuntor adequado.";
-    card.appendChild(hint);
-  }
-  wrap.appendChild(card);
-  box.appendChild(wrap);
+  if (modoCalc && !semAlt)
+    _mkPerfisUnidade(
+      corpo,
+      u,
+      `t${state.blocos.indexOf(b)}:${f.ini}`,
+      f.fim > f.ini,
+      () => {
+        atualizarUnidadesCalc();
+        renderUnidadesTorreAtual();
+      },
+    );
 }
 // Atualiza SÓ os derivados da torre selecionada (rodapé, KPIs, avisos) —
 // mudanças estruturais (solicitação/atividade/qtd) re-renderizam a torre.
@@ -2509,33 +2528,52 @@ function renderDadosProjeto() {
     const soPortaria = soPortariaF();
     gerais.style.display = soPortaria ? "" : "none";
     if (soPortaria) {
-    const fEmpr = _campo(
-      "Disjuntor geral do empreendimento",
-      _selectDisjHierarquia(
-        opcoesDisjEmpreendimentoF(),
-        state.atend.disjEmpreendimento,
-        (v) => {
-          state.atend.disjEmpreendimento = v;
-          renderDadosProjeto();
-        },
-      ),
-      "field--float",
-    );
-    fEmpr.setAttribute("data-noopt", "");
-    gerais.appendChild(fEmpr);
-    const fCond = _campo(
-      "Disjuntor geral do condomínio",
-      _selectDisjHierarquia(
-        opcoesDisjCondominioF(),
-        state.atend.disjCondominio,
-        (v) => {
-          state.atend.disjCondominio = v;
-        },
-      ),
-      "field--float",
-    );
-    fCond.setAttribute("data-noopt", "");
-    gerais.appendChild(fCond);
+    // Demanda acima do maior disjuntor geral: o aviso entra no lugar do
+    // select (que ficaria sem nenhuma opção).
+    const semOpcao = {};
+    errosCapacidadeDisjGeraisF().forEach((e) => (semOpcao[e.campo] = e.msg));
+    const avisoCapacidade = (msg) => {
+      const a = document.createElement("div");
+      a.className = "cmg-aviso cmg-aviso--error col-span-2";
+      a.innerHTML = '<div class="cmg-aviso-icon" aria-hidden="true"></div><p class="cmg-aviso-texto"></p>';
+      a.lastChild.textContent = msg;
+      return a;
+    };
+    if (semOpcao.empreendimento)
+      gerais.appendChild(avisoCapacidade(semOpcao.empreendimento));
+    else {
+      const fEmpr = _campo(
+        "Disjuntor geral do empreendimento",
+        _selectDisjHierarquia(
+          opcoesDisjEmpreendimentoF(),
+          state.atend.disjEmpreendimento,
+          (v) => {
+            state.atend.disjEmpreendimento = v;
+            renderDadosProjeto();
+          },
+        ),
+        "field--float",
+      );
+      fEmpr.setAttribute("data-noopt", "");
+      gerais.appendChild(fEmpr);
+    }
+    if (semOpcao.condominio)
+      gerais.appendChild(avisoCapacidade(semOpcao.condominio));
+    else {
+      const fCond = _campo(
+        "Disjuntor geral do condomínio",
+        _selectDisjHierarquia(
+          opcoesDisjCondominioF(),
+          state.atend.disjCondominio,
+          (v) => {
+            state.atend.disjCondominio = v;
+          },
+        ),
+        "field--float",
+      );
+      fCond.setAttribute("data-noopt", "");
+      gerais.appendChild(fCond);
+    }
     }
   }
 
@@ -2566,10 +2604,12 @@ function renderDadosProjeto() {
     box.appendChild(_mkPrumadasTabela());
   }
 
-  // Avisos da hierarquia (faixas inválidas / disjuntores fora da regra).
+  // Avisos da hierarquia (faixas inválidas / disjuntores fora da regra). Os
+  // de capacidade já aparecem no lugar do select e não se repetem aqui.
   const avisos = $("#projetoAvisos");
   if (avisos) {
-    const erros = validacaoHierarquiaProjeto();
+    const cap = errosCapacidadeDisjGeraisF().map((e) => e.msg);
+    const erros = validacaoHierarquiaProjeto().filter((e) => !cap.includes(e));
     if (erros.length) {
       avisos.style.display = "";
       avisos.innerHTML =
@@ -2771,7 +2811,10 @@ function validacaoObrigatoriosColetivo() {
     );
   if (!MULTI && modoCalculadoraF())
     state.ucBlocos.forEach((u, ui) => {
-      if (!ucSemAlteracao(u) && !(num((u.cargas || {})._demanda) > 0))
+      if (ucSemAlteracao(u)) return;
+      if (!u.perfil)
+        faltando.push(`Perfil de carga da ${u.identificacao || `UC ${ui + 1}`}`);
+      else if (!(num((u.cargas || {})._demanda) > 0))
         faltando.push(
           `Cargas da ${u.identificacao || `UC ${ui + 1}`} (demanda calculada)`,
         );
@@ -2791,6 +2834,7 @@ function validacaoObrigatoriosColetivo() {
       );
     state.ucBlocos.forEach((u, ui) => {
       const rotulo = u.identificacao || `UC ${ui + 1}`;
+      req(u.solicitacao, `Tipo de solicitação da ${rotulo}`);
       if (!ucSemAlteracao(u)) {
         req(tipoPropriedadeDe(u), `Tipo de propriedade da ${rotulo}`);
         req(u.area, `Área privativa da ${rotulo}`);
@@ -2820,10 +2864,11 @@ function validacaoObrigatoriosColetivo() {
         );
       if (cb.modoCalculadora)
         (b.ucs || []).forEach((u, ui) => {
-          if (!ucSemAlteracao(u) && !(num((u.cargas || {})._demanda) > 0))
-            faltando.push(
-              `Cargas da ${u.identificacao || `UC ${ui + 1}`} — Torre ${b.nome || bi + 1}`,
-            );
+          if (ucSemAlteracao(u)) return;
+          const rotulo = `${u.identificacao || `UC ${ui + 1}`} — Torre ${b.nome || bi + 1}`;
+          if (!u.perfil) faltando.push(`Perfil de carga da ${rotulo}`);
+          else if (!(num((u.cargas || {})._demanda) > 0))
+            faltando.push(`Cargas da ${rotulo}`);
         });
     });
   // Número de instalação/UC fora do padrão (REN ANEEL 1.095/2024) — as UCs
@@ -2864,22 +2909,25 @@ function validacaoObrigatoriosColetivo() {
     );
   return { ok: faltando.length === 0, faltando };
 }
-// Tabela de unidades da prévia — a MESMA nas duas modalidades
-// (docs/mocks/previa-bt-coletivo.svg e previa-bt-multitorres.svg):
-// identificação, complemento, tipo de pedido, atividade, carga prevista e
-// disjuntor, com o lápis levando de volta à etapa de edição.
-// `inicio` é o deslocamento da página em curso: sem ele a numeração de
-// reserva ("UC n") recomeçaria do 1 a cada bloco paginado.
-function _mkPreviaTabelaUCs(ucs, etapa, inicio) {
-  const base = inicio || 0;
+// Tabela de unidades da prévia — a MESMA nas duas modalidades (svg8 de
+// 21/10/2026): identificação, complemento, tipo de pedido, atividade, área,
+// carga prevista e disjuntor, com o lápis levando de volta à etapa de edição.
+// Lista TODAS as unidades, sem paginação.
+function _mkPreviaTabelaUCs(ucs, etapa) {
   const wrap = document.createElement("div");
   wrap.className = "previa-tabela-wrap";
   const linhas = ucs
     .map((u, i) => {
-      const rotulo = u.identificacao || `UC ${base + i + 1}`;
+      const rotulo = u.identificacao || `UC ${i + 1}`;
+      // Método 5.2: a Carga prevista digitada; modo calculadora: a carga
+      // instalada do perfil de carga escolhido.
+      const kwPerfil = num((u.cargas || {})._cargaKw);
       const carga = _preenchido(u.cargaPrevista)
         ? fmt2(u.cargaPrevista) + " kW"
-        : "—";
+        : kwPerfil > 0
+          ? fmt2(kwPerfil) + " kW"
+          : "—";
+      const area = _preenchido(u.area) ? `${u.area} m²` : "—";
       // Rótulo do select ("Ligação nova", "…com mudança no complemento") e,
       // na mudança de complemento, "atual → novo".
       const sol = SOLICITACOES_UC_COLETIVO.find(
@@ -2894,6 +2942,7 @@ function _mkPreviaTabelaUCs(ucs, etapa, inicio) {
         `<td>${compl}</td>` +
         `<td>${(sol && sol[1]) || u.solicitacao || "—"}</td>` +
         `<td>${u.atividade || "—"}</td>` +
+        `<td>${area}</td>` +
         `<td>${carga}</td>` +
         `<td class="previa-tabela-disj">${u.disjPara || "—"}` +
         `<button type="button" class="previa-edit" title="Editar" aria-label="Editar ${rotulo}" onclick="goTo(${etapa}, true)"></button>` +
@@ -2905,7 +2954,7 @@ function _mkPreviaTabelaUCs(ucs, etapa, inicio) {
   wrap.innerHTML =
     `<table class="previa-tabela"><thead><tr>` +
     `<th>Unidade</th><th>Complemento</th><th>Solicitação</th><th>Atividade</th>` +
-    `<th>Carga prevista</th><th>Disjuntor</th>` +
+    `<th>Área</th><th>Carga prevista</th><th>Disjuntor</th>` +
     `</tr></thead><tbody>${linhas}</tbody></table>`;
   return wrap;
 }
@@ -2974,37 +3023,79 @@ function _mkPreviaTorre(b, bi) {
     );
   painel.appendChild(grid);
 
-  // Tabela de unidades paginada em blocos de 10 — é a paginação de DENTRO
-  // do painel. A de fora, montada em renderPreviaColetivo, troca a torre
-  // exibida: com dezenas de torres de dezenas de unidades cada, uma
-  // paginação só não dá conta de navegar as duas dimensões.
-  const mount = document.createElement("div");
-  const pag = document.createElement("div");
-  pag.className = "previa-tabela-pag";
-  const renderTabela = () => {
-    const totalPag = Math.max(1, Math.ceil(ucs.length / ITENS_POR_PAGINA));
-    let atual = _previaTorrePag[bi] || 0;
-    if (atual >= totalPag) atual = _previaTorrePag[bi] = totalPag - 1;
-    const ini = atual * ITENS_POR_PAGINA;
-    mount.innerHTML = "";
-    mount.appendChild(
-      _mkPreviaTabelaUCs(
-        ucs.slice(ini, ini + ITENS_POR_PAGINA),
-        PG.unidades,
-        ini,
-      ),
-    );
-    pag.innerHTML = "";
-    pag.appendChild(
-      _mkPaginacao(totalPag, atual, (pp) => {
-        _previaTorrePag[bi] = pp;
-        renderTabela();
-      }),
-    );
-  };
-  renderTabela();
-  painel.append(mount, pag);
+  // Tabela com TODAS as unidades da torre (sem paginação, como no Figma); a
+  // troca de torre é pelas abas montadas em renderPreviaColetivo.
+  painel.appendChild(_mkPreviaTabelaUCs(ucs, PG.unidades));
   return painel;
+}
+// Abas das torres da prévia (svg8): pílulas "Torre N" numa faixa com rolagem
+// horizontal, seta para avançar e barra de progresso da rolagem embaixo.
+// Trocar de aba só troca o painel (`aoEscolher`) — a faixa não é refeita e
+// mantém a posição de rolagem.
+function _mkAbasTorres(atual, aoEscolher) {
+  const wrap = document.createElement("div");
+  wrap.className = "previa-abas";
+  const linha = document.createElement("div");
+  linha.className = "previa-abas-linha";
+  const trilho = document.createElement("div");
+  trilho.className = "previa-abas-trilho";
+  trilho.setAttribute("role", "tablist");
+  trilho.setAttribute("aria-label", "Torres");
+  const botoes = state.blocos.map((b, bi) => {
+    const t = document.createElement("button");
+    t.type = "button";
+    t.className = "previa-aba" + (bi === atual ? " on" : "");
+    t.setAttribute("role", "tab");
+    t.setAttribute("aria-selected", bi === atual ? "true" : "false");
+    t.textContent = `Torre ${b.nome || bi + 1}`;
+    t.addEventListener("click", () => {
+      botoes.forEach((x, k) => {
+        x.classList.toggle("on", k === bi);
+        x.setAttribute("aria-selected", k === bi ? "true" : "false");
+      });
+      t.scrollIntoView({ block: "nearest", inline: "nearest" });
+      aoEscolher(bi);
+    });
+    trilho.appendChild(t);
+    return t;
+  });
+  const seta = document.createElement("button");
+  seta.type = "button";
+  seta.className = "previa-abas-seta";
+  seta.setAttribute("aria-label", "Mais torres");
+  seta.innerHTML =
+    '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+  seta.addEventListener("click", () =>
+    trilho.scrollBy({ left: trilho.clientWidth * 0.8, behavior: "smooth" }),
+  );
+  linha.append(trilho, seta);
+  const barra = document.createElement("div");
+  barra.className = "previa-abas-barra";
+  const polegar = document.createElement("span");
+  barra.appendChild(polegar);
+  wrap.append(linha, barra);
+  // Barra e seta acompanham a rolagem: o polegar mostra a fração visível e
+  // a seta some quando não há mais torres à direita.
+  const atualizar = () => {
+    const total = trilho.scrollWidth || 1;
+    const visivel = Math.min(1, trilho.clientWidth / total);
+    polegar.style.width = `${visivel * 100}%`;
+    polegar.style.left = `${(trilho.scrollLeft / total) * 100}%`;
+    const fim = trilho.scrollLeft + trilho.clientWidth >= total - 1;
+    seta.hidden = fim;
+    barra.hidden = visivel >= 1;
+  };
+  trilho.addEventListener("scroll", atualizar, { passive: true });
+  window.addEventListener("resize", atualizar);
+  requestAnimationFrame(() => {
+    if (botoes[atual])
+      trilho.scrollLeft = Math.max(
+        0,
+        botoes[atual].offsetLeft - trilho.offsetLeft - 8,
+      );
+    atualizar();
+  });
+  return wrap;
 }
 function renderPreviaColetivo() {
   const box = $("#previaConteudo");
@@ -3032,10 +3123,12 @@ function renderPreviaColetivo() {
         .concat(state.atend.solicitacao || [], state.atend.escopo || [])
         .join(" · ");
 
-  // Correspondência vai para o FIM da prévia em todos os fluxos (ordem da
-  // tela-alvo); montada aqui e anexada ao final do html mais abaixo.
+  // Correspondência (e, havendo texto, as Observações) vai para o FIM da
+  // prévia em todos os fluxos (ordem da tela-alvo); montada aqui e anexada ao
+  // final do html mais abaixo.
+  const obsHtml = pvObservacoesBT(state.obs);
   const corrHtml =
-    `<div class="previa-secao"><h4 class="previa-secao-titulo">Conta de luz</h4><div class="previa-grid">` +
+    `<div class="previa-secao"><h4 class="previa-secao-titulo">Correspondência</h4><div class="previa-grid">` +
     pvCampoBT(
       "E-mail para receber a fatura do condomínio",
       emailFatura,
@@ -3046,7 +3139,8 @@ function renderPreviaColetivo() {
       c.vencimento ? "Todo dia " + c.vencimento : "",
       PG.corr,
     ) +
-    `</div></div>`;
+    `</div></div>` +
+    (obsHtml ? `<hr class="previa-divider" />` + obsHtml : "");
 
   /* ---- Dados para contato ----
      Só a pessoa de contato: o documento e os dados do titular ficam em
@@ -3216,29 +3310,27 @@ function renderPreviaColetivo() {
   box.innerHTML = html;
 
   if (MULTI) {
-    /* Uma torre por vez, com DUAS paginações: esta, abaixo do painel,
-       troca a torre exibida; a de dentro do painel corre as unidades
-       daquela torre em blocos de 10 (ver _mkPreviaTorre). */
+    /* Uma torre por vez, escolhida pelas abas "Torre N" acima do painel. */
     const mount = $("#previaTorresMount");
     if (mount) {
       const nTorres = state.blocos.length;
-      const renderTorreExterna = () => {
-        if (_previaTorreExterna >= nTorres) _previaTorreExterna = nTorres - 1;
-        if (_previaTorreExterna < 0) _previaTorreExterna = 0;
+      if (_previaTorreExterna >= nTorres) _previaTorreExterna = nTorres - 1;
+      if (_previaTorreExterna < 0) _previaTorreExterna = 0;
+      const painelBox = document.createElement("div");
+      const mostrar = () => {
         const bi = _previaTorreExterna;
-        mount.innerHTML = "";
-        mount.appendChild(_mkPreviaTorre(state.blocos[bi], bi));
-        const pagExt = document.createElement("div");
-        pagExt.className = "previa-tabela-pag";
-        pagExt.appendChild(
-          _mkPaginacao(nTorres, bi, (pg) => {
-            _previaTorreExterna = pg;
-            renderTorreExterna();
-          }),
-        );
-        mount.appendChild(pagExt);
+        painelBox.innerHTML = "";
+        painelBox.appendChild(_mkPreviaTorre(state.blocos[bi], bi));
       };
-      renderTorreExterna();
+      mount.innerHTML = "";
+      mount.append(
+        _mkAbasTorres(_previaTorreExterna, (bi) => {
+          _previaTorreExterna = bi;
+          mostrar();
+        }),
+        painelBox,
+      );
+      mostrar();
     }
   } else {
     // Composição por pavimento do agrupamento: entre o primeiro
@@ -3268,6 +3360,7 @@ function renderPreviaColetivo() {
   }
   const btn = $("#btnExportarPDF");
   if (btn) btn.disabled = !v.ok;
+  atualizarAvisosPreviaBT();
 }
 async function exportarPdfBT() {
   // validacaoObrigatoriosColetivo já espelha grupos de torres e faixas.
@@ -3325,6 +3418,12 @@ window.initFormulario = function () {
   const h1 = $("#formTitulo");
   if (h1)
     h1.textContent = "Baixa Tensão" + (CARD.nome ? " - " + CARD.nome : "");
+  // Conta de luz: o fragmento é o mesmo do individual; aqui a descrição avisa
+  // que as contas chegam na portaria até cada proprietário mudar (Figma).
+  const corrDesc = $("#corrDescricao");
+  if (corrDesc)
+    corrDesc.textContent =
+      "Escolha como e quando você deseja receber a conta de energia. Nesse primeiro momento, as contas chegarão na portaria do empreendimento, até que cada proprietário de cada unidade consumidora decida alterar a forma de recebimento.";
   btRenumerarEtapas();
   bindInputs();
   montarToggles();

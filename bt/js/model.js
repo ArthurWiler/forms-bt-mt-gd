@@ -23,20 +23,6 @@ const ORIENTACOES = {
       "O pedido poderá ser reprovado no momento da visita técnica caso não sejam identificadas as cargas declaradas neste formulário.",
     ],
   },
-  coletivo: {
-    // A demanda total > 304 kVA (projeto elétrico + ART/TRT) já é sinalizada por
-    // aviso contextual ao ultrapassar o limite (cargas-coletivo.js / blocos.js), e
-    // os motores pesados viram documento no PDF conforme declarados. Aqui ficam a
-    // planta de situação (documental) e a descrição dos campos de previsão/torres/
-    // híbrido, que orientam o preenchimento.
-    titulo:
-      "Agrupamento com proteção geral, atendimento híbrido ou múltiplas torres/blocos",
-    itens: [
-      "É obrigatório anexar no momento do pedido a planta de situação da edificação, com a indicação do padrão de entrada e a distância do ramal de entrada, conforme ND-5.2, com exceção para solicitação de alteração de carga sem mudança de local do ramal de Conexão. O Documento deve ser encaminhado junto ao pedido e no APR Web.",
-      "Para atendimentos híbridos, deve ser informada na planta de situação: quantidade de ramais de Conexão com a respectiva numeração predial de cada ponto de entrega, demanda de cada ramal de Conexão com a respectiva proteção geral (quando couber) e especificações dos cabos subterrâneos. Na ART/TRT deverão ser informados todos os números prediais que serão atendidos. Em casos de desmembramento, o ramal que não sofrerá alteração poderá apenas ser indicado na planta.",
-      "Se a solicitação for para atendimento híbrido, é obrigatório indicar na planta de situação o número predial de cada unidade consumidora",
-    ],
-  },
   callout:
     "Ao final, revise os dados na etapa Prévia & PDF, exporte o formulário e anexe-o ao seu pedido.",
 };
@@ -134,7 +120,8 @@ const ucBlocoPadrao = (i) => ({
   nPredial: "",
   complemento: "",
   caixa: "",
-  solicitacao: "Conexão Nova",
+  // Sem padrão: o tipo de solicitação é escolhido pelo usuário (spec 21/10).
+  solicitacao: "",
   mudancaLocal: "",
   // Tipo de propriedade (Residencial ou categoria da Tabela 11) — define o
   // cálculo de demanda; `atividade` é derivada dele (shared/js/carga-bt.js).
@@ -150,6 +137,12 @@ const ucBlocoPadrao = (i) => ({
   // Cargas detalhadas (calculadora do BT individual) — usadas quando o
   // ND-5.2 não calcula (menos de 4 aptos residenciais ou área fora da tabela)
   cargas: { qtds: CAT.map(() => 0), tipoA: "", catA: null, mots: [] },
+  // Perfil de carga do modo calculadora (bt/js/perfis-carga.js): id do
+  // perfil pronto ou "personalizado", o personalizado confirmado e a família
+  // em que a escolha foi feita — como no BT individual.
+  perfil: "",
+  perfilPers: null,
+  perfilFamilia: "",
 });
 
 // UC marcada como "Caixa Existente sem Alteração": não tem preenchimento de
@@ -226,6 +219,12 @@ const ucTorrePadrao = (i) => ({
   // Cargas detalhadas (calculadora do BT individual) — usadas quando o
   // ND-5.2 da torre não calcula
   cargas: { qtds: CAT.map(() => 0), tipoA: "", catA: null, mots: [] },
+  // Perfil de carga do modo calculadora (bt/js/perfis-carga.js): id do
+  // perfil pronto ou "personalizado", o personalizado confirmado e a família
+  // em que a escolha foi feita — como no BT individual.
+  perfil: "",
+  perfilPers: null,
+  perfilFamilia: "",
 });
 
 // Torre/Bloco (modo múltiplas torres) — preenchimento em massa

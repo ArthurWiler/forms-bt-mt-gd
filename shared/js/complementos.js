@@ -202,15 +202,17 @@ function abrirComposicaoPavimento(faixasAtuais, onSalvar, totalUCs) {
   const desc = document.createElement("p");
   desc.className = "cmg-modal-desc";
   desc.textContent =
-    "Informe o andar inicial, o andar final e quantas unidades há por andar em cada pavimento. As unidades por andar do último pavimento são sugeridas para fechar o total de unidades da torre, mas você pode editar qualquer campo.";
+    "Descreva a distribuição das unidades por andar. Se o padrão mudar ao longo da torre, adicione novas faixas de pavimento (ex: uma faixa para andares com 4 unidades e outra para andares com 3). Considere apenas os andares com apartamentos.";
 
   // Tabela de faixas
   const tabela = document.createElement("div");
   tabela.className = "cmg-pav-tabela";
 
-  // Resumo do cálculo, abaixo da tabela (preenchido por renderTabela).
+  // Erro de unidades faltando/sobrando, abaixo da tabela (preenchido por
+  // renderTabela); vazio quando os pavimentos fecham o total da torre.
   const resumo = document.createElement("p");
   resumo.className = "cmg-pav-resumo";
+  resumo.setAttribute("role", "alert");
 
   const corpo = document.createElement("div");
   corpo.className = "cmg-modal-conteudo";
@@ -294,7 +296,7 @@ function abrirComposicaoPavimento(faixasAtuais, onSalvar, totalUCs) {
         btnDel.className = "cmg-pav-remover";
         btnDel.setAttribute("aria-label", `Remover pavimento ${idx + 1}`);
         btnDel.innerHTML =
-          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+          '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M9 6V4h6v2M6 6l1 14h10l1-14M10 10v7M14 10v7"/></svg>';
         btnDel.addEventListener("click", () => {
           linhas.splice(idx, 1);
           aplicarSugestaoUltimo();
@@ -306,7 +308,8 @@ function abrirComposicaoPavimento(faixasAtuais, onSalvar, totalUCs) {
       tabela.appendChild(linha);
     };
 
-    linhas.forEach((ln, idx) => mkLinha(ln, idx, linhas.length > 1));
+    // A lixeira aparece em toda linha, inclusive na única (Figma).
+    linhas.forEach((ln, idx) => mkLinha(ln, idx, true));
 
     const rodapeTabela = document.createElement("div");
     rodapeTabela.className = "cmg-pav-adicionar-wrap";
@@ -346,21 +349,24 @@ function abrirComposicaoPavimento(faixasAtuais, onSalvar, totalUCs) {
     const alvo = inputs[idx * 3 + 2];
     if (alvo && alvo !== document.activeElement) alvo.value = String(sug);
   }
-  // Resumo abaixo da tabela: quantas UCs os pavimentos informados somam frente
-  // ao total da torre — o usuário enxerga na hora se falta ou sobra unidade.
+  // Erro abaixo da tabela quando os pavimentos não fecham o total da torre
+  // (texto do Figma): diz quantas unidades adicionar ou deletar, e o Salvar
+  // fica desabilitado até a soma bater. Sem total informado, ou sem nenhum
+  // pavimento completo (Salvar então desfaz a customização), não há o que
+  // conferir.
   function atualizarResumo() {
-    if (!total) {
-      resumo.textContent = "";
-      return;
-    }
     const somadas = ucsAlocadasPavimento(linhas);
-    const dif = total - somadas;
+    const vazio = !normalizarFaixasPavimento(linhas).length;
+    const dif = total && !vazio ? total - somadas : 0;
+    const base = `A torre tem ${total} unidades. Os pavimentos selecionados somam ${somadas} unidades.`;
     resumo.textContent =
-      dif === 0
-        ? `Os pavimentos somam as ${total} unidades da torre.`
-        : dif > 0
-          ? `Os pavimentos somam ${somadas} de ${total} unidades — faltam ${dif}.`
-          : `Os pavimentos somam ${somadas} unidades — ${-dif} a mais que as ${total} da torre.`;
+      dif > 0
+        ? `${base} Adicione mais ${dif} unidades.`
+        : dif < 0
+          ? `${base} Delete ${-dif} unidades.`
+          : "";
+    resumo.hidden = !dif;
+    btnSalvar.disabled = !!dif;
   }
   renderTabela();
 

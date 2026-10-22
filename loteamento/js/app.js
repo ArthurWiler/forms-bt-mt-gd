@@ -496,6 +496,13 @@ function pvSecao(titulo, campos) {
   );
 }
 const PV_DIVISOR = '<hr class="previa-divider"/>';
+// Texto livre das Observações na prévia: em negrito e sem rótulo (Figma
+// svg_previa do BT). `previa-campo--full` ocupa a linha inteira da grade.
+const pvTextoLivre = (txt) =>
+  `<p class="previa-texto previa-campo--full">${String(txt)
+    .trim()
+    .replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c])
+    .replace(/\n/g, "<br>")}</p>`;
 /* Quantidade de lotes por área — no Figma da prévia é uma tabela estreita
    (larguras pelo conteúdo), com uma coluna só para o lápis e o TOTAL no
    <tfoot>, separado do corpo por um traço mais escuro. */
@@ -572,10 +579,7 @@ function renderPreview() {
   // Observações é campo opcional: sem texto, a seção nem aparece na prévia.
   if (String(state.observacoes || "").trim())
     secoes.push(
-      pvSecao(
-        "Observações",
-        pvCampo("Observações", state.observacoes, { full: true, step: 5 }),
-      ),
+      pvSecao("Observações", pvTextoLivre(state.observacoes)),
     );
   $("#previewContent").innerHTML = secoes.join(PV_DIVISOR);
 }

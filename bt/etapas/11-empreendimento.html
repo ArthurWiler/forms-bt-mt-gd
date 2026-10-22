@@ -6,22 +6,11 @@
   <p class="card-sub">Preencha os dados gerais do empreendimento.</p>
 
   <div class="grid grid-2">
-    <div class="field col-span-2">
-      <label>
-        Cliente / Razão Social do empreendimento <span class="req">*</span>
-      </label>
-      <!-- Chave própria (prop.cliente): a razão social do empreendimento é
-           independente do nome de contato (prop.nome) da Etapa 2 — antes as
-           duas dividiam a mesma chave e o campo já nascia preenchido. -->
-      <input
-        type="text"
-        data-k="prop.cliente"
-        placeholder=" "
-        oninput="onEmprGate()"
-      />
-    </div>
+    <!-- Ordem do Figma: o CNPJ vem primeiro porque a consulta dele (buscarCNPJ
+         em bt-core.js) preenche a razão social logo abaixo. Ele fica sozinho
+         na linha: o campo seguinte ocupa as duas colunas. -->
     <div class="field">
-      <label>CPF / CNPJ <span class="req">*</span></label>
+      <label>CNPJ <span class="req">*</span></label>
       <input
         type="text"
         data-k="prop.cpfCnpj"
@@ -35,6 +24,20 @@
            convenção .field-hint dos demais campos) — antes ficava numa flex ao
            lado do input, o que empurrava a mensagem para dentro da caixa. -->
       <span id="cnpjStatus" class="field-hint"></span>
+    </div>
+    <div class="field col-span-2">
+      <label>
+        Cliente / Razão Social do empreendimento <span class="req">*</span>
+      </label>
+      <!-- Chave própria (prop.cliente): a razão social do empreendimento é
+           independente do nome de contato (prop.nome) da Etapa 2 — antes as
+           duas dividiam a mesma chave e o campo já nascia preenchido. -->
+      <input
+        type="text"
+        data-k="prop.cliente"
+        placeholder=" "
+        oninput="onEmprGate()"
+      />
     </div>
     <div class="field">
       <label>Nº ART/TRT de Projeto <span class="req">*</span></label>

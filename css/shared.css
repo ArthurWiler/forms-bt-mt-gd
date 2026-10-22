@@ -575,6 +575,10 @@ html {
   border: 1px solid var(--cmg-neutral-200); /* #D1D4D3 */
   border-radius: 8px;
   overflow: hidden; /* let the rounded corners clip the column backgrounds */
+  /* O branco é da CAIXA, não do texto: o parágrafo é centralizado na vertical
+     (align-self) e, com o fundo nele, acima e abaixo da frase vazava a cor de
+     quem está por trás (o cinza do card do imóvel, no aviso do gerador). */
+  background: var(--cmg-surface); /* #FFFFFF */
 }
 .cmg-aviso-icon {
   flex: none;
@@ -611,8 +615,6 @@ html {
   margin: 0;
   /* margem interna padrão do texto (vertical + respiro lateral) */
   padding: var(--cmg-space-3) var(--cmg-space-4);
-  background: var(--cmg-surface); /* #FFFFFF */
-  border-radius: 0 8px 8px 0;
   font-family: var(--cmg-font-family);
   font-weight: 400;
   font-size: 14px;
@@ -857,6 +859,90 @@ label.restricao-aceite input[type="checkbox"] {
   border-radius: var(--cmg-radius-pill);
   padding: 0 var(--cmg-space-1);
 }
+/* ---- Prévia: abas das torres (condomínio, svg8) ----
+   Pílulas "Torre N" (40px, contorno neutra/400; a ativa em verde/600) numa
+   faixa com rolagem horizontal, recuada 12px do painel; seta verde à direita
+   e, 8px abaixo, a barra de rolagem (trilho neutra/100 de 4px, polegar
+   neutra/400 de 6px). O painel da torre fica 12px abaixo da barra. */
+.previa-abas {
+  padding: 0 var(--cmg-space-3);
+  margin: 20px 0 var(--cmg-space-3);
+}
+.previa-abas-linha {
+  position: relative;
+}
+.previa-abas-trilho {
+  display: flex;
+  gap: var(--cmg-space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.previa-abas-trilho::-webkit-scrollbar {
+  display: none;
+}
+.previa-aba {
+  flex: none;
+  height: 40px;
+  padding: 0 var(--cmg-space-6);
+  border: 1px solid var(--cmg-neutral-400);
+  border-radius: var(--cmg-radius-pill);
+  background: var(--cmg-surface);
+  font-family: var(--cmg-font-family);
+  font-size: 14px;
+  font-weight: var(--cmg-fw-bold, 700);
+  letter-spacing: 0.2px;
+  color: var(--cmg-text-strong);
+  cursor: pointer;
+}
+.previa-aba:hover:not(.on) {
+  background: var(--cmg-neutral-50);
+}
+.previa-aba.on {
+  background: var(--cmg-green-600);
+  border-color: var(--cmg-green-600);
+  color: var(--cmg-neutral-0);
+}
+.previa-aba:focus-visible,
+.previa-abas-seta:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--cmg-focus-ring);
+}
+/* Seta sobre o fim da faixa: o degradê esconde a pílula cortada embaixo. */
+.previa-abas-seta {
+  position: absolute;
+  top: 0;
+  right: calc(var(--cmg-space-3) * -1);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: linear-gradient(to right, transparent, var(--cmg-surface) 45%);
+  color: var(--cmg-green-600);
+  cursor: pointer;
+}
+.previa-abas-seta[hidden] {
+  display: none;
+}
+.previa-abas-barra {
+  position: relative;
+  height: 4px;
+  margin-top: 9px;
+  border-radius: 2px;
+  background: var(--cmg-neutral-100);
+}
+.previa-abas-barra[hidden] {
+  display: none;
+}
+.previa-abas-barra > span {
+  position: absolute;
+  top: -1px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--cmg-neutral-400);
+}
 /* O gap do painel já separa os campos da tabela — sem margem extra.
    Figma: campos com gutter de linha 24 e de coluna 16. */
 .previa-painel .previa-grid {
@@ -998,6 +1084,181 @@ label.restricao-aceite input[type="checkbox"] {
   border-top: 1px solid var(--cmg-neutral-200);
 }
 
+/* ---- Prévia: texto livre (Observações) ----
+   O texto digitado, em negrito e sem rótulo (Figma svg_previa). */
+.previa-texto {
+  margin: 0;
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-body-lg);
+  line-height: 24px;
+  font-weight: var(--cmg-fw-bold, 700);
+  letter-spacing: 0.2px;
+  color: var(--cmg-text-strong);
+  overflow-wrap: anywhere;
+}
+
+/* ---- Prévia do BT individual (Figma svg_previa / svg_previa2) ----
+   `.previa-bt` é posto por renderPreviaBT: seções com título regular de
+   22px, campos de 16px numa grade de colunas iguais (vão de 16px) e
+   divisórias neutra/200. Os campos de cada imóvel descem para 14px e ficam
+   numa grade de 395px + 1fr (a 2ª coluna cai a 411px da borda, com ou sem
+   o painel "Imóvel N de M"). */
+.cemig-form .card-sub:has(+ .previa-bt) {
+  margin-bottom: 15px;
+}
+.previa-bt .previa-secao-titulo {
+  margin-bottom: 10px;
+  font-size: var(--cmg-fs-subtitle-md);
+  line-height: var(--cmg-lh-subtitle-md);
+  font-weight: var(--cmg-fw-regular, 400);
+}
+.previa-bt .previa-grid {
+  gap: 13px var(--cmg-space-4);
+}
+.previa-bt .previa-campo-label {
+  font-size: var(--cmg-fs-body-lg);
+  line-height: var(--cmg-lh-body-lg);
+}
+.previa-bt .previa-campo-valor {
+  margin-top: 4px;
+}
+.previa-bt .previa-divider {
+  margin: 27px 0 23px;
+  border-top-color: var(--cmg-neutral-200);
+}
+.previa-bt .previa-imovel-corpo .previa-divider {
+  margin: 31px 0 24px;
+}
+/* O card termina no texto da última seção: 25px até a borda (svg_previa). */
+.cemig-form .card:has(> .previa-bt) {
+  padding-bottom: 25px;
+}
+/* Campos do imóvel (com ou sem painel): corpo/médio, 2ª coluna a 411px. */
+.previa-bt .previa-imovel-corpo .previa-grid {
+  grid-template-columns: minmax(0, 395px) minmax(0, 1fr);
+  gap: var(--cmg-space-4);
+}
+.previa-bt .previa-imovel-corpo .previa-campo-label {
+  font-size: var(--cmg-fs-body);
+  line-height: 22px;
+}
+.previa-bt .previa-imovel-corpo .previa-campo-valor {
+  font-size: var(--cmg-fs-body);
+  line-height: 22px;
+}
+.previa-bt .previa-imovel-sub {
+  margin: 0 0 10px;
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-body-lg);
+  line-height: var(--cmg-lh-body-lg);
+  font-weight: var(--cmg-fw-regular, 400);
+  letter-spacing: 0.2px;
+  color: var(--cmg-text-strong);
+}
+/* Painel recolhível "Imóvel N de M" (<details>): mesmo painel cinza das
+   torres, com o chevron do acordeão canônico à direita. */
+.previa-bt .previa-imovel {
+  display: block;
+}
+.previa-bt .previa-imovel > summary {
+  list-style: none;
+  cursor: pointer;
+}
+.previa-bt .previa-imovel > summary::-webkit-details-marker {
+  display: none;
+}
+.previa-bt .previa-imovel > summary::after {
+  content: "";
+  flex: none;
+  width: 24px;
+  height: 24px;
+  margin-left: auto;
+  background: var(--cmg-text-strong);
+  -webkit-mask: var(--cmg-chevron) center / 24px 24px no-repeat;
+  mask: var(--cmg-chevron) center / 24px 24px no-repeat;
+  transition: transform 0.15s ease;
+}
+.previa-bt .previa-imovel[open] > summary::after {
+  transform: rotate(180deg);
+}
+.previa-bt .previa-imovel > .previa-imovel-corpo {
+  margin-top: var(--cmg-space-6);
+}
+.previa-bt .previa-imovel .previa-painel-titulo {
+  font-size: var(--cmg-fs-subtitle);
+}
+/* Card "Perfil de carga escolhido": o perfil da Etapa 5 resumido (título com
+   lápis, descrição e carga/demanda/disjuntor). Empilhado com 353px de largura
+   (imóvel único); `--linha` põe descrição | resumo lado a lado, separados por
+   um filete (dentro do painel "Imóvel N de M"). */
+.previa-bt .previa-imovel-sub + .previa-perfil {
+  margin-top: 6px;
+}
+.previa-bt .previa-perfil {
+  box-sizing: border-box;
+  width: 353px;
+  max-width: 100%;
+  padding: var(--cmg-space-3);
+  border: 1px solid var(--cmg-green-600);
+  border-radius: var(--cmg-radius);
+  background: var(--cmg-surface);
+  font-family: var(--cmg-font-family);
+  letter-spacing: var(--cmg-ls-tight);
+}
+.previa-bt .previa-perfil-titulo {
+  display: flex;
+  align-items: center;
+  gap: var(--cmg-space-2);
+  font-size: var(--cmg-fs-subtitle);
+  line-height: var(--cmg-lh-subtitle);
+  color: var(--cmg-green-600);
+}
+.previa-bt .previa-perfil-desc {
+  margin: var(--cmg-space-1) 0 0;
+  font-size: var(--cmg-fs-body);
+  line-height: 22px;
+  color: var(--cmg-text-muted);
+}
+.previa-bt .previa-perfil-resumo strong {
+  margin-right: 4px;
+}
+.previa-bt .previa-perfil-resumo {
+  margin-top: var(--cmg-space-3);
+  padding-top: 2px;
+  border-top: 1px solid var(--cmg-neutral-200);
+}
+.previa-bt .previa-perfil--linha {
+  display: inline-grid;
+  grid-template-columns: 323px auto;
+  align-items: start;
+  width: auto;
+}
+.previa-bt .previa-perfil--linha .previa-perfil-info {
+  padding-right: 23px;
+}
+.previa-bt .previa-perfil--linha .previa-perfil-resumo {
+  margin-top: 0;
+  padding: 0 0 0 var(--cmg-space-6);
+  border-top: 0;
+  border-left: 1px solid var(--cmg-neutral-200);
+}
+@media (max-width: 720px) {
+  .previa-bt .previa-imovel-corpo .previa-grid {
+    grid-template-columns: 1fr;
+  }
+  .previa-bt .previa-perfil--linha {
+    display: block;
+    width: 100%;
+  }
+  .previa-bt .previa-perfil--linha .previa-perfil-resumo {
+    margin-top: var(--cmg-space-3);
+    padding: 2px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--cmg-neutral-200);
+  }
+}
+
+
 /* ---- Chip de situação (Novo / Substituído / Mantido / Já existente) ----
    Fonte única: nasceu nos cards de transformador e de cubículo do MT
    (e das GDs) e é reusado pela prévia, então vive aqui e não em
@@ -1099,33 +1360,6 @@ label.restricao-aceite input[type="checkbox"] {
   align-items: center;
   gap: var(--cmg-space-2);
 }
-/* Paginação específica da tabela de UCs da torre: compacta e junto à tabela.
-   O painel .previa-painel já dá gap de 24px entre a tabela e este bloco, então
-   a margem padrão da .paginacao é anulada e os controles ficam menores. Os
-   seletores levam .cemig-form para vencer os padrões .cemig-form .paginacao*. */
-.cemig-form .previa-tabela-pag {
-  margin-top: calc(var(--cmg-space-6) * -1 + var(--cmg-space-2));
-}
-.cemig-form .previa-tabela-pag .paginacao {
-  margin-top: 0;
-  justify-content: center;
-  gap: var(--cmg-space-1);
-}
-.cemig-form .previa-tabela-pag .paginacao-btn {
-  width: 28px;
-  height: 28px;
-  font-size: var(--cmg-fs-body-lg);
-  
-}
-.cemig-form .previa-tabela-pag .paginacao-input {
-  width: 44px;
-  height: 28px;
-  align-items: center;
-}
-.cemig-form .previa-tabela-pag .paginacao-total {
-  margin-right: var(--cmg-space-1);
-}
-
 /* ---- Accordion section ---- */
 .modalidade-screen .modalidade-secao {
   margin-bottom: 0;
@@ -2631,9 +2865,26 @@ label.restricao-aceite input[type="checkbox"] {
    balão (e a seta) ancoram no próprio card. */
 .cemig-form .resultado-card:has(> .resultado-card-info.cmg-hint) {
   position: relative;
+  /* Rótulo e valor à esquerda; o (i) à direita, CENTRALIZADO na altura das
+     duas linhas (e não preso ao topo, como no float). O que vier depois — o
+     aviso de carga acima de 75 kW — ocupa a largura toda embaixo. */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--cmg-space-2);
+}
+.cemig-form .resultado-card:has(> .resultado-card-info.cmg-hint) > * {
+  grid-column: 1 / -1;
+}
+.cemig-form .resultado-card:has(> .resultado-card-info.cmg-hint) > .resultado-card-label,
+.cemig-form .resultado-card:has(> .resultado-card-info.cmg-hint) > .resultado-card-valor {
+  grid-column: 1;
 }
 .cemig-form .resultado-card > .resultado-card-info.cmg-hint {
   position: static;
+  float: none;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
 }
 .cemig-form .resultado-card-info.cmg-hint::after {
   text-align: center;
@@ -4325,14 +4576,21 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .cmg-pav-linha--invalida {
   background: var(--cmg-danger-50, #fdecec);
 }
-/* Resumo do preenchimento (UCs somadas × total da torre) abaixo da tabela */
+/* Erro de unidades faltando/sobrando (UCs somadas × total da torre) abaixo
+   da tabela: vermelho erro/500, centralizado, como no Figma. A margem
+   negativa encurta o gap de 24px do .cmg-modal-conteudo para os ~18px do
+   Figma entre a tabela e a linha do texto. */
 .cemig-form .cmg-pav-resumo {
-  margin: 12px 0 0;
+  margin: -6px 0 0;
   font-family: var(--cmg-font-family);
   font-size: 14px;
   line-height: 24px;
   letter-spacing: 0.2px;
-  color: var(--cmg-neutral-600, #364b46);
+  text-align: center;
+  color: var(--cmg-error-500, #c8303f);
+}
+.cemig-form .cmg-pav-resumo[hidden] {
+  display: none;
 }
 .cemig-form .cmg-pav-cel-acao {
   display: flex;
@@ -4355,6 +4613,14 @@ label.restricao-aceite input[type="checkbox"] {
   background: var(--cmg-neutral-100, #e6e9e8);
   color: var(--cmg-text-strong, #041e18);
 }
+/* Lixeira do modal de pavimentos: vermelha (erro/500), como no Figma. */
+.cemig-form .cmg-modal .cmg-pav-remover {
+  color: var(--cmg-error-500, #c8303f);
+}
+.cemig-form .cmg-modal .cmg-pav-remover:hover {
+  background: rgba(200, 48, 63, 0.08);
+  color: var(--cmg-error-500, #c8303f);
+}
 .cemig-form .cmg-pav-adicionar-wrap {
   display: flex;
   justify-content: center;
@@ -4374,6 +4640,14 @@ label.restricao-aceite input[type="checkbox"] {
 }
 .cemig-form .cmg-modal-rodape .btn {
   min-width: 200px;
+}
+/* Salvar travado (pavimentos não fecham o total): cinza sólido do Figma
+   (neutra/100 com texto neutra/500), não a versão translúcida do verde. */
+.cemig-form .cmg-modal-rodape .btn-primary:disabled {
+  opacity: 1;
+  background: var(--cmg-neutral-100);
+  border-color: var(--cmg-neutral-100);
+  color: var(--cmg-neutral-500);
 }
 @media (max-width: 640px) {
   .cemig-form .cmg-pav-linha {
@@ -4680,14 +4954,12 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .btn-add-uc {
   gap: var(--cmg-space-2);
 }
-/* Contador de caracteres das Observações */
-.cemig-form .obs-contador {
-  display: block;
-  margin-top: var(--cmg-space-1);
-  text-align: right;
-}
+/* "(opcional)" do título das Observações: 16px itálico regular ao lado do
+   título de 28px, como no Figma. */
 .cemig-form .card-title .opt {
+  font-size: 16px;
   font-style: italic;
+  font-weight: var(--cmg-fw-regular);
   color: var(--cmg-text-muted);
 }
 /* Documentação necessária (Etapa 1 do BT, spec Figma): título no tamanho do

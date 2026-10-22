@@ -274,11 +274,6 @@ function bindInputs() {
     });
   });
 }
-// Observações: contador de caracteres (limite via maxlength do textarea).
-function onObsBT(el) {
-  const cont = $("#obsContador");
-  if (cont) cont.textContent = `${el.value.length}/${el.maxLength} caracteres`;
-}
 function onMascara(el, fn) {
   el.value = fn(el.value);
   _setPath(el.dataset.k, el.value);
@@ -810,6 +805,27 @@ function pvCampoBT(label, valor, step, full) {
       ? `<button type="button" class="previa-edit" title="Editar" aria-label="Editar ${label}" onclick="goTo(${step}, true)"></button>`
       : "";
   return `<div class="previa-campo${full ? " previa-campo--full" : ""}"><div class="previa-campo-label">${label}</div><div class="previa-campo-valor">${vazio ? "—" : valor}${lapis}</div></div>`;
+}
+// Seção "Observações" da prévia (Figma svg_previa): o texto digitado, em
+// negrito, sem rótulo. Vazia → "" (a seção não entra).
+function pvObservacoesBT(obs) {
+  const t = String(obs == null ? "" : obs).trim();
+  if (!t) return "";
+  const esc = t.replace(
+    /[&<>"]/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
+  );
+  return `<div class="previa-secao"><h4 class="previa-secao-titulo">Observações</h4><p class="previa-texto">${esc.replace(/\n/g, "<br>")}</p></div>`;
+}
+// O card de avisos abaixo da prévia (pendências, motores, Termo Grupo B) só
+// aparece quando tem algo a mostrar — no Figma a prévia é um card só.
+function atualizarAvisosPreviaBT() {
+  const card = $("#previaAvisosCard");
+  if (!card) return;
+  const visivel = [...card.children].some(
+    (el) => el.style.display !== "none" && el.innerHTML.trim() !== "",
+  );
+  card.style.display = visivel ? "" : "none";
 }
 function pvCardBT(label, valor) {
   return `<div class="previa-card"><div class="previa-card-label">${label}</div><div class="previa-card-valor">${valor || "—"}</div></div>`;

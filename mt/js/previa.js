@@ -58,6 +58,13 @@ function pvSecao(titulo, corpo) {
 const PV_DIVISOR = '<hr class="previa-divider"/>';
 const pvSub = (titulo) => `<h5 class="previa-subtitulo">${titulo}</h5>`;
 const pvGrid = (campos) => `<div class="previa-grid">${campos}</div>`;
+// Texto livre das Observações na prévia: em negrito e sem rótulo (Figma
+// svg_previa do BT).
+const pvTextoLivre = (txt) =>
+  `<p class="previa-texto">${String(txt)
+    .trim()
+    .replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c])
+    .replace(/\n/g, "<br>")}</p>`;
 
 /* Chip de situação do transformador/cubículo — mesmo componente do card do
    formulário (.trafo-status, shared.css). */
@@ -701,15 +708,7 @@ function renderPreview() {
   ];
   if (state.observacoes)
     secoes.push(
-      pvSecao(
-        "Observações",
-        pvGrid(
-          pvCampo("Observações", state.observacoes, {
-            full: true,
-            step: PV_ETAPA.observacoes,
-          }),
-        ),
-      ),
+      pvSecao("Observações", pvTextoLivre(state.observacoes)),
     );
   $("#previewContent").innerHTML = secoes.join(PV_DIVISOR);
 

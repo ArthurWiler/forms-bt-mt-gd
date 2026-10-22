@@ -2425,6 +2425,13 @@ function pvSecao(titulo, campos) {
   );
 }
 const PV_DIVISOR = '<hr class="previa-divider"/>';
+// Texto livre das Observações na prévia: em negrito e sem rótulo (Figma
+// svg_previa do BT). `previa-campo--full` ocupa a linha inteira da grade.
+const pvTextoLivre = (txt) =>
+  `<p class="previa-texto previa-campo--full">${String(txt)
+    .trim()
+    .replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c])
+    .replace(/\n/g, "<br>")}</p>`;
 function renderPreviewGD() {
   // Aquecimento do jsPDF (carga sob demanda): chegar nesta etapa é o melhor
   // sinal de que o PDF vem a seguir. Sem await — não bloqueia a renderização.
@@ -2668,6 +2675,9 @@ function renderPreviewGD() {
       step: "correspondencia",
     });
   secoes.push(pvSecao("Correspondência e Fatura", cor));
+  // Observações: só entra na prévia quando há texto.
+  if (String(d.obs || "").trim())
+    secoes.push(pvSecao("Observações", pvTextoLivre(d.obs)));
   const content = $("#previewContent");
   if (content) content.innerHTML = secoes.join(PV_DIVISOR);
   const btn = $("#btnExportarPDF");

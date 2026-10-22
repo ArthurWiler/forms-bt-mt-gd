@@ -1,12 +1,14 @@
 /* ============================================================
-   CEMIG BT individual — Perfis de carga (Etapa 5, spec Figma svg9–14)
+   CEMIG BT — Perfis de carga (individual Etapa 5, spec Figma svg9–14;
+   coletivo/torres no modo calculadora)
    ------------------------------------------------------------
    Em vez de começar a calculadora do zero, cada imóvel oferece dois
    perfis prontos para o seu tipo de propriedade. Escolher um perfil
    apenas PREENCHE u.cargas (qtds/tipoA/catA/mots): a calculadora,
    a validação de disjuntores, a prévia e o PDF continuam lendo
    u.cargas como sempre. "Personalizar perfil" abre a calculadora
-   (montarCargasBT) sobre uma cópia — ver individual-app.js.
+   (montarCargasBT) sobre uma cópia — ver "UI dos perfis" no fim
+   deste arquivo.
 
    Item de perfil: { n: <nome EXATO do CAT>, min, max }. O nome é a
    referência, nunca o índice: cargas.qtds é posicional sobre CAT.
@@ -310,4 +312,392 @@ function abrirModalEquipamentosBT(linhas, aoPersonalizar) {
       },
     ],
   );
+}
+
+/* ============================================================
+   UI dos perfis — compartilhada pelo BT individual (Etapa 5) e
+   pelo modo calculadora do coletivo/múltiplas torres (menos de 4
+   apartamentos residenciais).
+   ------------------------------------------------------------
+   Cada UC escolhe um perfil pronto ou um "Perfil personalizado".
+   Escolher só PREENCHE u.cargas; o editor ("Personalizar perfil")
+   é a calculadora de sempre (montarCargasBT) sobre um rascunho —
+   Cancelar descarta, Confirmar vira o personalizado.
+
+   Quem monta a grade passa um contexto:
+     ctx = {
+       chave,          // identifica a UC/grupo (índice do imóvel no
+                       // individual; "c<líder>" no coletivo;
+                       // "t<torre>:<faixa>" nas torres)
+       aoMudar(),      // re-render depois de escolher/fechar o editor
+       aoAbrirEditor() // opcional: re-render ao abrir (padrão: aoMudar)
+       comGerador,     // editor com "Possui gerador?" (só individual)
+       avisoSemTipo,   // texto quando o tipo de propriedade não define
+                       // uma família de perfis
+     }
+   ============================================================ */
+// Editores abertos, por ctx.chave: { base, draft } — fora do state (é
+// estado de tela; o que vale é u.perfilPers depois de confirmar).
+const _editorPerfil = {};
+const editorPerfilAbertoBT = () => Object.keys(_editorPerfil).length > 0;
+const _geradorPadraoBT = () => ({
+  possui: "Não",
+  potencia: "",
+  fonte: "",
+  descricao: "",
+});
+const _cloneBT = (o) => JSON.parse(JSON.stringify(o));
+// Sem os derivados (_demanda/_cargaKw/_disjuntores): são recalculados.
+const _cargasLimpasBT = (c) => ({
+  qtds: CAT.map((_, i) => (c.qtds || [])[i] || 0),
+  tipoA: c.tipoA || "",
+  catA: c.catA == null ? null : c.catA,
+  mots: _cloneBT(c.mots || []),
+});
+// Perfil escolhido numa família que não vale mais (tipo/ramo mudou): a
+// escolha e o personalizado caem e a carga volta a zero. true = zerou.
+function revalidarPerfilBT(u) {
+  if (!u.perfil && !u.perfilPers) return false;
+  if (u.perfilFamilia === familiaPerfisBT(u)) return false;
+  u.perfil = "";
+  u.perfilPers = null;
+  u.perfilFamilia = "";
+  u.disjEscolhido = "";
+  u.cargas = { qtds: CAT.map(() => 0), tipoA: "", catA: null, mots: [] };
+  return true;
+}
+// Recalcula os derivados de carga/demanda/disjuntor de UMA UC a partir de
+// u.cargas (a escolha de perfil já conta na demanda).
+function recalcularCargasBT(u) {
+  const d = Object.assign(
+    { qtds: [], tipoA: "", catA: null, mots: [] },
+    u.cargas || {},
+  );
+  d.qtds = CAT.map((_, i) => d.qtds[i] || 0);
+  // A categoria segue o Tipo de propriedade atual (trocar de "Restaurantes"
+  // para "Escritórios" não muda a família de perfis, mas muda a conta).
+  const cat = infoTipoPropriedade(tipoPropriedadeDe(u)).catA;
+  if (d.tipoA === "nr" && cat != null) d.catA = cat;
+  const r = calcDemandaResultados(d, redeMonoBT());
+  d._demanda = r.demandaTotal;
+  d._cargaKw = r.cargaInstalada;
+  d._disjuntores = r.disjuntores.map((x) => x.fx);
+  u.cargas = d;
+}
+function selecionarPerfilBT(u, id, ctx) {
+  if (id === "personalizado") {
+    const pp = u.perfilPers;
+    if (!pp) return;
+    u.cargas = _cargasLimpasBT(pp.cargas);
+    if (ctx.comGerador) u.gerador = _cloneBT(pp.gerador || _geradorPadraoBT());
+    u.disjEscolhido = pp.disjEscolhido || "";
+  } else {
+    const p = perfilPorIdBT(id);
+    if (!p) return;
+    u.cargas = cargasDoPerfilBT(p, u);
+    if (ctx.comGerador) u.gerador = _geradorPadraoBT();
+    u.disjEscolhido = "";
+  }
+  u.perfil = id;
+  u.perfilFamilia = familiaPerfisBT(u);
+  recalcularCargasBT(u);
+  ctx.aoMudar();
+}
+function abrirEditorPerfilBT(u, origem, ctx) {
+  let base, cargas, gerador, disj;
+  if (origem === "personalizado" && u.perfilPers) {
+    base = u.perfilPers.base;
+    cargas = _cargasLimpasBT(u.perfilPers.cargas);
+    gerador = _cloneBT(u.perfilPers.gerador || _geradorPadraoBT());
+    disj = u.perfilPers.disjEscolhido || "";
+  } else {
+    const p = perfilPorIdBT(origem);
+    if (!p) return;
+    base = origem;
+    cargas = cargasDoPerfilBT(p, u);
+    gerador = _geradorPadraoBT();
+    disj = "";
+  }
+  // O rascunho imita a UC no que montarCargasBT/_ucGerador leem.
+  _editorPerfil[ctx.chave] = {
+    base,
+    draft: {
+      tipoPropriedade: tipoPropriedadeDe(u),
+      atividade: u.atividade,
+      cargas,
+      gerador,
+      disjEscolhido: disj,
+      _acc: {},
+    },
+  };
+  (ctx.aoAbrirEditor || ctx.aoMudar)();
+}
+function fecharEditorPerfilBT(u, ctx, confirmar) {
+  const ed = _editorPerfil[ctx.chave];
+  delete _editorPerfil[ctx.chave];
+  if (confirmar && ed && u) {
+    u.perfilPers = {
+      base: ed.base,
+      cargas: _cargasLimpasBT(ed.draft.cargas),
+      gerador: _cloneBT(ed.draft.gerador),
+      disjEscolhido: ed.draft.disjEscolhido || "",
+    };
+    selecionarPerfilBT(u, "personalizado", ctx);
+  } else ctx.aoMudar();
+}
+const _kwBT = (v) =>
+  (Number(v) || 0).toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+// Linha com pontilhado entre o rótulo e o valor da direita (card de perfil).
+function _linhaPerfilBT(htmlEsq, txtDir) {
+  const l = document.createElement("div");
+  l.className = "perfil-linha";
+  l.innerHTML =
+    `<span class="perfil-linha-nome">${htmlEsq}</span>` +
+    (txtDir == null
+      ? ""
+      : `<span class="perfil-linha-pontos" aria-hidden="true"></span><span class="perfil-linha-qtd"></span>`);
+  if (txtDir != null) l.lastChild.textContent = txtDir;
+  return l;
+}
+const _escBT = (s) =>
+  String(s == null ? "" : s).replace(
+    /[&<>"]/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
+  );
+// Card de perfil (svg9–12): rádio + título, descrição, 5 equipamentos,
+// "Todos os equipamentos", resumo (carga/demanda/disjuntor) e "Personalizar".
+function _perfilCardBT(o) {
+  const card = document.createElement("div");
+  card.className = "perfil-card" + (o.selecionado ? " is-selected" : "");
+  const radio = document.createElement("button");
+  radio.type = "button";
+  radio.className =
+    "toggle-btn perfil-card-radio" + (o.selecionado ? " on" : "");
+  radio.setAttribute("role", "radio");
+  radio.setAttribute("aria-checked", o.selecionado ? "true" : "false");
+  radio.textContent = o.titulo;
+  const desc = document.createElement("p");
+  desc.className = "perfil-card-desc";
+  desc.textContent = o.desc;
+  const tab = document.createElement("div");
+  tab.className = "perfil-card-tabela";
+  const cab = document.createElement("div");
+  cab.className = "perfil-linha perfil-linha--cab";
+  cab.innerHTML = "<span>Equipamentos</span><span>Quantidade</span>";
+  tab.appendChild(cab);
+  o.linhas
+    .slice(0, 5)
+    .forEach((l) =>
+      tab.appendChild(
+        _linhaPerfilBT(
+          `<strong>${_escBT(l.nome)}</strong>${l.pot ? " " + _escBT(l.pot) : ""}`,
+          l.qtd,
+        ),
+      ),
+    );
+  const todos = document.createElement("button");
+  todos.type = "button";
+  todos.className = "btn btn-ghost perfil-card-todos";
+  todos.textContent = "Todos os equipamentos";
+  todos.addEventListener("click", () =>
+    abrirModalEquipamentosBT(o.linhas, o.aoPersonalizar),
+  );
+  const resumo = document.createElement("div");
+  resumo.className = "perfil-card-resumo";
+  resumo.append(
+    _linhaPerfilBT(
+      `<strong>Carga total</strong> aprox. ${_kwBT(o.resumo.kw)} kW`,
+      `aprox. ${o.resumo.n}`,
+    ),
+    _linhaPerfilBT(
+      `<strong>Demanda total</strong> aprox. ${_kwBT(o.resumo.kva)} kVA`,
+    ),
+    _linhaPerfilBT(
+      `<strong>Disjuntor adequado</strong> ${_escBT(o.resumo.disj || "—")}`,
+    ),
+  );
+  const pers = document.createElement("button");
+  pers.type = "button";
+  pers.className = "perfil-card-personalizar";
+  pers.innerHTML = ICONE_LAPIS_BT + "Personalizar perfil";
+  pers.addEventListener("click", o.aoPersonalizar);
+  card.append(radio, desc, tab, todos, resumo, pers);
+  // O card inteiro escolhe o perfil (menos os botões de dentro).
+  card.addEventListener("click", (e) => {
+    if (e.target.closest("button") && e.target.closest("button") !== radio)
+      return;
+    if (!o.selecionado) o.aoSelecionar();
+  });
+  return card;
+}
+function _perfisGradeBT(u, ctx) {
+  const grade = document.createElement("div");
+  grade.className = "perfil-grid";
+  const perfis = perfisDoImovel(u);
+  const pp = u.perfilPers;
+  if (pp) {
+    const nBase = perfis.findIndex((p) => p.id === pp.base);
+    const r = resumoCargasBT(pp.cargas);
+    grade.appendChild(
+      _perfilCardBT({
+        titulo: "Perfil personalizado",
+        desc:
+          nBase >= 0
+            ? `Baseado no Perfil ${nBase + 1}, com os equipamentos e o disjuntor que você ajustou.`
+            : "Com os equipamentos e o disjuntor que você ajustou.",
+        linhas: linhasCargasBT(pp.cargas),
+        resumo: Object.assign(r, {
+          disj: pp.disjEscolhido || r.disjuntores[0],
+        }),
+        selecionado: u.perfil === "personalizado",
+        aoSelecionar: () => selecionarPerfilBT(u, "personalizado", ctx),
+        aoPersonalizar: () => abrirEditorPerfilBT(u, "personalizado", ctx),
+      }),
+    );
+  }
+  perfis.forEach((p, i) => {
+    const r = resumoCargasBT(cargasDoPerfilBT(p, u));
+    grade.appendChild(
+      _perfilCardBT({
+        titulo: `Perfil ${i + 1}: ${p.titulo}`,
+        desc: p.desc,
+        linhas: linhasPerfilBT(p),
+        resumo: Object.assign(r, { disj: r.disjuntores[0] }),
+        selecionado: u.perfil === p.id,
+        aoSelecionar: () => selecionarPerfilBT(u, p.id, ctx),
+        aoPersonalizar: () => abrirEditorPerfilBT(u, p.id, ctx),
+      }),
+    );
+  });
+  return grade;
+}
+// Editor "Perfil personalizado" (svg11) dentro do card da UC.
+function _perfilEditorBT(u, ctx) {
+  const ed = _editorPerfil[ctx.chave];
+  const d = ed.draft;
+  const box = document.createElement("div");
+  box.className = "perfil-editor";
+  const voltar = document.createElement("button");
+  voltar.type = "button";
+  voltar.className = "perfil-editor-voltar";
+  voltar.innerHTML =
+    '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8l-4 4 4 4M16 12H8"/></svg>Voltar';
+  voltar.addEventListener("click", () => fecharEditorPerfilBT(u, ctx, false));
+  const tit = document.createElement("div");
+  tit.className = "perfil-editor-titulo";
+  tit.textContent = "Perfil personalizado";
+  const txt = document.createElement("p");
+  txt.className = "perfil-editor-texto";
+  txt.textContent =
+    "Adicione ou remova equipamentos para personalizar o perfil adequado ao seu imóvel.";
+  const cargasBox = document.createElement("div");
+  const calcBox = document.createElement("div");
+  box.append(voltar, tit, txt, cargasBox);
+  // Gerador de emergência: só no individual (_ucGerador mora no app dele).
+  if (ctx.comGerador) box.appendChild(_ucGerador(d, ctx.chave));
+  box.appendChild(calcBox);
+  montarCargasBT(cargasBox, d, ctx.chave, () => _perfilCalcBT(calcBox, d));
+  _perfilCalcBT(calcBox, d);
+  const acoes = document.createElement("div");
+  acoes.className = "perfil-editor-acoes";
+  const cancelar = document.createElement("button");
+  cancelar.type = "button";
+  cancelar.className = "btn btn-ghost";
+  cancelar.textContent = "Cancelar";
+  cancelar.addEventListener("click", () => fecharEditorPerfilBT(u, ctx, false));
+  const confirmar = document.createElement("button");
+  confirmar.type = "button";
+  confirmar.className = "btn btn-primary";
+  confirmar.textContent = "Confirmar";
+  confirmar.addEventListener("click", () => fecharEditorPerfilBT(u, ctx, true));
+  acoes.append(cancelar, confirmar);
+  box.appendChild(acoes);
+  return box;
+}
+// Ícone (i) com dica flutuante (.cmg-hint) nos cards de carga e demanda.
+function _infoKpiBT(label, texto) {
+  return `<span class="resultado-card-info cmg-hint" tabindex="0" role="img" aria-label="${label}: ajuda" data-hint="${texto}"><img class="field-info" src="../imgs/info.svg" alt="" aria-hidden="true" /></span>`;
+}
+// "Informações calculadas de acordo com a seleção de equipamentos": carga e
+// demanda do rascunho + disjuntor adequado ("Mais opções" abre o modal).
+function _perfilCalcBT(box, d) {
+  const c = d.cargas || {};
+  const cargaKw = c._cargaKw || 0;
+  const lista = c._disjuntores || [];
+  if (d.disjEscolhido && !lista.includes(d.disjEscolhido)) d.disjEscolhido = "";
+  const atual = d.disjEscolhido || lista[0] || "";
+  box.innerHTML = "";
+  const wrap = document.createElement("div");
+  wrap.className = "perfil-calc divider";
+  wrap.innerHTML =
+    '<div class="perfil-calc-titulo">Informações calculadas de acordo com a seleção de equipamentos</div>';
+  const grade = document.createElement("div");
+  grade.className = "perfil-calc-grade";
+  const kpis = document.createElement("div");
+  kpis.className = "perfil-calc-kpis";
+  const cardCarga = document.createElement("div");
+  cardCarga.className =
+    "resultado-card" + (cargaKw > 75 ? " resultado-card--warn" : "");
+  cardCarga.innerHTML =
+    _infoKpiBT(
+      "Carga total calculada",
+      "Soma das potências de todos os equipamentos e motores declarados neste imóvel.",
+    ) +
+    `<div class="resultado-card-label">Carga total calculada</div>` +
+    `<div class="resultado-card-valor">${_kwBT(cargaKw)} kW</div>` +
+    (cargaKw > 75
+      ? `<div class="cmg-aviso cmg-aviso--warn" style="margin-bottom:0"><div class="cmg-aviso-icon" aria-hidden="true"></div><p class="cmg-aviso-texto">Sua carga instalada ultrapassa 75 kW, é obrigatório anexar a ART/TRT de projeto paga, planta situação, e formulário preenchido no APR Web.</p></div>`
+      : "");
+  const cardDem = document.createElement("div");
+  cardDem.className = "resultado-card";
+  cardDem.innerHTML =
+    _infoKpiBT(
+      "Demanda total calculada",
+      "Estimativa da potência máxima usada ao mesmo tempo, calculada a partir da carga total com os fatores de demanda da norma Cemig ND-5.1. É ela que define o disjuntor adequado.",
+    ) +
+    `<div class="resultado-card-label">Demanda total calculada</div>` +
+    `<div class="resultado-card-valor">${_kwBT(c._demanda || 0)} kVA</div>`;
+  kpis.append(cardCarga, cardDem);
+  const cardDisj = document.createElement("div");
+  cardDisj.className = "resultado-card perfil-calc-disj";
+  cardDisj.innerHTML =
+    '<div class="resultado-card-label">Disjuntor adequado calculado para este imóvel</div>' +
+    `<div class="resultado-card-valor">${atual ? _escBT(atual) : "—"}</div>`;
+  if (lista.length > 1) {
+    const mais = document.createElement("button");
+    mais.type = "button";
+    mais.className = "perfil-calc-mais";
+    mais.textContent = "Mais opções";
+    mais.addEventListener("click", () =>
+      abrirModalDisjuntoresBT(lista, atual, (v) => {
+        d.disjEscolhido = v;
+        _perfilCalcBT(box, d);
+      }),
+    );
+    cardDisj.appendChild(mais);
+  } else if (!lista.length) {
+    const hint = document.createElement("div");
+    hint.className = "field-hint";
+    hint.textContent = "Adicione equipamentos para ver o disjuntor adequado.";
+    cardDisj.appendChild(hint);
+  }
+  grade.append(kpis, cardDisj);
+  wrap.appendChild(grade);
+  box.appendChild(wrap);
+}
+// Conteúdo de cargas de uma UC: o editor aberto, o aviso de tipo de
+// propriedade sem perfis ou a grade de perfis.
+function montarPerfisBT(corpo, u, ctx) {
+  if (_editorPerfil[ctx.chave]) {
+    corpo.appendChild(_perfilEditorBT(u, ctx));
+    return;
+  }
+  if (!perfisDoImovel(u).length && !u.perfilPers) {
+    const hint = document.createElement("div");
+    hint.className = "cmg-aviso cmg-aviso--warn";
+    hint.innerHTML = `<div class="cmg-aviso-icon" aria-hidden="true"></div><p class="cmg-aviso-texto">${ctx.avisoSemTipo}</p>`;
+    corpo.appendChild(hint);
+    return;
+  }
+  corpo.appendChild(_perfisGradeBT(u, ctx));
 }
