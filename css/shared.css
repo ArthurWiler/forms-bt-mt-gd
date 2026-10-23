@@ -5751,6 +5751,16 @@ html[data-zona="rural"] [data-so-zona="urbana"],
 html:not([data-zona="rural"]) [data-so-zona="rural"] {
   display: none !important;
 }
+/* Fragmentos compartilhados (01-orientacoes): [data-so-fluxo] lista os
+   fluxos que mostram o item — "individual", "coletivo", "condominio"
+   (torres). O individual é a página sem html[data-fluxo]. O contador
+   01, 02… pula o item oculto sozinho. */
+html:not([data-fluxo]) [data-so-fluxo]:not([data-so-fluxo~="individual"]),
+html[data-fluxo="coletivo"] [data-so-fluxo]:not([data-so-fluxo~="coletivo"]),
+html[data-fluxo="condominio"]
+  [data-so-fluxo]:not([data-so-fluxo~="condominio"]) {
+  display: none !important;
+}
 /* Etapa 3: Município (2/3) + Estado (1/3) e, abaixo, a grade de 2. */
 .cemig-form #endRuralBox > .grid + .grid {
   margin-top: var(--cmg-space-8);

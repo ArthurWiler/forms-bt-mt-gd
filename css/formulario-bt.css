@@ -178,6 +178,84 @@ select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
    As definições locais foram removidas para evitar duplicação.
    O aviso de orientações migrou para o componente canônico `.cmg-aviso`
    (shared.css); a regra local `.callout` foi removida por ficar sem uso. */
+/* Etapa 1 do BT (spec Figma coletivo/torres, 23/10): sem divisória acima
+   do primeiro item — cada item fecha com a sua, na largura do card — e
+   número/texto, documentação, aviso e aceite recuados 16px. */
+.cemig-form .card-sub:has(+ .orient-list) {
+  margin-bottom: 12px;
+}
+.cemig-form .orient-list,
+.cemig-form .orient-list:has(+ .orient-docs) {
+  margin-top: 0;
+  border-bottom: none;
+}
+.cemig-form .orient-item {
+  padding: 21px var(--cmg-space-4) 13px;
+  border-top: none;
+  border-bottom: 1px solid var(--cmg-neutral-200);
+}
+/* Texto 8px abaixo do topo do número (topo de caixa alta do número 6px
+   acima do da frase, como no mock). */
+.cemig-form .orient-item p {
+  margin-top: var(--cmg-space-2);
+  line-height: 24px;
+}
+/* Item com mais de um parágrafo e lista (agrupamento/75 kW): o 8px de
+   cada <p> vira o respiro entre blocos; a lista usa o mesmo corpo. */
+.cemig-form .orient-texto {
+  flex: 1;
+  min-width: 0;
+}
+.cemig-form .orient-texto ul {
+  margin: var(--cmg-space-2) 0 0;
+  padding-left: 20px;
+  list-style: disc;
+}
+.cemig-form .orient-texto li {
+  font-size: var(--cmg-fs-body-lg);
+  line-height: 24px;
+  letter-spacing: var(--cmg-ls-tight);
+  color: var(--cmg-text);
+}
+.cemig-form .orient-texto li::marker {
+  color: var(--cmg-green-600);
+}
+/* O número de 36px num bloco de 39px: item de 1 linha = 82px no mock. O
+   dígito oculto do HTML (font-size 0) ainda abriria uma linha de 46px
+   abaixo do bloco — daí o line-height 0 no span. */
+.cemig-form .orient-num {
+  margin-bottom: var(--cmg-space-2);
+  line-height: 0;
+}
+.cemig-form .orient-num::before {
+  display: block;
+  line-height: 39px;
+  white-space: nowrap; /* "01" passa dos 42px da coluna */
+}
+.cemig-form .orient-docs,
+.cemig-form .orient-docs ~ .cmg-aviso,
+.cemig-form .orient-docs ~ .aceite-orient {
+  margin-left: var(--cmg-space-4);
+  margin-right: var(--cmg-space-4);
+}
+.cemig-form .orient-docs ~ .cmg-aviso {
+  width: auto; /* o 100% global somaria o recuo e vazaria do card */
+}
+.cemig-form .orient-docs {
+  margin-top: 22px;
+}
+.cemig-form .orient-docs-titulo {
+  margin-bottom: 22px;
+}
+/* Aceite numa faixa de 32px (área de toque), centrado 48px abaixo do
+   aviso; o card fecha com os mesmos 16px do topo. */
+.cemig-form .orient-docs ~ .aceite-orient {
+  min-height: 32px;
+  margin-top: var(--cmg-space-8);
+}
+.cemig-form .card:has(> .orient-docs) {
+  padding-bottom: var(--cmg-space-4);
+}
 
 /* ---------- BANNERS / ALERTAS ---------- */
 .alert {
