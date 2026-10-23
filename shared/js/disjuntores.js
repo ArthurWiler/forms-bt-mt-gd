@@ -207,16 +207,27 @@ function correnteDisj(fx) {
 //    geral atue antes do disjuntor de uma UC individual).
 // 2) Capacidade: suporta a demanda total do agrupamento (d em kVA).
 // Considera apenas tripolares (proteção geral de agrupamento é trifásica).
-// Ordenado do menor para o maior — o primeiro item é a sugestão automática.
+// Devolve só a FAIXA adequada (faixaDisjGeral): o primeiro item é a sugestão
+// automática; os demais, as alternativas da norma de mesma faixa.
 function disjuntoresGeraisAcima(maiorCorrenteUC, demandaTotal) {
-  return DISJ_GER.filter(
-    (d) =>
-      d.tipo === "tri" &&
-      correnteDisj(d.fx) > maiorCorrenteUC &&
-      (demandaTotal == null || d.d >= demandaTotal),
-  )
-    .sort((a, b) => correnteDisj(a.fx) - correnteDisj(b.fx))
-    .map((d) => d.fx);
+  return faixaDisjGeral(
+    DISJ_GER.filter(
+      (d) =>
+        d.tipo === "tri" &&
+        correnteDisj(d.fx) > maiorCorrenteUC &&
+        (demandaTotal == null || d.d >= demandaTotal),
+    ).sort((a, b) => correnteDisj(a.fx) - correnteDisj(b.fx)),
+  ).map((d) => d.fx);
+}
+
+// As faixas de proteção são "de/até": cada uma termina onde começa a seguinte,
+// então só a MENOR faixa adequada vale. De uma lista já ordenada, mantém os
+// disjuntores com a mesma capacidade (d) do primeiro — mais de uma opção só
+// existe quando a norma traz alternativas para a mesma faixa ("Tripolar
+// 400 A" / "Tripolar 2 x 200 A").
+function faixaDisjGeral(ordenados) {
+  if (!ordenados.length) return [];
+  return ordenados.filter((d) => d.d === ordenados[0].d);
 }
 
 // Ordenação por corrente crescente (empate desfeito pela capacidade d).

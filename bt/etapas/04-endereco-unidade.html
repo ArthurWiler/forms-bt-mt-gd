@@ -121,11 +121,22 @@
     <div class="grid grid-3">
       <div class="field col-span-2">
         <label>Município <span class="req">*</span></label>
-        <input type="text" data-k="obra.cidade" data-k-espelho placeholder=" " />
+        <input
+          type="text"
+          data-k="obra.cidade"
+          data-k-espelho
+          placeholder=" "
+          onblur="onMunicipioRuralBT()"
+        />
       </div>
       <div class="field">
         <label>Estado <span class="req">*</span></label>
-        <select data-k="obra.estado" data-k-espelho data-sem-vazio>
+        <select
+          data-k="obra.estado"
+          data-k-espelho
+          data-sem-vazio
+          onchange="onMunicipioRuralBT()"
+        >
           <option>AC</option>
           <option>AL</option>
           <option>AP</option>

@@ -1168,10 +1168,32 @@ async function geocodificarEnderecoMT() {
   );
   if (key) _mtLastGeoKey = key;
 }
-// Disparado no blur dos campos de endereço urbano (debounce de 800 ms).
+// Zona rural: o Município só leva o mapa até a cidade (bboxMunicipioBR, geo.js)
+// para o usuário marcar a propriedade — não cria pino nem move um já posto.
+let _mtLastMunKey = "";
+async function enquadrarMunicipioRuralMT() {
+  if (state.localizacao !== "Rural" || !mapaObra) return;
+  if (_nDig(state.latitude) >= 5 && _nDig(state.longitude) >= 5) return;
+  const key = [state.uc_municipio, state.uc_estado].join("|").toLowerCase();
+  if (!String(state.uc_municipio || "").trim() || _mtLastMunKey === key) return;
+  const bb = await bboxMunicipioBR(state.uc_municipio, state.uc_estado);
+  if (!bb || !mapaObra) return;
+  _mtLastMunKey = key;
+  mapaObra.fitBounds([
+    [bb.s, bb.w],
+    [bb.n, bb.e],
+  ]);
+}
+// Disparado no blur dos campos de endereço (debounce de 800 ms). Município e
+// Estado ficam no bloco rural quando a zona é Rural (onLocalizacao).
 function onEnderecoUrbanoMT() {
   clearTimeout(_mtGeoDebounce);
-  _mtGeoDebounce = setTimeout(geocodificarEnderecoMT, 800);
+  _mtGeoDebounce = setTimeout(
+    state.localizacao === "Rural"
+      ? enquadrarMunicipioRuralMT
+      : geocodificarEnderecoMT,
+    800,
+  );
 }
 /* Mesma geocodificação para o endereço do NOVO local da subestação (etapa
    "Tipo de atendimento"), que só existe quando há alteração de carga

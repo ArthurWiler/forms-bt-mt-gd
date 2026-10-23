@@ -149,6 +149,8 @@ function disjGeralTorreObrigatorio(b) {
 //  2) Seletividade: corrente ESTRITAMENTE maior que o maior disjuntor das UCs
 //     da torre (a hierarquia UC → Torre exige o superior sempre maior, nunca
 //     igual). Sem esse piso o geral poderia empatar com uma UC.
+// Devolve só a faixa adequada (faixaDisjGeral): o 1º é a sugestão; as
+// alternativas da norma de mesma faixa vão para o "Mais opções" do rodapé.
 function maiorCorrenteUCTorre(b) {
   // No modo calculadora o disjuntor da UC pode vir do cálculo pelas cargas
   // (disjUCTorre resolve disjPara → cargas._disjuntores[0]); no método 5.2 é
@@ -165,7 +167,7 @@ function opcoesDisjGeralTorre(b) {
   const cand = DISJ_GER.filter(
     (d) => d.tipo === "tri" && d.d >= demanda && correnteDisj(d.fx) > pisoUC,
   ).sort((a, b) => d_corr(a, b));
-  return cand.length ? [cand[0].fx] : [];
+  return faixaDisjGeral(cand).map((d) => d.fx);
 }
 
 // Opções de disjuntor do Condomínio / Combate a Incêndio da torre: menores

@@ -88,8 +88,11 @@
     <details class="cmg-acordeao">
       <summary class="cmg-acordeao-titulo">Documentos do Imóvel</summary>
       <div class="cmg-acordeao-corpo">
+        <!-- Regularidade e posse mudam por zona (html[data-zona], onZonaBT);
+             os requisitos dos contratos valem para as duas e ficam por
+             último, sempre visíveis (é o li:last-child sem margem). -->
         <ul class="orient-docs-lista">
-          <li>
+          <li data-so-zona="urbana">
             <strong>
               Documento de regularidade (comprova a localização do imóvel)
             </strong>
@@ -109,7 +112,7 @@
               contrato/estatuto social, se autarquia)
             </p>
           </li>
-          <li>
+          <li data-so-zona="urbana">
             <strong>
               Documento de posse do imóvel (original ou cópia autenticada, com
               endereço completo em nome do interessado)
@@ -123,6 +126,46 @@
               partilha ou Termo permissão de uso, REURB (protocolo com endereço
               completo, quando aplicável).
             </em>
+          </li>
+          <li data-so-zona="rural">
+            <strong>
+              Documento de regularidade (obrigatório apenas para propriedades
+              menores que 2 hectares)
+            </strong>
+            <p class="orient-docs-intro">
+              Para propriedades menores que 2 hectares, apresentar:
+            </p>
+            <em>
+              Certificado de Cadastro de Imóvel Rural (CCIR) individualizado,
+              com o endereço completo do imóvel
+            </em>
+            <p class="orient-docs-nota">
+              O CCIR atesta a regularidade da finalidade rural da unidade
+              consumidora, conforme a Instrução Normativa INCRA nº 82/2015.
+            </p>
+            <p class="orient-docs-nota">
+              <b>*Exceção:</b> dispensado caso o número do CCIR da área objeto
+              do pedido já esteja averbado no registro do imóvel.
+            </p>
+          </li>
+          <li data-so-zona="rural">
+            <strong>
+              Documento de posse ou propriedade (original ou cópia autenticada,
+              com endereço completo)
+            </strong>
+            <p class="orient-docs-intro">
+              Apresentar <b>apenas um</b> dos documentos a seguir:
+            </p>
+            <em>
+              Escritura Pública, Registro do Imóvel, Contrato de compra e venda,
+              Contrato de locação, Termo de doação, Termo de permissão de uso,
+              Contrato de arrendamento ou comodato, Formal de partilha
+            </em>
+            <p class="orient-docs-nota">
+              Ao apresentar os documentos, informe seu número de telefone
+              celular e e-mail para o contato das equipes da Cemig sobre o
+              andamento do serviço.
+            </p>
           </li>
           <li>
             <strong>Requisitos de validade dos contratos</strong>

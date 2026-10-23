@@ -706,6 +706,27 @@ function onEnderecoUrbanoBT() {
   clearTimeout(_btGeoDebounce);
   _btGeoDebounce = setTimeout(geocodificarEnderecoBT, 800);
 }
+// Zona rural: o Município só leva o mapa até a cidade (bboxMunicipioBR, geo.js)
+// para o usuário marcar a propriedade — não cria pino nem move um já posto.
+let _btLastMunKey = "";
+async function enquadrarMunicipioRuralBT() {
+  const o = window.state.obra;
+  if (!ruralBT() || !mapaObra) return;
+  if (_nDig(o.lat) >= 5 && _nDig(o.lng) >= 5) return;
+  const key = [o.cidade, o.estado].join("|").toLowerCase();
+  if (!String(o.cidade || "").trim() || _btLastMunKey === key) return;
+  const bb = await bboxMunicipioBR(o.cidade, o.estado);
+  if (!bb || !mapaObra) return;
+  _btLastMunKey = key;
+  mapaObra.fitBounds([
+    [bb.s, bb.w],
+    [bb.n, bb.e],
+  ]);
+}
+function onMunicipioRuralBT() {
+  clearTimeout(_btGeoDebounce);
+  _btGeoDebounce = setTimeout(enquadrarMunicipioRuralBT, 800);
+}
 function _limparRestricaoLayer() {
   if (mapaObra && restricaoLayer) mapaObra.removeLayer(restricaoLayer);
   restricaoLayer = null;

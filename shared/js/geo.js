@@ -485,6 +485,40 @@ async function geocodificarEnderecoBR({
     return null;
   }
 }
+/* bbox ({s,n,w,e}) do município — zona rural (BT/MT): sem logradouro não
+   há pino a propor, então o mapa só é levado até o município para o
+   usuário marcar a propriedade. Estruturada (city/state) e, se nada vier,
+   texto livre. Cacheado por cidade|uf. null se não achar. */
+const _nmBBoxMunicipioCache = {};
+async function bboxMunicipioBR(cidade, uf) {
+  const c = String(cidade == null ? "" : cidade).trim();
+  const u = String(uf == null ? "" : uf).trim();
+  if (!c) return null;
+  const key = [c, u].join("|").toLowerCase();
+  if (key in _nmBBoxMunicipioCache) return _nmBBoxMunicipioCache[key];
+  try {
+    let data = await _nmBuscar({
+      city: c,
+      ...(u ? { state: u } : {}),
+      country: "Brasil",
+      limit: "1",
+    });
+    if (!data.length)
+      data = await _nmBuscar({
+        q: [c, u, "Brasil"].filter(Boolean).join(", "),
+        limit: "1",
+      });
+    const bb = data[0] && data[0].boundingbox;
+    const out =
+      bb && bb.length === 4
+        ? { s: +bb[0], n: +bb[1], w: +bb[2], e: +bb[3] }
+        : null;
+    _nmBBoxMunicipioCache[key] = out;
+    return out;
+  } catch (e) {
+    return null; // falha de rede: não cacheia, permite nova tentativa
+  }
+}
 // Monta a URL de GetFeature por bbox usando o endpoint/versão/ordem de BBOX
 // DA CAMADA (cam.wfs/version/flipBBox), com fallback nos defaults do Sisema —
 // assim camadas de outros GeoServers (SICAR) usam o MESMO fluxo de consulta.

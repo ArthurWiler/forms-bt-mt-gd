@@ -208,10 +208,11 @@ const maiorCorrenteUCF = () =>
         0,
       );
 // app.js:635-638
-// Mesmo critério de dimensionamento mínimo do disjuntor da torre e dos demais
-// campos: só o MENOR disjuntor geral adequado (seletividade + capacidade).
+// Faixa do disjuntor geral adequado (seletividade + capacidade): o 1º é a
+// sugestão do card; as alternativas da norma de mesma faixa ("400 A" /
+// "2 x 200 A") vão para o "Mais opções" (spec Figma do rodapé coletivo).
 const opcoesDisjGeralF = () =>
-  disjuntoresGeraisAcima(maiorCorrenteUCF(), demandaPrevTotalF()).slice(0, 1);
+  disjuntoresGeraisAcima(maiorCorrenteUCF(), demandaPrevTotalF());
 // Disjuntor geral do agrupamento: OPCIONAL pela mesma regra do multi-torres
 // (disjGeralTorreRegra) e do BT individual (validacaoDisjuntoresBT) — só é
 // obrigatório quando a combinação dos disjuntores das UCs exige a proteção
