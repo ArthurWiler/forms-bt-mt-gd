@@ -560,11 +560,11 @@ function _simNaoBT(label, valor, aoMudar) {
 const _AVISO_PRONTO_BT = {
   Sim: [
     "cmg-aviso",
-    "Como o padrão de entrada de energia está pronto, após a análise e aprovação da solicitação pela Cemig, a vistoria para verificação da conformidade da instalação com as normas técnicas e o pedido de ligação serão gerados automaticamente. Não é necessário realizar nenhuma solicitação adicional.",
+    "Depois que você apresentar este formulário na agência, a Cemig irá analisar o pedido. Quando for aprovado, a vistoria e a ligação serão solicitadas automaticamente. Você não precisa fazer nenhuma solicitação adicional.",
   ],
   Não: [
     "cmg-aviso cmg-aviso--warn",
-    "Como o padrão de entrada de energia ainda não está pronto para ser ligado, após a análise da solicitação pela Cemig, você terá até 120 dias para solicitar a vistoria, etapa em que será verificada a conformidade da instalação com as normas técnicas, e o pedido de ligação. Após esse prazo, a solicitação poderá ser cancelada.",
+    "Depois que você apresentar este formulário na agência, a Cemig iráa analisar o pedido. Quando for aprovado, você terá até 120 dias para solicitar a vistoria e a ligação. Se não solicitar nesse prazo, o pedido pode ser cancelado.",
   ],
 };
 function _avisoProntoBT(box, v) {

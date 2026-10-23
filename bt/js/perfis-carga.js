@@ -418,9 +418,12 @@ function abrirEditorPerfilBT(u, origem, ctx) {
     gerador = _geradorPadraoBT();
     disj = "";
   }
-  // O rascunho imita a UC no que montarCargasBT/_ucGerador leem.
+  // O rascunho imita a UC no que montarCargasBT/_ucGerador leem. `origem` e
+  // `inicial` decidem, no Confirmar, se houve personalização de fato.
   _editorPerfil[ctx.chave] = {
     base,
+    origem,
+    inicial: _assinaturaEditorBT({ cargas, gerador, disjEscolhido: disj }),
     draft: {
       tipoPropriedade: tipoPropriedadeDe(u),
       atividade: u.atividade,
@@ -432,9 +435,39 @@ function abrirEditorPerfilBT(u, origem, ctx) {
   };
   (ctx.aoAbrirEditor || ctx.aoMudar)();
 }
+// O que o usuário pode mudar no editor — equipamentos, motores, disjuntor e
+// gerador —, normalizado para comparar a abertura com o Confirmar (tipoA/
+// catA e os derivados ficam de fora: o editor os recalcula sozinho).
+function _assinaturaEditorBT(d) {
+  const c = d.cargas || {};
+  const g = d.gerador || {};
+  return JSON.stringify({
+    qtds: CAT.map((_, i) => Number((c.qtds || [])[i]) || 0),
+    mots: (c.mots || [])
+      .filter((m) => (parseInt(m.q) || 0) > 0)
+      .map((m) => [m.fase, parseFloat(m.cv), parseInt(m.q)]),
+    disj: d.disjEscolhido || "",
+    ger:
+      g.possui === "Sim"
+        ? [g.potencia || "", g.fonte || "", (g.descricao || "").trim()]
+        : null,
+  });
+}
 function fecharEditorPerfilBT(u, ctx, confirmar) {
   const ed = _editorPerfil[ctx.chave];
   delete _editorPerfil[ctx.chave];
+  // Confirmar sem nada alterado a partir de um perfil pronto: só escolhe
+  // aquele perfil — não nasce (nem é sobrescrito) um "Perfil personalizado".
+  if (
+    confirmar &&
+    ed &&
+    u &&
+    ed.origem !== "personalizado" &&
+    _assinaturaEditorBT(ed.draft) === ed.inicial
+  ) {
+    selecionarPerfilBT(u, ed.origem, ctx);
+    return;
+  }
   if (confirmar && ed && u) {
     u.perfilPers = {
       base: ed.base,

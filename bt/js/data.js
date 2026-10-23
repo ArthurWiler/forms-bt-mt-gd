@@ -34,6 +34,7 @@ const TABELA_11 = [
   { d: "Restaurantes, bares e semelhantes", fp: 1.0, lim: Infinity, fe: 1.0 },
   { d: "Áreas comuns e condomínios", fp: 1.0, lim: 10, fe: 0.25 },
   { d: "Salão de festas", fp: 1.0, lim: Infinity, fe: 1.0 },
+  { d: "Outros", fp: 1.0, lim: 20, fe: 0.7 },
 ];
 
 // Tabela 12 — Fogões/fornos (grupo b3)
