@@ -41,7 +41,13 @@
           const res = await fetch(sec.dataset.src);
           if (!res.ok)
             throw new Error(`${sec.dataset.src}: HTTP ${res.status}`);
-          sec.innerHTML = await res.text();
+          // Fragmentos não têm <script>: qualquer um é injeção do Live
+          // Server, que sem </body> cai dentro do primeiro </svg> (ex.:
+          // o ícone do "Exportar PDF") e aparece como texto no botão.
+          sec.innerHTML = (await res.text()).replace(
+            /<script\b[\s\S]*?<\/script>/gi,
+            "",
+          );
         }),
       );
     } catch (e) {

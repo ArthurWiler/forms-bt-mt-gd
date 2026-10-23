@@ -65,7 +65,8 @@ function _pdfCarregarMoldes() {
     .then((html) => {
       const caixa = document.createElement("div");
       caixa.hidden = true;
-      caixa.innerHTML = html;
+      // Sem <script> nos moldes: descarta a injeção do Live Server.
+      caixa.innerHTML = html.replace(/<script\b[\s\S]*?<\/script>/gi, "");
       document.body.appendChild(caixa);
     })
     .catch((e) => {
