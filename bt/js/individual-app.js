@@ -564,7 +564,7 @@ const _AVISO_PRONTO_BT = {
   ],
   Não: [
     "cmg-aviso cmg-aviso--warn",
-    "Depois que você apresentar este formulário na agência, a Cemig iráa analisar o pedido. Quando for aprovado, você terá até 120 dias para solicitar a vistoria e a ligação. Se não solicitar nesse prazo, o pedido pode ser cancelado.",
+    "Depois que você apresentar este formulário na agência, a Cemig irá analisar o pedido. Quando for aprovado, você terá até 120 dias para solicitar a vistoria e a ligação. Se não solicitar nesse prazo, o pedido pode ser cancelado.",
   ],
 };
 function _avisoProntoBT(box, v) {
