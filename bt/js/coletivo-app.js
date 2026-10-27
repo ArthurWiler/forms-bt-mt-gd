@@ -3419,6 +3419,10 @@ window.initFormulario = function () {
   const h1 = $("#formTitulo");
   if (h1)
     h1.textContent = "Baixa Tensão" + (CARD.nome ? " - " + CARD.nome : "");
+  // Etapa 1 ("Análise técnica antecipada"): o passo 2 cita este formulário.
+  document
+    .querySelectorAll(".orient-form-nome")
+    .forEach((s) => (s.textContent = h1 ? h1.textContent : "Baixa Tensão"));
   // Conta de luz: o fragmento é o mesmo do individual; aqui a descrição avisa
   // que as contas chegam na portaria até cada proprietário mudar (Figma).
   const corrDesc = $("#corrDescricao");

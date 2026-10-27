@@ -340,6 +340,9 @@ function _podeAdicionarBT(id) {
   return id === "irr" ? irr === 0 : arr.length - irr === 0;
 }
 const solicitacaoRotuloBT = (u) => _tipoBT(tipoSolicitacaoBT(u)).l;
+// Mais de um imóvel no pedido (qualquer tipo, inclusive a irrigação rural):
+// o complemento passa a ser obrigatório em todos.
+const complementoObrigatorioBT = () => state.ucsDet.length > 1;
 function _aplicarTipoBT(u, t) {
   u.solicitacao = t.sol;
   u.mudaComplemento = !!t.compl;
@@ -651,9 +654,12 @@ function _ucIdentificacao(u, ui) {
     );
   } else {
     // Sem data-k o marcador não acrescenta o "(opcional)" — vai no rótulo.
+    // Com mais de um imóvel o complemento é o que distingue cada um.
     grid.appendChild(
       _campo(
-        'Complemento <span class="opt">(opcional)</span>',
+        complementoObrigatorioBT()
+          ? 'Complemento <span class="req">*</span>'
+          : 'Complemento <span class="opt">(opcional)</span>',
         inpTexto(u.complemento, (v) => (u.complemento = v)),
       ),
     );
@@ -1115,7 +1121,11 @@ function validacaoObrigatoriosBT() {
         faltando.push(`${im}: Complemento atual`);
       if (!String(u.novoComplemento || "").trim())
         faltando.push(`${im}: Novo complemento`);
-    }
+    } else if (
+      complementoObrigatorioBT() &&
+      !String(u.complemento || "").trim()
+    )
+      faltando.push(`${im}: Complemento`);
   });
   if (o.restricaoAmbiental === "Sim" && !o.restricaoAceite)
     faltando.push("Declaração de ciência da restrição ambiental");
@@ -1693,6 +1703,10 @@ window.initFormulario = function () {
   const subtipo = _prefAtividade || (CARD && CARD.nome) || "";
   const h1 = $("#formTitulo");
   if (h1) h1.textContent = "Baixa Tensão" + (subtipo ? " - " + subtipo : "");
+  // Etapa 1 ("Análise técnica antecipada"): o passo 2 cita este formulário.
+  document
+    .querySelectorAll(".orient-form-nome")
+    .forEach((s) => (s.textContent = h1 ? h1.textContent : "Baixa Tensão"));
   btRenumerarEtapas();
   bindInputs();
   montarToggles();
