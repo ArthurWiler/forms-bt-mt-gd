@@ -214,16 +214,6 @@ const DOC_TERRA_INDIGENA = {
     "Observação: Caso o processo de demarcação das terras ainda não tenha sido concluído, a solicitação poderá ser protocolada pelo procedimento padrão, como atendimento rural comum, sem enquadramento como comunidade indígena.",
   ],
 };
-// Área embargada pelo Sisema (auto de infração estadual): IMPEDITIVA, só a
-// mensagem de recusa (como a RL averbada). O nº do AI entra na frase via
-// nomeFeicao da camada.
-const DOC_AREA_EMBARGADA = {
-  bullets: [],
-  notas: [
-    "Em atendimento à sua solicitação, identificamos que o ponto para a ligação de energia elétrica encontra-se em área embargada pelo órgão ambiental estadual (Sisema), conforme Auto de Infração indicado acima. Sendo assim não podemos realizar o fornecimento de energia elétrica a essa unidade consumidora.",
-  ],
-};
-
 // Reserva Legal (CAR) — as exigências VARIAM pelo status do cadastro
 // (campo nom_tema da camada bases:mg_reserva_legal): Averbada é impeditiva;
 // Proposta e Aprovada e não Averbada pedem a realocação no registro/CAR.
@@ -303,20 +293,6 @@ const SISEMA_CAMADAS = [
     typeName: "IDE:ide_2003_mg_terras_indigenas_pol",
     tipoNome: "Terra Indígena",
     documentos: DOC_TERRA_INDIGENA,
-  },
-  {
-    // IDE-Sisema (Fiscalização Ambiental › Áreas Embargadas (Semad)), ~11,5
-    // mil polígonos, atualização mensal. Sem campo de nome: o rótulo é o nº
-    // do auto de infração (num_ai, ex.: "718783/2026").
-    id: "embargo",
-    rotulo: "Área Embargada pelo Sisema",
-    typeName: "IDE:ide_2304_mg_areas_embargadas_sisema_pol",
-    tipoNome: "Área Embargada pelo Sisema",
-    documentos: DOC_AREA_EMBARGADA,
-    nomeFeicao: (p) => {
-      const ai = p && p.num_ai != null ? String(p.num_ai).trim() : "";
-      return ai ? "Auto de Infração nº " + ai : null;
-    },
   },
   {
     id: "rl",
@@ -451,22 +427,85 @@ class ServidorIndisponivel extends Error {
   }
 }
 
-async function _fetchWfs(url) {
-  const host = _hostDe(url);
-  const d = _wfsDisjuntor.get(host);
-  if (d && d.abertoAte > Date.now()) throw new ServidorIndisponivel(host);
+// Vagas por host. O Sisema e o AgroTag respondem em HTTP/1.1, e o navegador
+// abre no máximo 6 conexões por host: o pedido que passa disso espera numa
+// fila INTERNA do navegador, e o prazo de WFS_TIMEOUT_MS corria durante essa
+// espera. Com consultas sobrepostas (digitação, cliques seguidos) e algumas
+// conexões penduradas, pedidos estouravam o prazo sem nem sair da máquina,
+// abriam o disjuntor e o resto das camadas voltava "Servidor sem resposta".
+// A fila aqui é NOSSA: o prazo só começa quando o pedido ganha conexão.
+const WFS_VAGAS_POR_HOST = 6;
+const _wfsVagas = new Map(); // host -> { livres, fila: [fn] }
 
+function _pegarVaga(host, signal) {
+  let v = _wfsVagas.get(host);
+  if (!v) _wfsVagas.set(host, (v = { livres: WFS_VAGAS_POR_HOST, fila: [] }));
+  if (v.livres > 0) {
+    v.livres--;
+    return Promise.resolve();
+  }
+  return new Promise((resolve, reject) => {
+    const entrar = () => {
+      if (signal) signal.removeEventListener("abort", desistir);
+      resolve();
+    };
+    const desistir = () => {
+      const i = v.fila.indexOf(entrar);
+      if (i >= 0) v.fila.splice(i, 1);
+      reject(signal.reason);
+    };
+    if (signal) signal.addEventListener("abort", desistir, { once: true });
+    v.fila.push(entrar);
+  });
+}
+
+function _soltarVaga(host) {
+  const v = _wfsVagas.get(host);
+  const proximo = v.fila.shift();
+  if (proximo) proximo();
+  else v.livres++;
+}
+
+// `cancelar`: sinal da consulta (consultarRestricoesObra) — quando ela é
+// substituída por outra, os pedidos em voo e na fila caem na hora, sem
+// contar como falha do servidor.
+async function _fetchWfs(url, cancelar) {
+  const host = _hostDe(url);
   for (let i = 0; ; i++) {
+    await _pegarVaga(host, cancelar);
+    // Conferido DEPOIS da fila: o disjuntor pode ter aberto enquanto o
+    // pedido esperava a vaga.
+    const d = _wfsDisjuntor.get(host);
+    if (d && d.abertoAte > Date.now()) {
+      _soltarVaga(host);
+      throw new ServidorIndisponivel(host);
+    }
+    const ctrl = new AbortController();
+    const prazo = setTimeout(
+      () => ctrl.abort(new DOMException("prazo esgotado", "TimeoutError")),
+      WFS_TIMEOUT_MS,
+    );
+    const repassar = () => ctrl.abort(cancelar.reason);
+    if (cancelar) cancelar.addEventListener("abort", repassar, { once: true });
     try {
-      const resp = await fetch(url, {
-        signal: AbortSignal.timeout(WFS_TIMEOUT_MS),
-      });
+      const resp = await fetch(url, { signal: ctrl.signal });
+      // O corpo é lido aqui, ainda dentro do prazo e da vaga: a conexão só
+      // fica livre depois dele, e um corpo que trava no meio é a mesma
+      // conexão pendurada de sempre.
+      const corpo = await resp.arrayBuffer();
       // Respondeu — inclusive 4xx/5xx: o servidor está de pé, o disjuntor
       // não tem nada a ver com o conteúdo da resposta.
       _wfsDisjuntor.delete(host);
-      return resp;
+      // (204/304 não aceitam corpo no construtor do Response.)
+      const semCorpo = [204, 205, 304].includes(resp.status);
+      return new Response(semCorpo ? null : corpo, {
+        status: resp.status,
+        statusText: resp.statusText,
+        headers: resp.headers,
+      });
     } catch (e) {
       if (e && e.name === "ServidorIndisponivel") throw e;
+      if (cancelar && cancelar.aborted) throw e;
 
       if (e && e.name === "TimeoutError") {
         const atual = _wfsDisjuntor.get(host) || { seguidas: 0, abertoAte: 0 };
@@ -482,9 +521,14 @@ async function _fetchWfs(url) {
           ? WFS_TENTATIVAS_TIMEOUT
           : WFS_TENTATIVAS_REDE;
       if (i + 1 >= limite) throw e;
-      // Espera curta e crescente antes de repetir (200 ms, 600 ms, …).
-      await new Promise((r) => setTimeout(r, 200 * Math.pow(3, i)));
+    } finally {
+      clearTimeout(prazo);
+      if (cancelar) cancelar.removeEventListener("abort", repassar);
+      _soltarVaga(host);
     }
+    // Espera curta e crescente antes de repetir (200 ms, 600 ms, …).
+    await new Promise((r) => setTimeout(r, 200 * Math.pow(3, i)));
+    if (cancelar && cancelar.aborted) throw cancelar.reason;
   }
 }
 
@@ -764,7 +808,7 @@ function nomeFeicaoRestricao(props) {
 // ponto-em-polígono, o que RECORTA polígonos grandes. Para desenhar o
 // contorno inteiro da reserva no mapa, refazemos o GetFeature filtrando
 // pelo id da feição (sem bbox). Retorna a Feature GeoJSON completa ou null.
-async function geometriaCompletaFeicao(cam, featureId) {
+async function geometriaCompletaFeicao(cam, featureId, cancelar) {
   if (!featureId) return null;
   try {
     const q = new URLSearchParams({
@@ -777,7 +821,10 @@ async function geometriaCompletaFeicao(cam, featureId) {
       maxFeatures: "1",
       featureID: featureId,
     });
-    const resp = await _fetchWfs(`${cam.wfs || SISEMA_WFS}?${q.toString()}`);
+    const resp = await _fetchWfs(
+      `${cam.wfs || SISEMA_WFS}?${q.toString()}`,
+      cancelar,
+    );
     if (!resp.ok) return null;
     const gj = await resp.json();
     const f = gj && gj.features && gj.features[0];
@@ -790,19 +837,30 @@ async function geometriaCompletaFeicao(cam, featureId) {
 // { ...cam, dentro:Boolean, nomes:[...], geometrias:[Feature,...] } ou
 // { ...cam, erro:"..." }. `geometrias` traz o contorno COMPLETO de cada
 // reserva intersectada (busca ampla por id, com fallback p/ a recortada).
+//
+// Só a consulta MAIS RECENTE vale: uma nova cancela a anterior (pedidos em
+// voo e na fila), e a substituída devolve `null` — o chamador ignora. Sem
+// isso, a resposta de um ponto antigo (digitação, cliques seguidos) podia
+// chegar depois e gravar por cima a restrição do ponto atual.
+let _consultaRestricoes = null;
 async function consultarRestricoesObra(lat, lng) {
+  if (_consultaRestricoes) _consultaRestricoes.abort();
+  const ctrl = (_consultaRestricoes = new AbortController());
+  const cancelar = ctrl.signal;
   await window.CemigLibs.turf(); // idem consultarImovelCAR: carga sob demanda
+  if (cancelar.aborted) return null;
   if (typeof SISEMA_CAMADAS === "undefined")
     throw new Error("Configuração do Sisema (geo.js) não carregada.");
   const ponto = window.turf.point([lng, lat]);
   // Uma camada por vez levava a consulta a minutos quando o Sisema
   // pendurava (ver _fetchWfs); em paralelo limitado o pior caso volta a
   // ser a camada mais lenta, não a soma das 64. A ordem é preservada.
-  return _emParalelo(SISEMA_CAMADAS, WFS_PARALELO, async (cam) => {
+  const res = await _emParalelo(SISEMA_CAMADAS, WFS_PARALELO, async (cam) => {
+    if (cancelar.aborted) return null;
     try {
       // URL única de GetFeature (fonte: _urlWfs) — respeita endpoint/versão/
       // flip de BBOX POR CAMADA (Sisema ou SICAR).
-      const resp = await _fetchWfs(_urlWfs(cam, lat, lng));
+      const resp = await _fetchWfs(_urlWfs(cam, lat, lng), cancelar);
       if (!resp.ok) return { ...cam, erro: `HTTP ${resp.status}` };
       const gj = await resp.json();
       const feats = (gj && gj.features) || [];
@@ -817,7 +875,7 @@ async function consultarRestricoesObra(lat, lng) {
       // se a busca ampla falhar, usa a própria feição (recortada pela bbox).
       const geometrias = [];
       for (const f of dentro) {
-        const completa = await geometriaCompletaFeicao(cam, f.id);
+        const completa = await geometriaCompletaFeicao(cam, f.id, cancelar);
         geometrias.push(completa || f);
       }
       // Uma entrada por FEIÇÃO intersectada, preservando o alinhamento entre
@@ -844,9 +902,12 @@ async function consultarRestricoesObra(lat, lng) {
         geometrias,
       };
     } catch (e) {
+      if (cancelar.aborted) return null;
       return { ...cam, erro: _erroWfs(e) };
     }
   });
+  if (_consultaRestricoes === ctrl) _consultaRestricoes = null;
+  return cancelar.aborted ? null : res;
 }
 // Desenha, num mapa Leaflet, o contorno das reservas intersectadas e devolve
 // a camada criada (L.geoJSON) — ou null se não houver geometria. Uso idêntico

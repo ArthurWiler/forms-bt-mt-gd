@@ -1298,6 +1298,7 @@ async function consultarRestricaoAmbientalMT(lat, lon) {
     );
   try {
     const res = await consultarRestricoesObra(lat, lon);
+    if (!res) return; // substituída por uma consulta mais nova (geo.js)
     const resumo = resumirRestricoes(res);
     if (resumo.errosTodos) {
       state.restricaoAmbiental = "";

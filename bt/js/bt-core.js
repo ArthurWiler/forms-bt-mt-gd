@@ -579,6 +579,7 @@ let marcadorObra = null;
 let restricaoLayer = null;
 let _mapaObraDebounce = null;
 let _btLastRestrKey = "";
+let _btRestrDebounce = null;
 let _btLastGeoKey = "";
 let _btGeoDebounce = null;
 function alertHTML(tipo, html) {
@@ -666,7 +667,15 @@ function onCoordBT(imediato) {
   if (isNaN(lat) || isNaN(lng)) return;
   if (_nDig(o.lat) < 5 || _nDig(o.lng) < 5) return;
   sincronizarMapaComCoordenadas(lat, lng, !!imediato);
-  consultarRestricaoAmbientalBT(lat, lng);
+  // Clique/arraste no mapa consultam na hora; a digitação espera o usuário
+  // parar (como o MT), em vez de uma consulta de todas as camadas por tecla.
+  clearTimeout(_btRestrDebounce);
+  if (imediato) consultarRestricaoAmbientalBT(lat, lng);
+  else
+    _btRestrDebounce = setTimeout(
+      () => consultarRestricaoAmbientalBT(lat, lng),
+      700,
+    );
 }
 // Geocodificação estruturada pelo endereço urbano (debounce, como BT/MT).
 async function geocodificarEnderecoBT() {
@@ -784,6 +793,7 @@ async function consultarRestricaoAmbientalBT(lat, lng) {
   if (status) status.textContent = "Consultando restrições…";
   try {
     const res = await consultarRestricoesObra(lat, lng);
+    if (!res) return; // substituída por uma consulta mais nova (geo.js)
     const dentros = res.filter((r) => r.dentro);
     const errosTodos = res.length > 0 && res.every((r) => r.erro);
     if (errosTodos) {

@@ -710,7 +710,15 @@ function onCoordGD(el, imediato) {
   if (isNaN(lat) || isNaN(lng)) return;
   if (_nDig(state.latitude) < 5 || _nDig(state.longitude) < 5) return;
   sincronizarMapaComCoordenadas(lat, lng, !!imediato);
-  consultarRestricaoAmbientalGD(lat, lng);
+  // Clique/arraste no mapa consultam na hora; a digitação espera o usuário
+  // parar (como o MT), em vez de uma consulta de todas as camadas por tecla.
+  clearTimeout(_gdRestrDebounce);
+  if (imediato) consultarRestricaoAmbientalGD(lat, lng);
+  else
+    _gdRestrDebounce = setTimeout(
+      () => consultarRestricaoAmbientalGD(lat, lng),
+      700,
+    );
 }
 /* ===== Etapa 3 — zona, pronto p/ ligar (porte do BT) ===== */
 // Última zona aplicada — o toggle grava state.localizacao ANTES de chamar este
@@ -827,6 +835,7 @@ let marcadorObra = null;
 let restricaoLayer = null;
 let _mapaObraDebounce = null;
 let _gdLastRestrKey = "";
+let _gdRestrDebounce = null;
 let _gdLastGeoKey = "";
 let _gdGeoDebounce = null;
 function _alertHTML(tipo, html) {
@@ -999,6 +1008,7 @@ async function consultarRestricaoAmbientalGD(lat, lng) {
   if (status) status.textContent = "Consultando restrições…";
   try {
     const res = await consultarRestricoesObra(lat, lng);
+    if (!res) return; // substituída por uma consulta mais nova (geo.js)
     const dentros = res.filter((r) => r.dentro);
     const errosTodos = res.length > 0 && res.every((r) => r.erro);
     if (errosTodos) {

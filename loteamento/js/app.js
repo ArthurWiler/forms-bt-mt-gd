@@ -277,6 +277,7 @@ async function consultarRestricaoAmbientalLote(lat, lng) {
   _loteLastRestrKey = key;
   try {
     const res = await consultarRestricoesObra(lat, lng);
+    if (!res) return; // substituída por uma consulta mais nova (geo.js)
     if (res.length > 0 && res.every((r) => r.erro)) {
       _loteLastRestrKey = "";
       _limparRestricaoLayer();
