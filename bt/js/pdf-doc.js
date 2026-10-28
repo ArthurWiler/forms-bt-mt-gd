@@ -679,16 +679,20 @@ function _pdfBlocosIndividualBT(S) {
 
     /* Padrão de energia: no individual cada imóvel responde por si
        (Etapa 4, spec Figma svg3–8). Ligação nova não pergunta mudança de
-       local — não há padrão existente para mudar. */
-    const camposPadrao = [
-      ["Distância do padrão até o poste inferior a 30m?", u.distMenor30],
-      ["O padrão está pronto para ser ligado?", u.prontoLigar],
+       local — não há padrão existente para mudar. No imóvel existente,
+       "pronto para ligar" e "distância" só existem se o padrão muda de
+       local (mesma ordem da Etapa 4). */
+    const dist = [
+      "Distância do padrão até o poste inferior a 30m?",
+      u.distMenor30,
     ];
-    if (u.solicitacao !== "Conexão Nova")
-      camposPadrao.push([
-        "O padrão precisa ser mudado de local?",
-        u.mudancaLocal,
-      ]);
+    const pronto = ["O padrão está pronto para ser ligado?", u.prontoLigar];
+    const camposPadrao =
+      u.solicitacao === "Conexão Nova"
+        ? [dist, pronto]
+        : [["O padrão precisa ser mudado de local?", u.mudancaLocal]].concat(
+            u.mudancaLocal === "Sim" ? [pronto, dist] : [],
+          );
     B.campos(camposPadrao);
     B.campos([["Tipo de rede BT que atende o local", obra.tipoRede]]);
     if (obra.restricaoAmbiental === "Sim")

@@ -123,15 +123,73 @@ const APP_FBDS_CIRCUNSCRICAO = [
 
 const DOC_INTRO =
   "Para que o cliente obtenha ligação de energia elétrica, é necessário anexar os seguintes documentos:";
-const DOC_UNIDADE_CONSERVACAO = {
+/* ---- Área de Preservação Permanente (APP) ----
+   O texto cita a COORDENADA consultada: o placeholder {coord} é substituído
+   por "(lat, lng)" em restricaoDocsBlocos (_interpTexto). Introdução própria
+   (`introPropria`): a padrão (DOC_INTRO, "anexar…") não cabe nesta redação. */
+const DOC_APP = {
+  chave: "app",
+  introPropria:
+    "Além disso, considerando que a residência ou benfeitoria localizada nas coordenadas {coord} encontra-se inserida em Área de Preservação Permanente, é necessária a comprovação da regularidade da ocupação para subsidiar a análise junto ao órgão ambiental competente. Para continuidade do atendimento, deverá ser apresentada pelo menos uma das seguintes comprovações:",
   bullets: [
-    "Comprovação da posse e regularidade do imóvel simultaneamente (IPTU, Registro do Imóvel, Escritura Pública, etc.); ou",
-    "Comprovação de posse (Contrato de Compra e Venda, Contrato de Locação, Termo de Doação, Termo de Permissão de Uso, etc.) e regularidade (Certidão de número/Habite-se/Declaração da Prefeitura, Planta de Arquitetura Aprovada) separadamente.",
+    "Termo de Ajustamento de Conduta (TAC);",
+    "Comprovação de Uso Antrópico Consolidado;",
+    "Declaração de Interesse Social ou Utilidade Pública, quando se tratar de propriedade rural;",
+    "Declaração emitida pelo órgão ambiental competente atestando a regularidade da ocupação.",
   ],
-  notas: [
-    "Outros documentos e informações complementares poderão ser solicitadas posteriormente a critério do órgão ambiental responsável pela administração da Unidade de Conservação.",
+  notas: [],
+};
+/* ---- Unidade de Conservação — texto VARIÁVEL por dois eixos ----
+   Mesma regra da aba Análise Ambiental do atendente (switches zona/rede):
+   - zona: "urbana" | "rural"    → muda a LISTA de documentos
+   - rede: "porta" | "extensao"  → muda a INTRODUÇÃO (+ complemento na frase)
+   Nos formulários do cliente a rede é SEMPRE "porta" (cenarioRestricao):
+   o cenário de extensão fica para o atendente. A nota do órgão vale nos
+   quatro cenários. Resolvido em docsUnidadeConservacao(cenario). */
+const UC_NOTA_ORGAO =
+  "A critério do órgão ambiental responsável pela administração da Unidade de Conservação, outros documentos e informações complementares poderão ser solicitadas posteriormente.";
+const UC_BULLETS_ZONA = {
+  urbana: [
+    "Documentos que comprovem posse e regularidade do imóvel simultaneamente (IPTU, Registro de Imóvel, Escritura Pública, etc) ou;",
+    "Documentos que comprovem posse (Contrato de Compra e Venda, Contrato de Locação, Termo de Doação, Termo de Permissão de Uso, etc) e regularidade (Certidão de número/Habite-se/Declaração da Prefeitura, Planta de Arquitetura Aprovada) separadamente.",
+  ],
+  rural: [
+    "Escritura do Imóvel e/ou Certidão de Inteiro Teor da matrícula do imóvel, e o CAR – Cadastro Ambiental Rural.",
   ],
 };
+const UC_INTRO_REDE = {
+  porta:
+    "Para que o cliente obtenha a ligação de energia elétrica, é necessário apresentar:",
+  extensao:
+    "Visando subsidiar a análise do órgão ambiental, o requerente deve apresentar os seguintes documentos:",
+};
+// Complemento da FRASE de localização — só no cenário de extensão de rede.
+const UC_COMPLEMENTO_EXTENSAO =
+  "Nessas condições, a execução de obras ou projetos de extensão de rede de distribuição de energia elétrica depende de autorização prévia do órgão responsável pela administração da respectiva Unidade de Conservação, não sendo possível o prosseguimento da solicitação sem a devida regularização e análise ambiental.";
+function normalizarCenario(cenario) {
+  const c = cenario || {};
+  return {
+    zona: c.zona === "rural" ? "rural" : "urbana",
+    rede: c.rede === "extensao" ? "extensao" : "porta",
+  };
+}
+// Cenário dos formulários: zona pela localização do form, rede sempre porta.
+function cenarioRestricao(localizacao) {
+  return { zona: localizacao === "Rural" ? "rural" : "urbana", rede: "porta" };
+}
+function docsUnidadeConservacao(cenario) {
+  const c = normalizarCenario(cenario);
+  return {
+    chave: "uc",
+    introPropria: UC_INTRO_REDE[c.rede],
+    bullets: UC_BULLETS_ZONA[c.zona].slice(),
+    notas: [UC_NOTA_ORGAO],
+  };
+}
+// Marcador da UC: o texto real só é resolvido no render (restricaoDocsBlocos),
+// então trocar a zona depois da consulta muda o texto sem reconsultar. É um
+// objeto simples para sobreviver ao JSON do state.
+const DOC_UNIDADE_CONSERVACAO = { chave: "uc", unidadeConservacao: true };
 const DOC_TERRA_QUILOMBOLA = {
   bullets: [
     "Certidão/Registro de Autodefinição emitido pela Fundação Cultural Palmares, comprovando o vínculo do(s) interessado(s) com a comunidade quilombola;",
@@ -156,16 +214,19 @@ const DOC_TERRA_INDIGENA = {
     "Observação: Caso o processo de demarcação das terras ainda não tenha sido concluído, a solicitação poderá ser protocolada pelo procedimento padrão, como atendimento rural comum, sem enquadramento como comunidade indígena.",
   ],
 };
+// Área embargada pelo Sisema (auto de infração estadual): IMPEDITIVA, só a
+// mensagem de recusa (como a RL averbada). O nº do AI entra na frase via
+// nomeFeicao da camada.
+const DOC_AREA_EMBARGADA = {
+  bullets: [],
+  notas: [
+    "Em atendimento à sua solicitação, identificamos que o ponto para a ligação de energia elétrica encontra-se em área embargada pelo órgão ambiental estadual (Sisema), conforme Auto de Infração indicado acima. Sendo assim não podemos realizar o fornecimento de energia elétrica a essa unidade consumidora.",
+  ],
+};
 
 // Reserva Legal (CAR) — as exigências VARIAM pelo status do cadastro
-// (campo nom_tema da camada bases:mg_reserva_legal). Três status possíveis,
-// cada um com seu bloco de documentos. PLACEHOLDERS — preencher bullets/notas.
-const DOC_RL_APROVADA_NAO_AVERBADA = {
-  bullets: [
-    // TODO(textos): documentos p/ "Reserva Legal Aprovada e não Averbada".
-  ],
-  notas: [],
-};
+// (campo nom_tema da camada bases:mg_reserva_legal): Averbada é impeditiva;
+// Proposta e Aprovada e não Averbada pedem a realocação no registro/CAR.
 const DOC_RL_AVERBADA = {
   bullets: [],
   notas: [
@@ -185,9 +246,8 @@ function _docsReservaLegal(props) {
     props && props.nom_tema != null ? String(props.nom_tema).trim() : "";
   if (/averbada/i.test(t) && !/n[ãa]o\s+averbada/i.test(t))
     return DOC_RL_AVERBADA;
-  if (/aprovada\s+e\s+n[ãa]o\s+averbada/i.test(t))
-    return DOC_RL_APROVADA_NAO_AVERBADA;
-  if (/proposta/i.test(t)) return DOC_RL_PROPOSTA;
+  if (/aprovada\s+e\s+n[ãa]o\s+averbada/i.test(t) || /proposta/i.test(t))
+    return DOC_RL_PROPOSTA;
   return null;
 }
 
@@ -245,6 +305,20 @@ const SISEMA_CAMADAS = [
     documentos: DOC_TERRA_INDIGENA,
   },
   {
+    // IDE-Sisema (Fiscalização Ambiental › Áreas Embargadas (Semad)), ~11,5
+    // mil polígonos, atualização mensal. Sem campo de nome: o rótulo é o nº
+    // do auto de infração (num_ai, ex.: "718783/2026").
+    id: "embargo",
+    rotulo: "Área Embargada pelo Sisema",
+    typeName: "IDE:ide_2304_mg_areas_embargadas_sisema_pol",
+    tipoNome: "Área Embargada pelo Sisema",
+    documentos: DOC_AREA_EMBARGADA,
+    nomeFeicao: (p) => {
+      const ai = p && p.num_ai != null ? String(p.num_ai).trim() : "";
+      return ai ? "Auto de Infração nº " + ai : null;
+    },
+  },
+  {
     id: "rl",
     rotulo: "Reserva Legal (CAR)",
     typeName: "bases:mg_reserva_legal",
@@ -266,7 +340,7 @@ const SISEMA_CAMADAS = [
     rotulo: "APPs hídricas " + regiao,
     typeName: `IDE:ide_210603_mg_hid_app_hidrica_mapcar_${suf}_pol`,
     tipoNome: "APP hídrica",
-    documentos: DOC_UNIDADE_CONSERVACAO,
+    documentos: DOC_APP,
     nomeFeicao: (p) => {
       const c = p && p.categoria != null ? String(p.categoria).trim() : "";
       return c ? "faixa " + c.replace(/\bAte\b/g, "até") : null;
@@ -278,7 +352,7 @@ const SISEMA_CAMADAS = [
     rotulo: "APPs da Circunscrição hidrográfica " + circ,
     typeName: `IDE:ide_240905_${suf}_apps_fbds_pol`,
     tipoNome: "Área de Preservação Permanente",
-    documentos: DOC_UNIDADE_CONSERVACAO,
+    documentos: DOC_APP,
     // Feição sem nome próprio: tipo hidrográfico + faixa da APP (m).
     // Ex.: props {hidro:"nascente", app_m:50} → "nascente — faixa de 50 m".
     nomeFeicao: (p) => {
@@ -303,6 +377,132 @@ const SISEMA_CAMADAS = [
   },
 ];
 
+/* ------------------------------------------------------------------
+   Timeout e repetição das consultas WFS.
+
+   O GeoServer do Sisema (62 das 64 camadas) deixa conexões PENDURADAS
+   com frequência: medido fora do navegador, ~1 em 8 GetFeature fica sem
+   resposta e só estoura no timeout do sistema, 20-40 s. O fetch nu não
+   tem prazo próprio — quem manda é o SO. Como consultarRestricoesObra
+   percorre 64 camadas, um punhado de penduradas transforma uma consulta
+   de 8 s em vários minutos (medido: 858 s), a aba fica presa em
+   "Consultando restrições…" e o atendente conclui que a análise
+   ambiental parou de funcionar.
+
+   Prazo curto por tentativa + repetição resolve porque a falha é
+   transitória: quando a conexão pendura, a tentativa seguinte costuma
+   responder em ~0,3 s. Resposta HTTP de erro (o 502 do AgroTag, por
+   exemplo) não é repetida — chega como resposta e é definitiva.
+   ------------------------------------------------------------------ */
+const WFS_TIMEOUT_MS = 12000;
+// Duas tentativas: quando a conexão pendura, quem resolve é a tentativa
+// SEGUINTE (medido: ~0,3 s). Uma terceira quase nunca muda o resultado e
+// custa mais 12 s de espera justamente na camada que interessa.
+//
+// As duas constantes existem separadas porque o fetch do navegador é
+// OPACO: conexão pendurada, host bloqueado pelo proxy e 502 sem cabeçalho
+// CORS chegam todos como o mesmo TypeError. Só o estouro do nosso próprio
+// prazo se identifica (TimeoutError). Hoje as duas valem 2; separadas,
+// mexer no comportamento de uma falha não arrasta a outra junto.
+const WFS_TENTATIVAS_TIMEOUT = 2;
+const WFS_TENTATIVAS_REDE = 2;
+// Disjuntor por servidor. Repetir é certo quando UMA camada pendura, e
+// desastroso quando o servidor inteiro está fora: 62 camadas x 2 tentativas
+// x 12 s, mesmo 6 a 6, dá minutos de espera para no fim não responder nada
+// (medido: 5 min). Após WFS_DISJUNTOR_FALHAS timeouts SEGUIDOS no host, as
+// consultas restantes àquele host falham na hora, sem ir à rede. Qualquer
+// resposta zera a contagem — um servidor instável (~1 em 8 penduradas, que
+// é o comportamento real do Sisema) nunca chega a abrir o disjuntor.
+const WFS_DISJUNTOR_FALHAS = 3;
+const WFS_DISJUNTOR_MS = 20000;
+// Camadas consultadas ao mesmo tempo. Sequencial (o que era feito antes)
+// paga a latência de 64 idas e voltas em série; paralelismo alto derruba
+// mais conexões no Sisema, que já é o elo fraco. 6 mantém a consulta na
+// casa dos segundos sem virar carga para o servidor.
+const WFS_PARALELO = 6;
+
+// Rótulo do erro mostrado no chip da camada. Separar "sem resposta" de
+// "falha de rede" importa no atendimento: a primeira é o Sisema pendurando
+// (vale reconsultar), a segunda costuma ser proxy/bloqueio da rede.
+function _erroWfs(e) {
+  if (e && e.name === "ServidorIndisponivel") return "Servidor sem resposta";
+  if (e && e.name === "TimeoutError") return "Sem resposta (timeout)";
+  return "Falha de rede/CORS";
+}
+
+// host -> { seguidas, abertoAte }. Vive entre consultas de propósito: se o
+// servidor acabou de se mostrar fora do ar, a consulta seguinte não precisa
+// redescobrir isso do zero. A janela curta (WFS_DISJUNTOR_MS) faz o estado
+// se desfazer sozinho, sem ninguém precisar reiniciar nada.
+const _wfsDisjuntor = new Map();
+
+function _hostDe(url) {
+  try {
+    return new URL(url).host;
+  } catch (e) {
+    return url;
+  }
+}
+
+class ServidorIndisponivel extends Error {
+  constructor(host) {
+    super("servidor " + host + " sem resposta");
+    this.name = "ServidorIndisponivel";
+  }
+}
+
+async function _fetchWfs(url) {
+  const host = _hostDe(url);
+  const d = _wfsDisjuntor.get(host);
+  if (d && d.abertoAte > Date.now()) throw new ServidorIndisponivel(host);
+
+  for (let i = 0; ; i++) {
+    try {
+      const resp = await fetch(url, {
+        signal: AbortSignal.timeout(WFS_TIMEOUT_MS),
+      });
+      // Respondeu — inclusive 4xx/5xx: o servidor está de pé, o disjuntor
+      // não tem nada a ver com o conteúdo da resposta.
+      _wfsDisjuntor.delete(host);
+      return resp;
+    } catch (e) {
+      if (e && e.name === "ServidorIndisponivel") throw e;
+
+      if (e && e.name === "TimeoutError") {
+        const atual = _wfsDisjuntor.get(host) || { seguidas: 0, abertoAte: 0 };
+        atual.seguidas++;
+        if (atual.seguidas >= WFS_DISJUNTOR_FALHAS)
+          atual.abertoAte = Date.now() + WFS_DISJUNTOR_MS;
+        _wfsDisjuntor.set(host, atual);
+        if (atual.abertoAte > Date.now()) throw new ServidorIndisponivel(host);
+      }
+
+      const limite =
+        e && e.name === "TimeoutError"
+          ? WFS_TENTATIVAS_TIMEOUT
+          : WFS_TENTATIVAS_REDE;
+      if (i + 1 >= limite) throw e;
+      // Espera curta e crescente antes de repetir (200 ms, 600 ms, …).
+      await new Promise((r) => setTimeout(r, 200 * Math.pow(3, i)));
+    }
+  }
+}
+
+// Executa fn sobre itens com no máximo `limite` em voo, PRESERVANDO a
+// ordem de `itens` no resultado (a UI lista as camadas nessa ordem).
+async function _emParalelo(itens, limite, fn) {
+  const out = new Array(itens.length);
+  let proximo = 0;
+  const trabalhador = async () => {
+    for (let i = proximo++; i < itens.length; i = proximo++)
+      out[i] = await fn(itens[i]);
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(limite, itens.length) }, trabalhador),
+  );
+  return out;
+}
+
 const SICAR_CAM_IMOVEL = {
   typeName: "sicar:sicar_imoveis_mg",
   wfs: SICAR_WFS_IMOVEIS,
@@ -315,7 +515,7 @@ async function consultarImovelCAR(lat, lng) {
   await window.CemigLibs.turf();
   const ponto = window.turf.point([lng, lat]);
   try {
-    const resp = await fetch(_urlWfs(SICAR_CAM_IMOVEL, lat, lng));
+    const resp = await _fetchWfs(_urlWfs(SICAR_CAM_IMOVEL, lat, lng));
     if (!resp.ok) return { erro: `HTTP ${resp.status}` };
     const gj = await resp.json();
     const feats = (gj && gj.features) || [];
@@ -334,7 +534,7 @@ async function consultarImovelCAR(lat, lng) {
       feicao: completa || f,
     };
   } catch (e) {
-    return { erro: "Falha de rede/CORS" };
+    return { erro: _erroWfs(e) };
   }
 }
 /* ============================================================
@@ -577,7 +777,7 @@ async function geometriaCompletaFeicao(cam, featureId) {
       maxFeatures: "1",
       featureID: featureId,
     });
-    const resp = await fetch(`${cam.wfs || SISEMA_WFS}?${q.toString()}`);
+    const resp = await _fetchWfs(`${cam.wfs || SISEMA_WFS}?${q.toString()}`);
     if (!resp.ok) return null;
     const gj = await resp.json();
     const f = gj && gj.features && gj.features[0];
@@ -595,16 +795,15 @@ async function consultarRestricoesObra(lat, lng) {
   if (typeof SISEMA_CAMADAS === "undefined")
     throw new Error("Configuração do Sisema (geo.js) não carregada.");
   const ponto = window.turf.point([lng, lat]);
-  const out = [];
-  for (const cam of SISEMA_CAMADAS) {
+  // Uma camada por vez levava a consulta a minutos quando o Sisema
+  // pendurava (ver _fetchWfs); em paralelo limitado o pior caso volta a
+  // ser a camada mais lenta, não a soma das 64. A ordem é preservada.
+  return _emParalelo(SISEMA_CAMADAS, WFS_PARALELO, async (cam) => {
     try {
       // URL única de GetFeature (fonte: _urlWfs) — respeita endpoint/versão/
       // flip de BBOX POR CAMADA (Sisema ou SICAR).
-      const resp = await fetch(_urlWfs(cam, lat, lng));
-      if (!resp.ok) {
-        out.push({ ...cam, erro: `HTTP ${resp.status}` });
-        continue;
-      }
+      const resp = await _fetchWfs(_urlWfs(cam, lat, lng));
+      if (!resp.ok) return { ...cam, erro: `HTTP ${resp.status}` };
       const gj = await resp.json();
       const feats = (gj && gj.features) || [];
       const dentro = feats.filter(
@@ -632,20 +831,22 @@ async function consultarRestricoesObra(lat, lng) {
         props: f.properties || {},
         geometria: geometrias[i],
       }));
-      out.push({
+      return {
         ...cam,
         dentro: dentro.length > 0,
+        // Ponto consultado: alimenta o {coord} do texto da APP.
+        lat,
+        lng,
         feicoes,
         // Compat: listas paralelas mantidas p/ consumidores que ainda as usam
         // (resumirRestricoes). `nomes` é filtrado; `geometrias` completo.
         nomes: feicoes.map((x) => x.nome).filter(Boolean),
         geometrias,
-      });
+      };
     } catch (e) {
-      out.push({ ...cam, erro: "Falha de rede/CORS" });
+      return { ...cam, erro: _erroWfs(e) };
     }
-  }
-  return out;
+  });
 }
 // Desenha, num mapa Leaflet, o contorno das reservas intersectadas e devolve
 // a camada criada (L.geoJSON) — ou null se não houver geometria. Uso idêntico
@@ -697,6 +898,8 @@ function _areasRestricao(res) {
         documentos: doc,
         geometria: f.geometria || null,
         cor: CORES_RESTRICAO[out.length % CORES_RESTRICAO.length],
+        lat: r.lat != null ? r.lat : null,
+        lng: r.lng != null ? r.lng : null,
       });
     }
   }
@@ -707,10 +910,13 @@ function _areasRestricao(res) {
 // seletor. A Esri não usa subdomínio {s} e a ordem dos eixos é {z}/{y}/{x}.
 function camadasBaseMapa(map) {
   const L = window.L;
-  const ruas = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: "© OpenStreetMap",
-  });
+  const ruas = L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {
+      maxZoom: 19,
+      attribution: "© OpenStreetMap",
+    },
+  );
   const satelite = L.tileLayer(
     "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     { maxZoom: 19, attribution: "" },
@@ -842,7 +1048,11 @@ function detalhesRestricoes(res) {
     tipoNome: a.tipoNome,
     nome: a.nome || null,
     cor: a.cor,
+    // A UC fica como marcador ({ unidadeConservacao }) e só é resolvida no
+    // render, conforme a zona do formulário (restricaoDocsBlocos).
     documentos: a.documentos || null,
+    lat: a.lat,
+    lng: a.lng,
   }));
 }
 // Escapa texto p/ inserção segura em HTML (usado no builder do MT/innerHTML).
@@ -858,76 +1068,135 @@ const RESTRICAO_AVISO_TITULO = "Unidade em área de restrição ambiental";
 const RESTRICAO_ACEITE_LABEL =
   "Declaro que li e estou de acordo com as informações acima.";
 // Segmentos da frase de localização (após o título). Cada segmento é
-// { t:texto, b:true? } p/ o consumidor destacar em negrito. Trata singular/
-// plural (1 vs N áreas) e destaca o NOME de cada área (ou o tipo, quando a
-// camada não traz nome). Consumido em React (BT) e em HTML (MT).
-function restricaoSentencaSegmentos(detalhe) {
+// { t:texto, b:true? } p/ o consumidor destacar em negrito. Cada área vira
+// "Tipo (Nome)", com o nome em negrito; sem nome, só o tipo em negrito.
+// `cenario` ({ zona, rede }) é opcional: com rede "extensao" e alguma UC entre
+// as áreas, entra o complemento da autorização do órgão gestor (só o
+// atendente usa; nos formulários a rede é sempre "porta").
+function restricaoSentencaSegmentos(detalhe, cenario) {
   const areas = detalhe || [];
   if (!areas.length) return [];
-  const plural = areas.length > 1;
   const segs = [
     {
       t:
-        "O ponto de ligação está localizado " +
-        (plural ? "nas áreas" : "na área") +
-        " de abrangência de ",
+        "O ponto de ligação solicitado está localizado em área sujeita a " +
+        "restrições ambientais, abrangida por ",
     },
   ];
   areas.forEach((a, i) => {
     if (i > 0) segs.push({ t: i === areas.length - 1 ? " e " : ", " });
     if (a.nome) {
-      segs.push({ t: a.tipoNome + ": " });
+      segs.push({ t: a.tipoNome + " (" });
       segs.push({ t: a.nome, b: true });
+      segs.push({ t: ")" });
     } else {
       segs.push({ t: a.tipoNome, b: true });
     }
   });
   segs.push({ t: "." });
+  const temUC = areas.some(
+    (a) => a.documentos && a.documentos.unidadeConservacao,
+  );
+  if (temUC && normalizarCenario(cenario).rede === "extensao")
+    segs.push({ t: " " + UC_COMPLEMENTO_EXTENSAO });
   return segs;
 }
-// Versão em HTML da frase (título em negrito + segmentos) — usada pelo MT.
-function restricaoSentencaHTML(detalhe) {
-  const corpo = restricaoSentencaSegmentos(detalhe)
+// Versão em HTML da frase (título em negrito + segmentos).
+function restricaoSentencaHTML(detalhe, cenario) {
+  const corpo = restricaoSentencaSegmentos(detalhe, cenario)
     .map((s) => (s.b ? `<strong>${_escHtml(s.t)}</strong>` : _escHtml(s.t)))
     .join("");
   return `<strong>${_escHtml(RESTRICAO_AVISO_TITULO)}</strong>. ${corpo}`;
 }
-// Mescla os documentos de todas as áreas: introdução ÚNICA + bullets unidos +
-// notas ao final, deduplicando por tipo (mesmo objeto `documentos`) e por texto
-// idêntico. Retorna { intro, bullets:[...], notas:[...] }.
-function restricaoDocsMesclado(detalhe) {
+// Placeholders dinâmicos do texto — hoje só {coord} (texto da APP). Sem
+// coordenada, "nas coordenadas {coord}" vira "no ponto informado".
+function _interpTexto(txt, ctx) {
+  if (txt == null) return txt;
+  const s = String(txt);
+  if (ctx && ctx.lat != null && ctx.lng != null) {
+    const coord = `(${(+ctx.lat).toFixed(6)}, ${(+ctx.lng).toFixed(6)})`;
+    return s.replace(/\{coord\}/g, coord);
+  }
+  return s
+    .replace(/nas coordenadas \{coord\}/g, "no ponto informado")
+    .replace(/\{coord\}/g, "");
+}
+// Mescla os documentos das áreas em BLOCOS. Os tipos sem introdução própria
+// compartilham DOC_INTRO num bloco único (bullets/notas unidos); os com
+// `introPropria` (UC, APP) viram um bloco cada, para a redação e a lista
+// ficarem coerentes — a lista da UC é obrigatória e a da APP é alternativa
+// ("pelo menos uma"), então não podem se misturar. Dedup por `chave` do tipo
+// (ou pelo próprio texto) e por texto idêntico — por chave, e não por
+// referência, porque o detalhe pode voltar do JSON do state.
+// ctx = { zona, rede, lat?, lng? }; sem lat/lng, usa o ponto consultado.
+// Retorna [ { intro, bullets:[...], notas:[...] }, … ].
+function restricaoDocsBlocos(detalhe, ctx) {
   const areas = detalhe || [];
-  const bullets = [];
-  const notas = [];
+  const comCoord = areas.find((a) => a && a.lat != null && a.lng != null);
+  const c = Object.assign(
+    {},
+    comCoord ? { lat: comCoord.lat, lng: comCoord.lng } : {},
+    ctx || {},
+  );
+  const compart = { intro: "", bullets: [], notas: [] };
+  const proprios = [];
   const vistos = new Set();
   for (const a of areas) {
-    const doc = a.documentos;
-    if (!doc || vistos.has(doc)) continue; // dedup por tipo (referência do objeto)
-    vistos.add(doc);
-    (doc.bullets || []).forEach((b) => {
-      if (!bullets.includes(b)) bullets.push(b);
-    });
-    (doc.notas || []).forEach((n) => {
-      if (!notas.includes(n)) notas.push(n);
-    });
+    let doc = a.documentos;
+    if (!doc) continue;
+    const chave =
+      doc.chave ||
+      JSON.stringify([doc.introPropria, doc.bullets, doc.notas]);
+    if (vistos.has(chave)) continue;
+    vistos.add(chave);
+    // A UC não tem texto fixo: resolve agora pela zona/rede do cenário.
+    if (doc.unidadeConservacao) doc = docsUnidadeConservacao(c);
+    const bullets = (doc.bullets || []).map((b) => _interpTexto(b, c));
+    const notas = (doc.notas || []).map((n) => _interpTexto(n, c));
+    if (doc.introPropria) {
+      proprios.push({ intro: _interpTexto(doc.introPropria, c), bullets, notas });
+    } else {
+      bullets.forEach((b) => {
+        if (!compart.bullets.includes(b)) compart.bullets.push(b);
+      });
+      notas.forEach((n) => {
+        if (!compart.notas.includes(n)) compart.notas.push(n);
+      });
+    }
   }
-  return { intro: bullets.length ? DOC_INTRO : "", bullets, notas };
+  const blocos = [];
+  if (compart.bullets.length || compart.notas.length) {
+    compart.intro = compart.bullets.length ? DOC_INTRO : "";
+    blocos.push(compart);
+  }
+  return blocos.concat(proprios);
 }
-// Versão em HTML do bloco de documentos (intro + <ul> + notas) — usada pelo MT.
-function restricaoDocsHTML(detalhe) {
-  const d = restricaoDocsMesclado(detalhe);
-  if (!d.bullets.length && !d.notas.length) return "";
-  let html = '<div class="restricao-docs">';
-  if (d.intro)
-    html += `<p class="restricao-docs-intro">${_escHtml(d.intro)}</p>`;
-  if (d.bullets.length)
-    html +=
-      '<ul class="restricao-docs-lista">' +
-      d.bullets.map((b) => `<li>${_escHtml(b)}</li>`).join("") +
-      "</ul>";
-  html += d.notas
-    .map((n) => `<p class="restricao-docs-nota">${_escHtml(n)}</p>`)
-    .join("");
-  html += "</div>";
-  return html;
+// Retrocompat.: primeiro bloco no formato antigo { intro, bullets, notas }.
+function restricaoDocsMesclado(detalhe, ctx) {
+  const b = restricaoDocsBlocos(detalhe, ctx);
+  return b[0] || { intro: "", bullets: [], notas: [] };
+}
+// Versão em HTML dos documentos: um .restricao-docs com uma
+// .restricao-docs-secao por bloco (intro + <ul> + notas). A frase de
+// localização NÃO entra aqui — nos formulários ela fica no banner de aviso.
+function restricaoDocsHTML(detalhe, ctx) {
+  const secoes = restricaoDocsBlocos(detalhe, ctx)
+    .map((d) => {
+      if (!d.bullets.length && !d.notas.length) return "";
+      let html = '<div class="restricao-docs-secao">';
+      if (d.intro)
+        html += `<p class="restricao-docs-intro">${_escHtml(d.intro)}</p>`;
+      if (d.bullets.length)
+        html +=
+          '<ul class="restricao-docs-lista">' +
+          d.bullets.map((b) => `<li>${_escHtml(b)}</li>`).join("") +
+          "</ul>";
+      html += d.notas
+        .map((n) => `<p class="restricao-docs-nota">${_escHtml(n)}</p>`)
+        .join("");
+      return html + "</div>";
+    })
+    .filter(Boolean);
+  if (!secoes.length) return "";
+  return `<div class="restricao-docs">${secoes.join("")}</div>`;
 }

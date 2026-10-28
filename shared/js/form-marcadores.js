@@ -161,6 +161,7 @@
     let sp = campo.querySelector(":scope > .field-err-fmt");
     if (!msg) {
       if (sp) sp.remove();
+      campo.style.marginBottom = "";
       return;
     }
     if (!sp) {
@@ -169,6 +170,15 @@
       campo.appendChild(sp);
     }
     sp.textContent = msg;
+    // Nos campos flutuantes o span é absoluto abaixo da caixa: a 1ª linha
+    // cabe no espaço até o próximo campo, as demais (coluna estreita) são
+    // reservadas aqui para não cobrirem o que vem embaixo.
+    campo.style.marginBottom = "";
+    if (getComputedStyle(sp).position === "absolute") {
+      const extra = sp.offsetHeight - 20;
+      const base = parseFloat(getComputedStyle(campo).marginBottom) || 0;
+      if (extra > 0) campo.style.marginBottom = base + extra + "px";
+    }
   }
 
   // Um controle conta como "visível" quando ele próprio está no layout OU

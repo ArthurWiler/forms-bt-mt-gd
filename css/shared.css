@@ -657,10 +657,11 @@ html {
    Restrição ambiental — layout inline (BT e MT). O banner .cmg-aviso--warn
    traz o título (negrito) + a frase de localização (nomes das áreas em
    negrito) num único <span> dentro de .cmg-aviso-texto. LOGO ABAIXO do banner,
-   .restricao-docs lista os documentos exigidos MESCLADOS (introdução única +
-   bullets unidos + notas ao final) e .restricao-aceite traz o checkbox
-   obrigatório de ciência. Estrutura idêntica gerada por React (BT) e
-   innerHTML (MT). Global (unscoped) como o próprio `.cmg-aviso`. ============ */
+   .restricao-docs lista os documentos exigidos em seções (.restricao-docs-secao,
+   geo.js/restricaoDocsBlocos): uma com a introdução padrão para os tipos que a
+   compartilham e uma por tipo de introdução própria (UC, APP). Depois,
+   .restricao-aceite traz o checkbox obrigatório de ciência. Estrutura idêntica
+   gerada por innerHTML em todos os forms (BT, MT, GD, Loteamento). Global (unscoped) como o próprio `.cmg-aviso`. ============ */
 .restricao-docs {
   margin-top: 12px;
   font-family: var(--cmg-font-family);
@@ -670,6 +671,9 @@ html {
 }
 .restricao-docs-intro {
   margin: 0;
+}
+.restricao-docs-secao + .restricao-docs-secao {
+  margin-top: 16px;
 }
 .restricao-docs-lista {
   margin: 8px 0 0;
@@ -3127,6 +3131,9 @@ label.restricao-aceite input[type="checkbox"] {
   font-family: var(--cmg-font-family);
   font-weight: var(--cmg-fw-bold);
   letter-spacing: var(--cmg-ls-tight);
+  /* Camada própria = suavização em tons de cinza: no Windows o ClearType
+     deixava franjas amarelas/azuis no negrito verde de 12px ("tremido"). */
+  will-change: transform;
 }
 .cemig-form .alert {
   border-radius: var(--cmg-radius);
@@ -3781,6 +3788,7 @@ label.restricao-aceite input[type="checkbox"] {
   line-height: var(--cmg-lh-caption);
   font-weight: var(--cmg-fw-bold);
   letter-spacing: var(--cmg-ls-tight);
+  will-change: transform; /* sem franjas do ClearType — ver .badge */
 }
 .cemig-form .card {
   background: var(--cmg-surface);
@@ -4833,7 +4841,9 @@ label.restricao-aceite input[type="checkbox"] {
   color: var(--cmg-error-500);
 }
 /* Campo com rótulo flutuante: o span entra DENTRO do container do campo,
-   então precisa sair da caixa de 56px para não empurrar o valor. */
+   então precisa sair da caixa de 56px para não empurrar o valor. Ancorado
+   pelo topo (logo abaixo da borda): numa coluna estreita a mensagem quebra
+   em 2 linhas e, ancorada por baixo, a 1ª linha subia para dentro da caixa. */
 .cemig-form .field--float .field-err-fmt,
 :is(.cemig-form, .cemig-lote)
   .field:not(.field--plain):not(:has(textarea)):has(input, select)
@@ -4841,7 +4851,10 @@ label.restricao-aceite input[type="checkbox"] {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: -20px;
+  top: 100%;
+  /* Vence o bottom: -20px do .field-hint flutuante (seletor mais
+     específico), que limitava o span a 1 linha de altura. */
+  bottom: auto !important;
   padding: 0 var(--cmg-space-4);
   margin-top: 0;
 }

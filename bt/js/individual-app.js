@@ -215,6 +215,8 @@ function onZonaBT() {
   // etapas por UC precisam refletir isso (os renders ignoram etapas ausentes).
   renderUcsIdentBT();
   renderUcsBT();
+  // O texto da Unidade de Conservação depende da zona (geo.js).
+  renderRestricaoAmbiental();
   CemigMarcadores.aplicar();
   CemigMarcadores.atualizarAvancar();
 }
@@ -530,6 +532,10 @@ function _aoMudarUcIdent() {
   renderUcsIdentBT();
   renderUcsBT();
 }
+// "Pronto para ser ligado?" e "distância até o poste": sempre na ligação
+// nova; no imóvel existente, só quando o padrão muda de local.
+const perguntasPadraoBT = (u) =>
+  u.solicitacao === "Conexão Nova" || u.mudancaLocal === "Sim";
 // Pergunta Sim/Não por imóvel (mesmo radio .toggle-btn dos demais Sim/Não).
 function _simNaoBT(label, valor, aoMudar) {
   const f = document.createElement("div");
@@ -725,38 +731,44 @@ function _ucIdentificacao(u, ui) {
     '<h5 class="uc-padrao-titulo">Padrão de energia deste imóvel</h5>';
   const gp = document.createElement("div");
   gp.className = "grid grid-2";
-  gp.appendChild(
-    _simNaoBT(
+  // Imóvel existente (com ou sem alteração): primeiro "precisa ser mudado de
+  // local?", sozinho na linha; só com "Sim" vêm "pronto para ser ligado?" e
+  // "distância até o poste". Ligação nova pergunta as duas direto.
+  if (u.solicitacao !== "Conexão Nova") {
+    const fMuda = _simNaoBT(
+      "O padrão precisa ser mudado de local?",
+      u.mudancaLocal,
+      (v) => {
+        u.mudancaLocal = v;
+        // Mostra/esconde as demais perguntas (e, no rural, o mapa do novo
+        // local do padrão neste card).
+        renderUcsIdentBT();
+      },
+    );
+    fMuda.classList.add("col-span-2");
+    gp.appendChild(fMuda);
+  }
+  if (perguntasPadraoBT(u)) {
+    const avisoPronto = document.createElement("div");
+    avisoPronto.className = "col-span-2";
+    const fPronto = _simNaoBT(
+      "O padrão está pronto para ser ligado?",
+      u.prontoLigar,
+      (v) => {
+        u.prontoLigar = v;
+        _avisoProntoBT(avisoPronto, v);
+      },
+    );
+    const fDist = _simNaoBT(
       "Distância do padrão até o poste inferior a 30m?",
       u.distMenor30,
       (v) => (u.distMenor30 = v),
-    ),
-  );
-  const avisoPronto = document.createElement("div");
-  avisoPronto.className = "col-span-2";
-  const fPronto = _simNaoBT(
-    "O padrão está pronto para ser ligado?",
-    u.prontoLigar,
-    (v) => {
-      u.prontoLigar = v;
-      _avisoProntoBT(avisoPronto, v);
-    },
-  );
-  if (u.solicitacao !== "Conexão Nova") {
-    gp.appendChild(
-      _simNaoBT(
-        "O padrão precisa ser mudado de local?",
-        u.mudancaLocal,
-        (v) => {
-          u.mudancaLocal = v;
-          // Rural: "Sim" abre o mapa do novo local do padrão neste card.
-          if (ruralBT()) renderUcsIdentBT();
-        },
-      ),
     );
+    if (u.solicitacao === "Conexão Nova") gp.append(fDist, fPronto);
+    else gp.append(fPronto, fDist);
+    gp.appendChild(avisoPronto);
+    _avisoProntoBT(avisoPronto, u.prontoLigar);
   }
-  gp.append(fPronto, avisoPronto);
-  _avisoProntoBT(avisoPronto, u.prontoLigar);
   padrao.appendChild(gp);
   wrap.appendChild(padrao);
   // Novo local do padrão: em zona rural, quando o imóvel pede mudança de
@@ -1219,22 +1231,26 @@ function _pvImovelBT(u, painel) {
     `</div><hr class="previa-divider" />` +
     `<h5 class="previa-imovel-sub">Padrão de energia deste imóvel</h5>` +
     `<div class="previa-grid">`;
-  h += pvCampoBT(
+  // Mesma ordem e mesmas condições da Etapa 4 (perguntasPadraoBT).
+  const dist = pvCampoBT(
     "Distância do padrão até o poste inferior a 30m?",
     u.distMenor30,
     PG.atend,
   );
-  if (!nova)
+  const pronto = pvCampoBT(
+    "O padrão está pronto para ser ligado?",
+    u.prontoLigar,
+    PG.atend,
+  );
+  if (nova) h += dist + pronto;
+  else {
     h += pvCampoBT(
       "O padrão precisa ser mudado de local?",
       u.mudancaLocal,
       PG.atend,
     );
-  h += pvCampoBT(
-    "O padrão está pronto para ser ligado?",
-    u.prontoLigar,
-    PG.atend,
-  );
+    if (perguntasPadraoBT(u)) h += pronto + dist;
+  }
   if (rural && u.mudancaLocal === "Sim" && (u.padraoLat || u.padraoLng)) {
     h += pvCampoBT(
       "Novo local do padrão (lat/long)",

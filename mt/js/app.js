@@ -800,6 +800,7 @@ function onLocalizacao() {
   updateCoordHint(); // zona rural → coordenada obrigatória (regra do BT)
   onCoord();
   recalcRamal();
+  renderRestricaoAmbiental(); // texto da Unidade de Conservação muda com a zona
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
 // Marca/desmarca a obrigatoriedade real (data-req) de um conjunto de campos —
@@ -1238,15 +1239,17 @@ function renderRestricaoAmbiental() {
   if (ra === "Sim") {
     if (wrap) wrap.style.display = "";
     const det = state.restricoesDetalhe;
+    // Zona do form define o texto da Unidade de Conservação (geo.js).
+    const cen = cenarioRestricao(state.localizacao);
     // Banner (warn): título + frase de localização, num único <span> (o
     // .cmg-aviso-texto é flex — sem o span os nós inline não fluem como texto).
     const sentenca =
       typeof restricaoSentencaHTML === "function"
-        ? restricaoSentencaHTML(det)
+        ? restricaoSentencaHTML(det, cen)
         : "";
     // Documentos mesclados (intro única + bullets + notas), sempre visíveis.
     const docs =
-      typeof restricaoDocsHTML === "function" ? restricaoDocsHTML(det) : "";
+      typeof restricaoDocsHTML === "function" ? restricaoDocsHTML(det, cen) : "";
     // Aceite obrigatório — bloqueia a exportação (camposObrigatoriosFaltando).
     const label =
       typeof RESTRICAO_ACEITE_LABEL !== "undefined"
@@ -3231,7 +3234,7 @@ async function onCEP(prefixo) {
     return;
   }
   if (st) {
-    st.textContent = "Endereço encontrado";
+    st.textContent = "CEP encontrado";
     st.className = "field-hint field-ok";
   }
   if (prefixo === "uc") {

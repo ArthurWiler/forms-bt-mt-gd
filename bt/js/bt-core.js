@@ -378,12 +378,16 @@ function onEstrangeiroBT(el) {
   } else {
     p.rne = "";
   }
-  ["prop.cpfCnpj", "prop.rne", "prop.filiacao", "prop.rg", "prop.numNis"].forEach(
-    (k) => {
-      const c = $(`[data-k="${k}"]`);
-      if (c) c.value = _get(window.state, k) || "";
-    },
-  );
+  [
+    "prop.cpfCnpj",
+    "prop.rne",
+    "prop.filiacao",
+    "prop.rg",
+    "prop.numNis",
+  ].forEach((k) => {
+    const c = $(`[data-k="${k}"]`);
+    if (c) c.value = _get(window.state, k) || "";
+  });
   // Os toggles Sim/Não se redesenham ouvindo o `change` do select-fonte.
   ["prop.laudoMedico", "prop.nis"].forEach((k) => {
     const sel = $(`select[data-k="${k}"]`);
@@ -524,7 +528,7 @@ async function onCepBT(el, alvo) {
         },
       );
     }
-    setStatus(statusId, '<span class="badge">Endereço encontrado</span>');
+    setStatus(statusId, '<span class="badge">CEP encontrado</span>');
     CemigMarcadores.atualizarAvancar();
   } catch (e) {
     setStatus(
@@ -741,12 +745,14 @@ function renderRestricaoAmbiental() {
   if (window.state.obra.restricaoAmbiental === "Sim") {
     wrap.style.display = "";
     const det = window.state.obra.restricoesDetalhe;
+    // Zona do form define o texto da Unidade de Conservação (geo.js).
+    const cen = cenarioRestricao(window.state.obra.localizacao);
     const sentenca =
       typeof restricaoSentencaHTML === "function"
-        ? restricaoSentencaHTML(det)
+        ? restricaoSentencaHTML(det, cen)
         : "";
     const docs =
-      typeof restricaoDocsHTML === "function" ? restricaoDocsHTML(det) : "";
+      typeof restricaoDocsHTML === "function" ? restricaoDocsHTML(det, cen) : "";
     const label =
       typeof RESTRICAO_ACEITE_LABEL !== "undefined"
         ? RESTRICAO_ACEITE_LABEL

@@ -531,6 +531,7 @@ function onZonaGD() {
     }
   }
   atualizarCoordRuralGD();
+  renderRestricaoAmbiental(); // texto da Unidade de Conservação muda com a zona
   if (window.CemigMarcadores) {
     window.CemigMarcadores.aplicar();
     window.CemigMarcadores.atualizarAvancar();
@@ -693,12 +694,14 @@ function renderRestricaoAmbiental() {
   if (state.restricaoAmbiental === "Sim") {
     wrap.style.display = "";
     const det = state.restricoesDetalhe;
+    // Zona do form define o texto da Unidade de Conservação (geo.js).
+    const cen = cenarioRestricao(state.localizacao);
     const sentenca =
       typeof restricaoSentencaHTML === "function"
-        ? restricaoSentencaHTML(det)
+        ? restricaoSentencaHTML(det, cen)
         : "";
     const docs =
-      typeof restricaoDocsHTML === "function" ? restricaoDocsHTML(det) : "";
+      typeof restricaoDocsHTML === "function" ? restricaoDocsHTML(det, cen) : "";
     const label =
       typeof RESTRICAO_ACEITE_LABEL !== "undefined"
         ? RESTRICAO_ACEITE_LABEL

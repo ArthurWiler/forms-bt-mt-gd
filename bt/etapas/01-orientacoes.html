@@ -230,25 +230,73 @@
       </div>
     </details>
 
+    <!-- Espelha os textos de restrição ambiental de shared/js/geo.js (os que
+         o formulário mostra depois do mapa). A UC muda por zona: os pares
+         data-so-zona são escolhidos por html[data-zona] (onZonaBT). -->
     <details class="cmg-acordeao" data-so-fluxo="individual">
       <summary class="cmg-acordeao-titulo">
-        Documentação de área de conservação
+        Documentação de área de restrição ambiental
       </summary>
       <div class="cmg-acordeao-corpo">
         <ul class="orient-docs-lista">
-          <li>
-            <strong>Unidade de conservação Estadual</strong>
+          <li data-so-zona="urbana">
+            <strong>Unidade de conservação</strong>
             <p class="orient-docs-intro">
               Apresentar <b>apenas um</b> dos documentos a seguir:
             </p>
             <em>
-              Comprovação da posse e regularidade do imóvel simultaneamente
-              (IPTU, Registro do Imóvel, Escritura Pública, etc.) ou Comprovação
-              de posse (Contrato de Compra e Venda, Contrato de Locação, Termo
-              de Doação, Termo de Permissão de Uso, etc.) e regularidade
-              (Certidão de número/Habite-se/Declaração da Prefeitura, Planta de
-              Arquitetura Aprovada) separadamente.
+              Documentos que comprovem posse e regularidade do imóvel
+              simultaneamente (IPTU, Registro de Imóvel, Escritura Pública,
+              etc.) ou documentos que comprovem posse (Contrato de Compra e
+              Venda, Contrato de Locação, Termo de Doação, Termo de Permissão de
+              Uso, etc.) e regularidade (Certidão de número/Habite-se/Declaração
+              da Prefeitura, Planta de Arquitetura Aprovada) separadamente.
             </em>
+            <p class="orient-docs-nota">
+              A critério do órgão ambiental responsável pela administração da
+              Unidade de Conservação, outros documentos e informações
+              complementares poderão ser solicitados posteriormente.
+            </p>
+          </li>
+          <li data-so-zona="rural">
+            <strong>Unidade de conservação</strong>
+            <p class="orient-docs-intro">Apresentar os documentos a seguir:</p>
+            <em>
+              Escritura do Imóvel e/ou Certidão de Inteiro Teor da matrícula do
+              imóvel, e o CAR – Cadastro Ambiental Rural.
+            </em>
+            <p class="orient-docs-nota">
+              A critério do órgão ambiental responsável pela administração da
+              Unidade de Conservação, outros documentos e informações
+              complementares poderão ser solicitados posteriormente.
+            </p>
+          </li>
+          <li>
+            <strong>Área de Preservação Permanente (APP)</strong>
+            <p class="orient-docs-intro">
+              Apresentar <b>pelo menos um</b> dos documentos a seguir:
+            </p>
+            <em>
+              Termo de Ajustamento de Conduta (TAC); Comprovação de Uso
+              Antrópico Consolidado; Declaração de Interesse Social ou Utilidade
+              Pública, quando se tratar de propriedade rural; Declaração emitida
+              pelo órgão ambiental competente atestando a regularidade da
+              ocupação.
+            </em>
+          </li>
+          <li>
+            <strong>Reserva Legal</strong>
+            <p class="orient-docs-intro">
+              Para reserva legal proposta ou aprovada e não averbada:
+            </p>
+            <em>
+              Constar a realocação da reserva no registro do imóvel ou no CAR,
+              em processo ou concluída.
+            </em>
+            <p class="orient-docs-nota">
+              Em reserva legal <b>averbada</b> não é possível o fornecimento de
+              energia elétrica (Lei federal nº 12.651/2012).
+            </p>
           </li>
           <li>
             <strong>Terra indígena</strong>
@@ -272,15 +320,23 @@
             <strong>Terra quilombola</strong>
             <p class="orient-docs-intro">Apresentar os documentos a seguir:</p>
             <em>
-              Documento do INCRA que comprove o domínio da terra em nome da
-              comunidade, juntamente com a demarcação da área; Mapa
-              georreferenciado contendo a delimitação do imóvel e a
+              Certidão/Registro de Autodefinição emitido pela Fundação Cultural
+              Palmares, comprovando o vínculo do(s) interessado(s) com a
+              comunidade quilombola; Documento do INCRA que comprove o domínio
+              da terra em nome da comunidade, juntamente com a demarcação da
+              área; Mapa georreferenciado contendo a delimitação do imóvel e a
               identificação das áreas de preservação ambiental; Lista de
               beneficiários emitida pela liderança comunitária; Formulário de
               Solicitação de Atendimento Rural devidamente preenchido (um para
               cada beneficiário); Documento oficial de identificação com CPF de
               cada beneficiário.
             </em>
+            <p class="orient-docs-nota">
+              <b>Observação:</b> Caso o processo de demarcação das terras ainda
+              não tenha sido concluído, a solicitação poderá ser protocolada
+              pelo procedimento padrão, como atendimento rural comum, sem
+              enquadramento como comunidade quilombola.
+            </p>
           </li>
         </ul>
       </div>
