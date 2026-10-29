@@ -55,13 +55,17 @@
          .empr-detalhe — ver onEmprGate em js/coletivo-app.js. -->
     <div class="field empr-detalhe">
       <label>CEP <span class="req">*</span></label>
-      <input
-        type="text"
-        data-k="obra.cep"
-        placeholder="00000-000"
-        oninput="onCepBT(this, 'obra')"
-      />
-      <span id="cepStatusObra" class="field-hint"></span>
+      <div style="display: flex; gap: 8px; align-items: center">
+        <div style="max-width: 180px">
+          <input
+            type="text"
+            data-k="obra.cep"
+            placeholder="00000-000"
+            oninput="onCepBT(this, 'obra')"
+          />
+        </div>
+        <span id="cepStatusObra"></span>
+      </div>
     </div>
     <div class="field col-span-2 empr-detalhe">
       <label>Endereço <span class="req">*</span></label>
