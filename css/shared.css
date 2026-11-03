@@ -2807,6 +2807,10 @@ label.restricao-aceite input[type="checkbox"] {
    Balão flutuante (verde neutra/600) exibido no hover/foco de
    ícones de ajuda: (i) do "Primeiro complemento" e dos KPIs de
    Carga/Demanda da torre. Substitui o tooltip nativo (title).
+   Centralizado sobre o ícone, com o texto centralizado (spec).
+   Texto puro vem do attr(data-hint); com negrito ou parágrafos, o
+   balão é o filho .cmg-hint-balao (um <span> por parágrafo), com a
+   mesma caixa — e aí o ::after some.
    ============================================================ */
 .cemig-form .cmg-hint {
   position: relative;
@@ -2815,6 +2819,12 @@ label.restricao-aceite input[type="checkbox"] {
 }
 .cemig-form .cmg-hint::after {
   content: attr(data-hint);
+}
+.cemig-form .cmg-hint:has(> .cmg-hint-balao)::after {
+  content: none;
+}
+.cemig-form .cmg-hint::after,
+.cemig-form .cmg-hint > .cmg-hint-balao {
   position: absolute;
   bottom: calc(100% + 10px);
   left: 50%;
@@ -2832,7 +2842,7 @@ label.restricao-aceite input[type="checkbox"] {
   font-weight: var(--cmg-fw-regular);
   line-height: var(--cmg-lh-caption);
   letter-spacing: var(--cmg-ls-tight);
-  text-align: left;
+  text-align: center;
   white-space: normal;
   box-shadow: 0 4px 8px 3px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.2);
   opacity: 0;
@@ -2841,11 +2851,13 @@ label.restricao-aceite input[type="checkbox"] {
   z-index: 60;
   pointer-events: none;
 }
-/* Seta apontando para o ícone */
+/* Seta apontando para o ícone. Só a metade de cima da borda (6px) tem cor:
+   ela vai do pé do balão (100% + 10px) até 4px acima do ícone — com
+   `100% + 4px` o triângulo inteiro caía por trás do balão e sumia. */
 .cemig-form .cmg-hint::before {
   content: "";
   position: absolute;
-  bottom: calc(100% + 4px);
+  bottom: calc(100% - 2px);
   left: 50%;
   transform: translateX(-50%);
   border: 6px solid transparent;
@@ -2856,10 +2868,18 @@ label.restricao-aceite input[type="checkbox"] {
   z-index: 60;
   pointer-events: none;
 }
+.cemig-form .cmg-hint > .cmg-hint-balao > span {
+  display: block;
+}
+.cemig-form .cmg-hint > .cmg-hint-balao b {
+  font-weight: var(--cmg-fw-bold);
+}
 .cemig-form .cmg-hint:hover::after,
 .cemig-form .cmg-hint:focus-visible::after,
 .cemig-form .cmg-hint:hover::before,
-.cemig-form .cmg-hint:focus-visible::before {
+.cemig-form .cmg-hint:focus-visible::before,
+.cemig-form .cmg-hint:hover > .cmg-hint-balao,
+.cemig-form .cmg-hint:focus-visible > .cmg-hint-balao {
   opacity: 1;
   visibility: visible;
 }
@@ -2890,29 +2910,27 @@ label.restricao-aceite input[type="checkbox"] {
   grid-row: 1 / span 2;
   align-self: center;
 }
-.cemig-form .resultado-card-info.cmg-hint::after {
-  text-align: center;
-}
-/* Variante ancorada à direita: usada quando o ícone fica no canto direito
-   do campo (ex.: (i) do "Primeiro complemento"). Centralizar o balão sobre
-   o ícone o jogaria para fora da coluna/tela — aqui ele abre para a esquerda,
-   alinhando a borda direita do balão com a do ícone.
-   Vale tanto para o (i) que ficou DENTRO do rótulo (markup estático) quanto
-   para o extraído dele por _campo() (bt-core.js), que vira filho direto do
-   .field com a classe .field-hint-icon — nas ilhas dinâmicas (cards de torre)
-   é sempre esse o caso, e sem o segundo seletor o balão abria centralizado e
-   vazava para fora da coluna. */
-.cemig-form .field label .cmg-hint::after,
-.cemig-form .field > .cmg-hint.field-hint-icon::after {
-  left: auto;
-  right: 0;
-  transform: none;
-}
-.cemig-form .field label .cmg-hint::before,
-.cemig-form .field > .cmg-hint.field-hint-icon::before {
-  left: auto;
-  right: 8px;
-  transform: none;
+/* Variante ancorada à direita, só em tela estreita (grade em 1 coluna): o
+   (i) do campo fica no canto direito da tela e o balão centralizado vazaria
+   para fora dela — aqui ele abre para a esquerda, alinhando a borda direita
+   do balão com a do ícone. Vale tanto para o (i) que ficou DENTRO do rótulo
+   (markup estático) quanto para o extraído dele por _campo() (bt-core.js),
+   que vira filho direto do .field com a classe .field-hint-icon. */
+@media (max-width: 720px) {
+  .cemig-form .field label .cmg-hint::after,
+  .cemig-form .field label .cmg-hint > .cmg-hint-balao,
+  .cemig-form .field > .cmg-hint.field-hint-icon::after,
+  .cemig-form .field > .cmg-hint.field-hint-icon > .cmg-hint-balao {
+    left: auto;
+    right: 0;
+    transform: none;
+  }
+  .cemig-form .field label .cmg-hint::before,
+  .cemig-form .field > .cmg-hint.field-hint-icon::before {
+    left: auto;
+    right: 4px;
+    transform: none;
+  }
 }
 /* O ícone dentro do wrapper não deve interceptar o foco/hover isolado. */
 .cemig-form .cmg-hint .field-info {
@@ -4306,6 +4324,11 @@ label.restricao-aceite input[type="checkbox"] {
 }
 .cemig-form .field label .cmg-hint .field-info {
   margin-left: 0;
+}
+/* Pergunta de radio (.field--plain): o (i) segue o texto da pergunta, em vez
+   de ir para a borda direita do campo (spec do atendimento híbrido). */
+.cemig-form .field--plain > label .cmg-hint {
+  margin-left: var(--cmg-space-2);
 }
 /* Ícone de ajuda: a própria imagem (imgs/info.svg) já é o círculo com "i".
    Sempre centralizada, tamanho fixo, alinhada à direita do rótulo. */

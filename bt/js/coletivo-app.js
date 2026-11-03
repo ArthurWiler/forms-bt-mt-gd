@@ -72,11 +72,9 @@ const state = {
   gruposUnidadesManual: false,
   // Atendimento híbrido (ND 5.1 cap. 14 / ND 5.2 cap. 11): unidades com
   // medição separada (ND 5.1), FORA do agrupamento — não entram em ucBlocos,
-  // na demanda nem no disjuntor geral da torre. Grupos no mesmo modelo de gruposUnidades; sem clique do
-  // usuário, todas num grupo só.
+  // na demanda nem no disjuntor geral da torre. Cada uma tem card próprio
+  // (sem grupos).
   ucs51: [],
-  gruposUcs51: [],
-  gruposUcs51Manual: false,
   logoPDF: null,
 };
 window.state = state;
@@ -93,7 +91,7 @@ if (MULTI) state.atend.disponibilizacaoEnergia = "";
 else state.atend.nUCs = "";
 // Abertura dos acordeões (fora do estado do formulário, como no React)
 const _ucAberta = {}; // grupos de unidades do coletivo, pelo índice do líder
-const _uc51Aberta = {}; // grupos de unidades com medição separada (híbrido)
+const _uc51Aberta = {}; // unidades com medição separada (híbrido), pelo índice
 const _torreAberta = {}; // grupos de torres, pelo índice do líder
 const _uniAberta = {}; // faixas de unidades das torres ("líder:faixa")
 // Marcam a abertura automática do primeiro card (torre 1 / unidade 1 da torre
@@ -198,14 +196,14 @@ function validacaoHibridoF() {
     const c = (u.complemento || "").trim();
     if (!(u.nPredial || "").trim() && !c) {
       erros.push(
-        `${u.identificacao}: informe o nº predial próprio ou o complemento (ex.: Loja 1).`,
+        `${u.identificacao}: informe o número do endereço da unidade ou o complemento (ex.: Loja 1).`,
       );
       return;
     }
     const k = chave(n, c);
     if (vistos.has(k))
       erros.push(
-        `${u.identificacao}: o endereço (nº ${n || "—"}${c ? ", " + c : ""}) repete o de outra unidade. Use outro nº predial ou outro complemento.`,
+        `${u.identificacao}: o endereço (nº ${n || "—"}${c ? ", " + c : ""}) repete o de outra unidade. Use outro número ou outro complemento.`,
       );
     vistos.set(k, u.identificacao);
   });
@@ -689,34 +687,6 @@ function sincronizarUcs51() {
     );
   while (arr.length > n) arr.pop();
 }
-function _gruposUcs51() {
-  const n = (state.ucs51 || []).length;
-  state.gruposUcs51 = state.gruposUcs51Manual
-    ? _normalizarParticao(state.gruposUcs51, n)
-    : n
-      ? [_indicesFaixa({ ini: 0, fim: n - 1 })]
-      : [];
-  return state.gruposUcs51;
-}
-function _espelharUcs51() {
-  if (MULTI) return;
-  sincronizarUcs51();
-  _espelharUCs(state.ucs51, _gruposUcs51());
-}
-function alternarUc51NoGrupo(lider, j, marcar) {
-  _espelharUcs51();
-  const ucs = state.ucs51;
-  const grupos = _gruposUcs51();
-  const ancora = _alternarNoGrupo(grupos, lider, j, marcar, (o, d) => {
-    ucs[d] = _copiarUC(ucs[o], ucs[d], d);
-  });
-  if (ancora === null) return;
-  state.gruposUcs51 = grupos;
-  state.gruposUcs51Manual = true;
-  const g = _gruposUcs51().find((x) => x.includes(ancora));
-  if (g) btToggleExclusivo(_uc51Aberta, g[0], true);
-  renderUcsColetivo();
-}
 // Complementos de um grupo de unidades: "Ap 101 a 304" (o prefixo comum não
 // se repete no fim da faixa) ou, com saltos, "101, 103 e 105".
 function _complementoGrupo(ucs, g) {
@@ -986,7 +956,7 @@ window.btUnidadesColetivoOk = function () {
   if (!window.btTipoRedeOk()) return false;
   if (editorPerfilAbertoBT()) return false;
   _espelharColetivo();
-  _espelharUcs51();
+  sincronizarUcs51();
   if (hibridoF() && !validacaoHibridoF().ok) return false;
   const modoCalc = modoCalculadoraF();
   // Medição separada (ND 5.1): sempre perfil de carga, como no individual.
@@ -1352,46 +1322,44 @@ function renderUcsColetivo() {
     CemigMarcadores.atualizarAvancar();
   }
 }
-// Atendimento híbrido: cards das unidades com medição separada (ND 5.1),
-// depois dos totais da torre. Mesmo corpo dos grupos do coletivo, mas sempre
-// com o perfil de carga do individual e o nº predial de cada uma.
+// Atendimento híbrido: um card por unidade com medição separada (ND 5.1),
+// depois dos totais da torre (spec da etapa 5). Mesmo corpo das unidades do
+// coletivo, mas sempre com o perfil de carga do individual e o número do
+// endereço de cada uma.
 function renderUcs51() {
   const box = $("#ucs51Box");
   if (!box) return;
-  _espelharUcs51();
+  sincronizarUcs51();
   box.innerHTML = "";
+  box.className = "";
   const ucs = state.ucs51;
   if (!hibridoF() || !ucs.length) return;
-  const titulo = document.createElement("div");
-  titulo.className = "ucs51-titulo";
-  titulo.style.marginTop = "32px";
-  titulo.innerHTML =
-    '<h3 class="card-title">Unidades com medição separada</h3>' +
-    '<p class="card-sub">Cada unidade tem sua própria caixa de medição e proteção, fora do agrupamento de medidores da torre, por isso a carga delas não entra na demanda nem no disjuntor geral da torre. Informe o complemento (ex.: Loja 1) e, se a unidade tiver número próprio na fachada, o nº predial.</p>';
-  box.appendChild(titulo);
-  const grupos = _gruposUcs51();
+  // Subseção com divisória, como as perguntas do padrão logo abaixo.
+  box.className = "divider";
+  box.innerHTML =
+    '<h4 class="secao-titulo">Unidades com medição separada</h4>' +
+    '<p class="secao-texto">Informe os dados de cada unidade com medição de energia separada. Caso a unidade tenha o número próprio na fachada, informe também o número.</p>';
   if (!Object.keys(_uc51Aberta).length) _uc51Aberta[0] = true;
-  grupos.forEach((g) => {
-    const aberta = _uc51Aberta[g[0]] === true;
+  ucs.forEach((u, j) => {
+    const aberta = _uc51Aberta[j] === true;
     box.appendChild(
       _mkUnidadesCard({
         titulo: "Unidade com medição separada",
-        badge: ucs.length > 1 ? _rotuloIndices(g) : "",
-        endereco: (ucs[g[0]] || {}).complemento,
-        // Sem nº predial próprio, a unidade usa o da torre (undefined).
-        numero: (ucs[g[0]] || {}).nPredial || undefined,
+        badge: ucs.length > 1 ? String(j + 1) : "",
+        endereco: u.complemento,
+        // Sem número próprio, a unidade usa o da torre (undefined).
+        numero: u.nPredial || undefined,
         aberta,
         eyebrow: "",
         aoAlternar: () => {
-          btToggleExclusivo(_uc51Aberta, g[0], !aberta);
+          btToggleExclusivo(_uc51Aberta, j, !aberta);
           renderUcsColetivo();
         },
         montarCorpo: (corpo) =>
-          _corpoGrupoColetivo(corpo, ucs, g, {
+          _corpoGrupoColetivo(corpo, ucs, [j], {
             modoCalc: true,
             padraoProprio: true,
-            espelhar: _espelharUcs51,
-            alternar: alternarUc51NoGrupo,
+            espelhar: sincronizarUcs51,
           }),
       }),
     );
@@ -1401,11 +1369,11 @@ function renderUcs51() {
 // Corpo do grupo, na ordem do spec: seleção das unidades; Tipo de solicitação
 // (largura toda); Nº da unidade/instalação (alteração); Complemento (atual) e
 // Novo complemento; Tipo de propriedade; Ramo (não residencial); Área
-// privativa; Carga prevista; Disjuntor; e, no híbrido, Norma/Nº predial. Com
-// mais de uma unidade no grupo, os identificadores próprios de cada UC viram
-// listas no fim do card.
-// ctx = { modoCalc, padraoProprio, espelhar, alternar }: padraoProprio são as
-// unidades ND 5.1 do híbrido (state.ucs51), com espelhar/alternar próprios.
+// privativa; Carga prevista; Disjuntor. Com mais de uma unidade no grupo, os
+// identificadores próprios de cada UC viram listas no fim do card.
+// ctx = { modoCalc, padraoProprio, espelhar, alternar }: padraoProprio é uma
+// unidade ND 5.1 do híbrido (state.ucs51), sempre sozinha no card (sem
+// seleção), com Número do endereço | Complemento no lugar do complemento.
 function _corpoGrupoColetivo(corpo, ucs, g, ctx) {
   const { modoCalc, padraoProprio, espelhar, alternar } = ctx;
   const u = ucs[g[0]];
@@ -1416,7 +1384,7 @@ function _corpoGrupoColetivo(corpo, ucs, g, ctx) {
     renderUcsColetivo();
     atualizarCargasColetivo();
   };
-  if (ucs.length > 1)
+  if (ucs.length > 1 && !padraoProprio)
     corpo.appendChild(
       _mkSelecao(
         "Selecione quais unidades compartilham os mesmos dados",
@@ -1452,41 +1420,56 @@ function _corpoGrupoColetivo(corpo, ucs, g, ctx) {
     ),
     "field--float col-span-2",
   );
-  // Identificadores por unidade: nº de instalação fora da ligação nova, novo
-  // complemento na mudança de complemento e nº predial no híbrido ND 5.1
-  // (validacaoHibridoF exige um distinto por UC).
+  // Identificadores por unidade: nº de instalação fora da ligação nova e novo
+  // complemento na mudança de complemento.
   const comInstalacao = !!u.solicitacao && u.solicitacao !== "Conexão Nova";
   const muda = _mudaComplemento(u);
-  const comPredial = !!padraoProprio;
   const campoInst = (x) =>
     _inpInstalacao(x.instalacao, (v) => (x.instalacao = v));
   const campoNovo = (x) =>
     _inp(x.novoComplemento, (v) => (x.novoComplemento = v), {
       placeholder: "Ex: 1101",
     });
-  const numTorre = String(state.obra.num || "").trim();
-  const campoPredial = (x) =>
-    _inp(
-      x.nPredial,
-      (v) => {
-        x.nPredial = v;
-        renderHibridoAlertas();
-        if (window.CemigMarcadores) CemigMarcadores.atualizarAvancar();
-      },
-      { placeholder: numTorre ? `Igual ao da torre (${numTorre})` : " " },
-    );
   if (comInstalacao && !varias) add("Nº da unidade/instalação", campoInst(u));
-  // Medição separada: os complementos não vêm do "primeiro complemento" da
-  // torre, então cada unidade digita o seu (lista no fim, com várias).
-  const campoCompl = (x) =>
-    _inp(x.complemento, (v) => (x.complemento = v), {
-      placeholder: "Ex: Loja 1",
-    });
   if (!padraoProprio)
     grid.appendChild(
       _campoComplemento(ucs, g, _complementoGrupo(ucs, g), corpo, refazer, muda),
     );
-  else if (!varias) add("Complemento da unidade", campoCompl(u));
+  else {
+    // Medição separada: número e complemento digitados pela própria unidade
+    // (não vêm do "primeiro complemento" da torre). Número vazio = o da torre;
+    // validacaoHibridoF exige endereço (nº, complemento) distinto entre todas.
+    const atualizarEnd = () => {
+      const end = corpo.querySelector(".uc-head-endereco");
+      if (end)
+        end.textContent = enderecoObraTxt(u.complemento, u.nPredial || undefined);
+      renderHibridoAlertas();
+      if (window.CemigMarcadores) CemigMarcadores.atualizarAvancar();
+    };
+    const numTorre = String(state.obra.num || "").trim();
+    add(
+      "Número do endereço da unidade",
+      _inp(
+        u.nPredial,
+        (v) => {
+          u.nPredial = v;
+          atualizarEnd();
+        },
+        { placeholder: numTorre ? `Igual ao da torre (${numTorre})` : " " },
+      ),
+    );
+    add(
+      "Complemento da unidade",
+      _inp(
+        u.complemento,
+        (v) => {
+          u.complemento = v;
+          atualizarEnd();
+        },
+        { placeholder: "Ex: Loja 1" },
+      ),
+    );
+  }
   if (muda && !varias) add("Novo complemento da unidade", campoNovo(u));
   add(
     "Tipo de propriedade",
@@ -1559,7 +1542,6 @@ function _corpoGrupoColetivo(corpo, ucs, g, ctx) {
       ),
       "field--float",
     );
-  if (comPredial && !varias) add("Nº predial", campoPredial(u));
   if (varias) {
     if (comInstalacao)
       grid.appendChild(
@@ -1568,12 +1550,6 @@ function _corpoGrupoColetivo(corpo, ucs, g, ctx) {
     if (muda)
       grid.appendChild(
         _mkListaPorUnidade("Novo complemento", ucs, g, campoNovo),
-      );
-    if (padraoProprio)
-      grid.appendChild(_mkListaPorUnidade("Complemento", ucs, g, campoCompl));
-    if (comPredial)
-      grid.appendChild(
-        _mkListaPorUnidade("Nº predial", ucs, g, campoPredial),
       );
   }
   corpo.appendChild(grid);
@@ -1979,10 +1955,9 @@ function _mkAgrupamentoCampos(grid, cfg) {
     inpQtd.setAttribute("data-foco", cfg.focoQtdId || "qtd-agrupamento");
     const f = _campo(cfg.qtdLabel || "Quantidade de unidades na torre", inpQtd);
     f.setAttribute("data-noopt", "");
-    // Coletivo: o toggle de atendimento híbrido divide a linha (cfg.aposQtd);
-    // sem ele, a quantidade fica sozinha.
-    if (coletivo && !cfg.aposQtd) f.classList.add("row-solo");
+    if (coletivo) f.classList.add("row-solo");
     grid.appendChild(f);
+    // Coletivo: toggle de atendimento híbrido logo abaixo da quantidade.
     if (cfg.aposQtd) cfg.aposQtd(grid);
   }
   if (coletivo && !_preenchido(cfg.qtd())) return;
@@ -2191,32 +2166,32 @@ function _cfgAgrupamentoColetivo() {
     },
   };
 }
-// Atendimento híbrido (Sim/Não, começa em Não) ao lado da quantidade e, com
-// Sim, a quantidade de unidades com medição separada logo abaixo. Essas
-// unidades (ND 5.1) são ADICIONAIS às da torre (ND 5.2) e ganham cards
-// próprios na etapa "Dados das unidades" (renderUcs51).
-const _hintIcone = (texto, rotulo) =>
-  `<span class="cmg-hint" tabindex="0" role="img" aria-label="Ajuda: ${rotulo}" data-hint="${texto}"><img class="field-info" src="../imgs/info.svg" alt="" aria-hidden="true" /></span>`;
+// Atendimento híbrido (Sim/Não, começa em Não) abaixo da quantidade e, com
+// Sim, a quantidade de unidades separadas logo abaixo. Essas unidades (ND 5.1)
+// são ADICIONAIS às da torre (ND 5.2) e ganham cards próprios na etapa "Dados
+// das unidades" (renderUcs51).
+// Ícone (i) com balão em HTML (.cmg-hint-balao): aceita negrito e parágrafos
+// (<span> por linha), o que o attr(data-hint) dos demais não comporta.
+const _hintIcone = (html, rotulo) =>
+  `<span class="cmg-hint" tabindex="0" role="img" aria-label="Ajuda: ${rotulo}. ${html.replace(/<[^>]+>/g, "")}"><img class="field-info" src="../imgs/info.svg" alt="" aria-hidden="true" /><span class="cmg-hint-balao" aria-hidden="true">${html}</span></span>`;
 function _mkHibridoColetivo(grid) {
   const at = state.atend;
   const f = document.createElement("div");
-  f.className = "field field--plain hibrido-toggle";
+  f.className = "field field--plain row-solo hibrido-toggle";
   f.setAttribute("data-noopt", "");
   const lbl = document.createElement("label");
   lbl.innerHTML =
     "Há unidades com medição separada da torre? " +
     _hintIcone(
-      "Atendimento híbrido. Exemplo: lojas no térreo com acesso pela rua, cada uma com a caixa de medição na própria fachada, fora do agrupamento de medidores da torre. Se houver garagem de uso comum a todas as unidades, todas ficam no agrupamento; nesse caso, responda Não.",
+      "<span><b>Exemplo</b>: lojas no térreo com acesso pela rua, cada uma com medição de energia separada dos medidores da torre.</span>" +
+        "<span><b>Exceção</b>: Garagem de uso comum a todas as unidades faz parte do agrupamento.</span>",
       "medição separada",
     );
   const radios = document.createElement("div");
   radios.className = "toggle-group";
   _radioGrupo(radios, ["Sim", "Não"], at.hibrido || "Não", (v) => {
     at.hibrido = v;
-    if (v !== "Sim") {
-      at.qtdUCs51 = "";
-      state.gruposUcs51Manual = false;
-    }
+    if (v !== "Sim") at.qtdUCs51 = "";
     sincronizarUcs51();
     _preservandoFoco(renderAgrupamentoColetivo);
     renderUcsColetivo();
@@ -2236,10 +2211,10 @@ function _mkHibridoColetivo(grid) {
   inp.min = "1";
   inp.setAttribute("data-foco", "qtd-ucs-51");
   const fq = _campo(
-    "Quantidade de unidades com medição separada " +
+    "Quantidade de unidades separadas da torre " +
       _hintIcone(
-        "Não conte estas unidades em Quantidade de unidades na torre.",
-        "unidades com medição separada",
+        "Não contabilize essas unidades no campo “Quantidade de unidades na torre”",
+        "unidades separadas da torre",
       ),
     inp,
   );
@@ -3523,7 +3498,7 @@ function renderPreviaColetivo() {
     );
     if (hibridoF())
       html += pvCampoBT(
-        "Quantidade de unidades com medição separada",
+        "Quantidade de unidades separadas da torre",
         String(state.ucs51.length),
         PG.ucs,
       );
