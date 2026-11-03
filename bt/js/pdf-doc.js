@@ -334,7 +334,7 @@ function _pdfBlocosColetivoBT(S) {
   const cargaUC = (u) =>
     ucSemAlteracao(u)
       ? ""
-      : (modoCalculadora
+      : (modoCalculadora || u.nd === "5.1" // medição separada: perfil de carga
           ? fmt2(num((u.cargas || {})._cargaKw))
           : fmt2(prevKwUC(u))) + " kW";
 
@@ -446,7 +446,10 @@ function _pdfBlocosColetivoBT(S) {
           [
             u.identificacao || `UC ${ui + 1}`,
             u.complemento,
-            hibrido ? `ND ${u.nd}` : null,
+            // Medição separada (híbrido): nº predial próprio, quando houver.
+            hibrido
+              ? `ND ${u.nd}` + (u.nd === "5.1" && u.nPredial ? ` · nº ${u.nPredial}` : "")
+              : null,
             u.instalacao,
             u.atividade,
             _pdfVazio(u.area) ? "" : u.area + "m²",

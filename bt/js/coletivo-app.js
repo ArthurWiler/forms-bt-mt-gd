@@ -70,6 +70,13 @@ const state = {
   // (ver _gruposUnidades).
   gruposUnidades: [],
   gruposUnidadesManual: false,
+  // Atendimento híbrido (ND 5.1 cap. 14 / ND 5.2 cap. 11): unidades com
+  // medição separada (ND 5.1), FORA do agrupamento — não entram em ucBlocos,
+  // na demanda nem no disjuntor geral da torre. Grupos no mesmo modelo de gruposUnidades; sem clique do
+  // usuário, todas num grupo só.
+  ucs51: [],
+  gruposUcs51: [],
+  gruposUcs51Manual: false,
   logoPDF: null,
 };
 window.state = state;
@@ -86,6 +93,7 @@ if (MULTI) state.atend.disponibilizacaoEnergia = "";
 else state.atend.nUCs = "";
 // Abertura dos acordeões (fora do estado do formulário, como no React)
 const _ucAberta = {}; // grupos de unidades do coletivo, pelo índice do líder
+const _uc51Aberta = {}; // grupos de unidades com medição separada (híbrido)
 const _torreAberta = {}; // grupos de torres, pelo índice do líder
 const _uniAberta = {}; // faixas de unidades das torres ("líder:faixa")
 // Marcam a abertura automática do primeiro card (torre 1 / unidade 1 da torre
@@ -103,8 +111,11 @@ let _ucPagina = 0; // página da lista de grupos de unidades do coletivo
 
 /* ===== flags de fluxo (paridade com app.js:67-68) ===== */
 const coletivoF = () => state.atend.disjGeral === "Sim";
-const hibridoF = () =>
-  coletivoF() && !MULTI && state.atend.solicitacao === SOLICITACOES[3];
+// Atendimento híbrido: toggle da etapa "Dados da torre" (atend.hibrido). Além
+// das unidades do agrupamento (atend.nUCs, ND 5.2), atend.qtdUCs51 unidades
+// têm caixa de medição e proteção própria, fora do agrupamento (ND 5.1) —
+// state.ucs51. Elas podem compartilhar um único ramal de conexão (Situação C).
+const hibridoF = () => coletivoF() && !MULTI && state.atend.hibrido === "Sim";
 const trocaDisjGeralF = () =>
   coletivoF() &&
   !MULTI &&
@@ -173,30 +184,42 @@ function demandaPrevTotalF() {
 function validacaoHibridoF() {
   if (!hibridoF()) return { ok: true, erros: [] };
   const erros = [];
-  const u51 = state.ucBlocos.filter((u) => u.nd === "5.1");
-  const u52 = state.ucBlocos.filter((u) => u.nd === "5.2");
-  const pred51 = u51.map((u) => (u.nPredial || "").trim());
-  if (pred51.some((p) => !p))
-    erros.push("ND 5.1: informe o nº predial de todas as UCs 5.1.");
-  const dup51 = pred51.filter(
-    (p) => p && pred51.indexOf(p) !== pred51.lastIndexOf(p),
+  // Norma (ND 5.1 cap. 14): cada unidade tem nº predial distinto ou, quando
+  // aplicável, o mesmo nº com complemento distinto. Sem nº próprio, a unidade
+  // com medição separada usa o da torre (obra.num).
+  const numObra = String(state.obra.num || "").trim();
+  const chave = (n, c) => `${n}|${c.toLowerCase()}`;
+  const vistos = new Map();
+  state.ucBlocos.forEach((u) =>
+    vistos.set(chave(numObra, (u.complemento || "").trim()), "torre"),
   );
-  if (dup51.length)
+  state.ucs51.forEach((u) => {
+    const n = (u.nPredial || "").trim() || numObra;
+    const c = (u.complemento || "").trim();
+    if (!(u.nPredial || "").trim() && !c) {
+      erros.push(
+        `${u.identificacao}: informe o nº predial próprio ou o complemento (ex.: Loja 1).`,
+      );
+      return;
+    }
+    const k = chave(n, c);
+    if (vistos.has(k))
+      erros.push(
+        `${u.identificacao}: o endereço (nº ${n || "—"}${c ? ", " + c : ""}) repete o de outra unidade. Use outro nº predial ou outro complemento.`,
+      );
+    vistos.set(k, u.identificacao);
+  });
+  // Agrupamento (ND 5.2): mesmo nº predial, diferenciadas pelo complemento.
+  const comp52 = state.ucBlocos.map((u) => (u.complemento || "").trim());
+  if (comp52.length > 1 && comp52.some((c) => !c))
     erros.push(
-      "ND 5.1: os números prediais devem ser distintos entre as UCs 5.1.",
-    );
-  const comp52 = u52.map((u) => (u.complemento || "").trim());
-  if (u52.length > 1 && comp52.some((c) => !c))
-    erros.push(
-      "ND 5.2: informe o complemento de todas as UCs 5.2 (elas compartilham o mesmo nº predial).",
+      "Informe o complemento de todas as unidades da torre (elas compartilham o mesmo nº predial).",
     );
   const dup52 = comp52.filter(
     (c) => c && comp52.indexOf(c) !== comp52.lastIndexOf(c),
   );
   if (dup52.length)
-    erros.push(
-      "ND 5.2: os complementos devem ser distintos (mesmo predial, diferindo só pelo complemento).",
-    );
+    erros.push("Os complementos das unidades da torre devem ser diferentes.");
   return { ok: erros.length === 0, erros };
 }
 // app.js:622-634 (ramo coletivo; multiTorres → 0)
@@ -646,6 +669,54 @@ function alternarUnidadeNoGrupo(lider, j, marcar) {
   renderUcsColetivo();
   atualizarCargasColetivo();
 }
+// Atendimento híbrido: state.ucs51 acompanha atend.qtdUCs51 (vazio durante a
+// digitação não apaga as preenchidas, como sincronizarBlocos); sem híbrido,
+// a lista some.
+function sincronizarUcs51() {
+  const arr = state.ucs51 || (state.ucs51 = []);
+  if (!hibridoF()) {
+    arr.length = 0;
+    return;
+  }
+  if (!_preenchido(state.atend.qtdUCs51)) return;
+  const n = Math.max(0, parseInt(state.atend.qtdUCs51) || 0);
+  while (arr.length < n)
+    arr.push(
+      Object.assign(novaUcBloco(arr.length), {
+        identificacao: `Medição separada ${arr.length + 1}`,
+        nd: "5.1",
+      }),
+    );
+  while (arr.length > n) arr.pop();
+}
+function _gruposUcs51() {
+  const n = (state.ucs51 || []).length;
+  state.gruposUcs51 = state.gruposUcs51Manual
+    ? _normalizarParticao(state.gruposUcs51, n)
+    : n
+      ? [_indicesFaixa({ ini: 0, fim: n - 1 })]
+      : [];
+  return state.gruposUcs51;
+}
+function _espelharUcs51() {
+  if (MULTI) return;
+  sincronizarUcs51();
+  _espelharUCs(state.ucs51, _gruposUcs51());
+}
+function alternarUc51NoGrupo(lider, j, marcar) {
+  _espelharUcs51();
+  const ucs = state.ucs51;
+  const grupos = _gruposUcs51();
+  const ancora = _alternarNoGrupo(grupos, lider, j, marcar, (o, d) => {
+    ucs[d] = _copiarUC(ucs[o], ucs[d], d);
+  });
+  if (ancora === null) return;
+  state.gruposUcs51 = grupos;
+  state.gruposUcs51Manual = true;
+  const g = _gruposUcs51().find((x) => x.includes(ancora));
+  if (g) btToggleExclusivo(_uc51Aberta, g[0], true);
+  renderUcsColetivo();
+}
 // Complementos de um grupo de unidades: "Ap 101 a 304" (o prefixo comum não
 // se repete no fim da faixa) ou, com saltos, "101, 103 e 105".
 function _complementoGrupo(ucs, g) {
@@ -852,6 +923,9 @@ window.btAgrupamentoColetivoOk = function () {
   if (!(num(ag.demandaIncendio) > 0)) return false;
   if (!_preenchido(ag.disjIncendio)) return false;
   if (!_preenchido(ag.disjVinculado)) return false;
+  // Híbrido: ao menos 1 unidade com medição separada.
+  if (state.atend.hibrido === "Sim" && !(parseInt(state.atend.qtdUCs51) > 0))
+    return false;
   if (
     ag.disjVinculado === "Sim" &&
     (!_preenchido(ag.disjVinculadoInstalacao) ||
@@ -912,11 +986,20 @@ window.btUnidadesColetivoOk = function () {
   if (!window.btTipoRedeOk()) return false;
   if (editorPerfilAbertoBT()) return false;
   _espelharColetivo();
+  _espelharUcs51();
+  if (hibridoF() && !validacaoHibridoF().ok) return false;
   const modoCalc = modoCalculadoraF();
-  return state.ucBlocos.every(
-    (u) =>
-      _preenchido(u.solicitacao) &&
-      (!modoCalc || ucSemAlteracao(u) || !!u.perfil),
+  // Medição separada (ND 5.1): sempre perfil de carga, como no individual.
+  const ok51 = state.ucs51.every(
+    (u) => _preenchido(u.solicitacao) && (ucSemAlteracao(u) || !!u.perfil),
+  );
+  return (
+    ok51 &&
+    state.ucBlocos.every(
+      (u) =>
+        _preenchido(u.solicitacao) &&
+        (!modoCalc || ucSemAlteracao(u) || !!u.perfil),
+    )
   );
 };
 
@@ -1020,8 +1103,8 @@ function renderHibridoAlertas() {
   }
   const v = validacaoHibridoF();
   box.innerHTML = v.ok
-    ? '<div class="alert alert-ok" style="margin-bottom:14px">Classificação ND 5.1 / ND 5.2 das UCs está consistente.</div>'
-    : `<div class="alert alert-warn" style="margin-bottom:14px"><strong>Atendimento híbrido — pendências:</strong><ul style="margin:6px 0 0;padding-left:18px">${v.erros.map((e) => `<li>${e}</li>`).join("")}</ul></div>`;
+    ? ""
+    : `<div class="alert alert-warn" style="margin-bottom:14px"><strong>Pendências do atendimento híbrido:</strong><ul style="margin:6px 0 0;padding-left:18px">${v.erros.map((e) => `<li>${e}</li>`).join("")}</ul></div>`;
 }
 // ---- Acordeão de unidades: peças comuns a torres e coletivo ----
 // Acordeão de unidades — faixa das torres ("Unidades consumidoras" + badge
@@ -1029,8 +1112,16 @@ function renderHibridoAlertas() {
 // com o endereço (obra + complemento) no topo do corpo. `eyebrow` é o grupo de
 // torres (vazio no coletivo). `montarCorpo(corpo)` só roda com o card aberto.
 function _mkUnidadesCard(o) {
-  const { titulo, badge, endereco, aberta, eyebrow, aoAlternar, montarCorpo } =
-    o;
+  const {
+    titulo,
+    badge,
+    endereco,
+    numero,
+    aberta,
+    eyebrow,
+    aoAlternar,
+    montarCorpo,
+  } = o;
   const bloco = document.createElement("div");
   bloco.className = "uc-colapsavel" + (aberta ? " is-open" : "");
   const head = document.createElement("button");
@@ -1049,7 +1140,7 @@ function _mkUnidadesCard(o) {
   if (!aberta) return bloco;
   const corpo = document.createElement("div");
   corpo.className = "uc-colapsavel-corpo";
-  corpo.appendChild(_blocoEndereco(endereco));
+  corpo.appendChild(_blocoEndereco(endereco, numero));
   montarCorpo(corpo);
   bloco.appendChild(corpo);
   return bloco;
@@ -1106,7 +1197,10 @@ function _mkListaPorUnidade(rotulo, ucs, idx, mkInput) {
   grid.className = "grid grid-2";
   idx.forEach((j) => {
     const u = ucs[j];
-    const c = _campo(`${rotulo} — ${u.complemento || `UC ${j + 1}`}`, mkInput(u));
+    const c = _campo(
+      `${rotulo} — ${u.complemento || u.identificacao || `UC ${j + 1}`}`,
+      mkInput(u),
+    );
     c.setAttribute("data-noopt", "");
     grid.appendChild(c);
   });
@@ -1208,7 +1302,6 @@ function renderUcsColetivo() {
   sincronizarUcBlocos();
   _espelharColetivo();
   renderHibridoAlertas();
-  const hibrido = hibridoF();
   const modoCalc = modoCalculadoraF();
   const ucs = state.ucBlocos;
   const grupos = _gruposUnidades();
@@ -1235,10 +1328,15 @@ function renderUcsColetivo() {
           renderUcsColetivo();
         },
         montarCorpo: (corpo) =>
-          _corpoGrupoColetivo(corpo, ucs, g, hibrido, modoCalc),
+          _corpoGrupoColetivo(corpo, ucs, g, {
+            modoCalc,
+            espelhar: _espelharColetivo,
+            alternar: alternarUnidadeNoGrupo,
+          }),
       }),
     );
   });
+  renderUcs51();
   const pag = $("#ucsColetivoPag");
   if (pag) {
     pag.innerHTML = "";
@@ -1254,18 +1352,67 @@ function renderUcsColetivo() {
     CemigMarcadores.atualizarAvancar();
   }
 }
+// Atendimento híbrido: cards das unidades com medição separada (ND 5.1),
+// depois dos totais da torre. Mesmo corpo dos grupos do coletivo, mas sempre
+// com o perfil de carga do individual e o nº predial de cada uma.
+function renderUcs51() {
+  const box = $("#ucs51Box");
+  if (!box) return;
+  _espelharUcs51();
+  box.innerHTML = "";
+  const ucs = state.ucs51;
+  if (!hibridoF() || !ucs.length) return;
+  const titulo = document.createElement("div");
+  titulo.className = "ucs51-titulo";
+  titulo.style.marginTop = "32px";
+  titulo.innerHTML =
+    '<h3 class="card-title">Unidades com medição separada</h3>' +
+    '<p class="card-sub">Cada unidade tem sua própria caixa de medição e proteção, fora do agrupamento de medidores da torre, por isso a carga delas não entra na demanda nem no disjuntor geral da torre. Informe o complemento (ex.: Loja 1) e, se a unidade tiver número próprio na fachada, o nº predial.</p>';
+  box.appendChild(titulo);
+  const grupos = _gruposUcs51();
+  if (!Object.keys(_uc51Aberta).length) _uc51Aberta[0] = true;
+  grupos.forEach((g) => {
+    const aberta = _uc51Aberta[g[0]] === true;
+    box.appendChild(
+      _mkUnidadesCard({
+        titulo: "Unidade com medição separada",
+        badge: ucs.length > 1 ? _rotuloIndices(g) : "",
+        endereco: (ucs[g[0]] || {}).complemento,
+        // Sem nº predial próprio, a unidade usa o da torre (undefined).
+        numero: (ucs[g[0]] || {}).nPredial || undefined,
+        aberta,
+        eyebrow: "",
+        aoAlternar: () => {
+          btToggleExclusivo(_uc51Aberta, g[0], !aberta);
+          renderUcsColetivo();
+        },
+        montarCorpo: (corpo) =>
+          _corpoGrupoColetivo(corpo, ucs, g, {
+            modoCalc: true,
+            padraoProprio: true,
+            espelhar: _espelharUcs51,
+            alternar: alternarUc51NoGrupo,
+          }),
+      }),
+    );
+  });
+  if (window.CemigMarcadores) CemigMarcadores.aplicar(box);
+}
 // Corpo do grupo, na ordem do spec: seleção das unidades; Tipo de solicitação
 // (largura toda); Nº da unidade/instalação (alteração); Complemento (atual) e
 // Novo complemento; Tipo de propriedade; Ramo (não residencial); Área
 // privativa; Carga prevista; Disjuntor; e, no híbrido, Norma/Nº predial. Com
 // mais de uma unidade no grupo, os identificadores próprios de cada UC viram
 // listas no fim do card.
-function _corpoGrupoColetivo(corpo, ucs, g, hibrido, modoCalc) {
+// ctx = { modoCalc, padraoProprio, espelhar, alternar }: padraoProprio são as
+// unidades ND 5.1 do híbrido (state.ucs51), com espelhar/alternar próprios.
+function _corpoGrupoColetivo(corpo, ucs, g, ctx) {
+  const { modoCalc, padraoProprio, espelhar, alternar } = ctx;
   const u = ucs[g[0]];
   const varias = g.length > 1;
   // Mudanças estruturais (campos aparecem/somem) espelham e re-renderizam.
   const refazer = () => {
-    _espelharColetivo();
+    espelhar();
     renderUcsColetivo();
     atualizarCargasColetivo();
   };
@@ -1276,7 +1423,7 @@ function _corpoGrupoColetivo(corpo, ucs, g, hibrido, modoCalc) {
         ucs.length,
         (j) => `Unidade ${j + 1}`,
         g,
-        (j, marcar) => alternarUnidadeNoGrupo(g[0], j, marcar),
+        (j, marcar) => alternar(g[0], j, marcar),
         "torres-selecao--5",
       ),
     );
@@ -1310,18 +1457,36 @@ function _corpoGrupoColetivo(corpo, ucs, g, hibrido, modoCalc) {
   // (validacaoHibridoF exige um distinto por UC).
   const comInstalacao = !!u.solicitacao && u.solicitacao !== "Conexão Nova";
   const muda = _mudaComplemento(u);
-  const comPredial = hibrido && u.nd === "5.1";
+  const comPredial = !!padraoProprio;
   const campoInst = (x) =>
     _inpInstalacao(x.instalacao, (v) => (x.instalacao = v));
   const campoNovo = (x) =>
     _inp(x.novoComplemento, (v) => (x.novoComplemento = v), {
       placeholder: "Ex: 1101",
     });
-  const campoPredial = (x) => _inp(x.nPredial, (v) => (x.nPredial = v));
+  const numTorre = String(state.obra.num || "").trim();
+  const campoPredial = (x) =>
+    _inp(
+      x.nPredial,
+      (v) => {
+        x.nPredial = v;
+        renderHibridoAlertas();
+        if (window.CemigMarcadores) CemigMarcadores.atualizarAvancar();
+      },
+      { placeholder: numTorre ? `Igual ao da torre (${numTorre})` : " " },
+    );
   if (comInstalacao && !varias) add("Nº da unidade/instalação", campoInst(u));
-  grid.appendChild(
-    _campoComplemento(ucs, g, _complementoGrupo(ucs, g), corpo, refazer, muda),
-  );
+  // Medição separada: os complementos não vêm do "primeiro complemento" da
+  // torre, então cada unidade digita o seu (lista no fim, com várias).
+  const campoCompl = (x) =>
+    _inp(x.complemento, (v) => (x.complemento = v), {
+      placeholder: "Ex: Loja 1",
+    });
+  if (!padraoProprio)
+    grid.appendChild(
+      _campoComplemento(ucs, g, _complementoGrupo(ucs, g), corpo, refazer, muda),
+    );
+  else if (!varias) add("Complemento da unidade", campoCompl(u));
   if (muda && !varias) add("Novo complemento da unidade", campoNovo(u));
   add(
     "Tipo de propriedade",
@@ -1342,19 +1507,21 @@ function _corpoGrupoColetivo(corpo, ucs, g, hibrido, modoCalc) {
       "Ramo da atividade",
       _inpRamo(u.ramo, (v) => {
         u.ramo = v;
-        _espelharColetivo();
+        espelhar();
       }),
     );
-  // Área privativa: em toda unidade (spec). Só a das residenciais entra no
-  // ND-5.2 (valor A); a área não muda o método — atualiza apenas os
-  // calculados, sem re-render (mantém o foco).
-  add(
+  // Área privativa: em toda unidade da torre (spec). Só a das residenciais
+  // entra no ND-5.2 (valor A); a área não muda o método — atualiza apenas os
+  // calculados, sem re-render (mantém o foco). A medição separada não entra no
+  // ND-5.2, então não pergunta.
+  if (!padraoProprio)
+    add(
     "Área privativa (m²)",
     _inp(
       u.area,
       (v) => {
         u.area = v;
-        _espelharColetivo();
+        espelhar();
         atualizarCargasColetivo();
       },
       { type: "number", placeholder: "Ex: 65" },
@@ -1368,7 +1535,7 @@ function _corpoGrupoColetivo(corpo, ucs, g, hibrido, modoCalc) {
         u.cargaPrevista,
         (v) => {
           u.cargaPrevista = v;
-          _espelharColetivo();
+          espelhar();
           atualizarCargasColetivo();
         },
         { type: "number", placeholder: "0,0" },
@@ -1392,17 +1559,7 @@ function _corpoGrupoColetivo(corpo, ucs, g, hibrido, modoCalc) {
       ),
       "field--float",
     );
-  // Norma de atendimento (só híbrido)
-  if (hibrido)
-    add(
-      "Norma de atendimento",
-      _selectDe(["ND 5.1", "ND 5.2"], "ND " + u.nd, (v) => {
-        u.nd = v.replace("ND ", "");
-        refazer();
-      }),
-      "field--float",
-    );
-  if (comPredial && !varias) add("Nº Predial", campoPredial(u));
+  if (comPredial && !varias) add("Nº predial", campoPredial(u));
   if (varias) {
     if (comInstalacao)
       grid.appendChild(
@@ -1412,14 +1569,24 @@ function _corpoGrupoColetivo(corpo, ucs, g, hibrido, modoCalc) {
       grid.appendChild(
         _mkListaPorUnidade("Novo complemento", ucs, g, campoNovo),
       );
+    if (padraoProprio)
+      grid.appendChild(_mkListaPorUnidade("Complemento", ucs, g, campoCompl));
     if (comPredial)
-      grid.appendChild(_mkListaPorUnidade("Nº Predial", ucs, g, campoPredial));
+      grid.appendChild(
+        _mkListaPorUnidade("Nº predial", ucs, g, campoPredial),
+      );
   }
   corpo.appendChild(grid);
   // Modo calculadora: o grupo escolhe um perfil de carga como no BT
   // individual; o disjuntor da UC é o do perfil.
   if (modoCalc && !semAlt)
-    _mkPerfisUnidade(corpo, u, `c${g[0]}`, varias, refazer);
+    _mkPerfisUnidade(
+      corpo,
+      u,
+      `${padraoProprio ? "p" : "c"}${g[0]}`,
+      varias,
+      refazer,
+    );
 }
 // Modo calculadora (menos de 4 aptos residenciais), coletivo e torres: a UC
 // (ou o grupo/faixa, editado pelo líder) escolhe um perfil de carga — mesma
@@ -1613,21 +1780,24 @@ function cargaTotalTorre(b) {
   }, 0);
 }
 // Endereço da obra (readonly nos cards de torre/unidade)
-function enderecoObraTxt(complemento) {
+// `numero`: nº predial próprio (medição separada do híbrido); omitido = o da obra.
+function enderecoObraTxt(complemento, numero) {
   const o = state.obra;
-  const base = [o.endereco, o.num].filter(Boolean).join(", ");
+  const base = [o.endereco, numero === undefined ? o.num : numero]
+    .filter(Boolean)
+    .join(", ");
   return (base || "—") + (complemento ? `, ${complemento}` : "");
 }
 // _mkKpiCard: ver shared/js/campos.js (cmgKpiCard).
 const _mkKpiCard = cmgKpiCard;
 // Endereço readonly no topo dos cards de torre/unidade: só o valor, em negrito
 // (sem o rótulo "Endereço" — spec das torres).
-function _blocoEndereco(complemento) {
+function _blocoEndereco(complemento, numero) {
   const box = document.createElement("div");
   box.className = "endereco-bloco";
   const val = document.createElement("span");
   val.className = "uc-head-endereco";
-  val.textContent = enderecoObraTxt(complemento);
+  val.textContent = enderecoObraTxt(complemento, numero);
   box.appendChild(val);
   return box;
 }
@@ -1809,8 +1979,11 @@ function _mkAgrupamentoCampos(grid, cfg) {
     inpQtd.setAttribute("data-foco", cfg.focoQtdId || "qtd-agrupamento");
     const f = _campo(cfg.qtdLabel || "Quantidade de unidades na torre", inpQtd);
     f.setAttribute("data-noopt", "");
-    if (coletivo) f.classList.add("row-solo");
+    // Coletivo: o toggle de atendimento híbrido divide a linha (cfg.aposQtd);
+    // sem ele, a quantidade fica sozinha.
+    if (coletivo && !cfg.aposQtd) f.classList.add("row-solo");
     grid.appendChild(f);
+    if (cfg.aposQtd) cfg.aposQtd(grid);
   }
   if (coletivo && !_preenchido(cfg.qtd())) return;
   const mkDemanda = () =>
@@ -1970,6 +2143,7 @@ function _cfgAgrupamentoColetivo() {
     disjId: "disjCondominio-coletivo",
     layout: "coletivo",
     focoQtdId: "qtd-coletivo",
+    aposQtd: _mkHibridoColetivo,
     qtd: () => state.atend.nUCs,
     setQtd: (v) => {
       // Forma do card: quantidade vazia (só ela aparece) e 0/1 ↔ 2+ UCs
@@ -2016,6 +2190,62 @@ function _cfgAgrupamentoColetivo() {
       if (window.CemigMarcadores) CemigMarcadores.atualizarAvancar();
     },
   };
+}
+// Atendimento híbrido (Sim/Não, começa em Não) ao lado da quantidade e, com
+// Sim, a quantidade de unidades com medição separada logo abaixo. Essas
+// unidades (ND 5.1) são ADICIONAIS às da torre (ND 5.2) e ganham cards
+// próprios na etapa "Dados das unidades" (renderUcs51).
+const _hintIcone = (texto, rotulo) =>
+  `<span class="cmg-hint" tabindex="0" role="img" aria-label="Ajuda: ${rotulo}" data-hint="${texto}"><img class="field-info" src="../imgs/info.svg" alt="" aria-hidden="true" /></span>`;
+function _mkHibridoColetivo(grid) {
+  const at = state.atend;
+  const f = document.createElement("div");
+  f.className = "field field--plain hibrido-toggle";
+  f.setAttribute("data-noopt", "");
+  const lbl = document.createElement("label");
+  lbl.innerHTML =
+    "Há unidades com medição separada da torre? " +
+    _hintIcone(
+      "Atendimento híbrido. Exemplo: lojas no térreo com acesso pela rua, cada uma com a caixa de medição na própria fachada, fora do agrupamento de medidores da torre. Se houver garagem de uso comum a todas as unidades, todas ficam no agrupamento; nesse caso, responda Não.",
+      "medição separada",
+    );
+  const radios = document.createElement("div");
+  radios.className = "toggle-group";
+  _radioGrupo(radios, ["Sim", "Não"], at.hibrido || "Não", (v) => {
+    at.hibrido = v;
+    if (v !== "Sim") {
+      at.qtdUCs51 = "";
+      state.gruposUcs51Manual = false;
+    }
+    sincronizarUcs51();
+    _preservandoFoco(renderAgrupamentoColetivo);
+    renderUcsColetivo();
+  });
+  f.append(lbl, radios);
+  grid.appendChild(f);
+  if (at.hibrido !== "Sim") return;
+  const inp = _inp(
+    at.qtdUCs51,
+    (v) => {
+      at.qtdUCs51 = v;
+      sincronizarUcs51();
+      if (window.CemigMarcadores) CemigMarcadores.atualizarAvancar();
+    },
+    { type: "number", placeholder: "0" },
+  );
+  inp.min = "1";
+  inp.setAttribute("data-foco", "qtd-ucs-51");
+  const fq = _campo(
+    "Quantidade de unidades com medição separada " +
+      _hintIcone(
+        "Não conte estas unidades em Quantidade de unidades na torre.",
+        "unidades com medição separada",
+      ),
+    inp,
+  );
+  fq.setAttribute("data-noopt", "");
+  fq.classList.add("row-solo");
+  grid.appendChild(fq);
 }
 // Card de agrupamento do coletivo (etapa "Dados da torre"): mesmo card do
 // condomínio, SEM "Identificação da torre". O endereço da obra é reapresentado
@@ -2843,6 +3073,17 @@ function validacaoObrigatoriosColetivo() {
       if (_mudaComplemento(u))
         req(u.novoComplemento, `Novo complemento da ${rotulo}`);
     });
+    // Medição separada (híbrido): sempre perfil de carga, como no individual.
+    if (hibridoF())
+      state.ucs51.forEach((u) => {
+        const rotulo = u.identificacao;
+        req(u.solicitacao, `Tipo de solicitação — ${rotulo}`);
+        if (_mudaComplemento(u))
+          req(u.novoComplemento, `Novo complemento — ${rotulo}`);
+        if (ucSemAlteracao(u)) return;
+        req(tipoPropriedadeDe(u), `Tipo de propriedade — ${rotulo}`);
+        if (!u.perfil) faltando.push(`Perfil de carga — ${rotulo}`);
+      });
   }
   if (MULTI)
     state.blocos.forEach((b, bi) => {
@@ -2889,9 +3130,9 @@ function validacaoObrigatoriosColetivo() {
       ),
     );
   else {
-    state.ucBlocos.forEach((u, ui) =>
-      _checaInst(u, u.identificacao || `UC ${ui + 1}`),
-    );
+    state.ucBlocos
+      .concat(hibridoF() ? state.ucs51 : [])
+      .forEach((u, ui) => _checaInst(u, u.identificacao || `UC ${ui + 1}`));
     _checaInst(
       { instalacao: _coletivoAgr().disjVinculadoInstalacao },
       "Disjuntor do condomínio",
@@ -2915,6 +3156,7 @@ function validacaoObrigatoriosColetivo() {
 // carga prevista e disjuntor, com o lápis levando de volta à etapa de edição.
 // Lista TODAS as unidades, sem paginação.
 function _mkPreviaTabelaUCs(ucs, etapa) {
+  const hibrido = hibridoF();
   const wrap = document.createElement("div");
   wrap.className = "previa-tabela-wrap";
   const linhas = ucs
@@ -2937,10 +3179,16 @@ function _mkPreviaTabelaUCs(ucs, etapa) {
       const compl = _mudaComplemento(u)
         ? `${u.complemento || "—"} → ${u.novoComplemento || "—"}`
         : u.complemento || "—";
+      // Híbrido: norma da UC e, na medição separada (ND 5.1), o nº predial
+      // próprio, quando houver.
+      const norma = !hibrido
+        ? ""
+        : `<td>ND ${u.nd}${u.nd === "5.1" && u.nPredial ? ` · nº ${u.nPredial}` : ""}</td>`;
       return (
         `<tr>` +
         `<td>${rotulo}</td>` +
         `<td>${compl}</td>` +
+        norma +
         `<td>${(sol && sol[1]) || u.solicitacao || "—"}</td>` +
         `<td>${u.atividade || "—"}</td>` +
         `<td>${area}</td>` +
@@ -2954,7 +3202,7 @@ function _mkPreviaTabelaUCs(ucs, etapa) {
     .join("");
   wrap.innerHTML =
     `<table class="previa-tabela"><thead><tr>` +
-    `<th>Unidade</th><th>Complemento</th><th>Solicitação</th><th>Atividade</th>` +
+    `<th>Unidade</th><th>Complemento</th>${hibrido ? "<th>Norma</th>" : ""}<th>Solicitação</th><th>Atividade</th>` +
     `<th>Área</th><th>Carga prevista</th><th>Disjuntor</th>` +
     `</tr></thead><tbody>${linhas}</tbody></table>`;
   return wrap;
@@ -3269,6 +3517,17 @@ function renderPreviaColetivo() {
       PG.ucs,
     );
     html += pvCampoBT(
+      "Unidades com medição separada da torre",
+      state.atend.hibrido || "Não",
+      PG.ucs,
+    );
+    if (hibridoF())
+      html += pvCampoBT(
+        "Quantidade de unidades com medição separada",
+        String(state.ucs51.length),
+        PG.ucs,
+      );
+    html += pvCampoBT(
       "Quantidade de unidades por andar",
       _previaPorAndar(ag),
       PG.ucs,
@@ -3335,16 +3594,22 @@ function renderPreviaColetivo() {
     }
   } else {
     // Composição por pavimento do agrupamento: entre o primeiro
-    // complemento e a proteção do condomínio, como no painel da torre.
+    // complemento e a proteção do condomínio, como no painel da torre. Antes
+    // dela: quantidade, híbrido (+ qtd ND 5.1), por andar e complemento.
     const gridAgr = $("#previaAgrupamentoGrid");
     if (gridAgr && (ag.aptosPorAndarFaixas || []).length)
       gridAgr.insertBefore(
         _faixasComposicao(ag.aptosPorAndarFaixas),
-        gridAgr.children[3],
+        gridAgr.children[hibridoF() ? 5 : 4],
       );
     const mountUcs = $("#previaUcsMount");
     if (mountUcs)
-      mountUcs.appendChild(_mkPreviaTabelaUCs(state.ucBlocos, PG.cargas));
+      mountUcs.appendChild(
+        _mkPreviaTabelaUCs(
+          state.ucBlocos.concat(hibridoF() ? state.ucs51 : []),
+          PG.cargas,
+        ),
+      );
   }
 
   // Pendências + botão exportar
@@ -3390,7 +3655,9 @@ async function exportarPdfBT() {
     trocaDisjGeral: trocaDisjGeralF(),
     hibrido: hibridoF(),
     ucsDet: [],
-    ucBlocos: state.ucBlocos,
+    // Medição separada (híbrido) entra nas tabelas de unidades, com a coluna
+    // Norma; os totais (demanda/carga/disjuntor geral) são só da torre.
+    ucBlocos: state.ucBlocos.concat(hibridoF() ? state.ucs51 : []),
     blocos: state.blocos,
     totalUcsEmpreendimento: totalUcsEmpreendimentoF(),
     obs: state.obs,
