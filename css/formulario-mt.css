@@ -909,3 +909,15 @@
   }
   /* .page/.page.show na impressão: fonte única em shared.css. */
 }
+
+/* Novo local da subestação: o #localNovoBox é item da grade, então o gap de
+   linha (32px) já separa ele do campo "Haverá mudança do local". O vão acima
+   da divisória do mapa passa a vir do bloco de endereço (que some sem zona
+   escolhida) e não da margem da divisória, que somada ao gap dava 64px. */
+.cemig-form #localNovoBox > .mapa-obra.divider {
+  margin-top: 0;
+}
+.cemig-form #blocoUrbanoNovo,
+.cemig-form #blocoRuralNovo {
+  margin-bottom: var(--cmg-space-8);
+}

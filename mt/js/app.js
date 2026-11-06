@@ -28,9 +28,9 @@ const CAMPOS_CARDS_CONFIG = {
       ],
     },
     {
-      // Zona de localização — sem valor padrão: a etapa revela em cascata
-      // (atividade + ramo → Localização → zona escolhida → endereço), então
-      // a zona precisa ser uma escolha real do usuário, não um pré-preenchido.
+      // Área do empreendimento — sempre visível e sem valor padrão: a zona
+      // precisa ser uma escolha real do usuário, e é ela que revela o
+      // endereço e o mapa.
       chave: "localizacao",
       gridId: "cardsLocalizacao",
       opcoes: [
@@ -296,7 +296,6 @@ function bindInputs() {
       el.value = ramoDescricao(state[k]);
       el.addEventListener("input", () => {
         state[k] = el.value;
-        atualizarCascataUC();
         if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
       });
       return;
@@ -635,32 +634,6 @@ function fillAtividades() {
 function ehAtividadeIrrigacao() {
   return /irriga[cç][aã]o/i.test(state.atividade || "");
 }
-// Revelação em cascata da Etapa 3: o endereço só faz sentido depois de
-// caracterizada a UC. Enquanto atividade e ramo não estiverem preenchidos, o
-// card de Localização fica oculto; enquanto a zona não for escolhida, nenhum
-// bloco de endereço aparece (blocoUrbano/blocoRural seguem sob onLocalizacao).
-function _ucIdentificada() {
-  return (
-    !!String(state.atividade || "").trim() &&
-    !!String(state.ramoAtividade || "").trim()
-  );
-}
-function atualizarCascataUC() {
-  const pronto = _ucIdentificada();
-  const zona = $("#blocoZona");
-  if (zona) zona.style.display = pronto ? "" : "none";
-  // Zona escondida não pode continuar comandando os blocos de endereço: sem
-  // isto, um preenchimento seguido de limpeza da atividade deixaria o endereço
-  // visível sem a zona correspondente na tela.
-  if (!pronto) {
-    $("#blocoUrbano").style.display = "none";
-    $("#blocoRural").style.display = "none";
-    const mapa = $("#blocoMapaCoord");
-    if (mapa) mapa.style.display = "none";
-  } else {
-    onLocalizacao();
-  }
-}
 function onAtividade() {
   const v = $("#f_atividade").value;
   state.atividade = v;
@@ -677,7 +650,6 @@ function onAtividade() {
     });
   }
   renderMotores();
-  atualizarCascataUC();
   recalcRamal();
 }
 // Máscara/validação no blur do campo opcional "Horário para Início do
@@ -737,14 +709,14 @@ function onLocalizacao() {
   state.localizacao = v;
   $("#blocoUrbano").style.display = v === "Urbana" ? "block" : "none";
   $("#blocoRural").style.display = v === "Rural" ? "block" : "none";
-  // Mapa/coordenadas fecham a cascata: dependem da zona (v) além de atividade
-  // e ramo, já garantidos por quem chama daqui.
+  // A Área do empreendimento fica sempre visível; endereço e mapa/coordenadas
+  // dependem só da zona escolhida.
   const blocoMapa = $("#blocoMapaCoord");
   if (blocoMapa) {
     // O Leaflet nasce com 0px quando criado em container display:none, mas o
     // ResizeObserver de _criarMapa() dispara o invalidateSize() assim que o
     // bloco ganha largura — nenhum ajuste extra é necessário aqui.
-    blocoMapa.style.display = !!v && _ucIdentificada() ? "" : "none";
+    blocoMapa.style.display = v ? "" : "none";
   }
   // Município/Estado são campos únicos, reposicionados conforme a zona para
   // manter a ordem do BT: urbano = CEP→Endereço→Número/Complemento/Bairro→
@@ -3345,10 +3317,9 @@ document.addEventListener("DOMContentLoaded", () => {
   onCompartilhada();
   addTrafo(); // começa com 1 linha de trafo
   aplicarAtividadeDaURL();
-  // Estado inicial da cascata da Etapa 3 — roda depois de bindInputs() (que
-  // restaura o rascunho) e de aplicarAtividadeDaURL(), para que uma atividade
-  // vinda da URL ou de um rascunho já revele Localização/endereço.
-  atualizarCascataUC();
+  // Estado inicial dos blocos de endereço da Etapa 3 — roda depois de
+  // bindInputs(), que restaura a zona do rascunho.
+  onLocalizacao();
   // Normaliza rótulos/obrigatoriedade das coordenadas (opcional em zona
   // urbana, obrigatória em rural — regra do BT) após montar os cards.
   updateCoordHint();
