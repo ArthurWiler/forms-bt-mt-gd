@@ -5018,6 +5018,65 @@ label.restricao-aceite input[type="checkbox"] {
   letter-spacing: var(--cmg-ls-wide);
   color: var(--cmg-text-strong);
 }
+/* Etapa 1 com "Documentação necessária" (BT e MT — spec Figma coletivo/
+   torres 23/10 e MT 06/11): sem divisória acima do primeiro item — cada item
+   fecha com a sua, na largura do card — e número/texto, documentação, aviso e
+   aceite recuados 16px. Escopo pela estrutura (`.card:has(> .orient-docs)`):
+   Micro/Mini/Loteamento/Desistência não têm o bloco e seguem a régua acima. */
+.cemig-form .card:has(> .orient-docs) .card-sub:has(+ .orient-list) {
+  margin-bottom: 12px;
+}
+.cemig-form .card:has(> .orient-docs) .orient-list {
+  margin-top: 0;
+  border-bottom: none;
+}
+.cemig-form .card:has(> .orient-docs) .orient-item {
+  padding: 21px var(--cmg-space-4) 13px;
+  border-top: none;
+  border-bottom: 1px solid var(--cmg-neutral-200);
+}
+/* Texto 8px abaixo do topo do número (topo de caixa alta do número 6px
+   acima do da frase, como no mock). */
+.cemig-form .card:has(> .orient-docs) .orient-item p {
+  margin-top: var(--cmg-space-2);
+  line-height: 24px;
+}
+/* O número de 36px num bloco de 39px: item de 1 linha = 82px no mock. O
+   dígito oculto do HTML (font-size 0) ainda abriria uma linha de 46px
+   abaixo do bloco — daí o line-height 0 no span. */
+.cemig-form .card:has(> .orient-docs) .orient-num {
+  margin-bottom: var(--cmg-space-2);
+  line-height: 0;
+}
+.cemig-form .card:has(> .orient-docs) .orient-num::before {
+  display: block;
+  line-height: 39px;
+  white-space: nowrap; /* "01" passa dos 42px da coluna */
+}
+.cemig-form .orient-docs,
+.cemig-form .orient-docs ~ .cmg-aviso,
+.cemig-form .orient-docs ~ .aceite-orient {
+  margin-left: var(--cmg-space-4);
+  margin-right: var(--cmg-space-4);
+}
+.cemig-form .orient-docs ~ .cmg-aviso {
+  width: auto; /* o 100% global somaria o recuo e vazaria do card */
+}
+.cemig-form .card > .orient-docs {
+  margin-top: 22px;
+}
+.cemig-form .card > .orient-docs .orient-docs-titulo {
+  margin-bottom: 22px;
+}
+/* Aceite numa faixa de 32px (área de toque), centrado 48px abaixo do
+   aviso; o card fecha com os mesmos 16px do topo. */
+.cemig-form .orient-docs ~ .aceite-orient {
+  min-height: 32px;
+  margin-top: var(--cmg-space-8);
+}
+.cemig-form .card:has(> .orient-docs) {
+  padding-bottom: var(--cmg-space-4);
+}
 .cmg-aviso-link {
   color: var(--cmg-green-600);
   font-weight: var(--cmg-fw-bold);
@@ -5797,8 +5856,10 @@ html[data-fluxo="condominio"]
   [data-so-fluxo]:not([data-so-fluxo~="condominio"]) {
   display: none !important;
 }
-/* Etapa 3: Município (2/3) + Estado (1/3) e, abaixo, a grade de 2. */
-.cemig-form #endRuralBox > .grid + .grid {
+/* Endereço rural (BT etapa 3 / MT etapa 3): Município (2/3) + Estado (1/3)
+   e, abaixo, a grade de 2. */
+.cemig-form #endRuralBox > .grid + .grid,
+.cemig-form #blocoRural > .grid + .grid {
   margin-top: var(--cmg-space-8);
 }
 /* "Tipo de rede que atende o local": no spec rural (svg3) o rótulo fica a

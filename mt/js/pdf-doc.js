@@ -182,11 +182,6 @@ function _pdfContatoMT(B) {
       ["RG / RANI", state.rg],
       ["Data de Nascimento", dataBR(state.nasc)],
     ]);
-    B.campos([
-      ["Possui NIS (Número de Identificação Social) para Tarifa Social?", state.nis],
-      ["Número do NIS", state.nis === "Sim" ? state.numNis : ""],
-      ["Possui equipamento essencial à vida?", state.laudoMedico],
-    ]);
   }
   B.subsecao("Dados do responsável técnico");
   B.campos([["Nome completo", state.rtNome, 3]]);
@@ -238,9 +233,9 @@ function _pdfEmpreendimentoMT(B) {
        para dentro dos "Dados técnicos". */
     compart ? ["Sobre a subestação", state.subestacaoExistente] : null,
     ["Subestação pronta para ser ligada", state.subPronta],
-    ["Atividade principal", state.atividade],
+    ["Tipo de propriedade", state.atividade],
     ["Ramo da atividade", ramoParaPdf(state.ramoAtividade)],
-    ["Área do empreendimento", state.localizacao],
+    ["Área do empreendimento", state.localizacao === "Urbana" ? "Urbano" : state.localizacao],
     ["CEP", state.uc_cep],
   ];
   if (rural)
@@ -250,7 +245,7 @@ function _pdfEmpreendimentoMT(B) {
       ["Cidade / Município", state.uc_municipio],
       ["Estado", state.uc_estado],
       ["Ponto de referência", state.pontoReferencia],
-      ["Nº Instalação / UC / Medidor do vizinho", state.instalVizinho],
+      ["Nº instalação mais próxima", state.instalVizinho],
     );
   else
     campos.push(
@@ -504,7 +499,7 @@ function _pdfGeracaoMT(B) {
    isso não é uma lista fixa de campos. */
 function _pdfCorrespondenciaMT(B) {
   B.filete();
-  B.secao("Correspondência", { repete: false });
+  B.secao("Conta de luz", { repete: false });
   const campos = [];
   if (state.formaCorresp === "E-mail informado")
     campos.push(["E-mail para receber a fatura", state.emailCliente]);
@@ -531,7 +526,7 @@ function _pdfCorrespondenciaMT(B) {
       ["Cidade", state.ec_municipio],
       ["Estado", state.ec_estado],
     );
-  else campos.push(["Como você deseja receber a fatura", state.formaCorresp]);
+  else campos.push(["Como você deseja receber a conta de luz", state.formaCorresp]);
   /* Campo opcional: sem dia escolhido não sai linha nenhuma — o
      usuário não recusou nada, apenas não informou. */
   campos.push([

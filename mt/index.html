@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Formulário Orçamento de Conexão MT — Cemig</title>
+    <title>Média Tensão - Indústria, comércio, irrigação e outros — Cemig</title>
     <!-- Open Sans auto-hospedada (@font-face em css/variables.css). -->
     <link
       rel="preload"
@@ -54,7 +54,7 @@
         <div class="sidebar-title">Progresso do preenchimento</div>
         <button type="button" class="vstep active">
           <span class="vstep-num">1</span>
-          <span class="vstep-label">Orientações</span>
+          <span class="vstep-label">Informações</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">2</span>
@@ -78,7 +78,7 @@
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">7</span>
-          <span class="vstep-label">Correspondência</span>
+          <span class="vstep-label">Conta de luz</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">8</span>
@@ -92,7 +92,7 @@
 
       <main class="main-col">
         <div class="form-header">
-          <h1>Média Tensão - Orçamento de Conexão</h1>
+          <h1>Média Tensão - Indústria, comércio, irrigação e outros</h1>
           <p>
             Preenchimento digital do formulário para solicitações de Conexão
             Nova e Alteração de Demanda de unidades consumidoras atendidas em
@@ -104,18 +104,17 @@
         <section class="page show" id="page-0">
           <div class="card">
             <div class="section-eyebrow">Etapa 1</div>
-            <h3 class="card-title">Orientações</h3>
+            <h3 class="card-title">Informações para preenchimento</h3>
             <p class="card-sub">
-              Leia as orientações antes de iniciar. Este formulário deve ser
-              preenchido pelo cliente ou pelo Responsável Técnico contratado,
-              conforme a Resolução Normativa ANEEL (REN) nº 1.000/2021.
+              Leia as informações antes de iniciar o preenchimento do
+              formulário.
             </p>
             <ul class="orient-list">
               <li class="orient-item">
                 <span class="orient-num">1</span>
                 <p>
                   O formulário deve ser preenchido para solicitações de
-                  <strong>Conexão Nova</strong> e
+                  <strong>Ligação Nova</strong> e
                   <strong>Alteração de Demanda</strong> de unidades consumidoras
                   atendidas em Média Tensão (MT). O responsável técnico que
                   atuar em nome de terceiros deverá apresentar procuração (art.
@@ -125,7 +124,7 @@
               <li class="orient-item">
                 <span class="orient-num">2</span>
                 <p>
-                  Para pedidos de Conexão Nova é obrigatório anexar documento
+                  Para pedidos de Ligação Nova é obrigatório anexar documento
                   que comprove que a unidade está em área regular, quando houver
                   ocupação em faixa de domínio ou servidão.
                   <a
@@ -146,6 +145,120 @@
                 </p>
               </li>
             </ul>
+
+            <!-- Mesmo markup de bt/etapas/01-orientacoes.html. Documentos do
+                 imóvel: só o conjunto urbano (é o que o Figma do MT mostra; a
+                 zona ainda não é conhecida nesta etapa). -->
+            <div class="orient-docs">
+              <h4 class="orient-docs-titulo">Documentação necessária</h4>
+
+              <details class="cmg-acordeao">
+                <summary class="cmg-acordeao-titulo">Documentos pessoais</summary>
+                <div class="cmg-acordeao-corpo">
+                  <ul class="orient-docs-lista">
+                    <li>
+                      <strong>Pessoa Física</strong>
+                      <em>CPF e documento oficial com foto</em>
+                    </li>
+                    <li>
+                      <strong>Pessoa Jurídica</strong>
+                      <em>
+                        Contrato social, requerimento de empresário ou CCMEI;
+                        Registro na Junta Comercial
+                      </em>
+                    </li>
+                    <li>
+                      <strong>Pessoa Jurídica (poder público)</strong>
+                      <em
+                        >CPF e documento oficial com foto do representante
+                        legal</em
+                      >
+                    </li>
+                    <li>
+                      <strong>Responsável técnico (caso exista)</strong>
+                      <em>
+                        CPF, documento oficial com foto, Procuração para
+                        solicitação em nome de terceiros
+                      </em>
+                    </li>
+                  </ul>
+                </div>
+              </details>
+
+              <details class="cmg-acordeao">
+                <summary class="cmg-acordeao-titulo">Documentos do imóvel</summary>
+                <div class="cmg-acordeao-corpo">
+                  <ul class="orient-docs-lista">
+                    <li>
+                      <strong>
+                        Documento de regularidade (comprova a localização do
+                        imóvel)
+                      </strong>
+                      <p class="orient-docs-intro">
+                        Apresentar <b>apenas um</b> dos documentos a seguir:
+                      </p>
+                      <em>
+                        Certidão de Número, Habite-se ou similar, IPTU,
+                        Escritura Pública, Registro do Imóvel, Alvará de
+                        construção ou de licença de localização, Planta de
+                        Arquitetura aprovada pela prefeitura,
+                        Licença/declaração de órgão competente (se área
+                        protegida por legislação ambiental ou territórios
+                        indígenas/quilombolas)
+                      </em>
+                      <p class="orient-docs-nota">
+                        <b>*Exceções:</b> não é exigido para o município de Juiz
+                        de Fora, nem para clientes do poder público (que devem
+                        apresentar contrato/estatuto social, se autarquia)
+                      </p>
+                    </li>
+                    <li>
+                      <strong>
+                        Documento de posse do imóvel (original ou cópia
+                        autenticada, com endereço completo em nome do
+                        interessado)
+                      </strong>
+                      <p class="orient-docs-intro">
+                        Apresentar <b>apenas um</b> dos documentos a seguir:
+                      </p>
+                      <em>
+                        Escritura, Contrato de compra e venda ou locação, Termo
+                        de doação, IPTU (somente do ano vigente ou anterior),
+                        Formal de partilha ou Termo permissão de uso, REURB
+                        (protocolo com endereço completo, quando aplicável).
+                      </em>
+                    </li>
+                    <li>
+                      <strong>Requisitos de validade dos contratos</strong>
+                      <p class="orient-docs-intro">
+                        Caso o documento apresentado seja o contrato de compra e
+                        venda, ou locação, o contrato só será validado mediante:
+                      </p>
+                      <em>
+                        Assinatura de todas as partes (contratante e
+                        contratado), CPF das partes envolvidas, Data de
+                        celebração, Endereço completo do imóvel (logradouro,
+                        número, bairro, cidade), Assinatura das
+                        testemunhas/avalistas, apenas se citados no contrato, em
+                        caso de falecimento do proprietário: cônjuge ou filhos
+                        podem figurar como novo interessado, mediante certidão
+                        de óbito
+                      </em>
+                    </li>
+                  </ul>
+                </div>
+              </details>
+            </div>
+
+            <div class="cmg-aviso">
+              <div class="cmg-aviso-icon" aria-hidden="true"></div>
+              <p class="cmg-aviso-texto">
+                <span>
+                  Outros documentos e informações complementares poderão ser
+                  solicitadas posteriormente.
+                </span>
+              </p>
+            </div>
 
             <label class="aceite-orient">
               <input type="checkbox" id="aceiteOrient" />
@@ -175,7 +288,7 @@
             <div class="grid grid-2">
               <div class="field">
                 <label
-                  >Nome completo ou razão social
+                  >Nome completo ou Razão Social
                   <span class="req">*</span></label
                 >
                 <input
@@ -185,7 +298,7 @@
                 />
               </div>
               <div class="field">
-                <label>E-mail do cliente <span class="req">*</span></label>
+                <label>E-mail <span class="req">*</span></label>
                 <input
                   type="email"
                   data-k="emailCliente"
@@ -261,49 +374,6 @@
                   aria-hidden="true"
                 />
               </div>
-              <!-- `field--plain`: a pergunta é longa demais para caber no
-                   rótulo flutuante DENTRO da caixa do select (ele recorta).
-                   Com o rótulo acima do controle o texto da referência cabe
-                   inteiro, inclusive a linha de exemplo. -->
-              <div class="field field--plain pf-campo" style="display: none">
-                <label>
-                  Possui NIS (Número de Identificação Social) para Tarifa
-                  Social?
-                  <span class="req">*</span>
-                </label>
-                <select data-k="nis" onchange="onNisMT()">
-                  <option value="">—</option>
-                  <option>Sim</option>
-                  <option>Não</option>
-                </select>
-              </div>
-              <div class="field field--plain pf-campo" style="display: none">
-                <label>
-                  Possui equipamento essencial à vida?
-                  <span class="label-ex"
-                    >(ex.: gerador de oxigênio, respirador, bomba
-                    infusora)</span
-                  >
-                  <span class="req">*</span>
-                </label>
-                <select data-k="laudoMedico">
-                  <option value="">—</option>
-                  <option>Sim</option>
-                  <option>Não</option>
-                </select>
-              </div>
-              <div
-                class="field pf-campo row-solo"
-                id="numNisBoxMT"
-                style="display: none"
-              >
-                <label>Número do NIS <span class="req">*</span></label>
-                <input
-                  type="text"
-                  data-k="numNis"
-                  placeholder="Número do NIS"
-                />
-              </div>
             </div>
             <h4 class="card-subtitle divider">Dados do responsável técnico</h4>
             <p class="card-sub">
@@ -311,8 +381,8 @@
               houver.
             </p>
             <div class="grid grid-2">
-              <div class="field">
-                <label>Nome</label>
+              <div class="field" data-noopt>
+                <label>Nome completo (sem abreviações)</label>
                 <input
                   type="text"
                   data-k="rtNome"
@@ -320,7 +390,7 @@
                 />
               </div>
 
-              <div class="field">
+              <div class="field" data-noopt>
                 <label>E-mail</label>
                 <input
                   type="email"
@@ -330,7 +400,7 @@
                 />
                 <span id="status-rtEmail" class="field-hint"></span>
               </div>
-              <div class="field">
+              <div class="field" data-noopt>
                 <label>Celular</label>
                 <input
                   type="tel"
@@ -352,15 +422,15 @@
         <section class="page" id="page-6">
           <div class="card">
             <div class="section-eyebrow">Etapa 7</div>
-            <h3 class="card-title">Correspondência e Fatura</h3>
+            <h3 class="card-title">Conta de luz</h3>
             <p class="card-sub">
-              Escolha como e quando você deseja receber a conta de energia.
+              Escolha como e quando você quer receber sua conta de luz.
             </p>
 
             <div class="grid grid-2" style="margin-top: 16px">
               <div class="field" data-noopt>
                 <label
-                  >Como você deseja receber a fatura?
+                  >Como você deseja receber a conta de luz?
                   <span class="req">*</span></label
                 >
                 <select data-k="formaCorresp" onchange="onCorresp()">
@@ -374,7 +444,7 @@
                 </select>
               </div>
               <div class="field field--plain col-span-2">
-                <label>Data de Vencimento da Fatura</label>
+                <label>Data de vencimento</label>
                 <div id="cardsDiaVenc"></div>
                 <select
                   data-k="desejaVenc"
@@ -521,14 +591,13 @@
         <section class="page" id="page-2">
           <div class="card">
             <div class="section-eyebrow">Etapa 3</div>
-            <h3 class="card-title">Dados da Unidade Consumidora</h3>
-            <p class="card-sub">Endereço do ponto de entrega.</p>
+            <h3 class="card-title">Dados do empreendimento</h3>
+            <p class="card-sub">
+              Preencha os dados de atividade e localização da unidade
+            </p>
             <div class="grid grid-2">
               <div class="field">
-                <label
-                  >Atividade desenvolvida na unidade
-                  <span class="req">*</span></label
-                >
+                <label>Tipo de propriedade <span class="req">*</span></label>
                 <select
                   id="f_atividade"
                   data-k="atividade"
@@ -538,7 +607,7 @@
                 </select>
               </div>
               <div class="field">
-                <label>Ramo da Atividade <span class="req">*</span></label>
+                <label>Ramo da atividade <span class="req">*</span></label>
                 <input
                   type="text"
                   data-k="ramoAtividade"
@@ -550,7 +619,7 @@
 
             <div class="grid grid-2" style="margin-top: 16px" id="blocoZona">
               <div class="field field--plain" data-noopt>
-                <label>Localização <span class="req">*</span></label>
+                <label>Área do empreendimento <span class="req">*</span></label>
                 <div id="cardsLocalizacao"></div>
                 <select
                   id="f_localizacao"
@@ -560,12 +629,16 @@
                   aria-hidden="true"
                 >
                   <option value=""></option>
-                  <option>Urbana</option>
-                  <option>Rural</option>
+                  <option value="Urbana">Urbano</option>
+                  <option value="Rural">Rural</option>
                 </select>
               </div>
             </div>
 
+            <!-- Município/Estado são campos únicos, movidos entre as zonas por
+                 onLocalizacao(): no urbano fecham o #gridUrbano (meia linha
+                 cada); no rural abrem o #gridRuralTopo (Município 2/3 +
+                 Estado 1/3, como o BT). -->
             <div id="blocoUrbano" style="display: none">
               <div class="grid grid-2" style="margin-top: 16px" id="gridUrbano">
                 <div class="field">
@@ -587,27 +660,33 @@
                     onblur="onEnderecoUrbanoMT()"
                   />
                 </div>
-                <div class="field">
-                  <label>Nº <span class="req">*</span></label>
-                  <input
-                    type="text"
-                    data-k="urb_num"
-                    placeholder=" "
-                    onblur="onEnderecoUrbanoMT()"
-                  />
-                </div>
-                <div class="field">
-                  <label>Bairro <span class="req">*</span></label>
-                  <input
-                    type="text"
-                    data-k="urb_bairro"
-                    placeholder=" "
-                    onblur="onEnderecoUrbanoMT()"
-                  />
+                <div class="grid grid-3 col-span-2">
+                  <div class="field">
+                    <label>Número <span class="req">*</span></label>
+                    <input
+                      type="text"
+                      data-k="urb_num"
+                      placeholder=" "
+                      onblur="onEnderecoUrbanoMT()"
+                    />
+                  </div>
+                  <div class="field">
+                    <label>Complemento</label>
+                    <input type="text" data-k="urb_compl" placeholder=" " />
+                  </div>
+                  <div class="field">
+                    <label>Bairro <span class="req">*</span></label>
+                    <input
+                      type="text"
+                      data-k="urb_bairro"
+                      placeholder=" "
+                      onblur="onEnderecoUrbanoMT()"
+                    />
+                  </div>
                 </div>
 
                 <div class="field" id="fieldMunicipio">
-                  <label>Município <span class="req">*</span></label>
+                  <label>Cidade / Município <span class="req">*</span></label>
                   <input
                     type="text"
                     data-k="uc_municipio"
@@ -617,36 +696,60 @@
                 </div>
                 <div class="field" id="fieldEstado">
                   <label>Estado <span class="req">*</span></label>
-                  <input
-                    type="text"
-                    data-k="uc_estado"
-                    value="MG"
-                    placeholder=" "
-                  />
-                </div>
-                <div class="field col-span-2" id="fieldComplUC">
-                  <label>Complemento do endereço</label>
-                  <input type="text" data-k="urb_compl" placeholder=" " />
+                  <select data-k="uc_estado" onchange="onEnderecoUrbanoMT()">
+                    <option>AC</option>
+                    <option>AL</option>
+                    <option>AP</option>
+                    <option>AM</option>
+                    <option>BA</option>
+                    <option>CE</option>
+                    <option>DF</option>
+                    <option>ES</option>
+                    <option>GO</option>
+                    <option>MA</option>
+                    <option>MT</option>
+                    <option>MS</option>
+                    <option selected>MG</option>
+                    <option>PA</option>
+                    <option>PB</option>
+                    <option>PR</option>
+                    <option>PE</option>
+                    <option>PI</option>
+                    <option>RJ</option>
+                    <option>RN</option>
+                    <option>RS</option>
+                    <option>RO</option>
+                    <option>RR</option>
+                    <option>SC</option>
+                    <option>SP</option>
+                    <option>SE</option>
+                    <option>TO</option>
+                  </select>
                 </div>
               </div>
             </div>
 
             <div id="blocoRural" style="display: none">
-              <div class="grid grid-2" style="margin-top: 16px" id="gridRural">
+              <div
+                class="grid grid-3"
+                style="margin-top: 16px"
+                id="gridRuralTopo"
+              ></div>
+              <div class="grid grid-2" id="gridRural">
                 <div class="field">
                   <label>Distrito / Comunidade / Região</label>
                   <input type="text" data-k="rur_distrito" placeholder=" " />
                 </div>
                 <div class="field">
-                  <label>Nome da Propriedade</label>
+                  <label>Nome da propriedade</label>
                   <input type="text" data-k="rur_propriedade" placeholder=" " />
                 </div>
                 <div class="field">
-                  <label>Ponto de Referência</label>
+                  <label>Ponto de referência</label>
                   <input type="text" data-k="pontoReferencia" placeholder=" " />
                 </div>
                 <div class="field">
-                  <label>Nº Instalação / UC / Medidor do Vizinho</label>
+                  <label>Nº instalação mais próxima</label>
                   <input
                     type="text"
                     data-k="instalVizinho"
@@ -698,7 +801,7 @@
                 </div>
 
                 <div class="field">
-                  <label>Coordenada em UTM</label>
+                  <label>Coordenada UTM</label>
                   <input
                     type="text"
                     data-k="utm"
@@ -1478,6 +1581,23 @@
     <button class="fab no-print" onclick="abrirAnexoII()">
       Conversão de Potências
     </button>
+
+    <!-- Figura ampliada do ramal de entrada — aberta pelo (i) do card. -->
+    <div
+      class="modal-overlay"
+      id="modalFigura"
+      onclick="if (event.target === this) fecharFigura()"
+    >
+      <div class="modal modal--figura" role="dialog" aria-modal="true" aria-label="Ramal de entrada">
+        <div class="modal-head">
+          <h3>Ramal de entrada</h3>
+          <button class="close" aria-label="Fechar" onclick="fecharFigura()">×</button>
+        </div>
+        <div class="modal-body">
+          <img id="modalFiguraImg" alt="" />
+        </div>
+      </div>
+    </div>
 
     <div class="modal-overlay" id="modalAnexo">
       <div class="modal">

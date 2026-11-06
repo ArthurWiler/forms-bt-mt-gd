@@ -632,63 +632,92 @@
   gap: 16px;
   margin-top: 8px;
 }
+/* Card do ramal (spec Figma MT 06/11): borda 1px, figura no topo e rodapé
+   com rádio + descrição + (i). Selecionado = borda verde e rodapé em
+   verde/50. */
 .cemig-mtform .ramal-card {
-  border: 2px solid var(--cmg-neutral-200);
+  border: 1px solid var(--cmg-neutral-200);
   border-radius: var(--cmg-radius);
   overflow: hidden;
   cursor: pointer;
-  transition:
-    border-color 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.18s ease;
+  transition: border-color 0.18s ease;
   background: var(--cmg-surface);
   display: flex;
   flex-direction: column;
 }
-.cemig-mtform .ramal-card:hover {
-  border-color: var(--cmg-green-600);
-  transform: translateY(-2px);
-}
+.cemig-mtform .ramal-card:hover,
 .cemig-mtform .ramal-card.selected {
   border-color: var(--cmg-green-600);
-  box-shadow: 0 0 0 3px var(--cmg-focus-ring);
 }
 .cemig-mtform .ramal-card .imgwrap {
   background: var(--cmg-surface);
-  padding: 10px;
+  padding: var(--cmg-space-2);
   border-bottom: 1px solid var(--cmg-neutral-200);
-  position: relative;
 }
-.cemig-mtform .ramal-card img {
+.cemig-mtform .ramal-card .imgwrap img {
   width: 100%;
   height: auto;
   display: block;
 }
-.cemig-mtform .ramal-card .check {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: var(--cmg-green-600);
-  color: var(--cmg-neutral-0);
-  display: none;
-  place-items: center;
-  font-size: 15px;
-}
-.cemig-mtform .ramal-card.selected .check {
-  display: grid;
-}
-.cemig-mtform .ramal-card .desc {
-  padding: 12px 14px;
-  font-size: 12px;
-  color: var(--cmg-text-muted);
-  line-height: 1.5;
+.cemig-mtform .ramal-rodape {
+  display: flex;
+  align-items: center;
+  gap: var(--cmg-space-2);
+  padding: 10px var(--cmg-space-4) 10px var(--cmg-space-3);
   flex: 1;
+  transition: background 0.18s ease;
 }
-.cemig-mtform .ramal-card .desc b {
+.cemig-mtform .ramal-card.selected .ramal-rodape {
+  background: var(--cmg-surface-accent);
+}
+.cemig-mtform .ramal-rodape input[type="radio"] {
+  flex: none;
+  margin: 0 var(--cmg-space-1, 4px);
+}
+.cemig-mtform .ramal-desc {
+  flex: 1;
+  margin: 0;
+  font-size: var(--cmg-fs-caption);
+  line-height: 18px;
+  letter-spacing: var(--cmg-ls-tight);
   color: var(--cmg-text);
+}
+.cemig-mtform .ramal-desc dt,
+.cemig-mtform .ramal-desc dd {
+  display: inline;
+  margin: 0;
+}
+.cemig-mtform .ramal-desc dd {
+  font-weight: var(--cmg-fw-bold);
+}
+.cemig-mtform .ramal-info {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: var(--cmg-radius-pill);
+  background: transparent;
+  cursor: pointer;
+}
+.cemig-mtform .ramal-info:hover {
+  background: rgba(87, 104, 100, 0.12);
+}
+.cemig-mtform .ramal-info:focus-visible {
+  outline: 2px solid var(--cmg-green-600);
+  outline-offset: 1px;
+}
+.cemig-mtform .ramal-info img {
+  width: 16px;
+  height: 16px;
+}
+/* Modal da figura ampliada: a imagem ocupa a largura útil do modal. */
+.cemig-mtform .modal--figura .modal-body img {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 .cemig-mtform .ramal-empty {
   padding: 30px;

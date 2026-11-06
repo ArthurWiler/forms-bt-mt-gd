@@ -193,22 +193,8 @@ function _pvContato() {
   }
   if (_pvEhPF() || state.estrangeiro)
     prop += pvCampo("Data de Nascimento", dataBR(state.nasc), { step: E });
-  if (_pvEhPF()) {
-    prop += pvCampo(
-      "Possui NIS (Número de Identificação Social) para Tarifa Social?",
-      state.nis,
-      { step: E },
-    );
-    if (state.nis === "Sim")
-      prop += pvCampo("Número do NIS", state.numNis, { step: E });
-    prop += pvCampo(
-      "Possui equipamento essencial à vida?",
-      state.laudoMedico,
-      { step: E },
-    );
-  }
   const rt =
-    pvCampo("Nome completo ou Razão Social", state.rtNome, {
+    pvCampo("Nome completo (sem abreviações)", state.rtNome, {
       full: true,
       step: E,
     }) +
@@ -223,15 +209,19 @@ function _pvContato() {
   );
 }
 
+/* A zona é guardada como "Urbana"/"Rural" (é o que calculo.js e o ramal
+   leem); a tela e o papel dizem "Área do empreendimento: Urbano". */
+const _pvArea = (z) => (z === "Urbana" ? "Urbano" : z);
+
 function _pvEmpreendimento() {
   const E = PV_ETAPA.empreendimento;
   const rural = state.localizacao === "Rural";
   let campos =
-    pvCampo("Atividade principal", state.atividade, { step: E }) +
+    pvCampo("Tipo de propriedade", state.atividade, { step: E }) +
     pvCampo("Ramo da atividade", ramoParaPdf(state.ramoAtividade), {
       step: E,
     }) +
-    pvCampo("Área do empreendimento", state.localizacao, { step: E }) +
+    pvCampo("Área do empreendimento", _pvArea(state.localizacao), { step: E }) +
     pvCampo("CEP", state.uc_cep, { step: E });
   campos += rural
     ? pvCampo("Distrito / Comunidade / Região", state.rur_distrito, {
@@ -241,7 +231,7 @@ function _pvEmpreendimento() {
       pvCampo("Cidade / Município", state.uc_municipio, { step: E }) +
       pvCampo("Estado", state.uc_estado, { step: E }) +
       pvCampo("Ponto de referência", state.pontoReferencia, { step: E }) +
-      pvCampo("Nº Instalação / UC / Medidor do vizinho", state.instalVizinho, {
+      pvCampo("Nº instalação mais próxima", state.instalVizinho, {
         step: E,
       })
     : pvCampo("Endereço", state.urb_endereco, { step: E }) +
@@ -649,7 +639,7 @@ function _pvRamalGeracao() {
 function _pvCorrespondencia() {
   const E = PV_ETAPA.correspondencia;
   let campos = pvCampo(
-    "Como você deseja receber a fatura",
+    "Como você deseja receber a conta de luz",
     state.formaCorresp,
     { step: E },
   );
@@ -688,7 +678,7 @@ function _pvCorrespondencia() {
       : "",
     { step: E },
   );
-  return pvSecao("Correspondência", pvGrid(campos));
+  return pvSecao("Conta de luz", pvGrid(campos));
 }
 
 /* ===== Montagem da etapa ===== */

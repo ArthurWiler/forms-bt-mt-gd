@@ -34,7 +34,7 @@ const CAMPOS_CARDS_CONFIG = {
       chave: "localizacao",
       gridId: "cardsLocalizacao",
       opcoes: [
-        { valor: "Urbana", texto: "Urbana" },
+        { valor: "Urbana", texto: "Urbano" },
         { valor: "Rural", texto: "Rural" },
       ],
     },
@@ -254,6 +254,10 @@ function goTo(n, livre) {
     if (i < n) s.classList.add("done");
     if (i === n) s.classList.add("active");
   });
+  // Descrição do form-header só na primeira etapa (Informações) — mesma
+  // regra do BT (bt-core.js).
+  const descHeader = $(".form-header p");
+  if (descHeader) descHeader.style.display = n === 0 ? "" : "none";
   window.scrollTo({ top: 0, behavior: "smooth" });
   // O mapa inicializa quando a página que o CONTÉM é exibida (detecção por
   // #map, não por número fixo — o campo já mudou de etapa mais de uma vez).
@@ -438,8 +442,8 @@ function onRgInput(el) {
 // documento está COMPLETO e inválido).
 // Limpa os caracteres não numéricos e decide o tipo automaticamente
 // pela quantidade de dígitos (<=11 → CPF; >11 → CNPJ).
-// Mostra/oculta os campos de Pessoa Física (Filiação, RG, Nascimento, Laudo,
-// NIS) — visíveis SÓ quando o documento é um CPF COMPLETO e VÁLIDO (igual ao
+// Mostra/oculta os campos de Pessoa Física (Filiação, RG, Nascimento) —
+// visíveis SÓ quando o documento é um CPF COMPLETO e VÁLIDO (igual ao
 // BT). Ao ocultar, limpa os valores p/ não travar a validação de obrigatórios.
 function mostrarCamposPF(pf) {
   const estr = !!state.estrangeiro;
@@ -456,7 +460,7 @@ function mostrarCamposPF(pf) {
   const rneBox = $("#docRneBox");
   if (rneBox) rneBox.style.display = estr ? "" : "none";
   if (!pf) {
-    const zerar = ["filiacao", "rg", "laudoMedico", "nis", "numNis"];
+    const zerar = ["filiacao", "rg"];
     if (!estr) zerar.push("nasc");
     zerar.forEach((k) => {
       const c = $(`[data-k="${k}"]`);
@@ -465,10 +469,6 @@ function mostrarCamposPF(pf) {
         state[k] = "";
       }
     });
-    const nb = $("#numNisBoxMT");
-    if (nb) nb.style.display = "none";
-  } else {
-    onNisMT();
   }
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
@@ -477,13 +477,11 @@ function mostrarCamposPF(pf) {
 function onEstrangeiroMT(el) {
   state.estrangeiro = !!el.checked;
   if (state.estrangeiro) {
-    ["cpfCnpj", "filiacao", "rg", "laudoMedico", "nis", "numNis"].forEach(
-      (k) => {
-        state[k] = "";
-        const c = $(`[data-k="${k}"]`);
-        if (c) c.value = "";
-      },
-    );
+    ["cpfCnpj", "filiacao", "rg"].forEach((k) => {
+      state[k] = "";
+      const c = $(`[data-k="${k}"]`);
+      if (c) c.value = "";
+    });
     const doc = $("#f_cpfcnpj");
     if (doc) doc.classList.remove("is-invalid");
     const msg = $("#cpfMsg");
@@ -499,15 +497,6 @@ function onEstrangeiroMT(el) {
   mostrarCamposPF(false);
 }
 window.onEstrangeiroMT = onEstrangeiroMT;
-// Número do NIS só quando "Possui NIS" = Sim.
-function onNisMT() {
-  const nis = $('[data-k="nis"]');
-  const box = $("#numNisBoxMT");
-  const pfVisivel = $(".pf-campo") && $(".pf-campo").style.display !== "none";
-  if (box)
-    box.style.display = pfVisivel && nis && nis.value === "Sim" ? "" : "none";
-  if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
-}
 let _cnpjBuscado = ""; // evita repetir a consulta a cada tecla após 14 dígitos
 async function onCpfCnpj() {
   const el = $("#f_cpfcnpj"),
@@ -758,21 +747,21 @@ function onLocalizacao() {
     blocoMapa.style.display = !!v && _ucIdentificada() ? "" : "none";
   }
   // Município/Estado são campos únicos, reposicionados conforme a zona para
-  // manter a ordem do BT: urbano = CEP→Endereço→Nº→Bairro→Município→Estado;
-  // rural = Município→Estado→Distrito→Propriedade→Ponto ref.→Instalação.
+  // manter a ordem do BT: urbano = CEP→Endereço→Número/Complemento/Bairro→
+  // Cidade/Município→Estado (meia linha cada); rural = Município (2/3) +
+  // Estado (1/3) no #gridRuralTopo, e abaixo Distrito→Propriedade→Ponto
+  // ref.→Instalação.
   const mun = $("#fieldMunicipio"),
     est = $("#fieldEstado");
   if (mun && est) {
-    if (v === "Rural") {
-      const g = $("#gridRural");
-      g.prepend(est);
-      g.prepend(mun);
-    } else {
-      const g = $("#gridUrbano"),
-        compl = $("#fieldComplUC");
-      g.insertBefore(mun, compl);
-      g.insertBefore(est, compl);
-    }
+    const rural = v === "Rural";
+    $(rural ? "#gridRuralTopo" : "#gridUrbano").append(mun, est);
+    mun.classList.toggle("col-span-2", rural);
+    // O rótulo acompanha a zona (mesmos textos do BT). O nó de texto é o
+    // primeiro filho: o "*" já virou data-req e o "(opcional)" não se aplica.
+    const rot = mun.querySelector("label")?.firstChild;
+    if (rot && rot.nodeType === Node.TEXT_NODE)
+      rot.nodeValue = rural ? "Município " : "Cidade / Município ";
   }
   // Troca de zona limpa os campos da zona oposta (lógica trocarZona do BT);
   // Município/Estado, comuns às duas zonas, são preservados.
@@ -2933,12 +2922,46 @@ function recalcRamal() {
     return;
   }
   empty.style.display = "none";
+  // Card do spec Figma (06/11): figura no topo e, no rodapé, rádio + linhas
+  // "Rótulo: **valor**" + (i) que amplia a figura (as plantas não são
+  // legíveis no tamanho do card).
   gallery.innerHTML = g.indices
     .map((idx) => {
-      const sel = ramalSelecionado === idx ? "selected" : "";
-      return `<div class="ramal-card ${sel}" onclick="selectRamal(${idx})">
-      <div class="imgwrap"><img src="${RAMAL_IMGS[idx] || ""}" alt="Ramal ${idx}"><span class="check">✓</span></div>
-      <div class="desc">${CalculoMT.textoRamal(idx).replace(/·/g, "<br>·")}</div></div>`;
+      const sel = ramalSelecionado === idx;
+      return `<div class="ramal-card${sel ? " selected" : ""}" onclick="selectRamal(${idx})">
+      <div class="imgwrap"><img src="${RAMAL_IMGS[idx] || ""}" alt="Figura do ramal de entrada ${idx}"></div>
+      <div class="ramal-rodape">
+        <input type="radio" name="ramalEntrada" value="${idx}"${sel ? " checked" : ""}
+               aria-label="Selecionar ramal de entrada ${idx}"
+               onclick="event.stopPropagation();selectRamal(${idx})">
+        <dl class="ramal-desc">${_ramalLinhasHTML(CalculoMT.textoRamal(idx))}</dl>
+        <button type="button" class="ramal-info" aria-label="Ampliar a figura do ramal ${idx}"
+                onclick="event.stopPropagation();ampliarFiguraRamal(${idx})">
+          <img src="../imgs/info.svg" alt="" aria-hidden="true">
+        </button>
+      </div></div>`;
+    })
+    .join("");
+}
+/* "Área de atendimento: Urbano · Atendimento à subestação: N°02, Nº05 · …"
+   (RAMAL_TEXTO, calculo.js) → uma linha por item, rótulo regular e valor em
+   negrito. Só a apresentação muda: "N°02" vira "nº2" e o valor começa em
+   maiúscula, como no Figma; o texto da norma segue o mesmo. */
+function _ramalLinhasHTML(texto) {
+  const esc = (t) =>
+    String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  return String(texto || "")
+    .split(" · ")
+    .map((item) => {
+      const i = item.indexOf(":");
+      if (i < 0) return `<div><dd>${esc(item)}</dd></div>`;
+      let valor = item.slice(i + 1).trim();
+      // Maiúscula ANTES de trocar o "N°": "N°02, N°04…" deve virar "nº2, nº4…".
+      valor = (valor.charAt(0).toUpperCase() + valor.slice(1)).replace(
+        /N[°º]\s*0?(\d+)/g,
+        "nº$1",
+      );
+      return `<div><dt>${esc(item.slice(0, i + 1))}</dt> <dd>${esc(valor)}</dd></div>`;
     })
     .join("");
 }
@@ -2947,6 +2970,20 @@ function selectRamal(idx) {
   state.ramalIndice = idx;
   recalcRamal();
 }
+/* (i) do card do ramal: mostra a figura em tamanho de leitura no modal. */
+function ampliarFiguraRamal(idx) {
+  const img = $("#modalFiguraImg");
+  if (!img) return;
+  img.src = RAMAL_IMGS[idx] || "";
+  img.alt = `Figura do ramal de entrada ${idx}`;
+  $("#modalFigura").classList.add("show");
+}
+function fecharFigura() {
+  $("#modalFigura")?.classList.remove("show");
+}
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") fecharFigura();
+});
 
 /* ===== Helpers de alerta (banner canônico .cmg-aviso do shared.css) ===== */
 function alertHTML(tipo, msg) {
