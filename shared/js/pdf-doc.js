@@ -170,6 +170,7 @@ function _pdfConstrutor() {
     novo: "pdf-chip--novo",
     substituido: "pdf-chip--substituido",
     mantido: "pdf-chip--mantido",
+    contador: "pdf-chip--contador",
   };
   const subsecaoChip = (texto, chip, tom, opcoes) => {
     if (_pdfVazio(chip)) return subsecao(texto, opcoes);
@@ -187,8 +188,10 @@ function _pdfConstrutor() {
 
   /* Campos na grade de 3 colunas. `lista` = [[rótulo, valor, cols?]].
      Cada LINHA da grade vira um bloco próprio — uma seção inteira
-     num só elemento seria um átomo maior que a página. */
-  const campos = (lista) => {
+     num só elemento seria um átomo maior que a página. `prende`
+     amarra cada linha ao bloco seguinte (o complemento do "Imóvel
+     N de M" não fica no pé da folha separado dos cartões dele). */
+  const campos = (lista, prende) => {
     let linha = null;
     let usadas = 0;
     (lista || [])
@@ -196,7 +199,7 @@ function _pdfConstrutor() {
       .forEach((c) => {
         const largura = Math.min(3, c[2] || 1);
         if (!linha || usadas + largura > 3) {
-          linha = push(_pdfMolde("tplPdfGrade"));
+          linha = push(_pdfMolde("tplPdfGrade"), prende);
           usadas = 0;
         }
         const campo = _pdfMolde("tplPdfCampo");

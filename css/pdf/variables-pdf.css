@@ -22,6 +22,13 @@
      · pdf-bt-coletivo/     svg_1 … svg_4 — agrupamento com proteção
        geral: a tabela única de unidades e o detalhe das que pedem
        alteração de carga.
+     · pdf-bt-2026-11/      revisão do Figma de 06/11/2026 para as três
+       modalidades do BT, que SUBSTITUI o layout das pastas acima onde
+       elas divergem (as medidas citadas como svg_N continuam valendo):
+       folha 1 do individual com "Imóvel e atendimento" (bt_indivi,
+       bt_rural), vários imóveis com o chip "N de M"
+       (bt_indiv_2_m_consum/2), cargas (bt_cargas), múltiplas torres
+       com endereço numa linha (mtorres1–4) e coletivo (col1, coletivo2/3).
      · pdf-loteamento/      svg_1 — a tabela estreita de lotes por
        área, fechada por uma linha TOTAL.
      · pdf-mt-nova/                     svg_1 … svg_3
@@ -170,6 +177,21 @@
   --pdf-chip-substituido-ponto: #ffc107;
   --pdf-chip-mantido-fundo: var(--pdf-cor-filete);
   --pdf-chip-mantido-ponto: var(--pdf-cor-texto);
+
+  /* Chip contador "N de M" ao lado de "Imóvel" (individual com vários
+     imóveis, bt_indiv_2_m_consum): pílula verde-limão de 20pt de altura
+     e raio 10 (rect x=77 y=438 38×20 rx=10), texto em negrito no verde
+     mais escuro, sem ponto. "Imóvel" começa em x=36 e o chip em 77. */
+  --pdf-chip-contador-fundo: #c4ff3f;
+  --pdf-chip-contador-texto: #041e18;
+  --pdf-chip-contador-pad-x: 5pt;
+  --pdf-chip-contador-fs: 10pt;
+  --pdf-chip-contador-gap: 9pt;
+  /* Logo abaixo dos cartões de coordenadas o chip desce mais: 18pt
+     entre a borda do cartão e o topo do chip (y 420 → 438), contra
+     os ~9pt do respiro normal dos cartões. A margem colapsa com a
+     margem de baixo dos cartões, então o valor é o total. */
+  --pdf-chip-contador-recuo: 17.5pt;
 
   /* Seta entre o equipamento atual e o substituto: o glifo mede
      9,33pt de altura no mock (pdf-mt-alteracao/svg_2, y de 589,33 a

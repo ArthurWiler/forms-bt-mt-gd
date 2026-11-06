@@ -13,6 +13,12 @@
      · múltiplas torres docs/mocks/pdf-bt-multitorres/svg_1 … svg_4
      · coletivo         docs/mocks/pdf-bt-coletivo/svg_1 … svg_4
 
+   A revisão de 06/11/2026 (docs/mocks/pdf-bt-2026-11/) prevalece
+   sobre esses mocks onde diverge: "Imóvel e atendimento" com
+   endereço numa linha e chip "Imóvel N de M" no individual,
+   empreendimento com endereço numa linha nas torres e no coletivo,
+   e "Conta de luz" no lugar de "Correspondência".
+
    Usa os helpers globais do módulo BT: fmt2, fmtW, num, prevKwUC,
    ucSemAlteracao, ramoParaPdf, CAT, TABELA_11, MOTOR_MONO/TRI,
    motorColPorQtd, motorKvaUnit, calcBlocoMultiTorres,
@@ -55,47 +61,75 @@ function _pdfContatoBT(B, prop) {
   ]);
 }
 
-/* Miolo de "Dados do empreendimento" — idêntico no coletivo e no
-   múltiplas torres a partir da razão social (svg_1 dos dois mocks).
-   Só o que vem ANTES dele (cartões de totais, tipo de solicitação e
-   modalidade) distingue as duas modalidades. */
-function _pdfEmpreendimentoBT(B, S) {
-  const { prop = {}, obra = {}, pessoaFisica } = S;
-  B.campos([["Cliente / Razão Social do empreendimento", prop.cliente, 3]]);
-  B.campos([
-    [pessoaFisica ? "CPF" : "CNPJ", prop.cpfCnpj],
-    ["Nº ART/TRT do projeto", obra.art],
-    ["Área do empreendimento", obra.localizacao],
-  ]);
-  B.campos([
-    ["CEP", obra.cep],
-    ["Endereço", obra.endereco, 2],
-  ]);
-  B.campos([
-    ["Número", obra.num],
-    ["Complemento", obra.compl],
-    ["Bairro", obra.bairro],
-  ]);
-  B.campos([
-    ["Cidade", obra.cidade],
-    ["Estado", obra.estado],
-  ]);
+/* Endereço numa linha só, como o campo "Endereço" dos mocks
+   ("Rua …, 530, apto. 202, bloco 4, Nova Gameleira, Belo Horizonte -
+   MG, CEP 30510420"). O rural não tem logradouro: a linha é município,
+   estado, distrito e nome da propriedade (individual/svg_2). */
+function _pdfEnderecoLinhaBT(obra, rural) {
+  const o = obra || {};
+  const partes = rural
+    ? [o.cidade, o.estado, o.distritoComunidade, o.nomePropriedade]
+    : [
+        o.endereco,
+        o.num,
+        o.compl,
+        o.bairro,
+        [o.cidade, o.estado].filter((x) => !_pdfVazio(x)).join(" - "),
+        _pdfVazio(o.cep) ? "" : "CEP " + o.cep,
+      ];
+  return partes.filter((x) => !_pdfVazio(x)).join(", ");
+}
+
+/* Coordenadas da obra — os dois cartões que vêm logo abaixo do
+   endereço em todas as modalidades. */
+function _pdfCoordenadasBT(B, obra) {
   B.cartoes([
     ["Coordenadas", _pdfCoordBT(obra.lat, obra.lng)],
     ["Coordenada UTM", _pdfUtmBT(obra)],
   ]);
-  B.campos([
-    ["Distância do padrão até a rede Cemig inferior a 30m?", obra.distMenor30],
-    ["O padrão está pronto para ser ligado?", obra.prontoLigar],
-    ["Tipo de rede BT que atende o local", obra.tipoRede],
-  ]);
 }
 
-/* "Correspondência" — mesma seção nas três modalidades: para onde
-   vai a fatura e em que dia ela vence (svg_2 de cada mock). O
-   rótulo do destino muda com a forma escolhida, e por isso não é
-   uma lista fixa de campos. */
-function _pdfCorrespondenciaBT(B, S) {
+/* "Dados do empreendimento" do coletivo e do múltiplas torres:
+   endereço, coordenadas, os cartões de totais e a modalidade são
+   comuns; a ordem do miolo muda entre os dois mocks.
+     · torres (mtorres1): Cliente | CNPJ, ART, Distância | Pronto, Rede
+     · coletivo (col1):   CNPJ | Cliente | ART, Distância, Pronto | Rede
+   Cada LINHA do mock é uma chamada de B.campos(); as últimas são uma
+   lista só porque, no mock, as perguntas do padrão e a rede fluem
+   pela linha que a anterior deixou. */
+function _pdfEmpreendimentoBT(B, S, totais, solicitacaoModalidade, coletivo) {
+  const { prop = {}, obra = {}, pessoaFisica } = S;
+  B.campos([["Endereço", _pdfEnderecoLinhaBT(obra, false), 3]]);
+  _pdfCoordenadasBT(B, obra);
+  B.cartoes(totais);
+  B.campos(solicitacaoModalidade);
+  const documento = [pessoaFisica ? "CPF" : "CNPJ", prop.cpfCnpj];
+  const cliente = ["Cliente / Razão Social do empreendimento", prop.cliente, 3];
+  const art = ["Nº ART/TRT do projeto", obra.art];
+  const dist = [
+    "Distância do padrão até a rede Cemig inferior a 30m?",
+    obra.distMenor30,
+  ];
+  const pronto = ["O padrão está pronto para ser ligado?", obra.prontoLigar];
+  const rede = ["Tipo de rede BT que atende o local", obra.tipoRede];
+  if (coletivo) {
+    B.campos([documento]);
+    B.campos([cliente]);
+    B.campos([art, dist, pronto, rede]);
+  } else {
+    B.campos([cliente]);
+    B.campos([documento, art, dist]);
+    B.campos([pronto, rede]);
+  }
+}
+
+/* "Conta de luz" — mesma seção nas três modalidades: para onde vai
+   a conta e em que dia ela vence. O rótulo do destino muda com a
+   forma escolhida, e por isso não é uma lista fixa de campos.
+   `fatura` nomeia o documento nos rótulos: "conta de luz" no
+   individual e nas torres, "fatura do condomínio" no coletivo (col1). */
+function _pdfCorrespondenciaBT(B, S, fatura) {
+  const doc = fatura || "conta de luz";
   const { prop = {}, corr = {}, obra = {} } = S;
   const enderecoObra = [
     [obra.endereco, obra.num].filter(Boolean).join(", "),
@@ -118,25 +152,25 @@ function _pdfCorrespondenciaBT(B, S) {
     .join(" - ");
   const destinoFatura =
     corr.alternativa === "E-mail informado"
-      ? ["E-mail para receber a fatura", prop.email]
+      ? ["E-mail para receber a " + doc, prop.email]
       : corr.alternativa === "Outro e-mail"
-        ? ["E-mail para receber a fatura", corr.outroEmail]
+        ? ["E-mail para receber a " + doc, corr.outroEmail]
         : corr.alternativa === "Conta globalizada"
           ? ["Conta globalizada", corr.contaGlobal]
           : corr.alternativa === "Mesmo da obra"
             ? [
-                "Endereço para receber a fatura",
+                "Endereço para receber a " + doc,
                 "Mesmo da unidade — " + enderecoObra,
                 3,
               ]
             : corr.alternativa === "Endereço novo"
-              ? ["Endereço para receber a fatura", enderecoNovo, 3]
-              : ["Forma de recebimento da fatura", corr.alternativa];
-  B.secao("Correspondência");
+              ? ["Endereço para receber a " + doc, enderecoNovo, 3]
+              : ["Forma de recebimento da " + doc, corr.alternativa];
+  B.secao("Conta de luz");
   B.campos([
     destinoFatura,
     [
-      "Data de vencimento da fatura",
+      "Data de vencimento",
       corr.vencimento ? "Todo dia " + corr.vencimento : "",
     ],
   ]);
@@ -156,10 +190,10 @@ function _pdfObservacoesBT(B, obs) {
 /* ============================================================
    2. Conteúdo — múltiplas torres (condomínio)
    ------------------------------------------------------------
-   Segue docs/mocks/pdf-bt-multitorres/svg_1 … svg_4: folha 1 com
-   contato e empreendimento, folha 2 com o projeto (hierarquia de
-   proteção) e a correspondência, e daí uma folha por torre —
-   quatro cartões de resumo e a tabela das unidades.
+   Segue pdf-bt-2026-11/mtorres1 … mtorres4: contato, empreendimento
+   e o projeto (hierarquia de proteção) correm a partir da folha 1,
+   seguidos da conta de luz; daí uma folha por torre — quatro
+   cartões de resumo e a tabela das unidades.
 
    Cada LINHA do mock é uma chamada de B.campos() própria, e não uma
    lista só: como campo vazio é descartado, numa lista única o campo
@@ -185,27 +219,34 @@ function _pdfBlocosMultiTorresBT(S) {
   /* ---- Dados do empreendimento ---- */
   B.filete();
   B.secao("Dados do empreendimento");
-  B.cartoes([
-    ["Demanda total de todas as torres", fmt2(demandaTotalGeral) + " kVA"],
-    ["Carga total de todas as torres", fmt2(prevTotalKw) + " kW"],
-  ]);
-  B.campos([
-    ["Tipo de solicitação", atend.escopo],
+  /* O Figma repete "Demanda total" no 2º cartão — erro de cópia; o
+     segundo é a carga (decisão de 06/11/2026). */
+  const qtdUnidades = blocos.reduce((s, b) => s + (b.ucs || []).length, 0);
+  _pdfEmpreendimentoBT(
+    B,
+    S,
     [
-      "Modalidade",
-      /* "14 torres" no mock; o singular existe porque o
-         empreendimento pode ter uma torre só. */
-      `Múltiplas torres - ${blocos.length} ` +
-        (blocos.length === 1 ? "torre" : "torres"),
+      ["Demanda total de todas as torres", fmt2(demandaTotalGeral) + " kVA"],
+      ["Carga total de todas as torres", fmt2(prevTotalKw) + " kW"],
+      ["Quantidade de unidades total", qtdUnidades || ""],
     ],
-  ]);
-  _pdfEmpreendimentoBT(B, S);
+    [
+      ["Tipo de solicitação", atend.escopo],
+      [
+        "Modalidade",
+        /* "14 torres" no mock; o singular existe porque o
+           empreendimento pode ter uma torre só. */
+        `Múltiplas torres - ${blocos.length} ` +
+          (blocos.length === 1 ? "torre" : "torres"),
+      ],
+    ],
+  );
 
-  /* ---- Dados do projeto, em folha nova ----
-     A quebra é do documento, não do transbordo: no mock a folha 1
-     termina com bastante espaço livre e o projeto abre limpo
+  /* ---- Dados do projeto ----
+     Corre na folha 1, logo após o empreendimento; o que não couber
+     segue para a folha 2 com o título repetido pelo paginador
      (svg_1 → svg_2). */
-  B.quebrarPagina();
+  B.filete();
   B.secao("Dados do projeto");
   B.campos([
     [
@@ -232,7 +273,7 @@ function _pdfBlocosMultiTorresBT(S) {
       );
   }
 
-  /* ---- Correspondência ---- */
+  /* ---- Conta de luz ---- */
   B.filete();
   _pdfCorrespondenciaBT(B, S);
 
@@ -245,7 +286,9 @@ function _pdfBlocosMultiTorresBT(S) {
     const cb = calcBlocoMultiTorres(b);
 
     B.quebrarPagina();
-    B.secao(`Dados da torre ${b.nome || bi + 1}`);
+    /* A tabela que transborda segue sem o título (multitorres/svg_4):
+       quem se repete é o cabeçalho da tabela. */
+    B.secao(`Dados da torre ${b.nome || bi + 1}`, { repete: false });
     B.cartoes(
       [
         [
@@ -302,9 +345,9 @@ function _pdfBlocosMultiTorresBT(S) {
 /* ============================================================
    3. Conteúdo — coletivo (agrupamento com proteção geral)
    ------------------------------------------------------------
-   Segue docs/mocks/pdf-bt-coletivo/svg_1 … svg_4: folha 1 com
-   contato e empreendimento, folha 2 com a correspondência e folha 3
-   com o resumo do agrupamento, seguido das unidades AGRUPADAS POR
+   Segue pdf-bt-2026-11/col1, coletivo2 e coletivo3: folha 1 com
+   contato, empreendimento e conta
+   de luz; folha 2 com o resumo do agrupamento, seguido das unidades AGRUPADAS POR
    TIPO DE PEDIDO — uma seção para cada, com a conexão nova em
    tabela e a alteração de carga em um bloco por unidade.
 
@@ -344,29 +387,35 @@ function _pdfBlocosColetivoBT(S) {
   /* ---- Dados do empreendimento ---- */
   B.filete();
   B.secao("Dados do empreendimento");
-  B.cartoes([
-    ["Demanda total de todas as unidades", fmt2(demandaTotalGeral) + " kVA"],
-    ["Carga total de todas as unidades", fmt2(prevTotalKw) + " kW"],
-    ["Disjuntor geral do agrupamento", atend.disjuntorGeral],
-  ]);
-  B.campos([
-    ["Tipo de solicitação", atend.escopo],
+  _pdfEmpreendimentoBT(
+    B,
+    S,
     [
-      "Modalidade",
-      "Coletivo — Agrupamento com Proteção Geral (APR Web)" +
-        (atend.solicitacao ? " · " + atend.solicitacao : ""),
-      2,
+      ["Demanda total de todas as unidades", fmt2(demandaTotalGeral) + " kVA"],
+      ["Carga total de todas as unidades", fmt2(prevTotalKw) + " kW"],
+      ["Disjuntor geral do agrupamento", atend.disjuntorGeral],
     ],
-  ]);
-  _pdfEmpreendimentoBT(B, S);
+    /* Sem "Tipo de solicitação": no coletivo o pedido é por unidade,
+       e cada uma aparece no seu grupo (col1). */
+    [
+      [
+        "Modalidade",
+        "Coletivo — Agrupamento com Proteção Geral (APR Web)" +
+          (atend.solicitacao ? " · " + atend.solicitacao : ""),
+        2,
+      ],
+    ],
+    true,
+  );
 
-  /* ---- Correspondência, em folha nova (svg_1 → svg_2) ---- */
-  B.quebrarPagina();
-  _pdfCorrespondenciaBT(B, S);
+  /* ---- Conta de luz, ainda na folha 1 ----
+     "Dados da torre" é quem abre a folha 2 (coletivo2). */
+  B.filete();
+  _pdfCorrespondenciaBT(B, S, "fatura do condomínio");
 
   /* ---- Dados da torre (o agrupamento), em folha nova ---- */
   B.quebrarPagina();
-  B.secao("Dados da torre");
+  B.secao("Dados da torre", { repete: false });
   B.cartoes(
     [
       [
@@ -403,7 +452,7 @@ function _pdfBlocosColetivoBT(S) {
      nº da instalação, ramo de atividade e o disjuntor que está lá
      hoje. Por isso ganha um bloco por unidade, e não uma lista. */
   const GRUPOS_UC = [
-    { tipo: "Conexão Nova", prefixo: "Unidades com pedidos para ", forte: "conexão nova" },
+    { tipo: "Conexão Nova", prefixo: "Unidades com pedidos para ", forte: "ligação nova" },
     {
       tipo: "Alteração de Carga",
       prefixo: "Unidades com pedidos para ",
@@ -504,8 +553,9 @@ function _pdfBlocosColetivoBT(S) {
 /* ============================================================
    4. Conteúdo — individual (até 3 caixas sem proteção geral)
    ------------------------------------------------------------
-   Segue docs/mocks/pdf-bt-individual/svg_1 … svg_7: uma seção por
-   unidade consumidora, "Correspondência" e — em folha nova —
+   Segue pdf-bt-2026-11/bt_indivi, bt_rural, bt_indiv_2_m_consum(2) e
+   bt_cargas: "Imóvel e atendimento" (um bloco por imóvel), "Conta de
+   luz" e — em folha nova —
    "Cargas da unidade" e "Cargas especiais da unidade".
 
    Cada LINHA do mock é uma chamada de B.campos() própria, e não uma
@@ -530,9 +580,10 @@ function _pdfBlocosIndividualBT(S) {
   const rural = obra.localizacao === "Rural";
   const varias = ucsDet.length > 1;
 
-  /* Sem número quando há uma só UC, numerada a partir daí — é a
-     diferença entre o svg_1 e o svg_5. */
-  const nomeUC = (i) => "unidade consumidora" + (varias ? " " + (i + 1) : "");
+  /* Alvo dos títulos das cargas: "Cargas da unidade" com um imóvel
+     só (svg_3), "Cargas do imóvel N" com vários — o mesmo nome dos
+     blocos "Imóvel N de M" da folha 1. */
+  const alvoCargas = (i) => (varias ? "do imóvel " + (i + 1) : "da unidade");
 
   /* Faixa do cartão "Disjuntor adequado". Reaproveita a régua já
      existente (exibeTermoGrupoBBT, em individual-app.js) em vez de
@@ -542,10 +593,12 @@ function _pdfBlocosIndividualBT(S) {
       ? exibeTermoGrupoBBT()
       : num(demandaTotalGeral) > 75;
 
-  /* ---- Dados do proprietário ---- */
+  /* ---- Dados do proprietário ----
+     Linhas do svg_1: Nome | E-mail, Celular, CPF | Filiação, RG,
+     Data de nascimento. */
   B.secao("Dados do proprietário");
+  B.campos([[pessoaFisica ? "Nome" : "Razão social", prop.nome, 3]]);
   const camposProp = [
-    [pessoaFisica ? "Nome" : "Razão social", prop.nome, 3],
     ["E-mail", prop.email],
     ["Celular", prop.celular],
     // Pessoa estrangeira não tem CPF/CNPJ: o documento é o RNE/RNM.
@@ -553,11 +606,11 @@ function _pdfBlocosIndividualBT(S) {
       ? ["Nº do RNE/RNM", prop.rne]
       : [pessoaFisica ? "CPF" : "CNPJ", prop.cpfCnpj],
   ];
+  if (pessoaFisica && !prop.estrangeiro)
+    camposProp.push(["Filiação", prop.filiacao], ["RG", prop.rg]);
   if (pessoaFisica) camposProp.push(["Data de nascimento", dataBR(prop.nasc)]);
   if (pessoaFisica && !prop.estrangeiro)
     camposProp.push(
-      ["Filiação", prop.filiacao],
-      ["RG", prop.rg],
       /* Só sai quando a pergunta foi respondida: um "Não" fabricado
          acrescentaria à folha um campo que o mock não tem. */
       ["NIS Tarifa Social", prop.nis === "Sim" ? prop.numNis : prop.nis],
@@ -565,14 +618,52 @@ function _pdfBlocosIndividualBT(S) {
     );
   B.campos(camposProp);
 
-  /* ---- Dados da unidade consumidora (uma seção por UC) ---- */
+  /* ---- Imóvel e atendimento ----
+     O endereço e as coordenadas são do pedido, ditos uma vez só no
+     topo da seção (svg_1/svg_2); daí um bloco por imóvel. */
+  /* Sem repetir o título: com vários imóveis a folha 2 abre direto
+     em "Imóvel 2 de 3" (bt_indiv_2_m_consum2). */
+  B.filete();
+  B.secao("Imóvel e atendimento", { repete: false });
+  B.campos([["Endereço", _pdfEnderecoLinhaBT(obra, rural), 3]]);
+  if (rural)
+    B.campos([
+      ["Ponto de referência", obra.pontoRef, 2],
+      ["Nº instalação mais próxima", obra.instProxima],
+    ]);
+  _pdfCoordenadasBT(B, obra);
+
   ucsDet.forEach((u, i) => {
     const cargas = u.cargas || {};
     const semAlteracao = ucSemAlteracao(u);
     const alteracao = u.solicitacao === "Alteração de Carga";
 
-    B.filete();
-    B.secao("Dados da " + nomeUC(i));
+    /* Vários imóveis: cada um abre com "Imóvel" + chip "N de M" e o
+       complemento que o distingue; do 2º em diante, um filete antes
+       (bt_indiv_2_m_consum2). Com um imóvel só, o complemento já está
+       no endereço — só sai se for outro. */
+    const complAtual = [
+      u.mudaComplemento ? "Complemento atual" : "Complemento",
+      u.complemento,
+    ];
+    const novoCompl = u.mudaComplemento
+      ? ["Novo complemento", u.novoComplemento, 2]
+      : null;
+    /* Número predial próprio do imóvel (diferente do endereço). */
+    const numero =
+      u.nPredial && u.nPredial !== obra.num ? ["Número", u.nPredial] : null;
+    if (varias) {
+      if (i > 0) B.filete();
+      B.subsecaoChip("Imóvel", `${i + 1} de ${ucsDet.length}`, "contador");
+      /* Chip e complemento presos aos cartões: o bloco do imóvel nunca
+         começa no pé de uma folha e continua na outra. */
+      B.campos([complAtual, novoCompl, numero], 1);
+    } else if (
+      u.mudaComplemento ||
+      numero ||
+      (u.complemento && u.complemento !== obra.compl)
+    )
+      B.campos([complAtual, novoCompl, numero]);
 
     /* Caixa existente sem alteração não tem carga preenchida: os
        cartões sairiam zerados, anunciando uma demanda que ninguém
@@ -597,7 +688,9 @@ function _pdfBlocosIndividualBT(S) {
           ? "Alteração de Carga com mudança no complemento"
           : semAlteracao
             ? "Imóvel existente sem alteração"
-            : u.solicitacao,
+            : u.solicitacao === "Conexão Nova"
+              ? "Ligação Nova"
+              : u.solicitacao,
       ],
       ["Modalidade", _PDF_MODALIDADE_IND],
       /* Residencial ou a categoria da Tabela 11 (urbano e rural). */
@@ -622,71 +715,14 @@ function _pdfBlocosIndividualBT(S) {
         ["Categoria de atividade", (TABELA_11[cargas.catA] || {}).d, 3],
       ]);
 
-    if (rural) {
-      B.campos([
-        ["Cidade", obra.cidade],
-        ["Estado", obra.estado],
-      ]);
-      B.campos([
-        ["Distrito/Comunidade", obra.distritoComunidade],
-        ["Nome da propriedade", obra.nomePropriedade],
-      ]);
-      B.campos([
-        ["Ponto de referência", obra.pontoRef, 2],
-        ["Instalação mais próxima", obra.instProxima],
-      ]);
-      B.campos([
-        [
-          u.mudaComplemento ? "Complemento atual" : "Complemento",
-          u.complemento,
-          u.mudaComplemento ? 1 : 3,
-        ],
-      ].concat(
-        u.mudaComplemento ? [["Novo complemento", u.novoComplemento, 2]] : [],
-      ));
-    } else {
-      B.campos([
-        ["CEP", obra.cep],
-        ["Endereço", obra.endereco, 2],
-      ]);
-      B.campos([
-        ["Número", u.nPredial || obra.num],
-        [
-          u.mudaComplemento ? "Complemento atual" : "Complemento",
-          u.complemento || obra.compl,
-        ],
-        ["Bairro", obra.bairro],
-      ]);
-      if (u.mudaComplemento)
-        B.campos([["Novo complemento", u.novoComplemento, 3]]);
-      B.campos([
-        ["Cidade", obra.cidade],
-        ["Estado", obra.estado],
-      ]);
-    }
-
-    /* Rural com mudança de local traz a coordenada do NOVO padrão;
-       nos demais casos vale a da obra, repetida em cada UC como no
-       svg_6. */
-    const novoPadrao =
-      rural && u.mudancaLocal === "Sim" && (u.padraoLat || u.padraoLng);
-    B.cartoes([
-      [
-        "Coordenadas",
-        novoPadrao
-          ? _pdfCoordBT(u.padraoLat, u.padraoLng)
-          : _pdfCoordBT(obra.lat, obra.lng),
-      ],
-      ["Coordenada UTM", novoPadrao ? u.padraoUtm : _pdfUtmBT(obra)],
-    ]);
-
     /* Padrão de energia: no individual cada imóvel responde por si
-       (Etapa 4, spec Figma svg3–8). Ligação nova não pergunta mudança de
-       local — não há padrão existente para mudar. No imóvel existente,
-       "pronto para ligar" e "distância" só existem se o padrão muda de
-       local (mesma ordem da Etapa 4). */
+       (Etapa 4). Ligação nova não pergunta mudança de local — não há
+       padrão existente para mudar. No imóvel existente, "pronto para
+       ligar" e "distância" só existem se o padrão muda de local
+       (mesma ordem da Etapa 4). A rede fecha a mesma lista: no mock as
+       três perguntas dividem uma linha. */
     const dist = [
-      "Distância do padrão até o poste inferior a 30m?",
+      "Distância do padrão até a rede Cemig inferior a 30m?",
       u.distMenor30,
     ];
     const pronto = ["O padrão está pronto para ser ligado?", u.prontoLigar];
@@ -696,13 +732,23 @@ function _pdfBlocosIndividualBT(S) {
         : [["O padrão precisa ser mudado de local?", u.mudancaLocal]].concat(
             u.mudancaLocal === "Sim" ? [pronto, dist] : [],
           );
-    B.campos(camposPadrao);
-    B.campos([["Tipo de rede BT que atende o local", obra.tipoRede]]);
-    if (obra.restricaoAmbiental === "Sim")
-      B.campos([["Restrições ambientais", obra.restricoesTexto, 3]]);
+    B.campos(
+      camposPadrao.concat([["Tipo de rede BT que atende o local", obra.tipoRede]]),
+    );
+
+    /* Rural com mudança de local: a coordenada do NOVO padrão é do
+       imóvel, não do pedido. */
+    if (rural && u.mudancaLocal === "Sim" && (u.padraoLat || u.padraoLng))
+      B.cartoes([
+        ["Coordenadas do novo padrão", _pdfCoordBT(u.padraoLat, u.padraoLng)],
+        ["UTM do novo padrão", u.padraoUtm],
+      ]);
   });
 
-  /* ---- Correspondência ---- */
+  if (obra.restricaoAmbiental === "Sim")
+    B.campos([["Restrições ambientais", obra.restricoesTexto, 3]]);
+
+  /* ---- Conta de luz ---- */
   B.filete();
   _pdfCorrespondenciaBT(B, S);
 
@@ -730,10 +776,10 @@ function _pdfBlocosIndividualBT(S) {
     const motores = (cargas.mots || []).filter((m) => (m.q || 0) > 0);
     const gerador = u.gerador || {};
     const temGerador = gerador.possui === "Sim";
-    const alvo = varias ? nomeUC(i) : "unidade";
+    const alvo = alvoCargas(i);
 
     if (itens.length) {
-      abrirCargas("Cargas da " + alvo);
+      abrirCargas("Cargas " + alvo);
       B.tabela(
         ["Equipamento", "Potência (W)", "Qtde.", "Total (W)"],
         itens.map((it) => [it.n, fmtW(it.w), it.q, fmtW(it.q * it.w)]),
@@ -743,7 +789,7 @@ function _pdfBlocosIndividualBT(S) {
     }
 
     if (!motores.length && !temGerador) return;
-    abrirCargas("Cargas especiais da " + alvo);
+    abrirCargas("Cargas especiais " + alvo);
 
     if (motores.length) {
       B.subsecao("Motores");

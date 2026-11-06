@@ -225,6 +225,29 @@
   --pdf-chip-ponto-cor: var(--pdf-chip-mantido-ponto);
 }
 
+/* Contador "N de M" (imóveis do individual): pílula verde-limão, sem
+   ponto, texto em negrito. */
+.pdf-chip--contador {
+  padding: 0 var(--pdf-chip-contador-pad-x);
+  border-radius: calc(var(--pdf-chip-altura) / 2);
+  background: var(--pdf-chip-contador-fundo);
+  color: var(--pdf-chip-contador-texto);
+  font-size: var(--pdf-chip-contador-fs);
+  font-weight: 700;
+}
+
+.pdf-chip--contador::before {
+  display: none;
+}
+
+.pdf-subsecao--chip:has(.pdf-chip--contador) {
+  gap: var(--pdf-chip-contador-gap);
+}
+
+.pdf-cartoes + .pdf-subsecao--chip:has(.pdf-chip--contador) {
+  margin-top: var(--pdf-chip-contador-recuo);
+}
+
 /* ============================================================
    5. Grade de campos
    ------------------------------------------------------------
