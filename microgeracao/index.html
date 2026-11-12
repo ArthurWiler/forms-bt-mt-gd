@@ -84,18 +84,14 @@
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">7</span>
-          <span class="vstep-label">Armazenamento de energia</span>
-        </button>
-        <button type="button" class="vstep">
-          <span class="vstep-num">8</span>
           <span class="vstep-label">Correspondência</span>
         </button>
         <button type="button" class="vstep">
-          <span class="vstep-num">9</span>
+          <span class="vstep-num">8</span>
           <span class="vstep-label">Observações</span>
         </button>
         <button type="button" class="vstep">
-          <span class="vstep-num">10</span>
+          <span class="vstep-num">9</span>
           <span class="vstep-label">Prévia &amp; PDF</span>
         </button>
       </aside>
@@ -132,7 +128,6 @@
              visíveis, então os ids abaixo são apenas rótulos estáveis. -->
         <section class="page" id="page-5" data-flow="individual" data-src="etapas/05-carga.html"></section>
         <section class="page" id="page-coletivo-unidades" data-flow="coletivo" hidden data-src="etapas/06-dados-unidades.html"></section>
-        <section class="page" id="page-armazenamento" data-src="etapas/08-armazenamento.html"></section>
         <section class="page" id="page-6" data-src="etapas/09-correspondencia.html"></section>
         <section class="page" id="page-7" data-src="etapas/07-observacoes.html"></section>
         <section class="page" id="page-8" data-src="etapas/10-previa.html"></section>
@@ -188,6 +183,10 @@
     <script defer src="../shared/js/api.js"></script>
     <script defer src="../shared/js/calc-demanda.js"></script>
     <script defer src="../shared/js/carga-bt.js"></script>
+    <!-- Perfis de carga do BT individual (cards, "Personalizar perfil" e
+         modais) e a ponte deles com o estado da GD. -->
+    <script defer src="../bt/js/perfis-carga.js"></script>
+    <script defer src="../shared/js/perfis-carga-gd.js"></script>
     <script defer src="../shared/js/valida-instalacao.js"></script>
     <!-- Construtores de campo das ilhas dinâmicas: usados pela lista de UCs do
          fluxo Coletivo/Agrupamento (js/coletivo.js). -->

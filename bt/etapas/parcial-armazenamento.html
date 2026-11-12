@@ -1,20 +1,15 @@
 <!doctype html>
 
-<!-- Armazenamento de energia (seção 5 da planilha da norma): uma resposta por
-     solicitação, comum ao individual, coletivo e condomínio. Os campos abaixo
-     do "Possui" só aparecem com Sim (onArmazBT, bt-core.js). -->
-<div class="card">
-  <div class="section-eyebrow">Etapa 6</div>
-  <h3 class="card-title">Armazenamento de energia</h3>
-  <p class="card-sub">
-    Informe os dados do sistema de armazenamento de energia, se houver.
-  </p>
+<!-- Armazenamento de energia (seção 5 da planilha da norma): bloco no fim da
+     Etapa 5 do individual (Cargas dos imóveis), do coletivo e do condomínio de
+     torres (Dados das unidades). Uma resposta por solicitação. Incluído pelo
+     etapas-loader via [data-include]; os campos abaixo do "Possui" só
+     aparecem com Sim (onArmazBT, bt-core.js). -->
+<div class="divider armaz-bloco">
+  <h4 class="card-subtitle">Armazenamento de energia</h4>
   <div class="grid grid-2">
     <div class="field field--plain col-span-2" data-noopt>
-      <label>
-        Possui sistema de armazenamento de energia?
-        <span class="req">*</span>
-      </label>
+      <label>Possui sistema de armazenamento de energia?</label>
       <div data-toggle="armaz.possui" data-toggle-onchange="onArmazBT"></div>
       <select data-k="armaz.possui" style="display: none" aria-hidden="true">
         <option>Sim</option>
@@ -64,8 +59,4 @@
       </div>
     </div>
   </div>
-</div>
-<div class="nav-bottom no-print">
-  <button class="btn btn-ghost" data-nav="prev">← Voltar</button>
-  <button class="btn btn-primary" data-nav="next">Avançar →</button>
 </div>

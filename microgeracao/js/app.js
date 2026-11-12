@@ -29,7 +29,6 @@
 /* ===== Estado global ===== */
 const state = gdEstadoInicial();
 window.state = state; // visível p/ depuração e harnesses (const não vaza p/ window)
-let ilhaCargas = null; // ilha do Formulário de Carga (shared/js/carga-bt.js)
 
 /* ===== util ===== */
 const $ = (s, el = document) => el.querySelector(s);
@@ -225,10 +224,7 @@ function goTo(n, livre) {
   });
   window.scrollTo({ top: 0, behavior: "smooth" });
   // Conteúdo dinâmico detectado por presença (lição do MT), não por índice:
-  if (alvo.querySelector("#calcDemandaBox") && ilhaCargas) {
-    ilhaCargas.atualizar();
-    renderResultadoCargaGD();
-  }
+  if (alvo.querySelector("#calcDemandaBox")) renderPerfisGD();
   // Leaflet mede o container ao criar o mapa; se a etapa estava oculta, os
   // tiles ficam cortados até um invalidateSize() com a página já visível.
   if (alvo.querySelector("#map")) {
@@ -303,13 +299,14 @@ const gdEtapaCargaDefinida = () =>
 
 // Quando dizer, no lugar dos campos, que as cargas NÃO precisam ser detalhadas.
 // Não é a simples negação de gdEtapaCargaDefinida(): aquela também é falsa com
-// o "Tipo de edificação" ainda em branco no Grupo B, e ali não há o que
-// afirmar — o usuário só não chegou na resposta. O aviso exige um motivo
-// DEFINITIVO: Grupo A (a demanda é contratada, não sai de formulário de carga)
-// ou solicitação que não mexe na potência disponibilizada.
+// a etapa 4 ainda incompleta no Grupo B, e ali não há o que afirmar — o
+// usuário só não chegou na resposta (é o aviso "pendente", ver
+// gdAplicarConteudoCarga). O aviso exige um motivo DEFINITIVO: Grupo A (a
+// demanda é contratada, não sai de formulário de carga) ou solicitação que não
+// mexe na potência disponibilizada.
 const gdCargaNaoSeAplica = () =>
-  !!state.solicitacao &&
-  (state.grupo === "A" ||
+  state.grupo === "A" ||
+  (!!state.solicitacao &&
     !GD_SOLICITACOES_FORM_CARGA.includes(state.solicitacao));
 
 function gdAplicarFluxoEdificacao() {
@@ -356,6 +353,19 @@ function gdAplicarConteudoCarga() {
   $$("[data-carga-aviso]").forEach((el) => {
     el.hidden = !avisar;
   });
+  // Nem campos nem "não se aplica": falta resposta na etapa 4. Diz qual.
+  const pendente = !aplica && !avisar;
+  const falta = [
+    !state.solicitacao && "o tipo de solicitação",
+    !state.edifTipo && "o tipo de edificação",
+  ]
+    .filter(Boolean)
+    .join(" e ");
+  $$("[data-carga-pendente]").forEach((el) => {
+    el.hidden = !pendente;
+    const span = el.querySelector("[data-carga-pendente-falta]");
+    if (span && falta) span.textContent = falta;
+  });
 }
 
 // Navega até a etapa que contém o marcador data-etapa="<nome>". Usado pelos
@@ -370,7 +380,7 @@ function gdIrParaAncora(nome) {
 }
 
 // Renumera os "Etapa N" dos fragmentos e os números da sidebar pela posição
-// real no fluxo ativo. Hoje a sequência é fixa (10 etapas nos dois fluxos), mas
+// real no fluxo ativo. Hoje a sequência é fixa (9 etapas nos dois fluxos), mas
 // os fragmentos trazem o número no HTML: isto mantém eyebrow e sidebar
 // coerentes com a posição, sem depender do que está escrito em cada arquivo.
 function gdRenumerarEtapas() {
@@ -512,16 +522,15 @@ window.gdPropDocOk = () =>
     ? String(state.rne || "").trim() !== ""
     : validarCpfCnpj(state.cpfCnpj).valido === true;
 // Pessoa estrangeira: no lugar do CPF/CNPJ entra o nº do RNE/RNM. Enquanto
-// marcado, os campos exclusivos de CPF (filiação, RG, equipamento essencial,
-// NIS) não valem — só a data de nascimento, que é de pessoa física nos dois
-// documentos.
+// marcado, os campos de pessoa física (filiação, RG, data de nascimento,
+// equipamento essencial, NIS) não valem.
 function gdEstrangeiro() {
   return !!state.estrangeiro;
 }
 function onEstrangeiroGD(el) {
   state.estrangeiro = !!el.checked;
   if (state.estrangeiro) {
-    ["cpfCnpj", "filiacao", "rg", "laudoMedico", "nis", "numNis"].forEach(
+    ["cpfCnpj", "filiacao", "rg", "nasc", "laudoMedico", "nis", "numNis"].forEach(
       (k) => {
         state[k] = "";
         const c = $(`[data-k="${k}"]`);
@@ -546,9 +555,10 @@ function mostrarCamposPF(pf) {
   $$(".pf-campo").forEach((el) => {
     el.style.display = pf ? "" : "none";
   });
-  // Data de nascimento: vale para CPF e para RNE/RNM.
+  // Data de nascimento: só com CPF válido — pessoa estrangeira (RNE/RNM) não
+  // informa.
   $$(".nasc-campo").forEach((el) => {
-    el.style.display = pf || estr ? "" : "none";
+    el.style.display = pf ? "" : "none";
   });
   const cpfBox = $("#docCpfCnpjBox");
   if (cpfBox) cpfBox.style.display = estr ? "none" : "";
@@ -557,8 +567,7 @@ function mostrarCamposPF(pf) {
   if (!pf) {
     // Espelha o MT: os campos PF ocultos são zerados, inclusive laudo/NIS —
     // aqui são <select> com opção vazia "—", e não mais cards Sim/Não.
-    const zerar = ["filiacao", "rg", "laudoMedico", "nis", "numNis"];
-    if (!estr) zerar.push("nasc");
+    const zerar = ["filiacao", "rg", "laudoMedico", "nis", "numNis", "nasc"];
     zerar.forEach((k) => {
       const c = $(`[data-k="${k}"]`);
       if (c) c.value = "";
@@ -644,7 +653,7 @@ function preencherSelect(k, lista, opts) {
 }
 function preencherSelects() {
   preencherSelect("grupo", GD_GRUPOS);
-  preencherSelect("classe", GD_CLASSES);
+  preencherSelect("tipoPropriedade", tiposPropriedade(""));
   preencherSelect("solicitacao", GD_SOLICITACOES);
   preencherSelect("edificacao", GD_EDIFICACOES);
   preencherSelect("edifTipo", GD_EDIF_TIPO);
@@ -802,6 +811,7 @@ function onTipoRedeGD() {
   _sync("tipoRede");
   atualizarDisjAtual();
   atualizarFasesDisj(); // a fase do disjuntor geral deriva do tipo de rede
+  renderPerfisGD(); // disjuntores dos perfis: mono/bifásica x trifásica
 }
 /* ============================================================
    MAPA LEAFLET + RESTRIÇÃO AMBIENTAL — porte do bt-core.js para o
@@ -1601,10 +1611,7 @@ function onGrupo() {
   _atualizarPotenciaContratada();
   _atualizarPotenciaGeracao();
   atualizarSE();
-  if (ilhaCargas) {
-    ilhaCargas.atualizar(); // redeMono depende do tipo de rede
-    renderResultadoCargaGD();
-  }
+  renderPerfisGD(); // a lista de disjuntores depende do tipo de rede
   // O disjuntor geral atual (Coletivo/Agrupamento) só vale no Grupo B, então a
   // troca de grupo tem de reavaliar a etapa 4 — inclusive limpando o valor.
   // Os campos de carga também só valem no Grupo B (ver gdEtapaCargaDefinida);
@@ -1637,61 +1644,63 @@ function renderChecklist(containerId, lista, alvo) {
   });
 }
 
-/* ===== Etapa 5 — Formulário de Carga ===== */
-function _atividadeCargas() {
-  return state.classe === "Residencial" ||
-    state.classe === "Industrial" ||
-    state.classe === "Comercial"
-    ? state.classe
-    : "";
+/* ===== Etapa 6 — Dados das unidades (perfis de carga) ===== */
+// Tipo de propriedade (etapa 3), igual ao BT Urbano: Residencial + categorias
+// da Tabela 11 (shared/js/carga-bt.js). A atividade (state.classe:
+// Residencial/Comercial/Industrial) é DERIVADA dele, em `classe` (PDF) e em
+// `atividade` (a chave que os perfis de carga leem para escolher a família).
+function _derivarAtividadeGD() {
+  state.classe = state.atividade = infoTipoPropriedade(
+    state.tipoPropriedade,
+  ).atividade;
 }
-// Atividade principal da UC (state.classe, etapa 6): o tipo de carga — e
-// portanto a lista de equipamentos — deriva dela, como no BT e no mini.
-function onClasseGD() {
-  _sync("classe");
+function onTipoPropriedadeGD() {
+  _sync("tipoPropriedade");
+  _derivarAtividadeGD();
+  mostrarRamoGD();
   // Sai do campo depois de escolher, como nos demais selects: o rótulo
-  // flutuante volta ao estado neutro em vez de ficar preso em :focus-within
-  // enquanto a lista abaixo é remontada.
-  const sel = $(`select[data-k="classe"]`);
+  // flutuante volta ao estado neutro em vez de ficar preso em :focus-within.
+  const sel = $(`select[data-k="tipoPropriedade"]`);
   if (sel) sel.blur();
-  if (ilhaCargas) {
-    ilhaCargas.atualizar();
-    renderResultadoCargaGD();
-  }
+  renderPerfisGD(); // outra família de perfis (ou outra categoria na conta)
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
-// Acordeões da lista de equipamentos (persistem entre re-renders da ilha).
-const _accCargas = {};
+// Ramo da atividade: texto livre, só informativo (não entra na conta), e só
+// fora do Residencial — como no BT. Ao voltar para Residencial é limpo.
+const _ramoAplicaGD = () =>
+  !!state.classe && state.classe !== "Residencial";
+function mostrarRamoGD() {
+  const aplica = _ramoAplicaGD();
+  const box = $("#ramoAtividadeBox");
+  if (box) box.style.display = aplica ? "" : "none";
+  if (!aplica && state.ramoAtividade) aplicarPatch({ ramoAtividade: "" });
+}
+// Perfis de carga — os mesmos cards, editor "Personalizar perfil" e modais
+// do BT individual (bt/js/perfis-carga.js, ligados à GD por
+// shared/js/perfis-carga-gd.js). Escolher um perfil preenche state.cargas;
+// o disjuntor do perfil vai para state.cargaDisjEscolhido (PDF).
+const _redeMonoGD = () =>
+  state.tipoRede === "Monofásica" || state.tipoRede === "Bifásica";
 function initCargas() {
-  const box = $("#calcDemandaBox");
-  if (!box) return;
-  ilhaCargas = montarCargaAcordeao(box, {
-    data: state.cargas,
-    abertos: _accCargas,
-    redeMono: () =>
-      state.tipoRede === "Monofásica" || state.tipoRede === "Bifásica",
-    atividade: _atividadeCargas,
-    // O select da Atividade principal fica logo acima: o hint seria redundante.
-    hintAtividade: false,
-    aoMudar: (c) => {
-      state.cargas = c;
-      renderResultadoCargaGD();
-    },
-  });
-  renderResultadoCargaGD();
+  gdInstalarHostPerfis({ redeMono: _redeMonoGD });
+  renderPerfisGD();
 }
-// Cards de carga/demanda + escolha do disjuntor (mesmo bloco do BT).
-function renderResultadoCargaGD() {
-  const box = $("#resultadoCargaBox");
-  if (!box) return;
-  renderResultadoCarga(box, {
-    cargas: () => state.cargas || {},
-    escolhido: () => state.cargaDisjEscolhido,
-    aoEscolher: (dj) => {
-      state.cargaDisjEscolhido = dj;
-    },
+function renderPerfisGD() {
+  gdRenderPerfisUC($("#calcDemandaBox"), {
+    avisoSemTipo:
+      "Escolha o <b>tipo de propriedade</b> na etapa Dados da unidade para ver os perfis de carga.",
   });
 }
+// Gate do "Avançar" de "Dados das unidades": com as cargas em tela, perfil
+// escolhido e editor fechado — no individual (UC única) e no modo
+// calculadora do coletivo (cada UC a considerar), como no BT.
+window.gdPerfilCargaOk = () => {
+  if (!gdEtapaCargaDefinida()) return true;
+  if (editorPerfilAbertoBT()) return false;
+  if (!gdEhColetivo()) return !!state.perfil;
+  if (!gdModoCalculadora()) return true;
+  return (state.ucs || []).every((u) => gdUcSemAlteracao(u) || !!u.perfil);
+};
 
 /* ===== Etapa 6 — Geração ===== */
 function _ehFastTrack() {
@@ -2198,9 +2207,8 @@ function validarExportacao() {
   // aparece na etapa 5 (ver #instalacaoUCBox em onSolicitacao()).
   if (!_ehLigacaoNova()) req(d.instalacao, "Número da instalação");
   req(d.titular, "Titular da UC");
-  // Atividade principal: fora da tela (área de não alocados), então não é
-  // exigida — cobrar um campo que não há como preencher travaria a exportação
-  // para sempre.
+  req(d.tipoPropriedade, "Tipo de propriedade");
+  if (_ramoAplicaGD()) req(d.ramoAtividade, "Ramo da atividade");
   if (d.estrangeiro) req(d.rne, "Nº do RNE/RNM");
   else req(d.cpfCnpj, "CPF/CNPJ");
   req(d.logradouro, "Logradouro");
@@ -2267,8 +2275,7 @@ function validarExportacao() {
         (c.qtds || []).some((q) => (q || 0) > 0) ||
         (c.mots || []).some((m) => (parseInt(m.q) || 0) > 0) ||
         (c.extras || []).some((m) => (parseInt(m.q) || 0) > 0);
-      if (!temCarga)
-        faltas.push("Formulário de Carga (declarar as cargas elétricas)");
+      if (!temCarga) faltas.push("Perfil de carga da unidade");
     }
   }
   // Potência de consumo — mesmas condições de _paresPotenciaGD(), pelos mesmos
@@ -2434,9 +2441,11 @@ function renderPreviewGD() {
       "1 — Identificação",
       pvCampo("Instalação", d.instalacao, { step: "atendimento" }) +
         pvCampo("Titular", d.titular, { step: "identificacao" }) +
-        pvCampo("Grupo / Atividade principal", `${d.grupo} / ${d.classe}`, {
-          step: "identificacao",
-        }) +
+        pvCampo("Grupo", d.grupo, { step: "dados-uc" }) +
+        pvCampo("Tipo de propriedade", d.tipoPropriedade, { step: "dados-uc" }) +
+        (_ramoAplicaGD()
+          ? pvCampo("Ramo da atividade", d.ramoAtividade, { step: "dados-uc" })
+          : "") +
         (d.estrangeiro
           ? pvCampo("Nº do RNE/RNM", d.rne, { step: "identificacao" })
           : pvCampo("CPF/CNPJ", d.cpfCnpj, { step: "identificacao" })) +
@@ -2625,7 +2634,7 @@ function renderPreviewGD() {
     pvSecao(
       "Armazenamento de energia",
       armazLinhasGD(d)
-        .map(([rot, val]) => pvCampo(rot, val, { step: "armazenamento" }))
+        .map(([rot, val]) => pvCampo(rot, val, { step: "geracao" }))
         .join(""),
     ),
   );
@@ -2730,8 +2739,11 @@ window.initFormulario = function () {
   bindDeclaracoes();
   renderChecklist("docsChecklist", GD_DOCUMENTOS, "docs");
   renderChecklist("docsTecChecklist", GD_DOCS_TEC, "docsTec");
+  // Atividade derivada ANTES dos perfis: é ela que escolhe a família.
+  _derivarAtividadeGD();
   initCargas();
   // Estado inicial das condicionais
+  mostrarRamoGD();
   onGrupo();
   onSolicitacao(); // já chama onEdifTipoGD() (disjuntor × edificação)
   onMudancaLocalGD();
@@ -2767,8 +2779,8 @@ window.initFormulario = function () {
   if (selFast) selFast.addEventListener("change", onFastTrack);
   const selGrupo = $(`select[data-k="grupo"]`);
   if (selGrupo) selGrupo.addEventListener("change", onGrupo);
-  // A Atividade principal da UC re-renderiza a lista de cargas pelo onchange
-  // do próprio select (onClasseGD), no fragmento da etapa 6.
+  // O Tipo de propriedade re-renderiza a lista de cargas pelo onchange do
+  // próprio select (onTipoPropriedadeGD), no fragmento da etapa 3.
   // tensaoAtendimento: o <select> da etapa 5 chama atualizarSE() no próprio
   // onchange (padrão da minigeração) — um listener aqui rodaria em dobro.
   // Aceite das Orientações reavalia o botão "Avançar".

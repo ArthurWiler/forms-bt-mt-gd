@@ -57,7 +57,10 @@ function gerarPdfMicroGD(d) {
     ["Instalação / UC / Medidor", d.instalacao],
     ["Titular", d.titular],
     ["Grupo", d.grupo],
-    ["Atividade principal", d.classe],
+    ["Tipo de propriedade", d.tipoPropriedade],
+    ...(d.classe && d.classe !== "Residencial"
+      ? [["Ramo da atividade", d.ramoAtividade]]
+      : []),
     // Pessoa estrangeira não tem CPF/CNPJ: o documento é o RNE/RNM.
     d.estrangeiro ? ["Nº do RNE/RNM", d.rne] : ["CPF/CNPJ", d.cpfCnpj],
     ["Fast Track (art. 73-A)", d.fastTrack],

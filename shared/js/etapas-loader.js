@@ -50,6 +50,21 @@
           );
         }),
       );
+      // Parciais: `<div data-include="etapas/x.html">` dentro de um fragmento
+      // é trocado pelo HTML do arquivo (um bloco reaproveitado por mais de uma
+      // etapa — ex.: o armazenamento de energia no fim da Etapa 5 do BT).
+      const parciais = Array.from(document.querySelectorAll("[data-include]"));
+      await Promise.all(
+        parciais.map(async (el) => {
+          const res = await fetch(el.dataset.include);
+          if (!res.ok)
+            throw new Error(`${el.dataset.include}: HTTP ${res.status}`);
+          el.outerHTML = (await res.text()).replace(
+            /<script\b[\s\S]*?<\/script>/gi,
+            "",
+          );
+        }),
+      );
     } catch (e) {
       avisoServidorHTTP(e && e.message);
       return;

@@ -273,7 +273,7 @@ function goTo(n, livre) {
     initMapaNovo();
     if (mapaNovo) setTimeout(() => mapaNovo.invalidateSize(), 50);
   }
-  if (n === 9) renderPreview();
+  if (n === 8) renderPreview();
   // Recalcula o estado (habilitado/desabilitado) do botão Avançar da nova etapa.
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
@@ -450,17 +450,17 @@ function mostrarCamposPF(pf) {
   $$(".pf-campo").forEach((el) => {
     el.style.display = pf ? "" : "none";
   });
-  // Data de nascimento: é de pessoa física tanto com CPF quanto com RNE/RNM.
+  // Data de nascimento: só com CPF válido — pessoa estrangeira (RNE/RNM) não
+  // informa.
   $$(".nasc-campo").forEach((el) => {
-    el.style.display = pf || estr ? "" : "none";
+    el.style.display = pf ? "" : "none";
   });
   const cpfBox = $("#docCpfCnpjBox");
   if (cpfBox) cpfBox.style.display = estr ? "none" : "";
   const rneBox = $("#docRneBox");
   if (rneBox) rneBox.style.display = estr ? "" : "none";
   if (!pf) {
-    const zerar = ["filiacao", "rg"];
-    if (!estr) zerar.push("nasc");
+    const zerar = ["filiacao", "rg", "nasc"];
     zerar.forEach((k) => {
       const c = $(`[data-k="${k}"]`);
       if (c) {
@@ -472,11 +472,11 @@ function mostrarCamposPF(pf) {
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
 // Pessoa estrangeira: no lugar do CPF/CNPJ entra o nº do RNE/RNM, e dos campos
-// exclusivos de CPF sobra só a data de nascimento.
+// de pessoa física (filiação, RG, data de nascimento) nenhum vale.
 function onEstrangeiroMT(el) {
   state.estrangeiro = !!el.checked;
   if (state.estrangeiro) {
-    ["cpfCnpj", "filiacao", "rg"].forEach((k) => {
+    ["cpfCnpj", "filiacao", "rg", "nasc"].forEach((k) => {
       state[k] = "";
       const c = $(`[data-k="${k}"]`);
       if (c) c.value = "";
@@ -1458,17 +1458,17 @@ function sincronizarMapaNovoComCoordenadas(lat, lon, imediato) {
 function onSubPronta() {
   state.subPronta = event.target.value;
   const box = $("#subProntaAlert");
-  // Mesmos avisos do BT (obra.prontoLigar): "Sim" → informativo; "Não" →
-  // atenção com o prazo de 120 dias e as condições de cancelamento/taxa.
+  // "Sim" → informativo (vistoria e ligação automáticas); "Não" → atenção
+  // com o prazo de 120 dias para solicitá-las.
   if (state.subPronta === "Sim")
     box.innerHTML = alertHTML(
       "info",
-      "Como a subestação já está pronta para ligar, o pedido de vistoria e ligação será disparado automaticamente após a conclusão das etapas do orçamento de conexão.",
+      "Depois que você apresentar este formulário na agência, a Cemig irá analisar o pedido. Quando for aprovado, a vistoria e a ligação serão solicitadas automaticamente. Você não precisa fazer nenhuma solicitação adicional.",
     );
   else if (state.subPronta === "Não")
     box.innerHTML = alertHTML(
       "warn",
-      "Solicite o pedido de vistoria e ligação em até 120 dias após a conclusão das etapas do orçamento de conexão. O orçamento pode ser cancelado após duas reprovações pelo mesmo motivo, e há cobrança de taxa a partir do segundo serviço realizado.",
+      "Depois que você apresentar este formulário na agência, a Cemig irá analisar o pedido. Quando for aprovado, você terá até 120 dias para solicitar a vistoria e a ligação. Se não solicitar nesse prazo, o pedido pode ser cancelado.",
     );
   else box.innerHTML = "";
 }
@@ -2078,7 +2078,7 @@ function validarDemandaCubiculo(i) {
     demCub > 0 && potCub > 0 && demCub > potCub
       ? alertHTML(
           "err",
-          `A demanda do cubículo não pode ser superior à potência total dos seus transformadores (${fmt(potCub)} kVA).`,
+          `A demanda do cubículo (${fmt(demCub)} kVA) não pode ser superior à potência total dos seus transformadores (${fmt(potCub)} kVA).`,
         )
       : "";
 }
@@ -2574,7 +2574,7 @@ function abrirAnaliseMotores() {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 function voltarDaAnalise() {
-  goTo(9);
+  goTo(8);
 }
 
 async function exportarPDFPartida() {
@@ -2623,11 +2623,33 @@ function recalcTecnico() {
   atualizarVisibilidadeSE();
   // tipo de subestação automático
   preencherTiposSE();
-  // A validação de tarifa monômia e de demanda era feita sobre os campos
-  // globais, que não existem mais — a demanda agora é declarada por
-  // transformador/cubículo e validada no próprio card.
+  // Demanda × potência dos transformadores: o aviso acompanha cada mudança
+  // (demanda, potência, modalidade, escalonamento) e o "Avançar" da etapa
+  // fica travado enquanto houver erro (data-gate="demandaVsPotenciaOk").
+  if (state.compartilhada === "Sim")
+    cubiculos.forEach((_, i) => validarDemandaCubiculo(i));
+  else validarDemandaInstalacao();
   recalcRamal();
+  if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
+/* Aviso da instalação não compartilhada (o dos cubículos fica no card de
+   cada um, em validarDemandaCubiculo). */
+function validarDemandaInstalacao() {
+  const el = $("#instDemandaAlert");
+  if (!el) return;
+  const pot = parseFloat(state.potTotalTrafos) || 0;
+  const dem = demandaRepresentativaInstalacao();
+  el.innerHTML =
+    state.compartilhada !== "Sim" && dem > 0 && pot > 0 && dem > pot
+      ? alertHTML(
+          "err",
+          `A demanda informada (${fmt(dem)} kVA) não pode ser superior à potência total dos transformadores (${fmt(pot)} kVA).`,
+        )
+      : "";
+}
+// Gate do "Avançar" da etapa de subestação e transformadores.
+window.demandaVsPotenciaOk = () =>
+  !validarDemandasTodas().some((r) => r.nivel === "erro");
 
 /* ===== Resumo dos dados (KPIs) + visibilidade da escolha de subestação =====
    Os KPIs mostram os totais que DETERMINAM quais modelos de subestação são
@@ -2802,20 +2824,23 @@ function selecionarSE(selectId, value) {
 
 /* Demanda representativa da INSTALAÇÃO (não-compartilhada) — espelha
    demandaRepresentativaCubiculo: com escalonamento vale a maior etapa; sem
-   ele, a demanda contratada (soma ponta + fora ponta na modalidade Azul). */
+   ele, a demanda contratada. Na modalidade Azul ponta e fora ponta NÃO são
+   concorrentes (não se somam): vale a MAIOR das duas. */
 function demandaRepresentativaInstalacao() {
   const azul = state.modalidade === "Azul";
   if (state.escalonada === "Sim") {
     return escalonadaInstalacao.reduce((maior, e) => {
       const v = azul
-        ? (parseFloat(e.ponta) || 0) + (parseFloat(e.foraponta) || 0)
+        ? Math.max(parseFloat(e.ponta) || 0, parseFloat(e.foraponta) || 0)
         : parseFloat(e.demanda) || 0;
       return Math.max(maior, v);
     }, 0);
   }
   return azul
-    ? (parseFloat(state.demandaPontaContratada) || 0) +
-        (parseFloat(state.demandaForaPontaContratada) || 0)
+    ? Math.max(
+        parseFloat(state.demandaPontaContratada) || 0,
+        parseFloat(state.demandaForaPontaContratada) || 0,
+      )
     : parseFloat(state.demandaContratada) || 0;
 }
 /* Regra 3 (gate de exportação): a demanda declarada não pode superar a
@@ -3295,7 +3320,7 @@ async function onCEP(prefixo) {
    O jsPDF é carregado lá dentro, junto da fonte embutida. */
 async function exportarPDF() {
   if (atualizarGateExportacao().length) {
-    goTo(9);
+    goTo(8);
     return;
   }
   await gerarPdfFormularioMT();

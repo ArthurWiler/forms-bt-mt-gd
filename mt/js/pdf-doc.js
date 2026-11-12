@@ -71,8 +71,7 @@ const _pdfMesAnoMT = (v) =>
 /* Campos de pessoa física só existem para CPF válido (mesma regra
    de mostrarCamposPF): num CNPJ eles estão limpos. */
 const _pdfEhPFMT = () =>
-  !state.estrangeiro &&
-  CalculoMT.soDigitos(state.cpfCnpj || "").length === 11;
+  !state.estrangeiro && CalculoMT.soDigitos(state.cpfCnpj || "").length === 11;
 
 /* Há conteúdo nesta lista de campos? O construtor descarta os
    vazios, então perguntar antes evita abrir um filete que não
@@ -136,7 +135,13 @@ function _pdfTrafoMT(B, t, i) {
      é novo nem uma substituição. Em Conexão Nova não há chip: todo
      trafo é, por definição, novo. */
   const semAlt = troca && situacao === "sem";
-  const chip = !troca ? "" : subst ? "Substituído" : semAlt ? "Mantido" : "Novo";
+  const chip = !troca
+    ? ""
+    : subst
+      ? "Substituído"
+      : semAlt
+        ? "Mantido"
+        : "Novo";
   const tom = subst ? "substituido" : semAlt ? "mantido" : "novo";
   const cartoes = (pot, inrush) => [
     ["Potência", _pdfUnMT(pot, "kVA")],
@@ -174,8 +179,6 @@ function _pdfContatoMT(B) {
   ]);
   /* Os campos de pessoa física não aparecem no mock, que desenha um
      CNPJ — mas o que a pessoa preencheu não pode sumir do papel. */
-  if (state.estrangeiro)
-    B.campos([["Data de Nascimento", dataBR(state.nasc)]]);
   if (_pdfEhPFMT()) {
     B.campos([
       ["Filiação (Mãe ou Pai)", state.filiacao],
@@ -235,7 +238,10 @@ function _pdfEmpreendimentoMT(B) {
     ["Subestação pronta para ser ligada", state.subPronta],
     ["Tipo de propriedade", state.atividade],
     ["Ramo da atividade", ramoParaPdf(state.ramoAtividade)],
-    ["Área do empreendimento", state.localizacao === "Urbana" ? "Urbano" : state.localizacao],
+    [
+      "Área do empreendimento",
+      state.localizacao === "Urbana" ? "Urbano" : state.localizacao,
+    ],
     ["CEP", state.uc_cep],
   ];
   if (rural)
@@ -267,7 +273,7 @@ function _pdfEmpreendimentoMT(B) {
     B.campos([["Área de restrição ambiental", state.restricoesTexto, 3]]);
 }
 
-/* "Dados técnicos da subestação e cargas especiais": o novo local
+/* "Dados da subestação e transdormadores": o novo local
    da subestação (em alteração de carga), a tarifação e a demanda,
    os transformadores — soltos ou dentro de cada cubículo —, os
    motores e o modelo de subestação escolhido. */
@@ -276,7 +282,7 @@ function _pdfTecnicoMT(B) {
   const compart = state.compartilhada === "Sim";
   const azul = state.modalidade === "Azul";
 
-  B.secao("Dados técnicos da subestação e cargas especiais", {
+  B.secao("Dados da subestação e transdormadores", {
     repete: false,
   });
 
@@ -504,7 +510,11 @@ function _pdfArmazenamentoMT(B) {
   B.secao("Armazenamento de energia", { repete: false });
   if (state.armazPossui !== "Sim") {
     B.campos([
-      ["Possui sistema de armazenamento de energia", state.armazPossui || "Não", 2],
+      [
+        "Possui sistema de armazenamento de energia",
+        state.armazPossui || "Não",
+        2,
+      ],
     ]);
     return;
   }
@@ -549,7 +559,11 @@ function _pdfCorrespondenciaMT(B) {
       ["Cidade", state.ec_municipio],
       ["Estado", state.ec_estado],
     );
-  else campos.push(["Como você deseja receber a conta de luz", state.formaCorresp]);
+  else
+    campos.push([
+      "Como você deseja receber a conta de luz",
+      state.formaCorresp,
+    ]);
   /* Campo opcional: sem dia escolhido não sai linha nenhuma — o
      usuário não recusou nada, apenas não informou. */
   campos.push([

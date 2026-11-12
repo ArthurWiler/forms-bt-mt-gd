@@ -20,12 +20,49 @@
    genéricos, até a Cemig fornecer o catálogo de cada ramo. As
    potências vêm do CAT (ND-5.1), não dos números ilustrativos do mock.
 
-   Requer: shared/js/load-form-data.js (CAT, MOTOR_MONO/MOTOR_TRI),
-   shared/js/calc.js (fmt2, fmtW), shared/js/calc-demanda.js
-   (calcDemandaResultados), shared/js/carga-bt.js (tipoPropriedadeDe,
-   infoTipoPropriedade), shared/js/ramo-atividade.js (ramoCodigo),
-   bt/js/model.js (cargasQtdsPorNome) e bt/js/bt-core.js (redeMonoBT).
+   Usado também por micro e minigeração (etapa de cargas), que não
+   carregam o bt-core: o que este arquivo pede ao formulário hospedeiro
+   passa por window.PERFIS_CARGA_HOST (ver "Ponte com o hospedeiro").
+
+   Requer: CAT/MOTOR_MONO/MOTOR_TRI (bt/js/data.js ou
+   shared/js/load-form-data.js), shared/js/calc.js (fmt2, fmtW),
+   shared/js/calc-demanda.js (calcDemandaResultados),
+   shared/js/carga-bt.js (tipoPropriedadeDe, infoTipoPropriedade,
+   montarCargaAcordeao), shared/js/campos.js (cmgCampo) e, no BT,
+   bt/js/bt-core.js (redeMonoBT, montarCargasBT).
    ============================================================ */
+
+/* ---- Ponte com o hospedeiro ----
+   O BT não registra nada: vale o bt-core (redeMonoBT, montarCargasBT).
+   Micro/mini definem window.PERFIS_CARGA_HOST = {
+     redeMono()                          → bool (disjuntores mono/bifásicos)
+     montarCargas(box, u, chave, aoMudar) → ilha de cargas do editor
+     semMotores                          → bool: os motores são declarados
+                                           FORA dos perfis (minigeração) —
+                                           os perfis ignoram os seus.
+   } */
+const _hostPerfisBT = () => window.PERFIS_CARGA_HOST || {};
+const _redeMonoPerfilBT = () => (_hostPerfisBT().redeMono || redeMonoBT)();
+const _semMotoresPerfilBT = () => !!_hostPerfisBT().semMotores;
+function _montarCargasPerfilBT(box, u, chave, aoMudar) {
+  return (_hostPerfisBT().montarCargas || montarCargasBT)(
+    box,
+    u,
+    chave,
+    aoMudar,
+  );
+}
+// `qtds` posicional sobre o CAT a partir de [{ n, q }] (mesma função do
+// bt/js/model.js, que o BT precisa já no carregamento — aqui fica a cópia
+// para quem não carrega o model do BT).
+function _qtdsPorNomePerfilBT(itens) {
+  const qtds = CAT.map(() => 0);
+  itens.forEach(({ n, q }) => {
+    const i = CAT.findIndex((c) => c.n === n);
+    if (i >= 0) qtds[i] = q;
+  });
+  return qtds;
+}
 
 const PERFIS_CARGA = {
   residencial: [
@@ -177,7 +214,9 @@ const PERFIS_CARGA = {
 // (TABELA_11[4]). Rascunhos de antes guardavam o CNAE 9602-5/01|02 no ramo.
 const _ehSalaoBT = (u) =>
   infoTipoPropriedade(tipoPropriedadeDe(u)).catA === 4 ||
-  (!u.tipoPropriedade && /^96025/.test(ramoCodigo(u.ramo || "")));
+  (!u.tipoPropriedade &&
+    typeof ramoCodigo === "function" &&
+    /^96025/.test(ramoCodigo(u.ramo || "")));
 
 // Família de perfis do imóvel, pelo Tipo de propriedade.
 function familiaPerfisBT(u) {
@@ -214,21 +253,23 @@ const _tipoAPerfilBT = (u) => (u.atividade === "Residencial" ? "res" : "nr");
 function cargasDoPerfilBT(p, u) {
   const catTipo = infoTipoPropriedade(tipoPropriedadeDe(u)).catA;
   return {
-    qtds: cargasQtdsPorNome(
+    qtds: _qtdsPorNomePerfilBT(
       p.itens.map((it) => ({ n: it.n, q: qtdPerfilBT(it) })),
     ),
     tipoA: _tipoAPerfilBT(u),
     catA: catTipo != null ? catTipo : p.catA == null ? null : p.catA,
-    mots: (p.mots || []).map((m) => ({
+    mots: _motsDoPerfilBT(p).map((m) => ({
       fase: m.fase,
       cv: m.cv,
       q: String(qtdPerfilBT(m)),
     })),
   };
 }
+// Motores do perfil — nenhum quando o hospedeiro os declara fora (mini).
+const _motsDoPerfilBT = (p) => (_semMotoresPerfilBT() ? [] : p.mots || []);
 // Contas do perfil para o card: carga, demanda, disjuntor e nº de equipamentos.
 function resumoCargasBT(c) {
-  const r = calcDemandaResultados(c, redeMonoBT());
+  const r = calcDemandaResultados(c, _redeMonoPerfilBT());
   const nItens =
     (c.qtds || []).reduce((s, q) => s + (q || 0), 0) +
     (c.mots || []).reduce((s, m) => s + (parseInt(m.q) || 0), 0);
@@ -251,7 +292,7 @@ function linhasPerfilBT(p) {
     const c = CAT.find((x) => x.n === it.n) || { w: 0 };
     return { nome: it.n, pot: fmtW(c.w) + " W", qtd: faixaPerfilBT(it) };
   });
-  (p.mots || []).forEach((m) =>
+  _motsDoPerfilBT(p).forEach((m) =>
     linhas.push({ nome: _motorRotuloBT(m), pot: "", qtd: faixaPerfilBT(m) }),
   );
   return linhas;
@@ -270,8 +311,91 @@ function linhasCargasBT(c) {
   return linhas;
 }
 
-/* Modais: _modalPerfilBT e abrirModalDisjuntoresBT vivem em bt-core.js
-   (usados também pelo coletivo/múltiplas torres). */
+/* ===== Modais (padrão .cmg-modal — ver shared/js/pdf-sucesso.js) =====
+   Moram aqui (e não no bt-core) para servir também a micro/mini. O BT
+   coletivo usa abrirModalDisjuntoresBT fora dos perfis. */
+function _modalPerfilBT(classe, tituloTxt, montarCorpo, botoes) {
+  const overlay = document.createElement("div");
+  overlay.className = "cmg-modal-overlay";
+  const dialog = document.createElement("div");
+  dialog.className = "cmg-modal cmg-modal-perfil " + classe;
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-modal", "true");
+  const idTitulo = "cmg-modal-perfil-titulo";
+  dialog.setAttribute("aria-labelledby", idTitulo);
+  const anteriorFoco = document.activeElement;
+  const fechar = () => {
+    document.removeEventListener("keydown", onKey);
+    overlay.remove();
+    if (anteriorFoco && anteriorFoco.focus && anteriorFoco.isConnected)
+      anteriorFoco.focus();
+  };
+  const onKey = (e) => {
+    if (e.key === "Escape") fechar();
+  };
+  const btnX = document.createElement("button");
+  btnX.type = "button";
+  btnX.className = "cmg-modal-fechar";
+  btnX.setAttribute("aria-label", "Fechar");
+  btnX.innerHTML =
+    '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+  btnX.addEventListener("click", fechar);
+  const corpo = document.createElement("div");
+  corpo.className = "cmg-modal-conteudo";
+  const titulo = document.createElement("h2");
+  titulo.className = "cmg-modal-titulo";
+  titulo.id = idTitulo;
+  titulo.textContent = tituloTxt;
+  corpo.appendChild(titulo);
+  montarCorpo(corpo);
+  const rodape = document.createElement("div");
+  rodape.className = "cmg-modal-rodape";
+  botoes.forEach((b) => {
+    const el = document.createElement("button");
+    el.type = "button";
+    el.className = "btn btn-outlined-acao " + b.classe;
+    el.innerHTML = b.html;
+    el.addEventListener("click", () => {
+      fechar();
+      if (b.acao) b.acao();
+    });
+    rodape.appendChild(el);
+  });
+  dialog.append(btnX, corpo, rodape);
+  overlay.appendChild(dialog);
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) fechar();
+  });
+  document.addEventListener("keydown", onKey);
+  document.body.appendChild(overlay);
+  btnX.focus();
+  return { dialog, fechar };
+}
+// "Mais opções de disjuntores" (svg14): select com as opções válidas.
+function abrirModalDisjuntoresBT(lista, atual, aoConfirmar) {
+  let sel = null;
+  _modalPerfilBT(
+    "cmg-modal-disj",
+    "Mais opções de disjuntores",
+    (corpo) => {
+      sel = document.createElement("select");
+      sel.innerHTML = lista
+        .map((dj) => `<option value="${dj}">${dj}</option>`)
+        .join("");
+      sel.value = atual || lista[0] || "";
+      corpo.appendChild(cmgCampo("Disjuntor", sel, "field--float"));
+    },
+    [
+      { classe: "btn-ghost", html: "Voltar" },
+      {
+        classe: "btn-primary",
+        html: "Confirmar",
+        acao: () => aoConfirmar(sel.value),
+      },
+    ],
+  );
+}
+
 const ICONE_LAPIS_BT =
   '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M14 6l4 4"/></svg>';
 
@@ -378,7 +502,7 @@ function recalcularCargasBT(u) {
   // para "Escritórios" não muda a família de perfis, mas muda a conta).
   const cat = infoTipoPropriedade(tipoPropriedadeDe(u)).catA;
   if (d.tipoA === "nr" && cat != null) d.catA = cat;
-  const r = calcDemandaResultados(d, redeMonoBT());
+  const r = calcDemandaResultados(d, _redeMonoPerfilBT());
   d._demanda = r.demandaTotal;
   d._cargaKw = r.cargaInstalada;
   d._disjuntores = r.disjuntores.map((x) => x.fx);
@@ -629,7 +753,9 @@ function _perfilEditorBT(u, ctx) {
   // Gerador de emergência: só no individual (_ucGerador mora no app dele).
   if (ctx.comGerador) box.appendChild(_ucGerador(d, ctx.chave));
   box.appendChild(calcBox);
-  montarCargasBT(cargasBox, d, ctx.chave, () => _perfilCalcBT(calcBox, d));
+  _montarCargasPerfilBT(cargasBox, d, ctx.chave, () =>
+    _perfilCalcBT(calcBox, d),
+  );
   _perfilCalcBT(calcBox, d);
   const acoes = document.createElement("div");
   acoes.className = "perfil-editor-acoes";

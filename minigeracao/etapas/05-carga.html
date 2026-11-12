@@ -16,8 +16,11 @@
       </p>
     </div>
   </div>
-  <div id="calcDemandaBox" style="margin-top: var(--cmg-space-8)"></div>
-  <div id="resultadoCargaBox"></div>
+  <!-- Perfis de carga do BT individual (cards + "Personalizar perfil"),
+       pela família do Tipo de propriedade da etapa 3 — ver renderPerfisGD()
+       em js/app.js. Carga, demanda e disjuntor estão nos próprios cards; os
+       motores ficam no bloco abaixo e entram na conta por fora dos perfis. -->
+  <div id="calcDemandaBox"></div>
   <!-- Motores e cargas especiais: veio da etapa "Tipo de atendimento", onde
        morava dentro de #blocoTecnicoIndividual e só existia depois de o "Tipo
        de edificação" ser respondido. Aqui é seção fixa da etapa — os motores
@@ -66,5 +69,7 @@
 </div>
 <div class="nav-bottom no-print">
   <button class="btn btn-ghost" data-nav="prev">← Voltar</button>
-  <button class="btn btn-primary" data-nav="next">Avançar →</button>
+  <button class="btn btn-primary" data-gate="gdPerfilCargaOk" data-nav="next">
+    Avançar →
+  </button>
 </div>

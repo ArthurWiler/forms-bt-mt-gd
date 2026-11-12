@@ -33,6 +33,11 @@ function gdUcPadrao(i) {
     // Cargas detalhadas (ND-5.1), usadas no modo calculadora (< 4 aptos).
     // A ilha montarCargaAcordeao escreve _demanda/_cargaKw/_disjuntores aqui.
     cargas: { qtds: [], tipoA: "", catA: 0, mots: [], extras: [] },
+    // Perfil de carga (modo calculadora) — ver bt/js/perfis-carga.js.
+    perfil: "",
+    perfilPers: null,
+    perfilFamilia: "",
+    disjEscolhido: "",
     _acc: {},
   };
 }
@@ -51,7 +56,19 @@ function gdEstadoInicial() {
     gridZero: "Não",
     titular: "",
     grupo: "B",
+    // Tipo de propriedade (Residencial ou categoria da Tabela 11, etapa 3) e
+    // a atividade DERIVADA dele em `classe` (Residencial/Comercial/Industrial).
+    tipoPropriedade: "",
+    ramoAtividade: "",
     classe: "",
+    atividade: "",
+    // Perfil de carga escolhido na etapa "Dados das unidades" (bt/js/
+    // perfis-carga.js): id do perfil, o personalizado e a família em que
+    // foi escolhido. Ver shared/js/perfis-carga-gd.js.
+    perfil: "",
+    perfilPers: null,
+    perfilFamilia: "",
+    disjEscolhido: "",
     cpfCnpj: "",
     // Pessoa estrangeira: no lugar do CPF/CNPJ entra o nº do RNE/RNM.
     estrangeiro: false,

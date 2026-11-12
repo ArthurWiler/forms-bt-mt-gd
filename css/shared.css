@@ -5874,6 +5874,12 @@ html[data-fluxo="condominio"]
 .cemig-form .atend-pedido + .divider {
   padding-top: 25px;
 }
+/* Armazenamento de energia no fim da Etapa 5 do BT (bt/etapas/
+   parcial-armazenamento.html): no Figma o subtítulo fica 25px abaixo da
+   linha, não os 32px padrão do .divider. */
+.cemig-form .armaz-bloco.divider {
+  padding-top: 25px;
+}
 
 /* ============================================================
    BT Condomínio de torres + Coletivo (specs svg1–15)

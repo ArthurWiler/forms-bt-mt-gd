@@ -13,7 +13,6 @@
 /* ===== Estado global ===== */
 const state = gdEstadoInicial();
 window.state = state; // visível p/ depuração e harnesses
-let ilhaCargas = null;
 
 /* ===== util ===== */
 const $ = (s, el = document) => el.querySelector(s);
@@ -181,10 +180,7 @@ function goTo(n, livre) {
     if (i === n) s.classList.add("active");
   });
   window.scrollTo({ top: 0, behavior: "smooth" });
-  if (alvo.querySelector("#calcDemandaBox") && ilhaCargas) {
-    ilhaCargas.atualizar();
-    renderResultadoCargaGD();
-  }
+  if (alvo.querySelector("#calcDemandaBox")) renderPerfisGD();
   if (alvo.querySelector("#fontesBox")) recalcFontes();
   if (alvo.querySelector("#gfcBloco")) atualizarGFC();
   // Leaflet mede o container ao criar o mapa; se a etapa estava oculta, os
@@ -313,16 +309,15 @@ window.gdPropDocOk = () =>
     ? String(state.rne || "").trim() !== ""
     : validarCpfCnpj(state.cpfCnpj).valido === true;
 // Pessoa estrangeira: no lugar do CPF/CNPJ entra o nº do RNE/RNM. Enquanto
-// marcado, os campos exclusivos de CPF (filiação, RG, equipamento essencial,
-// NIS) não valem — só a data de nascimento, que é de pessoa física nos dois
-// documentos.
+// marcado, os campos de pessoa física (filiação, RG, data de nascimento,
+// equipamento essencial, NIS) não valem.
 function gdEstrangeiro() {
   return !!state.estrangeiro;
 }
 function onEstrangeiroGD(el) {
   state.estrangeiro = !!el.checked;
   if (state.estrangeiro) {
-    ["cpfCnpj", "filiacao", "rg", "laudoMedico", "nis", "numNis"].forEach(
+    ["cpfCnpj", "filiacao", "rg", "nasc", "laudoMedico", "nis", "numNis"].forEach(
       (k) => {
         state[k] = "";
         const c = $(`[data-k="${k}"]`);
@@ -347,9 +342,10 @@ function mostrarCamposPF(pf) {
   $$(".pf-campo").forEach((el) => {
     el.style.display = pf ? "" : "none";
   });
-  // Data de nascimento: vale para CPF e para RNE/RNM.
+  // Data de nascimento: só com CPF válido — pessoa estrangeira (RNE/RNM) não
+  // informa.
   $$(".nasc-campo").forEach((el) => {
-    el.style.display = pf || estr ? "" : "none";
+    el.style.display = pf ? "" : "none";
   });
   const cpfBox = $("#docCpfCnpjBox");
   if (cpfBox) cpfBox.style.display = estr ? "none" : "";
@@ -358,8 +354,7 @@ function mostrarCamposPF(pf) {
   if (!pf) {
     // Espelha o micro: os campos PF ocultos são zerados, inclusive laudo/NIS —
     // na etapa 2 copiada são <select> com opção vazia "—", não cards Sim/Não.
-    const zerar = ["filiacao", "rg", "laudoMedico", "nis", "numNis"];
-    if (!estr) zerar.push("nasc");
+    const zerar = ["filiacao", "rg", "laudoMedico", "nis", "numNis", "nasc"];
     zerar.forEach((k) => {
       const c = $(`[data-k="${k}"]`);
       if (c) c.value = "";
@@ -442,7 +437,7 @@ function _rotuloTensaoGD(v) {
 function preencherSelects() {
   // "grupo" não tem select próprio: na minigeração é sempre "A" (uma única
   // opção em GD_GRUPOS), então o campo saiu da etapa 3 e o valor vem do estado.
-  preencherSelect("classe", GD_CLASSES);
+  preencherSelect("tipoPropriedade", tiposPropriedade(""));
   // tipoLigTrafo saiu da etapa: a ligação passou a ser perguntada POR
   // transformador, dentro do card (ver _opcoesTipoLigGD, js/subestacao.js).
   preencherSelect(
@@ -903,49 +898,78 @@ function onTelhadoArrendado() {
   }
 }
 
-/* ===== Etapa 5 — Formulário de Carga (redeMono sempre false no mini) ===== */
-function _atividadeCargas() {
-  return state.classe === "Residencial" ||
-    state.classe === "Industrial" ||
-    state.classe === "Comercial"
-    ? state.classe
-    : "";
+/* ===== Etapa 5 — Formulário de Carga: perfis de carga ===== */
+// Tipo de propriedade (etapa 3), igual ao BT Urbano: Residencial + categorias
+// da Tabela 11 (shared/js/carga-bt.js). A atividade (state.classe:
+// Residencial/Comercial/Industrial) é DERIVADA dele, em `classe` (PDF) e em
+// `atividade` (a chave que os perfis de carga leem para escolher a família).
+function _derivarAtividadeGD() {
+  state.classe = state.atividade = infoTipoPropriedade(
+    state.tipoPropriedade,
+  ).atividade;
 }
-// Acordeões da lista de equipamentos (persistem entre re-renders da ilha).
-const _accCargas = {};
+function onTipoPropriedadeGD() {
+  _sync("tipoPropriedade");
+  _derivarAtividadeGD();
+  mostrarRamoGD();
+  // Sai do campo depois de escolher, como nos demais selects: o rótulo
+  // flutuante volta ao estado neutro em vez de ficar preso em :focus-within.
+  const sel = $(`select[data-k="tipoPropriedade"]`);
+  if (sel) sel.blur();
+  renderPerfisGD(); // outra família de perfis (ou outra categoria na conta)
+  if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
+}
+// Ramo da atividade: texto livre, só informativo (não entra na conta), e só
+// fora do Residencial — como no BT. Ao voltar para Residencial é limpo.
+const _ramoAplicaGD = () =>
+  !!state.classe && state.classe !== "Residencial";
+function mostrarRamoGD() {
+  const aplica = _ramoAplicaGD();
+  const box = $("#ramoAtividadeBox");
+  if (box) box.style.display = aplica ? "" : "none";
+  if (!aplica && state.ramoAtividade) aplicarPatch({ ramoAtividade: "" });
+}
+// Perfis de carga — os mesmos cards, editor "Personalizar perfil" e modais
+// do BT individual e do microGD (bt/js/perfis-carga.js, ligados à GD por
+// shared/js/perfis-carga-gd.js). Escolher um perfil preenche state.cargas.
 function initCargas() {
-  const box = $("#calcDemandaBox");
-  if (!box) return;
-  // Mesma ilha do BT e do microGD (shared/js/carga-bt.js): antes o mini usava
-  // montarCalcDemanda + uma .kpi-row escrita à mão no fragmento, que não tinha
-  // o visual dos cards .resultado-* de css/shared.css.
-  ilhaCargas = montarCargaAcordeao(box, {
-    data: state.cargas,
-    abertos: _accCargas,
+  gdInstalarHostPerfis({
     // Grupo A, atendimento trifásico: não há rede mono/bifásica no mini.
     redeMono: () => false,
     // Os motores do mini são declarados no bloco técnico desta mesma etapa
     // (cards de motoresGD, js/subestacao.js), que traz também os dados de
-    // partida. Manter o acordeão da ilha faria o usuário declarar o mesmo
-    // motor duas vezes — aqui ele é escondido e state.cargas.mots vira
-    // derivado, por gdProjetarMotoresNaCarga().
+    // partida. Os perfis ignoram os motores deles e o editor esconde o
+    // acordeão de motores — state.cargas.mots é derivado, por
+    // gdProjetarMotoresNaCarga().
     semMotores: true,
-    atividade: _atividadeCargas,
-    aoMudar: (c) => {
-      state.cargas = c;
-      renderResultadoCargaGD();
-    },
   });
-  renderResultadoCargaGD();
+  renderPerfisGD();
 }
+function renderPerfisGD() {
+  gdRenderPerfisUC($("#calcDemandaBox"), {
+    avisoSemTipo:
+      "Escolha o <b>tipo de propriedade</b> na etapa Dados da unidade para ver os perfis de carga.",
+    antesDeCalcular: _projetarMotoresGD,
+  });
+}
+// Gate do "Avançar" da etapa: editor fechado e, quando o Formulário de Carga
+// é obrigatório (ligação nova / aumento de demanda), um perfil escolhido.
+window.gdPerfilCargaOk = () =>
+  !editorPerfilAbertoBT() &&
+  (!GD_SOLICITACOES_FORM_CARGA.includes(state.solicitacao) || !!state.perfil);
 /* Projeta os cards de motor do bloco técnico (motoresGD) em
    state.cargas.mots — a origem única dos motores do mini. `mots` é DERIVADO,
    nunca digitado: a ilha esconde o acordeão de motores (semMotores).
    1 card = 1 motor (q: 1), e é a contagem de cards que motorColPorQtd() usa
    para escolher a coluna c1..c4 da T14/T15.
-   Recalcula a ilha SEM reconstruir o DOM (ilhaCargas.recalcular), para não
-   roubar o foco de quem está digitando no card do motor. */
+   Recalcula as cargas SEM reconstruir o DOM dos perfis, para não roubar o
+   foco de quem está digitando no card do motor. */
 function gdProjetarMotoresNaCarga() {
+  _projetarMotoresGD();
+  recalcularCargasBT(state);
+  state.cargaDisjEscolhido = gdDisjDoPerfil(state);
+}
+function _projetarMotoresGD() {
   if (!state.cargas) state.cargas = {};
   state.cargas.mots = (motoresGD || [])
     .filter((m) => m.cv)
@@ -960,7 +984,6 @@ function gdProjetarMotoresNaCarga() {
       if (m.cv === GD_CV_ACIMA) linha.kvaDeclarado = m.kva;
       return linha;
     });
-  if (ilhaCargas) ilhaCargas.recalcular();
 }
 /* Motor na sentinela sem o kVA: o campo existe com [data-req], mas o
    CemigMarcadores só cobra o que está VISÍVEL — num card colapsado ele não
@@ -971,18 +994,6 @@ function gdValidarMotoresGD() {
       m.cv === GD_CV_ACIMA && !m.kva ? `Motor ${i + 1}: potência (kVA)` : null,
     )
     .filter(Boolean);
-}
-// Cards de carga/demanda + escolha do disjuntor (mesmo bloco do BT/micro).
-function renderResultadoCargaGD() {
-  const box = $("#resultadoCargaBox");
-  if (!box) return;
-  renderResultadoCarga(box, {
-    cargas: () => state.cargas || {},
-    escolhido: () => state.cargaDisjEscolhido,
-    aoEscolher: (dj) => {
-      state.cargaDisjEscolhido = dj;
-    },
-  });
 }
 
 /* ===== Etapa 6 — Geração =====
@@ -1889,10 +1900,10 @@ function validarExportacao() {
   // etapa 4 (ver onSolicitacao).
   if (!_ehLigacaoNova()) req(d.instalacao, "Número da instalação");
   req(d.titular, "Titular da UC");
-  req(d.classe, "Atividade principal");
+  req(d.tipoPropriedade, "Tipo de propriedade");
+  if (_ramoAplicaGD()) req(d.ramoAtividade, "Ramo da atividade");
   if (d.estrangeiro) {
     req(d.rne, "Nº do RNE/RNM");
-    req(d.nasc, "Data de Nascimento");
   } else {
     req(d.cpfCnpj, "CPF/CNPJ");
     const _doc = validarCpfCnpj(d.cpfCnpj);
@@ -1957,7 +1968,8 @@ function validarExportacao() {
       (c.qtds || []).some((q) => (q || 0) > 0) ||
       (c.mots || []).some((m) => (parseInt(m.q) || 0) > 0) ||
       (c.extras || []).some((m) => (parseInt(m.q) || 0) > 0);
-    if (!temCarga)
+    if (!state.perfil) faltas.push("Perfil de carga da unidade");
+    else if (!temCarga)
       faltas.push("Formulário de Carga (declarar as cargas elétricas)");
   }
   // A demanda contratada é campo de card (transformador ou cubículo): quem a
@@ -2203,9 +2215,11 @@ function renderPreviewGD() {
           { step: 2 },
         ) +
         pvCampo("Instalação", d.instalacao, { step: 3 }) +
-        pvCampo("Grupo / Atividade principal", `${d.grupo} / ${d.classe}`, {
-          step: 2,
-        }) +
+        pvCampo("Grupo", d.grupo, { step: 2 }) +
+        pvCampo("Tipo de propriedade", d.tipoPropriedade, { step: 2 }) +
+        (_ramoAplicaGD()
+          ? pvCampo("Ramo da atividade", d.ramoAtividade, { step: 2 })
+          : "") +
         pvCampo("Solicitação", d.solicitacao, { step: 3 }) +
         pvCampo(
           "Tensão de atendimento",
@@ -2254,22 +2268,22 @@ function renderPreviewGD() {
     pvSecao(
       "Armazenamento de energia",
       armazLinhasGD(d)
-        .map(([rot, val]) => pvCampo(rot, val, { step: 7 }))
+        .map(([rot, val]) => pvCampo(rot, val, { step: 5 }))
         .join(""),
     ),
   );
   let cor =
-    pvCampo("Como deseja receber a fatura", d.corrAlternativa, { step: 8 }) +
-    pvCampo("Vencimento", d.vencimento, { step: 8 });
+    pvCampo("Como deseja receber a fatura", d.corrAlternativa, { step: 7 }) +
+    pvCampo("Vencimento", d.vencimento, { step: 7 });
   if (d.corrAlternativa === "E-mail informado")
     cor += pvCampo("E-mail para envio da fatura", d.email, {
       full: true,
-      step: 8,
+      step: 7,
     });
   if (d.corrAlternativa === "Outro e-mail")
     cor += pvCampo("E-mail para envio da fatura", d.corrOutroEmail, {
       full: true,
-      step: 8,
+      step: 7,
     });
   if (d.corrAlternativa === "Endereço novo")
     cor += pvCampo(
@@ -2283,12 +2297,12 @@ function renderPreviewGD() {
       ]
         .filter(Boolean)
         .join(" · "),
-      { full: true, step: 8 },
+      { full: true, step: 7 },
     );
   if (d.corrAlternativa === "Conta globalizada")
-    cor += pvCampo("Conta globalizada", d.contaGlobal, { step: 8 });
+    cor += pvCampo("Conta globalizada", d.contaGlobal, { step: 7 });
   secoes.push(pvSecao("Correspondência e Fatura", cor));
-  // Observações (etapa 10): só entra na prévia quando há texto — uma seção com
+  // Observações (etapa 9): só entra na prévia quando há texto — uma seção com
   // um "—" solto não acrescenta nada à conferência.
   if ((d.obs || "").trim())
     secoes.push(
@@ -2353,7 +2367,10 @@ window.initFormulario = function () {
   bindInputs();
   inicializarCards();
   bindDeclaracoes();
+  // Atividade derivada ANTES dos perfis: é ela que escolhe a família.
+  _derivarAtividadeGD();
   initCargas();
+  mostrarRamoGD();
   // Blocos de modelo de módulo/inversor: sem esta garantia uma fonte Solar
   // restaurada abriria com as listas vazias, sem nenhum campo a preencher.
   // Vem antes de renderFontes(), que é quem os desenha.
@@ -2394,18 +2411,8 @@ window.initFormulario = function () {
   mostrarCamposPF(gdEhCpfValido());
   // nis: o próprio <select> da etapa 2 copiada chama onNisGD() no onchange
   // (padrão do micro/MT) — um listener aqui faria o handler rodar duas vezes.
-  // A Atividade principal (state.classe) define o tipo de carga (residencial x
-  // não-residencial), então remonta a lista de equipamentos e recalcula os
-  // cards de resultado. O select vive na etapa 3 e a ilha na 5: a busca é no
-  // documento inteiro, então a distância entre as duas não importa.
-  const selClasse = $(`select[data-k="classe"]`);
-  if (selClasse)
-    selClasse.addEventListener("change", () => {
-      if (ilhaCargas) {
-        ilhaCargas.atualizar();
-        renderResultadoCargaGD();
-      }
-    });
+  // O Tipo de propriedade (etapa 3) remonta a lista de equipamentos da etapa 5
+  // pelo onchange do próprio select (onTipoPropriedadeGD).
   const aceite = $("#aceiteOrient");
   if (aceite)
     aceite.addEventListener("change", () => {

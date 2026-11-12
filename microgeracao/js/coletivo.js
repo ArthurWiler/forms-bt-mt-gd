@@ -450,6 +450,10 @@ function gdReplicarUC1() {
       ? u
       : Object.assign({}, base, {
           cargas: JSON.parse(JSON.stringify(base.cargas || {})),
+          // O perfil personalizado também em cópia: é editável por UC.
+          perfilPers: base.perfilPers
+            ? JSON.parse(JSON.stringify(base.perfilPers))
+            : null,
           _acc: {},
           complemento: u.complemento,
           instalacao: u.instalacao,
@@ -632,7 +636,7 @@ function gdRenderUcs() {
       }
 
       // Disjuntor da UC: escolha manual no ND-5.2; no modo calculadora vem
-      // das cargas declaradas (renderizado abaixo, junto da ilha).
+      // do perfil de carga escolhido (gdDisjDoPerfil, abaixo).
       if (!modoCalc || semAlt) {
         grid.appendChild(
           cmgCampo(
@@ -654,37 +658,30 @@ function gdRenderUcs() {
       }
       corpo.appendChild(grid);
 
-      // Modo calculadora: a UC detalha as cargas na MESMA ilha do fluxo
-      // individual (shared/js/carga-bt.js), que escreve _demanda/_cargaKw/
-      // _disjuntores em u.cargas.
+      // Modo calculadora: a UC escolhe um perfil de carga — mesma grade e
+      // editor "Personalizar perfil" do BT individual e do BT coletivo
+      // (montarPerfisBT, bt/js/perfis-carga.js). Escolher só preenche
+      // u.cargas (_demanda/_cargaKw/_disjuntores); o disjuntor da UC é o do
+      // perfil (gdDisjDoPerfil, shared/js/perfis-carga-gd.js).
       if (modoCalc && !semAlt) {
+        const chave = "c" + ui;
+        if (revalidarPerfilBT(u)) delete _editorPerfil[chave];
+        if (u.perfil) recalcularCargasBT(u);
+        u.disjPara = gdDisjDoPerfil(u);
         const divisor = document.createElement("div");
         divisor.className = "divider";
         const titulo = document.createElement("span");
         titulo.className = "subbox-title";
-        titulo.textContent = "Cargas da unidade";
+        titulo.textContent = "Perfil de carga da unidade";
         divisor.appendChild(titulo);
         corpo.appendChild(divisor);
-        const cargasBox = document.createElement("div");
-        corpo.appendChild(cargasBox);
-        const disjBox = document.createElement("div");
-        corpo.appendChild(disjBox);
-        u.cargas = u.cargas || {};
-        u._acc = u._acc || {};
-        montarCargaAcordeao(cargasBox, {
-          data: u.cargas,
-          abertos: u._acc,
-          redeMono: () =>
-            state.tipoRede === "Monofásica" || state.tipoRede === "Bifásica",
-          atividade: () => u.atividade || "",
-          categoria: () => infoTipoPropriedade(tipoPropriedadeDe(u)).catA,
-          hintAtividade: false,
-          aoMudar: () => {
-            gdRenderResultadoUC(disjBox, u);
-            gdAtualizarCargasColetivo();
-          },
+        montarPerfisBT(corpo, u, {
+          chave,
+          comGerador: false,
+          avisoSemTipo:
+            "Escolha o <b>tipo de propriedade</b> da unidade acima para ver os perfis de carga.",
+          aoMudar: gdRenderUcs,
         });
-        gdRenderResultadoUC(disjBox, u);
       }
       // Replicar a UC 1 para as demais — dentro da própria UC 1, como no BT
       // coletivo (bt/js/coletivo-app.js). Sozinha na lista não há destino.
@@ -709,19 +706,6 @@ function gdRenderUcs() {
     CemigMarcadores.aplicar(box);
     CemigMarcadores.atualizarAvancar();
   }
-}
-
-// KPIs + disjuntor calculado de UMA UC (modo calculadora) — mesma ilha de
-// resultado do fluxo individual.
-function gdRenderResultadoUC(box, u) {
-  renderResultadoCarga(box, {
-    cargas: () => u.cargas,
-    escolhido: () => u.disjPara,
-    aoEscolher: (dj) => {
-      u.disjPara = dj;
-      gdAtualizarCargasColetivo();
-    },
-  });
 }
 
 // Atualiza SÓ o que é calculado: visibilidade do campo não residencial e o
@@ -816,7 +800,7 @@ function gdValidarColetivo() {
     });
     if (semCarga.length)
       faltas.push(
-        `Cargas elétricas de ${semCarga.length} unidade(s) do agrupamento`,
+        `Perfil de carga de ${semCarga.length} unidade(s) do agrupamento`,
       );
   } else {
     // ND-5.2: a área privativa de cada apartamento residencial é o insumo do

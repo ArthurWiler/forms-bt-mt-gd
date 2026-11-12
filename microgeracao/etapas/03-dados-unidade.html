@@ -10,6 +10,19 @@
       <label>Grupo <span class="req">*</span></label>
       <select data-k="grupo" data-sem-vazio></select>
     </div>
+    <!-- Tipo de propriedade = Residencial + categorias da Tabela 11, igual ao
+         BT Urbano (shared/js/carga-bt.js): é ele que define o tipo de carga
+         (residencial x não residencial) e a categoria da lista de
+         equipamentos. A atividade (state.classe) é DERIVADA dele em
+         onTipoPropriedadeGD(). O ramo só aparece fora do Residencial. -->
+    <div class="field">
+      <label>Tipo de propriedade <span class="req">*</span></label>
+      <select data-k="tipoPropriedade" onchange="onTipoPropriedadeGD()"></select>
+    </div>
+    <div class="field" id="ramoAtividadeBox" style="display: none">
+      <label>Ramo da atividade <span class="req">*</span></label>
+      <input type="text" data-k="ramoAtividade" placeholder=" " />
+    </div>
     <div class="field field--plain col-span-2" data-noopt>
       <label>Zona de localização <span class="req">*</span></label>
       <div data-toggle="localizacao" data-toggle-onchange="onZonaGD"></div>

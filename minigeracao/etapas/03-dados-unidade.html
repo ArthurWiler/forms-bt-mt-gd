@@ -6,13 +6,18 @@
     Preencha os dados de identificação das unidades consumidoras.
   </p>
   <div class="grid grid-2">
-    <!-- Atividade principal (state.classe): é ela que define o tipo de carga
-         — Residencial x não-residencial — e, portanto, a lista de equipamentos
-         do Formulário de Carga. Mesmo nome e mesmo lugar do BT, junto da
-         identificação da UC; antes ficava na própria etapa de Carga. -->
+    <!-- Tipo de propriedade = Residencial + categorias da Tabela 11, igual ao
+         BT Urbano (shared/js/carga-bt.js): é ele que define o tipo de carga
+         (residencial x não residencial) e a categoria da lista de
+         equipamentos. A atividade (state.classe) é DERIVADA dele em
+         onTipoPropriedadeGD(). O ramo só aparece fora do Residencial. -->
     <div class="field">
-      <label>Atividade principal <span class="req">*</span></label>
-      <select data-k="classe"></select>
+      <label>Tipo de propriedade <span class="req">*</span></label>
+      <select data-k="tipoPropriedade" onchange="onTipoPropriedadeGD()"></select>
+    </div>
+    <div class="field" id="ramoAtividadeBox" style="display: none">
+      <label>Ramo da atividade <span class="req">*</span></label>
+      <input type="text" data-k="ramoAtividade" placeholder=" " />
     </div>
 
     <div class="field field--plain col-span-2" data-noopt>

@@ -70,8 +70,7 @@
         oninput="onMascara(this, mascararRG)"
       />
     </div>
-    <!-- Data de nascimento vale para os dois documentos de pessoa física (CPF
-         e RNE/RNM), daí a classe própria em vez de .pf-campo. -->
+    <!-- Data de nascimento: só com CPF válido (pessoa estrangeira não informa). -->
     <div class="field row-solo nasc-campo" style="display: none">
       <label>Data de Nascimento <span class="req">*</span></label>
       <input type="date" data-k="prop.nasc" placeholder=" " />

@@ -108,7 +108,10 @@ function gerarPdfMiniGD(d) {
   const ucPairs = [
     ["Instalação / UC / Medidor", d.instalacao],
     ["Grupo", d.grupo],
-    ["Atividade principal", d.classe],
+    ["Tipo de propriedade", d.tipoPropriedade],
+    ...(d.classe && d.classe !== "Residencial"
+      ? [["Ramo da atividade", d.ramoAtividade]]
+      : []),
     ["Tipo de Solicitação", d.solicitacao],
     // O valor guardado é o volt "cru" (chave da regra de subestação); sai
     // formatado em kV, como no rótulo do <select>.

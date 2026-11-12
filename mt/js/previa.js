@@ -24,9 +24,9 @@ const PV_ETAPA = {
   atendimento: 3,
   subestacao: 4,
   ramal: 5,
-  armazenamento: 6,
-  correspondencia: 7,
-  observacoes: 8,
+  armazenamento: 5, // bloco no fim de Ramal e Geração
+  correspondencia: 6,
+  observacoes: 7,
 };
 
 /* ===== Blocos de montagem (padrão previa-* do shared.css) ===== */
@@ -64,7 +64,10 @@ const pvGrid = (campos) => `<div class="previa-grid">${campos}</div>`;
 const pvTextoLivre = (txt) =>
   `<p class="previa-texto">${String(txt)
     .trim()
-    .replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c])
+    .replace(
+      /[&<>"]/g,
+      (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
+    )
     .replace(/\n/g, "<br>")}</p>`;
 
 /* Chip de situação do transformador/cubículo — mesmo componente do card do
@@ -172,8 +175,7 @@ function pvMidia(src, legenda, step, linha) {
 /* Campos de pessoa física só existem para CPF válido (mesma regra de
    mostrarCamposPF): num CNPJ eles são limpos e não devem virar "—" na tela. */
 const _pvEhPF = () =>
-  !state.estrangeiro &&
-  CalculoMT.soDigitos(state.cpfCnpj || "").length === 11;
+  !state.estrangeiro && CalculoMT.soDigitos(state.cpfCnpj || "").length === 11;
 
 function _pvContato() {
   const E = PV_ETAPA.contato;
@@ -190,10 +192,9 @@ function _pvContato() {
   if (_pvEhPF()) {
     prop +=
       pvCampo("Filiação (Mãe ou Pai)", state.filiacao, { step: E }) +
-      pvCampo("RG / RANI", state.rg, { step: E });
+      pvCampo("RG / RANI", state.rg, { step: E }) +
+      pvCampo("Data de Nascimento", dataBR(state.nasc), { step: E });
   }
-  if (_pvEhPF() || state.estrangeiro)
-    prop += pvCampo("Data de Nascimento", dataBR(state.nasc), { step: E });
   const rt =
     pvCampo("Nome completo (sem abreviações)", state.rtNome, {
       full: true,
@@ -581,7 +582,7 @@ function _pvTecnico() {
       _pvSubestacao("Subestação atual", state.alt_tipoAtual) +
       _pvSubestacao("Nova subestação", state.alt_tipoPara);
 
-  return pvSecao("Dados técnicos da subestação e cargas especiais", corpo);
+  return pvSecao("Dados da subestação e transdormadores", corpo);
 }
 
 function _pvRamalGeracao() {
@@ -724,9 +725,7 @@ function renderPreview() {
     _pvCorrespondencia(),
   ];
   if (state.observacoes)
-    secoes.push(
-      pvSecao("Observações", pvTextoLivre(state.observacoes)),
-    );
+    secoes.push(pvSecao("Observações", pvTextoLivre(state.observacoes)));
   $("#previewContent").innerHTML = secoes.join(PV_DIVISOR);
 
   // A pergunta "Tarifa monômia?" saiu do formulário junto com a seção global

@@ -633,8 +633,11 @@ function _pdfBlocosIndividualBT(S) {
       : [pessoaFisica ? "CPF" : "CNPJ", prop.cpfCnpj],
   ];
   if (pessoaFisica && !prop.estrangeiro)
-    camposProp.push(["Filiação", prop.filiacao], ["RG", prop.rg]);
-  if (pessoaFisica) camposProp.push(["Data de nascimento", dataBR(prop.nasc)]);
+    camposProp.push(
+      ["Filiação", prop.filiacao],
+      ["RG", prop.rg],
+      ["Data de nascimento", dataBR(prop.nasc)],
+    );
   if (pessoaFisica && !prop.estrangeiro)
     camposProp.push(
       /* Só sai quando a pergunta foi respondida: um "Não" fabricado

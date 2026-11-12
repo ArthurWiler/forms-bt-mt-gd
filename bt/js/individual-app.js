@@ -1148,11 +1148,12 @@ function validacaoObrigatoriosBT() {
 // Índices das etapas para os lápis da prévia (ordem real do
 // Índices de página para os lápis de edição da prévia — a ordem das
 // `section.page` em bt/individual.html: orientações=0, dados pessoais=1,
-// endereço da unidade=2, imóveis e atendimento=3, cargas dos imóveis=4,
-// armazenamento de energia=5, conta de luz=6, observações=7, prévia=8. "Tipo de atendimento" voltou a ser
+// endereço da unidade=2, imóveis e atendimento=3, cargas dos imóveis=4 (com o
+// armazenamento de energia no fim), conta de luz=5, observações=6, prévia=7.
+// "Tipo de atendimento" voltou a ser
 // uma etapa própria (referência do Figma da trilha, com 8 passos), separada do
 // endereço — daí `dados` e `atend` apontarem para etapas diferentes.
-const PG = { prop: 1, dados: 2, atend: 3, cargas: 4, armaz: 5, corr: 6 };
+const PG = { prop: 1, dados: 2, atend: 3, cargas: 4, armaz: 4, corr: 5 };
 // Residencial ou a categoria da Tabela 11 (urbano e rural).
 const tipoPropriedadeBT = (u) => tipoPropriedadeDe(u);
 // Ramo (texto livre) só existe nos imóveis não residenciais — a irrigação
@@ -1302,7 +1303,8 @@ function renderPreviaBT() {
     h += pvCampoBT("Filiação", p.filiacao, PG.prop);
     h += pvCampoBT("RG", p.rg, PG.prop);
   }
-  if (pf) h += pvCampoBT("Data de nascimento", dataBR(p.nasc), PG.prop);
+  if (pf && !p.estrangeiro)
+    h += pvCampoBT("Data de nascimento", dataBR(p.nasc), PG.prop);
   secoes.push(secao("Dados do proprietário", h + `</div>`));
   // Endereço da unidade consumidora: um só para todos os imóveis.
   h = `<div class="previa-grid">`;

@@ -327,7 +327,15 @@
       e.stopPropagation();
       const page = btn.closest(".page") || document;
       const r = validar(page);
-      const alvo = r.primeiro;
+      // Sem campo faltando, quem trava é um gate (data-gate) — rola até o
+      // primeiro aviso de erro visível da etapa, que explica o bloqueio.
+      let alvo = r.primeiro;
+      if (!alvo)
+        alvo =
+          Array.prototype.find.call(
+            page.querySelectorAll(".cmg-aviso--error"),
+            _visivel,
+          ) || null;
       if (alvo) {
         alvo.scrollIntoView({ behavior: "smooth", block: "center" });
         // O foco reforça a mensagem para leitores de tela; após a rolagem para

@@ -96,7 +96,19 @@ function gdEstadoInicial() {
     instalacao: "",
     titular: "",
     grupo: "A",
+    // Tipo de propriedade (Residencial ou categoria da Tabela 11, etapa 3) e
+    // a atividade DERIVADA dele em `classe` (Residencial/Comercial/Industrial).
+    tipoPropriedade: "",
+    ramoAtividade: "",
     classe: "",
+    atividade: "",
+    // Perfil de carga escolhido no Formulário de Carga (bt/js/
+    // perfis-carga.js): id do perfil, o personalizado e a família em que
+    // foi escolhido. Ver shared/js/perfis-carga-gd.js.
+    perfil: "",
+    perfilPers: null,
+    perfilFamilia: "",
+    disjEscolhido: "",
     cpfCnpj: "",
     // Pessoa estrangeira: no lugar do CPF/CNPJ entra o nº do RNE/RNM.
     estrangeiro: false,

@@ -22,24 +22,34 @@
       Para a unidade consumidora, detalhe as cargas para calcularmos a demanda
       e o disjuntor adequado.
     </p>
-    <!-- Atividade principal (state.classe): é ela que define o tipo de carga
-         (Residencial → res; Comercial/Industrial → não-residencial) e,
-         portanto, a lista de equipamentos. Mesmo nome do campo equivalente do
-         BT e da minigeração. Sem ela a lista não tem como ser montada. -->
-    <div class="grid grid-2">
-      <div class="field">
-        <label>Atividade principal <span class="req">*</span></label>
-        <select data-k="classe" onchange="onClasseGD()"></select>
-      </div>
+    <!-- Perfis de carga do BT individual (cards + "Personalizar perfil"),
+         pela família do Tipo de propriedade da etapa 3 — ver renderPerfisGD()
+         em js/app.js. Carga, demanda e disjuntor estão nos próprios cards. -->
+    <div id="calcDemandaBox"></div>
+  </div>
+  <!-- Etapa 4 ainda incompleta (solicitação e/ou edificação em branco — quem
+       pula etapas pela sidebar chega aqui assim): diz o que falta e leva até
+       lá, em vez de deixar o card só com o cabeçalho. O texto do que falta é
+       escrito por gdAplicarConteudoCarga(). -->
+  <div data-carga-pendente hidden>
+    <div class="cmg-aviso cmg-aviso--warn no-print">
+      <div class="cmg-aviso-icon" aria-hidden="true"></div>
+      <p class="cmg-aviso-texto">
+        Para detalhar as cargas, informe primeiro
+        <span data-carga-pendente-falta>o tipo de solicitação e o tipo de
+        edificação</span> na etapa
+        <a
+          href="#"
+          class="cmg-aviso-link"
+          onclick="gdIrParaAncora('atendimento'); return false"
+          >Tipo de atendimento</a
+        >.
+      </p>
     </div>
-    <div id="calcDemandaBox" style="margin-top: var(--cmg-space-8)"></div>
-    <div id="resultadoCargaBox"></div>
   </div>
   <!-- No lugar dos campos quando as cargas não se aplicam por um motivo
        DEFINITIVO (Grupo A ou solicitação que não mexe na potência) — ver
-       gdCargaNaoSeAplica() em js/app.js. Com o tipo de edificação ainda em
-       branco nem os campos nem o aviso aparecem: o card fica só com o
-       cabeçalho. -->
+       gdCargaNaoSeAplica() em js/app.js. -->
   <div data-carga-aviso hidden>
     <div class="cmg-aviso no-print">
       <div class="cmg-aviso-icon" aria-hidden="true"></div>
@@ -52,5 +62,7 @@
 </div>
 <div class="nav-bottom no-print">
   <button class="btn btn-ghost" data-nav="prev">← Voltar</button>
-  <button class="btn btn-primary" data-nav="next">Avançar →</button>
+  <button class="btn btn-primary" data-gate="gdPerfilCargaOk" data-nav="next">
+    Avançar →
+  </button>
 </div>

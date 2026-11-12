@@ -2960,12 +2960,12 @@ function _mkPrumadasTabela() {
    views/revisar.js + validacaoObrigatorios de app.js:750-823)
    ============================================================ */
 // Índices das etapas para os lápis (após o pruning): coletivo e condomínio
-// têm 10 e 9 páginas — tipo=1, empr=2 e o miolo varia. No condomínio a etapa
-// "Dados do projeto" vem antes do Armazenamento; nos dois o Armazenamento de
-// energia vem logo antes da Conta de luz, que antecede obs/prévia.
+// têm 8 e 9 páginas — tipo=1, empr=2 e o miolo varia. O Armazenamento de
+// energia é um bloco no fim da Etapa 5 (Dados das unidades) nos dois; no
+// condomínio "Dados do projeto" vem antes da Conta de luz.
 const PG = MULTI
-  ? { tipo: 1, empr: 2, blocos: 3, unidades: 4, projeto: 5, armaz: 6, corr: 7 }
-  : { tipo: 1, empr: 2, ucs: 3, cargas: 4, armaz: 5, corr: 6 };
+  ? { tipo: 1, empr: 2, blocos: 3, unidades: 4, projeto: 5, armaz: 4, corr: 6 }
+  : { tipo: 1, empr: 2, ucs: 3, cargas: 4, armaz: 4, corr: 5 };
 function validacaoObrigatoriosColetivo() {
   _espelharGrupos();
   _espelharColetivo();

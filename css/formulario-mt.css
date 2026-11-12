@@ -539,6 +539,11 @@
 .cemig-minigd .cub-demanda-grid {
   margin-top: 14px;
 }
+/* Na instalação (fora dos cards) os campos de demanda são um bloco novo da
+   etapa: mesmo passo de 32px que separa a tabela de demanda escalonada. */
+.cemig-mtform #trafoTarifacao > .cub-demanda-grid {
+  margin-top: var(--cmg-space-8);
+}
 /* Tabela de demanda escalonada dentro do card do cubículo — segue o mesmo
    passo vertical dos demais blocos. O botão "+ Adicionar etapa de demanda"
    usa o padrão canônico do BT (.motores-add + .btn.btn-ghost, shared.css),
@@ -594,7 +599,9 @@
 }
 /* O alerta de demanda do cubículo só ocupa espaço quando tem conteúdo. */
 .cemig-mtform .cub-card [id^="cubDemandaAlert"]:not(:empty),
-.cemig-minigd .cub-card [id^="cubDemandaAlert"]:not(:empty) {
+.cemig-minigd .cub-card [id^="cubDemandaAlert"]:not(:empty),
+/* Idem para o aviso da instalação, logo abaixo dos campos de demanda. */
+.cemig-mtform #instDemandaAlert:not(:empty) {
   margin-top: 14px;
 }
 /* Mesma ideia na microgeração, um nível acima: o aviso de demanda × potência

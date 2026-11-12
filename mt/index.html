@@ -3,7 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Média Tensão - Indústria, comércio, irrigação e outros — Cemig</title>
+    <title>
+      Média Tensão - Indústria, comércio, irrigação e outros — Cemig
+    </title>
     <!-- Open Sans auto-hospedada (@font-face em css/variables.css). -->
     <link
       rel="preload"
@@ -78,18 +80,14 @@
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">7</span>
-          <span class="vstep-label">Armazenamento de energia</span>
-        </button>
-        <button type="button" class="vstep">
-          <span class="vstep-num">8</span>
           <span class="vstep-label">Conta de luz</span>
         </button>
         <button type="button" class="vstep">
-          <span class="vstep-num">9</span>
+          <span class="vstep-num">8</span>
           <span class="vstep-label">Observações</span>
         </button>
         <button type="button" class="vstep">
-          <span class="vstep-num">10</span>
+          <span class="vstep-num">9</span>
           <span class="vstep-label">Prévia &amp; PDF</span>
         </button>
       </aside>
@@ -157,7 +155,9 @@
               <h4 class="orient-docs-titulo">Documentação necessária</h4>
 
               <details class="cmg-acordeao">
-                <summary class="cmg-acordeao-titulo">Documentos pessoais</summary>
+                <summary class="cmg-acordeao-titulo">
+                  Documentos pessoais
+                </summary>
                 <div class="cmg-acordeao-corpo">
                   <ul class="orient-docs-lista">
                     <li>
@@ -190,7 +190,9 @@
               </details>
 
               <details class="cmg-acordeao">
-                <summary class="cmg-acordeao-titulo">Documentos do imóvel</summary>
+                <summary class="cmg-acordeao-titulo">
+                  Documentos do imóvel
+                </summary>
                 <div class="cmg-acordeao-corpo">
                   <ul class="orient-docs-lista">
                     <li>
@@ -205,10 +207,9 @@
                         Certidão de Número, Habite-se ou similar, IPTU,
                         Escritura Pública, Registro do Imóvel, Alvará de
                         construção ou de licença de localização, Planta de
-                        Arquitetura aprovada pela prefeitura,
-                        Licença/declaração de órgão competente (se área
-                        protegida por legislação ambiental ou territórios
-                        indígenas/quilombolas)
+                        Arquitetura aprovada pela prefeitura, Licença/declaração
+                        de órgão competente (se área protegida por legislação
+                        ambiental ou territórios indígenas/quilombolas)
                       </em>
                       <p class="orient-docs-nota">
                         <b>*Exceções:</b> não é exigido para o município de Juiz
@@ -424,82 +425,8 @@
         </section>
 
         <section class="page" id="page-6">
-          <!-- Armazenamento de energia (seção 5 da planilha da norma). Os
-               campos abaixo do "Possui" só aparecem com Sim (onArmazMT). -->
           <div class="card">
             <div class="section-eyebrow">Etapa 7</div>
-            <h3 class="card-title">Armazenamento de energia</h3>
-            <p class="card-sub">
-              Informe os dados do sistema de armazenamento de energia, se
-              houver.
-            </p>
-            <div class="grid grid-2">
-              <div class="field field--plain col-span-2" data-noopt>
-                <label
-                  >Possui sistema de armazenamento de energia?
-                  <span class="req">*</span></label
-                >
-                <select data-k="armazPossui" onchange="onArmazMT()">
-                  <option>Sim</option>
-                  <option selected>Não</option>
-                </select>
-              </div>
-              <div
-                class="grid grid-2 col-span-2"
-                id="armazDetalheBox"
-                style="display: none"
-              >
-                <div class="field field--plain col-span-2" data-noopt>
-                  <label
-                    >Sistema com possibilidade de operação ilhada?
-                    <span class="req">*</span></label
-                  >
-                  <select data-k="armazIlhada">
-                    <option value=""></option>
-                    <option>Sim</option>
-                    <option>Não</option>
-                  </select>
-                </div>
-                <div class="field">
-                  <label
-                    >Máxima potência de carga (kW)
-                    <span class="req">*</span></label
-                  >
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    inputmode="decimal"
-                    data-k="armazPotCarga"
-                    placeholder=" "
-                  />
-                </div>
-                <div class="field">
-                  <label
-                    >Máxima potência de descarga (kW)
-                    <span class="req">*</span></label
-                  >
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    inputmode="decimal"
-                    data-k="armazPotDescarga"
-                    placeholder=" "
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="nav-bottom no-print">
-            <button class="btn btn-ghost" onclick="goTo(5)">← Voltar</button>
-            <button class="btn btn-primary" onclick="goTo(7)">Avançar →</button>
-          </div>
-        </section>
-
-        <section class="page" id="page-7">
-          <div class="card">
-            <div class="section-eyebrow">Etapa 8</div>
             <h3 class="card-title">Conta de luz</h3>
             <p class="card-sub">
               Escolha como e quando você quer receber sua conta de luz.
@@ -661,8 +588,8 @@
             </div>
           </div>
           <div class="nav-bottom no-print">
-            <button class="btn btn-ghost" onclick="goTo(6)">← Voltar</button>
-            <button class="btn btn-primary" onclick="goTo(8)">Avançar →</button>
+            <button class="btn btn-ghost" onclick="goTo(5)">← Voltar</button>
+            <button class="btn btn-primary" onclick="goTo(7)">Avançar →</button>
           </div>
         </section>
 
@@ -1177,12 +1104,9 @@
         <section class="page" id="page-4">
           <div class="card">
             <div class="section-eyebrow">Etapa 5</div>
-            <h3 class="card-title">
-              Dados técnicos da subestação e cargas especiais
-            </h3>
+            <h3 class="card-title">Dados da subestação e transdormadores</h3>
             <p class="card-sub">
-              Preencha os dados técnicos da subestação e suas cargas especiais,
-              se houver..
+              Preencha os dados técnicos da subestação e dos transformadores.
             </p>
             <h4 class="card-subtitle">Subestação</h4>
             <div class="grid grid-2">
@@ -1315,6 +1239,9 @@
                 <!-- Tarifação e demanda da instalação (uma para todos os
                      transformadores) — montada por renderTarifacaoInstalacao. -->
                 <div id="trafoTarifacao" class="trafo-tarifacao-bloco"></div>
+                <!-- Demanda > potência dos transformadores: erro que trava o
+                     "Avançar" (validarDemandaInstalacao). -->
+                <div id="instDemandaAlert"></div>
               </div>
 
               <div id="blocoMotoresIndividual">
@@ -1468,7 +1395,13 @@
           </div>
           <div class="nav-bottom no-print">
             <button class="btn btn-ghost" onclick="goTo(3)">← Voltar</button>
-            <button class="btn btn-primary" onclick="goTo(5)">Avançar →</button>
+            <button
+              class="btn btn-primary"
+              onclick="goTo(5)"
+              data-gate="demandaVsPotenciaOk"
+            >
+              Avançar →
+            </button>
           </div>
         </section>
 
@@ -1550,6 +1483,67 @@
                 </div>
               </div>
             </div>
+
+            <!-- Armazenamento de energia (seção 5 da planilha da norma): bloco
+                 no fim da Etapa 6, como no BT e nos GD. Os campos abaixo do
+                 "Possui" só aparecem com Sim (onArmazMT). -->
+            <div class="divider armaz-bloco">
+              <h4 class="card-subtitle">Armazenamento de energia</h4>
+              <div class="grid grid-2">
+                <div class="field field--plain col-span-2" data-noopt>
+                  <label>Possui sistema de armazenamento de energia?</label>
+                  <select data-k="armazPossui" onchange="onArmazMT()">
+                    <option>Sim</option>
+                    <option selected>Não</option>
+                  </select>
+                </div>
+                <div
+                  class="grid grid-2 col-span-2"
+                  id="armazDetalheBox"
+                  style="display: none"
+                >
+                  <div class="field field--plain col-span-2" data-noopt>
+                    <label
+                      >Sistema com possibilidade de operação ilhada?
+                      <span class="req">*</span></label
+                    >
+                    <select data-k="armazIlhada">
+                      <option value=""></option>
+                      <option>Sim</option>
+                      <option>Não</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label
+                      >Máxima potência de carga (kW)
+                      <span class="req">*</span></label
+                    >
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      inputmode="decimal"
+                      data-k="armazPotCarga"
+                      placeholder=" "
+                    />
+                  </div>
+                  <div class="field">
+                    <label
+                      >Máxima potência de descarga (kW)
+                      <span class="req">*</span></label
+                    >
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      inputmode="decimal"
+                      data-k="armazPotDescarga"
+                      placeholder=" "
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="nav-bottom no-print">
             <button class="btn btn-ghost" onclick="goTo(4)">← Voltar</button>
@@ -1557,9 +1551,9 @@
           </div>
         </section>
 
-        <section class="page" id="page-8">
+        <section class="page" id="page-7">
           <div class="card">
-            <div class="section-eyebrow">Etapa 9</div>
+            <div class="section-eyebrow">Etapa 8</div>
             <h3 class="card-title">Observações</h3>
             <div class="field">
               <textarea
@@ -1570,14 +1564,14 @@
             </div>
           </div>
           <div class="nav-bottom no-print">
-            <button class="btn btn-ghost" onclick="goTo(7)">← Voltar</button>
-            <button class="btn btn-primary" onclick="goTo(9)">Avançar →</button>
+            <button class="btn btn-ghost" onclick="goTo(6)">← Voltar</button>
+            <button class="btn btn-primary" onclick="goTo(8)">Avançar →</button>
           </div>
         </section>
 
-        <section class="page" id="page-9">
+        <section class="page" id="page-8">
           <div class="card">
-            <div class="section-eyebrow">Etapa 10</div>
+            <div class="section-eyebrow">Etapa 9</div>
             <h3 class="card-title">Prévia do formulário</h3>
             <p class="card-sub no-print">
               Confira se todos os dados estão corretos e gere o PDF da sua
@@ -1599,7 +1593,7 @@
             </div>
           </div>
           <div class="nav-bottom no-print">
-            <button class="btn btn-ghost" onclick="goTo(8)">
+            <button class="btn btn-ghost" onclick="goTo(7)">
               ← Voltar e editar
             </button>
             <span class="nav-step-info" id="exportProgressMini"
@@ -1620,7 +1614,22 @@
                 onclick="exportarPDF()"
               >
                 Exportar PDF
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5M9 13h6M9 17h6" /></svg>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"
+                  />
+                  <path d="M14 3v5h5M9 13h6M9 17h6" />
+                </svg>
               </button>
             </div>
           </div>
@@ -1664,12 +1673,19 @@
     <div
       class="modal-overlay"
       id="modalFigura"
-      onclick="if (event.target === this) fecharFigura()"
+      onclick="if (event.target === this) fecharFigura();"
     >
-      <div class="modal modal--figura" role="dialog" aria-modal="true" aria-label="Ramal de entrada">
+      <div
+        class="modal modal--figura"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Ramal de entrada"
+      >
         <div class="modal-head">
           <h3>Ramal de entrada</h3>
-          <button class="close" aria-label="Fechar" onclick="fecharFigura()">×</button>
+          <button class="close" aria-label="Fechar" onclick="fecharFigura()">
+            ×
+          </button>
         </div>
         <div class="modal-body">
           <img id="modalFiguraImg" alt="" />

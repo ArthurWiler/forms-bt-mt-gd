@@ -92,18 +92,14 @@
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">8</span>
-          <span class="vstep-label">Armazenamento de energia</span>
-        </button>
-        <button type="button" class="vstep">
-          <span class="vstep-num">9</span>
           <span class="vstep-label">Correspondência</span>
         </button>
         <button type="button" class="vstep">
-          <span class="vstep-num">10</span>
+          <span class="vstep-num">9</span>
           <span class="vstep-label">Observações</span>
         </button>
         <button type="button" class="vstep">
-          <span class="vstep-num">11</span>
+          <span class="vstep-num">10</span>
           <span class="vstep-label">Prévia &amp; PDF</span>
         </button>
       </aside>
@@ -164,11 +160,10 @@
           id="page-5"
           data-src="etapas/06-geracao.html"
         ></section>
-        <!-- A etapa "Armazenamento" deixou de existir: o bloco "Armazenamento e
-             banco de baterias" passou a viver DENTRO da etapa de Geração, como
-             na microgeração (microgeracao/etapas/04-geracao.html). Quem manda
-             na ordem são estes ids, e goTo() navega por eles — os nomes dos
-             fragmentos apenas os acompanham. -->
+        <!-- O armazenamento de energia é um bloco no fim da etapa de Geração
+             (shared/parciais/armazenamento-gd.html), como na microgeração.
+             Quem manda na ordem são estes ids, e goTo() navega por eles — os
+             nomes dos fragmentos apenas os acompanham. -->
         <section
           class="page"
           id="page-6"
@@ -177,21 +172,16 @@
         <section
           class="page"
           id="page-7"
-          data-src="etapas/08a-armazenamento.html"
-        ></section>
-        <section
-          class="page"
-          id="page-8"
           data-src="etapas/08-correspondencia.html"
         ></section>
         <section
           class="page"
-          id="page-9"
+          id="page-8"
           data-src="etapas/09-observacoes.html"
         ></section>
         <section
           class="page"
-          id="page-10"
+          id="page-9"
           data-src="etapas/10-previa.html"
         ></section>
       </main>
@@ -234,6 +224,12 @@
          cards .resultado-* estilizados em css/shared.css. Depende de
          calc-demanda.js, então vem depois. -->
     <script defer src="../shared/js/carga-bt.js"></script>
+    <!-- cmgCampo: modal "Mais opções de disjuntores" dos perfis de carga. -->
+    <script defer src="../shared/js/campos.js"></script>
+    <!-- Perfis de carga do BT individual (cards, "Personalizar perfil" e
+         modais) e a ponte deles com o estado da GD. -->
+    <script defer src="../bt/js/perfis-carga.js"></script>
+    <script defer src="../shared/js/perfis-carga-gd.js"></script>
     <script defer src="../shared/js/valida-instalacao.js"></script>
     <script defer src="../shared/js/form-marcadores.js"></script>
     <script defer src="../shared/js/trilha-etapas.js"></script>
