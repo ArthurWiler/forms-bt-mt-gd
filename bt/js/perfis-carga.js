@@ -32,7 +32,7 @@ const PERFIS_CARGA = {
     {
       id: "res-pequena",
       titulo: "Casa pequena",
-      desc: "Para casas de cerca de 50 m², com até 2 moradores e uso mais simples de energia.",
+      desc: "Para casas de cerca de 50 m², com até 2 moradores e aparelhos básicos, como geladeira, chuveiro elétrico e TV.",
       itens: [
         { n: "Lâmpada LED 18W", min: 4, max: 8 },
         { n: "Televisor", min: 1, max: 3 },
@@ -46,7 +46,7 @@ const PERFIS_CARGA = {
     {
       id: "res-grande",
       titulo: "Casa grande",
-      desc: "Para casas de cerca de 150 m², com família de até 4 pessoas e uso mais intenso de energia.",
+      desc: "Para casas de cerca de 150 m², com família de até 4 pessoas e mais aparelhos, podendo incluir ar-condicionado.",
       itens: [
         { n: "Lâmpada LED 18W", min: 4, max: 8 },
         { n: "Televisor", min: 1, max: 3 },

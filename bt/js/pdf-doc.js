@@ -176,6 +176,28 @@ function _pdfCorrespondenciaBT(B, S, fatura) {
   ]);
 }
 
+/* "Armazenamento de energia" — seção da norma nova, uma por solicitação,
+   logo antes da Conta de luz nas três modalidades. Sem sistema, só a
+   resposta "Não"; com sistema, ilhamento e potências de carga/descarga. */
+function _pdfArmazenamentoBT(B, S) {
+  const a = S.armaz || {};
+  const kw = (v) =>
+    String(v ?? "").trim() ? fmtW(v) + " kW" : "";
+  B.secao("Armazenamento de energia");
+  if (a.possui !== "Sim") {
+    B.campos([["Possui sistema de armazenamento de energia", a.possui || "Não", 3]]);
+    return;
+  }
+  B.campos([
+    ["Possui sistema de armazenamento de energia", "Sim"],
+    ["Sistema com possibilidade de operação ilhada", a.ilhada],
+  ]);
+  B.campos([
+    ["Máxima potência de carga", kw(a.potCarga)],
+    ["Máxima potência de descarga", kw(a.potDescarga)],
+  ]);
+}
+
 /* "Observações" fecha os três documentos, quando há texto. É o
    único bloco que os mocks não desenham e que mesmo assim continua
    sendo impresso: o campo existe no formulário e o que a pessoa
@@ -274,6 +296,8 @@ function _pdfBlocosMultiTorresBT(S) {
   }
 
   /* ---- Conta de luz ---- */
+  B.filete();
+  _pdfArmazenamentoBT(B, S);
   B.filete();
   _pdfCorrespondenciaBT(B, S);
 
@@ -410,6 +434,8 @@ function _pdfBlocosColetivoBT(S) {
 
   /* ---- Conta de luz, ainda na folha 1 ----
      "Dados da torre" é quem abre a folha 2 (coletivo2). */
+  B.filete();
+  _pdfArmazenamentoBT(B, S);
   B.filete();
   _pdfCorrespondenciaBT(B, S, "fatura do condomínio");
 
@@ -749,6 +775,8 @@ function _pdfBlocosIndividualBT(S) {
     B.campos([["Restrições ambientais", obra.restricoesTexto, 3]]);
 
   /* ---- Conta de luz ---- */
+  B.filete();
+  _pdfArmazenamentoBT(B, S);
   B.filete();
   _pdfCorrespondenciaBT(B, S);
 

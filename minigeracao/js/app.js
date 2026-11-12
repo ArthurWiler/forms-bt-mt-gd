@@ -1316,6 +1316,8 @@ function recalcFontes() {
   // o DOM antes da prévia e apagaria o valor derivado se ele ficasse vazio.
   const inp = $(`[data-k="potAtivaInstalada"]`);
   if (inp) inp.value = state.potAtivaInstalada;
+  // A produção mensal do armazenamento sai desta potência.
+  atualizarProducaoArmazGD();
   const disp = $("#gd_potAtivaTotal");
   if (disp) disp.textContent = total ? fmt2(total) + " kW" : "";
   // Regra 9: a potência de geração filtra os modelos de subestação. Basta
@@ -1837,22 +1839,6 @@ function atualizarDecl95() {
   if (aviso) aviso.style.display = gz && !state.decl95 ? "" : "none";
 }
 
-/* ===== Etapa 6 — Armazenamento =====
-   O bloco "Armazenamento e banco de baterias" passou a viver DENTRO da etapa
-   de geração, como na microgeração — a etapa própria deixou de existir. ===== */
-function onArmazenamento() {
-  _sync("possuiArmazenamento");
-  _sync("armOperacaoIlhada");
-  const sim = state.possuiArmazenamento === "Sim";
-  const bloco = $("#armBloco");
-  if (bloco) bloco.style.display = sim ? "" : "none";
-  const ilhada = sim && state.armOperacaoIlhada === "Sim";
-  const chave = $("#armChaveBox"),
-    rec = $("#armReconexaoBox");
-  if (chave) chave.style.display = ilhada ? "" : "none";
-  if (rec) rec.style.display = ilhada ? "" : "none";
-}
-
 /* ===== Declarações em caixa de seleção =====
    Restou uma: a dispensa do art. 73-A, que vive na etapa 6 junto da
    modalidade de operação. O binding é por [data-decl], então independe de
@@ -2042,6 +2028,7 @@ function validarExportacao() {
     faltas.push(
       "Dispensa de análise de inversão de fluxo (obrigatória para Grid Zero)",
     );
+  armazPendenciasGD(d, req); // shared/js/armazenamento.js
   // Data de vencimento da fatura: opcional (não entra em `req`).
   // A forma de recebimento, sim: o dropdown abre em "Selecione" (sem
   // pré-seleção), então é preciso cobrar a escolha.
@@ -2263,18 +2250,26 @@ function renderPreviewGD() {
           .join(""),
     ),
   );
+  secoes.push(
+    pvSecao(
+      "Armazenamento de energia",
+      armazLinhasGD(d)
+        .map(([rot, val]) => pvCampo(rot, val, { step: 7 }))
+        .join(""),
+    ),
+  );
   let cor =
-    pvCampo("Como deseja receber a fatura", d.corrAlternativa, { step: 7 }) +
-    pvCampo("Vencimento", d.vencimento, { step: 7 });
+    pvCampo("Como deseja receber a fatura", d.corrAlternativa, { step: 8 }) +
+    pvCampo("Vencimento", d.vencimento, { step: 8 });
   if (d.corrAlternativa === "E-mail informado")
     cor += pvCampo("E-mail para envio da fatura", d.email, {
       full: true,
-      step: 7,
+      step: 8,
     });
   if (d.corrAlternativa === "Outro e-mail")
     cor += pvCampo("E-mail para envio da fatura", d.corrOutroEmail, {
       full: true,
-      step: 7,
+      step: 8,
     });
   if (d.corrAlternativa === "Endereço novo")
     cor += pvCampo(
@@ -2288,12 +2283,12 @@ function renderPreviewGD() {
       ]
         .filter(Boolean)
         .join(" · "),
-      { full: true, step: 7 },
+      { full: true, step: 8 },
     );
   if (d.corrAlternativa === "Conta globalizada")
-    cor += pvCampo("Conta globalizada", d.contaGlobal, { step: 7 });
+    cor += pvCampo("Conta globalizada", d.contaGlobal, { step: 8 });
   secoes.push(pvSecao("Correspondência e Fatura", cor));
-  // Observações (etapa 9): só entra na prévia quando há texto — uma seção com
+  // Observações (etapa 10): só entra na prévia quando há texto — uma seção com
   // um "—" solto não acrescenta nada à conferência.
   if ((d.obs || "").trim())
     secoes.push(
@@ -2385,7 +2380,7 @@ window.initFormulario = function () {
   if (radioModo) radioModo.checked = true;
   onModoOperacaoGD();
   recalcFontes();
-  onArmazenamento();
+  onArmazGD(); // shared/js/armazenamento.js
   onCorrAlternativa();
   // Etapa 3 (cópia do micro): zona antes da coordenada — onZonaGD decide quais
   // caixas de endereço ficam visíveis, e onCoordGD já parte do estado certo.

@@ -66,26 +66,6 @@ const CARDS_GD = [
     gridId: "cardsTelhadoArrendado",
     opcoes: SIM_NAO,
   },
-  {
-    chave: "possuiArmazenamento",
-    gridId: "cardsPossuiArmazenamento",
-    opcoes: SIM_NAO,
-  },
-  {
-    chave: "armOperacaoIlhada",
-    gridId: "cardsArmOperacaoIlhada",
-    opcoes: SIM_NAO,
-  },
-  {
-    chave: "armChaveDesconexao",
-    gridId: "cardsArmChaveDesconexao",
-    opcoes: SIM_NAO,
-  },
-  {
-    chave: "armReconexaoAuto",
-    gridId: "cardsArmReconexaoAuto",
-    opcoes: SIM_NAO,
-  },
   { chave: "decl81", gridId: "cardsDecl81", opcoes: SIM_NAO },
   {
     chave: "vencimento",
@@ -390,7 +370,7 @@ function gdIrParaAncora(nome) {
 }
 
 // Renumera os "Etapa N" dos fragmentos e os números da sidebar pela posição
-// real no fluxo ativo. Hoje a sequência é fixa (9 etapas nos dois fluxos), mas
+// real no fluxo ativo. Hoje a sequência é fixa (10 etapas nos dois fluxos), mas
 // os fragmentos trazem o número no HTML: isto mantém eyebrow e sidebar
 // coerentes com a posição, sem depender do que está escrito em cada arquivo.
 function gdRenumerarEtapas() {
@@ -1900,6 +1880,8 @@ function _gravarPotAtivaGD(valor) {
   state.potAtivaInstalada = valor;
   const inp = $(`[data-k="potAtivaInstalada"]`);
   if (inp) inp.value = valor;
+  // A produção mensal do armazenamento sai desta potência.
+  atualizarProducaoArmazGD();
 }
 /* ============================================================
    MÓDULOS E INVERSORES — um bloco por MODELO
@@ -2159,20 +2141,6 @@ function recalcGeracao() {
   atualizarSE(); // limite de 300 kVA das SE Nº 1/5/8 depende da potência
 }
 
-/* ===== Etapa 7 — Armazenamento ===== */
-function onArmazenamento() {
-  _sync("possuiArmazenamento");
-  _sync("armOperacaoIlhada");
-  const sim = state.possuiArmazenamento === "Sim";
-  const bloco = $("#armBloco");
-  if (bloco) bloco.style.display = sim ? "" : "none";
-  const ilhada = sim && state.armOperacaoIlhada === "Sim";
-  const chave = $("#armChaveBox"),
-    rec = $("#armReconexaoBox");
-  if (chave) chave.style.display = ilhada ? "" : "none";
-  if (rec) rec.style.display = ilhada ? "" : "none";
-}
-
 /* ===== Etapa 8 — Declarações (checkboxes booleanos) ===== */
 function bindDeclaracoes() {
   $$("[data-decl]").forEach((chk) => {
@@ -2378,6 +2346,7 @@ function validarExportacao() {
   _reqParPotenciaGD(req, "geracao", "", d.demandaGeracaoAtual);
   if (!d.decl84) faltas.push("Declaração 8.4 (obrigatória)");
   if (!d.decl86) faltas.push("Declaração 8.6 (obrigatória)");
+  armazPendenciasGD(d, req); // shared/js/armazenamento.js
   // Data de vencimento da fatura: opcional (não entra em `req`).
   // A forma de recebimento, sim: o dropdown abre em "Selecione" (sem
   // pré-seleção), então é preciso cobrar a escolha.
@@ -2653,7 +2622,12 @@ function renderPreviewGD() {
     ),
   );
   secoes.push(
-    pvSecao("5 — Armazenamento", pvCampo("Possui", d.possuiArmazenamento, {})),
+    pvSecao(
+      "Armazenamento de energia",
+      armazLinhasGD(d)
+        .map(([rot, val]) => pvCampo(rot, val, { step: "armazenamento" }))
+        .join(""),
+    ),
   );
   let cor =
     pvCampo("Como deseja receber a fatura", d.corrAlternativa, {
@@ -2770,7 +2744,7 @@ window.initFormulario = function () {
   sincronizarModulosGD();
   sincronizarInversoresGD();
   onFonte();
-  onArmazenamento();
+  onArmazGD(); // shared/js/armazenamento.js
   onCorrAlternativa();
   // Modalidade de operação: radios sem data-k — restaura a marcação a partir
   // do estado (prefill/voltar à etapa) e deriva fastTrack/gridZero.

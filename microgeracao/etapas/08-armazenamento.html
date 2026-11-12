@@ -1,0 +1,107 @@
+<!doctype html>
+
+<!-- Armazenamento de energia (seção 5 da planilha da norma). A visibilidade
+     em cascata e a produção mensal vivem em shared/js/armazenamento.js. -->
+<div class="card">
+  <div class="section-eyebrow" data-etapa="armazenamento">Etapa 7</div>
+  <h3 class="card-title">Armazenamento de energia</h3>
+  <p class="card-sub">
+    Informe os dados do sistema de armazenamento de energia, se houver.
+  </p>
+  <div class="grid grid-2">
+    <div class="field field--plain col-span-2" data-noopt>
+      <label>
+        Possui sistema de armazenamento de energia?
+        <span class="req">*</span>
+      </label>
+      <div data-toggle="armazPossui" data-toggle-onchange="onArmazGD"></div>
+      <select data-k="armazPossui" style="display: none" aria-hidden="true">
+        <option>Sim</option>
+        <option>Não</option>
+      </select>
+    </div>
+    <div
+      class="grid grid-2 col-span-2"
+      id="armazDetalheBox"
+      style="display: none"
+    >
+      <div class="field field--plain col-span-2" data-noopt>
+        <label>
+          Sistema com possibilidade de operação ilhada?
+          <span class="req">*</span>
+        </label>
+        <div data-toggle="armazIlhada"></div>
+        <select data-k="armazIlhada" style="display: none" aria-hidden="true">
+          <option value=""></option>
+          <option>Sim</option>
+          <option>Não</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Máxima potência de carga (kW) <span class="req">*</span></label>
+        <input
+          type="number"
+          min="0"
+          step="any"
+          inputmode="decimal"
+          data-k="armazPotCarga"
+          placeholder=" "
+        />
+      </div>
+      <div class="field">
+        <label
+          >Máxima potência de descarga (kW) <span class="req">*</span></label
+        >
+        <input
+          type="number"
+          min="0"
+          step="any"
+          inputmode="decimal"
+          data-k="armazPotDescarga"
+          placeholder=" "
+        />
+      </div>
+      <div class="field field--plain col-span-2" data-noopt>
+        <label>
+          Central geradora despachável?
+          <span class="label-ex">(Art. 2º, IV-A, REN 1000/2021)</span>
+          <span class="req">*</span>
+        </label>
+        <div
+          data-toggle="armazDespachavel"
+          data-toggle-onchange="onArmazGD"
+        ></div>
+        <select
+          data-k="armazDespachavel"
+          style="display: none"
+          aria-hidden="true"
+        >
+          <option value=""></option>
+          <option>Sim</option>
+          <option>Não</option>
+        </select>
+      </div>
+      <div
+        class="grid grid-2 col-span-2"
+        id="armazDespachavelBox"
+        style="display: none"
+      >
+        <div class="cmg-aviso cmg-aviso--error col-span-2">
+          <div class="cmg-aviso-icon" aria-hidden="true"></div>
+          <div class="cmg-aviso-texto">
+            Deverá ser anexado no APRWEB memória de cálculo que comprove 20% da
+            capacidade de armazenar da produção mensal.
+          </div>
+        </div>
+        <div class="field" data-noopt>
+          <label>Produção mensal da central geradora distribuída (kWh)</label>
+          <input type="text" id="armazProducaoMensal" disabled placeholder=" " />
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="nav-bottom no-print">
+  <button class="btn btn-ghost" data-nav="prev">← Voltar</button>
+  <button class="btn btn-primary" data-nav="next">Avançar →</button>
+</div>

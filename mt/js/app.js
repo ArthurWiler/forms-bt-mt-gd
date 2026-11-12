@@ -273,7 +273,7 @@ function goTo(n, livre) {
     initMapaNovo();
     if (mapaNovo) setTimeout(() => mapaNovo.invalidateSize(), 50);
   }
-  if (n === 8) renderPreview();
+  if (n === 9) renderPreview();
   // Recalcula o estado (habilitado/desabilitado) do botão Avançar da nova etapa.
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
@@ -590,6 +590,17 @@ async function onCpfCnpj() {
 //  - Endereço da obra → usa o endereço da UC (aviso, sem campos próprios)
 //  - Outro e-mail → e-mail alternativo
 //  - Conta globalizada → pede o número da conta globalizada
+/* ===== Armazenamento de energia (etapa 7) =====
+   Uma resposta por solicitação. "Possui" começa em Não; ilhamento e potências
+   de carga/descarga só aparecem (e só são exigidos — o validador ignora
+   campos ocultos) com Sim. */
+function onArmazMT() {
+  const sel = $('select[data-k="armazPossui"]');
+  state.armazPossui = sel ? sel.value : "Não";
+  const box = $("#armazDetalheBox");
+  if (box) box.style.display = state.armazPossui === "Sim" ? "" : "none";
+  if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
+}
 function onCorresp() {
   const sel = $('select[data-k="formaCorresp"]');
   const v = sel ? sel.value : "";
@@ -2563,7 +2574,7 @@ function abrirAnaliseMotores() {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 function voltarDaAnalise() {
-  goTo(8);
+  goTo(9);
 }
 
 async function exportarPDFPartida() {
@@ -3284,7 +3295,7 @@ async function onCEP(prefixo) {
    O jsPDF é carregado lá dentro, junto da fonte embutida. */
 async function exportarPDF() {
   if (atualizarGateExportacao().length) {
-    goTo(8);
+    goTo(9);
     return;
   }
   await gerarPdfFormularioMT();
@@ -3311,6 +3322,7 @@ document.addEventListener("DOMContentLoaded", () => {
   bindInputs();
   inicializarCamposCards();
   onCorresp(); // sincroniza os blocos condicionais da correspondência
+  onArmazMT(); // rascunho com armazenamento = Sim reabre os campos
   // Sincroniza os blocos de Subestação (trafos x cubículos) já no load: sem
   // isto o estado inicial vinha só dos style="display" do HTML, que podiam
   // divergir do valor restaurado em state.compartilhada.

@@ -8,7 +8,7 @@
 async function gerarCartaMonomia() {
   await window.CemigLibs.jspdf().catch(() => {}); // guard abaixo dá o alerta
   if (typeof atualizarGateExportacao === "function" && atualizarGateExportacao().length) {
-    goTo(8);
+    goTo(9);
     return;
   }
   if (!window.jspdf) {

@@ -403,23 +403,9 @@ function gerarPdfMicroGD(d) {
 
   // ---- 5. Armazenamento ----
   sec("5.  SISTEMA DE ARMAZENAMENTO DE ENERGIA");
-  const armPairs = [["Possui armazenamento", d.possuiArmazenamento]];
-  if (d.possuiArmazenamento === "Sim") {
-    armPairs.push(["Operação ilhada", d.armOperacaoIlhada]);
-    if (d.armOperacaoIlhada === "Sim")
-      armPairs.push(
-        ["Chave de desconexão física", d.armChaveDesconexao],
-        ["Reconexão automática", d.armReconexaoAuto],
-      );
-    armPairs.push(
-      ["Capacidade do banco (kWh)", d.armCapacidadeKwh],
-      ["Potência total do banco (kW)", d.armPotenciaKw],
-      ["Capacidade nominal (Ah)", d.armCapacidadeAh],
-      ["Tensão CC (V)", d.armTensaoCC],
-      ["Profundidade de descarga (%)", d.armProfundidadeDescarga],
-      ["Produção mensal (kWh)", d.armProducaoMensal],
-    );
-  }
+  // Campos da seção 5 da planilha da norma (shared/js/armazenamento.js);
+  // a etapa do formulário fica antes da Correspondência.
+  const armPairs = armazLinhasGD(d, true);
   kvPairs(armPairs);
   P.gap(2);
 

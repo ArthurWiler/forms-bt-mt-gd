@@ -84,14 +84,18 @@
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">7</span>
-          <span class="vstep-label">Correspondência</span>
+          <span class="vstep-label">Armazenamento de energia</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">8</span>
-          <span class="vstep-label">Observações</span>
+          <span class="vstep-label">Correspondência</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">9</span>
+          <span class="vstep-label">Observações</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">10</span>
           <span class="vstep-label">Prévia &amp; PDF</span>
         </button>
       </aside>
@@ -128,6 +132,7 @@
              visíveis, então os ids abaixo são apenas rótulos estáveis. -->
         <section class="page" id="page-5" data-flow="individual" data-src="etapas/05-carga.html"></section>
         <section class="page" id="page-coletivo-unidades" data-flow="coletivo" hidden data-src="etapas/06-dados-unidades.html"></section>
+        <section class="page" id="page-armazenamento" data-src="etapas/08-armazenamento.html"></section>
         <section class="page" id="page-6" data-src="etapas/09-correspondencia.html"></section>
         <section class="page" id="page-7" data-src="etapas/07-observacoes.html"></section>
         <section class="page" id="page-8" data-src="etapas/10-previa.html"></section>
@@ -176,6 +181,7 @@
     <!-- Complementos das unidades: usado pelo bloco da torre em "Dados das
          unidades" do fluxo Coletivo/Agrupamento (js/coletivo.js). -->
     <script defer src="../shared/js/complementos.js"></script>
+    <script defer src="../shared/js/armazenamento.js"></script>
     <script defer src="js/model.js"></script>
     <script defer src="../shared/js/gd-pdf-base.js"></script>
     <script defer src="js/pdf.js"></script>

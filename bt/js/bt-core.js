@@ -112,6 +112,28 @@ function corrPadrao() {
     contaGlobal: "",
   };
 }
+// Armazenamento de energia (etapa própria, antes da Conta de luz): uma
+// resposta por solicitação. "Possui" começa em Não; o resto só é perguntado
+// com Sim.
+function armazPadrao() {
+  return { possui: "Não", ilhada: "", potCarga: "", potDescarga: "" };
+}
+// Campos do armazenamento só aparecem com "Possui" = Sim (o validador ignora
+// os ocultos, então a obrigatoriedade acompanha a visibilidade).
+function onArmazBT() {
+  const box = $("#armazDetalheBox");
+  if (box) box.style.display = state.armaz.possui === "Sim" ? "" : "none";
+  if (window.CemigMarcadores) CemigMarcadores.atualizarAvancar();
+}
+// Pendências do armazenamento para a lista da prévia (mesmo `req` dos apps).
+function armazPendenciasBT(req) {
+  const a = state.armaz;
+  req(a.possui, "Possui sistema de armazenamento de energia");
+  if (a.possui !== "Sim") return;
+  req(a.ilhada, "Sistema com possibilidade de operação ilhada");
+  req(a.potCarga, "Máxima potência de carga do armazenamento");
+  req(a.potDescarga, "Máxima potência de descarga do armazenamento");
+}
 function obraPadrao() {
   return {
     art: "",
@@ -842,6 +864,20 @@ function pvCampoBT(label, valor, step, full) {
       ? `<button type="button" class="previa-edit" title="Editar" aria-label="Editar ${label}" onclick="goTo(${step}, true)"></button>`
       : "";
   return `<div class="previa-campo${full ? " previa-campo--full" : ""}"><div class="previa-campo-label">${label}</div><div class="previa-campo-valor">${vazio ? "—" : valor}${lapis}</div></div>`;
+}
+// Seção "Armazenamento de energia" da prévia (individual, coletivo e
+// condomínio). `step` é o índice da etapa para os lápis.
+function pvArmazenamentoBT(step) {
+  const a = state.armaz;
+  const kw = (v) => (String(v ?? "").trim() ? fmtW(v) + " kW" : "");
+  let h = `<div class="previa-grid">`;
+  h += pvCampoBT("Possui sistema de armazenamento de energia", a.possui, step);
+  if (a.possui === "Sim") {
+    h += pvCampoBT("Sistema com possibilidade de operação ilhada", a.ilhada, step);
+    h += pvCampoBT("Máxima potência de carga", kw(a.potCarga), step);
+    h += pvCampoBT("Máxima potência de descarga", kw(a.potDescarga), step);
+  }
+  return `<div class="previa-secao"><h4 class="previa-secao-titulo">Armazenamento de energia</h4>${h}</div></div>`;
 }
 // Seção "Observações" da prévia (Figma svg_previa): o texto digitado, em
 // negrito, sem rótulo. Vazia → "" (a seção não entra).

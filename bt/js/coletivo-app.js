@@ -44,6 +44,7 @@ const state = {
   ),
   prop: propPadrao(),
   corr: corrPadrao(),
+  armaz: armazPadrao(),
   // Distância e "pronto para ligar" começam sem resposta (radios vazios no
   // spec); a zona é SEMPRE "Urbano" neste fluxo (grafia do React em
   // views/empreendimento.js — não "Urbana").
@@ -2959,12 +2960,12 @@ function _mkPrumadasTabela() {
    views/revisar.js + validacaoObrigatorios de app.js:750-823)
    ============================================================ */
 // Índices das etapas para os lápis (após o pruning): coletivo e condomínio
-// têm 8 páginas — tipo=1, empr=2 e o miolo varia. No condomínio a etapa "Dados
-// do projeto" vem antes da Correspondência; no coletivo a Correspondência é a
-// penúltima antes de obs/prévia.
+// têm 10 e 9 páginas — tipo=1, empr=2 e o miolo varia. No condomínio a etapa
+// "Dados do projeto" vem antes do Armazenamento; nos dois o Armazenamento de
+// energia vem logo antes da Conta de luz, que antecede obs/prévia.
 const PG = MULTI
-  ? { tipo: 1, empr: 2, blocos: 3, unidades: 4, projeto: 5, corr: 6 }
-  : { tipo: 1, empr: 2, ucs: 3, cargas: 4, corr: 5 };
+  ? { tipo: 1, empr: 2, blocos: 3, unidades: 4, projeto: 5, armaz: 6, corr: 7 }
+  : { tipo: 1, empr: 2, ucs: 3, cargas: 4, armaz: 5, corr: 6 };
 function validacaoObrigatoriosColetivo() {
   _espelharGrupos();
   _espelharColetivo();
@@ -2994,6 +2995,7 @@ function validacaoObrigatoriosColetivo() {
     req(c.municipio, "Município de correspondência");
   } else if (c.alternativa === "Conta globalizada")
     req(c.contaGlobal, "Conta globalizada");
+  armazPendenciasBT(req);
   req(o.endereco, "Endereço da obra");
   req(o.num, "Nº da obra");
   req(o.bairro, "Bairro da obra");
@@ -3347,11 +3349,13 @@ function renderPreviaColetivo() {
         .concat(state.atend.solicitacao || [], state.atend.escopo || [])
         .join(" · ");
 
-  // Correspondência (e, havendo texto, as Observações) vai para o FIM da
-  // prévia em todos os fluxos (ordem da tela-alvo); montada aqui e anexada ao
-  // final do html mais abaixo.
+  // Armazenamento, Correspondência (e, havendo texto, as Observações) vão
+  // para o FIM da prévia em todos os fluxos (ordem da tela-alvo); montados
+  // aqui e anexados ao final do html mais abaixo.
   const obsHtml = pvObservacoesBT(state.obs);
   const corrHtml =
+    pvArmazenamentoBT(PG.armaz) +
+    `<hr class="previa-divider" />` +
     `<div class="previa-secao"><h4 class="previa-secao-titulo">Correspondência</h4><div class="previa-grid">` +
     pvCampoBT(
       "E-mail para receber a fatura do condomínio",
@@ -3624,6 +3628,7 @@ async function exportarPdfBT() {
     atend: state.atend,
     prop: state.prop,
     corr: state.corr,
+    armaz: state.armaz,
     obra: state.obra,
     prevTotalKw: prevTotalKwF(),
     demandaPrevTotal: demandaPrevTotalF(),
@@ -3674,6 +3679,7 @@ window.initFormulario = function () {
   btRenumerarEtapas();
   bindInputs();
   montarToggles();
+  onArmazBT();
   sincronizarUcBlocos();
   sincronizarBlocos();
   autoSelecionarDisjTorres();

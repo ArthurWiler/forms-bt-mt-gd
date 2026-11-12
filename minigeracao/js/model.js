@@ -199,12 +199,15 @@ function gdEstadoInicial() {
     consorcioVerificado: "Não",
     fontes: [gdFontePadrao()],
     // 5 - Armazenamento
-    possuiArmazenamento: "Não",
-    armOperacaoIlhada: "Não",
-    armChaveDesconexao: "Não",
-    armReconexaoAuto: "Não",
-    armCapacidadeKwh: "", armPotenciaKw: "", armCapacidadeAh: "",
-    armTensaoCC: "", armProfundidadeDescarga: "", armProducaoMensal: "",
+    // Armazenamento de energia (etapa própria, antes da Correspondência —
+    // regras em shared/js/armazenamento.js). "Possui" começa em Não.
+    armazPossui: "Não",
+    armazIlhada: "",
+    armazPotCarga: "",
+    armazPotDescarga: "",
+    armazDespachavel: "",
+    // Calculada (Pot. ativa instalada × 0,16 × 30 × 24); nunca digitada.
+    armazProducaoMensal: "",
     // 6 - Garantia de Fiel Cumprimento
     gfcValor: "",
     garantiaForma: "",

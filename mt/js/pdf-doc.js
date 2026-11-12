@@ -495,6 +495,29 @@ function _pdfGeracaoMT(B) {
   ]);
 }
 
+/* Armazenamento de energia (seção da norma nova), logo antes da Conta
+   de luz. Sem sistema, só a resposta; com sistema, ilhamento e potências. */
+function _pdfArmazenamentoMT(B) {
+  const kw = (v) =>
+    String(v ?? "").trim() ? Number(v).toLocaleString("pt-BR") + " kW" : "";
+  B.filete();
+  B.secao("Armazenamento de energia", { repete: false });
+  if (state.armazPossui !== "Sim") {
+    B.campos([
+      ["Possui sistema de armazenamento de energia", state.armazPossui || "Não", 2],
+    ]);
+    return;
+  }
+  B.campos([
+    ["Possui sistema de armazenamento de energia", "Sim"],
+    ["Sistema com possibilidade de operação ilhada", state.armazIlhada],
+  ]);
+  B.campos([
+    ["Máxima potência de carga", kw(state.armazPotCarga)],
+    ["Máxima potência de descarga", kw(state.armazPotDescarga)],
+  ]);
+}
+
 /* O rótulo do destino da fatura muda com a forma escolhida, e por
    isso não é uma lista fixa de campos. */
 function _pdfCorrespondenciaMT(B) {
@@ -550,6 +573,7 @@ function _pdfBlocosMT() {
   _pdfTecnicoMT(B);
   _pdfRamalMT(B);
   _pdfGeracaoMT(B);
+  _pdfArmazenamentoMT(B);
   _pdfCorrespondenciaMT(B);
   /* "Observações" fecha o documento quando há texto. É o único
      bloco que o mock não desenha e que mesmo assim é impresso: o

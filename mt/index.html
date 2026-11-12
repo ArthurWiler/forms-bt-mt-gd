@@ -78,14 +78,18 @@
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">7</span>
-          <span class="vstep-label">Conta de luz</span>
+          <span class="vstep-label">Armazenamento de energia</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">8</span>
-          <span class="vstep-label">Observações</span>
+          <span class="vstep-label">Conta de luz</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">9</span>
+          <span class="vstep-label">Observações</span>
+        </button>
+        <button type="button" class="vstep">
+          <span class="vstep-num">10</span>
           <span class="vstep-label">Prévia &amp; PDF</span>
         </button>
       </aside>
@@ -420,8 +424,82 @@
         </section>
 
         <section class="page" id="page-6">
+          <!-- Armazenamento de energia (seção 5 da planilha da norma). Os
+               campos abaixo do "Possui" só aparecem com Sim (onArmazMT). -->
           <div class="card">
             <div class="section-eyebrow">Etapa 7</div>
+            <h3 class="card-title">Armazenamento de energia</h3>
+            <p class="card-sub">
+              Informe os dados do sistema de armazenamento de energia, se
+              houver.
+            </p>
+            <div class="grid grid-2">
+              <div class="field field--plain col-span-2" data-noopt>
+                <label
+                  >Possui sistema de armazenamento de energia?
+                  <span class="req">*</span></label
+                >
+                <select data-k="armazPossui" onchange="onArmazMT()">
+                  <option>Sim</option>
+                  <option selected>Não</option>
+                </select>
+              </div>
+              <div
+                class="grid grid-2 col-span-2"
+                id="armazDetalheBox"
+                style="display: none"
+              >
+                <div class="field field--plain col-span-2" data-noopt>
+                  <label
+                    >Sistema com possibilidade de operação ilhada?
+                    <span class="req">*</span></label
+                  >
+                  <select data-k="armazIlhada">
+                    <option value=""></option>
+                    <option>Sim</option>
+                    <option>Não</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label
+                    >Máxima potência de carga (kW)
+                    <span class="req">*</span></label
+                  >
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    inputmode="decimal"
+                    data-k="armazPotCarga"
+                    placeholder=" "
+                  />
+                </div>
+                <div class="field">
+                  <label
+                    >Máxima potência de descarga (kW)
+                    <span class="req">*</span></label
+                  >
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    inputmode="decimal"
+                    data-k="armazPotDescarga"
+                    placeholder=" "
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="nav-bottom no-print">
+            <button class="btn btn-ghost" onclick="goTo(5)">← Voltar</button>
+            <button class="btn btn-primary" onclick="goTo(7)">Avançar →</button>
+          </div>
+        </section>
+
+        <section class="page" id="page-7">
+          <div class="card">
+            <div class="section-eyebrow">Etapa 8</div>
             <h3 class="card-title">Conta de luz</h3>
             <p class="card-sub">
               Escolha como e quando você quer receber sua conta de luz.
@@ -583,8 +661,8 @@
             </div>
           </div>
           <div class="nav-bottom no-print">
-            <button class="btn btn-ghost" onclick="goTo(5)">← Voltar</button>
-            <button class="btn btn-primary" onclick="goTo(7)">Avançar →</button>
+            <button class="btn btn-ghost" onclick="goTo(6)">← Voltar</button>
+            <button class="btn btn-primary" onclick="goTo(8)">Avançar →</button>
           </div>
         </section>
 
@@ -1479,9 +1557,9 @@
           </div>
         </section>
 
-        <section class="page" id="page-7">
+        <section class="page" id="page-8">
           <div class="card">
-            <div class="section-eyebrow">Etapa 8</div>
+            <div class="section-eyebrow">Etapa 9</div>
             <h3 class="card-title">Observações</h3>
             <div class="field">
               <textarea
@@ -1492,14 +1570,14 @@
             </div>
           </div>
           <div class="nav-bottom no-print">
-            <button class="btn btn-ghost" onclick="goTo(6)">← Voltar</button>
-            <button class="btn btn-primary" onclick="goTo(8)">Avançar →</button>
+            <button class="btn btn-ghost" onclick="goTo(7)">← Voltar</button>
+            <button class="btn btn-primary" onclick="goTo(9)">Avançar →</button>
           </div>
         </section>
 
-        <section class="page" id="page-8">
+        <section class="page" id="page-9">
           <div class="card">
-            <div class="section-eyebrow">Etapa 9</div>
+            <div class="section-eyebrow">Etapa 10</div>
             <h3 class="card-title">Prévia do formulário</h3>
             <p class="card-sub no-print">
               Confira se todos os dados estão corretos e gere o PDF da sua
@@ -1521,7 +1599,7 @@
             </div>
           </div>
           <div class="nav-bottom no-print">
-            <button class="btn btn-ghost" onclick="goTo(7)">
+            <button class="btn btn-ghost" onclick="goTo(8)">
               ← Voltar e editar
             </button>
             <span class="nav-step-info" id="exportProgressMini"

@@ -60,6 +60,7 @@ const state = {
   ),
   prop: propPadrao(),
   corr: corrPadrao(),
+  armaz: armazPadrao(),
   obra: Object.assign(obraPadrao(), (CARD.prefill && CARD.prefill.obra) || {}),
   obs: "",
   // A Etapa 4 começa sem imóveis (os contadores em 0, spec svg1); só os cards
@@ -1099,6 +1100,7 @@ function validacaoObrigatoriosBT() {
     req(c.municipio, "Município de correspondência");
   } else if (c.alternativa === "Conta globalizada")
     req(c.contaGlobal, "Conta globalizada");
+  armazPendenciasBT(req);
   if (o.localizacao !== "Rural") {
     req(o.endereco, "Endereço da obra");
     req(o.num, "Nº da obra");
@@ -1147,10 +1149,10 @@ function validacaoObrigatoriosBT() {
 // Índices de página para os lápis de edição da prévia — a ordem das
 // `section.page` em bt/individual.html: orientações=0, dados pessoais=1,
 // endereço da unidade=2, imóveis e atendimento=3, cargas dos imóveis=4,
-// conta de luz=5, observações=6, prévia=7. "Tipo de atendimento" voltou a ser
+// armazenamento de energia=5, conta de luz=6, observações=7, prévia=8. "Tipo de atendimento" voltou a ser
 // uma etapa própria (referência do Figma da trilha, com 8 passos), separada do
 // endereço — daí `dados` e `atend` apontarem para etapas diferentes.
-const PG = { prop: 1, dados: 2, atend: 3, cargas: 4, corr: 5 };
+const PG = { prop: 1, dados: 2, atend: 3, cargas: 4, armaz: 5, corr: 6 };
 // Residencial ou a categoria da Tabela 11 (urbano e rural).
 const tipoPropriedadeBT = (u) => tipoPropriedadeDe(u);
 // Ramo (texto livre) só existe nos imóveis não residenciais — a irrigação
@@ -1347,6 +1349,7 @@ function renderPreviaBT() {
   secoes.push(
     secao(varios ? "Imóveis e atendimento" : "Imóvel e atendimento", h),
   );
+  secoes.push(pvArmazenamentoBT(PG.armaz));
   // Correspondência
   h = `<div class="previa-grid">`;
   h += pvCampoBT("E-mail para receber a fatura", emailFatura, PG.corr);
@@ -1698,6 +1701,7 @@ async function exportarPdfBT() {
     atend: state.atend,
     prop: state.prop,
     corr: state.corr,
+    armaz: state.armaz,
     obra: state.obra,
     prevTotalKw: 0,
     demandaPrevTotal: 0,
@@ -1726,6 +1730,7 @@ window.initFormulario = function () {
   btRenumerarEtapas();
   bindInputs();
   montarToggles();
+  onArmazBT();
   // Zona travada (card Rural): toggle desabilitado
   if (zonaTravada) {
     const sel = $(`select[data-k="obra.localizacao"]`);

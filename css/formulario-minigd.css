@@ -84,23 +84,6 @@ body {
    `.cemig-form`. Cópias locais removidas — dead code sobreposto
    pelo shared (o conector já é ocultado lá com display:none). */
 
-/* Única exceção: o rótulo pode quebrar em duas linhas.
-   "Garantia de Fiel Cumprimento" (etapa 7) é o rótulo mais longo dos seis
-   formulários e não cabe nos ~148px que sobram na trilha de 204px. O
-   `.cemig-form .vstep-label` do shared trava a caixa em `flex: none` +
-   `height: 20px`, então o texto sairia numa linha só, vazando o painel por
-   cima da coluna do formulário. Aqui ele passa a poder ENCOLHER — sem
-   crescer: com `flex-grow` os rótulos curtos ganhariam sobra e o
-   `text-align: center` que já vem do shared apareceria neles — e a altura
-   fixa vira piso. Mesma especificidade do shared, arquivo carregado depois.
-   No mobile a trilha vira fita rolável com `white-space: nowrap` no `.vstep`
-   (shared.css, @media), então lá nada quebra e o chip segue de 20px. */
-.cemig-minigd .vstep-label {
-  flex: 0 1 auto;
-  height: auto;
-  min-height: 20px;
-}
-
 .main-col {
   flex: 1;
   min-width: 0;

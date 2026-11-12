@@ -491,8 +491,8 @@ html {
    DESCENDENTE, não filho direto, caso os subgrupos venham a se aninhar: como
    um subgrupo já é `display: contents`, ele não é um `.grid`, e um seletor `>`
    só alcançaria o primeiro nível — os mais fundos voltariam a ser blocos
-   comuns, empilhando os campos em 1 coluna e sem `gap`. Hoje os dois usos
-   (#atendimentoBloco e #armBloco) são filhos diretos de um .grid. */
+   comuns, empilhando os campos em 1 coluna e sem `gap`. Hoje os usos
+   (#atendimentoBloco, endereços da unidade) são filhos diretos de um .grid. */
 .grid .grid-subgrupo {
   display: contents;
 }
@@ -3684,17 +3684,23 @@ label.restricao-aceite input[type="checkbox"] {
 .cemig-form .vstep-label {
   display: flex;
   align-items: center;
-  height: 20px;
+  /* Uma linha de 20px; o rótulo que não cabe na coluna de 204px (ex.:
+     "Armazenamento de energia") QUEBRA em vez de vazar. Vazando, a .sidebar
+     passava a ter scrollWidth > clientWidth e o trilha-etapas.js a tratava
+     como fita rolável também no desktop (seta ">" e fade cortando todos os
+     rótulos). No mobile o chip tem white-space: nowrap e segue em uma linha. */
+  min-height: 20px;
   font-family: var(--cmg-font-family);
   font-size: 12px;
   font-style: normal;
   font-weight: 600;
   line-height: 20px;
   letter-spacing: 0.5px;
-  text-align: center;
+  text-align: left;
   /* Estado "futuro" (nem active nem done) — cinza-esverdeado do Figma. */
   color: #576864;
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
 
   /* Anti-"tremor" entre estados: o peso já é fixo (600 em futuro/active/done),
      mas só a linha .active ganha fundo (--cmg-step-active-bg). Texto sobre

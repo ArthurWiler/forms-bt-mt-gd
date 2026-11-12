@@ -24,8 +24,9 @@ const PV_ETAPA = {
   atendimento: 3,
   subestacao: 4,
   ramal: 5,
-  correspondencia: 6,
-  observacoes: 7,
+  armazenamento: 6,
+  correspondencia: 7,
+  observacoes: 8,
 };
 
 /* ===== Blocos de montagem (padrão previa-* do shared.css) ===== */
@@ -636,6 +637,31 @@ function _pvRamalGeracao() {
   return pvSecao("Ramal e Geração", corpo);
 }
 
+function _pvArmazenamento() {
+  const E = PV_ETAPA.armazenamento;
+  const kw = (v) =>
+    _pvVazio(v) ? "" : Number(v).toLocaleString("pt-BR") + " kW";
+  let campos = pvCampo(
+    "Possui sistema de armazenamento de energia",
+    state.armazPossui || "Não",
+    { step: E },
+  );
+  if (state.armazPossui === "Sim")
+    campos +=
+      pvCampo(
+        "Sistema com possibilidade de operação ilhada",
+        state.armazIlhada,
+        { step: E },
+      ) +
+      pvCampo("Máxima potência de carga", kw(state.armazPotCarga), {
+        step: E,
+      }) +
+      pvCampo("Máxima potência de descarga", kw(state.armazPotDescarga), {
+        step: E,
+      });
+  return pvSecao("Armazenamento de energia", pvGrid(campos));
+}
+
 function _pvCorrespondencia() {
   const E = PV_ETAPA.correspondencia;
   let campos = pvCampo(
@@ -694,6 +720,7 @@ function renderPreview() {
     _pvAtendimento(),
     _pvTecnico(),
     _pvRamalGeracao(),
+    _pvArmazenamento(),
     _pvCorrespondencia(),
   ];
   if (state.observacoes)

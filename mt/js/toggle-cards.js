@@ -42,6 +42,8 @@ const TOGGLE_CARDS_CONFIG = {
     "gerMomentaneo",
     "gridZero",
     "btMesmaProp",
+    "armazPossui",
+    "armazIlhada",
   ],
 };
 
