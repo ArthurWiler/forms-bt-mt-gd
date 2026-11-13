@@ -3285,6 +3285,85 @@ label.restricao-aceite input[type="checkbox"] {
   color: var(--cmg-neutral-600);
   padding: 2px 8px;
 }
+/* ---- Mapa carregando (todos os formulários — geo.js, _cmgAtualizarMapa) ----
+   Skeleton com o mesmo brilho do .etapa-skeleton cobrindo o mapa inteiro:
+   (1) antes do Leaflet existir — o próprio container vazio, via
+   :not(.leaflet-container); (2) até os tiles da 1ª vista chegarem e enquanto
+   o endereço é geocodificado — .mapa-skel, inserido pelo geo.js. A consulta
+   ambiental não cobre o mapa (o pin continua visível): vira o selo
+   .mapa-carregando-restr no topo, e o "Avançar" fica travado. */
+.cemig-form :is(.mapa-canvas, #map, #mapNovo):not(.leaflet-container),
+.cemig-form .mapa-skel {
+  background: linear-gradient(
+    90deg,
+    var(--cmg-neutral-100) 25%,
+    var(--cmg-neutral-50) 50%,
+    var(--cmg-neutral-100) 75%
+  );
+  background-size: 400% 100%;
+  animation: skeletonBrilho 1.4s ease-in-out infinite;
+}
+.cemig-form :is(.mapa-canvas, #map, #mapNovo):not(.leaflet-container) {
+  position: relative;
+}
+.cemig-form :is(.mapa-canvas, #map, #mapNovo):not(.leaflet-container)::after {
+  content: "Carregando mapa…";
+}
+.cemig-form .mapa-skel {
+  position: absolute;
+  inset: 0;
+  z-index: 1001; /* acima dos panes e controles do Leaflet (até 1000) */
+}
+.cemig-form .mapa-skel,
+.cemig-form :is(.mapa-canvas, #map, #mapNovo):not(.leaflet-container) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cemig-form .mapa-skel-txt,
+.cemig-form :is(.mapa-canvas, #map, #mapNovo):not(.leaflet-container)::after {
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-body);
+  line-height: 22px;
+  color: var(--cmg-neutral-600);
+}
+.cemig-form .mapa-carregando-restr {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  gap: var(--cmg-space-2);
+  max-width: calc(100% - 120px); /* livra o zoom e o seletor de camadas */
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--cmg-neutral-0);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  font-family: var(--cmg-font-family);
+  font-size: var(--cmg-fs-caption);
+  line-height: var(--cmg-lh-caption);
+  color: var(--cmg-text);
+  pointer-events: none;
+}
+.cemig-form .mapa-spinner {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  border: 2px solid var(--cmg-neutral-200);
+  border-top-color: var(--cmg-green-600);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cemig-form :is(.mapa-canvas, #map, #mapNovo):not(.leaflet-container),
+  .cemig-form .mapa-skel,
+  .cemig-form .mapa-spinner {
+    animation: none;
+  }
+}
 .cemig-form .mapa-legenda {
   display: flex;
   flex-wrap: wrap;

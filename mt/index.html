@@ -386,7 +386,7 @@
               houver.
             </p>
             <div class="grid grid-2">
-              <div class="field" data-noopt>
+              <div class="field">
                 <label>Nome completo (sem abreviações)</label>
                 <input
                   type="text"
@@ -395,7 +395,7 @@
                 />
               </div>
 
-              <div class="field" data-noopt>
+              <div class="field">
                 <label>E-mail</label>
                 <input
                   type="email"
@@ -405,7 +405,7 @@
                 />
                 <span id="status-rtEmail" class="field-hint"></span>
               </div>
-              <div class="field" data-noopt>
+              <div class="field">
                 <label>Celular</label>
                 <input
                   type="tel"
@@ -930,8 +930,8 @@
                 <div class="mapa-obra">
                   <p class="mapa-hint">
                     Indique no mapa a nova localização da subestação: clique no
-                    ponto desejado e, se precisar, arraste o pin para ajustar.
-                    O marcador cinza mostra a localização atual, informada em
+                    ponto desejado e, se precisar, arraste o pin para ajustar. O
+                    marcador cinza mostra a localização atual, informada em
                     Empreendimento.
                   </p>
                   <div
@@ -1039,13 +1039,44 @@
               <h4 class="card-subtitle divider">
                 Dados da subestação compartilhada <span class="req">*</span>
               </h4>
-              <p class="card-sub">
+              <!-- Texto e exemplo mudam com a finalidade
+                   (atualizarExemplosSubestacaoMT): na conexão nova a dúvida é
+                   subestação nova × já existente; na alteração, informar só os
+                   cubículos alterados e os novos. -->
+              <p class="card-sub" data-so-finalidade="nova">
                 Preencha os dados dos cubículos na sua propriedade. Para
                 <strong>novas subestações</strong>, informe os
                 <strong>dados de todos os cubículos</strong>. Se a
                 <strong>subestação já existir</strong>, preencha apenas as
                 <strong>informações do novo cubículo</strong> a ser adicionado.
               </p>
+              <p class="card-sub" data-so-finalidade="alteracao">
+                Informe apenas os dados dos
+                <strong>cubículos que serão alterados</strong> e dos
+                <strong>novos cubículos</strong>. Os que não mudam não precisam
+                ser preenchidos.
+              </p>
+              <div class="cmg-exemplo" data-so-finalidade="nova">
+                <strong>Exemplos</strong>:
+                <ol class="cmg-exemplo-lista">
+                  <li>
+                    Uma subestação nova, que está sendo construída, será
+                    compartilhada por 3 empresas e terá 3 cubículos. Nesse caso,
+                    informe os dados dos 3 cubículos.
+                  </li>
+                  <li>
+                    Se uma empresa deseja se ligar a uma subestação, que já
+                    existe, e será instalado um 4º cubículo, você informa apenas
+                    os dados do novo cubículo.
+                  </li>
+                </ol>
+              </div>
+              <div class="cmg-exemplo" data-so-finalidade="alteracao">
+                <strong>Exemplo</strong>: a subestação já existe e tem 4
+                cubículos. Você vai aumentar a carga de um deles e instalar um
+                novo, o 5º. Informe apenas os dados desses 2 cubículos, o
+                alterado e o novo. Os outros 3 não precisam ser preenchidos.
+              </div>
 
               <div class="grid grid-2 bloco-sub-gap">
                 <div class="field row-solo" id="qtdCubiculosBox">
@@ -1102,10 +1133,27 @@
                 <h4 class="card-subtitle divider">
                   Dados dos transformadores <span class="req">*</span>
                 </h4>
-                <p class="card-sub">
+                <p class="card-sub" data-so-finalidade="nova">
                   Preencha os dados de todos os transformadores que serão usados
                   na sua propriedade.
                 </p>
+                <p class="card-sub" data-so-finalidade="alteracao">
+                  Informe <strong>todos os transformadores</strong> da
+                  subestação, inclusive os que não mudam, e marque em cada um se
+                  ele será trocado, mantido ou se é novo. A potência total da
+                  subestação é a soma de todos eles.
+                </p>
+                <div class="cmg-exemplo" data-so-finalidade="alteracao">
+                  <strong>Exemplo</strong>: a subestação tem 2 transformadores
+                  de 500 kVA e demanda de 800 kVA. Você vai trocar um deles por
+                  um de 750 kVA. Informe os 2: o primeiro como
+                  <strong>Trocar este transformador</strong> (potência 500 kVA e
+                  nova potência 750 kVA) e o segundo como
+                  <strong>Manter este transformador</strong> (500 kVA). A
+                  potência total fica 1.250 kVA, acima da demanda. Se só o de
+                  750 kVA for informado, a demanda passa da potência e o
+                  formulário indicará um erro.
+                </div>
 
                 <div class="grid grid-2 bloco-sub-gap">
                   <div class="field row-solo" id="qtdTransformadorBox">
@@ -1397,10 +1445,17 @@
                     <label
                       >Sistema com possibilidade de operação ilhada?
                       <span class="req">*</span>
-                      <span class="cmg-hint cmg-hint--direita" tabindex="0" role="img"
+                      <span
+                        class="cmg-hint cmg-hint--direita"
+                        tabindex="0"
+                        role="img"
                         aria-label="Ajuda: operação ilhada. Capacidade do sistema de baterias de se desconectar da rede elétrica durante um apagão e manter os equipamentos essenciais funcionando de forma independente, sem interrupção de energia."
                         data-hint="Capacidade do sistema de baterias de se desconectar da rede elétrica durante um apagão e manter os equipamentos essenciais funcionando de forma independente, sem interrupção de energia."
-                        ><img class="field-info" src="../imgs/info.svg" alt="" aria-hidden="true"
+                        ><img
+                          class="field-info"
+                          src="../imgs/info.svg"
+                          alt=""
+                          aria-hidden="true"
                       /></span>
                     </label>
                     <select data-k="armazIlhada">
@@ -1565,7 +1620,8 @@
       Conversão de Potências
     </button>
 
-    <!-- Figura ampliada do ramal de entrada — aberta pelo (i) do card. -->
+    <!-- Figura ampliada do ramal de entrada ou da subestação — aberta pelo
+         (i) do card (_ampliarFigura troca o título). -->
     <div
       class="modal-overlay"
       id="modalFigura"
@@ -1578,7 +1634,7 @@
         aria-label="Ramal de entrada"
       >
         <div class="modal-head">
-          <h3>Ramal de entrada</h3>
+          <h3 id="modalFiguraTitulo">Ramal de entrada</h3>
           <button class="close" aria-label="Fechar" onclick="fecharFigura()">
             ×
           </button>

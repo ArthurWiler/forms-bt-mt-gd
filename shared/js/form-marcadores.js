@@ -310,7 +310,13 @@
       // um <button disabled> não dispara click, e o usuário que clica nele
       // precisa ser levado até o campo que falta (ver o handler de clique
       // abaixo). A navegação em si é barrada por aria-disabled nos handlers.
-      const bloquear = !(_reqOk(page) && gateOk);
+      // Consulta de restrição ambiental em andamento (geo.js): trava a etapa
+      // que contém o mapa da obra até o resultado chegar.
+      const carregando =
+        typeof window.cmgRestricoesCarregando === "function" &&
+        window.cmgRestricoesCarregando() &&
+        !!page.querySelector("#map");
+      const bloquear = !(_reqOk(page) && gateOk) || carregando;
       btn.disabled = false;
       btn.setAttribute("aria-disabled", bloquear ? "true" : "false");
       btn.classList.toggle("is-disabled", bloquear);
@@ -336,6 +342,8 @@
             page.querySelectorAll(".cmg-aviso--error"),
             _visivel,
           ) || null;
+      // Nem campo nem erro: a trava é a consulta ambiental — leva ao mapa.
+      if (!alvo) alvo = page.querySelector(".mapa-carregando-restr");
       if (alvo) {
         alvo.scrollIntoView({ behavior: "smooth", block: "center" });
         // O foco reforça a mensagem para leitores de tela; após a rolagem para

@@ -312,14 +312,49 @@ function gdRamalLinhas(idx) {
 /* Figura ampliada: modal criado sob demanda (micro e mini não têm o
    #modalFigura do MT). */
 function gdAmpliarFiguraRamal(idx) {
+  gdAmpliarFigura(
+    GD_RAMAL_IMG(idx),
+    `Figura do ramal de entrada ${idx}`,
+    "Ramal de entrada",
+  );
+}
+/* Card de modelo de subestação (micro e mini — spec sub.svg, 13/11): foto no
+   topo e rodapé com rádio + "Subestação modelo nºN" + (i) que amplia a
+   foto. Mesmo HTML/CSS do card do MT (renderGaleriaSE, formulario-mt.css). */
+function gdRotuloModeloSE(valor) {
+  return String(valor || "").replace(
+    /Subesta[çc][ãa]o\s*N[º°]\s*0?(\d+)/i,
+    "Subestação modelo nº$1",
+  );
+}
+function gdSeCardHTML({ valor, img, marcado, grupo, aoEscolher }) {
+  const nome = gdRotuloModeloSE(valor);
+  return `<div class="se-card${marcado ? " selected" : ""}" onclick="${aoEscolher}">
+      ${img ? `<img class="se-img" src="${img}" alt="${nome}">` : `<div class="se-img se-img--vazia" aria-hidden="true"></div>`}
+      <div class="se-rodape">
+        <input type="radio" name="se_${grupo}" value="${valor}"${marcado ? " checked" : ""}
+               aria-label="Selecionar ${nome}" onclick="event.stopPropagation();${aoEscolher}">
+        <span class="se-nome">${nome}</span>
+        ${img ? `<button type="button" class="ramal-info" aria-label="Ampliar a foto da ${nome}" onclick="event.stopPropagation();gdAmpliarFiguraSE('${valor}')"><img src="../imgs/info.svg" alt="" aria-hidden="true"></button>` : ""}
+      </div>
+    </div>`;
+}
+function gdAmpliarFiguraSE(valor) {
+  const n = (String(valor).match(/(\d+)/) || [])[1];
+  const imgs =
+    typeof SUBESTACAO_IMGS_B64 !== "undefined" ? SUBESTACAO_IMGS_B64 : {};
+  const nome = gdRotuloModeloSE(valor);
+  gdAmpliarFigura(imgs[n], nome, nome);
+}
+function gdAmpliarFigura(src, alt, titulo) {
   let ov = document.getElementById("modalFiguraGD");
   if (!ov) {
     ov = document.createElement("div");
     ov.id = "modalFiguraGD";
     ov.className = "modal-overlay";
-    ov.innerHTML = `<div class="modal modal--figura" role="dialog" aria-modal="true" aria-label="Ramal de entrada">
+    ov.innerHTML = `<div class="modal modal--figura" role="dialog" aria-modal="true">
         <button type="button" class="modal-close" aria-label="Fechar" onclick="gdFecharFiguraRamal()">×</button>
-        <h3 class="card-title">Ramal de entrada</h3>
+        <h3 class="card-title" id="modalFiguraGDTitulo"></h3>
         <img id="modalFiguraGDImg" alt="" style="display:block;width:100%;height:auto" />
       </div>`;
     ov.addEventListener("click", (e) => {
@@ -331,8 +366,10 @@ function gdAmpliarFiguraRamal(idx) {
     });
   }
   const img = document.getElementById("modalFiguraGDImg");
-  img.src = GD_RAMAL_IMG(idx);
-  img.alt = `Figura do ramal de entrada ${idx}`;
+  img.src = src || "";
+  img.alt = alt;
+  document.getElementById("modalFiguraGDTitulo").textContent = titulo;
+  ov.querySelector(".modal").setAttribute("aria-label", titulo);
   ov.style.display = "flex";
 }
 function gdFecharFiguraRamal() {

@@ -639,11 +639,16 @@ function renderGaleriaSEGD(containerId, selectId) {
   cont.innerHTML = opts
     .map((o) => {
       const n = (String(o.value).match(/(\d+)/) || [])[1];
-      const marcado = o.value === sel.value ? " selected" : "";
-      return `<div class="se-card${marcado}" onclick="selecionarSEGD('${selectId}','${o.value}')">
-      ${n && imgs[n] ? `<img src="${imgs[n]}" alt="${o.value}">` : ""}
-      <div class="lbl">${o.value}</div>
-    </div>`;
+      // Card do spec sub.svg (13/11): foto no topo e rodapé com rádio +
+      // "Subestação modelo nºN" + (i) que amplia a foto — o mesmo padrão do
+      // card de ramal (gdSeCardHTML, shared/js/tarifacao-gd.js).
+      return gdSeCardHTML({
+        valor: o.value,
+        img: n && imgs[n],
+        marcado: o.value === sel.value,
+        grupo: selectId,
+        aoEscolher: `selecionarSEGD('${selectId}','${o.value}')`,
+      });
     })
     .join("");
 }

@@ -645,7 +645,7 @@ async function _nmBBoxBairro(bairro, cidade, uf) {
   _nmBBoxCache[key] = out;
   return out;
 }
-async function geocodificarEnderecoBR({
+async function _geocodificarEnderecoBRImpl({
   logradouro,
   numero,
   bairro,
@@ -734,7 +734,7 @@ async function geocodificarEnderecoBR({
    usuário marcar a propriedade. Estruturada (city/state) e, se nada vier,
    texto livre. Cacheado por cidade|uf. null se não achar. */
 const _nmBBoxMunicipioCache = {};
-async function bboxMunicipioBR(cidade, uf) {
+async function _bboxMunicipioBRImpl(cidade, uf) {
   const c = String(cidade == null ? "" : cidade).trim();
   const u = String(uf == null ? "" : uf).trim();
   if (!c) return null;
@@ -843,7 +843,7 @@ async function geometriaCompletaFeicao(cam, featureId, cancelar) {
 // isso, a resposta de um ponto antigo (digitação, cliques seguidos) podia
 // chegar depois e gravar por cima a restrição do ponto atual.
 let _consultaRestricoes = null;
-async function consultarRestricoesObra(lat, lng) {
+async function _consultarRestricoesObraImpl(lat, lng) {
   if (_consultaRestricoes) _consultaRestricoes.abort();
   const ctrl = (_consultaRestricoes = new AbortController());
   const cancelar = ctrl.signal;
@@ -966,6 +966,104 @@ function _areasRestricao(res) {
   }
   return out;
 }
+/* ===== Carregamento dos mapas: skeleton + trava do "Avançar" (global) =====
+   Três esperas ficam visíveis para o usuário, em TODOS os formulários:
+     - "Carregando mapa…": skeleton até os tiles da 1ª vista chegarem (antes
+       do Leaflet existir, o mesmo skeleton sai do CSS em
+       .mapa-canvas/#map/#mapNovo :not(.leaflet-container) — shared.css);
+     - "Localizando endereço…": skeleton no mapa da obra (#map) enquanto a
+       geocodificação (geocodificarEnderecoBR / bboxMunicipioBR) está em voo;
+     - "Consultando restrições ambientais…": selo no topo do mapa da obra
+       enquanto consultarRestricoesObra roda. Nesse intervalo o "Avançar" da
+       etapa que contém #map fica travado (form-marcadores.js lê
+       cmgRestricoesCarregando).
+   Os mapas do NOVO local (#mapPadrao, #mapNovo, #mapNovoSE, padrão do BT)
+   só recebem o skeleton dos tiles: endereço e restrição são do ponto da obra. */
+const _cmgMapas = new Set();
+const _cmgCarga = { geo: 0, restr: 0 };
+function _cmgMapaObra(cont) {
+  return cont.id === "map";
+}
+function _cmgAtualizarMapa(map) {
+  const cont = map.getContainer();
+  if (!cont.isConnected) {
+    _cmgMapas.delete(map);
+    return;
+  }
+  const obra = _cmgMapaObra(cont);
+  const skelTxt = !map._cmgTilesOk
+    ? "Carregando mapa…"
+    : obra && _cmgCarga.geo > 0
+      ? "Localizando endereço…"
+      : "";
+  let skel = cont.querySelector(":scope > .mapa-skel");
+  if (skelTxt) {
+    if (!skel) {
+      skel = document.createElement("div");
+      skel.className = "mapa-skel";
+      skel.setAttribute("role", "status");
+      skel.innerHTML = '<span class="mapa-skel-txt"></span>';
+      cont.appendChild(skel);
+    }
+    skel.querySelector(".mapa-skel-txt").textContent = skelTxt;
+  } else if (skel) skel.remove();
+  let selo = cont.querySelector(":scope > .mapa-carregando-restr");
+  if (obra && _cmgCarga.restr > 0 && !skelTxt) {
+    if (!selo) {
+      selo = document.createElement("div");
+      selo.className = "mapa-carregando-restr";
+      selo.setAttribute("role", "status");
+      selo.innerHTML =
+        '<span class="mapa-spinner" aria-hidden="true"></span>Consultando restrições ambientais…';
+      cont.appendChild(selo);
+    }
+  } else if (selo) selo.remove();
+}
+function _cmgAtualizarMapas() {
+  [..._cmgMapas].forEach(_cmgAtualizarMapa);
+}
+function _cmgMudarCarga(tipo, delta) {
+  _cmgCarga[tipo] = Math.max(0, _cmgCarga[tipo] + delta);
+  _cmgAtualizarMapas();
+  // Depois do chamador tratar o resultado (continua no microtask do await):
+  // só então o gate do "Avançar" é recalculado.
+  if (tipo === "restr")
+    setTimeout(() => {
+      if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
+    }, 0);
+}
+async function _cmgComCarga(tipo, fn) {
+  _cmgMudarCarga(tipo, 1);
+  try {
+    return await fn();
+  } finally {
+    _cmgMudarCarga(tipo, -1);
+  }
+}
+window.cmgRestricoesCarregando = () => _cmgCarga.restr > 0;
+function geocodificarEnderecoBR(end) {
+  return _cmgComCarga("geo", () => _geocodificarEnderecoBRImpl(end));
+}
+function bboxMunicipioBR(cidade, uf) {
+  return _cmgComCarga("geo", () => _bboxMunicipioBRImpl(cidade, uf));
+}
+function consultarRestricoesObra(lat, lng) {
+  return _cmgComCarga("restr", () => _consultarRestricoesObraImpl(lat, lng));
+}
+// Registra o mapa e mantém o skeleton até a 1ª vista de tiles carregar (ou
+// 12 s, para um servidor de tiles fora do ar não prender o skeleton).
+function _cmgRegistrarMapa(map, camada) {
+  _cmgMapas.add(map);
+  map._cmgTilesOk = false;
+  const pronto = () => {
+    if (map._cmgTilesOk) return;
+    map._cmgTilesOk = true;
+    _cmgAtualizarMapa(map);
+  };
+  camada.once("load", pronto);
+  setTimeout(pronto, 12000);
+  _cmgAtualizarMapa(map);
+}
 // Camadas base de TODOS os mapas dos formulários: Ruas (OSM) abre por padrão
 // e Satélite (Esri World Imagery, mesma fonte usada pelo Sisema) fica no
 // seletor. A Esri não usa subdomínio {s} e a ordem dos eixos é {z}/{y}/{x}.
@@ -984,6 +1082,7 @@ function camadasBaseMapa(map) {
   );
   ruas.addTo(map);
   L.control.layers({ Ruas: ruas, Satélite: satelite }).addTo(map);
+  _cmgRegistrarMapa(map, ruas);
   return { ruas, satelite };
 }
 // Legenda ABAIXO do mapa: um item por ÁREA intersectada, na MESMA cor do

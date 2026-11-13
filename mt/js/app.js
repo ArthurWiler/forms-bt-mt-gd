@@ -355,6 +355,7 @@ function onFinalidade() {
     });
   }
   renderTrafos(); // os radios de troca aparecem/somem conforme a finalidade
+  atualizarExemplosSubestacaoMT();
   updateCoordHint();
   recalcTecnico();
   if (state.compartilhada === "Sim") renderCubiculos();
@@ -1439,6 +1440,15 @@ function onTel(k) {
 }
 
 /* ===== Etapa 5 (Subestação): compartilhada, trafos, motores ===== */
+/* Textos e exemplos da etapa de subestação (data-so-finalidade): "nova" na
+   Conexão Nova (e sem finalidade), "alteracao" nas demais. */
+function atualizarExemplosSubestacaoMT() {
+  const alt = permiteTrocaTrafo();
+  document.querySelectorAll("[data-so-finalidade]").forEach((el) => {
+    const quer = el.getAttribute("data-so-finalidade") === "alteracao";
+    el.style.display = quer === alt ? "" : "none";
+  });
+}
 function onCompartilhada() {
   state.compartilhada = $("#f_compartilhada").value;
   const compart = state.compartilhada === "Sim";
@@ -2715,10 +2725,19 @@ function renderGaleriaSE(containerId, selectId) {
     .map((o) => {
       const m = o.value.match(/(\d+)/);
       const img = m && SUBESTACAO_IMGS[m[1]];
-      const sel_ = o.value === sel.value ? "selected" : "";
-      return `<div class="se-card ${sel_}" onclick="selecionarSE('${selectId}','${o.value}')">
-      ${img ? `<img src="${img}" alt="${o.value}">` : ""}
-      <div class="lbl">${o.value}</div>
+      const marcado = o.value === sel.value;
+      const nome = rotuloModeloSE(o.value);
+      const escolher = `selecionarSE('${selectId}','${o.value}')`;
+      // Card do spec sub.svg (13/11): foto no topo e rodapé com rádio + nome
+      // do modelo + (i) que amplia a foto — o mesmo padrão do card de ramal.
+      return `<div class="se-card${marcado ? " selected" : ""}" onclick="${escolher}">
+      ${img ? `<img class="se-img" src="${img}" alt="${nome}">` : `<div class="se-img se-img--vazia" aria-hidden="true"></div>`}
+      <div class="se-rodape">
+        <input type="radio" name="se_${selectId}" value="${o.value}"${marcado ? " checked" : ""}
+               aria-label="Selecionar ${nome}" onclick="event.stopPropagation();${escolher}">
+        <span class="se-nome">${nome}</span>
+        ${img ? `<button type="button" class="ramal-info" aria-label="Ampliar a foto da ${nome}" onclick="event.stopPropagation();ampliarFiguraSE('${o.value}')"><img src="../imgs/info.svg" alt="" aria-hidden="true"></button>` : ""}
+      </div>
     </div>`;
     })
     .join("");
@@ -2894,13 +2913,37 @@ function selectRamal(idx) {
   state.ramalIndice = idx;
   recalcRamal();
 }
-/* (i) do card do ramal: mostra a figura em tamanho de leitura no modal. */
-function ampliarFiguraRamal(idx) {
+/* (i) dos cards de ramal e de subestação: mostra a figura em tamanho de
+   leitura no modal, com o título de quem o abriu. */
+function _ampliarFigura(src, alt, titulo) {
   const img = $("#modalFiguraImg");
   if (!img) return;
-  img.src = RAMAL_IMGS[idx] || "";
-  img.alt = `Figura do ramal de entrada ${idx}`;
+  img.src = src || "";
+  img.alt = alt;
+  const h = $("#modalFiguraTitulo");
+  if (h) h.textContent = titulo;
+  $("#modalFigura .modal")?.setAttribute("aria-label", titulo);
   $("#modalFigura").classList.add("show");
+}
+function ampliarFiguraRamal(idx) {
+  _ampliarFigura(
+    RAMAL_IMGS[idx],
+    `Figura do ramal de entrada ${idx}`,
+    "Ramal de entrada",
+  );
+}
+/* "Subestação Nº 4" (valor do <select>, usado nas regras) → rótulo do card
+   do spec: "Subestação modelo nº4". */
+function rotuloModeloSE(valor) {
+  return String(valor || "").replace(
+    /Subesta[çc][ãa]o\s*N[º°]\s*0?(\d+)/i,
+    "Subestação modelo nº$1",
+  );
+}
+function ampliarFiguraSE(valor) {
+  const n = (String(valor).match(/(\d+)/) || [])[1];
+  const nome = rotuloModeloSE(valor);
+  _ampliarFigura(SUBESTACAO_IMGS[n], nome, nome);
 }
 function fecharFigura() {
   $("#modalFigura")?.classList.remove("show");
@@ -3239,6 +3282,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // isto o estado inicial vinha só dos style="display" do HTML, que podiam
   // divergir do valor restaurado em state.compartilhada.
   onCompartilhada();
+  atualizarExemplosSubestacaoMT(); // textos/exemplos conforme a finalidade
   addTrafo(); // começa com 1 linha de trafo
   aplicarAtividadeDaURL();
   // Estado inicial dos blocos de endereço da Etapa 3 — roda depois de

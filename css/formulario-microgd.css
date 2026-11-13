@@ -992,62 +992,9 @@ textarea.ta {
 }
 
 /* ===== Galeria visual de tipos de subestação (MICROGD) =====
-   Mesma experiência por cards do módulo MT. */
-.se-gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
-  width: 100%;
-  margin-top: 10px;
-}
-.se-card {
-  border: 2px solid var(--borda);
-  border-radius: 10px;
-  overflow: visible;
-  cursor: pointer;
-  transition: 0.18s;
-  background: #fff;
-  text-align: center;
-  position: relative;
-}
-.se-card:hover {
-  border-color: var(--verde);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
-}
-.se-card.selected {
-  border-color: var(--verde);
-  box-shadow: 0 0 0 4px rgba(16, 119, 97, 0.18);
-}
-.se-card.disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  filter: grayscale(1);
-}
-.se-card.disabled:hover {
-  transform: none;
-  box-shadow: none;
-  border-color: var(--borda);
-}
-.se-card img {
-  width: 100%;
-  height: 150px;
-  object-fit: contain;
-  background: #fff;
-  display: block;
-  padding: 6px;
-  border-radius: 8px 8px 0 0;
-}
-.se-card .lbl {
-  padding: 6px 8px;
-  font-size: 11.5px;
-  font-weight: 700;
-  color: var(--verde-escuro);
-}
-/* .se-info / .se-tooltip removidos junto com o badge (i) da galeria de tipos
-   de subestação — mesma decisão do módulo MT (ver renderGaleriaSEGD em
-   microgeracao/js/subestacao.js). A minigeração tem cópias próprias dessas
-   regras e segue com o tooltip. */
+   Desde 13/11/2026 (spec sub.svg) as regras são as mesmas do MT e da mini:
+   :is(.cemig-mtform, .cemig-microgd, .cemig-minigd) .se-* em
+   css/formulario-mt.css. */
 
 /* ===== Módulos e inversores: um bloco por MODELO =====
    Sem acordeão (são quatro campos, que cabem numa olhada): cada modelo é um
