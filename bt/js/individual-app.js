@@ -1330,13 +1330,14 @@ function renderPreviaBT() {
   if (pf && !p.estrangeiro)
     h += pvCampoBT("Data de nascimento", dataBR(p.nasc), PG.prop);
   secoes.push(secao("Dados do proprietário", h + `</div>`));
-  // Endereço da unidade consumidora: um só para todos os imóveis.
+  // Endereço da unidade consumidora: um só para todos os imóveis. Sem
+  // "Complemento": a etapa não o pede mais — o complemento é de cada imóvel
+  // e sai na seção "Imóvel e atendimento".
   h = `<div class="previa-grid">`;
   if (!rural) {
     h += pvCampoBT("CEP", o.cep, PG.dados, true);
     h += pvCampoBT("Endereço", o.endereco, PG.dados);
     h += pvCampoBT("Número", o.num, PG.dados);
-    h += pvCampoBT("Complemento", o.compl, PG.dados);
     h += pvCampoBT("Bairro", o.bairro, PG.dados);
     h += pvCampoBT("Cidade", o.cidade, PG.dados);
     h += pvCampoBT("Estado", o.estado, PG.dados);

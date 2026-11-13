@@ -2414,10 +2414,9 @@ function renderPreviewGD() {
           : pvCampo("CPF/CNPJ", d.cpfCnpj, { step: "identificacao" })) +
         pvCampo(
           "Endereço",
-          `${d.logradouro}, ${d.numero} ${d.complemento} — ${d.bairro}, ${d.municipio}/${d.estado}`,
+          `${d.logradouro}, ${d.numero} — ${d.bairro}, ${d.municipio}/${d.estado}`,
           { full: true, step: "identificacao" },
-        ) +
-        pvCampo("Fast Track / Grid Zero", `${d.fastTrack} / ${d.gridZero}`, {}),
+        ),
     ),
   );
   secoes.push(
@@ -2527,6 +2526,9 @@ function renderPreviewGD() {
     pvSecao(
       "4 — Geração",
       pvCampo("Fonte", d.fontePrimaria, {}) +
+        // O card "Modalidade de operação" substituiu os campos Fast Track e
+        // Grid Zero (que seguem derivados dele para o PDF e o art. 73-A).
+        pvCampo("Modalidade de operação", d.modoOperacao, { step: "geracao" }) +
         pvCampo("Potência de geração (kW)", d.potAtivaInstalada, {}) +
         pvCampo("Modalidade", d.modalidade, {}) +
         _pvParPotenciaGD("geracao", "", d.demandaGeracaoAtual, "geracao") +

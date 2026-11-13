@@ -3429,7 +3429,8 @@ function renderPreviaColetivo() {
   );
   html += pvCampoBT(pf ? "CPF" : "CNPJ", p.cpfCnpj, PG.empr);
   html += pvCampoBT("Nº ART/TRT do projeto", o.art, PG.empr);
-  html += pvCampoBT("Área do empreendimento", o.localizacao, PG.empr);
+  // Sem "Área do empreendimento": coletivo e torres são sempre urbanos
+  // (obra.localizacao fixo em "Urbano"), a etapa não pergunta.
   html += pvCampoBT("CEP", o.cep, PG.empr);
   html += pvCampoBT("Endereço", o.endereco, PG.empr);
   html += pvCampoBT("Número", o.num, PG.empr);

@@ -2363,7 +2363,7 @@ function renderPreviewGD() {
           { step: 2 },
         ) +
         pvCampo("Instalação", d.instalacao, { step: 3 }) +
-        pvCampo("Grupo", d.grupo, { step: 2 }) +
+        // Sem "Grupo": a minigeração é sempre Grupo A, nenhuma etapa pergunta.
         pvCampo("Tipo de propriedade", d.tipoPropriedade, { step: 2 }) +
         (_ramoAplicaGD()
           ? pvCampo("Ramo da atividade", d.ramoAtividade, { step: 2 })
