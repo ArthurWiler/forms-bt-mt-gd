@@ -2360,6 +2360,30 @@ const pvTextoLivre = (txt) =>
     .trim()
     .replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c])
     .replace(/\n/g, "<br>")}</p>`;
+// Análise de Partida de Motores do Grupo B (shared/js/partida-motores-bt.js):
+// motores dos perfis de carga, na UC única ou em cada UC do coletivo em modo
+// calculadora. No Grupo A os motores são os cards de motoresGD
+// (js/subestacao.js), com os dados de partida no próprio card e o PDF em
+// #btnExportarPartida.
+window.PARTIDA_MOTORES_HOST = {
+  motores: () => {
+    if (!gdEtapaCargaDefinida()) return [];
+    const mots = (u) => (u && u.cargas && u.cargas.mots) || [];
+    if (!gdEhColetivo())
+      return state.perfil
+        ? [{ rotulo: "Unidade consumidora", mots: mots(state) }]
+        : [];
+    if (!gdModoCalculadora()) return [];
+    return (state.ucs || [])
+      .map((u, i) =>
+        gdUcSemAlteracao(u) || !u.perfil
+          ? null
+          : { rotulo: `Unidade consumidora ${i + 1}`, mots: mots(u) },
+      )
+      .filter(Boolean);
+  },
+  cliente: () => state.titular,
+};
 function renderPreviewGD() {
   // Aquecimento do jsPDF (carga sob demanda): chegar nesta etapa é o melhor
   // sinal de que o PDF vem a seguir. Sem await — não bloqueia a renderização.
@@ -2614,6 +2638,7 @@ function renderPreviewGD() {
   const btnPartida = $("#btnExportarPartida");
   if (btnPartida)
     btnPartida.style.display = motoresPesadosGD(d).length ? "" : "none";
+  atualizarAvisoMotoresBT();
 }
 function syncState() {
   $$("[data-k]").forEach((el) => {

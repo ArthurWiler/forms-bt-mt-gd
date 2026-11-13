@@ -3323,15 +3323,54 @@ function _mkAbasTorres(atual, aoEscolher) {
   });
   return wrap;
 }
+// Análise de Partida de Motores (shared/js/partida-motores-bt.js): motores
+// dos perfis de carga, só no modo calculadora. Grupos de unidades/faixas são
+// editados pelo líder (o resto é cópia, ver _espelharUCs), então entra uma
+// linha por grupo, rotulada com todas as unidades dele.
+window.PARTIDA_MOTORES_HOST = {
+  motores: () => {
+    const mots = (u) => (u && u.cargas && u.cargas.mots) || [];
+    const unid = (idx) =>
+      `${idx.length > 1 ? "Unidades" : "Unidade"} ${_rotuloIndices(idx)}`;
+    const out = [];
+    if (MULTI) {
+      _espelharGrupos();
+      _gruposTorres().forEach((gt) => {
+        const b = state.blocos[gt[0]];
+        if (!b || !calcBlocoMultiTorres(b).modoCalculadora) return;
+        _faixasDaTorre(b)
+          .map(_indicesFaixa)
+          .forEach((idx) => {
+            const u = (b.ucs || [])[idx[0]];
+            if (!u || ucSemAlteracao(u)) return;
+            out.push({
+              rotulo: `${_nomeGrupo(gt)} ${_rotuloIndices(gt)} — ${unid(idx)}`,
+              mots: mots(u),
+            });
+          });
+      });
+      return out;
+    }
+    if (!modoCalculadoraF()) return out;
+    _espelharColetivo();
+    _gruposUnidades().forEach((g) => {
+      const u = state.ucBlocos[g[0]];
+      if (!u || ucSemAlteracao(u)) return;
+      out.push({ rotulo: unid(g), mots: mots(u) });
+    });
+    return out;
+  },
+  cliente: () => state.prop.nome,
+};
 function renderPreviaColetivo() {
   const box = $("#previaConteudo");
   if (!box) return;
   _espelharGrupos();
   _espelharColetivo();
-  /* O aquecimento do jsPDF saiu daqui: o PDF do formulário agora é HTML
-     impresso pelo navegador (js/pdf-doc.js) e o fluxo coletivo não tem
-     documento auxiliar em jsPDF — baixar a lib nesta etapa seria ~350 kB
-     de CDN que ninguém usa. */
+  /* Sem aquecimento do jsPDF: o PDF do formulário é HTML impresso pelo
+     navegador (js/pdf-doc.js). O único documento em jsPDF do coletivo, a
+     Análise de Partida de Motores, só existe com motor pesado e baixa a lib
+     no próprio clique (exportarPDFPartidaBT). */
   const p = state.prop,
     c = state.corr,
     o = state.obra;
@@ -3605,6 +3644,7 @@ function renderPreviaColetivo() {
   }
   const btn = $("#btnExportarPDF");
   if (btn) btn.disabled = !v.ok;
+  atualizarAvisoMotoresBT();
   atualizarAvisosPreviaBT();
 }
 async function exportarPdfBT() {
