@@ -271,6 +271,7 @@ function goTo(n, livre) {
   // condicional está de fato aberto (mudança de local = "Sim").
   if ($("#page-" + n).querySelector("#mapNovo") && _mudancaLocalAtiva()) {
     initMapaNovo();
+    atualizarLocalAtualNovoMT(); // o local atual pode ter mudado na etapa 3
     if (mapaNovo) setTimeout(() => mapaNovo.invalidateSize(), 50);
   }
   if (n === 8) renderPreview();
@@ -817,54 +818,18 @@ function _mudancaLocalAtiva() {
     state.mudancaLocal === "Sim"
   );
 }
-/* Endereço do NOVO local (etapa "Tipo de atendimento") — a zona é HERDADA da
-   etapa 3 ("Localização"): a subestação se move dentro do mesmo imóvel, então
-   não se pergunta a zona duas vezes. Só o bloco da zona escolhida aparece, e
-   seus campos só são obrigatórios enquanto estão visíveis.
-   Chamado por updateCoordHint() (mudança de local / finalidade) e por
-   onLocalizacao() (troca de zona na etapa 3). */
-const _REQ_URB_NOVO = [
-  "nv_cep",
-  "nv_endereco",
-  "nv_num",
-  "nv_bairro",
-  "nv_municipio",
-  "nv_estado",
-];
-const _REQ_RUR_NOVO = ["nv_municipio_rur", "nv_estado_rur"];
-function sincronizarZonaNovoLocal() {
-  const box = $("#blocoUrbanoNovo"),
-    boxR = $("#blocoRuralNovo");
-  if (!box || !boxR) return;
-  // A etapa 3 já nasce com "Urbana" pré-selecionada, então a zona nunca fica
-  // vazia na prática; ainda assim o `mudanca &&` mantém os dois blocos
-  // fechados enquanto não há mudança de local declarada.
-  const mudanca = _mudancaLocalAtiva();
-  const zona = mudanca ? state.localizacao : "";
-  box.style.display = zona === "Urbana" ? "block" : "none";
-  boxR.style.display = zona === "Rural" ? "block" : "none";
-  _setReq(_REQ_URB_NOVO, zona === "Urbana");
-  _setReq(_REQ_RUR_NOVO, zona === "Rural");
-}
-
 /* Gate do botão "Avançar" da etapa "Tipo de atendimento"
    (data-gate="localNovoOk"). O data-req já cobre "coordenada nova em
    branco"; aqui entram as regras que ele não expressa: coordenada fora de
    faixa e novo local idêntico ao atual. */
 window.localNovoOk = function () {
   if (!_mudancaLocalAtiva()) return true;
-  // Sem zona definida na etapa 3 não há bloco de endereço para preencher —
-  // o data-req não pega esse caso (os dois blocos ficam ocultos).
-  if (!state.localizacao) return false;
   const lt = String(state.latitudeNova || "").trim(),
     lg = String(state.longitudeNova || "").trim();
   if (!lt || !lg) return false;
   if (CalculoMT.validarCoordenadas(lt, lg).nivel === "erro") return false;
-  // Novo local igual ao atual: provável cópia acidental — não é mudança.
-  return !(
-    parseFloat(lt) === parseFloat(state.latitude) &&
-    parseFloat(lg) === parseFloat(state.longitude)
-  );
+  // Novo local igual ao atual (pin sobre o marcador cinza): não é mudança.
+  return cmgNovoLocalOk(state.latitude, state.longitude, lt, lg);
 };
 
 function updateCoordHint() {
@@ -893,10 +858,9 @@ function updateCoordHint() {
   const box = $("#localNovoBox");
   if (box) box.style.display = mudanca ? "" : "none";
   _setReq(["latitudeNova", "longitudeNova"], mudanca);
-  // Endereço do novo local: herda a zona da etapa 3.
-  sincronizarZonaNovoLocal();
   if (mudanca) {
     initMapaNovo();
+    atualizarLocalAtualNovoMT();
     // O container acabou de sair do display:none — o Leaflet precisa remedir.
     if (mapaNovo) setTimeout(() => mapaNovo.invalidateSize(), 60);
   }
@@ -908,40 +872,19 @@ function onMudancaLocal() {
   // faria o PDF/prévia exibirem um local novo que o usuário já desistiu de
   // informar (mesma lógica de limpeza de zona em onLocalizacao).
   if (!_mudancaLocalAtiva()) {
-    // Coordenadas + endereço do novo local são descartados juntos: o bloco
-    // inteiro deixou de existir para este pedido.
-    [
-      "latitudeNova",
-      "longitudeNova",
-      "utmNova",
-      ..._REQ_URB_NOVO,
-      ..._REQ_RUR_NOVO,
-      "nv_compl",
-      "nv_distrito",
-      "nv_propriedade",
-      "nv_pontoReferencia",
-      "nv_instalVizinho",
-    ].forEach((k) => {
+    // As coordenadas do novo local são descartadas: o bloco deixou de existir
+    // para este pedido (o endereço do novo local não é mais perguntado).
+    ["latitudeNova", "longitudeNova", "utmNova"].forEach((k) => {
       const el = $(`[data-k=${k}]`);
-      // "MG" é o default do Estado no HTML — restaura em vez de esvaziar.
-      const padrao = k === "nv_estado" || k === "nv_estado_rur" ? "MG" : "";
-      if (el) el.value = padrao;
-      state[k] = padrao;
+      if (el) el.value = "";
+      state[k] = "";
     });
     if (mapaNovo && _refPinoNovo.pino) {
       mapaNovo.removeLayer(_refPinoNovo.pino);
       _refPinoNovo.pino = null;
     }
-    // Endereço zerado ⇒ zera também o cache anti-repetição da geocodificação,
-    // senão reativar a mudança com o MESMO endereço não recriaria o pino.
-    _mtLastGeoNovoKey = "";
     const al = $("#coordNovaAlert");
     if (al) al.innerHTML = "";
-    const st = $("#cep-status-nv");
-    if (st) {
-      st.textContent = "";
-      st.className = "field-hint";
-    }
   }
   updateCoordHint();
   onCoord();
@@ -1043,7 +986,7 @@ function onCoord(imediato) {
         utmNovaEl.value = `${uN.zona}${_utmBandLetter(latN)} E:${uN.easting} N:${uN.northing}`;
       // Novo local igual ao atual não é uma "mudança de local" — provável
       // cópia acidental das coordenadas atuais.
-      if (!isNaN(lat) && !isNaN(lon) && latN === lat && lonN === lon)
+      if (!isNaN(lat) && !isNaN(lon) && !cmgNovoLocalOk(lat, lon, latN, lonN))
         errosNova.push(
           "As coordenadas do novo local são idênticas às do local atual. Ajuste o pin no mapa para o novo ponto da subestação.",
         );
@@ -1076,8 +1019,6 @@ let _mtGeoDebounce = null,
   _mtLastGeoKey = "",
   _mtLastRestrKey = "",
   _mtRestrDebounce = null;
-let _mtGeoNovoDebounce = null,
-  _mtLastGeoNovoKey = "";
 const _nDig = (s) => (String(s || "").match(/\d/g) || []).length;
 /* Núcleo compartilhado da geocodificação por endereço. `campos` diz de quais
    chaves do state ler o endereço e a coordenada já existente; `aplicar` grava
@@ -1167,36 +1108,6 @@ function onEnderecoUrbanoMT() {
       : geocodificarEnderecoMT,
     800,
   );
-}
-/* Mesma geocodificação para o endereço do NOVO local da subestação (etapa
-   "Tipo de atendimento"), que só existe quando há alteração de carga
-   (finalidade ≠ Conexão Nova) com mudança de local. Sem isto o pin do
-   #mapNovo só se movia por clique/arraste. */
-async function geocodificarEnderecoNovoMT() {
-  if (!_mudancaLocalAtiva()) return;
-  // O mapa do novo local é criado sob demanda (goTo); se o usuário preencher o
-  // endereço antes disso, garante a instância para o pino ter onde aparecer.
-  initMapaNovo();
-  const key = await _geocodificarBloco(
-    {
-      endereco: "nv_endereco",
-      num: "nv_num",
-      bairro: "nv_bairro",
-      municipio: "nv_municipio",
-      estado: "nv_estado",
-      cep: "nv_cep",
-      lat: "latitudeNova",
-      lon: "longitudeNova",
-    },
-    _mtLastGeoNovoKey,
-    _aplicarCoordNovaDoMapa,
-  );
-  if (key) _mtLastGeoNovoKey = key;
-}
-// Disparado no blur dos campos de endereço do novo local (debounce de 800 ms).
-function onEnderecoNovoMT() {
-  clearTimeout(_mtGeoNovoDebounce);
-  _mtGeoNovoDebounce = setTimeout(geocodificarEnderecoNovoMT, 800);
 }
 // Bloco "Unidade consumidora em área de restrição ambiental?" — espelha
 // exatamente os três estados do BT (bt/js/views/obra.js): orientação inicial,
@@ -1437,15 +1348,20 @@ function initMapaNovo() {
   if (!mapaNovo) return;
   const lat = parseFloat(state.latitudeNova),
     lon = parseFloat(state.longitudeNova);
+  // Sem coordenada nova ainda: parte do local ATUAL da UC (marcador cinza),
+  // o ponto de referência natural para escolher o novo local da subestação.
+  atualizarLocalAtualNovoMT();
   if (!isNaN(lat) && !isNaN(lon))
     sincronizarMapaNovoComCoordenadas(lat, lon, true);
-  else {
-    // Sem coordenada nova ainda: parte do local ATUAL da UC, que é o ponto
-    // de referência natural para escolher o novo local da subestação.
-    const latA = parseFloat(state.latitude),
-      lonA = parseFloat(state.longitude);
-    if (!isNaN(latA) && !isNaN(lonA)) mapaNovo.setView([latA, lonA], 16);
-  }
+}
+// Marcador FIXO do local atual (shared/js/mapa-novo-local.js): reposicionado
+// sempre que o bloco é exibido, pois a etapa 3 pode mudar a coordenada.
+const _refLocalAtualMT = { pino: null };
+function atualizarLocalAtualNovoMT() {
+  if (!mapaNovo) return;
+  cmgMarcarLocalAtual(mapaNovo, _refLocalAtualMT, state.latitude, state.longitude);
+  if (!_refPinoNovo.pino)
+    cmgEnquadrarLocalAtual(mapaNovo, state.latitude, state.longitude);
 }
 function sincronizarMapaNovoComCoordenadas(lat, lon, imediato) {
   if (isNaN(lat) || isNaN(lon)) return;
@@ -3237,26 +3153,6 @@ function onCepUcInput(el) {
     }
   }
 }
-// CEP do endereço do NOVO local (etapa "Tipo de atendimento").
-let _cepNovoBuscado = "";
-function onCepNovoInput(el) {
-  el.value = mascararCEP(el.value);
-  state.nv_cep = el.value;
-  const d = CalculoMT.soDigitos(el.value);
-  if (d.length === 8) {
-    if (_cepNovoBuscado !== d) {
-      _cepNovoBuscado = d;
-      onCEP("nv");
-    }
-  } else {
-    _cepNovoBuscado = "";
-    const st = $("#cep-status-nv");
-    if (st) {
-      st.textContent = "";
-      st.className = "field-hint";
-    }
-  }
-}
 function _setField(k, v) {
   const el = $(`[data-k="${k}"]`);
   if (!el || v == null) return;
@@ -3269,7 +3165,7 @@ async function onCEP(prefixo) {
     st.textContent = "buscando…";
     st.className = "field-hint";
   }
-  const CEP_K = { uc: "uc_cep", ec: "ec_cep", nv: "nv_cep" };
+  const CEP_K = { uc: "uc_cep", ec: "ec_cep" };
   const cepEl = $(`[data-k="${CEP_K[prefixo] || "ec_cep"}"]`);
   const d = await buscarCEP(cepEl?.value || "");
   if (!d) {
@@ -3295,15 +3191,6 @@ async function onCEP(prefixo) {
     // O pin vem da geocodificação estruturada por endereço+número; se o número
     // já estiver preenchido, refina imediatamente.
     onEnderecoUrbanoMT();
-  } else if (prefixo === "nv") {
-    // Endereço do NOVO local: preenche os campos nv_*. O CEP sozinho NÃO define
-    // a coordenada (centroide impreciso, igual ao bloco da UC) — o pin vem da
-    // geocodificação estruturada, que refina assim que o número está informado.
-    _setField("nv_endereco", d.logradouro);
-    _setField("nv_bairro", d.bairro);
-    _setField("nv_municipio", d.cidade);
-    _setField("nv_estado", d.uf);
-    onEnderecoNovoMT();
   } else {
     _setField("ec_rua", d.logradouro);
     _setField("ec_bairro", d.bairro);

@@ -245,28 +245,30 @@ const GD_TENSAO_LIGNOVA_138 = "13800"; // 13,8 kV — mantido: documenta o volt 
      atual  → a potência que a UC já tem (conexão existente);
      futura → a potência depois da obra (só com alteração de potência).
    Só o NOME muda entre os grupos: o Grupo A contrata demanda ("potência
-   contratada"), o Grupo B não. Tabela única porque os mesmos rótulos são
+   contratada"), o Grupo B não. Todo rótulo diz se a potência é de CONSUMO
+   (a carga instalada da UC) ou de GERAÇÃO (a GD) — pedido de 13/11/2026,
+   os dois pares aparecem na mesma solicitação. Tabela única porque os mesmos rótulos são
    usados pela etapa, pela validação, pela prévia e pelo PDF — ver
    gdRotuloPotencia(). */
 const GD_ROTULOS_POTENCIA = {
   consumo: {
     A: {
       nova: "Potência de consumo a ser contratada (kW)",
-      atual: "Potência contratada atual (kW)",
-      futura: "Potência contratada futura (kW)",
+      atual: "Potência de consumo contratada atual (kW)",
+      futura: "Potência de consumo contratada futura (kW)",
     },
     B: {
-      nova: "Potência de consumo (kW)",
-      atual: "Potência atual (kW)",
-      futura: "Potência futura (kW)",
+      nova: "Potência instalada de consumo (kW)",
+      atual: "Potência instalada de consumo atual (kW)",
+      futura: "Potência instalada de consumo futura (kW)",
     },
   },
   // A geração não tem `nova`/`futura`: esse valor É a potência da usina, que a
   // etapa calcula dos módulos e inversores (ver _paresPotenciaGD, js/app.js).
   // Sobra a potência já conectada.
   geracao: {
-    A: { atual: "Potência contratada de geração atual (kW)" },
-    B: { atual: "Potência de geração atual (kW)" },
+    A: { atual: "Potência de geração (GD) contratada atual (kW)" },
+    B: { atual: "Potência de geração (GD) instalada atual (kW)" },
   },
 };
 // `grupo` pode chegar vazio (estado recém-criado): cai no Grupo B, que é o

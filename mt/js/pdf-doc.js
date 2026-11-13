@@ -292,29 +292,9 @@ function _pdfTecnicoMT(B) {
   const campos = [];
   if (!ehNova) {
     campos.push(["Haverá mudança no local da subestação", state.mudancaLocal]);
-    /* O endereço do novo local só existe quando houve mudança
-       declarada; a zona é a mesma da unidade consumidora. */
+    /* O novo local é só a coordenada marcada no mapa (o endereço não é
+       mais perguntado — 13/11/2026). */
     if (state.mudancaLocal === "Sim") {
-      campos.push(["Área do empreendimento", state.localizacao]);
-      if (state.localizacao === "Rural")
-        campos.push(
-          ["Distrito / Comunidade / Região", state.nv_distrito],
-          ["Nome da propriedade", state.nv_propriedade],
-          ["Cidade / Município", state.nv_municipio_rur],
-          ["Estado", state.nv_estado_rur],
-          ["Ponto de referência", state.nv_pontoReferencia],
-          ["Nº Instalação / UC / Medidor do vizinho", state.nv_instalVizinho],
-        );
-      else
-        campos.push(
-          ["CEP", state.nv_cep],
-          ["Endereço", state.nv_endereco, 2],
-          ["Número", state.nv_num],
-          ["Complemento", state.nv_compl],
-          ["Bairro", state.nv_bairro],
-          ["Cidade", state.nv_municipio],
-          ["Estado", state.nv_estado],
-        );
       campos.push(
         [
           "Coordenadas do novo local",

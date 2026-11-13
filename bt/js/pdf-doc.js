@@ -765,9 +765,9 @@ function _pdfBlocosIndividualBT(S) {
       camposPadrao.concat([["Tipo de rede BT que atende o local", obra.tipoRede]]),
     );
 
-    /* Rural com mudança de local: a coordenada do NOVO padrão é do
-       imóvel, não do pedido. */
-    if (rural && u.mudancaLocal === "Sim" && (u.padraoLat || u.padraoLng))
+    /* Mudança de local (urbano e rural): a coordenada do NOVO padrão é
+       do imóvel, não do pedido. */
+    if (u.mudancaLocal === "Sim" && (u.padraoLat || u.padraoLng))
       B.cartoes([
         ["Coordenadas do novo padrão", _pdfCoordBT(u.padraoLat, u.padraoLng)],
         ["UTM do novo padrão", u.padraoUtm],

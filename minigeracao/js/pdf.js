@@ -136,6 +136,12 @@ function gerarPdfMiniGD(d) {
   // travado em "Não" — imprimir a linha só acrescentaria ruído.
   if (_temSubestacaoExistenteGD())
     ucPairs.push(["Mudança de local da subestação", d.mudancaSE]);
+  // Novo local da subestação: só a coordenada marcada no mapa.
+  if (d.mudancaSE === "Sim")
+    ucPairs.push([
+      "Coordenadas do novo local da subestação",
+      `Lat ${d.mudLatitude || "—"} · Lon ${d.mudLongitude || "—"}`,
+    ]);
   // Escolha da subestação: conexão nova e alteração são caminhos exclusivos.
   if (ehLigacaoNova) {
     ucPairs.push(["Subestação para conexão nova", d.cn_tipoSE]);
@@ -191,14 +197,18 @@ function gerarPdfMiniGD(d) {
       subSec("Cubículo " + (i + 1) + marca);
       // kvPairs descarta o par vazio, então o nº de UC some sozinho numa
       // subestação nova (onde ele não é perguntado).
-      kvPairs([
-        ["Nº da unidade consumidora / instalação", c.instalacao],
-        [
-          ehLigacaoNova ? GD_ROTULOS_DEMANDA.nova : GD_ROTULOS_DEMANDA.futura,
-          c.demanda,
-        ],
-        [GD_ROTULOS_DEMANDA.atual, c.demandaAtual],
-      ]);
+      // Conexão nova: tarifação do cubículo (como no MT); na alteração, o
+      // par de demanda do card.
+      kvPairs(
+        [["Nº da unidade consumidora / instalação", c.instalacao]].concat(
+          ehLigacaoNova
+            ? gdTarifaLinhas(c)
+            : [
+                [GD_ROTULOS_DEMANDA.futura, c.demanda],
+                [GD_ROTULOS_DEMANDA.atual, c.demandaAtual],
+              ],
+        ),
+      );
       const linhas = linhasTrafo(c.trafos, comSituacao);
       if (linhas.length) tabela(cabTrafo, largTrafo, linhas);
     });
@@ -235,7 +245,11 @@ function gerarPdfMiniGD(d) {
               ehLigacaoNova || ehAlteracaoDemanda ? [t.demanda || "—"] : [],
             ),
         );
-      if (linhasDem.length) tabela(cabDem, largDem, linhasDem);
+      // Conexão nova: a demanda é da instalação (tarifação, como no MT).
+      if (ehLigacaoNova) {
+        const tar = gdTarifaLinhas(d);
+        if (tar.length) kvPairs(tar);
+      } else if (linhasDem.length) tabela(cabDem, largDem, linhasDem);
       totRow(
         "Potência total instalada",
         (d.qtdTotalTrafos || 0) +
@@ -246,6 +260,11 @@ function gerarPdfMiniGD(d) {
           " kW",
       );
     }
+  }
+  // Ramal de entrada (conexão nova): texto e figura, como no MT.
+  if (ehLigacaoNova && d.ramalIndice != null) {
+    subSec("RAMAL DE ENTRADA");
+    gdPdfRamal(P, d.ramalIndice);
   }
   // Motores e cargas especiais — valem nos dois ramos.
   const motoRows = (d.motores || [])
@@ -345,7 +364,7 @@ function gerarPdfMiniGD(d) {
     ["Potência Ativa Instalada Total (kW)", d.potAtivaInstalada],
   ];
   if (ehAlteracaoGeracao)
-    gerPairs.push(["Potência de Geração Atual (kW)", d.potGeracaoAtual]);
+    gerPairs.push(["Potência de Geração (GD) Atual (kW)", d.potGeracaoAtual]);
   gerPairs.push(
     [
       "Modalidade de compensação",

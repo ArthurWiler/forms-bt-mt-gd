@@ -237,7 +237,44 @@ function renderTrafosGD() {
    cai-se na potência instalada para não liberar modelo que o valor real
    excluiria".
    ============================================================ */
+/* Conexão nova do Grupo A (13/11/2026): tarifação e demanda como no MT —
+   modalidade Verde/Azul, escalonada, ponta/fora ponta — no lugar da
+   "potência de consumo a ser contratada". Mesmo bloco de shared/js/
+   tarifacao-gd.js da minigeração, aqui sobre o próprio `state`. */
+function gdTarifaAplica() {
+  return state.grupo === "A" && _ehLigacaoNova();
+}
+function renderTarifacaoGD() {
+  const box = $("#trafoTarifacao");
+  if (!box) return;
+  box.innerHTML = gdTarifaAplica()
+    ? gdTarifaHTML(state, {
+        ref: "state",
+        id: "instTarifa",
+        aoValor: "recalcTecnicoGD()",
+        aoEstrutura: "renderTarifacaoGD();recalcTecnicoGD()",
+      })
+    : "";
+  if (window.CemigMarcadores) window.CemigMarcadores.aplicar();
+}
+// Mês escolhido no "Início de uso" de uma etapa escalonada.
+function gdTarifaRecalc() {
+  recalcTecnicoGD();
+}
+// Gate do "Avançar" (gdAtendimentoOk, js/app.js): tarifação completa, demanda
+// dentro da potência dos transformadores e ramal escolhido.
+function gdTarifaEtapaOk() {
+  if (!gdTarifaAplica() || !_mostrarBlocoTecnicoGD()) return true;
+  const pot = parseFloat(state.potTotalTrafos) || 0;
+  const dem = demandaRepresentativaGD();
+  return (
+    !gdTarifaFaltas(state).length &&
+    !(dem > 0 && pot > 0 && dem > pot) &&
+    !gdRamalFaltas(true, state.cn_tipoSE).length
+  );
+}
 function demandaRepresentativaGD() {
+  if (gdTarifaAplica()) return gdDemandaTarifa(state);
   const aContratar = parseFloat(state.demandaConsumo);
   if (Number.isFinite(aContratar)) return aContratar;
   const atual = parseFloat(state.demandaConsumoAtual);
@@ -262,7 +299,7 @@ function _validarDemandaVsPotenciaGD() {
     dem > 0 && pot > 0 && dem > pot
       ? `<div class="cmg-aviso cmg-aviso--error no-print">
            <div class="cmg-aviso-icon" aria-hidden="true"></div>
-           <p class="cmg-aviso-texto">A potência contratada (${_fmtGD(dem)} kW) não pode ser superior à potência total dos transformadores (${_fmtGD(pot)} kVA).</p>
+           <p class="cmg-aviso-texto">${gdTarifaAplica() ? "A demanda informada" : "A potência contratada"} (${_fmtGD(dem)} kW) não pode ser superior à potência total dos transformadores (${_fmtGD(pot)} kVA).</p>
          </div>`
       : "";
 }
@@ -634,9 +671,8 @@ function tipoSEefetivoGD() {
   return $("#alt_tipoAtual")?.value || "";
 }
 /* Nome mantido por ser o que os <select> do fragmento chamam no onchange.
-   Diferente do MT, aqui NÃO existe galeria de ramal (o ramal da micro é o
-   campo Aéreo/Subterrâneo da própria etapa): a função só consolida o estado
-   derivado das galerias. */
+   Consolida o estado derivado das galerias e, na conexão nova do Grupo A,
+   desenha a galeria do ramal de entrada (gdRenderRamal, como no MT). */
 function recalcRamal() {
   state.cn_tipoSE = $("#cn_tipoSE")?.value || "";
   state.alt_tipoAtual = $("#alt_tipoAtual")?.value || "";
@@ -647,6 +683,7 @@ function recalcRamal() {
   renderGaleriaSEGD("seGallery_nova", "cn_tipoSE");
   renderGaleriaSEGD("seGallery_atual", "alt_tipoAtual");
   renderGaleriaSEGD("seGallery_para", "alt_tipoPara");
+  gdRenderRamal(gdTarifaAplica(), state.cn_tipoSE);
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
 
@@ -693,8 +730,19 @@ function atualizarSE() {
     state.qtdTotalTrafos = 0;
     state.trafos = [];
     state.motores = [];
+    gdLimparTarifa(state);
+    state.ramalIndice = null;
+    renderTarifacaoGD();
+    gdRenderRamal(false, "");
     return;
   }
+  // Fora da conexão nova não há tarifação a declarar: o que foi respondido
+  // antes de trocar a solicitação não pode sair escondido no PDF.
+  if (!gdTarifaAplica()) {
+    gdLimparTarifa(state);
+    state.ramalIndice = null;
+  }
+  renderTarifacaoGD();
   // Em Conexão Nova não há trafo "existente" a trocar: uma situação de troca
   // escolhida antes de mudar a solicitação ficaria presa no estado.
   if (!_permiteTrocaTrafoGD())
@@ -720,13 +768,15 @@ function gdValidarSubestacao() {
   // A potência contratada em si NÃO é exigida aqui: quem a exige é
   // validarExportacao(), no mesmo critério dos campos (ver
   // _atualizarPotenciaContratada). O que se valida aqui é a coerência dela com
-  // os transformadores declarados.
+  // os transformadores declarados. Na conexão nova a demanda vem da tarifação.
+  if (gdTarifaAplica()) faltas.push(...gdTarifaFaltas(state));
   const pot = parseFloat(state.potTotalTrafos) || 0;
   const dem = demandaRepresentativaGD();
   if (dem > 0 && pot > 0 && dem > pot)
     faltas.push(
-      `Potência contratada (${_fmtGD(dem)} kW) acima da potência dos transformadores (${_fmtGD(pot)} kVA)`,
+      `${gdTarifaAplica() ? "Demanda" : "Potência contratada"} (${_fmtGD(dem)} kW) acima da potência dos transformadores (${_fmtGD(pot)} kVA)`,
     );
   if (!tipoSEefetivoGD()) faltas.push("Tipo de subestação");
+  faltas.push(...gdRamalFaltas(gdTarifaAplica(), state.cn_tipoSE));
   return faltas;
 }

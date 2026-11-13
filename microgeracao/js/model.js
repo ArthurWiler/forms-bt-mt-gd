@@ -139,6 +139,15 @@ function gdEstadoInicial() {
     trafos: [],
     qtdTransformador: "",
     potTotalTrafos: 0,
+    // Tarifação da conexão nova do Grupo A (shared/js/tarifacao-gd.js):
+    // modalidade Verde/Azul, escalonada, demanda(s) e o ramal de entrada.
+    modalidadeTarifaria: "",
+    escalonada: "",
+    demandaContratada: "",
+    demandaPonta: "",
+    demandaForaPonta: "",
+    etapasEscalonada: [],
+    ramalIndice: null,
     qtdTotalTrafos: 0,
     // Sem modalidade tarifária horária e sem demanda escalonada (existem no MT,
     // não na microgeração): quem dimensiona a subestação é a potência de consumo
@@ -151,7 +160,6 @@ function gdEstadoInicial() {
     edificacao: "",
     edifTipo: "",
     ramal: "Aéreo",
-    disjAtualA: "",
     disjGeralFase: "",
     disjGeralA: "",
     qteDisjGeral: "",
@@ -159,28 +167,17 @@ function gdEstadoInicial() {
     // Sem padrão: são perguntas obrigatórias, e um "Não" pré-marcado deixava
     // o req() da validação passar sem o usuário ter escolhido nada.
     mudancaLocal: "",
-    // Novo local do padrão de entrada (etapa 5, só com mudancaLocal="Sim").
-    // Endereço PRÓPRIO, independente do endereço da unidade da etapa 3: o
-    // padrão pode mudar de local sem que a unidade mude de endereço.
-    // Os campos acompanham a ZONA escolhida na etapa 3 (localizacao): urbana
-    // usa CEP/logradouro; rural usa o descritivo (distrito, propriedade, ponto
-    // de referência, instalação mais próxima). Município/Estado valem nas duas.
-    mudCep: "",
-    mudLogradouro: "",
-    mudNumero: "",
-    mudComplemento: "",
-    mudBairro: "",
-    mudMunicipio: "",
-    mudEstado: "MG",
-    mudDistritoComunidade: "",
-    mudNomePropriedade: "",
-    mudPontoRef: "",
-    mudInstProxima: "",
+    // Novo local do padrão de entrada (etapa 4, só com mudancaLocal="Sim"):
+    // só a coordenada do pin no mapa — o endereço não é pedido de novo
+    // (13/11/2026). O local atual é latitude/longitude da etapa 3.
     mudLatitude: "",
     mudLongitude: "",
     mudFuso: "",
     mudUtmE: "",
     mudUtmN: "",
+    // "Distância do padrão até a rede Cemig inferior a 30m?" — Grupo B, com
+    // ligação nova ou mudança de local (como no BT).
+    distMenor30: "",
     telhadoArrendado: "",
     // Unidade arrendada (spec Figma): só se aplica com telhadoArrendado="Sim".
     // O requisito do DUB virou aviso na etapa, então não há mais campo para ele.

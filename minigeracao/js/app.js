@@ -180,11 +180,17 @@ function goTo(n, livre) {
     if (i === n) s.classList.add("active");
   });
   window.scrollTo({ top: 0, behavior: "smooth" });
+  // Descrição do form-header só na primeira etapa (Orientações) — mesma regra
+  // do BT (bt-core.js) e do MT.
+  const descHeader = $(".form-header p");
+  if (descHeader) descHeader.style.display = n === 0 ? "" : "none";
   if (alvo.querySelector("#calcDemandaBox")) renderPerfisGD();
   if (alvo.querySelector("#fontesBox")) recalcFontes();
   if (alvo.querySelector("#gfcBloco")) atualizarGFC();
   // Leaflet mede o container ao criar o mapa; se a etapa estava oculta, os
   // tiles ficam cortados até um invalidateSize() com a página já visível.
+  // Novo local da subestação: o local atual (etapa 3) pode ter mudado.
+  if (alvo.querySelector("#mapNovoSE")) atualizarNovoLocalSEGD();
   if (alvo.querySelector("#map")) {
     initMapaObra();
     if (mapaObra) setTimeout(() => mapaObra.invalidateSize(), 60);
@@ -785,8 +791,143 @@ async function consultarRestricaoAmbientalGD(lat, lng) {
 
 // Regra 12: campo de negócio próprio (sai no PDF). Deixou de filtrar a galeria
 // junto com gdSEDisponivel(), então não refaz mais o bloco técnico.
+// Com "Sim", abre o mapa do novo local da subestação (13/11/2026).
 function onMudancaSE() {
   _sync("mudancaSE");
+  atualizarNovoLocalSEGD();
+}
+/* --- Novo local da subestação (mudancaSE = "Sim") ---
+   Só o mapa: marcador cinza FIXO no local atual (latitude/longitude da etapa
+   3) e o pin arrastável do novo local, em mudLatitude/mudLongitude. Peças
+   comuns em shared/js/mapa-novo-local.js. */
+let mapaNovoSE = null;
+let marcadorNovoSE = null;
+const _refAtualNovoSE = { pino: null };
+let _mapaNovoSEPendente = false;
+function atualizarNovoLocalSEGD() {
+  const ver = state.mudancaSE === "Sim";
+  const bloco = $("#mudancaSEBloco");
+  if (bloco) bloco.style.display = ver ? "" : "none";
+  if (ver) {
+    initMapaNovoSE();
+    _marcarLocalAtualNovoSE();
+    if (mapaNovoSE) setTimeout(() => mapaNovoSE.invalidateSize(), 60);
+  } else if (state.mudLatitude || state.mudLongitude) {
+    // "Não" descarta o novo local: ele sairia na prévia/PDF escondido.
+    aplicarPatch({ mudLatitude: "", mudLongitude: "" });
+    onCoordNovoSEGD(null);
+    if (mapaNovoSE && marcadorNovoSE) {
+      mapaNovoSE.removeLayer(marcadorNovoSE);
+      marcadorNovoSE = null;
+    }
+  }
+  if (window.CemigMarcadores) {
+    window.CemigMarcadores.aplicar();
+    window.CemigMarcadores.atualizarAvancar();
+  }
+}
+function _marcarLocalAtualNovoSE() {
+  if (!mapaNovoSE) return;
+  cmgMarcarLocalAtual(
+    mapaNovoSE,
+    _refAtualNovoSE,
+    state.latitude,
+    state.longitude,
+  );
+  if (!marcadorNovoSE)
+    cmgEnquadrarLocalAtual(mapaNovoSE, state.latitude, state.longitude);
+  _statusNovoSEGD();
+}
+function _statusNovoSEGD() {
+  const st = $("#mapaNovoSEStatus");
+  if (st)
+    st.textContent = cmgStatusNovoLocal(
+      state.latitude,
+      state.longitude,
+      state.mudLatitude,
+      state.mudLongitude,
+    );
+}
+// Gate: com mudança de local, o pin novo existe e fica fora do local atual.
+function gdNovoLocalSEOk() {
+  if (state.mudancaSE !== "Sim") return true;
+  return cmgNovoLocalOk(
+    state.latitude,
+    state.longitude,
+    state.mudLatitude,
+    state.mudLongitude,
+  );
+}
+// Gate do "Avançar" da etapa Tipo de atendimento.
+window.gdAtendimentoOk = () =>
+  gdNovoLocalSEOk() &&
+  (typeof gdTarifaEtapaOk !== "function" || gdTarifaEtapaOk());
+function onCoordNovoSEGD(el) {
+  if (el) {
+    el.value = el.value.replace(/[^\d.\-]/g, "");
+    state[el.dataset.k] = el.value;
+  }
+  const u = gdUtmDeCoordenadas(state.mudLatitude, state.mudLongitude);
+  state.mudFuso = u ? u.fuso : "";
+  state.mudUtmE = u ? u.utmE : "";
+  state.mudUtmN = u ? u.utmN : "";
+  const disp = $("#gd_utm_novoSE");
+  if (disp) disp.value = u ? `${u.fuso}${u.banda} E:${u.utmE} N:${u.utmN}` : "";
+  _statusNovoSEGD();
+  if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
+  const lat = cmgCoord(state.mudLatitude),
+    lng = cmgCoord(state.mudLongitude);
+  if (isNaN(lat) || isNaN(lng)) return;
+  if (_nDig(state.mudLatitude) < 5 || _nDig(state.mudLongitude) < 5) return;
+  _pinNovoSE(lat, lng);
+}
+function _aplicarCoordNovoSE(lat, lng) {
+  aplicarPatch({ mudLatitude: String(lat), mudLongitude: String(lng) });
+  onCoordNovoSEGD(null);
+}
+function initMapaNovoSE() {
+  const div = $("#mapNovoSE");
+  if (!div || mapaNovoSE || _mapaNovoSEPendente) return;
+  if (!window.L) {
+    _mapaNovoSEPendente = true;
+    window.CemigLibs.leaflet()
+      .then(() => {
+        _mapaNovoSEPendente = false;
+        initMapaNovoSE();
+        _marcarLocalAtualNovoSE();
+      })
+      .catch(() => {
+        _mapaNovoSEPendente = false;
+      });
+    return;
+  }
+  mapaNovoSE = window.L.map(div).setView([-19.9167, -43.9345], 12);
+  camadasBaseMapa(mapaNovoSE);
+  mapaNovoSE.on("click", (e) =>
+    _aplicarCoordNovoSE(e.latlng.lat, e.latlng.lng),
+  );
+  setTimeout(() => mapaNovoSE.invalidateSize(), 200);
+  if (window.ResizeObserver)
+    new ResizeObserver(() => {
+      if (div.clientWidth > 0) mapaNovoSE.invalidateSize();
+    }).observe(div);
+  const lat = cmgCoord(state.mudLatitude),
+    lng = cmgCoord(state.mudLongitude);
+  if (!isNaN(lat) && !isNaN(lng)) _pinNovoSE(lat, lng);
+}
+function _pinNovoSE(lat, lng) {
+  if (!mapaNovoSE) return;
+  const ll = window.L.latLng(lat, lng);
+  if (marcadorNovoSE) marcadorNovoSE.setLatLng(ll);
+  else {
+    marcadorNovoSE = window.L.marker(ll, { draggable: true }).addTo(mapaNovoSE);
+    marcadorNovoSE.on("dragend", (e) => {
+      const p = e.target.getLatLng();
+      _aplicarCoordNovoSE(p.lat, p.lng);
+    });
+  }
+  if (!mapaNovoSE.getBounds().contains(ll))
+    mapaNovoSE.setView(ll, Math.max(mapaNovoSE.getZoom(), 17));
 }
 /* "Tipo de edificação" (o antigo "Entrada de energia") é a segunda pergunta
    da etapa e governa o resto dela: individual e compartilhada levam a blocos
@@ -829,8 +970,9 @@ function _paresPotenciaGD() {
   return {
     nova,
     // Sem solicitação escolhida não há o que perguntar.
-    verNovaOuFutura:
-      !!state.solicitacao && (nova || _ehAlteracaoDemandaGD()),
+    // Na conexão nova a demanda a contratar sai da tarifação (Verde/Azul,
+    // escalonada) da instalação ou do cubículo — gdTarifaAplica(), 13/11/2026.
+    verNovaOuFutura: !!state.solicitacao && !nova && _ehAlteracaoDemandaGD(),
     verAtual: !!state.solicitacao && !nova,
   };
 }
@@ -1952,6 +2094,12 @@ function validarExportacao() {
   // "Tipo de edificação" (entradaEnergia) NÃO entra aqui: gdValidarSubestacao()
   // já o cobra logo abaixo, com o texto que explica o que se espera da resposta.
   req(d.tensaoAtendimento, "Tensão de atendimento");
+  // Novo local da subestação: só a coordenada marcada no mapa.
+  if (d.mudancaSE === "Sim") {
+    req(d.mudLatitude, "Novo local da subestação no mapa");
+    if (d.mudLatitude && !gdNovoLocalSEOk())
+      faltas.push("Novo local da subestação diferente da localização atual");
+  }
   // A impedância deixou de ser uma resposta da instalação: agora é campo de
   // cada transformador, e quem a cobra é gdValidarSubestacao() logo abaixo —
   // nos dois ramos, individual e cubículos.
@@ -1987,7 +2135,7 @@ function validarExportacao() {
   req(d.modoOperacao, "Modalidade de operação do sistema");
   req(d.potAtivaInstalada, "Potência Ativa Instalada Total");
   if ((d.solicitacao || "").indexOf("GD Existente") >= 0)
-    req(d.potGeracaoAtual, "Potência de Geração Atual");
+    req(d.potGeracaoAtual, "Potência de geração (GD) atual");
   req(d.modalidade, "Modalidade de compensação");
   // Cada fonte cobra o SEU conjunto (ver renderFontes): o que não entra em
   // tela não pode ser exigido, senão a exportação trava sem nada a preencher.
@@ -2227,6 +2375,18 @@ function renderPreviewGD() {
           { step: 3 },
         ) +
         pvCampo("Tipo de edificação", d.entradaEnergia, { step: 3 }) +
+        (_temSubestacaoExistenteGD()
+          ? pvCampo("Mudança de local da subestação", d.mudancaSE, {
+              step: 3,
+            })
+          : "") +
+        (d.mudancaSE === "Sim"
+          ? pvCampo(
+              "Coordenadas do novo local da subestação",
+              `Lat ${d.mudLatitude || "—"} · Lon ${d.mudLongitude || "—"}`,
+              { full: true, step: 3 },
+            )
+          : "") +
         pvCampo("Subestação (ND 5.3)", d.tipoSE, { step: 3 }) +
         // Individual e compartilhada resumem coisas diferentes: lá são os
         // transformadores da própria UC, aqui os cubículos do bloco.
@@ -2243,6 +2403,30 @@ function renderPreviewGD() {
               `${d.qtdTotalTrafos || 0} un · ${d.potTotalTrafos || 0} kVA · demanda ${d.demandaTotalTrafos || 0} kW`,
               { full: true, step: 3 },
             )) +
+        // Conexão nova: tarifação (da instalação ou de cada cubículo) e o
+        // ramal de entrada, como no MT.
+        (gdTarifaAplica()
+          ? (d.entradaEnergia === GD_ENTRADA_COMPARTILHADA
+              ? (d.cubiculos || [])
+                  .map((c, i) =>
+                    pvCampo(
+                      `Cubículo ${i + 1} — tarifação`,
+                      gdTarifaLinhas(c)
+                        .map(([r, v]) => `${r}: ${v}`)
+                        .join(" · "),
+                      { full: true, step: 3 },
+                    ),
+                  )
+                  .join("")
+              : gdTarifaLinhas(d)
+                  .map(([r, v]) =>
+                    pvCampo(r, v, { full: /^Etapa/.test(r), step: 3 }),
+                  )
+                  .join("")) +
+            gdRamalLinhas(d.ramalIndice)
+              .map(([r, v]) => pvCampo(r, v, { full: true, step: 3 }))
+              .join("")
+          : "") +
         // A demanda é campo de card (transformador ou cubículo): a linha acima
         // já traz a soma declarada, nos dois ramos. Aqui resta a da geração.
         pvCampo("Demanda de geração (kW)", d.demandaGeracao, { step: 5 }),

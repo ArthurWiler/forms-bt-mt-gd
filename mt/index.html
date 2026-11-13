@@ -923,125 +923,16 @@
               </div>
 
               <div id="localNovoBox" class="col-span-2">
-                <div id="blocoUrbanoNovo" style="display: none">
-                  <div class="grid grid-2" id="gridUrbanoNovo">
-                    <div class="field">
-                      <label>CEP <span class="req">*</span></label>
-                      <input
-                        type="text"
-                        data-k="nv_cep"
-                        placeholder=" "
-                        oninput="onCepNovoInput(this)"
-                      />
-                      <span id="cep-status-nv" class="field-hint"></span>
-                    </div>
-                    <div class="field col-span-2">
-                      <label>Endereço <span class="req">*</span></label>
-                      <input
-                        type="text"
-                        data-k="nv_endereco"
-                        placeholder=" "
-                        onblur="onEnderecoNovoMT()"
-                      />
-                    </div>
-                    <div class="field">
-                      <label>Nº <span class="req">*</span></label>
-                      <input
-                        type="text"
-                        data-k="nv_num"
-                        placeholder=" "
-                        onblur="onEnderecoNovoMT()"
-                      />
-                    </div>
-                    <div class="field">
-                      <label>Bairro <span class="req">*</span></label>
-                      <input
-                        type="text"
-                        data-k="nv_bairro"
-                        placeholder=" "
-                        onblur="onEnderecoNovoMT()"
-                      />
-                    </div>
-                    <div class="field">
-                      <label>Município <span class="req">*</span></label>
-                      <input
-                        type="text"
-                        data-k="nv_municipio"
-                        placeholder=" "
-                        onblur="onEnderecoNovoMT()"
-                      />
-                    </div>
-                    <div class="field">
-                      <label>Estado <span class="req">*</span></label>
-                      <input
-                        type="text"
-                        data-k="nv_estado"
-                        value="MG"
-                        placeholder=" "
-                      />
-                    </div>
-                    <div class="field col-span-2">
-                      <label>Complemento do endereço</label>
-                      <input type="text" data-k="nv_compl" placeholder=" " />
-                    </div>
-                  </div>
-                </div>
-
-                <div id="blocoRuralNovo" style="display: none">
-                  <div class="grid grid-2" id="gridRuralNovo">
-                    <div class="field">
-                      <label>Município <span class="req">*</span></label>
-                      <input
-                        type="text"
-                        data-k="nv_municipio_rur"
-                        placeholder=" "
-                      />
-                    </div>
-                    <div class="field">
-                      <label>Estado <span class="req">*</span></label>
-                      <input
-                        type="text"
-                        data-k="nv_estado_rur"
-                        value="MG"
-                        placeholder=" "
-                      />
-                    </div>
-                    <div class="field">
-                      <label>Distrito / Comunidade / Região</label>
-                      <input type="text" data-k="nv_distrito" placeholder=" " />
-                    </div>
-                    <div class="field">
-                      <label>Nome da Propriedade</label>
-                      <input
-                        type="text"
-                        data-k="nv_propriedade"
-                        placeholder=" "
-                      />
-                    </div>
-                    <div class="field">
-                      <label>Ponto de Referência</label>
-                      <input
-                        type="text"
-                        data-k="nv_pontoReferencia"
-                        placeholder=" "
-                      />
-                    </div>
-                    <div class="field">
-                      <label>Nº Instalação / UC / Medidor do Vizinho</label>
-                      <input
-                        type="text"
-                        data-k="nv_instalVizinho"
-                        data-fmt="fmtInstalacaoUC"
-                        placeholder=" "
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div class="mapa-obra divider">
+                <!-- Novo local (13/11/2026): SÓ o mapa — o endereço não é
+                     pedido de novo. Marcador cinza fixo no local atual
+                     (etapa Empreendimento) e o pin arrastável do novo local
+                     (shared/js/mapa-novo-local.js). -->
+                <div class="mapa-obra">
                   <p class="mapa-hint">
-                    Confirme a localização da unidade no mapa. Se o pin estiver
-                    incorreto, você pode clicar e arrastá-lo para ajustar.
+                    Indique no mapa a nova localização da subestação: clique no
+                    ponto desejado e, se precisar, arraste o pin para ajustar.
+                    O marcador cinza mostra a localização atual, informada em
+                    Empreendimento.
                   </p>
                   <div
                     id="mapNovo"
@@ -1505,8 +1396,13 @@
                   <div class="field field--plain col-span-2" data-noopt>
                     <label
                       >Sistema com possibilidade de operação ilhada?
-                      <span class="req">*</span></label
-                    >
+                      <span class="req">*</span>
+                      <span class="cmg-hint cmg-hint--direita" tabindex="0" role="img"
+                        aria-label="Ajuda: operação ilhada. Capacidade do sistema de baterias de se desconectar da rede elétrica durante um apagão e manter os equipamentos essenciais funcionando de forma independente, sem interrupção de energia."
+                        data-hint="Capacidade do sistema de baterias de se desconectar da rede elétrica durante um apagão e manter os equipamentos essenciais funcionando de forma independente, sem interrupção de energia."
+                        ><img class="field-info" src="../imgs/info.svg" alt="" aria-hidden="true"
+                      /></span>
+                    </label>
                     <select data-k="armazIlhada">
                       <option value=""></option>
                       <option>Sim</option>
@@ -2138,6 +2034,7 @@
     <script defer src="../shared/js/libs.js"></script>
     <script defer src="../shared/js/ramo-atividade.js"></script>
     <script defer src="../shared/js/geo.js"></script>
+    <script defer src="../shared/js/mapa-novo-local.js"></script>
     <script defer src="../shared/js/valida-instalacao.js"></script>
     <script defer src="../shared/js/form-marcadores.js"></script>
     <script defer src="../shared/js/trilha-etapas.js"></script>

@@ -277,33 +277,9 @@ function _pvAtendimento() {
       state.mudancaLocal,
       { step: E },
     );
-  // O endereço do novo local só existe quando houve mudança declarada; a zona
-  // é a mesma da unidade consumidora (herdada da etapa anterior).
+  // O novo local é só a coordenada marcada no mapa (o endereço não é mais
+  // perguntado — 13/11/2026).
   if (state.finalidade && !ehNova && state.mudancaLocal === "Sim") {
-    const rural = state.localizacao === "Rural";
-    campos += pvCampo("Área do novo local da subestação", state.localizacao, {
-      step: E,
-    });
-    campos += rural
-      ? pvCampo("Distrito / Comunidade / Região", state.nv_distrito, {
-          step: E,
-        }) +
-        pvCampo("Nome da propriedade", state.nv_propriedade, { step: E }) +
-        pvCampo("Cidade / Município", state.nv_municipio_rur, { step: E }) +
-        pvCampo("Estado", state.nv_estado_rur, { step: E }) +
-        pvCampo("Ponto de referência", state.nv_pontoReferencia, { step: E }) +
-        pvCampo(
-          "Nº Instalação / UC / Medidor do vizinho",
-          state.nv_instalVizinho,
-          { step: E },
-        )
-      : pvCampo("CEP", state.nv_cep, { step: E }) +
-        pvCampo("Endereço", state.nv_endereco, { step: E }) +
-        pvCampo("Número", state.nv_num, { step: E }) +
-        pvCampo("Complemento", state.nv_compl, { step: E }) +
-        pvCampo("Bairro", state.nv_bairro, { step: E }) +
-        pvCampo("Cidade / Município", state.nv_municipio, { step: E }) +
-        pvCampo("Estado", state.nv_estado, { step: E });
     campos +=
       pvCampo(
         "Coordenadas do novo local",

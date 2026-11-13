@@ -37,10 +37,6 @@
           oninput="onInstalacaoUC(this)"
         />
       </div>
-      <div class="field" id="disjIndividualBox" style="display: none">
-        <label>Disjuntor individual atual <span class="req">*</span></label>
-        <select data-k="disjAtualA"></select>
-      </div>
       <div class="field" id="disjGeralBox" style="display: none">
         <label>Disjuntor geral atual <span class="req">*</span></label>
         <select data-k="disjGeralA" onchange="onDisjCorrente()"></select>
@@ -62,7 +58,7 @@
            ainda dimensiona a subestação: ao mudar, refaz os modelos permitidos
            e o aviso de demanda × potência. -->
       <div class="field" id="demandaConsumoAtualBox" style="display: none">
-        <label id="demandaConsumoAtualLbl">Potência atual (kW)</label>
+        <label id="demandaConsumoAtualLbl">Potência instalada de consumo atual (kW)</label>
         <input
           type="text"
           data-k="demandaConsumoAtual"
@@ -74,7 +70,7 @@
         />
       </div>
       <div class="field" id="demandaConsumoBox" style="display: none">
-        <label id="demandaConsumoLbl">Potência futura (kW)</label>
+        <label id="demandaConsumoLbl">Potência instalada de consumo futura (kW)</label>
         <input
           type="text"
           data-k="demandaConsumo"
@@ -130,10 +126,14 @@
           </div>
 
           <div id="trafoCards"></div>
-          <!-- A microgeração não tem modalidade tarifária horária nem demanda
-               escalonada: quem dimensiona a subestação é a "Demanda de consumo
-               contratada (kW)" logo acima. Aqui fica só o aviso de coerência
-               entre ela e a potência dos transformadores. -->
+          <!-- Tarifação e demanda da instalação (13/11/2026): só na CONEXÃO
+               NOVA do Grupo A, como no MT — modalidade Verde/Azul, demanda
+               escalonada e ponta/fora ponta (renderTarifacaoGD, js/
+               subestacao.js). Na alteração quem dimensiona a subestação segue
+               sendo a potência de consumo contratada logo acima. -->
+          <div id="trafoTarifacao" class="trafo-tarifacao-bloco"></div>
+          <!-- Demanda > potência dos transformadores: erro que trava o
+               "Avançar" (gdTarifaEtapaOk). -->
           <div id="demandaVsPotenciaAlert"></div>
         </div>
 
@@ -197,6 +197,21 @@
             <option value=""></option>
           </select>
           <div class="se-gallery" id="seGallery_nova"></div>
+        </div>
+
+        <!-- Ramal de entrada (13/11/2026): Grupo A + conexão nova, mesmas
+             regras do MT (CalculoMT.grupoRamal) — galeria em gdRenderRamal(),
+             shared/js/tarifacao-gd.js. -->
+        <div id="blocoRamalGD" style="display: none">
+          <h4 class="card-subtitle divider">Ramal de entrada</h4>
+          <p class="card-sub">
+            Selecione a figura que representa o ramal de entrada que atenderá a
+            unidade consumidora, conforme o tipo de subestação e a ND-5.3.
+          </p>
+          <div id="ramalGallery" class="ramal-gallery"></div>
+          <div id="ramalEmpty" class="ramal-empty" style="display: none">
+            Selecione o tipo de subestação para visualizar os ramais elegíveis.
+          </div>
         </div>
 
         <div id="blocoSubestacaoAlteracao" style="display: none">
@@ -309,112 +324,17 @@
           <option>Não</option>
         </select>
       </div>
-      <!-- Bloco do novo local: item de largura cheia do grid do card, NÃO um
-           .grid-subgrupo. Dentro dele a estrutura é a mesma da etapa 3 (e do BT):
-           endereço em .grid-2, mapa em bloco próprio com .divider, coordenadas
-           em .grid-3. Como o mapa e o .grid-3 deixam de ser itens de grid, o
-           `gap` não soma às margens do .divider / `.mapa-obra + .grid`. -->
+      <!-- Novo local do padrão (13/11/2026): SÓ o mapa — o endereço não é
+           pedido de novo. Marcador cinza fixo no local atual (coordenada da
+           etapa 3) e o pin arrastável do novo local (shared/js/
+           mapa-novo-local.js); coordenadas em .grid-3 abaixo. -->
       <div id="mudancaLocalBloco" class="col-span-2" style="display: none">
-        <div class="grid grid-2" id="mudEndUrbanoBox">
-          <!-- CEP sozinho na linha (.row-solo), como na etapa 3: lá o Endereço
-               é col-span-2 no grid de 3 colunas do card e empurra o CEP para uma
-               linha só dele. Aqui o grid tem 2 colunas, então o mesmo desenho
-               vem do .row-solo — linha inteira, largura de 1 coluna. -->
-          <div class="field row-solo">
-            <label>CEP <span class="req">*</span></label>
-            <input
-              type="text"
-              data-k="mudCep"
-              placeholder=" "
-              oninput="onCepPadraoGD(this)"
-            />
-          </div>
-          <div class="field">
-            <label>Endereço <span class="req">*</span></label>
-            <input
-              type="text"
-              data-k="mudLogradouro"
-              placeholder=" "
-              onblur="onEnderecoPadraoGD()"
-            />
-          </div>
-          <div class="field">
-            <label>Número <span class="req">*</span></label>
-            <input
-              type="text"
-              data-k="mudNumero"
-              placeholder=" "
-              onblur="onEnderecoPadraoGD()"
-            />
-          </div>
-          <div class="field">
-            <label>Complemento</label>
-            <input type="text" data-k="mudComplemento" placeholder=" " />
-          </div>
-          <div class="field">
-            <label>Bairro <span class="req">*</span></label>
-            <input
-              type="text"
-              data-k="mudBairro"
-              placeholder=" "
-              onblur="onEnderecoPadraoGD()"
-            />
-          </div>
-          <!-- Município/Estado fecham o endereço urbano, como na etapa 3. -->
-          <div class="field">
-            <label>Cidade / Município <span class="req">*</span></label>
-            <input
-              type="text"
-              data-k="mudMunicipio"
-              placeholder=" "
-              onblur="onEnderecoPadraoGD()"
-            />
-          </div>
-          <div class="field">
-            <label>Estado <span class="req">*</span></label>
-            <select data-k="mudEstado" data-sem-vazio></select>
-          </div>
-        </div>
-        <div class="grid grid-2" id="mudEndRuralBox" style="display: none">
-          <div class="field">
-            <label>Município <span class="req">*</span></label>
-            <input
-              type="text"
-              data-k="mudMunicipio"
-              data-k-espelho
-              placeholder=" "
-            />
-          </div>
-          <div class="field">
-            <label>Estado <span class="req">*</span></label>
-            <select data-k="mudEstado" data-k-espelho data-sem-vazio></select>
-          </div>
-          <div class="field">
-            <label
-              >Distrito / Comunidade / Região <span class="req">*</span></label
-            >
-            <input type="text" data-k="mudDistritoComunidade" placeholder=" " />
-          </div>
-          <div class="field">
-            <label>Nome da propriedade <span class="req">*</span></label>
-            <input type="text" data-k="mudNomePropriedade" placeholder=" " />
-          </div>
-          <div class="field">
-            <label>Ponto de referência <span class="req">*</span></label>
-            <input type="text" data-k="mudPontoRef" placeholder=" " />
-          </div>
-          <div class="field col-span-2">
-            <label
-              >Nº instalação / UC / medidor mais próxima
-              <span class="req">*</span></label
-            >
-            <input type="text" data-k="mudInstProxima" placeholder=" " />
-          </div>
-        </div>
-        <div class="mapa-obra divider">
+        <div class="mapa-obra">
           <p class="mapa-hint">
-            Confirme a localização da unidade no mapa. Se o pin estiver
-            incorreto, você pode clicar e arrastá-lo para ajustar.
+            Indique no mapa a nova localização do padrão de entrada: clique
+            no ponto desejado e, se precisar, arraste o pin para ajustar. O
+            marcador cinza mostra a localização atual, informada em Dados da
+            unidade consumidora.
           </p>
           <div class="mapa-actions">
             <span class="field-hint" id="mapaPadraoStatus"></span>
@@ -453,10 +373,32 @@
           </div>
         </div>
       </div>
+      <!-- Distância até a rede (como no BT): só no Grupo B, quando há padrão
+           a construir — ligação nova ou mudança de local (ver
+           atualizarDistMenor30GD em js/app.js). -->
+      <div
+        class="field field--plain col-span-2"
+        id="distMenor30Box"
+        style="display: none"
+        data-noopt
+      >
+        <label
+          >Distância do padrão até a rede Cemig inferior a 30m?
+          <span class="req">*</span></label
+        >
+        <div data-toggle="distMenor30"></div>
+        <select data-k="distMenor30" style="display: none" aria-hidden="true">
+          <option value=""></option>
+          <option>Sim</option>
+          <option>Não</option>
+        </select>
+      </div>
     </div>
   </div>
 </div>
 <div class="nav-bottom no-print">
   <button class="btn btn-ghost" data-nav="prev">← Voltar</button>
-  <button class="btn btn-primary" data-nav="next">Avançar →</button>
+  <button class="btn btn-primary" data-nav="next" data-gate="gdAtendimentoOk">
+    Avançar →
+  </button>
 </div>

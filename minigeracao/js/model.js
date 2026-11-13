@@ -149,6 +149,23 @@ function gdEstadoInicial() {
     // Regra 12: haverá mudança de local da subestação? Segue sendo perguntada e
     // impressa; deixou de filtrar a galeria quando gdSEDisponivel() saiu.
     mudancaSE: "Não",
+    // Tarifação da conexão nova, subestação individual (shared/js/
+    // tarifacao-gd.js) — na compartilhada ela é de cada cubículo — e o ramal
+    // de entrada (galeria do MT).
+    modalidadeTarifaria: "",
+    escalonada: "",
+    demandaContratada: "",
+    demandaPonta: "",
+    demandaForaPonta: "",
+    etapasEscalonada: [],
+    ramalIndice: null,
+    // Novo local da subestação (só com mudancaSE = "Sim"): a coordenada do pin
+    // no mapa — o endereço não é pedido de novo (13/11/2026).
+    mudLatitude: "",
+    mudLongitude: "",
+    mudFuso: "",
+    mudUtmE: "",
+    mudUtmN: "",
     // impedanciaTrafo saiu do estado plano: a impedância virou campo de cada
     // transformador (trafos[].impedancia / cubiculos[].trafos[].impedancia).
     geradorEmergencia: "Não",

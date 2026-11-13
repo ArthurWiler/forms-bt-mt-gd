@@ -632,8 +632,9 @@
   }
 }
 
-/* ---- Galeria RAMAL DE ENTRADA ---- */
-.cemig-mtform .ramal-gallery {
+/* ---- Galeria RAMAL DE ENTRADA ---- (MT e, desde 13/11/2026, a conexão
+   nova do Grupo A na micro e na mini — shared/js/tarifacao-gd.js) */
+:is(.cemig-mtform, .cemig-microgd, .cemig-minigd) .ramal-gallery {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(420px, 100%), 1fr));
   gap: 16px;
@@ -642,7 +643,7 @@
 /* Card do ramal (spec Figma MT 06/11): borda 1px, figura no topo e rodapé
    com rádio + descrição + (i). Selecionado = borda verde e rodapé em
    verde/50. */
-.cemig-mtform .ramal-card {
+:is(.cemig-mtform, .cemig-microgd, .cemig-minigd) .ramal-card {
   border: 1px solid var(--cmg-neutral-200);
   border-radius: var(--cmg-radius);
   overflow: hidden;
@@ -652,21 +653,21 @@
   display: flex;
   flex-direction: column;
 }
-.cemig-mtform .ramal-card:hover,
-.cemig-mtform .ramal-card.selected {
+:is(.cemig-mtform, .cemig-microgd, .cemig-minigd) .ramal-card:hover,
+:is(.cemig-mtform, .cemig-microgd, .cemig-minigd) .ramal-card.selected {
   border-color: var(--cmg-green-600);
 }
-.cemig-mtform .ramal-card .imgwrap {
+:is(.cemig-mtform, .cemig-microgd, .cemig-minigd) .ramal-card .imgwrap {
   background: var(--cmg-surface);
   padding: var(--cmg-space-2);
   border-bottom: 1px solid var(--cmg-neutral-200);
 }
-.cemig-mtform .ramal-card .imgwrap img {
+:is(.cemig-mtform, .cemig-microgd, .cemig-minigd) .ramal-card .imgwrap img {
   width: 100%;
   height: auto;
   display: block;
 }
-.cemig-mtform .ramal-rodape {
+:is(.cemig-mtform, .cemig-microgd, .cemig-minigd) .ramal-rodape {
   display: flex;
   align-items: center;
   gap: var(--cmg-space-2);
@@ -674,14 +675,14 @@
   flex: 1;
   transition: background 0.18s ease;
 }
-.cemig-mtform .ramal-card.selected .ramal-rodape {
+:is(.cemig-mtform, .cemig-microgd, .cemig-minigd) .ramal-card.selected .ramal-rodape {
   background: var(--cmg-surface-accent);
 }
-.cemig-mtform .ramal-rodape input[type="radio"] {
+:is(.cemig-mtform, .cemig-microgd, .cemig-minigd) .ramal-rodape input[type="radio"] {
   flex: none;
   margin: 0 var(--cmg-space-1, 4px);
 }
-.cemig-mtform .ramal-desc {
+:is(.cemig-mtform, .cemig-microgd, .cemig-minigd) .ramal-desc {
   flex: 1;
   margin: 0;
   font-size: var(--cmg-fs-caption);
@@ -689,15 +690,15 @@
   letter-spacing: var(--cmg-ls-tight);
   color: var(--cmg-text);
 }
-.cemig-mtform .ramal-desc dt,
-.cemig-mtform .ramal-desc dd {
+:is(.cemig-mtform, .cemig-microgd, .cemig-minigd) .ramal-desc dt,
+:is(.cemig-mtform, .cemig-microgd, .cemig-minigd) .ramal-desc dd {
   display: inline;
   margin: 0;
 }
-.cemig-mtform .ramal-desc dd {
+:is(.cemig-mtform, .cemig-microgd, .cemig-minigd) .ramal-desc dd {
   font-weight: var(--cmg-fw-bold);
 }
-.cemig-mtform .ramal-info {
+:is(.cemig-mtform, .cemig-microgd, .cemig-minigd) .ramal-info {
   flex: none;
   display: grid;
   place-items: center;
@@ -709,14 +710,14 @@
   background: transparent;
   cursor: pointer;
 }
-.cemig-mtform .ramal-info:hover {
+:is(.cemig-mtform, .cemig-microgd, .cemig-minigd) .ramal-info:hover {
   background: rgba(87, 104, 100, 0.12);
 }
-.cemig-mtform .ramal-info:focus-visible {
+:is(.cemig-mtform, .cemig-microgd, .cemig-minigd) .ramal-info:focus-visible {
   outline: 2px solid var(--cmg-green-600);
   outline-offset: 1px;
 }
-.cemig-mtform .ramal-info img {
+:is(.cemig-mtform, .cemig-microgd, .cemig-minigd) .ramal-info img {
   width: 16px;
   height: 16px;
 }
@@ -726,7 +727,7 @@
   width: 100%;
   height: auto;
 }
-.cemig-mtform .ramal-empty {
+:is(.cemig-mtform, .cemig-microgd, .cemig-minigd) .ramal-empty {
   padding: 30px;
   text-align: center;
   color: var(--cmg-text-muted);

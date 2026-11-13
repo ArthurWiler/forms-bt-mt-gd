@@ -26,6 +26,11 @@
         <label>
           Sistema com possibilidade de operação ilhada?
           <span class="req">*</span>
+          <span class="cmg-hint cmg-hint--direita" tabindex="0" role="img"
+            aria-label="Ajuda: operação ilhada. Capacidade do sistema de baterias de se desconectar da rede elétrica durante um apagão e manter os equipamentos essenciais funcionando de forma independente, sem interrupção de energia."
+            data-hint="Capacidade do sistema de baterias de se desconectar da rede elétrica durante um apagão e manter os equipamentos essenciais funcionando de forma independente, sem interrupção de energia."
+            ><img class="field-info" src="../imgs/info.svg" alt="" aria-hidden="true"
+          /></span>
         </label>
         <div data-toggle="armazIlhada"></div>
         <select data-k="armazIlhada" style="display: none" aria-hidden="true">
@@ -60,7 +65,7 @@
       </div>
       <div class="field field--plain col-span-2" data-noopt>
         <label>
-          Central geradora despachável? (Art. 2º, IV-A, REN 1000/2021)
+          Possui central geradora despachável? (Art. 2º, IV-A, REN 1000/2021)
           <span class="req">*</span>
         </label>
         <div
@@ -89,9 +94,12 @@
             capacidade de armazenar da produção mensal.
           </div>
         </div>
-        <div class="field" data-noopt>
-          <label>Produção mensal da central geradora distribuída (kWh)</label>
-          <input type="text" id="armazProducaoMensal" disabled placeholder=" " />
+        <!-- KPI (spec kpi.svg, 13/11/2026): valor calculado, não é campo. -->
+        <div class="resultado-card resultado-card--armaz col-span-2">
+          <div class="resultado-card-label">
+            Produção mensal da central geradora distribuída
+          </div>
+          <div class="resultado-card-valor" id="armazProducaoMensal">—</div>
         </div>
       </div>
     </div>

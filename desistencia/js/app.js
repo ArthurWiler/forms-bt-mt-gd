@@ -140,6 +140,10 @@ function goTo(n, livre) {
     if (i === n) s.classList.add("active");
   });
   window.scrollTo({ top: 0, behavior: "smooth" });
+  // Descrição do form-header só na primeira etapa (Orientações) — mesma regra
+  // do BT (bt-core.js) e do MT.
+  const descHeader = $(".form-header p");
+  if (descHeader) descHeader.style.display = n === 0 ? "" : "none";
   if (n === 5) renderPreview();
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }

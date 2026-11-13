@@ -223,6 +223,10 @@ function goTo(n, livre) {
     if (i === n) s.classList.add("active");
   });
   window.scrollTo({ top: 0, behavior: "smooth" });
+  // Descrição do form-header só na primeira etapa (Orientações) — mesma regra
+  // do BT (bt-core.js) e do MT.
+  const descHeader = $(".form-header p");
+  if (descHeader) descHeader.style.display = n === 0 ? "" : "none";
   // Conteúdo dinâmico detectado por presença (lição do MT), não por índice:
   if (alvo.querySelector("#calcDemandaBox")) renderPerfisGD();
   // Leaflet mede o container ao criar o mapa; se a etapa estava oculta, os
@@ -230,6 +234,12 @@ function goTo(n, livre) {
   if (alvo.querySelector("#map")) {
     initMapaObra();
     if (mapaObra) setTimeout(() => mapaObra.invalidateSize(), 60);
+  }
+  // Novo local do padrão: o local atual (etapa 3) pode ter mudado.
+  if (alvo.querySelector("#mapPadrao") && state.mudancaLocal === "Sim") {
+    initMapaPadrao();
+    atualizarLocalAtualPadraoGD();
+    if (mapaPadrao) setTimeout(() => mapaPadrao.invalidateSize(), 60);
   }
   // Etapas do fluxo Coletivo/Agrupamento (js/coletivo.js).
   if (alvo.querySelector("#gdTorreBox") && typeof gdRenderTorre === "function")
@@ -658,7 +668,6 @@ function preencherSelects() {
   preencherSelect("edificacao", GD_EDIFICACOES);
   preencherSelect("edifTipo", GD_EDIF_TIPO);
   preencherSelect("ramal", GD_RAMAL);
-  preencherSelect("mudEstado", GD_UFS);
   preencherSelect("instExistenteBTMT", GD_BT_MT);
   // Nível de tensão da unidade arrendada (spec Figma) — mesma lista BT/MT.
   preencherSelect("arrendTensao", GD_BT_MT);
@@ -755,40 +764,10 @@ function onZonaGD() {
   }
   atualizarCoordRuralGD();
   renderRestricaoAmbiental(); // texto da Unidade de Conservação muda com a zona
-  // O novo local do padrão (etapa 4) pede os MESMOS campos da zona escolhida
-  // aqui — senão o formulário cobraria CEP de quem declarou área rural.
-  aplicarZonaPadraoGD();
   if (window.CemigMarcadores) {
     window.CemigMarcadores.aplicar();
     window.CemigMarcadores.atualizarAvancar();
   }
-}
-// Espelha a zona da etapa 3 no bloco "novo local do padrão" da etapa 4: mostra
-// o conjunto de campos correspondente e zera o da zona oposta, para que um
-// endereço urbano digitado antes de trocar para Rural não vá para o PDF.
-function aplicarZonaPadraoGD() {
-  const zona = state.localizacao;
-  const rural = zona === "Rural";
-  const urb = $("#mudEndUrbanoBox"),
-    rur = $("#mudEndRuralBox");
-  if (urb) urb.style.display = zona === "Urbana" ? "" : "none";
-  if (rur) rur.style.display = rural ? "" : "none";
-  // Zona ainda não escolhida: não há conjunto de campos a espelhar, e limpar
-  // aqui apagaria o que o usuário digitou antes de voltar à etapa 3.
-  if (!zona) return;
-  const limpar = rural
-    ? ["mudCep", "mudLogradouro", "mudNumero", "mudComplemento", "mudBairro"]
-    : [
-        "mudDistritoComunidade",
-        "mudNomePropriedade",
-        "mudPontoRef",
-        "mudInstProxima",
-      ];
-  limpar.forEach((k) => {
-    if (!state[k]) return;
-    state[k] = "";
-    $$(`[data-k="${k}"]`).forEach((c) => (c.value = ""));
-  });
 }
 // A coordenada é obrigatória em qualquer zona (o `*` está no HTML e vira
 // data-req pelos marcadores); em zona rural, além disso, um aviso reforça
@@ -805,11 +784,8 @@ function atualizarCoordRuralGD() {
 function onProntoLigarGD() {
   _sync("prontoLigar");
 }
-// Como no BT, o tipo de rede re-renderiza a lista de correntes do disjuntor
-// individual atual na etapa "Tipo de atendimento".
 function onTipoRedeGD() {
   _sync("tipoRede");
-  atualizarDisjAtual();
   atualizarFasesDisj(); // a fase do disjuntor geral deriva do tipo de rede
   renderPerfisGD(); // disjuntores dos perfis: mono/bifásica x trifásica
 }
@@ -1069,13 +1045,13 @@ function onTelhadoArrendado() {
    Sim/Não) só aparece depois que o tipo de edificação é
    escolhido — é a tela inicial do Figma, com apenas os dois
    primeiros campos.
-   Qual disjuntor aparece (sempre no Grupo B):
-     • Edificação Individual            → Disjuntor individual atual
-     • Coletiva/Agrupamento             → Disjuntor geral atual
+   Disjuntor "atual": só o GERAL, no Coletivo/Agrupamento do Grupo B.
+   O "Disjuntor individual atual" da Edificação Individual saiu em
+   13/11/2026 — o cliente não precisa informar o disjuntor atual.
    Em Ligação Nova NÃO existe disjuntor "atual" (a unidade ainda
-   não existe): nenhum dos dois é exibido, como no Figma.
+   não existe), como no Figma.
    No Grupo A o atendimento é dimensionado pela POTÊNCIA contratada,
-   não pelo disjuntor — por isso nenhum dos dois se aplica lá
+   não pelo disjuntor — por isso ele não se aplica lá
    (mesma lógica que rege os campos de _atualizarPotenciaContratada()).
    E lá o próprio tipo de edificação não é perguntado (gdPerguntaEdifTipo):
    sem a pergunta não há o que esperar, então o restante da etapa abre direto
@@ -1097,98 +1073,46 @@ function onEdifTipoGD() {
   // falso com a solicitação em branco, então checar só `!nova` deixava o campo
   // aparecer antes de o usuário responder o que veio a pedir.
   const base = !!state.edifTipo && !!state.solicitacao && !nova && ehBT;
-  const verInd = base && individual;
   const verGeral = base && !individual;
-  const bInd = $("#disjIndividualBox");
-  if (bInd) bInd.style.display = verInd ? "" : "none";
   const bGeral = $("#disjGeralBox");
   if (bGeral) bGeral.style.display = verGeral ? "" : "none";
   // Campo oculto não pode manter valor: em Ligação Nova o disjuntor "atual"
-  // não existe, e ao alternar a edificação o disjuntor do outro tipo ficaria
-  // preso no estado e sairia no PDF.
-  if (!verInd && state.disjAtualA) aplicarPatch({ disjAtualA: "" });
+  // não existe, e na Edificação Individual ele ficaria preso no estado e
+  // sairia no PDF.
   if (!verGeral && state.disjGeralA) aplicarPatch({ disjGeralA: "" });
-  atualizarDisjAtual();
   // Alterna as duas versões de "Dados das unidades": Individual (uma UC,
   // ND-5.1) x Coletivo/Agrupamento (torre + lista de UCs, ND-5.2). Já chama
   // CemigMarcadores.aplicar/atualizarAvancar no fim.
   gdAplicarFluxoEdificacao();
 }
-// Disjuntor individual atual: correntes da ND-5.1 para a rede que atende o
-// local (tipoRede), no mesmo formato "40 A" do disjuntor geral.
-function atualizarDisjAtual() {
-  const sel = $(`select[data-k="disjAtualA"]`);
-  if (!sel) return;
-  const fase =
-    state.tipoRede === "Monofásica"
-      ? "Monopolar"
-      : state.tipoRede === "Bifásica"
-        ? "Bipolar"
-        : "Tripolar";
-  const correntes = GD_DISJ_REVISADA.filter((x) => x.tipo === fase).map(
-    (x) => x.a,
-  );
-  const atual = sel.value;
-  sel.innerHTML =
-    '<option value=""></option>' +
-    correntes.map((a) => `<option value="${a}">${a} A</option>`).join("");
-  if (correntes.map(String).includes(String(atual))) sel.value = atual;
-  else sel.value = state.disjAtualA = "";
-}
-/* --- Novo local do padrão de entrada (mudancaLocal = "Sim") --- */
+/* --- Novo local do padrão de entrada (mudancaLocal = "Sim") ---
+   Só o mapa (13/11/2026): marcador cinza FIXO no local atual (latitude/
+   longitude da etapa 3) e o pin arrastável do novo local, gravado em
+   mudLatitude/mudLongitude. Peças comuns em shared/js/mapa-novo-local.js. */
 function onMudancaLocalGD() {
   _sync("mudancaLocal");
   const bloco = $("#mudancaLocalBloco");
   const mostrar = state.mudancaLocal === "Sim";
   if (bloco) bloco.style.display = mostrar ? "" : "none";
   if (mostrar) {
-    // A zona vem da etapa 3, escolhida ANTES desta: aplica ao abrir o bloco.
-    aplicarZonaPadraoGD();
     // Leaflet mede o container na criação: só dá para instanciar o mapa com o
     // bloco já visível, senão os tiles saem cortados (mesma lição do goTo).
     initMapaPadrao();
+    atualizarLocalAtualPadraoGD();
     if (mapaPadrao) setTimeout(() => mapaPadrao.invalidateSize(), 60);
+  } else if (state.mudLatitude || state.mudLongitude) {
+    // "Não" descarta o novo local: ele sairia na prévia/PDF escondido.
+    aplicarPatch({ mudLatitude: "", mudLongitude: "" });
+    onCoordPadraoGD(null);
+    if (mapaPadrao && marcadorPadrao) {
+      mapaPadrao.removeLayer(marcadorPadrao);
+      marcadorPadrao = null;
+    }
   }
+  atualizarDistMenor30GD();
   if (window.CemigMarcadores) {
     window.CemigMarcadores.aplicar();
     window.CemigMarcadores.atualizarAvancar();
-  }
-}
-function onCepPadraoGD(el) {
-  el.value = mascararCEP(el.value);
-  state.mudCep = el.value;
-  if (soDigitos(el.value).length === 8) buscarCepPadraoGD(el.value);
-}
-// ViaCEP direto: criarConsultasExternas().buscarCep escreve nos campos do
-// endereço DA UNIDADE (cep/logradouro/…), e aqui o alvo são os campos mud*.
-// Mesma guarda de corrida do buscarCep compartilhado: trocar a zona (que limpa
-// os campos mud* da zona oposta) ou digitar outro CEP invalida a consulta em
-// voo, e sem conferir isso a resposta antiga repovoa o que acabou de ser limpo.
-async function buscarCepPadraoGD(cep) {
-  const status = $("#mapaPadraoStatus");
-  const limpo = soDigitos(cep);
-  if (limpo.length !== 8) return;
-  const aindaVale = () => soDigitos(state.mudCep) === limpo;
-  if (status) status.textContent = "Buscando endereço…";
-  try {
-    const r = await fetch(`https://viacep.com.br/ws/${limpo}/json/`);
-    const j = await r.json();
-    if (!aindaVale()) return;
-    if (j.erro) {
-      if (status) status.textContent = "CEP não encontrado.";
-      return;
-    }
-    if (status) status.textContent = "";
-    aplicarPatch({
-      mudLogradouro: j.logradouro || state.mudLogradouro,
-      mudBairro: j.bairro || state.mudBairro,
-      mudMunicipio: j.localidade || state.mudMunicipio,
-      mudEstado: j.uf || state.mudEstado,
-    });
-    onEnderecoPadraoGD();
-  } catch (e) {
-    if (!aindaVale()) return;
-    if (status) status.textContent = "Não foi possível consultar o CEP.";
   }
 }
 function onCoordPadraoGD(el) {
@@ -1202,20 +1126,56 @@ function onCoordPadraoGD(el) {
   state.mudUtmN = u ? u.utmN : "";
   const disp = $("#gd_utm_padrao");
   if (disp) disp.value = u ? `${u.fuso}${u.banda} E:${u.utmE} N:${u.utmN}` : "";
-  const lat = parseFloat(String(state.mudLatitude).replace(",", ".")),
-    lng = parseFloat(String(state.mudLongitude).replace(",", "."));
+  _statusNovoLocalPadraoGD();
+  if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
+  const lat = cmgCoord(state.mudLatitude),
+    lng = cmgCoord(state.mudLongitude);
   if (isNaN(lat) || isNaN(lng)) return;
   if (_nDig(state.mudLatitude) < 5 || _nDig(state.mudLongitude) < 5) return;
   sincronizarMapaPadrao(lat, lng, !!(el === null));
 }
+function _statusNovoLocalPadraoGD() {
+  const st = $("#mapaPadraoStatus");
+  if (st)
+    st.textContent = cmgStatusNovoLocal(
+      state.latitude,
+      state.longitude,
+      state.mudLatitude,
+      state.mudLongitude,
+    );
+}
+// Gate do novo local: com mudança de local, o pin novo precisa existir e ficar
+// em ponto diferente do atual (mesma regra do localNovoOk do MT).
+function gdNovoLocalPadraoOk() {
+  if (_ehLigacaoNova() || state.mudancaLocal !== "Sim") return true;
+  return cmgNovoLocalOk(
+    state.latitude,
+    state.longitude,
+    state.mudLatitude,
+    state.mudLongitude,
+  );
+}
 let mapaPadrao = null;
 let marcadorPadrao = null;
+const _refAtualPadrao = { pino: null };
 let _mapaPadraoDebounce = null;
-let _gdLastGeoKeyPadrao = "";
-let _gdGeoDebouncePadrao = null;
 function _aplicarCoordDoMapaPadrao(lat, lng) {
   aplicarPatch({ mudLatitude: String(lat), mudLongitude: String(lng) });
   onCoordPadraoGD(null);
+}
+// Marcador do local atual: a etapa 3 pode mudar a coordenada depois de o mapa
+// existir, então ele é reposicionado sempre que o bloco é exibido.
+function atualizarLocalAtualPadraoGD() {
+  if (!mapaPadrao) return;
+  cmgMarcarLocalAtual(
+    mapaPadrao,
+    _refAtualPadrao,
+    state.latitude,
+    state.longitude,
+  );
+  if (!marcadorPadrao)
+    cmgEnquadrarLocalAtual(mapaPadrao, state.latitude, state.longitude);
+  _statusNovoLocalPadraoGD();
 }
 // Flag própria: este mapa e o da obra podem ser pedidos em sequência, e cada
 // um precisa saber se a SUA criação já está a caminho.
@@ -1229,6 +1189,7 @@ function initMapaPadrao() {
       .then(() => {
         _mapaPadraoPendente = false;
         initMapaPadrao();
+        atualizarLocalAtualPadraoGD();
       })
       .catch(() => {
         _mapaPadraoPendente = false;
@@ -1241,8 +1202,12 @@ function initMapaPadrao() {
     _aplicarCoordDoMapaPadrao(e.latlng.lat, e.latlng.lng),
   );
   setTimeout(() => mapaPadrao.invalidateSize(), 200);
-  const lat = parseFloat(String(state.mudLatitude).replace(",", ".")),
-    lng = parseFloat(String(state.mudLongitude).replace(",", "."));
+  if (window.ResizeObserver)
+    new ResizeObserver(() => {
+      if (div.clientWidth > 0) mapaPadrao.invalidateSize();
+    }).observe(div);
+  const lat = cmgCoord(state.mudLatitude),
+    lng = cmgCoord(state.mudLongitude);
   if (!isNaN(lat) && !isNaN(lng)) sincronizarMapaPadrao(lat, lng, true);
 }
 function sincronizarMapaPadrao(lat, lng, imediato) {
@@ -1263,64 +1228,41 @@ function sincronizarMapaPadrao(lat, lng, imediato) {
         const p = e.target.getLatLng();
         _aplicarCoordDoMapaPadrao(p.lat, p.lng);
       });
-      const zMax = Number.isFinite(mapaPadrao.getMaxZoom())
-        ? mapaPadrao.getMaxZoom()
-        : 19;
-      mapaPadrao.setView(ll, zMax);
+      // Primeiro pin: só recentra se ele caiu fora da vista (o usuário já
+      // está olhando a vizinhança do local atual).
+      if (!mapaPadrao.getBounds().contains(ll))
+        mapaPadrao.setView(ll, Math.max(mapaPadrao.getZoom(), 17));
     }
     setTimeout(() => mapaPadrao.invalidateSize(), 100);
   };
   if (imediato) atualizar();
   else _mapaPadraoDebounce = setTimeout(atualizar, 600);
 }
-async function geocodificarEnderecoPadraoGD() {
-  // Zona rural não tem logradouro/número para geocodificar — a coordenada vem
-  // do mapa ou é digitada (mesma regra de geocodificarEnderecoGD na etapa 3).
-  if (state.localizacao === "Rural") return;
-  const pronto =
-    String(state.mudLogradouro || "").trim() &&
-    String(state.mudNumero || "").trim() &&
-    String(state.mudMunicipio || "").trim();
-  if (!pronto) return;
-  if (_nDig(state.mudLatitude) >= 5 && _nDig(state.mudLongitude) >= 5) return;
-  const key = [
-    state.mudLogradouro,
-    state.mudNumero,
-    state.mudBairro,
-    state.mudMunicipio,
-    state.mudCep,
-  ]
-    .join("|")
-    .toLowerCase();
-  if (_gdLastGeoKeyPadrao === key) return;
-  const status = $("#mapaPadraoStatus");
-  if (status) status.textContent = "Buscando coordenada…";
-  try {
-    const r = await geocodificarEnderecoBR({
-      logradouro: state.mudLogradouro,
-      numero: state.mudNumero,
-      bairro: state.mudBairro,
-      cidade: state.mudMunicipio,
-      uf: state.mudEstado,
-      cep: state.mudCep,
-    });
-    _gdLastGeoKeyPadrao = key;
-    if (!r) {
-      if (status)
-        status.textContent =
-          "Endereço não encontrado. Informe a coordenada manualmente.";
-      return;
-    }
-    if (status) status.textContent = "";
-    _aplicarCoordDoMapaPadrao(r.lat, r.lon);
-  } catch (e) {
-    if (status) status.textContent = "Falha ao geocodificar o endereço.";
+
+/* --- Distância do padrão até a rede (Grupo B) ---
+   Mesma regra do BT individual (perguntasPadraoBT): perguntada quando há
+   padrão a construir — ligação nova ou mudança de local. Oculta, é limpa. */
+function _verDistMenor30GD() {
+  return (
+    state.grupo === "B" &&
+    !!state.solicitacao &&
+    (_ehLigacaoNova() || state.mudancaLocal === "Sim")
+  );
+}
+function atualizarDistMenor30GD() {
+  const ver = _verDistMenor30GD();
+  const box = $("#distMenor30Box");
+  if (box) box.style.display = ver ? "" : "none";
+  if (!ver && state.distMenor30) {
+    aplicarPatch({ distMenor30: "" });
+    const sel = $('select[data-k="distMenor30"]');
+    if (sel) sel.dispatchEvent(new Event("change", { bubbles: true }));
   }
 }
-function onEnderecoPadraoGD() {
-  clearTimeout(_gdGeoDebouncePadrao);
-  _gdGeoDebouncePadrao = setTimeout(geocodificarEnderecoPadraoGD, 800);
-}
+// Gate do "Avançar" da etapa Tipo de atendimento.
+window.gdAtendimentoOk = () =>
+  gdNovoLocalPadraoOk() &&
+  (typeof gdTarifaEtapaOk !== "function" || gdTarifaEtapaOk());
 
 /* --- Subestação (Grupo A / migração BT→MT) --- */
 // SE_INFO_GD (descrições ND-5.3 do tooltip "i" da galeria) saiu junto com o
@@ -1343,7 +1285,7 @@ function onSolicitacao() {
       ? ""
       : "none";
   const nova = _ehLigacaoNova();
-  ["#disjAtualBox", "#instExistenteBox", "#instExistenteBTMTBox"].forEach(
+  ["#instExistenteBox", "#instExistenteBTMTBox"].forEach(
     (s) => {
       const el = $(s);
       if (el) el.style.display = nova ? "none" : "";
@@ -1394,6 +1336,7 @@ function onSolicitacao() {
   _atualizarPotenciaContratada();
   atualizarSE();
   onEdifTipoGD(); // o disjuntor visível depende de solicitação × edificação
+  atualizarDistMenor30GD(); // perguntada na ligação nova (Grupo B)
   if (window.CemigMarcadores) {
     window.CemigMarcadores.aplicar();
     window.CemigMarcadores.atualizarAvancar();
@@ -1531,11 +1474,14 @@ function _paresPotenciaGD(tipo) {
     nova,
     // Sem solicitação escolhida não há o que perguntar: os campos ficam fora
     // da tela, como a UC existente e a mudança de local.
+    // Na conexão nova do Grupo A a demanda a contratar é declarada na
+    // tarifação (Verde/Azul, escalonada) do bloco técnico — gdTarifaAplica.
     verNovaOuFutura:
       tipo !== "geracao" &&
       !!state.solicitacao &&
       !consumoBT &&
       !geracaoNaoFV &&
+      !(tipo === "consumo" && gdTarifaAplica()) &&
       (nova || _ehAlteracaoPotenciaGD()),
     verAtual: !!state.solicitacao && !geracaoNaoFV && !nova,
   };
@@ -1612,6 +1558,7 @@ function onGrupo() {
   _atualizarPotenciaGeracao();
   atualizarSE();
   renderPerfisGD(); // a lista de disjuntores depende do tipo de rede
+  atualizarDistMenor30GD(); // só no Grupo B
   // O disjuntor geral atual (Coletivo/Agrupamento) só vale no Grupo B, então a
   // troca de grupo tem de reavaliar a etapa 4 — inclusive limpando o valor.
   // Os campos de carga também só valem no Grupo B (ver gdEtapaCargaDefinida);
@@ -2230,7 +2177,9 @@ function validarExportacao() {
   // (4 opções normativas) segue na área de não alocados e pelo mesmo motivo
   // NÃO é exigido aqui.
   if (gdPerguntaEdifTipo()) req(d.edifTipo, "Tipo de edificação");
-  req(d.ramal, "Ramal");
+  // O antigo "Ramal" (Aéreo/Subterrâneo) ficou na área de não alocados; o
+  // ramal de entrada da conexão nova do Grupo A é cobrado por
+  // gdValidarSubestacao() (galeria do MT, 13/11/2026).
   req(d.telhadoArrendado, "Telhado arrendado");
   // Unidade arrendada: obrigatória só quando há arrendamento (os campos ficam
   // ocultos e zerados fora dele — ver onTelhadoArrendado).
@@ -2239,26 +2188,16 @@ function validarExportacao() {
     req(d.arrendTensao, "Nível de tensão da unidade arrendada");
   }
   // Mudança de local: exigida só fora da ligação nova — é quando o campo
-  // aparece na etapa 5 (ver #mudancaLocalBox em onSolicitacao()).
+  // aparece na etapa 4 (ver #mudancaLocalBox em onSolicitacao()).
   if (!_ehLigacaoNova()) req(d.mudancaLocal, "Mudança de local do padrão");
   if (d.mudancaLocal === "Sim" && !_ehLigacaoNova()) {
-    // Os campos do novo local seguem a ZONA da etapa 3: cobrar CEP de quem
-    // declarou área rural travaria a exportação sem ter como preencher.
-    if (d.localizacao === "Rural") {
-      req(d.mudDistritoComunidade, "Distrito / Comunidade do novo local");
-      req(d.mudNomePropriedade, "Nome da propriedade do novo local");
-      req(d.mudPontoRef, "Ponto de referência do novo local");
-      req(d.mudInstProxima, "Instalação mais próxima do novo local");
-    } else {
-      req(d.mudCep, "CEP do novo local do padrão");
-      req(d.mudLogradouro, "Endereço do novo local do padrão");
-      req(d.mudNumero, "Número do novo local do padrão");
-      req(d.mudBairro, "Bairro do novo local do padrão");
-    }
-    req(d.mudMunicipio, "Município do novo local do padrão");
-    req(d.mudLatitude, "Latitude do novo local do padrão");
-    req(d.mudLongitude, "Longitude do novo local do padrão");
+    // Só o mapa: o novo local é a coordenada do pin (sem endereço).
+    req(d.mudLatitude, "Novo local do padrão no mapa");
+    if (d.mudLatitude && !gdNovoLocalPadraoOk())
+      faltas.push("Novo local do padrão diferente da localização atual");
   }
+  if (_verDistMenor30GD())
+    req(d.distMenor30, "Distância do padrão até a rede Cemig inferior a 30m");
   // Formulário de Carga: exigido exatamente quando os campos ENTRAM em tela —
   // por isso a condição é a MESMA que os mostra (gdEtapaCargaDefinida), e não
   // só o tipo de solicitação. No Grupo A não há formulário de carga (a demanda
@@ -2481,23 +2420,19 @@ function renderPreviewGD() {
     (gdPerguntaEdifTipo()
       ? pvCampo("Edificação", d.edifTipo, { step: "atendimento" })
       : "") +
-    pvCampo("Ramal", d.ramal, { step: "atendimento" }) +
     // Rótulo formatado (kV no Grupo A) sobre o volt "cru" guardado no estado.
     pvCampo(
       "Tensão de conexão",
       d.tensaoAtendimento ? _rotuloTensao(d.tensaoAtendimento) : "",
       { step: "atendimento" },
     );
-  // Disjuntor "atual": individual na Edificação Individual, geral no
-  // Coletivo/Agrupamento — os dois só no Grupo B. No Grupo A o atendimento é
-  // dimensionado pela demanda contratada e nenhum deles aparece na etapa 4.
-  const _ehIndividual = d.edifTipo === "Edificação Individual";
-  if (d.grupo === "B")
-    atend += pvCampo(
-      _ehIndividual ? "Disjuntor individual atual" : "Disjuntor geral atual",
-      _ehIndividual ? d.disjAtualA : d.disjGeralA,
-      { step: "atendimento" },
-    );
+  // Disjuntor geral atual: só no Coletivo/Agrupamento do Grupo B (o
+  // individual atual não é mais perguntado). No Grupo A o atendimento é
+  // dimensionado pela demanda contratada e ele não aparece na etapa 4.
+  if (d.grupo === "B" && d.edifTipo && d.edifTipo !== "Edificação Individual")
+    atend += pvCampo("Disjuntor geral atual", d.disjGeralA, {
+      step: "atendimento",
+    });
   atend += pvCampo("Telhado arrendado", d.telhadoArrendado, {
     step: "atendimento",
   });
@@ -2508,33 +2443,17 @@ function renderPreviewGD() {
       step: "atendimento",
     });
   if (d.mudancaLocal === "Sim" && !_ehLigacaoNova())
-    atend +=
-      pvCampo(
-        "Novo local do padrão",
-        // Urbano x rural: o novo local segue a zona escolhida na etapa 3.
-        (d.localizacao === "Rural"
-          ? [
-              d.mudDistritoComunidade,
-              d.mudNomePropriedade,
-              d.mudPontoRef,
-              [d.mudMunicipio, d.mudEstado].filter(Boolean).join("/"),
-            ]
-          : [
-              [d.mudLogradouro, d.mudNumero].filter(Boolean).join(", "),
-              d.mudBairro,
-              [d.mudMunicipio, d.mudEstado].filter(Boolean).join("/"),
-              d.mudCep ? "CEP " + d.mudCep : "",
-            ]
-        )
-          .filter(Boolean)
-          .join(" - "),
-        { full: true, step: "atendimento" },
-      ) +
-      pvCampo(
-        "Coordenadas do novo local",
-        `Lat ${d.mudLatitude || "—"} · Lon ${d.mudLongitude || "—"}`,
-        { full: true, step: "atendimento" },
-      );
+    atend += pvCampo(
+      "Coordenadas do novo local do padrão",
+      `Lat ${d.mudLatitude || "—"} · Lon ${d.mudLongitude || "—"}`,
+      { full: true, step: "atendimento" },
+    );
+  if (_verDistMenor30GD())
+    atend += pvCampo(
+      "Distância do padrão até a rede Cemig inferior a 30m?",
+      d.distMenor30,
+      { full: true, step: "atendimento" },
+    );
   // Potência de consumo: o mesmo par da etapa 4 — no Grupo B só a potência
   // atual, já que a nova/futura vem do Formulário de Carga (etapa 6).
   atend += _pvParPotenciaGD(
@@ -2563,6 +2482,18 @@ function renderPreviewGD() {
         `${d.qtdTotalTrafos || 0} un · ${d.potTotalTrafos || 0} kVA`,
         { step: "atendimento" },
       ) +
+      // Conexão nova: tarifação/demanda e ramal de entrada (como no MT).
+      (gdTarifaAplica()
+        ? gdTarifaLinhas(d)
+            .concat(gdRamalLinhas(d.ramalIndice))
+            .map(([r, v]) =>
+              pvCampo(r, v, {
+                full: /^Etapa|^Ramal/.test(r),
+                step: "atendimento",
+              }),
+            )
+            .join("")
+        : "") +
       pvCampo("Motores declarados", String((d.motores || []).length), {
         step: "atendimento",
       });
@@ -2746,7 +2677,7 @@ window.initFormulario = function () {
   mostrarRamoGD();
   onGrupo();
   onSolicitacao(); // já chama onEdifTipoGD() (disjuntor × edificação)
-  onMudancaLocalGD();
+  onMudancaLocalGD(); // já chama atualizarDistMenor30GD()
   onGeradorEmergencia();
   onTelhadoArrendado();
   // Cards de modelo de módulo/inversor: o estado nasce com 1 de cada, então a

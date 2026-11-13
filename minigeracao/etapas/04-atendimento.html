@@ -161,14 +161,18 @@
             />
           </div>
 
-          <!-- A demanda contratada é campo do CARD de cada transformador, como
-               a do cubículo é campo do card dele — ver _camposDemandaGD() em
-               js/subestacao.js. Idem a impedância percentual: característica de
-               cada equipamento, não uma resposta única da instalação. A
-               minigeração não tem modalidade tarifária horária nem demanda
-               escalonada, então não sobra nada da instalação para perguntar
-               aqui embaixo. -->
+          <!-- Na ALTERAÇÃO a demanda contratada é campo do CARD de cada
+               transformador, como a do cubículo é campo do card dele — ver
+               _camposDemandaGD() em js/subestacao.js. Idem a impedância
+               percentual: característica de cada equipamento. Na CONEXÃO NOVA
+               (13/11/2026) a demanda vem da tarifação da instalação logo
+               abaixo — modalidade Verde/Azul, escalonada e ponta/fora ponta,
+               como no MT (renderTarifacaoGD). -->
           <div id="trafoCards" class="col-span-2"></div>
+          <div id="trafoTarifacao" class="trafo-tarifacao-bloco col-span-2"></div>
+          <!-- Demanda > potência dos transformadores: erro que trava o
+               "Avançar" (gdTarifaEtapaOk). -->
+          <div id="instDemandaAlert" class="col-span-2"></div>
         </div>
 
         <!-- Regra 9: modelos com teto de 300 kVA indisponíveis quando a potência
@@ -208,6 +212,21 @@
             <option value=""></option>
           </select>
           <div class="se-gallery" id="seGallery_nova"></div>
+        </div>
+
+        <!-- Ramal de entrada (13/11/2026): conexão nova, mesmas regras do MT
+             (CalculoMT.grupoRamal) — galeria em gdRenderRamal(),
+             shared/js/tarifacao-gd.js. -->
+        <div id="blocoRamalGD" style="display: none">
+          <h4 class="card-subtitle divider">Ramal de entrada</h4>
+          <p class="card-sub">
+            Selecione a figura que representa o ramal de entrada que atenderá a
+            unidade consumidora, conforme o tipo de subestação e a ND-5.3.
+          </p>
+          <div id="ramalGallery" class="ramal-gallery"></div>
+          <div id="ramalEmpty" class="ramal-empty" style="display: none">
+            Selecione o tipo de subestação para visualizar os ramais elegíveis.
+          </div>
         </div>
 
         <div id="blocoSubestacaoAlteracao" style="display: none">
@@ -276,6 +295,52 @@
           <option>Sim</option>
         </select>
       </div>
+      <!-- Novo local da subestação (13/11/2026): SÓ o mapa, como no micro e no
+           MT — marcador cinza fixo no local atual (etapa 3) e o pin arrastável
+           do novo local (shared/js/mapa-novo-local.js). -->
+      <div id="mudancaSEBloco" class="col-span-2" style="display: none">
+        <div class="mapa-obra">
+          <p class="mapa-hint">
+            Indique no mapa a nova localização da subestação: clique no ponto
+            desejado e, se precisar, arraste o pin para ajustar. O marcador
+            cinza mostra a localização atual, informada em Dados da unidade.
+          </p>
+          <div class="mapa-actions">
+            <span class="field-hint" id="mapaNovoSEStatus"></span>
+          </div>
+          <div id="mapNovoSE" class="mapa-canvas"></div>
+        </div>
+        <div class="grid grid-3">
+          <div class="field">
+            <label>Latitude <span class="req">*</span></label>
+            <input
+              type="text"
+              data-k="mudLatitude"
+              placeholder=" "
+              oninput="onCoordNovoSEGD(this)"
+            />
+          </div>
+          <div class="field">
+            <label>Longitude <span class="req">*</span></label>
+            <input
+              type="text"
+              data-k="mudLongitude"
+              placeholder=" "
+              oninput="onCoordNovoSEGD(this)"
+            />
+          </div>
+          <div class="field">
+            <label>Coordenada UTM</label>
+            <input
+              type="text"
+              id="gd_utm_novoSE"
+              readonly
+              disabled
+              placeholder=" "
+            />
+          </div>
+        </div>
+      </div>
 
       <!-- 'O empreendimento será "Grid Zero"?' mudou para a etapa 6 (Dados da
            Geração): a resposta trava a demanda de geração em 0 e a modalidade em
@@ -328,5 +393,7 @@
 </div>
 <div class="nav-bottom no-print">
   <button class="btn btn-ghost" data-nav="prev">← Voltar</button>
-  <button class="btn btn-primary" data-nav="next">Avançar →</button>
+  <button class="btn btn-primary" data-nav="next" data-gate="gdAtendimentoOk">
+    Avançar →
+  </button>
 </div>

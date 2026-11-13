@@ -33,8 +33,10 @@ function gerarPdfMicroGD(d) {
   const parPotencia = (pares, tipo, novaOuFutura, atual) => {
     if (tipo === "geracao" && d.fontePrimaria !== "Solar") return;
     const rot = (papel) => gdRotuloPotencia(tipo, papel, d.grupo);
+    // Conexão nova do Grupo A: a demanda sai da tarifação (bloco técnico).
     const semNovaOuFutura =
-      tipo === "geracao" || (tipo === "consumo" && d.grupo !== "A");
+      tipo === "geracao" ||
+      (tipo === "consumo" && (d.grupo !== "A" || ehLigacaoNova));
     if (ehLigacaoNova) {
       if (!semNovaOuFutura) pares.push([rot("nova"), novaOuFutura]);
     } else {
@@ -110,7 +112,6 @@ function gerarPdfMicroGD(d) {
     ["Tipo de Solicitação", d.solicitacao],
     ["Tipo de edificação", d.edificacao],
     ["Padrão de Entrada", d.edifTipo],
-    ["Ramal", d.ramal],
     [
       "Disjuntor Geral",
       `${d.disjGeralFase || "—"} ${d.disjGeralA || ""}${d.qteDisjGeral ? " · Qte " + d.qteDisjGeral : ""}`.trim(),
@@ -131,11 +132,9 @@ function gerarPdfMicroGD(d) {
   if (GD_SOLICITACOES_AUMENTO_POTENCIA.includes(d.solicitacao))
     ucPairs.splice(4, 0, ["Nova Proteção", d.novaProtecao]);
   // Campos de unidade JÁ existente: numa ligação nova não há padrão instalado,
-  // logo não há disjuntor "atual" nem local a mudar. O disjuntor individual
-  // ainda depende do grupo: no Grupo A o atendimento é dimensionado pela
-  // demanda contratada e o campo nem aparece no formulário.
+  // logo não há local a mudar. (O "Disjuntor individual atual" saiu do
+  // formulário em 13/11/2026 — o cliente não informa o disjuntor atual.)
   if (!ehLigacaoNova) {
-    if (ehBT) ucPairs.push(["Disjuntor Individual Atual (A)", d.disjAtualA]);
     ucPairs.push(["Mudança de Local do Padrão", d.mudancaLocal]);
   }
   // Unidade arrendada: dados próprios do arrendamento (spec Figma).
@@ -144,36 +143,19 @@ function gerarPdfMicroGD(d) {
       ["Nº da unidade/instalação arrendada", d.arrendUC],
       ["Nível de tensão da unidade arrendada", d.arrendTensao],
     );
-  // Novo local do padrão de entrada (etapa 5): endereço próprio, informado só
-  // quando há mudança de local.
-  if (d.mudancaLocal === "Sim" && !ehLigacaoNova) {
+  // Novo local do padrão de entrada (etapa 4): só a coordenada marcada no
+  // mapa, informada quando há mudança de local.
+  if (d.mudancaLocal === "Sim" && !ehLigacaoNova)
     ucPairs.push([
-      "Novo local do padrão",
-      // Urbano x rural: o novo local segue a zona escolhida na etapa 3.
-      (d.localizacao === "Rural"
-        ? [
-            d.mudDistritoComunidade,
-            d.mudNomePropriedade,
-            d.mudPontoRef,
-            d.mudInstProxima ? "Inst. próxima " + d.mudInstProxima : "",
-            [d.mudMunicipio, d.mudEstado].filter(Boolean).join("/"),
-          ]
-        : [
-            [d.mudLogradouro, d.mudNumero].filter(Boolean).join(", "),
-            d.mudComplemento,
-            d.mudBairro,
-            [d.mudMunicipio, d.mudEstado].filter(Boolean).join("/"),
-            d.mudCep ? "CEP " + d.mudCep : "",
-          ]
-      )
-        .filter(Boolean)
-        .join(" - ") || "—",
-    ]);
-    ucPairs.push([
-      "Coordenadas do novo local",
+      "Coordenadas do novo local do padrão",
       `Lat ${d.mudLatitude || "—"} · Lon ${d.mudLongitude || "—"}`,
     ]);
-  }
+  // Distância até a rede: Grupo B, ligação nova ou mudança de local.
+  if (ehBT && d.solicitacao && (ehLigacaoNova || d.mudancaLocal === "Sim"))
+    ucPairs.push([
+      "Distância do padrão até a rede Cemig inferior a 30m?",
+      d.distMenor30,
+    ]);
   if (!ehLigacaoNova) {
     ucPairs.push(
       ["Instalação / UC / Medidor existente no local", d.instExistente],
@@ -193,8 +175,14 @@ function gerarPdfMicroGD(d) {
       .map((t, i) => [`Trafo ${i + 1}`, t.qte || "—", `${t.potencia || "—"} kVA`]);
     if (trafoRows.length)
       tabela(["Transformador", "Qte", "Potência"], [80, 30, 72], trafoRows);
-    // Sem tarifação/demanda próprias: a demanda que dimensiona a subestação é
-    // a "Demanda contratada consumo (kW)" já impressa acima.
+    // Conexão nova: tarifação/demanda (Verde/Azul, escalonada) e ramal de
+    // entrada, como no MT. Na alteração a demanda que dimensiona a subestação
+    // é a potência de consumo contratada já impressa acima.
+    if (ehLigacaoNova) {
+      const tar = gdTarifaLinhas(d);
+      if (tar.length) kvPairs(tar);
+      gdPdfRamal(P, d.ramalIndice);
+    }
     const motoRows = (d.motores || [])
       .filter((m) => m.cv || m.volts)
       .map((m, i) => [

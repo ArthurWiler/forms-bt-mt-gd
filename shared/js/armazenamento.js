@@ -25,13 +25,13 @@ function producaoMensalArmazKWh(potKw) {
 const _fmtArmazKWh = (v) =>
   v ? v.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) : "";
 
-// Recalcula o campo bloqueado da produção mensal. Chamado ao abrir a etapa,
-// ao responder "despachável" e sempre que a potência da usina muda.
+// Recalcula o KPI da produção mensal. Chamado ao abrir a etapa, ao responder
+// "despachável" e sempre que a potência da usina muda.
 function atualizarProducaoArmazGD() {
   const v = producaoMensalArmazKWh(state.potAtivaInstalada);
   state.armazProducaoMensal = v ? String(v) : "";
-  const inp = $("#armazProducaoMensal");
-  if (inp) inp.value = _fmtArmazKWh(v);
+  const el = $("#armazProducaoMensal");
+  if (el) el.textContent = v ? _fmtArmazKWh(v) + " kWh" : "—";
 }
 
 // Visibilidade em cascata: Possui = Sim abre os detalhes; Despachável = Sim
@@ -55,7 +55,7 @@ function armazPendenciasGD(d, req) {
   req(d.armazIlhada, "Sistema com possibilidade de operação ilhada");
   req(d.armazPotCarga, "Máxima potência de carga do armazenamento");
   req(d.armazPotDescarga, "Máxima potência de descarga do armazenamento");
-  req(d.armazDespachavel, "Central geradora despachável");
+  req(d.armazDespachavel, "Possui central geradora despachável");
 }
 
 // Pares [rótulo, valor] da seção, para a prévia e o PDF dos dois formulários.
@@ -83,7 +83,7 @@ function armazLinhasGD(d, curto) {
       kw(d.armazPotDescarga),
     ],
     [
-      rot("Central geradora despachável", "Central despachável"),
+      rot("Possui central geradora despachável", "Central despachável"),
       d.armazDespachavel,
     ],
   );

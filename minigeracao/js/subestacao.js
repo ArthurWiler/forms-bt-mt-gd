@@ -12,9 +12,11 @@
       compartilhada (multimedição). Volta todo o ramo de cubículos
       do MT e os "Totais Consolidados". Cada cubículo tem a sua
       instalação, os seus transformadores e a sua demanda.
-   2. Em relação ao MT: o cliente NÃO informa modalidade tarifária
-      (Verde/Azul) nem demanda escalonada — a tarifa é padronizada
-      pela CEMIG. O cubículo declara uma demanda única em kW.
+   2. Em relação ao MT: na ALTERAÇÃO o cliente não informa modalidade
+      tarifária (Verde/Azul) nem demanda escalonada — o card declara uma
+      demanda única em kW. Na CONEXÃO NOVA (13/11/2026) vale a regra do
+      MT: tarifação da instalação (individual) ou de cada cubículo
+      (compartilhada), em shared/js/tarifacao-gd.js, e o ramal de entrada.
       Sai junto a corrente de inrush, substituída pelo tipo de
       ligação do transformador (como na microgeração).
    3. O modelo NOVO de subestação (#alt_tipoPara) é filtrado pelo
@@ -382,7 +384,84 @@ function _avisoTrafosDUBGD() {
    — o campo que não se aplica fica fora de tela e é zerado por
    _limparDemandaOcultaGD().
    ============================================================ */
+/* Conexão nova (13/11/2026): a demanda passa a vir da tarifação — da
+   instalação no ramo individual (sobre `state`) e de cada cubículo no
+   compartilhado —, com a regra do MT (gdDemandaTarifa: maior etapa; no Azul,
+   a maior entre ponta e fora ponta). Os cards de transformador deixam de
+   ter demanda própria. */
+function gdTarifaAplica() {
+  return _ehLigacaoNova();
+}
+function renderTarifacaoGD() {
+  const box = $("#trafoTarifacao");
+  if (!box) return;
+  box.innerHTML =
+    gdTarifaAplica() && !_ehCompartilhadaGD()
+      ? gdTarifaHTML(state, {
+          ref: "state",
+          id: "instTarifa",
+          aoValor: "recalcTecnicoGD()",
+          aoEstrutura: "renderTarifacaoGD();recalcTecnicoGD()",
+        })
+      : "";
+  if (window.CemigMarcadores) window.CemigMarcadores.aplicar();
+}
+// Mês escolhido no "Início de uso" de uma etapa escalonada.
+function gdTarifaRecalc() {
+  cubiculosGD.forEach((c, i) => validarDemandaCubiculo(i));
+  recalcTecnicoGD();
+}
+// Demanda da instalação × potência total dos transformadores (individual).
+function _validarDemandaInstalacaoGD() {
+  const el = $("#instDemandaAlert");
+  if (!el) return;
+  const pot = parseFloat(state.potTotalTrafos) || 0;
+  const dem = demandaRepresentativaGD();
+  el.innerHTML =
+    gdTarifaAplica() && !_ehCompartilhadaGD() && dem > 0 && pot > 0 && dem > pot
+      ? _avisoGD(
+          "error",
+          `A demanda informada (${_fmtGD(dem)} kW) não pode ser superior à potência total dos transformadores (${_fmtGD(pot)} kVA).`,
+        )
+      : "";
+}
+// Faltas da tarifação + ramal (conexão nova): validação e gate.
+function _faltasTarifaGD() {
+  if (!gdTarifaAplica() || !_mostrarBlocoTecnicoGD()) return [];
+  const f = [];
+  if (_ehCompartilhadaGD())
+    cubiculosGD.forEach((c, i) => {
+      const rot = `Cubículo ${i + 1}: `;
+      f.push(...gdTarifaFaltas(c, rot));
+    });
+  else {
+    f.push(...gdTarifaFaltas(state));
+    const pot = parseFloat(state.potTotalTrafos) || 0;
+    const dem = demandaRepresentativaGD();
+    if (dem > 0 && pot > 0 && dem > pot)
+      f.push(
+        `Demanda (${_fmtGD(dem)} kW) acima da potência dos transformadores (${_fmtGD(pot)} kVA)`,
+      );
+  }
+  f.push(...gdRamalFaltas(true, state.cn_tipoSE));
+  return f;
+}
+// Gate do "Avançar" (gdAtendimentoOk, js/app.js). O excesso de demanda dos
+// cubículos entra pela mesma conta de gdValidarSubestacao().
+function gdTarifaEtapaOk() {
+  if (!gdTarifaAplica() || !_mostrarBlocoTecnicoGD()) return true;
+  const excessoCub =
+    _ehCompartilhadaGD() &&
+    cubiculosGD.some((c) => {
+      const pot = CalculoMT.calcularTrafos(_trafosFuturosGD(c.trafos))
+        .potenciaTotal;
+      const dem = demandaRepresentativaCubiculoGD(c);
+      return dem > 0 && pot > 0 && dem > pot;
+    });
+  return !_faltasTarifaGD().length && !excessoCub;
+}
 function demandaRepresentativaObjGD(o) {
+  if (gdTarifaAplica()) return gdDemandaTarifa(o);
   const aContratar = parseFloat(o.demanda);
   if (Number.isFinite(aContratar)) return aContratar;
   const atual = parseFloat(o.demandaAtual);
@@ -392,9 +471,8 @@ function demandaTotalTrafosGD() {
   return trafosGD.reduce((s, t) => s + demandaRepresentativaObjGD(t), 0);
 }
 function demandaRepresentativaGD() {
-  return _ehCompartilhadaGD()
-    ? totaisCubiculosGD().demandaTotal
-    : demandaTotalTrafosGD();
+  if (_ehCompartilhadaGD()) return totaisCubiculosGD().demandaTotal;
+  return gdTarifaAplica() ? gdDemandaTarifa(state) : demandaTotalTrafosGD();
 }
 /* Potência do próprio card, para confrontar com a demanda dele. */
 function _potenciaCardTrafoGD(t) {
@@ -724,11 +802,17 @@ function novoCubiculoGD() {
   return {
     instalacao: "",
     trafos: [novoTrafoGD()],
-    // Par de demanda do cubículo, espelho do da UC: a CONTRATAR ("a ser
-    // contratada" na ligação nova, "futura" na alteração) e a ATUAL. Quais
+    // Par de demanda do cubículo na alteração: a FUTURA e a ATUAL. Quais
     // aparecem sai de _paresPotenciaGD() — ver o card em renderCubiculos().
     demanda: "",
     demandaAtual: "",
+    // Conexão nova: tarifação do cubículo, como no MT (tarifacao-gd.js).
+    modalidadeTarifaria: "",
+    escalonada: "",
+    demandaContratada: "",
+    demandaPonta: "",
+    demandaForaPonta: "",
+    etapasEscalonada: [],
     // Cubículo já existente (será alterado) x novo (será acrescentado).
     // Só relevante em finalidade ≠ Conexão Nova — ver _permiteTrocaTrafoGD().
     existente: false,
@@ -946,6 +1030,16 @@ function renderCubiculos() {
         </div>
         ${trafoBlocos}
         ${_camposDemandaGD(c, `cub${i}`, `cubiculosGD[${i}]`, "recalcCubiculo(" + i + ")", paresCub)}
+        ${
+          gdTarifaAplica()
+            ? `<div class="cub-trafo-bloco">${gdTarifaHTML(c, {
+                ref: `cubiculosGD[${i}]`,
+                id: `cubTarifa${i}`,
+                aoValor: `recalcCubiculo(${i})`,
+                aoEstrutura: `renderCubiculos();recalcCubiculo(${i})`,
+              })}</div>`
+            : ""
+        }
         <div id="cubDemandaAlert${i}"></div>
       </div>
     </div>`;
@@ -1037,6 +1131,7 @@ function atualizarMudancaSEGD() {
       sel.value = "Não";
       sel.dispatchEvent(new Event("change", { bubbles: true }));
     }
+    atualizarNovoLocalSEGD(); // fecha o mapa e descarta o novo local
   }
 }
 /* Exibe a escolha do tipo de subestação (nova ou alteração) só quando os totais
@@ -1204,9 +1299,8 @@ function tipoSEefetivoGD() {
   return $("#alt_tipoAtual")?.value || "";
 }
 /* Nome mantido por ser o que os <select> do fragmento chamam no onchange.
-   Diferente do MT, aqui NÃO existe galeria de ramal: o ramal de conexão é da
-   CEMIG (aéreo) e o de entrada não é perguntado no formulário da minigeração.
-   A função só consolida o estado derivado das galerias. */
+   Consolida o estado derivado das galerias e, na conexão nova, desenha a
+   galeria do ramal de entrada (gdRenderRamal, como no MT — 13/11/2026). */
 function recalcRamal() {
   state.cn_tipoSE = $("#cn_tipoSE")?.value || "";
   state.alt_tipoAtual = $("#alt_tipoAtual")?.value || "";
@@ -1217,6 +1311,7 @@ function recalcRamal() {
   renderGaleriaSEGD("seGallery_nova", "cn_tipoSE");
   renderGaleriaSEGD("seGallery_atual", "alt_tipoAtual");
   renderGaleriaSEGD("seGallery_para", "alt_tipoPara");
+  gdRenderRamal(gdTarifaAplica() && _mostrarBlocoTecnicoGD(), state.cn_tipoSE);
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
 
@@ -1238,9 +1333,10 @@ function recalcTecnicoGD() {
   state.potTotalTrafos = rt.potenciaTotal;
   state.qtdTotalTrafos = rt.quantidadeTotal;
   state.demandaTotalCubiculos = compart ? rt.demandaTotal : 0;
-  // Demanda da instalação no ramo individual: a soma dos cards, como a dos
-  // cubículos é no compartilhado. É o que a prévia e o PDF imprimem.
-  state.demandaTotalTrafos = compart ? 0 : demandaTotalTrafosGD();
+  // Demanda da instalação no ramo individual: a soma dos cards (alteração) ou
+  // a da tarifação (conexão nova). É o que a prévia e o PDF imprimem.
+  state.demandaTotalTrafos = compart ? 0 : demandaRepresentativaGD();
+  _validarDemandaInstalacaoGD();
   const escrever = (id, v) => {
     const el = $("#" + id);
     if (el) el.value = compart ? _fmtGD(v) : "";
@@ -1308,7 +1404,11 @@ function atualizarSE() {
       demandaTotalTrafos: 0,
       trafos: [],
       cubiculos: [],
+      ramalIndice: null,
     });
+    gdLimparTarifa(state);
+    renderTarifacaoGD();
+    gdRenderRamal(false, "");
     // Os cards ficam ocultos, mas o `oninput` deles aponta para trafosGD[i] /
     // cubiculosGD[i], que acabaram de sumir — esvaziar o DOM evita que um card
     // órfão volte à tela (ou receba uma tecla) apontando para o nada.
@@ -1329,8 +1429,16 @@ function atualizarSE() {
       c.trafos.forEach(zerar);
     });
   }
+  // Tarifação só na conexão nova; a da instalação só no ramo individual (na
+  // compartilhada ela é de cada cubículo). O que não se aplica é zerado.
+  if (!gdTarifaAplica()) {
+    cubiculosGD.forEach(gdLimparTarifa);
+    state.ramalIndice = null;
+  }
+  if (!gdTarifaAplica() || compart) gdLimparTarifa(state);
   sincronizarCubiculos();
   renderTrafosGD();
+  renderTarifacaoGD();
   recalcTecnicoGD();
 }
 /* Faltas do bloco técnico para o gate de exportação (etapa Prévia). Os cards
@@ -1404,5 +1512,7 @@ function gdValidarSubestacao() {
     });
   }
   if (!tipoSEefetivoGD()) faltas.push("Tipo de subestação");
+  // Conexão nova: tarifação (instalação ou cubículos) e ramal de entrada.
+  faltas.push(..._faltasTarifaGD());
   return faltas;
 }

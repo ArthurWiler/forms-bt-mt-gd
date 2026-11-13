@@ -153,7 +153,7 @@ function atualizarSolicitacaoAuto() {
 // escolhe os perfis de carga da Etapa 5).
 window.btImoveisOk = () =>
   state.ucsDet.length > 0 &&
-  state.ucsDet.every((u) => !!tipoPropriedadeDe(u)) &&
+  state.ucsDet.every((u) => !!tipoPropriedadeDe(u) && novoLocalPadraoOkBT(u)) &&
   window.btTipoRedeOk();
 // Etapa 5: todo imóvel com carga tem um perfil escolhido, nenhum editor de
 // perfil ficou aberto e a combinação de disjuntores é válida (2+ imóveis).
@@ -741,9 +741,12 @@ function _ucIdentificacao(u, ui) {
       u.mudancaLocal,
       (v) => {
         u.mudancaLocal = v;
-        // Mostra/esconde as demais perguntas (e, no rural, o mapa do novo
-        // local do padrão neste card).
+        // "Não" descarta o novo local marcado no mapa.
+        if (v !== "Sim") u.padraoLat = u.padraoLng = u.padraoUtm = "";
+        // Mostra/esconde as demais perguntas e o mapa do novo local do
+        // padrão neste card.
         renderUcsIdentBT();
+        if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
       },
     );
     fMuda.classList.add("col-span-2");
@@ -761,7 +764,7 @@ function _ucIdentificacao(u, ui) {
       },
     );
     const fDist = _simNaoBT(
-      "Distância do padrão até o poste inferior a 30m?",
+      "Distância do padrão até a rede Cemig inferior a 30m?",
       u.distMenor30,
       (v) => (u.distMenor30 = v),
     );
@@ -772,12 +775,22 @@ function _ucIdentificacao(u, ui) {
   }
   padrao.appendChild(gp);
   wrap.appendChild(padrao);
-  // Novo local do padrão: em zona rural, quando o imóvel pede mudança de
-  // local, mapa + coordenadas para escolher o ponto do padrão.
-  const novoLocal =
-    ruralBT() && u.mudancaLocal === "Sim" && u.solicitacao !== "Conexão Nova";
+  // Novo local do padrão: quando o imóvel pede mudança de local (urbano e
+  // rural, desde 13/11/2026), só o mapa — marcador cinza no local atual
+  // (Endereço da unidade) e o pin do novo local.
+  const novoLocal = _novoLocalPadraoBT(u);
   if (novoLocal) return _ucIdentComNovoLocal(wrap, u, ui);
   return wrap;
+}
+const _novoLocalPadraoBT = (u) =>
+  u.mudancaLocal === "Sim" && u.solicitacao !== "Conexão Nova";
+// Gate: todo imóvel com mudança de local tem o novo ponto marcado no mapa, em
+// lugar diferente do atual (shared/js/mapa-novo-local.js).
+function novoLocalPadraoOkBT(u) {
+  return (
+    !_novoLocalPadraoBT(u) ||
+    cmgNovoLocalOk(state.obra.lat, state.obra.lng, u.padraoLat, u.padraoLng)
+  );
 }
 // Envolve a grade de identificação e anexa a seção "Novo local do padrão"
 // (mapa Leaflet clicável/arrastável + latitude/longitude + UTM). Cada UC tem
@@ -793,11 +806,22 @@ function _ucIdentComNovoLocal(grid, u, ui) {
   const hint = document.createElement("p");
   hint.className = "mapa-hint";
   hint.textContent =
-    "Indique no mapa o novo ponto do padrão. Clique no mapa ou arraste o pino para ajustar; a coordenada e o UTM são preenchidos automaticamente.";
+    "Indique no mapa a nova localização do padrão de entrada: clique no ponto desejado e, se precisar, arraste o pin para ajustar. O marcador cinza mostra a localização atual, informada em Endereço da unidade.";
+  const status = document.createElement("span");
+  status.className = "field-hint";
+  const atualizarStatus = () => {
+    status.textContent = cmgStatusNovoLocal(
+      state.obra.lat,
+      state.obra.lng,
+      u.padraoLat,
+      u.padraoLng,
+    );
+  };
+  atualizarStatus();
   const canvas = document.createElement("div");
   canvas.className = "mapa-canvas";
   canvas.id = `padraoMap${ui}`;
-  sec.append(titulo, hint, canvas);
+  sec.append(titulo, hint, status, canvas);
   wrap.appendChild(sec);
 
   const grade = document.createElement("div");
@@ -820,6 +844,8 @@ function _ucIdentComNovoLocal(grid, u, ui) {
   const recalcUtm = () => {
     u.padraoUtm = utmString(u.padraoLat, u.padraoLng);
     inpUtm.value = u.padraoUtm;
+    atualizarStatus();
+    if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
   };
   inpLat.addEventListener("input", () => {
     u.padraoLat = inpLat.value;
@@ -891,8 +917,8 @@ function _initPadraoMapa(ui, u) {
         const p = e.target.getLatLng();
         if (u._padraoAplicar) u._padraoAplicar(p.lat, p.lng);
       });
-      const zMax = Number.isFinite(map.getMaxZoom()) ? map.getMaxZoom() : 19;
-      map.setView(ll, zMax);
+      if (centralizar || !map.getBounds().contains(ll))
+        map.setView(ll, Math.max(map.getZoom(), 17));
     }
   };
   map.on("click", (e) => {
@@ -902,10 +928,13 @@ function _initPadraoMapa(ui, u) {
   map._padraoColocar = colocar;
   _padraoMaps[ui] = map;
   setTimeout(() => map.invalidateSize(), 120);
-  // Semeia o mapa: coordenada do padrão já informada ou, senão, a da obra.
-  const lat = num(u.padraoLat) || num(state.obra.lat);
-  const lng = num(u.padraoLng) || num(state.obra.lng);
+  // Marcador cinza FIXO no local atual (a obra); o pin arrastável é só o do
+  // novo local, quando já informado.
+  cmgMarcarLocalAtual(map, { pino: null }, state.obra.lat, state.obra.lng);
+  const lat = num(u.padraoLat);
+  const lng = num(u.padraoLng);
   if (lat && lng) colocar(lat, lng, true);
+  else cmgEnquadrarLocalAtual(map, state.obra.lat, state.obra.lng);
 }
 // Reposiciona o pino quando lat/long são digitados manualmente (debounce leve).
 function _sincronizarPadraoMapa(ui, u) {
@@ -1236,7 +1265,7 @@ function _pvImovelBT(u, painel) {
     `<div class="previa-grid">`;
   // Mesma ordem e mesmas condições da Etapa 4 (perguntasPadraoBT).
   const dist = pvCampoBT(
-    "Distância do padrão até o poste inferior a 30m?",
+    "Distância do padrão até a rede Cemig inferior a 30m?",
     u.distMenor30,
     PG.atend,
   );
@@ -1254,7 +1283,7 @@ function _pvImovelBT(u, painel) {
     );
     if (perguntasPadraoBT(u)) h += pronto + dist;
   }
-  if (rural && u.mudancaLocal === "Sim" && (u.padraoLat || u.padraoLng)) {
+  if (_novoLocalPadraoBT(u) && (u.padraoLat || u.padraoLng)) {
     h += pvCampoBT(
       "Novo local do padrão (lat/long)",
       [u.padraoLat, u.padraoLng].filter(Boolean).join(", "),

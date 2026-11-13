@@ -162,6 +162,9 @@
          geo.js (restrição ambiental e geocodificação) pede o Turf sozinho. -->
     <script defer src="../shared/js/libs.js"></script>
     <script defer src="../shared/js/geo.js"></script>
+    <!-- Mapa do novo local (mudança de local do padrão): marcador do local
+         atual + gate. -->
+    <script defer src="../shared/js/mapa-novo-local.js"></script>
     <script defer src="js/data.js"></script>
     <script defer src="../mt/js/subestacoes-b64.js"></script>
     <script defer src="../shared/js/load-form-data.js"></script>
@@ -199,6 +202,10 @@
          telas não divergirem. Mesma prática de ../mt/js/subestacoes-b64.js
          acima. Tem de vir antes de js/subestacao.js, que o consome. -->
     <script defer src="../mt/js/calculo.js"></script>
+    <!-- Tarifação/demanda e ramal de entrada da conexão nova do Grupo A
+         (mesmas regras do MT); mesano.js = campo "Início de uso". -->
+    <script defer src="../shared/js/mesano.js"></script>
+    <script defer src="../shared/js/tarifacao-gd.js"></script>
     <script defer src="js/app.js"></script>
     <!-- Fluxo Coletivo/Agrupamento: depende de state/$ definidos em app.js. -->
     <script defer src="js/coletivo.js"></script>
