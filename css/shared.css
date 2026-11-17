@@ -622,6 +622,12 @@ html {
   letter-spacing: 0.2px;
   color: var(--cmg-neutral-600); /* #364B46 */
 }
+/* Link dentro do aviso (gfc.svg): verde institucional, negrito, sublinhado. */
+.cmg-aviso-texto a {
+  color: var(--cmg-green-600);
+  font-weight: 700;
+  text-decoration: underline;
+}
 /* Warn variant — modifier over `.cmg-aviso`: only the border colour, the
    icon-column background and the glyph change; layout/typography inherit
    from the base. Markup: <div class="cmg-aviso cmg-aviso--warn">…</div>. */
@@ -1086,6 +1092,111 @@ label.restricao-aceite input[type="checkbox"] {
    filete para não colar na imagem. */
 .previa-midia:not(.previa-midia--linha) .previa-midia-legenda {
   border-top: 1px solid var(--cmg-neutral-200);
+}
+
+/* ---- Prévia da minigeração (Figma previa.svg / previa2.svg, 17/11/2026) ----
+   `.previa-gd` vem junto de `.previa-bt` (mesma tipografia de seção e campo)
+   e acrescenta: cartões-resumo numa linha de N colunas iguais (`--pv-cols`,
+   escrito por pvCards), subtítulos regulares de 18px, o subtítulo de item
+   (Modelo de módulo 1) e o cartão da subestação com o (i) de ampliar. */
+.previa-gd .previa-cards {
+  grid-template-columns: repeat(var(--pv-cols, 3), minmax(0, 1fr));
+  margin-bottom: var(--cmg-space-4);
+}
+.previa-gd .previa-setas {
+  grid-template-columns: repeat(var(--pv-cols, 3), minmax(0, 1fr));
+  font-size: 20px;
+  font-weight: var(--cmg-fw-bold, 700);
+}
+.previa-gd .previa-setas span {
+  line-height: 0;
+}
+@media (max-width: 720px) {
+  .previa-gd .previa-cards,
+  .previa-gd .previa-setas {
+    grid-template-columns: 1fr;
+  }
+  .previa-gd .previa-setas span + span {
+    display: none;
+  }
+}
+.previa-gd .previa-card {
+  padding: var(--cmg-space-4) 20px;
+}
+.previa-gd .previa-card-valor {
+  font-size: var(--cmg-fs-body-lg);
+  line-height: 24px;
+}
+.previa-gd .previa-subtitulo {
+  margin: var(--cmg-space-6) 0 10px;
+  font-size: var(--cmg-fs-subtitle);
+  line-height: var(--cmg-lh-subtitle);
+  font-weight: var(--cmg-fw-regular, 400);
+}
+.previa-gd .previa-subtitulo--item {
+  font-size: var(--cmg-fs-body-lg);
+  line-height: var(--cmg-lh-body-lg);
+}
+.previa-gd .previa-bloco {
+  margin-top: var(--cmg-space-6);
+}
+.previa-gd .previa-bloco-titulo {
+  margin-bottom: 10px;
+}
+.previa-gd .previa-bloco > .previa-grid {
+  margin-bottom: var(--cmg-space-3);
+}
+.previa-gd .previa-painel {
+  margin: var(--cmg-space-6) 0 0;
+}
+/* No painel o vão entre os filhos vem do gap (flex column). */
+.previa-gd .previa-painel .previa-subtitulo,
+.previa-gd .previa-painel .previa-divider,
+.previa-gd .previa-painel .previa-cards,
+.previa-gd .previa-painel .previa-bloco {
+  margin: 0;
+}
+.previa-gd .previa-painel .previa-bloco + .previa-bloco {
+  margin-top: 0;
+}
+.previa-gd .previa-midia--linha > img {
+  width: 160px;
+  height: 120px;
+  object-fit: cover;
+}
+.previa-gd .previa-midia--linha .previa-midia-legenda {
+  min-width: 272px;
+}
+.previa-gd .previa-midia--ramal {
+  max-width: 420px;
+}
+/* (i) do cartão de mídia: amplia a foto, como na galeria. */
+.previa-info {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  line-height: 0;
+}
+.previa-info img,
+.previa-gd .previa-midia .previa-info img {
+  width: 18px;
+  height: 18px;
+  background: transparent;
+}
+.previa-info:focus-visible {
+  outline: 2px solid var(--cmg-green-600);
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+/* Complemento do valor (critério da opção escolhida), em itálico. */
+.previa-campo-nota {
+  font-size: var(--cmg-fs-caption);
+  font-style: italic;
+  font-weight: var(--cmg-fw-regular, 400);
 }
 
 /* ---- Prévia: texto livre (Observações) ----
@@ -2388,6 +2499,26 @@ label.restricao-aceite input[type="checkbox"] {
   max-width: 100%;
   box-sizing: border-box;
   padding: var(--cmg-space-4) 20px;
+}
+/* KPI do valor da Garantia de Fiel Cumprimento (minigeração, gfc.svg):
+   300 de 830px. */
+.cemig-form .resultado-card.resultado-card--gfc {
+  /* Cresce com o rótulo (a fonte da web é mais larga que a do Figma e o
+     rótulo quebraria em 300px), sem nunca ficar menor que o mock. */
+  justify-self: start;
+  min-width: 300px;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: var(--cmg-space-4) 20px;
+}
+.cemig-form .resultado-card--gfc .resultado-card-label {
+  font-size: 14px;
+  line-height: 24px;
+}
+.cemig-form .resultado-card--gfc .resultado-card-valor {
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--cmg-neutral-600);
 }
 .cemig-form .resultado-card {
   background: var(--cmg-surface);

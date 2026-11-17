@@ -796,7 +796,7 @@ function onDispositivoMotorGD(selectEl, i) {
    horária nem a demanda escalonada: o cliente da minigeração não
    declara tarifa. O cubículo declara os seus transformadores e o seu
    par de demanda; a GERAÇÃO não é declarada aqui — ela é uma só, da
-   usina, e vive na etapa 6 (potência ativa instalada + fontes).
+   usina, e vive na etapa 5 (potência ativa instalada + fontes).
    ============================================================ */
 function novoCubiculoGD() {
   return {
@@ -1082,7 +1082,7 @@ function renderResumoSEGD() {
   const dem = demandaRepresentativaGD();
   const kpis = [
     // "Cubículos" só existe na compartilhada. A geração não entra: ela é
-    // declarada uma única vez na etapa 6 (potência ativa instalada + fontes).
+    // declarada uma única vez na etapa 5 (potência ativa instalada + fontes).
     ...(compart ? [["Cubículos", String(cubiculosGD.length)]] : []),
     // Sem demanda declarada o KPI mostra só o travessão — o dimensionamento
     // recai sobre a potência instalada, mas isso não precisa estar no card.
@@ -1152,7 +1152,7 @@ function _tetoSEkW(tipo) {
   return c && c.maxKW ? c.maxKW : 0;
 }
 /* REGRA 9 (minigeração) — os modelos com teto de 300 kVA não servem quando a
-   POTÊNCIA ATIVA INSTALADA DE GERAÇÃO (etapa 6) passa desse limite. É corte
+   POTÊNCIA ATIVA INSTALADA DE GERAÇÃO (etapa 5) passa desse limite. É corte
    DIFERENTE do `maxKW` do CalculoMT, que compara o teto com a DEMANDA
    contratada; por isso vem como pós-filtro e não como parâmetro — passar a
    geração no lugar da demanda contaminaria o dimensionamento.

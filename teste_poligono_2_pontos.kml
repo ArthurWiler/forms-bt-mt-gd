@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+  <name>Teste – 1 polígono e 2 pontos</name>
+  <open>1</open>
+
+  <!-- Estilo do polígono: cores no formato aabbggrr (alfa, azul, verde, vermelho) -->
+  <Style id="estiloArea">
+    <LineStyle><color>ff0080ff</color><width>2</width></LineStyle>
+    <PolyStyle><color>550080ff</color></PolyStyle>
+  </Style>
+
+  <!-- A pasta agrupa o polígono e seus pontos -->
+  <Folder>
+    <name>Comunidade Teste (2)</name>
+    <open>1</open>
+
+    <!-- POLÍGONO: o id permite que os pontos apontem para ele -->
+    <Placemark id="area1">
+      <name>Comunidade Teste</name>
+      <styleUrl>#estiloArea</styleUrl>
+      <description><![CDATA[
+        <b>2 pontos</b><hr>
+        <ol>
+          <li><a href="#ponto1;balloonFlyto">Ponto A</a></li>
+          <li><a href="#ponto2;balloonFlyto">Ponto B</a></li>
+        </ol>
+      ]]></description>
+      <Polygon>
+        <tessellate>1</tessellate>
+        <outerBoundaryIs><LinearRing><coordinates>
+          -43.7095,-19.4395,0
+          -43.7045,-19.4395,0
+          -43.7045,-19.4425,0
+          -43.7095,-19.4425,0
+          -43.7095,-19.4395,0
+        </coordinates></LinearRing></outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+
+    <!-- PONTOS: cada um com um id único (ponto1, ponto2) -->
+    <Folder>
+      <name>Pontos</name>
+      <Placemark id="ponto1">
+        <name>Ponto A</name>
+        <description><![CDATA[
+          <b>Comunidade:</b> <a href="#area1;balloonFlyto">Comunidade Teste</a><hr>
+          Ficha do ponto A.
+        ]]></description>
+        <Point><coordinates>-43.7080,-19.4405,0</coordinates></Point>
+      </Placemark>
+      <Placemark id="ponto2">
+        <name>Ponto B</name>
+        <description><![CDATA[
+          <b>Comunidade:</b> <a href="#area1;balloonFlyto">Comunidade Teste</a><hr>
+          Ficha do ponto B.
+        ]]></description>
+        <Point><coordinates>-43.7060,-19.4415,0</coordinates></Point>
+      </Placemark>
+    </Folder>
+  </Folder>
+</Document>
+</kml>

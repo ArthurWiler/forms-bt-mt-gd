@@ -42,7 +42,7 @@ const CARDS_GD = [
   // traz como <select> com opção vazia "—", não como cards Sim/Não.
   // localizacao vive na etapa 3, também copiada, e usa <div data-toggle>
   // — renderizado por montarToggles().
-  // A etapa 6 é porte da etapa de geração do microGD e traz os Sim/Não como
+  // A etapa 5 é porte da etapa de geração do microGD e traz os Sim/Não como
   // <div data-toggle> + <select data-k> oculto (montarToggles) — gridZero saiu
   // junto: virou a modalidade de operação, um card de três opções.
   { chave: "mudancaSE", gridId: "cardsMudancaSE", opcoes: SIM_NAO },
@@ -987,11 +987,15 @@ function onSolicitacao() {
   const instBox = $("#instalacaoUCBox");
   if (instBox)
     instBox.style.display = state.solicitacao && !nova ? "" : "none";
-  // Regra 11: GD existente COM alteração ⇒ potência de geração atual (etapa 6).
+  // Regra 11: GD existente COM alteração ⇒ potência de geração atual (etapa 5).
+  // Fora dessa solicitação o valor é APAGADO: ele é descontado da potência da
+  // garantia de fiel cumprimento e não pode seguir valendo escondido.
+  const altGeracao = state.solicitacao === GD_SOLICITACAO_ALTERA_GERACAO;
   const pa = $("#potGeracaoAtualBox");
-  if (pa)
-    pa.style.display =
-      (state.solicitacao || "").indexOf("GD Existente") >= 0 ? "" : "none";
+  if (pa) pa.style.display = altGeracao ? "" : "none";
+  if (!altGeracao && state.potGeracaoAtual)
+    aplicarPatch({ potGeracaoAtual: "" });
+  atualizarGFC();
   // atualizarSE() redesenha os cards: é lá que os campos de demanda vivem, e
   // os rótulos deles dependem da solicitação recém-escolhida.
   atualizarSE();
@@ -1013,6 +1017,12 @@ function onGridZero() {
     }
     dg.disabled = gz;
   }
+  // Sem injeção na rede não há crédito: a quantidade de UCs beneficiadas
+  // deixa de ser perguntada e é limpa (o PDF diz "Não se aplica").
+  const ucs = $("#qtdUCsCreditoBox");
+  if (ucs) ucs.style.display = gz ? "none" : "";
+  if (gz && state.qtdInstalacoesCredito)
+    aplicarPatch({ qtdInstalacoesCredito: "" });
   onModalidade();
   atualizarDecl95();
 }
@@ -1040,7 +1050,7 @@ function onTelhadoArrendado() {
   }
 }
 
-/* ===== Etapa 5 — Formulário de Carga: perfis de carga ===== */
+/* ===== Etapa 6 — Cargas da unidade (Formulário de Carga): perfis de carga ===== */
 // Tipo de propriedade (etapa 3), igual ao BT Urbano: Residencial + categorias
 // da Tabela 11 (shared/js/carga-bt.js). A atividade (state.classe:
 // Residencial/Comercial/Industrial) é DERIVADA dele, em `classe` (PDF) e em
@@ -1138,7 +1148,7 @@ function gdValidarMotoresGD() {
     .filter(Boolean);
 }
 
-/* ===== Etapa 6 — Geração =====
+/* ===== Etapa 5 — Geração =====
    Porte do conjunto da etapa de geração do microGD
    (microgeracao/etapas/04-geracao.html + js/app.js), com UMA diferença de
    estrutura: lá existe uma única fonte primária e o estado é plano; aqui o
@@ -1206,10 +1216,19 @@ function onModalidade() {
     }
     sel.disabled = trava;
   }
+  const compart = state.modalidade === "Geração Compartilhada";
   const consorcio = $("#consorcioBox");
-  if (consorcio)
-    consorcio.style.display =
-      state.modalidade === "Geração Compartilhada" ? "" : "none";
+  if (consorcio) consorcio.style.display = compart ? "" : "none";
+  // Contrato de constituição: só existe consórcio/cooperativa na Geração
+  // Compartilhada. Fora dela (inclusive no Grid Zero, travado em Autoconsumo
+  // Local) volta a "Não", o default do modelo.
+  const contrato = $("#anexouContratoBox");
+  if (contrato) contrato.style.display = compart ? "" : "none";
+  if (!compart && state.anexouContrato !== "Não") {
+    aplicarPatch({ anexouContrato: "Não" });
+    const sel = $(`select[data-k="anexouContrato"]`);
+    if (sel) sel.dispatchEvent(new Event("change")); // redesenha os rádios
+  }
   atualizarGFC();
 }
 
@@ -1474,7 +1493,7 @@ function recalcFontes() {
   const disp = $("#gd_potAtivaTotal");
   if (disp) disp.textContent = total ? fmt2(total) + " kW" : "";
   // Regra 9: a potência de geração filtra os modelos de subestação. Basta
-  // recalcular — refazer os cards a cada tecla da etapa 6 seria desperdício, e
+  // recalcular — refazer os cards a cada tecla da etapa 5 seria desperdício, e
   // atualizarSE() é quem os redesenha.
   recalcTecnicoGD();
   atualizarGFC();
@@ -1848,7 +1867,7 @@ function _ligarCamposFonteGD(escopo, i) {
    numa ÚNICA linha (primária | secundária) e, abaixo, um acordeão por fonte com
    os campos dela. Antes cada fonte era um bloco corrido com a sua própria
    pergunta "Fonte primária" — com duas fontes a mesma pergunta aparecia duas
-   vezes, longe uma da outra, e o conjunto da etapa 6 virava uma coluna sem
+   vezes, longe uma da outra, e o conjunto da etapa 5 virava uma coluna sem
    fim. */
 function renderFontes() {
   const box = $("#fontesBox");
@@ -1957,43 +1976,56 @@ function onFonteToggleGD(i, chave, valor) {
   if (window.CemigMarcadores) window.CemigMarcadores.atualizarAvancar();
 }
 
-/* ===== Garantia de Fiel Cumprimento (Regras 19/21) — deriva da Geração ===== */
+/* ===== Garantia de Fiel Cumprimento — regra da planilha (ver gdExigeGFC) ===== */
 function atualizarGFC() {
-  _sync("consorcioVerificado"); // onchange inline dispara antes do bindInputs
   const gfc = gdCalcularGFC(state);
   state.gfcValor = String(gfc);
   const disp = $("#gd_gfcValor");
-  if (disp) disp.value = "R$ " + fmt2(gfc);
+  if (disp) disp.textContent = "R$ " + fmt2(gfc);
   const exige = gdExigeGFC(state);
-  const bloco = $("#gfcBloco");
-  if (bloco) bloco.style.display = exige ? "" : "none";
-  const isento = $("#gfcIsentoAviso");
-  if (isento) {
-    const ultrapassa =
-      (parseFloat(state.potAtivaInstalada) || 0) > GD_GFC_LIMITE_KW;
-    const isentoConsorcio =
-      state.modalidade === "Geração Compartilhada" &&
-      state.consorcioVerificado === "Sim";
-    isento.style.display = ultrapassa && isentoConsorcio ? "" : "none";
+  // O limite vale para a potência LÍQUIDA (instalada − geração atual), como
+  // na planilha.
+  const ultrapassa = gdPotLiquidaGFC(state) > GD_GFC_LIMITE_KW;
+  // Três estados exclusivos: exigida (gfc.svg), até 500 kW (gfc2.svg), ou
+  // acima de 500 kW numa modalidade fora do critério (Geração Compartilhada /
+  // EMUC — mensagem da planilha).
+  const mostrar = (sel, ver) => {
+    const el = $(sel);
+    if (el) el.style.display = ver ? "" : "none";
+  };
+  mostrar("#gfcBloco", exige);
+  mostrar("#gfcAvisoExige", exige);
+  mostrar("#gfcAvisoAte500", !ultrapassa);
+  mostrar("#gfcAvisoModalidade", ultrapassa && !exige);
+  // Fora da exigência a forma de apresentação não vale nada — não pode seguir
+  // escondida para o PDF.
+  if (!exige && state.garantiaForma) {
+    aplicarPatch({ garantiaForma: "" });
+    const sel = $(`select[data-k="garantiaForma"]`);
+    if (sel) sel.dispatchEvent(new Event("change")); // redesenha os rádios
   }
   if (window.CemigMarcadores) {
     window.CemigMarcadores.aplicar();
     window.CemigMarcadores.atualizarAvancar();
   }
 }
-// Regra 22: a dispensa do art. 73-A só aparece (e é obrigatória) quando
-// Grid Zero = Sim. Item e aviso vivem na etapa 6, ao lado da modalidade de
-// operação que os origina.
+// Regra 22: a dispensa do art. 73-A só aparece quando Grid Zero = Sim, ao
+// lado da modalidade de operação que a origina (etapa 5). É OPCIONAL, como o
+// item 9.5 da planilha Formulario-MiniGD rev. P2 (decisão de 17/11/2026). Fora
+// do Grid Zero a marcação é desfeita, para não seguir escondida.
 function atualizarDecl95() {
   const gz = state.gridZero === "Sim";
   const item = $("#decl95Item");
   if (item) item.style.display = gz ? "" : "none";
-  const aviso = $("#decl95Aviso");
-  if (aviso) aviso.style.display = gz && !state.decl95 ? "" : "none";
+  if (!gz && state.decl95) {
+    state.decl95 = false;
+    const chk = $(`[data-decl="decl95"]`);
+    if (chk) chk.checked = false;
+  }
 }
 
 /* ===== Declarações em caixa de seleção =====
-   Restou uma: a dispensa do art. 73-A, que vive na etapa 6 junto da
+   Restou uma: a dispensa do art. 73-A, que vive na etapa 5 junto da
    modalidade de operação. O binding é por [data-decl], então independe de
    qual fragmento a hospeda — os fragmentos já estão todos no DOM quando
    initFormulario() roda. ===== */
@@ -2184,10 +2216,6 @@ function validarExportacao() {
   // "Avançar" só olha a etapa ativa, então a lista inteira é revalidada aqui.
   faltas.push(...gdValidarFVGD());
   if (gdExigeGFC(d)) req(d.garantiaForma, "Forma de apresentação da garantia");
-  if (d.gridZero === "Sim" && !d.decl95)
-    faltas.push(
-      "Dispensa de análise de inversão de fluxo (obrigatória para Grid Zero)",
-    );
   armazPendenciasGD(d, req); // shared/js/armazenamento.js
   // Data de vencimento da fatura: opcional (não entra em `req`).
   // A forma de recebimento, sim: o dropdown abre em "Selecione" (sem
@@ -2206,302 +2234,8 @@ function validarExportacao() {
   return { ok: faltas.length === 0, faltas };
 }
 
-/* --- Prévia (padrão pvCampo/pvSecao do MT) --- */
-function pvCampo(label, valor, opts) {
-  opts = opts || {};
-  const vazio = valor == null || valor === "";
-  const lapis =
-    opts.step != null
-      ? `<button type="button" class="previa-edit" title="Editar" aria-label="Editar ${label}" onclick="goTo(${opts.step}, true)"></button>`
-      : "";
-  return (
-    `<div class="previa-campo${opts.full ? " previa-campo--full" : ""}">` +
-    `<div class="previa-campo-label">${label}</div>` +
-    `<div class="previa-campo-valor">${vazio ? "—" : valor}${lapis}</div></div>`
-  );
-}
-function pvSecao(titulo, campos) {
-  return (
-    `<div class="previa-secao"><h4 class="previa-secao-titulo">${titulo}</h4>` +
-    `<div class="previa-grid">${campos}</div></div>`
-  );
-}
-const PV_DIVISOR = '<hr class="previa-divider"/>';
-// Texto livre das Observações na prévia: em negrito e sem rótulo (Figma
-// svg_previa do BT). `previa-campo--full` ocupa a linha inteira da grade.
-const pvTextoLivre = (txt) =>
-  `<p class="previa-texto previa-campo--full">${String(txt)
-    .trim()
-    .replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c])
-    .replace(/\n/g, "<br>")}</p>`;
-// Resumo de UMA fonte na prévia — o conjunto muda com a fonte primária, como
-// na etapa. O prefixo só aparece havendo mais de uma fonte.
-function _pvFonteGD(f, i, total) {
-  const pre = total > 1 ? `F${i + 1}: ` : "";
-  const linha = (rot, val) => pvCampo(pre + rot, val, { step: 5 });
-  let out =
-    linha("Fonte", f.fontePrimaria) +
-    linha("Potência da fonte (kW)", f.potencia);
-  if (f.fontePrimaria === "Solar")
-    out +=
-      linha(
-        "Módulos",
-        `${(f.modulos || []).length} modelo(s) · ${f.qtdModulos || "—"} un · ${f.potTotalModulos || "—"} kW`,
-      ) +
-      linha(
-        "Inversores",
-        `${(f.inversores || []).length} modelo(s) · ${f.qtdInversores || "—"} un · ${f.potTotalInversores || "—"} kW`,
-      );
-  else if (f.fontePrimaria === "Hidráulica")
-    out +=
-      linha(
-        "Rio / Sub-bacia",
-        `${f.hidroRio || "—"} / ${f.hidroSubBacia || "—"}`,
-      ) +
-      linha("Pot. Aparente (kVA)", f.hidroPotAparente) +
-      linha("Barragem >= 15 m", f.hidroBarragemAltura) +
-      GD_BARRAGEM_PERGUNTAS.map((q) => linha(q.rotulo, f[q.chave])).join("");
-  else if (GD_FONTES_CENTRAL_TERMICA.includes(f.fontePrimaria))
-    out +=
-      linha("Combustível", f.bioCombustivel) +
-      linha("Pot. Aparente (kVA)", f.bioPotAparente) +
-      linha(
-        "Máq. motriz / Ciclo",
-        `${f.bioMaqMotriz || "—"} / ${f.bioCicloTermodinamico || "—"}`,
-      );
-  else if (f.fontePrimaria === "Eólica")
-    out +=
-      linha("Aerogeradores", `${f.eolQtdAerogeradores || "—"} un`) +
-      linha(
-        "Fabricante / Modelo",
-        `${f.eolFabricante || "—"} / ${f.eolModelo || "—"}`,
-      ) +
-      linha(
-        "Altura da pá (m) / Eixo",
-        `${f.eolAlturaPa || "—"} / ${f.eolEixoRotor || "—"}`,
-      );
-  return out;
-}
-function renderPreviewGD() {
-  // Aquecimento do jsPDF (carga sob demanda): chegar nesta etapa é o melhor
-  // sinal de que o PDF vem a seguir. Sem await — não bloqueia a renderização.
-  window.CemigLibs.jspdf().catch(() => {});
-  syncState();
-  const d = state;
-  const v = validarExportacao();
-  const faltasBox = $("#revFaltas");
-  if (faltasBox)
-    faltasBox.innerHTML = v.ok
-      ? '<div class="rev-ok">Todos os campos obrigatórios preenchidos. Pronto para exportar.</div>'
-      : '<div class="rev-faltas"><strong>Preencha os campos obrigatórios antes de exportar:</strong><ul>' +
-        v.faltas.map((f) => `<li>${f}</li>`).join("") +
-        "</ul></div>";
-  const secoes = [];
-  // Etapa 2 — Dados do proprietário (índice 1) e etapa 3 — Dados da unidade
-  // (índice 2). A Instalação mora na etapa técnica (índice 3); a Atividade
-  // principal voltou para a etapa 3, então o lápis dela aponta o índice 2.
-  let ident =
-    pvCampo("Titular", d.titular, { step: 1 }) +
-    (d.estrangeiro
-      ? pvCampo("Nº do RNE/RNM", d.rne, { step: 1 })
-      : pvCampo("CPF/CNPJ", d.cpfCnpj, { step: 1 })) +
-    pvCampo("E-mail", d.email, { step: 1 }) +
-    pvCampo("Celular", d.celular, { step: 1 });
-  if (d.filiacao) ident += pvCampo("Filiação", d.filiacao, { step: 1 });
-  if (d.nasc) ident += pvCampo("Data de Nascimento", dataBR(d.nasc), { step: 1 });
-  if (d.filiacao)
-    ident += pvCampo(
-      "Equipamentos essenciais? / NIS?",
-      `${d.laudoMedico} / ${d.nis}`,
-      { step: 1 },
-    );
-  if (d.nis === "Sim" && d.numNis)
-    ident += pvCampo("Número do NIS", d.numNis, { step: 1 });
-  ident +=
-    pvCampo("Responsável técnico", d.rtNome, { step: 1 }) +
-    pvCampo("E-mail do RT", d.rtEmail, { step: 1 }) +
-    pvCampo("Celular do RT", d.rtCelular, { step: 1 });
-  secoes.push(pvSecao("1 — Dados do proprietário", ident));
-  // Endereço da unidade: urbano e rural são mutuamente exclusivos.
-  const endereco =
-    d.localizacao === "Rural"
-      ? [
-          d.distritoComunidade,
-          d.nomePropriedade,
-          d.pontoRef,
-          [d.municipio, d.estado].filter(Boolean).join("/"),
-        ]
-          .filter(Boolean)
-          .join(" · ")
-      : `${d.logradouro}, ${d.numero} — ${d.bairro}, ${d.municipio}/${d.estado}`;
-  // Grupo não entra aqui: não tem campo próprio (o mini é sempre "A") e já
-  // aparece em "Grupo / Atividade principal" na seção técnica.
-  let uni =
-    pvCampo("Zona de localização", d.localizacao, { step: 2 }) +
-    pvCampo("Endereço", endereco, { full: true, step: 2 });
-  if (d.localizacao === "Rural" && d.instProxima)
-    uni += pvCampo("Instalação mais próxima", d.instProxima, { step: 2 });
-  if (d.restricaoAmbiental)
-    uni += pvCampo(
-      "Restrição ambiental",
-      d.restricaoAmbiental === "Sim"
-        ? (d.restricoesTexto || "Sim").replace(/\n/g, "<br>")
-        : "Não",
-      { full: true, step: 2 },
-    );
-  secoes.push(pvSecao("2 — Dados da unidade", uni));
-  // Coordenadas ficam na etapa 3 (mapa); o restante é da etapa técnica (3).
-  secoes.push(
-    pvSecao(
-      "3 — Tipo de atendimento",
-      pvCampo("Coordenadas", `Lat ${d.latitude} · Lon ${d.longitude}`, {
-        step: 2,
-      }) +
-        pvCampo(
-          "UTM (calculada)",
-          `Fuso ${d.fuso} · E ${d.utmE} · N ${d.utmN}`,
-          { step: 2 },
-        ) +
-        pvCampo("Instalação", d.instalacao, { step: 3 }) +
-        // Sem "Grupo": a minigeração é sempre Grupo A, nenhuma etapa pergunta.
-        pvCampo("Tipo de propriedade", d.tipoPropriedade, { step: 2 }) +
-        (_ramoAplicaGD()
-          ? pvCampo("Ramo da atividade", d.ramoAtividade, { step: 2 })
-          : "") +
-        pvCampo("Solicitação", d.solicitacao, { step: 3 }) +
-        pvCampo(
-          "Tensão de atendimento",
-          d.tensaoAtendimento ? _rotuloTensaoGD(d.tensaoAtendimento) : "",
-          { step: 3 },
-        ) +
-        pvCampo("Tipo de edificação", d.entradaEnergia, { step: 3 }) +
-        (_temSubestacaoExistenteGD()
-          ? pvCampo("Mudança de local da subestação", d.mudancaSE, {
-              step: 3,
-            })
-          : "") +
-        (d.mudancaSE === "Sim"
-          ? pvCampo(
-              "Coordenadas do novo local da subestação",
-              `Lat ${d.mudLatitude || "—"} · Lon ${d.mudLongitude || "—"}`,
-              { full: true, step: 3 },
-            )
-          : "") +
-        pvCampo("Subestação (ND 5.3)", d.tipoSE, { step: 3 }) +
-        // Individual e compartilhada resumem coisas diferentes: lá são os
-        // transformadores da própria UC, aqui os cubículos do bloco.
-        (d.entradaEnergia === GD_ENTRADA_COMPARTILHADA
-          ? pvCampo(
-              "Cubículos",
-              `${(d.cubiculos || []).length} · ${d.qtdTotalTrafos || 0} trafos · ${d.potTotalTrafos || 0} kVA · demanda ${d.demandaTotalCubiculos || 0} kW`,
-              { full: true, step: 3 },
-            )
-          : pvCampo(
-              "Transformadores",
-              // A impedância saiu do resumo: com um valor por transformador não
-              // há um número único a exibir — a tabela do PDF traz a coluna.
-              `${d.qtdTotalTrafos || 0} un · ${d.potTotalTrafos || 0} kVA · demanda ${d.demandaTotalTrafos || 0} kW`,
-              { full: true, step: 3 },
-            )) +
-        // Conexão nova: tarifação (da instalação ou de cada cubículo) e o
-        // ramal de entrada, como no MT.
-        (gdTarifaAplica()
-          ? (d.entradaEnergia === GD_ENTRADA_COMPARTILHADA
-              ? (d.cubiculos || [])
-                  .map((c, i) =>
-                    pvCampo(
-                      `Cubículo ${i + 1} — tarifação`,
-                      gdTarifaLinhas(c)
-                        .map(([r, v]) => `${r}: ${v}`)
-                        .join(" · "),
-                      { full: true, step: 3 },
-                    ),
-                  )
-                  .join("")
-              : gdTarifaLinhas(d)
-                  .map(([r, v]) =>
-                    pvCampo(r, v, { full: /^Etapa/.test(r), step: 3 }),
-                  )
-                  .join("")) +
-            gdRamalLinhas(d.ramalIndice)
-              .map(([r, v]) => pvCampo(r, v, { full: true, step: 3 }))
-              .join("")
-          : "") +
-        // A demanda é campo de card (transformador ou cubículo): a linha acima
-        // já traz a soma declarada, nos dois ramos. Aqui resta a da geração.
-        pvCampo("Demanda de geração (kW)", d.demandaGeracao, { step: 5 }),
-    ),
-  );
-  secoes.push(
-    pvSecao(
-      "4 — Geração",
-      pvCampo("Qtd. fontes", d.qtdFontes, { step: 5 }) +
-        pvCampo("Modalidade de operação", d.modoOperacao, { step: 5 }) +
-        pvCampo("Pot. Ativa Instalada (kW)", d.potAtivaInstalada, {
-          step: 5,
-        }) +
-        pvCampo("Modalidade", d.modalidade, { step: 5 }) +
-        // Uma linha por fonte com o resumo do conjunto dela: o detalhe todo
-        // (níveis de operação, critérios de risco, modelos) fica para o PDF.
-        (d.fontes || [])
-          .map((f, i) => _pvFonteGD(f, i, (d.fontes || []).length))
-          .join(""),
-    ),
-  );
-  secoes.push(
-    pvSecao(
-      "Armazenamento de energia",
-      armazLinhasGD(d)
-        .map(([rot, val]) => pvCampo(rot, val, { step: 5 }))
-        .join(""),
-    ),
-  );
-  let cor =
-    pvCampo("Como deseja receber a fatura", d.corrAlternativa, { step: 7 }) +
-    pvCampo("Vencimento", d.vencimento, { step: 7 });
-  if (d.corrAlternativa === "E-mail informado")
-    cor += pvCampo("E-mail para envio da fatura", d.email, {
-      full: true,
-      step: 7,
-    });
-  if (d.corrAlternativa === "Outro e-mail")
-    cor += pvCampo("E-mail para envio da fatura", d.corrOutroEmail, {
-      full: true,
-      step: 7,
-    });
-  if (d.corrAlternativa === "Endereço novo")
-    cor += pvCampo(
-      "Endereço da fatura",
-      [
-        [d.corrRua, d.corrNum].filter(Boolean).join(", "),
-        d.corrBairro,
-        d.corrMunicipio,
-        d.corrEstado,
-        d.corrCep,
-      ]
-        .filter(Boolean)
-        .join(" · "),
-      { full: true, step: 7 },
-    );
-  if (d.corrAlternativa === "Conta globalizada")
-    cor += pvCampo("Conta globalizada", d.contaGlobal, { step: 7 });
-  secoes.push(pvSecao("Correspondência e Fatura", cor));
-  // Observações (etapa 9): só entra na prévia quando há texto — uma seção com
-  // um "—" solto não acrescenta nada à conferência.
-  if ((d.obs || "").trim())
-    secoes.push(
-      pvSecao("Observações", pvTextoLivre(d.obs)),
-    );
-  const content = $("#previewContent");
-  if (content) content.innerHTML = secoes.join(PV_DIVISOR);
-  const btn = $("#btnExportarPDF");
-  if (btn) btn.disabled = !v.ok;
-  // O PDF de Análise de Partida só existe havendo motor pesado — mesma
-  // condição com que o MT oferece o documento na prévia dele.
-  const btnPartida = $("#btnExportarPartida");
-  if (btnPartida)
-    btnPartida.style.display = motoresPesadosGD(d).length ? "" : "none";
-}
+/* --- Prévia: renderPreviewGD() e os blocos previa-* vivem em js/previa.js
+   (desenho do Figma previa.svg / previa2.svg, 17/11/2026). --- */
 function syncState() {
   $$("[data-k]").forEach((el) => {
     state[el.dataset.k] = el.value;
@@ -2595,7 +2329,7 @@ window.initFormulario = function () {
   mostrarCamposPF(gdEhCpfValido());
   // nis: o próprio <select> da etapa 2 copiada chama onNisGD() no onchange
   // (padrão do micro/MT) — um listener aqui faria o handler rodar duas vezes.
-  // O Tipo de propriedade (etapa 3) remonta a lista de equipamentos da etapa 5
+  // O Tipo de propriedade (etapa 3) remonta a lista de equipamentos da etapa 6
   // pelo onchange do próprio select (onTipoPropriedadeGD).
   const aceite = $("#aceiteOrient");
   if (aceite)

@@ -64,11 +64,11 @@
         <div class="sidebar-title">Progresso do preenchimento</div>
         <button type="button" class="vstep active">
           <span class="vstep-num">1</span>
-          <span class="vstep-label">Orientações</span>
+          <span class="vstep-label">Informações</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">2</span>
-          <span class="vstep-label">Dados do proprietário</span>
+          <span class="vstep-label">Dados para contato</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">3</span>
@@ -80,11 +80,11 @@
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">5</span>
-          <span class="vstep-label">Formulário de Carga</span>
+          <span class="vstep-label">Dados da geração</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">6</span>
-          <span class="vstep-label">Dados da Geração</span>
+          <span class="vstep-label">Cargas da unidade</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">7</span>
@@ -92,7 +92,7 @@
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">8</span>
-          <span class="vstep-label">Correspondência</span>
+          <span class="vstep-label">Conta de Luz</span>
         </button>
         <button type="button" class="vstep">
           <span class="vstep-num">9</span>
@@ -144,21 +144,22 @@
           id="page-3"
           data-src="etapas/04-atendimento.html"
         ></section>
-        <!-- Carga vem ANTES de Geração: as duas dependem da etapa "Tipo de
-             atendimento", que já vem antes das duas, e nenhuma depende da
-             outra. A potência ativa instalada declarada na Geração segue
-             filtrando os tipos de subestação (Regra 9, ver _tiposSEminiGD) —
-             uma volta à etapa 4, como já era — e define a Garantia de Fiel
-             Cumprimento, que continua depois dela. -->
+        <!-- Geração vem ANTES de Cargas da unidade (sidebar do Figma, gfc.svg,
+             17/11/2026 — mesma ordem do microGD). As duas dependem só da etapa
+             "Tipo de atendimento" e nenhuma depende da outra. A potência ativa
+             instalada declarada na Geração filtra os tipos de subestação
+             (Regra 9, ver _tiposSEminiGD) e define a Garantia de Fiel
+             Cumprimento. Os nomes dos fragmentos ficaram com a numeração
+             antiga — quem manda na ordem são os ids. -->
         <section
           class="page"
           id="page-4"
-          data-src="etapas/05-carga.html"
+          data-src="etapas/06-geracao.html"
         ></section>
         <section
           class="page"
           id="page-5"
-          data-src="etapas/06-geracao.html"
+          data-src="etapas/05-carga.html"
         ></section>
         <!-- O armazenamento de energia é um bloco no fim da etapa de Geração
              (shared/parciais/armazenamento-gd.html), como na microgeração.
@@ -245,6 +246,7 @@
     <script defer src="../shared/js/mesano.js"></script>
     <script defer src="../shared/js/tarifacao-gd.js"></script>
     <script defer src="js/app.js"></script>
+    <script defer src="js/previa.js"></script>
     <!-- Bloco técnico da subestação: transformadores, motores, cubículos da
          subestação compartilhada, resumo e tipo de SE. Depende de state/$/
          _sync/aplicarPatch/_ehLigacaoNova (app.js) e de CalculoMT. -->

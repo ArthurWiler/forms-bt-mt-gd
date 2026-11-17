@@ -1656,6 +1656,18 @@ function _ehFastTrack() {
 function _ehGridZero() {
   return state.gridZero === "Sim";
 }
+// Qtde. de UCs beneficiadas: só no Solar (como a modalidade de compensação) e
+// nunca no Grid Zero — sem injeção na rede não há crédito a distribuir. Some e
+// é limpa; o PDF diz "Não se aplica".
+function atualizarUCsCreditoGD() {
+  const gz = _ehGridZero();
+  const box = $("#qtdUCsCreditoBox");
+  if (box)
+    box.style.display =
+      state.fontePrimaria === "Solar" && !gz ? "" : "none";
+  if (gz && state.qtdInstalacoesCredito)
+    aplicarPatch({ qtdInstalacoesCredito: "" });
+}
 // Modalidade de operação (etapa 4): um card único no lugar dos antigos campos
 // Fast Track e Grid Zero. Eles continuam existindo no estado — derivados desta
 // escolha — porque PDF, prévia e as regras do art. 73-A dependem deles.
@@ -1764,10 +1776,11 @@ function onFonte() {
   const ehHidro = state.fontePrimaria === "Hidráulica";
   const ehBio = GD_FONTES_CENTRAL_TERMICA.includes(state.fontePrimaria);
   const ehEol = state.fontePrimaria === "Eólica";
-  ["#tipoGeracaoBox", "#modalidadeBox", "#qtdUCsCreditoBox"].forEach((s) => {
+  ["#tipoGeracaoBox", "#modalidadeBox"].forEach((s) => {
     const el = $(s);
     if (el) el.style.display = ehFV ? "" : "none";
   });
+  atualizarUCsCreditoGD();
   const blocos = $("#fvBlocos");
   if (blocos) blocos.style.display = ehFV ? "" : "none";
   // Conjunto da fonte Hidráulica: dados da central + segurança de barragens.
@@ -2094,6 +2107,7 @@ function recalcGeracao() {
     }
     selMod.disabled = travaModalidade;
   }
+  atualizarUCsCreditoGD();
   atualizarSE(); // limite de 300 kVA das SE Nº 1/5/8 depende da potência
 }
 

@@ -1,6 +1,6 @@
 <!doctype html>
 <div class="card">
-  <div class="section-eyebrow" data-etapa="geracao">Etapa 6</div>
+  <div class="section-eyebrow" data-etapa="geracao">Etapa 5</div>
   <h3 class="card-title">Dados da geração</h3>
   <p class="card-sub">
     Preencha os dados relacionados à geração distribuída instalada em sua
@@ -94,30 +94,17 @@
       </div>
       <!-- Regra 22: a dispensa de análise de inversão de fluxo (art. 73-A) é
          consequência direta da modalidade escolhida acima, então mora ao lado
-         dela — antes vivia na etapa de Declarações, longe do que a origina.
-         Item e aviso são filhos DIRETOS do grid com col-span-2: escondidos
-         (display:none) saem do fluxo sem deixar vão, e o respiro vem do gap.
-         Quem alterna os dois é atualizarDecl95() (js/app.js). -->
+         dela. OPCIONAL, como o item 9.5 da planilha (17/11/2026). Filho
+         DIRETO do grid com col-span-2: escondido (display:none) sai do fluxo
+         sem deixar vão. Quem o alterna é atualizarDecl95() (js/app.js). -->
       <label class="doc-item col-span-2" id="decl95Item" style="display: none">
         <input type="checkbox" data-decl="decl95" />
         <span class="doc-text">
           Solicito dispensa da análise de inversão de fluxo em razão do
-          atendimento ao art. 73-A, sob a seguinte regra (opcional): não injeção
-          na rede de distribuição de energia elétrica (“Grid Zero”).
-          <span class="doc-req">(Obrigatório para Grid Zero)</span>
+          atendimento ao art. 73-A, sob a seguinte regra (opcional): não
+          injeção na rede de distribuição de energia elétrica (“Grid Zero”).
         </span>
       </label>
-      <div
-        id="decl95Aviso"
-        class="cmg-aviso cmg-aviso--warn no-print col-span-2"
-        style="display: none"
-      >
-        <div class="cmg-aviso-icon" aria-hidden="true"></div>
-        <p class="cmg-aviso-texto">
-          Como o empreendimento é Grid Zero, marque a declaração acima — ela é
-          obrigatória para prosseguir com a exportação.
-        </p>
-      </div>
       <!-- Regra 11: a geração que a UC JÁ tem. Só aparece nas solicitações de GD
          existente (ver onSolicitacao) e entra no cálculo da GFC como potência
          já instalada — daí o recalcFontes() no oninput. -->
@@ -137,7 +124,9 @@
         <label>Modalidade de compensação <span class="req">*</span></label>
         <select data-k="modalidade" onchange="onModalidade()"></select>
       </div>
-      <div class="field">
+      <!-- Some no Grid Zero: sem injeção na rede não há crédito a distribuir
+           (ver onGridZero). -->
+      <div class="field" id="qtdUCsCreditoBox">
         <label>Qtde. de UCs beneficiadas <span class="req">*</span></label>
         <input
           type="text"
@@ -150,7 +139,8 @@
 
     <!-- Fecho da geração: o que só existe no mini — a soma das fontes, a demanda
        contratada de geração e o contrato de constituição (consórcio /
-       cooperativa), que alimenta a Garantia de Fiel Cumprimento. -->
+       cooperativa). Nada daqui decide a Garantia de Fiel Cumprimento além da
+       potência e da modalidade (regra da planilha, ver gdExigeGFC). -->
     <h4 class="card-subtitle divider">Contratação e documentação da geração</h4>
     <div class="grid grid-2 bloco-sub-gap">
       <!-- Resultado somente-leitura no padrão .readonly-val (shared.css): a
@@ -179,7 +169,14 @@
           oninput="onNumDec(this)"
         />
       </div>
-      <div class="field field--plain col-span-2" data-noopt>
+      <!-- Consórcio e cooperativa só existem na Geração Compartilhada: fora
+           dela a pergunta some e volta a "Não" (ver onModalidade). -->
+      <div
+        class="field field--plain col-span-2"
+        id="anexouContratoBox"
+        style="display: none"
+        data-noopt
+      >
         <label>Anexou contrato de constituição? (consórcio/cooperativa)</label>
         <div data-toggle="anexouContrato"></div>
         <select
@@ -201,7 +198,6 @@
         <div data-toggle="consorcioVerificado"></div>
         <select
           data-k="consorcioVerificado"
-          onchange="atualizarGFC()"
           style="display: none"
           aria-hidden="true"
         >

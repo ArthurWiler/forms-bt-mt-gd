@@ -154,7 +154,7 @@ function gerarPdfMiniGD(d) {
       ucPairs.push(["Nova subestação", d.alt_tipoPara]);
   }
   ucPairs.push(["Tipo de Subestação efetivo (ND 5.3)", d.tipoSE]);
-  // A demanda de GERAÇÃO é uma só, da usina (etapa 6), e sai aqui; a de
+  // A demanda de GERAÇÃO é uma só, da usina (etapa 5), e sai aqui; a de
   // consumo é campo de card e sai no bloco técnico.
   ucPairs.push([
     "Demanda a contratar de geração (kW)",
@@ -341,7 +341,7 @@ function gerarPdfMiniGD(d) {
   }
 
   // ---- Padrão de entrada e usina ----
-  // Fecha a etapa 5 no formulário; aqui vem em seção própria porque o bloco de
+  // Fecha a etapa 6 no formulário; aqui vem em seção própria porque o bloco de
   // carga acima é condicional (só sai quando há cargas a declarar) e a
   // pergunta vale para qualquer solicitação.
   sec("PADRÃO DE ENTRADA E USINA");
@@ -372,16 +372,21 @@ function gerarPdfMiniGD(d) {
       // valor não parecer escolha livre do solicitante.
       d.modalidade + (d.gridZero === "Sim" ? " (travada — Grid Zero)" : ""),
     ],
-    ["Qtde. instalações a receber crédito", d.qtdInstalacoesCredito],
+    [
+      "Qtde. instalações a receber crédito",
+      // Grid Zero: sem injeção na rede não há crédito (o campo some da tela).
+      d.gridZero === "Sim" ? "Não se aplica" : d.qtdInstalacoesCredito,
+    ],
     // A demanda a contratar de geração sai na seção 2 (Dados da unidade),
     // junto do restante do que é contratado — imprimi-la aqui a repetiria.
-    ["Anexou contrato de constituição", d.anexouContrato],
   );
+  // Consórcio/cooperativa só existem na Geração Compartilhada — é só lá que a
+  // tela pergunta pelo contrato de constituição.
   if (d.modalidade === "Geração Compartilhada")
-    gerPairs.push([
-      "Documentação do consórcio verificada",
-      d.consorcioVerificado,
-    ]);
+    gerPairs.push(
+      ["Anexou contrato de constituição", d.anexouContrato],
+      ["Documentação do consórcio verificada", d.consorcioVerificado],
+    );
   kvPairs(gerPairs);
   // Um MODELO por linha: a usina costuma misturar modelos, e os totais não
   // dizem de quê são feitos. Mesmas larguras da tabela de transformadores
@@ -481,9 +486,9 @@ function gerarPdfMiniGD(d) {
     const motivo =
       (parseFloat(d.potAtivaInstalada) || 0) <= GD_GFC_LIMITE_KW
         ? "Não aplicável (potência instalada ≤ 500 kW)"
-        : d.modalidade === GD_GFC_MODALIDADE_EMUC
-          ? "Dispensada — não se aplica a EMUC"
-          : "Dispensada — Geração Compartilhada com consórcio verificado";
+        : gdPotLiquidaGFC(d) <= GD_GFC_LIMITE_KW
+          ? "Não aplicável (potência a ser conectada ≤ 500 kW)"
+          : "Não aplicável (modalidade de compensação fora do critério)";
     fullLine("Garantia (> 500 kW)", motivo);
   } else {
     kvPairs([

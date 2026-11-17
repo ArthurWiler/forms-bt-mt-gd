@@ -297,7 +297,11 @@ function gerarPdfMicroGD(d) {
             ? " (travada — Grid Zero)"
             : ""),
     ],
-    ["Qtde. instalações a receber crédito", d.qtdInstalacoesCredito],
+    [
+      "Qtde. instalações a receber crédito",
+      // Grid Zero: sem injeção na rede não há crédito (o campo some da tela).
+      d.gridZero === "Sim" ? "Não se aplica" : d.qtdInstalacoesCredito,
+    ],
   );
   kvPairs(gerPairs);
   if (ehFV) {

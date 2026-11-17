@@ -1,28 +1,56 @@
 <!doctype html>
+<!-- Etapa 7 pelo Figma (gfc.svg / gfc2.svg, 17/11/2026): um aviso para cada
+     lado do limite de 500 kW, o valor como KPI (não é campo: é calculado) e a
+     forma de apresentação em rádios. Quem alterna tudo é atualizarGFC()
+     (js/app.js). -->
 <div class="card">
   <div class="section-eyebrow">Etapa 7</div>
   <h3 class="card-title">Garantia de Fiel Cumprimento</h3>
+  <p class="card-sub">
+    Preencha os dados relacionados à geração distribuída instalada em sua
+    propriedade.
+  </p>
 
-  <!-- Aviso de enquadramento: `--warn` porque a exigência acima de 500 kW é
-       uma condição a cumprir, não uma informação de apoio. -->
-  <div class="cmg-aviso cmg-aviso--warn no-print">
-    <div class="cmg-aviso-icon" aria-hidden="true"></div>
-    <p class="cmg-aviso-texto">
-      Para minigeração com potência instalada superior a 500 kW, é necessário
-      apresentar a garantia de fiel cumprimento (art. 655-C da REN nº
-      1.000/2021).
-    </p>
-  </div>
+  <!-- `--warn` nos dois: acima de 500 kW é uma condição a cumprir; até 500 kW
+       o aviso diz que a etapa não tem nada a preencher. -->
   <div
-    id="gfcIsentoAviso"
-    class="cmg-aviso no-print"
-    style="margin-top: 10px; display: none"
+    id="gfcAvisoExige"
+    class="cmg-aviso cmg-aviso--warn no-print"
+    style="display: none"
   >
     <div class="cmg-aviso-icon" aria-hidden="true"></div>
     <p class="cmg-aviso-texto">
-      <strong>GFC dispensada. </strong>
-      Geração Compartilhada com documentação do consórcio verificada não tem
-      cobrança de Garantia de Fiel Cumprimento.
+      Para minigeração com potência instalada superior a 500 kW,
+      <strong>é necessário apresentar a garantia de fiel cumprimento</strong>
+      (art. 655-C da REN nº 1.000/2021).
+    </p>
+  </div>
+  <div id="gfcAvisoAte500" class="cmg-aviso cmg-aviso--warn no-print">
+    <div class="cmg-aviso-icon" aria-hidden="true"></div>
+    <p class="cmg-aviso-texto">
+      Para minigeração com potência instalada de até 500 kW,
+      <strong>não é necessário apresentar a garantia de fiel cumprimento</strong>
+      (art. 655-C da REN nº 1.000/2021).<br />
+      Por favor, <strong>avance para o próximo passo</strong>.
+    </p>
+  </div>
+  <!-- Acima de 500 kW, mas a modalidade de compensação fica fora do critério
+       (só Autoconsumo Local e Remoto exigem). Texto da planilha (M201). -->
+  <div
+    id="gfcAvisoModalidade"
+    class="cmg-aviso cmg-aviso--warn no-print"
+    style="display: none"
+  >
+    <div class="cmg-aviso-icon" aria-hidden="true"></div>
+    <p class="cmg-aviso-texto">
+      Para esta solicitação, a modalidade de compensação não se enquadra no
+      critério e
+      <strong
+        >não há necessidade de apresentação da garantia de fiel
+        cumprimento</strong
+      >
+      (art. 655-C da REN nº 1.000/2021).<br />
+      Por favor, <strong>avance para o próximo passo</strong>.
     </p>
   </div>
   <div
@@ -30,15 +58,20 @@
     class="grid grid-2"
     style="margin-top: var(--cmg-space-8); display: none"
   >
-    <div class="field col-span-2">
+    <!-- KPI: o valor é calculado (gdCalcularGFC), nunca digitado. -->
+    <div class="resultado-card resultado-card--gfc col-span-2">
+      <div class="resultado-card-label">
+        Valor da garantia do Fiel Cumprimento
+      </div>
+      <div class="resultado-card-valor" id="gd_gfcValor">—</div>
+    </div>
+    <div class="field field--plain col-span-2" data-noopt>
       <label
         >Forma de apresentação da garantia <span class="req">*</span></label
       >
-      <select data-k="garantiaForma"></select>
-    </div>
-    <div class="field col-span-2">
-      <label>Valor da Garantia de Fiel Cumprimento (R$)</label>
-      <input type="text" id="gd_gfcValor" readonly disabled placeholder=" " />
+      <div data-toggle="garantiaForma"></div>
+      <select data-k="garantiaForma" style="display: none" aria-hidden="true">
+      </select>
     </div>
     <!-- Aviso único: as instruções de apresentação e o contato da área
          responsável eram dois banners seguidos dizendo "procure a CEMIG" de
@@ -57,7 +90,7 @@
             >Dúvidas Frequentes da CEMIG</a
           >.
         </span>
-        <span style="display: block">
+        <span style="display: block; margin-top: var(--cmg-space-1)">
           <strong>
             Gerência de Processos Especiais da Expansão de Média e Baixa Tensão
             - EM/PE

@@ -60,7 +60,7 @@ const GD_TIPO_LIG_TRAFO = ["∆-Y", "∆-∆", "Y-∆", "Y-Y"];
    número, para nunca colidir com um CV real nem sobreviver a um parseFloat. */
 const GD_CV_ACIMA = "acima";
 // Dispositivos de partida de motor — mesma lista do MT (mt/js/dados.js) e da
-// microgeração, usada pelos cards de "Motores e cargas especiais" da etapa 5
+// microgeração, usada pelos cards de "Motores e cargas especiais" da etapa 6
 // (Formulário de Carga), de onde saíram os do bloco técnico da subestação.
 const GD_DISPOSITIVOS_MOTOR = [
   "Chave Série-Paralelo",
@@ -256,25 +256,57 @@ const GD_GFC_CUSTO_INVESTIMENTO = {
   Eólica: 4500,
 };
 
-// Regra 19: a GFC é calculada automaticamente pelo sistema (não é preenchida pelo cliente).
-// GFC = Percentual × Potência líquida × Custo de investimento.
-//   Potência líquida = Potência instalada − Geração já existente.
-//   Percentual = 0% (≤500 kW) · 2,5% (500<x<1000) · 5% (≥1000 kW).
-// Regra 21: GFC não se aplica a Geração Compartilhada nem a EMUC (retorna 0).
+// Regra 19: a GFC é calculada automaticamente pelo sistema (não é preenchida
+// pelo cliente). Porte FIEL da aba "GFC" da planilha Formulario-MiniGD rev. P2
+// (célula M201 do Formulário + GFC!B18 / GFC!P38) — decisão do usuário em
+// 17/11/2026: "deixe o cálculo como na planilha".
+//   Garantia = Percentual × Potência × Preço (REH 3.171/2023, R$/kW por fonte)
+//   Percentual = 2,5% (500 < P < 1000 kW) · 5% (P ≥ 1000 kW) · 0 abaixo.
+// Potência atual de geração: só é descontada na solicitação "GD Existente COM
+// Alteração de Potência Ativa Instalada Total de Geração" (GFC!B10).
+const GD_SOLICITACAO_ALTERA_GERACAO =
+  "GD Existente COM Alteração de Potência Ativa Instalada Total de Geração";
+// Modalidades no critério da garantia (M201: L94 = Dados!B40 ou Dados!B41).
+const GD_GFC_MODALIDADES = ["Autoconsumo Local", "Autoconsumo Remoto"];
+function gdPotGeracaoAtualGFC(d) {
+  return d.solicitacao === GD_SOLICITACAO_ALTERA_GERACAO
+    ? parseFloat(d.potGeracaoAtual) || 0
+    : 0;
+}
+// "Potência para cálculo" (GFC!B12): instalada total − geração atual.
+function gdPotLiquidaGFC(d) {
+  return (parseFloat(d.potAtivaInstalada) || 0) - gdPotGeracaoAtualGFC(d);
+}
+function _percGFC(p) {
+  if (p >= 1000) return 0.05;
+  if (p > GD_GFC_LIMITE_KW) return 0.025;
+  return 0;
+}
+function _precoGFC(fonte) {
+  return GD_GFC_CUSTO_INVESTIMENTO[fonte] || 0;
+}
 function gdCalcularGFC(d) {
+  // GFC!B18 / I38 / B42: Geração Compartilhada e EMUC valem 0.
   const mod = d.modalidade;
   if (mod === "Geração Compartilhada" || mod === GD_GFC_MODALIDADE_EMUC)
     return 0;
-  const instalada = parseFloat(d.potAtivaInstalada) || 0;
-  const existente = parseFloat(d.potGeracaoAtual) || 0;
-  const liquida = Math.max(0, instalada - existente);
-  let perc = 0;
-  if (liquida >= 1000) perc = 0.05;
-  else if (liquida > GD_GFC_LIMITE_KW) perc = 0.025;
-  const fonte =
-    (d.fontes && d.fontes[0] && d.fontes[0].fontePrimaria) || "Solar";
-  const custo = GD_GFC_CUSTO_INVESTIMENTO[fonte] || 4000;
-  return perc * liquida * custo;
+  const fontes = d.fontes || [];
+  const f1 = fontes[0] || {};
+  if ((parseInt(d.qtdFontes) || 1) === 1) {
+    // Uma fonte (GFC!B18): percentual e potência são os da potência líquida.
+    const p = gdPotLiquidaGFC(d);
+    return _percGFC(p) * p * _precoGFC(f1.fontePrimaria);
+  }
+  // Duas fontes (GFC!P38 = B42 + I38), exatamente como a planilha: cada fonte
+  // tem o PRÓPRIO percentual, tirado da potência dela; a geração atual só é
+  // descontada da fonte 1.
+  const f2 = fontes[1] || {};
+  const p1 = (parseFloat(f1.potencia) || 0) - gdPotGeracaoAtualGFC(d);
+  const p2 = parseFloat(f2.potencia) || 0;
+  return (
+    _percGFC(p1) * p1 * _precoGFC(f1.fontePrimaria) +
+    _percGFC(p2) * p2 * _precoGFC(f2.fontePrimaria)
+  );
 }
 
 /* GD_TIPO_SE_BLOQ_LIGNOVA_138 e gdSEDisponivel() saíram: a aceitação das
@@ -293,7 +325,7 @@ function gdCalcularGFC(d) {
 const GD_SOLICITACAO_LIG_NOVA =
   "Ligação de Nova Unidade Consumidora COM Geração Distribuída";
 // Regra 9: teto de 300 kVA das subestações Nº 1, 3, 5, 6 e 8 — aqui medido
-// contra a POTÊNCIA ATIVA INSTALADA DE GERAÇÃO (etapa 6), que é conceito
+// contra a POTÊNCIA ATIVA INSTALADA DE GERAÇÃO (etapa 5), que é conceito
 // distinto do `maxKW` do CalculoMT (teto de DEMANDA contratada). Por isso o
 // limite sobrevive à migração para o catálogo do MT; QUAIS modelos o têm sai de
 // CalculoMT.SE_CRITERIOS (ver _tiposSEminiGD em js/subestacao.js), não de uma
@@ -330,18 +362,14 @@ const GD_CONTATO_CEMIG = {
   telefone: "0800 721 0167",
   email: "geracaodistribuida@cemig.com.br",
 };
-// GFC exigida acima de 500 kW, EXCETO:
-//  - Geração Compartilhada com consórcio verificado;
-//  - Geração Compartilhada / EMUC (Regra 21: GFC não se aplica a EMUC).
+// GFC exigida (célula M201 da planilha): potência instalada informada,
+// potência LÍQUIDA (instalada − geração atual) acima de 500 kW e modalidade de
+// compensação Autoconsumo Local ou Remoto. Geração Compartilhada e EMUC nunca
+// exigem — a "Documentação do consórcio verificada" não interfere.
 function gdExigeGFC(d) {
-  if ((parseFloat(d.potAtivaInstalada) || 0) <= GD_GFC_LIMITE_KW) return false;
-  if (
-    d.modalidade === "Geração Compartilhada" &&
-    d.consorcioVerificado === "Sim"
-  )
-    return false;
-  if (d.modalidade === GD_GFC_MODALIDADE_EMUC) return false;
-  return true;
+  if (!(parseFloat(d.potAtivaInstalada) > 0)) return false;
+  if (gdPotLiquidaGFC(d) <= GD_GFC_LIMITE_KW) return false;
+  return GD_GFC_MODALIDADES.includes(d.modalidade);
 }
 
 // Conversão Latitude/Longitude → UTM (WGS-84), espelhando BT/MT. O usuário
